@@ -1,1 +1,3 @@
 * text=auto !eol
+bin/mangadap_version -text
+pro/mangadap_version.pro -text
