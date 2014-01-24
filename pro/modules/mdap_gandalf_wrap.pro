@@ -218,6 +218,10 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 ; A constant additive polynomial (degree=0) is used in together with
 ; the multiplicative polynomials (always recommended).
 
+
+;warning, if the noise vector is not defined, do not run ppxf, but set
+;the ppxf outputs to dummy values to have the workflow continue
+;without crashing.
 if ~keyword_set(fix_star_kin) then begin
 mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
     goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
@@ -273,6 +277,9 @@ mdegree_=mdegree
 if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
 
 
+;warning, if the noise vector is not defined, do not run gandalf, but set
+;the gandalf outputs to dummy values to have the workflow continue
+;without crashing.
 mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
   l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=50., $
   BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
