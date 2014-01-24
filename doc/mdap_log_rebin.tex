@@ -1,0 +1,86 @@
+\subsection{{\tt mdap\_log\_rebin.pro}}
+\label{dap_sec:mdap_log_rebin}
+
+This interface controls the main module is responsable for the
+logarithmic resampling of the input galaxy spexctra, errors, and the
+stellar templates. It also broadens the input stellar spectra to match
+the galaxy instrumental resolution. 
+
+The list of input/output parameters defined in mdap\_log\_rebin.pro is
+given in Table \ref{dap_tab:mdap_log_rebin}.
+
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_log\_rebin.pro} \label{dap_tab::mdap_log_rebin} \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+{\bf  INPUTS} &  \\
+\hline
+spectra   &   [NxT dbl array].  The N galaxy spectra to resample.\\
+%
+errors    &   [NxT dbl array].  Errors associated to the N spectra.\\
+%
+wavelength & [dbl array].     Array with T elements, that specifies the wavelengths where galaxy spectra and errors are defined.\\
+%
+library    &  [string].          Directory containing the template spectra. Template spectra must be in fits format, defined over a 
+                             linear wavelength with constant ang/pix step, and must contain all the header information needed to  
+                             recover the wavelenght domain (i.e. CRPIX1, CDELT1, and CRVAL1).\\
+%
+fwhm\_diff &   [dbl array].     Vector containing the FWHM(lambda) that the stellar spectra must be convolved for. At the moment, 
+                             the value median(fwhm\_diff/wavelength*c) is used for broadening. Implementation to use the full 
+                             LSF(lambda) information are foreseen.\\
+%
+\hline
+{\bf  OPTIONAL INPUTS} & \\
+\hline
+input\_velscale & [flt].    Constant km/sec/pixel to be used when rebinning the input spectra. If not provided, the value will be
+                             automatically set by the procedure.\\
+%
+wave\_range  & [2 elem array].   If specified, the galaxy spectra will be trimmed to this wavelength range (units: angstrom). Default: 
+                             use the entire input wavelength range. Stellar spectra will be trimmed by 
+                             wave\_range[0] - 250 ang and wave\_range[1] + 250 ang.\\
+
+%
+\hline
+{\bf  OPTIONAL KEYWORDS}  & \\
+\hline
+/flux    &                  If set, flux conservation is applied to the log resampling. **Do not use** for template fitting.\\
+/gal\_wavelength\_ log\_step &  Set this keyword if the input galaxy spectra are logarithmically sampled (i.e. wavelength has a logarithmic progression).\\
+/quiet    &                    If set, message prompt is suppressed.\\
+\hline
+{\bf  OUTPUTS} &  \\
+\hline
+%
+log\_spc  &  [N x TT dbl array]. The logarithmically resampled (ln-lambda) N galaxy spectra, over the wavelength range ln(wave\_range).\\
+%
+log\_err &   [N x TT dbl array]  The errors associated to the log\_spc. Errors are rebinned using the following formulas:
+
+
+                              \ \ \   lrg=minmax(wavelength)
+
+                              \ \ \   mdap\_do\_ log\_rebin, lrg, errors$^2$, log\_err2, loglam, velscale=velscale
+
+                              \ \ \  log\_err = $\sqrt{{\rm log\_err2}}$
+
+                             where mdap\_do\_log\_rebin.pro is the original procedure by M. Cappellari (see
+                             Section \ref{dap_sec:mdap_do_log_rebin}).\\
+%
+log\_wav &   [TT dlb array].    The values of the ln-lambda over which log\_spc and log\_err are defined.\\
+%
+library\_log & [W x M dbl array]. The W stellar template spectra, logarithmically resampled.\\
+%
+log\_wav\_ library &[M dbl array]. The values of log-lambda over which the stellar templates are defined.\\
+\hline
+{\bf  OPTIONAL OUTPUTS} &  \\
+\hline
+version & string specifying the module version. If requested, the module is not execute and only version flag is returned.\\
+\hline
+\end{longtable}
+\end{center}

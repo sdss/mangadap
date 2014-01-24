@@ -1,0 +1,145 @@
+\subsection{{\tt mdap\_read\_datacube.pro}}
+\label{dap_sec:mdap_read_datacube}
+
+This interface module reads the input datacube or RSS files (which
+must be multi-layer fits file) and extract from it all the arrays and
+quantities, which are needed for the analysis. Table
+\ref{dap_tab:mdap_read_datacube} list the inputs and outputs required
+for this module.
+
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_read\_datacube.pro} \label{dap_tab:mdap_read_datacube} \\
+\hline
+{\bf  INPUTS} & \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+datacube\_name & string with the name of the fits file containing the input in datacube or RSS formats. 
+                         For inputs in datacube format, the file must be a fits file with the following
+                         extensions:
+                                \begin{enumerate}
+                             \item flux in 1e-17 ergs/s/cm$^{-2}$/\AA. This extension must be a 3D
+                               array, with the wavelength direction along the 3rd axis. 
+                            \item  Inverse variance associated to the first extension
+                            \item  Wavelength solution (1D dbl array). Constant linear step
+                              (preferred)? Constant Log-step? Constant ln-step?
+                            \item  RSS format (row-stacked spectra) (NOT USED)                  
+                            \item  coverage map; (NOT USED)
+                           \end{enumerate}
+
+                         For inputs in RSS format, the file must be a fits file with the following
+                         extensions:
+                          \begin{enumerate}
+                            \item flux in 1e-17 ergs/s/cm$^{-2}$/\AA. This extension must be a 3D
+                               array, with the wavelength direction along the 3rd axis.
+ 
+                            \item Inverse variance associated to the first extension
+
+                            \item Wavelength solution (1D dbl array). Constant linear step
+                              (preferred)? Constant Log-step? Constant ln-step?
+                            
+                            \item X position table.  Since position is a function of wavelength this is an 
+                               array of the same size as the flux array.  Coordinates should be in arcseconds 
+                               relative to the center of the data cube (i.e., roughly the center of the galaxy).
+                            \item Y position table.
+                            \end{enumerate}\\
+%
+\hline
+{\bf  OPTIONAL INPUTS}  & \\
+\hline
+lrange & [2 elem vector]. It indicates the wavelentgh range (in angstrom) where to
+       extract the information for Signal and Noise. Default: use the entire
+spectra range \\
+%
+\hline {\bf OPTIONAL KEYWORDS} &  \\ 
+\hline 
+/keep\_original\_ step & If set, the wavelength output vector will be the same as the one
+                         define from the input fits file. The default
+                         is to re-construct (and  therefore re-inrpolate the galaxy and error
+                         spectra) the output wavelength vector with constant ang/pixel step
+                         using the minimum ang/pixel step that is stored in the wavelength
+                         solution. For MANGA, it is suggested to set this keyword.\\
+%
+\hline
+{\bf  OUTPUTS} &  \\
+\hline
+data           &  Galaxy spectra. [NxMxT dbl array] in the case that the inputs are in datacube format, or [NxT dbl array]
+               in the case the inputs are in RSS format. Spectra are resampled over the vector wavelength.    \\
+%
+error          & Errors associated to data. [NxMxT dbl array] in the case that the inputs are in datacube format, or [NxT dbl array]
+               in the case the inputs are in RSS format. Spectra are resampled over the vector wavelength. \\
+%
+wavelength     & [T dbl array]. Wavalenght value where data and errors are computed. The vector is constructed with constant linear step in ang/pixel 
+               (unless the $\backslash$keep\_original\_ step keyword is selected). If input spectra have a logarithmic sampling, 
+               the minimum available step is used (e.g. log\_lam[1]-log\_lam[0]).   \\
+%
+x2d            & Array containing the x coordinates in arcseconds (0 is the center of the field of view). 
+               [NxM dbl array] in the case that the inputs are in datacube format, or 
+               [N dbl array] in the case the inputs are in RSS format. \\
+%
+y2d            & Array containing the y coordinates in arcseconds (0 is the center of the field of view). 
+               [NxM dbl array] in the case that the inputs are in datacube format, or 
+               [N dbl array] in the case the inputs are in RSS format. \\
+%
+signal         & Mean galaxy signal per \AA, obtained considering all the wavelength range 
+               (or only the range specified by lrange).               
+               [NxM dbl array] in the case that the inputs are in datacube format, or 
+               [N dbl array] in the case the inputs are in RSS format. 
+               The signal is computed as the median of each spectrum, in the wavelength range specified by lrange. \\
+\\
+%
+noise          & Mean galaxy error per \AA, obtained considering all the wavelength range 
+               (or only the range specified by lrange). Calculation is done on original spectra, not those resampled over the vector wavelenght.
+               [NxM dbl array] in the case that the inputs are in datacube format, or 
+               [N dbl array] in the case the inputs are in RSS format.
+               The signal is computed as the median of each error, in the wavelength range specified by lrange.\\
+%               
+cdelt1         & [double].        Spatial sampling along x direction (arcsec/pixel). If inputs are in RSS format, it is set to 0.5.  \\
+cdelt2         & [double].        Spatial sampling along y direction (arcsec/pixel). If inputs are in RSS format, it is set to 0.5.  \\
+header2d       & [str array].     The header for output two-dimensional maps produced by the DAP. \\
+\hline
+{\bf  OPTIONAL OUTPUTS} &  \\
+\hline
+version & string specifying the module version. If requested, the module is not execute and only version flag is returned.\\
+ x2d\_ reconstructed  &   [NxM array]   If input is in DATACUBE format, x2d\_ reconstructed = x2d.
+
+                          [N'xM' array] If inputs are in RSS format, the x2d coordinates are resampled over a 2D map with fixed 0"5/pixel sampling
+                                     and define the  x2d\_ reconstructed map.\\
+%
+ y2d\_ reconstructed &    [NxM array]   If input is in DATACUBE format, y2d\_reconstructed = y2d.
+
+                          [N'xM' array] If inputs are in RSS format, the y2d coordinates are resampled over a 2D map with fixed 0"5/pixel sampling
+                                     and define the  y2d\_ reconstructed map.\\
+%
+ signal2d\_ reconstructed  &  [NxM array]   If input is in DATACUBE format, signal2d\_reconstructed = signal.
+
+                         [N'xM' array] If inputs are in RSS format, the signal is resampled over the 2D map defined by
+                                         x2d\_ reconstructed  and y2d\_ reconstructed. \\
+%
+ noise2d\_ reconstructed  &   [NxM array]   If input is in DATACUBE format, noise2d\_reconstructed = noise.
+
+                        [N'xM' array] If inputs are in RSS format, the noise is resampled over the 2D map defined by
+                                         x2d\_reconstructed  and y2d\_reconstructed. \\
+%
+ version   & [string]            Module version. If requested, the module is not execute and only version flag is returned.\\
+%
+\hline
+\end{longtable}
+\end{center}
+
+
+\subsubsection{Future developments}
+
+The following items needs to be implemented:
+
+\begin{itemize}
+  \item Implement with new format of input datacube.
+  \item Allow for identification and removal of foreground stars.
+\end{itemize}

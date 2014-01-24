@@ -1,5 +1,34 @@
 * text=auto !eol
 bin/mangadap_version -text
+doc/dap.bbl -text
+doc/dap.pdf -text
+doc/dap.tex -text
+doc/figures/Blocks_1-3.odg -text
+doc/figures/block1.odg -text
+doc/figures/block1.pdf -text
+doc/figures/block1.ps -text
+doc/figures/block2.pdf -text
+doc/figures/block2.ps -text
+doc/figures/block3.pdf -text
+doc/figures/block3.ps -text
+doc/figures/block4.pdf -text
+doc/figures/block4.ps -text
+doc/figures/block5.pdf -text
+doc/figures/block5.ps -text
+doc/figures/dap_workflow_2.pdf -text
+doc/figures/dap_workflow_2.ps -text
+doc/figures/mangaDAP_workflow.odg -text
+doc/figures/mangaDAP_workflow.pdf -text
+doc/figures/mangaDAP_workflow.ps -text
+doc/figures/mangaDAP_workflow_1.ps -text
+doc/figures/mangaDAP_workflow_2.pdf -text
+doc/figures/mangaDAP_workflow_2.ps -text
+doc/mdap_calculate_spectrum_sn.tex -text
+doc/mdap_calibrate_sn.tex -text
+doc/mdap_log_rebin.tex -text
+doc/mdap_read_datacube.tex -text
+doc/mdap_spatial_binning.tex -text
+doc/mdap_voronoi_2d_binning.tex -text
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500.fits -text svneol=unset#unset
