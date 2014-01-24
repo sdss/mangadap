@@ -23,3 +23,29 @@ external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500.fits -text s
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
 pro/mangadap_version.pro -text
+pro/utilities/basic_colors.pro -text
+pro/utilities/basic_colors_rev.pro -text
+pro/utilities/mdap_add_fits_layer.pro -text
+pro/utilities/mdap_bvls.pro -text
+pro/utilities/mdap_calculate_spectrum_sn.pro -text
+pro/utilities/mdap_convol_sigma.pro -text
+pro/utilities/mdap_create_starting_guesses.pro -text
+pro/utilities/mdap_display_2dmap.pro -text
+pro/utilities/mdap_display_2dmap_ps.pro -text
+pro/utilities/mdap_get_2d_map.pro -text
+pro/utilities/mdap_get_error_from_residual.pro -text
+pro/utilities/mdap_interpolate_2dmaps.pro -text
+pro/utilities/mdap_place_cbar.pro -text
+pro/utilities/mdap_place_image.pro -text
+pro/utilities/mdap_range.pro -text
+pro/utilities/mdap_read_indices_definitions.pro -text
+pro/utilities/mdap_readfits_2d.pro -text
+pro/utilities/mdap_readfits_lambda.pro -text
+pro/utilities/mdap_recovery_2d.pro -text
+pro/utilities/mdap_round_str.pro -text
+pro/utilities/mdap_sgn.pro -text
+pro/utilities/mdap_stc.pro -text
+pro/utilities/range.pro -text
+pro/utilities/read_header.pro -text
+pro/utilities/test_sn_definition.pro -text
+pro/utilities/usersymbol.pro -text
