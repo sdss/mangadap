@@ -225,7 +225,7 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 if ~keyword_set(fix_star_kin) then begin
 mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
     goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
-       range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet
+       range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk
 endif else begin
    ppxfsol = [start_[0]+offset,start_[1],start_[2],start_[3],0.,0.,start_[4],start_[5]]
    ERROR_stars = fltarr(6)+99.
@@ -276,21 +276,21 @@ sol_star = [ppxfsol[0],ppxfsol[1],ppxfsol[2],ppxfsol[3],0,0,-1]
 mdegree_=mdegree
 if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
 
-
+;stop
 ;warning, if the noise vector is not defined, do not run gandalf, but set
 ;the gandalf outputs to dummy values to have the workflow continue
 ;without crashing.
 mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
   l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=50., $
   BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
-  L0_TEMPL=l0_templ,DEGREE=degree, MDEGREE=mdegree_, $
+  L0_TEMPL=l0_templ,DEGREE=-1, MDEGREE=mdegree_, $
   /FOR_ERRORS, ERROR=esol,$
   REDDENING=REDDENING,$
   fix_gas_kin=fix_gas_kin,$
   range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet
 sol=temporary(ppxfsol)
   ;REDDENING=[0.05]
-
+;stop
 ;*** SONO ARRIVATO QUI, devo aggiustare gli outputs in modo che vengano passati giusti a mdap_spectral_fitting.pro ***
 ;*** DEVO ANCHE INSERIRE I FIX_STAR_KIN, RANGE_V_STAR, ECC ALL'INTERNO DI MDAP_PPXF E MDAP_GANDALF.PRO
 
