@@ -292,8 +292,30 @@ if RSS eq 1 then begin
 
 endif
 sz=size(data)
-; defyning S/N from data, before any re-sampling
 
+; removing spectra if bad defined for more than 20% of wavelength extension
+if RSS eq 0 then begin      ;datacube
+for j = 0, sz[2]-1 do begin
+   for i = 0 , sz[1] -1 do begin
+      indici = where(error[i,j,*] le 0 or finite(error[i,j,*]) ne 1 or finite(data[i,j,*]) ne 1)
+      if n_elements(indici) ge 0.2 * n_elements(data[i,j,*]) then begin
+         data[i,j,*] = data[i,j,*]*0.
+         error[i,j,*] = error[i,j,*]*0.+1.
+      endif
+   endfor
+endfor
+endif
+if RSS eq 1 then begin      ;datacube
+   for i = 0 , sz[1] -1 do begin
+      indici = where(error[i,*] le 0 or finite(error[i,*]) ne 1 or finite(data[i,*]) ne 1)
+      if n_elements(indici) ge 0.2 * n_elements(data[i,*]) then begin
+         data[i,*] = data[i,*]*0.
+         error[i,*] = error[i,*]*0.+1.
+      endif
+   endfor
+endif
+
+; defyning S/N from data, before any re-sampling
 if RSS eq 0 then begin      ;datacube
    signal = fltarr(sz[1],sz[2])
    noise = fltarr(sz[1],sz[2])
