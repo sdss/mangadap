@@ -492,6 +492,7 @@ endif else begin
         if n_elements(range_v_gas) ne 0 then parinfo[i+1].limits   = start_pars[i+1] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+2].limits   = [max([0.2d,start_pars[i+2]+range_s_gas[0]/velscale ]),start_pars[i+2]+range_s_gas[1]/velscale ]
         ; to avoid problems near the previous boundaries
+       
         if (start_pars[i+1] le parinfo[i+1].limits[0]) then start_pars[i+1] = parinfo[i+1].limits[0]+0.0001
         if (start_pars[i+1] ge parinfo[i+1].limits[1]) then start_pars[i+1] = parinfo[i+1].limits[1]-0.0001
         if (start_pars[i+2] le parinfo[i+2].limits[0]) then start_pars[i+2] = parinfo[i+2].limits[0]+0.0001
@@ -527,13 +528,25 @@ if keyword_set(for_errors) then begin
     for i = 0,nlines-1 do begin
         j = i_lines[i]
         if (emission_setup.a[j] gt 0) then begin
-            parinfo[i*3].limited = [1,0]
-            parinfo[i*3].limits(0) = 0
+;            parinfo[i*3].limited = [1,0]
+;            parinfo[i*3].limits(0) = 0
+            parinfo[i*3].limited = [1,1]
+            parinfo[i*3].limits(0) = 0.
+            parinfo[i*3].limits(1) = 10.*max(abs(galaxy))
+            if (start_pars[i*3] le parinfo[i*3].limits[0]) then start_pars[i*3] = parinfo[i*3].limits[0]+0.001
+            if (start_pars[i*3] ge parinfo[i*3].limits[1]) then start_pars[i*3] = parinfo[i*3].limits[1]-0.001
+
         endif else begin
-            parinfo[i*3].limited = [0,1]
-            parinfo[i*3].limits(1) = 0
+;            parinfo[i*3].limited = [0,1]
+;            parinfo[i*3].limits(1) = 0
+            parinfo[i*3].limited = [1,1]
+            parinfo[i*3].limits(1) = 0.
+            parinfo[i*3].limits(0) = -10.*max(abs(galaxy))
+           if (start_pars[i*3] le parinfo[i*3].limits[0]) then start_pars[i*3] = parinfo[i*3].limits[0]+0.001
+           if (start_pars[i*3] ge parinfo[i*3].limits[1]) then start_pars[i*3] = parinfo[i*3].limits[1]-0.001
         endelse
     endfor
+   
 endif
 
 ; C) Finally, find the lines for which the kinematics needs to be tied
@@ -739,7 +752,7 @@ ENDIF ELSE BEGIN
 ENDELSE
 
 FOR j=0,degree+ntemp+nlines DO a[*,j] = c[*,j]/noise          ; Weight all columns with errors
-
+;stop
 ; Select the spectral region to fit and solve the overconditioned system
 ; using SVD/BVLS. Use unweighted array for estimating bestfit predictions.
 sol = BVLSN_Solve_pxf(a[goodpixels,*],galaxy[goodpixels]/noise[goodpixels],degree, $
@@ -962,7 +975,7 @@ PRO MDAP_GANDALF, templates, galaxy, noise, velScale, sol, emission_setup, l0_ga
   range_v_gas=range_v_gas,range_s_gas=range_s_gas
 
 compile_opt idl2
-on_error, 2
+on_error, 0
 
 ; ------------------------------------
 ; Do some initial input error checking
@@ -1036,10 +1049,12 @@ endfor
 if n_elements(reddening) ne 0  then start_pars[2*nlines:2*nlines+n_elements(reddening)-1] = reddening
 
 ; ------------------------------------
-; Convolve the input stellar templates with the input stellar kinematics
+; Convolve the input stellar templates with the input stellar
+; kinematics
 kinstars = sol[0:5]
+solori=sol
 cstar=convolve_templates(templates,kinstars,velscale)
-
+;stop
 ; ------------------------------------
 ; Set the limits and the appropriate inter-dependencies for fitting
 ; emission-line Gaussians and prepare the FUNCTARGS and PARINFO
@@ -1050,7 +1065,7 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
   EMISSION_SETUP=emission_setup, START_PARS=start_pars, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
   PARINFO=parinfo, FUNCTARGS=functargs, INT_DISP=int_disp, $
   LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ
-
+;stop
 ; ------------------------------------
 ; This is where the GANDALF fit is actually performed. Call MPFIT to
 ; find the best-fitting position and width of the emission lines while
@@ -1085,6 +1100,7 @@ resid = fitfunc_gas(best_pars,CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
                     EMISSION_TEMPLATES=emission_templates, INT_DISP=int_disp, $
                     LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ)
 ;
+;stop
 if total(noise) eq n_elements(galaxy) then begin
     ; If you have input as errors on the fluxes an array of constant unity vales
     ; compute Chi^2/DOF and use this instead of bestnorm/dof to rescale the formal uncertainties
@@ -1171,14 +1187,14 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
       PARINFO=parinfo, FUNCTARGS=functargs, INT_DISP=int_disp, $
       LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ, $
       FOR_ERRORS=for_errors
-    
+    ;stop
     ; -----------------
     ; Re-run MPFIT starting from previous solution and using now the
     ; FOR_ERRORS keyword to specify that we solve non-linearly also for
     ; the amplitudes, and not only for the line position and width.
     best_pars_2 = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
                         FTOL=1d-1, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, /QUIET)
-
+;stop
     ; -----------------
     ; Re-evaluate the fit residuals to re-assess the fit quality and
     ; rescale the errors. The last MPFIT fit should have always
@@ -1186,13 +1202,14 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; set to unity for the emission-line templates, as their amplitude
     ; is determined by MPFIT.
     resid_2 = fitfunc_gas(best_pars_2,CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
-                          KINSTARS=sol[0:5], VELSCALE=velscale, DEGREE=degree, MDEGREE=mdegree, $
+                          KINSTARS=solori[0:5], VELSCALE=velscale, DEGREE=degree, MDEGREE=mdegree, $
                           GOODPIXELS=goodpixels, BESTFIT=bestfit_2, WEIGHTS=weights_2, $
                           EMISSION_SETUP=emission_setup, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
                           EMISSION_TEMPLATES=emission_templates_2, INT_DISP=int_disp, $
                           LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ, $
                           FOR_ERRORS=for_errors)
     ;
+;stop
     if total(noise) eq n_elements(galaxy) then begin
         ; If as errors on the fluxes you have input an array of
         ; constant unity vales compute Chi^2/DOF and use this instead
@@ -1227,7 +1244,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     best_pars = best_pars & bestfit = bestfit_2 
     emission = emission_2 & emission_templates = emission_templates_2
     weights = weights_2
-    
+    ;stop
     ; -----------------
     ; Show the fit if requested
     if keyword_set(plot) then show_fit, galaxy, bestfit, emission, best_pars, sol, $
