@@ -287,7 +287,7 @@ dv = (loglam_templates[0]-loglam_gal[0])*c
 
 if not keyword_set(quiet) then print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 ;  'Spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer),' fitted'
-window,0,retain=2
+;window,0,retain=2
 
 if n_elements(mdegree) ne 0 then MDEGREE_=MDEGREE
 if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
@@ -316,7 +316,7 @@ FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
 ; Print, ' Fitting spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer)   ;TEST LINE
 
 
-GOODPIXELS=where(galaxy_/noise_ ge .5 )
+;GOODPIXELS=where(galaxy_/noise_ ge .5 )
 if ~keyword_set(quiet) then print, 'fitting spectrum',i
 ;MDEGREE_=MDEGREE
 ;if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
@@ -329,23 +329,6 @@ if ~keyword_set(quiet) then print, 'fitting spectrum',i
 ;       fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
 ;      range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas
 ;
-
-
-
-
-
-;; ************************************************************;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;; T.B.D. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; If noise_ has null or negative values, do not run mdap_gandalf_wrap
-; but set its outputs to dummy values to make the workflow continue
-; without crashing.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
 
 mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale, start, sol, $
        EMISSION_SETUP_FILE=emission_line_file, $
@@ -361,14 +344,14 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
 ;stop
 
 ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.
-if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.
+if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.  ma005_142.790030+22.746507datacubes_block5.idl
 
    ; plots for checks... remove these lines when running on remote server
-    plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[5100,6800]
-    oplot,exp(loglam_gal),bestfit,color=200
+   ; plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[5100,6800]
+   ; oplot,exp(loglam_gal),bestfit,color=200
    ; print,'start', start
    ; print,'sol',  sol
-   ; print,'error', error
+    ;print,'error', error
    ; print, ''
    ; print, minmax(exp(loglam_gal))
    ; do I really need it? best_fit_model_log[i,*]=bestfit
@@ -379,9 +362,9 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
    ;-- storing outputs
    ;reddening_output[i] = (n_elements(ebv) eq 0) ?  0 : ebv[0]; reddening_output[i] = 0 : reddening_output[i] = ebv[0]
    if n_elements(ebv) eq 2 then reddening_output[i,*]= ebv
-   if n_elements(ebv) eq 1 then reddening_output[i,*]= [ebv[0],99]
+   if n_elements(ebv) eq 1 then reddening_output[i,*]= [ebv[0],0.]
    if n_elements(ebv) eq 2 then reddening_output_err[i,*]= err_reddening
-   if n_elements(ebv) eq 1 then reddening_output_err[i,*]= [err_reddening[0],99]
+   if n_elements(ebv) eq 1 then reddening_output_err[i,*]= [err_reddening[0],999.]
    if n_elements(ebv) eq 0 then reddening_output[i,*]= [0,0]
    if n_elements(ebv) eq 0 then reddening_output_err[i,*]= [99,99]
 
