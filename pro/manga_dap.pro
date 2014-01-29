@@ -144,7 +144,7 @@ if sz[0] eq 2 then printf,1,'[INFO] RSS file '+root_name+' read; Nfibres: '+mdap
 MW_extinction = 0.
 fwhm_instr=wavelength*0.+2.73
 c=299792.458d
-
+mask_range=[5570.,5590.,5800.,5850.]
 ;*********************************************************************************
 
 
@@ -273,7 +273,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
-        extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],/quiet ;,$
+        extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet ;,$
   
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_tpl[i,*]=emission_line_fluxes_tpl[i,*]/area_bins_tpl[i]
@@ -321,7 +321,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],/quiet
+        MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet
 
    junk = size(emission_line_fluxes_str);need to save all flux maps
    for i = 0, junk[1]-1 do emission_line_fluxes_str[i,*]=emission_line_fluxes_str[i,*]/area_bins_str[i]
@@ -350,11 +350,11 @@ mdap_create_starting_guesses,emission_line_kinematics_str,xbin_str,ybin_str,x2d,
 
 
 
-log_step_gal=log_wav_ems[1]-log_wav_ems[0]
-mdn = median(stellar_kinematics_str[*,0])
-wavelength_input=exp(log_wav_ems-mdn[0]/velscale*(log_step_gal))
-wavelength_input=wavelength_input[200./velscale : n_elements(wavelength_input) - 200./velscale]   ;trim 6 pixels to allow for +/- 200 km/sec redshift due rotation
-
+;log_step_gal=log_wav_ems[1]-log_wav_ems[0]
+;mdn = median(stellar_kinematics_str[*,0])
+;wavelength_input=exp(log_wav_ems-mdn[0]/velscale*(log_step_gal))
+;wavelength_input=wavelength_input[200./velscale : n_elements(wavelength_input) - 200./velscale]   ;trim 6 pixels to allow for +/- 200 km/sec redshift due rotation
+wavelength_input=exp(log_wav_ems)
 if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or execute_all_modules eq 1 then begin
    mdap_spectral_fitting,log_spc_ems,log_err_ems,log_wav_ems,library_log_ems,log_wav_library_ems,velscale,$
         stellar_kinematics_ems,stellar_kinematics_ems_err,stellar_weights_ems,emission_line_kinematics_ems,emission_line_kinematics_ems_err,$
@@ -362,7 +362,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
-        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,/quiet;,$
+        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,mask_range=mask_range,/quiet;,$
 
  
     ; best_fit_model_log=best_fit_model_log_ems,emission_model_log=emission_model_log_ems
@@ -455,7 +455,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
           MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
-          extra_inputs=['MOMENTS=4','DEGREE=-1','BIAS=0','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],range_v_star=[-50.,50.],range_v_gas=[-50.,50.],/quiet ;,$
+          extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,/quiet ;,$
    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
 
    ;calculate the real S/N of binned spectra
