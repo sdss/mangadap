@@ -15,6 +15,19 @@
 ;    good, 0, masked), which can be used later in making plots
 ;    with SHOW_FIT.PRO
 
+pro remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
+
+for i = 0, n_elements(indici_to_remove_from_good_pixels)-1 do begin
+   rm = where(indici_to_remove_from_good_pixels[i] eq goodpixels)
+  if rm[0] ne -1 then remove,rm,goodpixels
+endfor
+
+
+
+end
+
+
+
 function mask_emission_lines,npix,Vsys,emission_setup,velscale,l0_gal,lstep_gal,$
                              sigma=sigma,l_rf_range=l_rf_range,log10=log10
 
@@ -129,7 +142,7 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
        VSYST=VSYST, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
        quiet=quiet,FOR_ERRORS=FOR_ERRORS,$
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas
+       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,mask_range=mask_range,fitted_pixels=fitted_pixels
 
 
 
@@ -150,6 +163,13 @@ IF NOT KEYWORD_SET(MDEGREE)             THEN mdegree=0
 
 w = where(noise eq 0 or finite(noise) eq 0) & if (w[0] ne -1) then noise[w] = max(noise)*1000.
 
+if n_elements(mask_range) ne 0 then begin 
+   indici_to_remove_from_good_pixels = [0];where(
+   for i = 0, n_elements(mask_range)-2,2 do begin
+      indici_to_remove_from_good_pixels = [indici_to_remove_from_good_pixels,where(loglam_gal ge alog(mask_range[i]) and loglam_gal le alog(mask_range[i+1]))]
+   endfor
+   indici_to_remove_from_good_pixels = indici_to_remove_from_good_pixels[1:*]
+endif
 
 
 int_disp = 0.
@@ -197,6 +217,10 @@ readcol,eml_file,eml_i,eml_name,eml_lambda,eml_action,eml_kind,eml_a,eml_v,eml_s
 emission_setup = create_struct('i',eml_i,'name',eml_name,'lambda',eml_lambda,'action',eml_action,$
                                'kind',eml_kind,'a',eml_a,'v',eml_v,'s',eml_s,'fit',eml_fit)
 
+
+
+
+
 ; call the function mask_emission_lines, which loops over the listed
 ; emission-lines and mask those tagged with an 'm' for mask. Use
 ; emission-line masks with a sigma of 200 km/s, and use only the
@@ -218,6 +242,8 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 ; A constant additive polynomial (degree=0) is used in together with
 ; the multiplicative polynomials (always recommended).
 
+if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
+
 
 
 ;stop
@@ -226,7 +252,7 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 indici_neg = where(galaxy le 0)
 if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
 if ~keyword_set(fix_star_kin) then begin
-
+;stop
 mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
     goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
        range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk
@@ -284,6 +310,7 @@ if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
 ;warning, if the noise vector is not defined, do not run gandalf, but set
 ;the gandalf outputs to dummy values to have the workflow continue
 ;without crashing.
+if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
 mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
   l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=50., $
   BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
@@ -293,6 +320,7 @@ mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
   fix_gas_kin=fix_gas_kin,$
   range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet
 sol=temporary(ppxfsol)
+fitted_pixels=goodpixels
   ;REDDENING=[0.05]
 ;stop
 ;*** SONO ARRIVATO QUI, devo aggiustare gli outputs in modo che vengano passati giusti a mdap_spectral_fitting.pro ***
@@ -471,35 +499,6 @@ gas_fluxes_err =gas_fluxes_err[1:*]
 
 if n_elements(reddening) ne 0 then reddening = sol_EBmV;,esol_EBmV]
 if n_elements(reddening) ne 0 then err_reddening = esol_EBmV
-;print, reddening
-;print, err_reddening
-; Try this implementation:
-; if n_elements(reddening) ne 0 then reddening = sol_EBmV ; 1 or 2 elements vector
-; if n_elements(reddening) ne 0 then error_reddening = esol_EBmV; 1 or 2 elements vector
-
-;for i = 0, n_elements(eml_i)-1 do print,eml_i[i],' ',eml_name[i],' ' ,gas_fluxes[i]
-
-; ;print,'--> Finally, write out the fit results!'
-; ; N) Finally writing out the outputs
-; 
-; ; writing fits file with the fitting results structure
-; pars_file = (strsplit(infile,'.',/extract))[0]+'_pars.fits'
-; mwrfits,fit_results,pars_file,/create,/silent
-; ; writing multi-extension fits file with fit results
-; fits_file = (strsplit(infile,'.',/extract))[0]+'_fits.fits'
-; writefits,fits_file,galaxy    ,hdr_gal
-; writefits,fits_file,bestfit   ,/append ; appending best fitting model
-; ; Add up the best-fitting emission templates to get the emission spectrum
-; if ((size(emission_templates))[0] eq 1) then emission = emission_templates          
-; if ((size(emission_templates))[0] eq 2) then emission = total(emission_templates,2)
-; writefits,fits_file,emission  ,/append ; appending best-fitting emission-line spectrum
-; writefits,fits_file,spec_neat ,/append ; appending galaxy spectrum without detected emission
-; ; NEW - V1.3
-; dummy = galaxy*0 & dummy[goodpixels] = 1 & goodpixels = dummy
-; writefits,fits_file,goodpixels ,/append ; appending goodpixels array (1 good, 0, masked)
-; ; writing fits file with optimal template
-; otempl_file = (strsplit(infile,'.',/extract))[0]+'_otempl.fits'
-; writefits,otempl_file,otemplate ,hdr_templ 
 
 
 END
