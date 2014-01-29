@@ -19,7 +19,7 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
      extra_inputs=extra_inputs,use_previos_guesses=use_previos_guesses,$
      fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
      range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,rest_frame_log=rest_frame_log,filter=filter,$
-     version=version
+     version=version,mask_range=mask_range
 ;,$
     ; emission_line_intens=emission_line_intens,emission_line_intens_rms=emission_line_intens_rms;,$
     ; best_fit_model_log=best_fit_model_log,emission_model_log=emission_model_log,$
@@ -246,7 +246,7 @@ emission_line_equivW_err=fltarr(sz[2],n_elements(wav))
 
 if keyword_set(rest_frame_log) then begin
       wavelength_output=exp(loglam_templates);exp(loglam_gal-sol[0]/velscale*(log_step_gal))
-      if n_elements(wavelength_input) ne 0 then wavelength_output=wavelength_input
+     ; if n_elements(wavelength_input) ne 0 then wavelength_output=wavelength_input
 endif else begin
 
    if n_elements(wavelength_input) ne 0 then begin
@@ -289,12 +289,12 @@ dv = (loglam_templates[0]-loglam_gal[0])*c
 if not keyword_set(quiet) then print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 ;  'Spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer),' fitted'
-window,0,retain=2
+;window,0,retain=2
 
 if n_elements(mdegree) ne 0 then MDEGREE_=MDEGREE
 if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
 FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
-;FOR i = 25, sz[2]-1 DO BEGIN  ;loop over all the spectra
+;FOR i = 45, 45 DO BEGIN  ;loop over all the spectra
 
    if n_elements(reddening) ne 0 then ebv=reddening
    start = [star_kin_starting_guesses[i,0],star_kin_starting_guesses[i,1],star_kin_starting_guesses[i,2],star_kin_starting_guesses[i,3],gas_kin_starting_guesses[i,0],gas_kin_starting_guesses[i,1]]
@@ -320,7 +320,7 @@ FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
 
 ;GOODPIXELS=where(galaxy_/noise_ ge .5 )
 if ~keyword_set(quiet) then print, 'fitting spectrum',i
-print, 'fitting spectrum',i
+;print, 'fitting spectrum',i
 ;MDEGREE_=MDEGREE
 ;if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
 ;   mdap_sgandalf, templates,[[alog(wav)],[emss]], loglam_gal, galaxy_, noise_, velScale, start, sol, $
@@ -341,7 +341,7 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
        VSYST=dv, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
        FOR_ERRORS=1,$    ; ERROR COMPUTATION MUST BE TRIGGERED!!!
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet
+       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,mask_range=mask_range,fitted_pixels=fitted_pixels
 
 
 ;stop
@@ -350,10 +350,11 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
 if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.  ma005_142.790030+22.746507datacubes_block5.idl
 
    ; plots for checks... remove these lines when running on remote server
-    plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3640,4870]
-    oplot,exp(loglam_gal),bestfit,color=200
-    print,'start', start
-    print,'sol',  sol
+    ;plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3640,7870]
+    ;oplot,exp(loglam_gal),bestfit,color=200
+    ;OPLOT,exp(loglam_gal[fitted_pixels]),bestfit[fitted_pixels],color=100
+    ;print,'start', start
+    ;print,'sol',  sol
     ;print,'error', error
    ; print, ''
    ; print, minmax(exp(loglam_gal))
@@ -440,10 +441,10 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
       residuals_interp = interpol(galaxy_-bestfit,rf_gal_lam,wavelength_output)
       residuals[i,*] = temporary(residuals_interp)
 
-      bf_template = interpol(bf_template,loglam_templates,wavelength_output)
+      ;bf_template = interpol(bf_template,loglam_templates,wavelength_output)
       best_template[i,*] = temporary(bf_template)
 
-      bf_template_LOSVD = interpol(bf_template_LOSVD,loglam_templates,wavelength_output)
+      ;bf_template_LOSVD = interpol(bf_template_LOSVD,loglam_templates,wavelength_output)
       best_template_LOSVD_conv[i,*] =temporary(bf_template_LOSVD)
 
    endif else begin
