@@ -246,6 +246,7 @@ emission_line_equivW_err=fltarr(sz[2],n_elements(wav))
 
 if keyword_set(rest_frame_log) then begin
       wavelength_output=exp(loglam_templates);exp(loglam_gal-sol[0]/velscale*(log_step_gal))
+      if n_elements(wavelength_input) ne 0 then wavelength_output=wavelength_input
 endif else begin
 
    if n_elements(wavelength_input) ne 0 then begin
@@ -286,8 +287,9 @@ reddening_output_err = fltarr(sz[2],2)
 dv = (loglam_templates[0]-loglam_gal[0])*c
 
 if not keyword_set(quiet) then print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
+print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 ;  'Spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer),' fitted'
-;window,0,retain=2
+window,0,retain=2
 
 if n_elements(mdegree) ne 0 then MDEGREE_=MDEGREE
 if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
@@ -318,6 +320,7 @@ FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
 
 ;GOODPIXELS=where(galaxy_/noise_ ge .5 )
 if ~keyword_set(quiet) then print, 'fitting spectrum',i
+print, 'fitting spectrum',i
 ;MDEGREE_=MDEGREE
 ;if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
 ;   mdap_sgandalf, templates,[[alog(wav)],[emss]], loglam_gal, galaxy_, noise_, velScale, start, sol, $
@@ -347,10 +350,10 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
 if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.  ma005_142.790030+22.746507datacubes_block5.idl
 
    ; plots for checks... remove these lines when running on remote server
-   ; plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[5100,6800]
-   ; oplot,exp(loglam_gal),bestfit,color=200
-   ; print,'start', start
-   ; print,'sol',  sol
+    plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3640,4870]
+    oplot,exp(loglam_gal),bestfit,color=200
+    print,'start', start
+    print,'sol',  sol
     ;print,'error', error
    ; print, ''
    ; print, minmax(exp(loglam_gal))
@@ -437,7 +440,10 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
       residuals_interp = interpol(galaxy_-bestfit,rf_gal_lam,wavelength_output)
       residuals[i,*] = temporary(residuals_interp)
 
+      bf_template = interpol(bf_template,loglam_templates,wavelength_output)
       best_template[i,*] = temporary(bf_template)
+
+      bf_template_LOSVD = interpol(bf_template_LOSVD,loglam_templates,wavelength_output)
       best_template_LOSVD_conv[i,*] =temporary(bf_template_LOSVD)
 
    endif else begin
