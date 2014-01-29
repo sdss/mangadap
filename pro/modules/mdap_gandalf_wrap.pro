@@ -219,10 +219,14 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 ; the multiplicative polynomials (always recommended).
 
 
-;warning, if the noise vector is not defined, do not run ppxf, but set
-;the ppxf outputs to dummy values to have the workflow continue
-;without crashing.
+
+;stop
+; If the galaxy spectrum have zero values in some regions, I increase the noise in
+; those regions.
+indici_neg = where(galaxy le 0)
+if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
 if ~keyword_set(fix_star_kin) then begin
+
 mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
     goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
        range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk
