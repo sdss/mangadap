@@ -72,6 +72,7 @@ pro/interfaces/mdap_spectral_fitting.pro -text
 pro/manga_dap.pro -text
 pro/mangadap_version.pro -text
 pro/modules/mdap_bvls.pro -text
+pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_spectrum_sn.pro -text
 pro/modules/mdap_convol_sigma.pro -text
 pro/modules/mdap_do_log_rebin.pro -text
