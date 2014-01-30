@@ -192,9 +192,8 @@
 
 ;------------------------------------------------------------------------------------
 FUNCTION BVLSN_Solve_pxf, A, b, degree, $
-                          FOR_ERRORS=for_errors, NLINES=nlines
+                          FOR_ERRORS=for_errors, NLINES=nlines,external_library=external_library
 compile_opt idl2, hidden
-
 ; No need to enforce positivity constraints if fitting one
 ; single template: use faster SVD solution instead of BVLS.
 ;
@@ -218,7 +217,8 @@ ENDIF ELSE BEGIN               ; Fitting multiple templates
             BND[1,s[2]-1-i] = 1.0d
         endfor
     endif
-    mdap_BVLS, A, B, BND, soluz
+    if external_library[0] eq 'none' then mdap_BVLS, A, B, BND, soluz
+    if external_library[0] ne 'none' then mdap_bvls_external, A, B, BND, soluz,external_library
 ENDELSE
 
 return, soluz
@@ -432,7 +432,7 @@ PRO SET_CONSTRAINTS, GALAXY=galaxy, NOISE=noise, CSTAR=cstar,                   
                      INT_DISP=int_disp, LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,      $
                      FOR_ERRORS=for_errors,$
                      fix_gas_kin=fix_gas_kin,$
-                     range_v_gas=range_v_gas,range_s_gas=range_s_gas
+                     range_v_gas=range_v_gas,range_s_gas=range_s_gas,external_library=external_library
 
 
 ; This subroutine sets up the constraints and boundaries for the
@@ -655,7 +655,9 @@ for i = 0,nlines-1 do begin
     endif
 endfor
 
-; Gathering all the information and setting the FUNCTARGS structure for MPFIT
+; Gathering all the information and setting the FUNCTARGS structure
+; for MPFIT
+if n_elements(external_library) eq 0 then external_library='none'
 if not keyword_set(for_errors) then for_errors =0 else for_errors =1
 if not keyword_set(log10) then begin
     if n_elements(reddening) eq 0 then begin
@@ -663,13 +665,13 @@ if not keyword_set(log10) then begin
                    KINSTARS:kinstars, VELSCALE:velscale, DEGREE:degree, MDEGREE:mdegree, $
                    GOODPIXELS:goodpixels, L0_GAL:l0_gal, LSTEP_GAL:lstep_gal, $
                    INT_DISP:int_disp, $
-                   FOR_ERRORS:for_errors}
+                   FOR_ERRORS:for_errors,external_library:external_library}
     endif else begin
         functargs={CSTAR:cstar, GALAXY:galaxy, NOISE:noise, EMISSION_SETUP:emission_setup,$
                    KINSTARS:kinstars, VELSCALE:velscale, DEGREE:degree, MDEGREE:mdegree, $
                    GOODPIXELS:goodpixels, L0_GAL:l0_gal, LSTEP_GAL:lstep_gal, $
                    INT_DISP:int_disp, REDDENING:reddening, L0_TEMPL:l0_templ, $
-                   FOR_ERRORS:for_errors}
+                   FOR_ERRORS:for_errors,external_library:external_library}
     endelse
 endif else begin
     if n_elements(reddening) eq 0  then begin
@@ -677,13 +679,13 @@ endif else begin
                    KINSTARS:kinstars, VELSCALE:velscale, DEGREE:degree, MDEGREE:mdegree, $
                    GOODPIXELS:goodpixels, L0_GAL:l0_gal, LSTEP_GAL:lstep_gal, $
                    INT_DISP:int_disp, LOG10:log10, $
-                   FOR_ERRORS:for_errors}
+                   FOR_ERRORS:for_errors,external_library:external_library}
     endif else begin
         functargs={CSTAR:cstar, GALAXY:galaxy, NOISE:noise, EMISSION_SETUP:emission_setup,$
                    KINSTARS:kinstars, VELSCALE:velscale, DEGREE:degree, MDEGREE:mdegree, $
                    GOODPIXELS:goodpixels, L0_GAL:l0_gal, LSTEP_GAL:lstep_gal, $
                    INT_DISP:int_disp, LOG10:log10, REDDENING:reddening, L0_TEMPL:l0_templ, $
-                   FOR_ERRORS:for_errors}
+                   FOR_ERRORS:for_errors,external_library:external_library}
     endelse
 endelse
 
@@ -695,7 +697,7 @@ FUNCTION FITFUNC_GAS, pars, CSTAR=cstar, GALAXY=galaxy, NOISE=noise, EMISSION_SE
                       GOODPIXELS=goodpixels, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal,                    $
                       BESTFIT=bestfit, WEIGHTS=weights, EMISSION_TEMPLATES=emission_templates,      $
                       INT_DISP=int_disp, LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,       $
-                      FOR_ERRORS=for_errors
+                      FOR_ERRORS=for_errors,external_library=external_library
 compile_opt idl2, hidden
 
 
@@ -755,8 +757,9 @@ FOR j=0,degree+ntemp+nlines DO a[*,j] = c[*,j]/noise          ; Weight all colum
 ;stop
 ; Select the spectral region to fit and solve the overconditioned system
 ; using SVD/BVLS. Use unweighted array for estimating bestfit predictions.
+
 sol = BVLSN_Solve_pxf(a[goodpixels,*],galaxy[goodpixels]/noise[goodpixels],degree, $
-                      FOR_ERRORS=for_errors,NLINES=nlines)
+                      FOR_ERRORS=for_errors,NLINES=nlines,external_library=external_library)
 bestfit = c # sol
 err = (galaxy[goodpixels]-bestfit[goodpixels])/noise[goodpixels]
 
@@ -972,7 +975,7 @@ PRO MDAP_GANDALF, templates, galaxy, noise, velScale, sol, emission_setup, l0_ga
               PLOT=plot, QUIET=quiet, LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,         $
               FOR_ERRORS=for_errors,$
   fix_gas_kin=fix_gas_kin,$
-  range_v_gas=range_v_gas,range_s_gas=range_s_gas
+  range_v_gas=range_v_gas,range_s_gas=range_s_gas,external_library=external_library
 
 compile_opt idl2
 on_error, 0
@@ -1064,7 +1067,7 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
   VELSCALE=velscale, DEGREE=degree, MDEGREE=mdegree, GOODPIXELS=goodpixels, $
   EMISSION_SETUP=emission_setup, START_PARS=start_pars, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
   PARINFO=parinfo, FUNCTARGS=functargs, INT_DISP=int_disp, $
-  LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ
+  LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,external_library=external_library
 ;stop
 ; ------------------------------------
 ; This is where the GANDALF fit is actually performed. Call MPFIT to
@@ -1098,7 +1101,7 @@ resid = fitfunc_gas(best_pars,CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
                     GOODPIXELS=goodpixels, BESTFIT=bestfit, WEIGHTS=weights, $
                     EMISSION_SETUP=emission_setup, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
                     EMISSION_TEMPLATES=emission_templates, INT_DISP=int_disp, $
-                    LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ)
+                    LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,external_library=external_library)
 ;
 ;stop
 if total(noise) eq n_elements(galaxy) then begin
@@ -1186,7 +1189,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
       EMISSION_SETUP=emission_setup, START_PARS=start_pars, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
       PARINFO=parinfo, FUNCTARGS=functargs, INT_DISP=int_disp, $
       LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ, $
-      FOR_ERRORS=for_errors
+      FOR_ERRORS=for_errors,external_library=external_library
     ;stop
     ; -----------------
     ; Re-run MPFIT starting from previous solution and using now the
@@ -1207,7 +1210,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
                           EMISSION_SETUP=emission_setup, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
                           EMISSION_TEMPLATES=emission_templates_2, INT_DISP=int_disp, $
                           LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ, $
-                          FOR_ERRORS=for_errors)
+                          FOR_ERRORS=for_errors,external_library=external_library)
     ;
 ;stop
     if total(noise) eq n_elements(galaxy) then begin
