@@ -264,7 +264,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,$
-        extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet ;,$
+        extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,external_library=external_library,/quiet ;,$
   
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_tpl[i,*]=emission_line_fluxes_tpl[i,*]/area_bins_tpl[i]
@@ -312,7 +312,8 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],$
+        mask_range=mask_range,external_library=external_library,/quiet
 
    junk = size(emission_line_fluxes_str);need to save all flux maps
    for i = 0, junk[1]-1 do emission_line_fluxes_str[i,*]=emission_line_fluxes_str[i,*]/area_bins_str[i]
@@ -347,7 +348,8 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_3,$
-        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,mask_range=mask_range,/quiet;,$
+        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,$
+        mask_range=mask_range,external_library=external_library,/quiet;,$
 
    junk = size(emission_line_fluxes_ems) ;need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_ems[i,*]=emission_line_fluxes_ems[i,*]/area_bins_ems[i]
@@ -432,7 +434,8 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
           MW_extinction=MW_extinction,emission_line_file=emission_line_file_radial_binning,$
-          extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,/quiet ;,$
+          extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
+         range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,external_library=external_library,/quiet ;,$
    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
 
    ;calculate the real S/N of binned spectra
