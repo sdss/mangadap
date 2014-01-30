@@ -447,7 +447,8 @@ con = n*double(fft(fft(f1,-1)*fft(k1,-1),1))
 return, con[0:nf-1]
 END
 ;----------------------------------------------------------------------------
-FUNCTION ppxf_BVLS_Solve, A, b, npoly
+FUNCTION ppxf_BVLS_Solve, A, b, npoly,$
+       external_library=external_library
 compile_opt idl2, hidden
 
 ; No need to enforce positivity constraints if fitting one single template:
@@ -464,7 +465,9 @@ else begin               ; Fitting multiple templates
     if npoly gt 0 then bnd[0,0:npoly-1] = -mx ; No bounds on Legendre polynomials
     bnd[0,npoly:*] = 0d  ; Positivity constraints on the templates (and sky spectra)
     bnd[1,*] = mx
-    mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr
+    if external_library[0] eq 'none' then mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr 
+    if external_library[0] ne 'none' then mdap_bvls_external, A, B, bnd, soluz, external_library, IERR=ierr
+
     if ierr ne 0 then message, 'BVLS Error n. ' + strtrim(ierr,2)
 endelse
 
@@ -475,7 +478,8 @@ FUNCTION ppxf_fitfunc_optimal_template, pars, $
     BESTFIT=bestFit, BIAS=bias, CLEAN=clean, DEGREE=degree, $
     FACTOR=factor, GALAXY=galaxy, GOODPIXELS=goodPixels, MDEGREE=mdegree, $
     NOISE=noise, QUIET=quiet, SKY=sky, STAR=star, VSYST=vsyst, WEIGHTS=weights, $
-    REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda
+    REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda,$
+       external_library=external_library
 compile_opt idl2, hidden
 
 s = size(galaxy)
@@ -617,7 +621,8 @@ endelse
 npoly = (degree+1)*nspec ; Number of additive polynomials in the fit
 
 repeat begin
-    weights = ppxf_BVLS_Solve(aa,bb,npoly)
+    weights = ppxf_BVLS_Solve(aa,bb,npoly,$
+       external_library=external_library)
     bestfit = c[0:npix*nspec-1,*] # weights
     err = (galaxy[goodPixels]-bestfit[goodPixels])/noise[goodPixels]
     if keyword_set(clean) then begin
@@ -643,7 +648,8 @@ PRO mdap_ppxf, templates, galaxy, noise, velScale, start, sol, $
     GOODPIXELS=goodPixels, MDEGREE=mdegree, MOMENTS=moments, OVERSAMPLE=oversample, $
     POLYWEIGHTS=polyweights, PLOT=plot, QUIET=quiet, SKY=sky, VSYST=vsyst, WEIGHTS=weights, $
     REGUL=regul, LAMBDA=lambda, REDDENING=reddening,$
-       fix_star_kin=fix_star_kin,range_v_star=range_v_star,range_s_star=range_s_star
+       fix_star_kin=fix_star_kin,range_v_star=range_v_star,range_s_star=range_s_star,$
+       external_library=external_library
 compile_opt idl2
 on_error, 2
 
@@ -737,18 +743,21 @@ if moments gt 0 then begin
     ; more than 3*sigma from the best fit and repeat the minimization
     ; until the set of cleaned pixels does not change any more.
     ;
+    if n_elements(external_library) eq 0 then external_library = 'none'
     good = goodPixels
     for j=0,4 do begin ; Do at most five cleaning iterations
         if n_elements(sky) eq 0 then $
             functArgs = {BIAS:bias, DEGREE:degree, FACTOR:factor, GALAXY:double(galaxy), $
                 GOODPIXELS:goodPixels, MDEGREE:mdegree, NOISE:double(noise), $
                 STAR:double(star), VSYST:vsyst/velScale, $
-                REGUL:regul, REG_DIM:reg_dim, LAMBDA:lambda} $
+                REGUL:regul, REG_DIM:reg_dim, LAMBDA:lambda,$
+                external_library:external_library} $
         else $
             functArgs = {BIAS:bias, DEGREE:degree, FACTOR:factor, GALAXY:double(galaxy), $
                 GOODPIXELS:goodPixels, MDEGREE:mdegree, NOISE:double(noise), $
                 SKY:double(sky), STAR:double(star), VSYST:vsyst/velScale, $
-                REGUL:regul, REG_DIM:reg_dim, LAMBDA:lambda}
+                REGUL:regul, REG_DIM:reg_dim, LAMBDA:lambda,$
+                external_library:external_library}
         res = mpfit('ppxf_fitfunc_optimal_template', start1, ERRMSG=errmsg, $
             FTOL=1d-4, FUNCTARGS=functArgs, NFEV=ncalls, PARINFO=parinfo, $
             PERROR=error, /QUIET)
@@ -760,7 +769,8 @@ if moments gt 0 then begin
             DEGREE=degree, FACTOR=factor, GALAXY=galaxy, $
             GOODPIXELS=goodPixels, MDEGREE=mdegree, NOISE=noise, $
             QUIET=quiet, SKY=sky, STAR=star, VSYST=vsyst/velScale, $
-            REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda)
+            REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda,$
+            external_library=external_library)
         if array_equal(goodOld,goodPixels) then break
     endfor
 
@@ -780,7 +790,8 @@ endelse
 err = ppxf_fitfunc_optimal_template(res, BESTFIT=bestFit, BIAS=0, DEGREE=degree, $
     FACTOR=factor, GALAXY=galaxy, GOODPIXELS=goodPixels, MDEGREE=mdegree, $
     NOISE=noise, SKY=sky, STAR=star, VSYST=vsyst/velScale, WEIGHTS=weights, $
-    REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda)
+    REGUL=regul, REG_DIM=reg_dim, LAMBDA=lambda,$
+       external_library=external_library)
 chi2 = robust_sigma(err, /ZERO)^2       ; Robust computation of Chi^2/DOF.
 sol = dblarr(7+mdegree*s2[0])
 sol[0] = res[0:(n_elements(start)>moments)-1]
