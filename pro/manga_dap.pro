@@ -1,25 +1,21 @@
-pro execute
-readcol,'total_filelist.dat',root_name_vector,velocity_initial_guess_vector,$
-   velocity_dispersion_initial_guess_vector,fibre_number_vector,Reff_vector,mode_vector,/silent, format='A,F,F,F,F,F,F,A',comment='#'
+pro manga_dap,input_number,configure_file
 
-for i = 0, n_elements(root_name_vector)-1 do begin
-   t0=systime(/seconds)/60./60.
-   manga_dap,i;,/check_version
-   print, root_name_vector[i],' execution time ',systime(/seconds)/60./60.-t0,' hours'
-endfor
+;check_version=check_version,$
+;       dont_remove_null_templates=dont_remove_null_templates;,datacubes_or_rss=datacubes_or_rss
 
-;manga_dap,20
- 
-end
+;*****SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
+readcol,configure_file,command_line,comment='#',delimiter='%',/silent,format='A'
+for i=0, n_elements(command_line)-1 do d=execute(command_line[i])
+if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
+if n_elements(remove_null_templates) eq 0 then remove_null_templates = 1
 
-pro manga_dap,input_number,check_version=check_version,$
-       dont_remove_null_templates=dont_remove_null_templates;,datacubes_or_rss=datacubes_or_rss
 
- 
+
+
 t0=systime(/seconds)/60./60.
 
 if keyword_set(check_version) then begin
-   readcol,'total_filelist.dat',root_name_vector,velocity_initial_guess_vector,$
+   readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
           velocity_dispersion_initial_guess_vector,ellipticity_vector,position_angle_vector,fibre_number_vector,Reff_vector,mode_vector,/silent, format='A,F,F,F,F,F,F,A',comment='#'
    root_name = root_name_vector[input_number]
    mode = mode_vector[input_number]
@@ -33,30 +29,29 @@ manga_dap_version = '0.1'    ; 18 Dec 2013 by L. Coccato
 ;stop
 
 
-readcol,'total_filelist.dat',root_name_vector,velocity_initial_guess_vector,$
+readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
         velocity_dispersion_initial_guess_vector,ellipticity_vector,position_angle_vector,fibre_number_vector,Reff_vector,mode_vector,/silent, format='A,F,F,F,F,F,F,A',comment='#'
 
 
 root_name = root_name_vector[input_number]
 mode = mode_vector[input_number]
-datacube_dir = '../'+mode[0]+'/'
+datacube_dir = datacube_root_dir+mode[0]+'/'
 velocity_initial_guess = velocity_initial_guess_vector[input_number]
 velocity_dispersion_initial_guess = velocity_dispersion_initial_guess_vector[input_number]
 ell=ellipticity_vector[input_number]
 pa=position_angle_vector[input_number]
 number_of_fibres=fibre_number_vector[input_number]
-
-output_dir='results_'+mode+'/'+root_name+'/'+root_name+'_'
+output_dir=output_root_dir+'results_'+mode+'/'+root_name+'/'+root_name+'_'
 datacube_name=root_name+'.fits'  
 if mode eq 'datacubes' then begin
    datacube_name=root_name+'.fits'  
-   res = file_test('results_datacubes/'+root_name+'/',/directory)
-   if res eq 0 then spawn,'mkdir results_datacubes/'+root_name
+   res = file_test(output_root_dir+'results_datacubes/'+root_name+'/',/directory)
+   if res eq 0 then spawn,'mkdir '+output_root_dir+'results_datacubes/'+root_name
 endif
 if mode eq 'rss' then begin
    datacube_name=root_name+'_rss.fits'
-   res = file_test('results_rss/'+root_name+'/',/directory)
-   if res eq 0 then spawn,'mkdir results_rss/'+root_name
+   res = file_test(output_root_dir+'results_rss/'+root_name+'/',/directory)
+   if res eq 0 then spawn,'mkdir '+output_root_dir+'results_rss/'+root_name
 endif
 output_filefits=output_dir+'high_level.fits'
 output_idlsession=output_dir+'mdap_session.idl'
@@ -113,7 +108,6 @@ mdap_spectral_fitting,version=mdap_spectral_fitting_version
 mdap_measure_indices,version=mdap_measure_indices_version
 mdap_spatial_radial_binning,version=mdap_spatial_radial_binning_version
 ;junk = temporary(chek_version)
-w_range_for_sn_computation=[6251.-1382./2., 6251.+1382./2.] 
 ;**********************************************************************************
 
 
@@ -139,47 +133,53 @@ printf,1,'[INFO] mdap_read_datacube ver '+max([mdap_read_datacube_version,mdap_r
 sz=size(data)
 if sz[0] eq 3 then printf,1,'[INFO] datacube '+root_name+' read; size: '+mdap_stc(sz[1],/integer)+'x'+mdap_stc(sz[2],/integer)
 if sz[0] eq 2 then printf,1,'[INFO] RSS file '+root_name+' read; Nfibres: '+mdap_stc(sz[1],/integer)
-;save,filename='block1.idl',/variables
 
-MW_extinction = 0.
-fwhm_instr=wavelength*0.+2.73
+;**** definition of some variables
+MW_extinction = 0.                    ; will be replaced by appropriate extension in the input file
+fwhm_instr=wavelength*0.+2.73         ; will be replaced by appropriate extension in the input file
 c=299792.458d
-mask_range=[5570.,5590.,5800.,5850.]
-;*********************************************************************************
-
+mask_range=[5570.,5590.,5800.,5850.]  ; will be replaced by mask extension in the input file
 
 ;BLOCK 2
 ;*** SPATIAL BINNING *************************************************************
 if mode eq 'rss' then begin
-   sn1=15.   ;20  for testing
-   sn2=10.   ;15  for testing
-   sn3=5   ;13  for testing
-   sn_thr_tpl=4.
-   sn_thr_str=4.
-   sn_thr_ems=3.
+   sn1=sn1_rss
+   sn2=sn2_rss
+   sn3=sn3_rss
+   sn_thr_tpl=sn_thr_tpl_rss
+   sn_thr_str=sn_thr_str_rss
+   sn_thr_ems=sn_thr_ems_rss
+   if n_elements(sn_calibration_rss) ne 0 then sn_calibration = sn_calibration_rss
 endif
 if mode eq 'datacubes' then begin
-   sn1=40.  ;90  for testing  ; 30 according to Renbin's document
-   sn2=25.;;25.  ;60  for testing  ; 25 according to Renbin's document
-   sn3=15.;.  ;50  for testing  ; 15 (at Hbeta, not R band) according to Renbin's document
-   sn_thr_tpl=4.
-   sn_thr_str=4.
-   sn_thr_ems=4.
-   sn_calibration = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
+   sn1=sn1_datacubes
+   sn2=sn2_datacubes
+   sn3=sn3_datacubes
+   sn_thr_tpl=sn_thr_tpl_datacubes;4.
+   sn_thr_str=sn_thr_str_datacubes
+   sn_thr_ems=sn_thr_ems_datacubes
+   if n_elements(sn_calibration_datacubes) ne 0 then sn_calibration = sn_calibration_datacubes
+
 endif
 
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
-   mdap_spatial_binning,data,error,signal,noise,sn1,x2d,y2d,cdelt1,cdelt2,spatial_binning_tpl,spectra_tpl,errors_tpl,xbin_tpl,ybin_tpl,area_bins_tpl,bin_sn_tpl,sn_thr=sn_thr_tpl,$
-                            x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,nelements_within_bin=nelements_within_bin_tpl,sn_calibration=sn_calibration;,/plot
+   mdap_spatial_binning,data,error,signal,noise,sn1,x2d,y2d,cdelt1,cdelt2,spatial_binning_tpl,spectra_tpl,errors_tpl,$
+                        xbin_tpl,ybin_tpl,area_bins_tpl,bin_sn_tpl,sn_thr=sn_thr_tpl,$
+                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
+                         nelements_within_bin=nelements_within_bin_tpl,sn_calibration=sn_calibration,$
+                         user_bin_map=user_bin_map_spatial_binnin_1;,/plot
    sxaddpar,header_2d,'BLOCK2',mdap_spatial_binning_version,'mdap_spatial_binning version'
    execute_all_modules=1
 endif
-
+;stop
 printf,1,'[INFO] mdap_spatial_binning ver '+max([mdap_spatial_binning_version,mdap_spatial_binning_version_previous])
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 1. SN= '+mdap_stc(sn1,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_tpl),/integer)
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
-   mdap_spatial_binning,data,error,signal,noise,sn2,x2d,y2d,cdelt1,cdelt2,spatial_binning_str,spectra_str,errors_str,xbin_str,ybin_str,area_bins_str,bin_sn_str,sn_thr=sn_thr_str,$
-                            x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,nelements_within_bin=nelements_within_bin_str,sn_calibration=sn_calibration;,/plot
+   mdap_spatial_binning,data,error,signal,noise,sn2,x2d,y2d,cdelt1,cdelt2,spatial_binning_str,spectra_str,errors_str,$
+                        xbin_str,ybin_str,area_bins_str,bin_sn_str,sn_thr=sn_thr_str,$
+                        x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
+                        nelements_within_bin=nelements_within_bin_str,sn_calibration=sn_calibration,$
+                        user_bin_map=user_bin_map_spatial_binnin_2;,/plot
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 2. SN= '+mdap_stc(sn2,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_str),/integer)
@@ -187,8 +187,11 @@ printf,1,'[INFO] datacube '+ root_name+' spatial binning 2. SN= '+mdap_stc(sn2,/
 
 
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
-   mdap_spatial_binning,data,error,signal,noise,sn3,x2d,y2d,cdelt1,cdelt2,spatial_binning_ems,spectra_ems,errors_ems,xbin_ems,ybin_ems,area_bins_ems,bin_sn_ems,sn_thr=sn_thr_ems,$
-                            x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,nelements_within_bin=nelements_within_bin_ems,sn_calibration=sn_calibration;,/plot
+   mdap_spatial_binning,data,error,signal,noise,sn3,x2d,y2d,cdelt1,cdelt2,spatial_binning_ems,spectra_ems,errors_ems,$
+                        xbin_ems,ybin_ems,area_bins_ems,bin_sn_ems,sn_thr=sn_thr_ems,$
+                        x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
+                        nelements_within_bin=nelements_within_bin_ems,sn_calibration=sn_calibration,$
+                        user_bin_map=user_bin_map_spatial_binnin_3;,/plot
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_ems),/integer)
@@ -200,43 +203,31 @@ printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/
 
 ; BLOCK 3
 ;*** LOG-REBIN, STELLAR TEMPLATE CONVOLUTION, SELECTION OF WAVELENGTH RANGE ******
-velscale=30.
-
-;
-; N.B. alog() or alog10() should not matter: in both ways the log-step
-; is constant (0.0002303 in the 1st case, 0.0001 in the secod case). I
-; prefer natural log because the step i larger and round-off errors
-; are smaller than the alog10() case.  If this need to be changed, the
-; following modules needs to be edited:
-;    mdap_log_rebin.pro, mdap_spectral_fitting.pro
 
 
 fwhm_stars = wavelength*0.+2.54   ; To be used for MARCS templates.
 fwhm_diff=sqrt(fwhm_instr^2 - fwhm_stars^2)
 
 if mdap_log_rebin_version gt mdap_log_rebin_version_previous   or execute_all_modules eq 1 then begin
- ;  mdap_log_rebin,spectra_tpl,errors_tpl,wavelength,'templates_tremonti/*fits',fwhm_diff,$
-   mdap_log_rebin,spectra_tpl,errors_tpl,wavelength,'templates_marcs/*fits',fwhm_diff,$
+   mdap_log_rebin,spectra_tpl,errors_tpl,wavelength,stellar_library_spatial_binning_1,fwhm_diff,$
         log_spc_tpl,log_err_tpl,log_wav_tpl,library_log_tpl,log_wav_library_tpl,$
-        input_velscale=velscale,wave_range=[3600.,10300.],/gal_wavelength_log_step,/quiet
+        input_velscale=velscale,wave_range=trim_wav_range_spatial_binning_1,/gal_wavelength_log_step,/quiet
    sxaddpar,header_2d,'BLOCK3',mdap_log_rebin_version,'mdap_log_rebin version'
    execute_all_modules=1
 endif
 printf,1,'[INFO] mdap_log_rebin ver '+max([mdap_log_rebin_version,mdap_log_rebin_version_previous])
 printf,1,'[INFO] datacube '+root_name+'log_rebin 1'
 if mdap_log_rebin_version gt mdap_log_rebin_version_previous   or execute_all_modules eq 1 then begin
-;   mdap_log_rebin,spectra_str,errors_str,wavelength,'templates_tremonti/*fits',fwhm_diff,$
-   mdap_log_rebin,spectra_str,errors_str,wavelength,'templates_marcs/*fits',fwhm_diff,$
+   mdap_log_rebin,spectra_str,errors_str,wavelength,stellar_library_spatial_binning_2,fwhm_diff,$
         log_spc_str,log_err_str,log_wav_str,library_log_str,log_wav_library_str,$
-        input_velscale=velscale,wave_range=[3600.,7500.],/gal_wavelength_log_step,/quiet
+        input_velscale=velscale,wave_range=trim_wav_range_spatial_binning_2,/gal_wavelength_log_step,/quiet
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+root_name+'log_rebin 2'
 if mdap_log_rebin_version gt mdap_log_rebin_version_previous  or execute_all_modules eq 1 then begin
-;   mdap_log_rebin,spectra_ems,errors_ems,wavelength,'templates_tremonti/*fits',fwhm_diff,$
-   mdap_log_rebin,spectra_ems,errors_ems,wavelength,'templates_marcs/*fits',fwhm_diff,$
+   mdap_log_rebin,spectra_ems,errors_ems,wavelength,stellar_library_spatial_binning_3,fwhm_diff,$
         log_spc_ems,log_err_ems,log_wav_ems,library_log_ems,log_wav_library_ems,$
-        input_velscale=velscale,wave_range=[3600.,10300.],/gal_wavelength_log_step,/quiet
+        input_velscale=velscale,wave_range=trim_wav_range_spatial_binning_3,/gal_wavelength_log_step,/quiet
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+root_name+'log_rebin 3'
@@ -272,7 +263,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         emission_line_fluxes_tpl,emission_line_fluxes_tpl_err,emission_line_equivW_tpl,emission_line_equivW_tpl_err,wavelength_input=exp(log_wav_library_tpl),$
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,$
         extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet ;,$
   
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
@@ -280,7 +271,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
    for i = 0, junk[1]-1 do emission_line_fluxes_tpl_err[i,*]=emission_line_fluxes_tpl_err[i,*]/sqrt(area_bins_tpl[i])
 
    ;--retain only templates with positive weights for the next fits
-   if ~keyword_set(dont_remove_null_templates) then begin
+   if remove_null_templates[0] eq 1 then begin
        wp = total(stellar_weights_tpl,1)
        library_log_tpl = temporary(library_log_tpl[*,where(wp gt 0)])
        library_log_str = temporary(library_log_str[*,where(wp gt 0)])
@@ -304,7 +295,7 @@ printf,1,'[INFO] mdap_spectral_fitting ver '+max([mdap_spectral_fitting_version,
 printf,1,'[INFO] datacube '+root_name+' spectral fitting 1'
 ;--
 ;goto, block5
-save,filename=root_name+mode+'_block4a.idl',/variables 
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block4a.idl',/variables 
 ;stop
 
 ;--stellar kinematics
@@ -321,7 +312,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,/quiet
 
    junk = size(emission_line_fluxes_str);need to save all flux maps
    for i = 0, junk[1]-1 do emission_line_fluxes_str[i,*]=emission_line_fluxes_str[i,*]/area_bins_str[i]
@@ -339,7 +330,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
 endif
 printf,1,'[INFO] datacube '+root_name+' spectral fitting 2'
 ;--
-save,filename=root_name+mode+'_block4b.idl',/variables 
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block4b.idl',/variables 
 ;stop
 ;--emission lines kinematics
 ;interpolate stellar kinematics results over ems grid to get starting guesses from the previous results.
@@ -348,12 +339,6 @@ mdap_create_starting_guesses,stellar_kinematics_str,xbin_str,ybin_str,x2d,y2d,xb
 mdap_create_starting_guesses,emission_line_kinematics_str,xbin_str,ybin_str,x2d,y2d,xbin_ems,ybin_ems,gas_kin_starting_guesses,$
                velocity_initial_guess[0],50.,0.,0.
 
-
-
-;log_step_gal=log_wav_ems[1]-log_wav_ems[0]
-;mdn = median(stellar_kinematics_str[*,0])
-;wavelength_input=exp(log_wav_ems-mdn[0]/velscale*(log_step_gal))
-;wavelength_input=wavelength_input[200./velscale : n_elements(wavelength_input) - 200./velscale]   ;trim 6 pixels to allow for +/- 200 km/sec redshift due rotation
 wavelength_input=exp(log_wav_ems)
 if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or execute_all_modules eq 1 then begin
    mdap_spectral_fitting,log_spc_ems,log_err_ems,log_wav_ems,library_log_ems,log_wav_library_ems,velscale,$
@@ -361,15 +346,8 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_ems,emission_line_fluxes_ems_err,emission_line_equivW_ems,emission_line_equivW_ems_err,wavelength_input=wavelength_input,$
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_3,$
         extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,mask_range=mask_range,/quiet;,$
-
- 
-    ; best_fit_model_log=best_fit_model_log_ems,emission_model_log=emission_model_log_ems
-;,/quiet
-
-   ;stellar_kinematics_ems[*,0:3] = star_kin_starting_guesses
-   ;stellar_kinematics_ems_err = stellar_kinematics_ems*0.0
 
    junk = size(emission_line_fluxes_ems) ;need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_ems[i,*]=emission_line_fluxes_ems[i,*]/area_bins_ems[i]
@@ -388,7 +366,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
    junk = temporary(sn_per_angstorm)
 endif
 printf,1,'[INFO] datacube '+root_name+' spectral fitting 3'
-save,filename=root_name+mode+'_block4c.idl',/variables
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block4c.idl',/variables
 ;*********************************************************************************
 
 
@@ -406,7 +384,7 @@ fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0.0   ;
 
 if mdap_measure_indices_version gt mdap_measure_indices_version_previous or execute_all_modules eq 1 then begin
    print, 'measuring indices on '+mdap_stc(n_elements(best_template_tpl[*,0]),/integer)+' spectra'
-   mdap_measure_indices,wavelength_output_tpl,galaxy_minus_ems_fit_model_tpl,$
+   mdap_measure_indices,absorption_line_indices,wavelength_output_tpl,galaxy_minus_ems_fit_model_tpl,$
              best_template_tpl,best_template_LOSVD_conv_tpl,stellar_kinematics_tpl[*,0],residuals_tpl,$
              fwhm_diff_indices,abs_line_indices,abs_line_indices_errors,abs_line_indices_template,abs_line_indices_template_losvd,$
              dir=output_dir,remove_outliers=5;,/noplot
@@ -419,7 +397,7 @@ endif
 printf,1,'[INFO] datacube '+root_name+' indices measured on '+mdap_stc(n_elements(best_template_tpl[*,0]),/integer)+' spectra'
 
 
-save,filename=root_name+mode+'_block5.idl',/variables
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block5.idl',/variables
 ;*********************************************************************************
 
 
@@ -429,14 +407,13 @@ save,filename=root_name+mode+'_block5.idl',/variables
 if mdap_spatial_radial_binning_version gt mdap_spatial_radial_binning_version_previous or execute_all_modules eq 1 then begin
 mdap_get_error_from_residual,residuals_ems,galaxy_minus_ems_fit_model_ems,input_errors
 
-lrange2 = [3700,10300]
 
 ;-- radial binning 
 ;v0.2spatial_binning_scheme
 mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,spatial_binning_ems,xbin_ems,ybin_ems,ell,pa,$
       galaxy_minus_ems_fit_model_ems,input_errors,wavelength_output_rest_frame_log,$
       spatial_binning_rad,r_bin,r_bin_lo,r_bin_up,r2d_bin,r2d_bin_lo,r2d_bin_up,radially_binned_spectra,radially_binned_errors,$
-      output_lrange=lrange2,output_wav=output_wav,n_elements_bin=nelements_within_bin_radial
+      output_lrange=trim_wav_range_radial_binning,output_wav=output_wav,n_elements_bin=nelements_within_bin_radial
 
 ;--
    printf,1,'[INFO] datacube '+root_name+' radial binning: ',mdap_stc(n_elements(r_bin),/integer),' bins'
@@ -454,7 +431,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           emission_line_fluxes_rbin,emission_line_fluxes_rbin_err,emission_line_equivW_rbin,emission_line_equivW_rbin_err,wavelength_input=output_wav,$
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
-          MW_extinction=MW_extinction,emission_line_file='emission_lines_setup_with_Balmer_decrement',$
+          MW_extinction=MW_extinction,emission_line_file=emission_line_file_radial_binning,$
           extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,/quiet ;,$
    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
 
@@ -482,26 +459,16 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    execute_all_modules = 1
    printf,1,'[INFO] datacube '+root_name+' radial binning: measured indices'
 endif
-save,filename=root_name+mode+'_block6.idl',/variables
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block6.idl',/variables
 ;*********************************************************************************
-
-;    
-;   
-;   ;
-;    ##############################################
-;    #####    MODEL DEPENDENT DATA PRODUCTS   #####
-;    ##############################################
-;
-;T.B.D.
-;*********************************************************************************
-;
-;-- SAVING RESULTS IN THE OUTPUT DATACUBE.... to be optimized
+ 
+;-- SAVING HIGH LEVEL SCIENCE PRODUCTS RESULTS IN THE OUTPUT DATACUBE.... to be optimized
 ;   
 
 
 NINDICES = n_elements(ABS_LINE_INDICES[0,*])
-mdap_read_indices_definitions,indices=indices
-readcol,'emission_lines_setup_with_Balmer_decrement',cnt,ln_name,ln_wav,comment='#',format='I, A, A',/silent
+mdap_read_indices_definitions,absorption_line_indices,indices=indices
+readcol,emission_line_file_spatial_binnin_3,cnt,ln_name,ln_wav,comment='#',format='I, A, A',/silent
 NLINES = n_elements(cnt)
 
 writefits,output_filefits,signal2d_reconstructed,header_2d
@@ -648,6 +615,17 @@ close, 1
 openw,1,root_name+'_'+mode+'.done'
 printf,1,root_name+'_'+mode+' execution time '+mdap_stc(systime(/seconds)/60./60.-t0)+' hours'
 close, 1
+
+;*********************************************************************************
+;
+;    
+;   
+;   ;
+;    ##############################################
+;    #####    MODEL DEPENDENT DATA PRODUCTS   #####
+;    ##############################################
+;
+;T.B.D.
 end
 
 ; ;uncomment these lines when performing parallelization on SCIAMA.
