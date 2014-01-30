@@ -142,7 +142,8 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
        VSYST=VSYST, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
        quiet=quiet,FOR_ERRORS=FOR_ERRORS,$
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,mask_range=mask_range,fitted_pixels=fitted_pixels
+       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,$
+       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library
 
 
 
@@ -255,7 +256,8 @@ if ~keyword_set(fix_star_kin) then begin
 ;stop
 mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
     goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
-       range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk
+       range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk,$
+       external_library=external_library
 endif else begin
    ppxfsol = [start_[0]+offset,start_[1],start_[2],start_[3],0.,0.,start_[4],start_[5]]
    ERROR_stars = fltarr(6)+99.
@@ -318,7 +320,8 @@ mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
   /FOR_ERRORS, ERROR=esol,$
   REDDENING=REDDENING,$
   fix_gas_kin=fix_gas_kin,$
-  range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet
+  range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,$
+       external_library=external_library
 sol=temporary(ppxfsol)
 fitted_pixels=goodpixels
   ;REDDENING=[0.05]
