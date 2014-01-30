@@ -1,8 +1,9 @@
-pro mdap_read_indices_definitions,indices=indices
+pro mdap_read_indices_definitions,absorption_line_indices,indices=indices
 
-readcol,'absorption_line_indices_definition.dat',id,name,passband0,passband1,blue_cont0,blue_cont1,red_cont0,red_cont1,units,$
+readcol,absorption_line_indices,id,name,passband0,passband1,blue_cont0,blue_cont1,red_cont0,red_cont1,units,$
                                                 format='I,A,D,D,D,D,D,D,A',comment='#',/silent                                                        
 
+; not correct: 
 passband_TiO2=[6191.375,6273.875]                       
 blue_cont_TiO2=[6068.375,6143.375]                      
 red_cont_TiO2=[6374.375,6416.875]                       

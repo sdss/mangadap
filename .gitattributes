@@ -76,12 +76,14 @@ pro/utilities/basic_colors_rev.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
 pro/utilities/mdap_bvls.pro -text
 pro/utilities/mdap_calculate_spectrum_sn.pro -text
+pro/utilities/mdap_calibrate_sn.pro -text
 pro/utilities/mdap_convol_sigma.pro -text
 pro/utilities/mdap_create_starting_guesses.pro -text
 pro/utilities/mdap_display_2dmap.pro -text
 pro/utilities/mdap_display_2dmap_ps.pro -text
 pro/utilities/mdap_get_2d_map.pro -text
 pro/utilities/mdap_get_error_from_residual.pro -text
+pro/utilities/mdap_get_losvd.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_place_cbar.pro -text
 pro/utilities/mdap_place_image.pro -text
