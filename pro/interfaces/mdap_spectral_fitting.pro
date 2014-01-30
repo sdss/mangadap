@@ -7,7 +7,8 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
      extra_inputs=extra_inputs,use_previos_guesses=use_previos_guesses,$
      fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
      range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,rest_frame_log=rest_frame_log,filter=filter,$
-     version=version,mask_range=mask_range
+     version=version,mask_range=mask_range,$
+     external_library=external_library
 ;,$
     ; emission_line_intens=emission_line_intens,emission_line_intens_rms=emission_line_intens_rms;,$
     ; best_fit_model_log=best_fit_model_log,emission_model_log=emission_model_log,$
@@ -329,7 +330,8 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
        VSYST=dv, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
        FOR_ERRORS=1,$    ; ERROR COMPUTATION MUST BE TRIGGERED!!!
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,mask_range=mask_range,fitted_pixels=fitted_pixels
+       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,$
+       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library
 
 
 ;stop
