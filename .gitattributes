@@ -77,7 +77,6 @@ pro/modules/mdap_voronoi_2d_binning.pro -text
 pro/obsolete/mdap_sgandalf.pro -text
 pro/obsolete/mdap_spectral_fitting_with_sgandalf.pro -text
 pro/utilities/basic_colors.pro -text
-pro/utilities/basic_colors_rev.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
 pro/utilities/mdap_bvls.pro -text
 pro/utilities/mdap_calculate_spectrum_sn.pro -text
