@@ -80,7 +80,6 @@ pro/utilities/basic_colors.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
 pro/utilities/mdap_bvls.pro -text
 pro/utilities/mdap_calibrate_sn.pro -text
-pro/utilities/mdap_convol_sigma.pro -text
 pro/utilities/mdap_create_starting_guesses.pro -text
 pro/utilities/mdap_display_2dmap.pro -text
 pro/utilities/mdap_display_2dmap_ps.pro -text
