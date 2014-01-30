@@ -101,4 +101,5 @@ pro/utilities/range.pro -text
 pro/utilities/read_header.pro -text
 pro/utilities/test_sn_definition.pro -text
 pro/utilities/usersymbol.pro -text
+/total_filelist.dat -text
 ups/mangadap.table -text
