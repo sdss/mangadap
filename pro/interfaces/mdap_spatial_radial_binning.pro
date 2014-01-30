@@ -98,7 +98,7 @@ if sz[1] eq 1 then begin   ; only 1 input spectrum.... I do not bin.
    goto, end_module
 endif
 
-nbins = 10
+nbins = 6
 if sz[1] lt 50 then nbins =5
 if sz[1] lt 15 then nbins =3
 if sz[1] lt 10 then nbins =2 
