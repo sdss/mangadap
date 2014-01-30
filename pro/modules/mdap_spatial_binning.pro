@@ -193,7 +193,7 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
    ;computation of bin_sn and coordinate once I know which is the bin each data point belongs to
    valid_user_bins = user_input_bins(where(user_input_bins ge 0))
    n_valid_user_bins =n_elements(valid_user_bins)
-   bin_sn = fltarr(n_valid_user_bins)
+   bin_sn = fltarr(n_valid_user_bins)-99
    xNode  = fltarr(n_valid_user_bins)
    yNode = fltarr(n_valid_user_bins)
    
@@ -214,7 +214,9 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
        ;yNode[i] = total(y2d[indici]*signal[indici])/total(signal[indici])
    endfor
 
-
+   xnode=xnode(where(bin_sn gt -99))
+   ynode=ynode(where(bin_sn gt -99))
+   bin_sn = bin_sn(where(bin_sn gt -99))
    indici_bins = where(binNum_(uniq(binNum_,sort(binNum_))) ne -1)
    nbins = n_elements(indici_bins)
 
