@@ -79,7 +79,6 @@ pro/obsolete/mdap_spectral_fitting_with_sgandalf.pro -text
 pro/utilities/basic_colors.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
 pro/utilities/mdap_bvls.pro -text
-pro/utilities/mdap_calculate_spectrum_sn.pro -text
 pro/utilities/mdap_calibrate_sn.pro -text
 pro/utilities/mdap_convol_sigma.pro -text
 pro/utilities/mdap_create_starting_guesses.pro -text
