@@ -29,6 +29,10 @@ doc/mdap_log_rebin.tex -text
 doc/mdap_read_datacube.tex -text
 doc/mdap_spatial_binning.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
+external/F90_32/README_from_Remco -text
+external/F90_32/bvls.f90 -text
+external/F90_32/bvls_wrapper.c -text
+external/F90_32/make_library.sh -text
 external/F90_64/README_from_Remco -text
 external/F90_64/bvls.f90 -text
 external/F90_64/bvls_wrapper.c -text
