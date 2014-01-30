@@ -1,0 +1,136 @@
+#---------------------
+# List of galaxies to process and their properties ASCII file, one
+# line per galaxy, format:
+#    Col 1. [string] Name of the fits file, WITHOUT the .fits extension
+#    Col 2. [float]  Galaxy mean velocity (km/sec)
+#    Col 3. [float]  Galaxy mean velocity dispersion (km/sec)
+#    Col 4. [float]  Galaxy mean ellipticity
+#    Col 5. [float]  Galaxy mean Position Angle
+#    Col 6. [float]  MANGA Bundle size
+#    Col 7. [float]  Galaxy effective radius
+#    Col 8. [string] Dataformat. Valid entries are: datacubes or rss
+#
+total_filelist = '/home/UNI/coccatol/argo4/MANGA/mangadap/total_filelist.dat' 
+#----------------------
+#
+# ----------------------------------
+# Location of input files and result storage
+#
+# depending on the dataformat (datacubes or rss) files are read from
+#          datacube_root_dir+<dataformat>+'/' 
+# and stored in 
+#          output_root_dir+'results_'+<dataformat>+'/'
+#
+datacube_root_dir='/home/UNI/coccatol/argo4/MANGA/'
+output_root_dir='/home/UNI/coccatol/argo4/MANGA/'
+#----------------------
+#
+#------------------------------- 
+# Wavelength range for computation of Signal-to-Noise
+# r-band is ~[6251.-1382./2., 6251.+1382./2.] (Fukugita et al. 1998)
+# Units: angstrom, values: float
+#
+# Comment the line to let the variable undefined and use the entire wavelength range.
+#
+w_range_for_sn_computation = [5560.00, 6942.00]
+#
+#------------------------------- 
+#
+# Wavelength range to consider for the analysis. Galaxy spectra will be trimmed according to 
+# the defined wavelength range; stellar template spectra will be trimmed +/- 200 angstrom more.
+# Comment the lines to let the variables undefined and use the entire wavelength range.
+# Units: angstrom, values: float
+trim_wav_range_spatial_binning_1 = [3600.,10300.] 
+trim_wav_range_spatial_binning_2 = [3600.,7500.]
+trim_wav_range_spatial_binning_3 = [3600.,10300.]
+trim_wav_range_radial_binning = [3700.,10300.]
+#
+#------------------------------- 
+#
+#
+#------------------------------- 
+# Velocity scale (km/sec/pixel), values: float
+# Comment the line to let the variable undefined and use the automatic value given by the data.
+velscale = 30.
+#
+#
+#-------------------------------
+# Stellar library
+# String indicating where to find the stellar (or ssp) templates for the spectral fitting.
+# Tip: files will be selected via res = file_search(stellar_library_spatial_binning_N)
+# Warning: stellar_library_spatial_binning_1 will be used also for the spatial radial binning scheme
+#
+stellar_library_spatial_binning_1='/home/UNI/coccatol/argo4/MANGA/mangadap/external/templates_marcs/*fits'
+stellar_library_spatial_binning_2='/home/UNI/coccatol/argo4/MANGA/mangadap/external/templates_marcs/*fits'
+stellar_library_spatial_binning_3='/home/UNI/coccatol/argo4/MANGA/mangadap/external/templates_marcs/*fits'
+#-------------------------------
+#
+#--------------------------------------------------------------------------------------------
+# Target S/N ratios, S/N cut-off thresholds, and coefficient for empirical S/N calibration
+# for the 3 spatial binning schemes and data format (datacubes or rss)
+# Target S/N MUST be specified.
+# If S/N cut-off thresholds are undefined, the default value (0) will be used. To disable 
+# any S/N cut-off, set the variable to a very low (negaitve) number, e.g. -10000.
+#
+# If the calibration coefficients are not defined, no calbiration is performed (suggested for RSS files)
+#
+# S/N are intended per pixel and within the wavelength region specified by w_range_for_sn_computation (see above).
+# 
+#   target S/N for rss files, spatial binning 1-3:
+sn1_rss = 15.
+sn2_rss = 10.
+sn3_rss = 5  
+#   S/N threshold for rss files, spatial binning 1-3:
+sn_thr_tpl_rss = 4.
+sn_thr_str_rss = 4.
+sn_thr_ems_rss = 3.
+# Calibration coefficients for rss files. Formula is specified in the mdap_calibrat_sn.pro function.
+#sn_calibration_rss = undefined
+#
+#   target S/N for datacubes files, spatial binning 1-3:
+sn1_datacubes = 40.
+sn2_datacubes = 25.
+sn3_datacubes = 15.
+#   S/N threshold for datacubes files, spatial binning 1-3:
+sn_thr_tpl_datacubes = 4.
+sn_thr_str_datacubes = 4.
+sn_thr_ems_datacubes = 4.
+# Calibration coefficients for datacubes files. Formula is specified in the mdap_calibrat_sn.pro function.
+sn_calibration_datacubes = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
+#
+#
+#
+# -- User supplied binning schemes for the 3 spatial binning.
+# Names of fits files specifying the binnin schemes must be provided as string. Fits files must have
+# the header keywords CRVAL1, CRVAL2, CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and CRIX2: 
+# Coordinate 0,0 should indicate the center of the field of view
+# If these variable are undefined (or the specified fits file is not found, the S/N criteria defined above will be used
+# If these variable are defined, the S/N criteria defined above will be ignored
+#
+# user_bin_map_spatial_binnin_1 = 'none'
+# user_bin_map_spatial_binnin_2 = 'none'
+# user_bin_map_spatial_binnin_3 = 'none'
+# user_bin_map_radial_binnin = 'none'
+#
+#
+#--------------------------------------------------------------------------------------------
+#
+# Definition of emission lines and their fitting set-up, for the spatial binning schemes
+# Only those specified in emission_line_file_spatial_binnin_3 will be stored.
+# 
+emission_line_file_spatial_binnin_1='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
+emission_line_file_spatial_binnin_2='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
+emission_line_file_spatial_binnin_3='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
+emission_line_file_radial_binning='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
+#
+#--------------------------------------------------------------------------------------------
+#
+#--------------------------------------------------------------------------------------------
+#
+# LIST of absorption line indices to measure (description T.B.D.)
+absorption_line_indices='/home/UNI/coccatol/argo4/MANGA/mangadap/external/absorption_line_indices_definition.dat'
+#
+#
+#
+save_intermediate_steps = 0
+remove_null_templates = 1
