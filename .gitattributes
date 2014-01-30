@@ -71,6 +71,8 @@ pro/modules/mdap_gandalf.pro -text
 pro/modules/mdap_gandalf_wrap.pro -text
 pro/modules/mdap_ppxf.pro -text
 pro/modules/mdap_voronoi_2d_binning.pro -text
+pro/obsolete/mdap_sgandalf.pro -text
+pro/obsolete/mdap_spectral_fitting_with_sgandalf.pro -text
 pro/utilities/basic_colors.pro -text
 pro/utilities/basic_colors_rev.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
