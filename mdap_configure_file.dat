@@ -134,3 +134,5 @@ absorption_line_indices='/home/UNI/coccatol/argo4/MANGA/mangadap/external/absorp
 #
 save_intermediate_steps = 0
 remove_null_templates = 1
+external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_32/'
+#external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_64/'
