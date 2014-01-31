@@ -121,7 +121,7 @@ sn_calibration_datacubes = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
 emission_line_file_spatial_binnin_1='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
 emission_line_file_spatial_binnin_2='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
 emission_line_file_spatial_binnin_3='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
-emission_line_file_radial_binning='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement'
+emission_line_file_radial_binning='/home/UNI/coccatol/argo4/MANGA/mangadap/external/emission_lines_setup_with_Balmer_decrement_residuals'
 #
 #--------------------------------------------------------------------------------------------
 #
@@ -132,7 +132,16 @@ absorption_line_indices='/home/UNI/coccatol/argo4/MANGA/mangadap/external/absorp
 #
 #
 #
-save_intermediate_steps = 0
+save_intermediate_steps = 1
 remove_null_templates = 1
 external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_32/'
 #external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_64/'
+#
+#
+#--------------------------------------------------------------------------------------------
+#
+#
+spectra_fittin_parameters_patial_binning_1=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
+spectra_fittin_parameters_patial_binning_2=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
+spectra_fittin_parameters_patial_binning_3=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
+spectra_fittin_parameters_patial_binning_readial=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)']
