@@ -25,7 +25,7 @@ if keyword_set(check_version) then begin
    if check_previous_session eq 1 then restore,output_idlsession
 endif
 
-manga_dap_version = '0.1'    ; 18 Dec 2013 by L. Coccato
+manga_dap_version = '0.4'    ; 31 Jan 2014 by L. Coccato
 ;stop
 
 
@@ -264,8 +264,8 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,$
-        extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],mask_range=mask_range,external_library=external_library,/quiet ;,$
-  
+        extra_inputs=spectra_fittin_parameters_patial_binning_1,mask_range=mask_range,external_library=external_library,/quiet ;,$
+   ;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_tpl[i,*]=emission_line_fluxes_tpl[i,*]/area_bins_tpl[i]
    for i = 0, junk[1]-1 do emission_line_fluxes_tpl_err[i,*]=emission_line_fluxes_tpl_err[i,*]/sqrt(area_bins_tpl[i])
@@ -312,9 +312,9 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4'],$
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=spectra_fittin_parameters_patial_binning_2,$
         mask_range=mask_range,external_library=external_library,/quiet
-
+;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
    junk = size(emission_line_fluxes_str);need to save all flux maps
    for i = 0, junk[1]-1 do emission_line_fluxes_str[i,*]=emission_line_fluxes_str[i,*]/area_bins_str[i]
    for i = 0, junk[1]-1 do emission_line_fluxes_str_err[i,*]=emission_line_fluxes_str_err[i,*]/sqrt(area_bins_str[i])
@@ -348,9 +348,9 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_3,$
-        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)'],/rest_frame_log,$
+        extra_inputs=spectra_fittin_parameters_patial_binning_3,/rest_frame_log,$
         mask_range=mask_range,external_library=external_library,/quiet;,$
-
+;        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
    junk = size(emission_line_fluxes_ems) ;need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
    for i = 0, junk[1]-1 do emission_line_fluxes_ems[i,*]=emission_line_fluxes_ems[i,*]/area_bins_ems[i]
    for i = 0, junk[1]-1 do emission_line_fluxes_ems_err[i,*]=emission_line_fluxes_ems_err[i,*]/sqrt(area_bins_ems[i])
@@ -434,11 +434,13 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
           MW_extinction=MW_extinction,emission_line_file=emission_line_file_radial_binning,$
-          extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
+          extra_inputs=spectra_fittin_parameters_patial_binning_readial,$
+         ;extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
          range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,external_library=external_library,/quiet ;,$
    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
-
-   ;calculate the real S/N of binned spectra
+ 
+ 
+  ;calculate the real S/N of binned spectra
    bin_sn_rad_real = r_bin
    indxx = where(wavelength_output_rbin ge w_range_for_sn_computation[0]  and wavelength_output_rbin le w_range_for_sn_computation[1] )
    for i = 0, n_elements(bin_sn_rad_real) -1 do begin
@@ -447,16 +449,16 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    endfor
    junk = temporary(sn_per_angstorm)
 ;--
-
+;stop
 ;--measurement of abs indices
    lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_rbin)
    rrr=poly_fit(wavelength_output_rbin,lick_resolution_tmp,4,yfit=lick_resolution)
    fwhm_instr = wavelength_output_rbin*0.+2.73                           ; ad hoc: I do not know the true one.
    fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0. ;fwhm in angstrom
-   mdap_measure_indices,wavelength_output_rbin,galaxy_minus_ems_fit_model_rbin,$
+   mdap_measure_indices,absorption_line_indices,wavelength_output_rbin,galaxy_minus_ems_fit_model_rbin,$
         best_template_rbin,best_template_LOSVD_conv_rbin,stellar_kinematics_rbin[*,0],residuals_rbin,$
         fwhm_diff_indices,abs_line_indices_rbin,remove_outliers=5,$
-        abs_line_indices_errors_rbin,abs_line_indices_template_rbin,abs_line_indices_template_losvd_rbin,dir=output_dir;,/noplot
+        abs_line_indices_errors_rbin,abs_line_indices_template_rbin,abs_line_indices_template_losvd_rbin,dir=output_dir+'rbin_';,/noplot
 ;--
    sxaddpar,header_2d,'BLOCK6',mdap_spatial_radial_binning_version,'mdap_spatial_radial_binning_version'
    execute_all_modules = 1

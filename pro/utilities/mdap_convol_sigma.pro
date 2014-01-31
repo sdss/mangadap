@@ -56,25 +56,23 @@
 ;%%%
 
 
-function mdap_convol_sigma,x,vector,x_sigma,sigma,help=help;,slow=slow
+function mdap_convol_sigma,x,vector,x_sigma,sigma;,help=help;,slow=slow
 
-if keyword_set(help) then begin
-   Result = FILE_WHICH('convol_sigma.pro')
-   readcol,Result,h,format='A,A',delimiter='@',/silent
-   end_of_help = where(h eq ';%%%' )
-   for i = 0, end_of_help(0) do print, h(i)
-   conv=-1
-   goto, fine
-endif
+;if keyword_set(help) then begin
+;   Result = FILE_WHICH('convol_sigma.pro')
+;   readcol,Result,h,format='A,A',delimiter='@',/silent
+;   end_of_help = where(h eq ';%%%' )
+;   for i = 0, end_of_help(0) do print, h(i)
+ ;  conv=-1
+ ;  goto, fine
+;endif
 
 sigma_new=interpol(sigma,x_sigma,x)
 
 conv=0.d
 
-
-sigma_new2=2.*sigma_new^2
+sigma_new2=2.d*sigma_new^2
 sigma_new_sqrt2pi = sigma_new*sqrt(2.d*double(!pi))
-;area = int_tabulated(x,vector);-step*vector
 for i = 0, n_elements(vector)-2 do begin
    area = (x[i+1]-x[i])*vector[i]
    kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
@@ -84,9 +82,9 @@ area = (x[i]-x[i-1])*vector[i]
 kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
 conv+=kernel
 ;stop
-goto,fine
+;goto,fine
 
-fine:
+;fine:
 return,conv
 end
 
