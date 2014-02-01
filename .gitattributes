@@ -96,6 +96,7 @@ pro/utilities/mdap_get_losvd.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_place_cbar.pro -text
 pro/utilities/mdap_place_image.pro -text
+pro/utilities/mdap_ppxf_convol_fft.pro -text
 pro/utilities/mdap_range.pro -text
 pro/utilities/mdap_read_indices_definitions.pro -text
 pro/utilities/mdap_readfits_2d.pro -text

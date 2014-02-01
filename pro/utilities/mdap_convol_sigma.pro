@@ -76,7 +76,7 @@ sigma_new_sqrt2pi = sigma_new*sqrt(2.d*double(!pi))
 for i = 0, n_elements(vector)-2 do begin
    area = (x[i+1]-x[i])*vector[i]
    kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
-   conv+=kernel
+   conv=conv+kernel
 endfor
 area = (x[i]-x[i-1])*vector[i]
 kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
