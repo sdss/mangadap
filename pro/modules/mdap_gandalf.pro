@@ -225,15 +225,16 @@ return, soluz
 END
 
 ;------------------------------------------------------------------------------------
-FUNCTION CREATE_GAUSSN, X=x, PARS=newpars,INT_DISP_PIX=int_disp_pix
+FUNCTION CREATE_GAUSSN, X=x, PARS=newpars,INT_DISP_PIX2=int_disp_pix2
 ; The instrumental resolution is supposed to be in sigma and in pixels
 ; at this stage
 
 npars=n_elements(newpars)
 npix = n_elements(x)
 y=fltarr(npix)
+;int_disp_pix2=(int_disp_pix)^2
 FOR i=0, npars-3, 3 DO BEGIN
-    newpars[i+2] = sqrt(newpars[i+2]*newpars[i+2] + (int_disp_pix)^2)
+    newpars[i+2] = sqrt(newpars[i+2]*newpars[i+2] + int_disp_pix2)
     w=(findgen(n_elements(x))-newpars[i+1])/newpars[i+2]
     tmp=newpars[i]*EXP(-w^2/2.)
     y=y+tmp
@@ -244,7 +245,7 @@ END
 
 ;------------------------------------------------------------------------------------
 FUNCTION CREATE_TEMPLATES, EMISSION_SETUP=emission_setup, PARS=pars, NPIX=npix         ,$
-                           LSTEP_GAL=lstep_gal, INT_DISP_PIX=int_disp_pix, LOG10=log10 ,$
+                           LSTEP_GAL=lstep_gal, INT_DISP_PIX2=int_disp_pix2, LOG10=log10 ,$
                            FOR_ERRORS=for_errors
 
 ; Take the emission-setup structure and the input pars parameter array
@@ -278,10 +279,10 @@ for i = 0,nlines-1 do begin
         ; than the NNLS weight assigned to each template will actually correspond 
         ; to the emission-line amplitude.
         ampl_i = emission_setup.a[i_lines[i]] 
-        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[ampl_i,pars[2*i:2*i+1]],INT_DISP_PIX=int_disp_pix)
+        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[ampl_i,pars[2*i:2*i+1]],INT_DISP_PIX2=int_disp_pix2)
     endif else begin
         ; Make Gaussian templates amplitudes specified by the input pars array
-        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[pars[3*i:3*i+2]],INT_DISP_PIX=int_disp_pix)
+        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[pars[3*i:3*i+2]],INT_DISP_PIX2=int_disp_pix2)
     endelse
 endfor
 
@@ -332,13 +333,13 @@ if i_slines[0] ne -1 then begin
             
             gaus_sline = create_gaussn(X=findgen(npix), $
                                        PARS=[a_sline,pars[i_mline*2]-offset,pars[i_mline*2+1]], $
-                                       INT_DISP_PIX=int_disp_pix)
+                                       INT_DISP_PIX2=int_disp_pix2)
         endif else begin
             a_sline = emission_setup.a[j]*pars[i_mline*3]
            
             gaus_sline = create_gaussn(X=findgen(npix), $
                                        PARS=[a_sline,pars[i_mline*3+1]-offset,pars[i_mline*3+2]], $
-                                       INT_DISP_PIX=int_disp_pix)
+                                       INT_DISP_PIX2=int_disp_pix2)
         endelse
         gaus[*,i_mline] = gaus[*,i_mline] + gaus_sline 
         
@@ -378,7 +379,8 @@ s = size(templates)
 ctemplates = dblarr(s[1],s[2])
 IF s[0] EQ 2 THEN ntemp = s[2] ELSE ntemp = 1   ; Number of template spectra
 FOR j=0,ntemp-1  DO BEGIN
-        ctemplates[*,j] = convol(templates[*,j],losvd,/EDGE_TRUNCATE) ;
+        ;ctemplates[*,j] = convol(templates[*,j],losvd,/EDGE_TRUNCATE) ;
+        ctemplates[*,j] = mdap_ppxf_convol_fft(templates[*,j],losvd) ;
 ENDFOR
 
 return,ctemplates
@@ -720,10 +722,10 @@ FOR j=1,mdegree DO mpoly=mpoly + legendre(x,j)*pars[npars+j-1]
 s = size(cstar)
 ; passing only the emission-line parameters 
 IF NOT KEYWORD_SET(for_errors) THEN eml_pars = pars[0:nlines*2-1] ELSE eml_pars = pars[0:nlines*3-1]
-int_disp_pix = int_disp/velscale
+int_disp_pix2 = (int_disp/velscale)^2
 
 gaus = create_templates(EMISSION_SETUP=emission_setup,LSTEP_GAL=lstep_gal, NPIX=npix, PARS=eml_pars, $
-                        INT_DISP_PIX=int_disp_pix, LOG10=log10, $
+                        INT_DISP_PIX2=int_disp_pix2, LOG10=log10, $
                         FOR_ERRORS=for_errors)
 
 ; Stacking all the inputs together:

@@ -431,22 +431,6 @@ fact = 10d^(-0.4d*ebv*(k1>0))  ; Calzetti+00 equation (2) with opposite sign
 return, fact ; The model spectrum has to be multiplied by this vector
 END
 ;----------------------------------------------------------------------------
-FUNCTION ppxf_convol_fft, f, k
-compile_opt idl2, hidden
-
-nf = n_elements(f)
-nk = n_elements(k)
-n = 2L^ceil(alog(nf+nk/2)/alog(2))
-f1 = dblarr(n)
-k1 = f1
-f1[0] = f
-k1[0] = rotate(k,2)
-k1 = shift(k1,-(nk-1)/2)
-con = n*double(fft(fft(f1,-1)*fft(k1,-1),1))
-
-return, con[0:nf-1]
-END
-;----------------------------------------------------------------------------
 FUNCTION ppxf_BVLS_Solve, A, b, npoly,$
        external_library=external_library
 compile_opt idl2, hidden
@@ -561,10 +545,10 @@ if factor gt 1 then pix = range(0d,s[1]-1d,s[1]*factor) ; Oversampled pixels ran
 tmp = dblarr(s[1],nspec,/NOZERO)
 for j=0,ntemp-1 do begin
     if factor eq 1 then $ ; No oversampling of the template spectrum
-        for k=0,nspec-1 do tmp[*,k] = ppxf_convol_fft(star[*,j],losvd[*,k]) $
+        for k=0,nspec-1 do tmp[*,k] = mdap_ppxf_convol_fft(star[*,j],losvd[*,k]) $
     else begin             ; Oversample the template spectrum before convolution
         st = interpolate(star[*,j],pix,CUBIC=-0.5)   ; Sinc-like interpolation
-        for k=0,nspec-1 do tmp[*,k] = rebin(ppxf_convol_fft(st,losvd[*,k]),s[1])
+        for k=0,nspec-1 do tmp[*,k] = rebin(mdap_ppxf_convol_fft(st,losvd[*,k]),s[1])
     endelse
     c[0,(degree+1)*nspec+j] = (mpoly*tmp[0:npix-1,*])[*] ; reform into a vector
 endfor

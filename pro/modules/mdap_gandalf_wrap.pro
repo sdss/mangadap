@@ -354,8 +354,11 @@ endelse
 i_l = where(emission_setup.kind eq 'l') 
 sol_gas_A = sol[dindgen(n_elements(i_l))*4+1]
 ; constant A/N=4 threshold
-AoN_thresholds = dblarr(n_elements(i_l)) + 4.0
-spec_neat = remouve_detected_emission(galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds,AoN=sol_gas_AoN)
+AoN_thresholds = dblarr(n_elements(i_l)) + 4.0-100
+;spec_neat = remouve_detected_emission(galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds*0.,AoN=sol_gas_AoN)
+; I want to remove even the smallest emission line, does not metter if
+; formally detected or not.
+spec_neat = remouve_detected_emission(galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds ,AoN=sol_gas_AoN) 
 bf_comp2 = galaxy-spec_neat
 
 ;print,'--> ... and cleaning the galaxy spectrum from any detected gas emission line'
@@ -439,7 +442,7 @@ for j = 0, n_elements(dummy.lambda[i_l])-1 do begin
     if j_buffer[0] ne -1 then begin
        C_line     = median(spec_neat[j_buffer])
        gas_ew_[j]  = gas_fluxes[j]/C_line
-       gas_ew_err_[j]  = gas_fluxes_err[j]/C_line+abs(gas_fluxes[j])/C_line^2.*robust_sigma(spec_neat[j_buffer])
+       gas_ew_err_[j]  = gas_fluxes_err[j]/C_line+abs(gas_fluxes[j])/C_line^2*robust_sigma(spec_neat[j_buffer])
     endif
 endfor
 

@@ -187,9 +187,14 @@
 ;       V2.52: Print number of unbinned pixels. MC, Oxford, 28 March 2007
 ;       V2.53: Fixed program stop, introduced in V2.5, with /NO_CVT keyword.
 ;           MC, Oxford, 3 December 2007
-;       V2.54: Recalculate targetSN to have at least 1 bin. L.Coccato Oct 2013
-;-
+; =================================================================================
+;-      Nov 2013: ADAPTED FOR MANGA Data Analysis Pipeline by L. Coccato
+;            - Recalculate targetSN to have at least 1 bin. L.Coccato Oct 2013
+;            - Usage of empirical calibraion between estimated S/N
+;              and real S/N (mdap_calibrate_sn.pro)
+;
 ;----------------------------------------------------------------------------
+
 pro bin2d_weighted_centroid, x, y, density, xBar, yBar
 COMPILE_OPT IDL2, HIDDEN
 
