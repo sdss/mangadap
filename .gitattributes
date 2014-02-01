@@ -38,6 +38,13 @@ external/F90_64/bvls.f90 -text
 external/F90_64/bvls_wrapper.c -text
 external/F90_64/make_library.sh -text
 external/absorption_line_indices_definition.dat -text
+external/cmpfit-1.2/DISCLAIMER -text
+external/cmpfit-1.2/Makefile -text
+external/cmpfit-1.2/README -text
+external/cmpfit-1.2/mpfit.c -text
+external/cmpfit-1.2/mpfit.h -text
+external/cmpfit-1.2/testmpfit.c -text
+external/cmpfit-1.2/testmpfit.log -text
 external/emission_lines_setup_with_Balmer_decrement -text
 external/emission_lines_setup_with_Balmer_decrement_residuals -text
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
