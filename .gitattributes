@@ -47,6 +47,7 @@ external/cmpfit-1.2/testmpfit.c -text
 external/cmpfit-1.2/testmpfit.log -text
 external/emission_lines_setup_with_Balmer_decrement -text
 external/emission_lines_setup_with_Balmer_decrement_residuals -text
+external/instrumental_fwhm.dat -text
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500.fits -text svneol=unset#unset
