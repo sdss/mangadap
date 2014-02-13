@@ -8,7 +8,7 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
      fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
      range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,rest_frame_log=rest_frame_log,filter=filter,$
      version=version,mask_range=mask_range,$
-     external_library=external_library
+     external_library=external_library,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix
 ;,$
     ; emission_line_intens=emission_line_intens,emission_line_intens_rms=emission_line_intens_rms;,$
     ; best_fit_model_log=best_fit_model_log,emission_model_log=emission_model_log,$
@@ -174,7 +174,7 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ;
 ; version  [string]            Module version. If requested, the module is not execute and only version flag is returned
 ;
-version_module = '0.1'
+version_module = '0.2'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
@@ -211,6 +211,10 @@ log_step_gal=loglam_gal[1]-loglam_gal[0] ;log-wavelength step (for galaxy spectr
 ;   for different sofware requirements (ppxf, gandalf, s-gandalf, etc)
 readcol,emission_line_file,junk,em_name,wav,junk,junk,emss,format='I,A,F,A,A,F',comment='#',/silent
 emss = mdap_sgn(emss)
+
+
+INT_DISP = fltarr(n_elements(emss))
+if n_elements(fwhm_instr_kmsec_matrix) eq 0 then INT_DISP =INT_DISP+52.
 ;--
 
 ;-- initialization of output variables
@@ -278,10 +282,12 @@ dv = (loglam_templates[0]-loglam_gal[0])*c
 if not keyword_set(quiet) then print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 ;  'Spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer),' fitted'
-;window,0,retain=2
+window,0,retain=2
 
 if n_elements(mdegree) ne 0 then MDEGREE_=MDEGREE
 if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
+;emission_line_file_ori = emission_line_file
+
 FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
 ;FOR i = 45, 45 DO BEGIN  ;loop over all the spectra
 
@@ -296,19 +302,19 @@ FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
    noise_=noise[*,i]
 
 
-   ;-- correct for galactic reddening, if provided
-   IF KEYWORD_SET(MW_extinction) THEN BEGIN
-      ;dereddening_attenuation = DUST_CALZETTI(l0_gal,lstep_gal,n_elements(galaxy_),-MW_extinction,0.0d,/log10)
-      dereddening_attenuation = mdap_dust_calzetti(log_0_gal,log_step_gal,n_elements(galaxy_),-MW_extinction,0.0d)
-      galaxy_ = galaxy_*temporary(dereddening_attenuation)
-   ENDIF
+ ;  ;-- correct for galactic reddening, if provided
+ ;  IF KEYWORD_SET(MW_extinction) THEN BEGIN
+ ;     ;dereddening_attenuation = DUST_CALZETTI(l0_gal,lstep_gal,n_elements(galaxy_),-MW_extinction,0.0d,/log10)
+ ;     dereddening_attenuation = mdap_dust_calzetti(log_0_gal,log_step_gal,n_elements(galaxy_),-MW_extinction,0.0d)
+ ;     galaxy_ = galaxy_*temporary(dereddening_attenuation)
+ ;  ENDIF
 
   ;-- fitting with mdap_sgandalf
 ; Print, ' Fitting spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer)   ;TEST LINE
 
 
 ;GOODPIXELS=where(galaxy_/noise_ ge .5 )
-if ~keyword_set(quiet) then print, 'fitting spectrum',i
+   if ~keyword_set(quiet) then print, 'fitting spectrum',i
 ;print, 'fitting spectrum',i
 ;MDEGREE_=MDEGREE
 ;if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
@@ -322,7 +328,10 @@ if ~keyword_set(quiet) then print, 'fitting spectrum',i
 ;      range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas
 ;
 
-mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale, start, sol, $
+    
+   INT_DISP=interpol(fwhm_instr_kmsec_matrix[1,*],alog(fwhm_instr_kmsec_matrix[0,*]),alog(wav*(1.+start[2]/c)))/2.3548
+status = 1
+   mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale, start, sol, $
        EMISSION_SETUP_FILE=emission_line_file, $
        gas_intens,gas_fluxes,gas_ew,gas_intens_err,gas_fluxes_err,gas_ew_err,$
        BESTFIT=bestFit, BIAS=bias,  MDEGREE=MDEGREE,DEGREE=degree, ERROR=error, $
@@ -331,7 +340,24 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
        FOR_ERRORS=1,$    ; ERROR COMPUTATION MUST BE TRIGGERED!!!
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
        range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,$
-       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library
+       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,INT_DISP=INT_DISP,status = status
+   
+   if status eq 0 then begin  ; if the fit failed, I set dummy outputs to not to stop the workflow.
+     sol = fltarr(9)/0.
+     error = fltarr(8)+99.
+     gas_intens=fltarr(n_elements(wav))
+     gas_fluxes=fltarr(n_elements(wav))
+     gas_ew=fltarr(n_elements(wav))
+     gas_intens_err=fltarr(n_elements(wav))+99.
+     gas_fluxes_err=fltarr(n_elements(wav))+99.
+     gas_ew_err=fltarr(n_elements(wav))+99.
+     bestFit=loglam_gal*0.
+     if n_elements(reddening) ne 0 then ebv= ebv*0.
+     if n_elements(reddening) ne 0 then err_reddening= ebv*0.+99
+
+     weights = dblarr(sz[2],sztempl[2])
+     bf_comp2=loglam_gal*0.
+   endif
 
 
 ;stop
@@ -340,14 +366,18 @@ mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale,
 if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.  ma005_142.790030+22.746507datacubes_block5.idl
 
    ; plots for checks... remove these lines when running on remote server
-    ;plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3640,7870]
-    ;oplot,exp(loglam_gal),bestfit,color=200
-    ;OPLOT,exp(loglam_gal[fitted_pixels]),bestfit[fitted_pixels],color=100
-    ;print,'start', start
-    ;print,'sol',  sol
-    ;print,'error', error
+    plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3600,10350],xstyle=1
+    oplot,exp(loglam_gal),bestfit,color=200
+    if n_elements(fitted_pixels) ne 0 then OPLOT,exp(loglam_gal[fitted_pixels]),bestfit[fitted_pixels],color=200
+    
+    print,'start', start
+    print,'sol',  sol
+    print,'error', error
+   if n_elements(ebv) ne 0 then  print, 'reddening = ',ebv
+   if n_elements(ebv) eq 0 then  print, 'reddening = Not FITTED'
    ; print, ''
-   ; print, minmax(exp(loglam_gal))
+   ; print, minmax(exp(loglam_gal)).reset
+
    ; do I really need it? best_fit_model_log[i,*]=bestfit
    ; do I really need it? emission_model_log[i,*]=bf_comp2
   ; print, 'spectrum '+string(i)
@@ -373,10 +403,10 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
       stellar_weights[i,*]= weights[0:sztempl[2]-1]
    ;endif
    emission_line_kinematics[i,*]=sol[7:8]
-   emission_line_kinematics_err[i,*]=error[4:5]
+   emission_line_kinematics_err[i,*]=error[6:7]
 ;   stop
-;   emission_line_intens[i,*]= gas_intens; corrected for reddening, if fitted
-;   emission_line_intens_err[i,*]= gas_intens_err
+   ;emission_line_intens[i,*]= gas_intens; corrected for reddening, if fitted
+   ;emission_line_intens_err[i,*]= gas_intens_err
    emission_line_equivW[i,*]= gas_ew
    emission_line_equivW_err[i,*]= gas_ew_err
    emission_line_fluxes[i,*]= gas_fluxes     ; corrected for reddening, if fitted
@@ -385,9 +415,9 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
    ;-- check how many emission lines have intensity > 4*intensity_error
    ;      (i.e. 3 sigma detections)
    ;test = abs(emission_line_intens[i,*]) - 4.*abs(emission_line_intens_err[i,*])
-   test = abs(gas_intens) - 4.*abs(gas_intens_err)
+   test = abs(gas_intens) - 0.5*abs(gas_intens_err)
    indici = where(test gt 0) 
-
+;stop
   ; stop
 ;    window,0,retain=2,xsize=1900
 ;      residuals_ = galaxy_-bestfit
@@ -407,9 +437,9 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
 
 ;stop
 
-    if n_elements(indici) lt 2 then begin  ;I want at least 2 emission lines to be detected at >3sigma level....
- ;      emission_line_intens[i,*] = 0.
- ;      emission_line_intens_err[i,*] = 0.
+    if n_elements(indici) lt 2 then begin  ;I want at least 2 emission lines to be detected at >0.5sigma level....
+       ;emission_line_intens[i,*] = 0.
+       ;emission_line_intens_err[i,*] = 0.
        emission_line_fluxes[i,*] = 0./0.
        emission_line_fluxes_err[i,*] = 0./0.
        emission_line_equivW[i,*] = 0./0.
@@ -479,7 +509,7 @@ end
 ;   ;-- storing outputs
 ;   ;reddening_output[i] = (n_elements(ebv) eq 0) ?  0 : ebv[0]; reddening_output[i] = 0 : reddening_output[i] = ebv[0]
 ;   if n_elements(ebv) ne 0 then reddening_output[i] = ebv[0]
-;   if n_elements(MW_extinction) ne 0 then reddening_output[i] = reddening_output[i] - MW_extinction[0] 
+;   if n_elements(MW_extinction) ne 0 then reddening_output[i] = reddeningn_output[i] - MW_extinction[0] 
 ;   bf_template = (templates # weights[0:sztempl[2]-1])
 ;   optimal_template_log[*,i]=bf_template
 ;   mdap_get_losvd,sol,velscale,losvd

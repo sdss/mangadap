@@ -1,8 +1,8 @@
 pro mdap_spatial_binning,data,error,signal,noise,min_sn,x2d,y2d,stepx,stepy,$
     binning_map,spectra,errors,xNode,yNode,area_bins,bin_sn,plot=plot,sn_thr=sn_thr,$
     x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed, $
-    nelements_within_bin=nelements_within_bin,SN_CALIBRATION=SN_CALIBRATION,user_bin_map=user_bin_map,$
-   version=version
+    nelements_within_bin=nelements_within_bin,SN_CALIBRATION=SN_CALIBRATION,user_bin_map=user_bin_map,weight_for_sn=weight_for_sn,$
+    version=version
 
 
 ;*** INPUTS ***
@@ -49,13 +49,24 @@ pro mdap_spatial_binning,data,error,signal,noise,min_sn,x2d,y2d,stepx,stepy,$
 ;                    tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
 ;                    SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
 ;
-;user_bin_map  string   If provided, the spatial map will be created from the fits fiel specified by this input.
+;user_bin_map  string   If provided, the spatial map will be created
+;                      from the fits fiel specified by this input. The
+;                      fits file must contain the CRVAL1, CRVAL2,
+;                      CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and
+;                      CRIX2 header keywords (coordinate units in
+;                      arcseconds, 0,0 indicates the center of the
+;                      field of view.
 ;
 ;
 ;*** INPUT KEYWORDS ***
 ;
 ;\plot               If set, some plots on X11 terminal will be shown. Not suggested if the task is launched remotely. 
 ;
+;weight_for_sn      If set, the spectra in the same spatial bin will be
+;                   weighted by $S/N^2$ before being added. If The voronoi binning scheme
+;                   is adopted, the S/N in the bin is computed via equation (3) of
+;                   Cappellari & Copin (2003), and the centers of the
+;                   spatial bins are computed by weighting spectra coordinates by $S/N^2$.
 ;
 ;*** OUTPUTS ***
 ;
@@ -223,8 +234,10 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
 
 endif else begin  ; VORONOI SPATIAL BINNING SCHEME
    user_map_failure:
+  ; if keyword_set(weight_for_sn) then WVT = 1
+   ;stop
    mdap_voronoi_2d_binning,x2d[ind_good],y2d[ind_good],signal[ind_good],noise[ind_good],min_sn,binNum_, $
-      xNode, yNode, xBar, yBar, bin_sn, nPixels, scale, plot=plot,SN_CALIBRATION=SN_CALIBRATION, /QUIET;,/no_cvt
+      xNode, yNode, xBar, yBar, bin_sn, nPixels, scale, plot=plot,SN_CALIBRATION=SN_CALIBRATION,/QUIET,weight_for_sn=weight_for_sn;,/no_cvt
    nbins=n_elements(xnode)
   
 endelse
@@ -266,8 +279,27 @@ if sz[0] eq 3 then begin  ;DATACUBE
 ;stepx=junkx[1]-junkx[0]
    for k = 0, nbins-1 do begin
       ind = where(binning_map_ eq k)
-      spectra[*,k] = total(data_[ind,*],1)
-      errors[*,k] = sqrt(total(error_[ind,*]^2.,1))
+      if keyword_set(weight_for_sn) then begin
+         w = signal[ind_good[ind]]/noise[ind_good[ind]]^2
+         tw = total(w)/n_elements(ind)
+         ;g = 1./error_[ind,*]^2
+         ;GG=errors[*,k]
+         e2=error_[ind,*]^2
+         for dd = 0, n_elements(ind)-1 do begin
+            spectra[*,k] =  spectra[*,k] + data_[ind[dd],*]*w[dd] / tw 
+            ;GG = GG + (1./g[dd,*] * (w[dd]/tw)^2)^(-1)
+            errors[*,k] =errors[*,k] + e2[dd,*]* (w[dd]/tw)^2
+         endfor
+          errors[*,k]=sqrt(errors[*,k])
+       ;  stop
+       ; errors[*,k] = 1/sqrt(GG)*n_elements(ind)   ;If I put the factor *n_elements(ind) I get it right
+       
+      endif else begin
+         spectra[*,k] = total(data_[ind,*],1)
+         errors[*,k] = sqrt(total(error_[ind,*]^2.,1))
+      endelse
+      indici = where( finite(errors[*,k]) ne 1, compl=indici_ok)
+    if indici[0] ne -1 then errors[indici,k] = median(errors[indici_ok,k])      
       nelements_within_bin[k] = n_elements(ind)
    endfor
    area_bins=nelements_within_bin*stepx[0]*stepy[0] ;area in arcsec2
@@ -282,20 +314,39 @@ if sz[0] eq 2 then begin  ;RSS
  
    for k = 0, nbins-1 do begin
       ind = where(binNum_ eq k)
-      spectra[*,k] = total(data[ind_good[ind],*],1)
-      errors[*,k] = sqrt(total(error[ind_good[ind],*]^2.,1))
-      nelements_within_bin[k] = n_elements(ind)
-   endfor
+      if keyword_set(weight_for_sn) then begin
+         w = signal[ind_good[ind]]/noise[ind_good[ind]]^2
+         tw = total(w)/n_elements(ind)
+         e2=error[ind_good[ind],*]^2;  e=1.g^2;;;;g = 1./error[ind_good[ind],*]^2
+         ;GG=errors[*,k]
+         for dd = 0, n_elements(ind)-1 do begin
+            spectra[*,k] =  spectra[*,k] + data[ind_good[ind[dd]],*]*w[dd] / tw 
+            errors[*,k] = errors[*,k] + e2[dd,*]*(w[dd] / tw )^2
+         endfor
+         ;errors[*,k] = 1/sqrt(GG)*n_elements(ind)   ;If I put the factor *n_elements(ind) I get it right
+          errors[*,k] = sqrt(errors[*,k])
+     endif else begin
+         spectra[*,k] = total(data[ind_good[ind],*],1)
+         errors[*,k] = sqrt(total(error[ind_good[ind],*]^2.,1))
+      endelse
+    ; stop
+     indici = where( finite(errors[*,k]) ne 1, compl=indici_ok)
+     if indici[0] ne -1 then errors[indici,k] = median(errors[indici_ok,k])
+     nelements_within_bin[k] = n_elements(ind)
+  endfor
+
 ;stop
    reconstructed_R2d = sqrt(x2d_reconstructed^2+y2d_reconstructed^2)
    sz = size(reconstructed_R2d)
    for j = 0, sz[2]-1 do begin
       for i = 0, sz[1]-1 do begin
          dist = sqrt((x2d_reconstructed[i,j] - xnode)^2+(y2d_reconstructed[i,j]- ynode)^2)
+         dist_rss = sqrt((x2d_reconstructed[i,j] - x2d)^2+(y2d_reconstructed[i,j]- y2d)^2)
          junk = where(dist eq min(dist))
          binning_map[i,j] = junk[0]   ;IF MORE BINS ARE ENCLOSED IN THE RESOLUTION ELEMENT, ONLY THE CLOSEST TO THE CENTER RULES. IN THIS CASE THE MAP IS USELESS, BECAUSE IT FAILS IN ALLOCATING ALL THE BINS IN THE RECONSTRUCTED F.O.V.
          dist_bad = sqrt((x2d_reconstructed[i,j] - x2d[ind_bad])^2+(y2d_reconstructed[i,j]- y2d[ind_bad])^2)
-         if min(dist) ge min(dist_bad) then binning_map[i,j] = -1
+         ;if min(dist) ge min(dist_bad) then binning_map[i,j] = -1
+         if min(dist) ge min(dist_bad) or min(dist_rss) ge 1.5 then binning_map[i,j] = -1   ;If I am closer to a bad pixel than a good pixel, or if I am more distant than 3" to a fibre location
       endfor
    endfor
    area_bins = fltarr(nbins)

@@ -58,10 +58,10 @@ endif
 output_dir=''
 if n_elements(dir) ne 0 then output_dir = dir
 
-lambda_step = wavelength[1] - wavelength[0]
-fwhm_diff_indices=fwhm_diff_indices_/lambda_step  ;from angstrom to pixels
+;lambda_step = wavelength[1] - wavelength[0]
+;fwhm_diff_indices=fwhm_diff_indices_/lambda_step  ;from angstrom to pixels
 fwhm_sigma_conversion = double(2.*sqrt(alog(4.)));2.35482
-sigma = fwhm_diff_indices/fwhm_sigma_conversion
+sigma = fwhm_diff_indices_/fwhm_sigma_conversion
 c=299792.48d
 sz = size(spectra)
 mdap_read_indices_definitions,absorption_line_indices,indices=indices
@@ -81,7 +81,8 @@ FOR i = 0, sz[1]-1 DO BEGIN
    template_LOSVD = best_template_LOSVD[i,*]
    v = stellar_velocity[i]
 
-   
+   if finite(v) eq 0 then continue
+    
     ;--- noise computation from rms vector
     
   
@@ -129,10 +130,13 @@ FOR i = 0, sz[1]-1 DO BEGIN
       template_conv = template;mdap_convol_sigma(x_pixels,template,x_pixels,sigma) 
       template_LOSVD_conv = template_LOSVD;mdap_convol_sigma(x_pixels,template_LOSVD,x_pixels,sigma) 
    endif else begin
-      x_pixels=findgen(n_elements(wavelength))
-      spc_conv=mdap_convol_sigma(x_pixels,spc,x_pixels,sigma) 
-      template_conv = mdap_convol_sigma(x_pixels,template,x_pixels,sigma) 
-      template_LOSVD_conv = mdap_convol_sigma(x_pixels,template_LOSVD,x_pixels,sigma) 
+      spc_conv=mdap_convol_sigma(wavelength,spc,wavelength,sigma) 
+      template_conv = mdap_convol_sigma(wavelength,template,wavelength,sigma) 
+      template_LOSVD_conv = mdap_convol_sigma(wavelength,template_LOSVD,wavelength,sigma) 
+       ;x_pixels=findgen(n_elements(wavelength))
+      ;spc_conv=mdap_convol_sigma(x_pixels,spc,x_pixels,sigma) 
+      ;template_conv = mdap_convol_sigma(x_pixels,template,x_pixels,sigma) 
+      ;template_LOSVD_conv = mdap_convol_sigma(x_pixels,template_LOSVD,x_pixels,sigma) 
    endelse
    ;--
    if ~keyword_set(noplot) then device, filename=output_dir+'indices_spectrum_'+mdap_stc(i+1,/integer)+'.ps',/color,xsize=15,ysize=12
@@ -158,6 +162,28 @@ FOR i = 0, sz[1]-1 DO BEGIN
   
       ;.. actual computation module
   ;stop
+
+
+      if indices[k].name eq 'D4000' or indices[k].name eq 'TiO0p89'then begin  ;indices[k].passband[0] eq 0
+         ind1 = where(wavelength ge red_cont[0] and wavelength le  red_cont[1]) 
+         ind2 = where(wavelength ge blue_cont[0] and wavelength le  blue_cont[1]) 
+         A=median(spc_conv[ind1],/even)
+         B=median(spc_conv[ind2],/even)
+         equiv_w1 = A/B
+         equiv_w2 = median(template_conv[ind1],/even)/median(template_conv[ind2],/even)
+         equiv_w3 = median(template_LOSVD_conv[ind1],/even)/median(template_LOSVD_conv[ind2],/even)
+         correction = equiv_w2[0] / equiv_w3[0]
+
+         
+         ind =  where(wavelength ge blue_cont[0] and wavelength le  red_cont[1]) 
+         Delt = median(noise[ind],/even)
+         error=  sqrt((abs(A/B^2)*delt)^2+(abs(delt/B))^2)
+         goto, I_have_measured_it
+      endif
+
+   
+
+
         mdap_do_measure_index,spc_conv,wavelength,passband ,blue_cont,$
                 red_cont,equiv_w1,index_mag1,noise=noise,error=error,title='galaxy, spc '+mdap_stc(i+1,/integer)+' index: '+indices[k].name,noplot=noplot
        
@@ -168,7 +194,7 @@ FOR i = 0, sz[1]-1 DO BEGIN
                 indices[k].red_cont,equiv_w3,index_mag3,title='template_LOSVD, spc '+mdap_stc(i+1,/integer)+' index: '+indices[k].name,noplot=noplot
        
       ;..  
-        
+        I_have_measured_it:
         if indices[k].units eq 'mag' then correction = index_mag2[0] - index_mag3[0]
         if indices[k].units eq 'ang' then correction = equiv_w2[0] / equiv_w3[0]
 

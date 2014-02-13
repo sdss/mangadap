@@ -114,7 +114,7 @@ pro mdap_read_datacube,datacube_name,data,error,wavelength,$
 ; version  [string]      Module version. If requested, the module is not execute and only version flag is returned
 ;
 
-version_module = '0.1'
+version_module = '0.2'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
@@ -298,8 +298,9 @@ if RSS eq 0 then begin      ;datacube
 for j = 0, sz[2]-1 do begin
    for i = 0 , sz[1] -1 do begin
       indici = where(error[i,j,*] le 0 or finite(error[i,j,*]) ne 1 or finite(data[i,j,*]) ne 1)
-      if n_elements(indici) ge 0.2 * n_elements(data[i,j,*]) then begin
-         data[i,j,*] = data[i,j,*]*0.
+      ;if n_elements(indici) ge 0.2 * n_elements(data[i,j,*]) then begin
+      if n_elements(indici) ge 0.2 * n_elements(data[i,j,*]) or min(data[i,j,*]) eq max(data[i,j,*]) then begin
+         data[i,j,*] = data[i,j,*]*0./0.
          error[i,j,*] = error[i,j,*]*0.+1.
       endif
    endfor
@@ -308,8 +309,9 @@ endif
 if RSS eq 1 then begin      ;datacube
    for i = 0 , sz[1] -1 do begin
       indici = where(error[i,*] le 0 or finite(error[i,*]) ne 1 or finite(data[i,*]) ne 1)
-      if n_elements(indici) ge 0.2 * n_elements(data[i,*]) then begin
-         data[i,*] = data[i,*]*0.
+   ;   if n_elements(indici) ge 0.2 * n_elements(data[i,*]) then begin
+      if n_elements(indici) ge 0.2 * n_elements(data[i,*]) or min(data[i,*]) eq max(data[i,*]) then begin
+         data[i,*] = data[i,*]*0./0.
          error[i,*] = error[i,*]*0.+1.
       endif
    endfor
@@ -330,9 +332,9 @@ endif else begin        ; rss
   ; stop
    signal = median(data[*,lam_Sel],dimension=2,/even)
    noise =  median(error[*,lam_Sel],dimension=2,/even)
-   indici = where(finite(noise) eq 0 or finite(signal) eq 0 or signal le 0 or noise le 0,compl=pos)
+   indici = where(finite(noise) eq 0 or finite(signal) eq 0  or noise le 0,compl=pos)
    if indici[0] ne -1 then noise(indici) = max(noise[pos])
-   if indici[0] ne -1 then signal(indici) = 0.
+   if indici[0] ne -1 then signal(indici) = 0./0.
 endelse
 
 ;-- resampling over a new wavelenght range with a constant ang/pxl step, if required.
@@ -409,7 +411,7 @@ if RSS eq 0 then begin; IF I HAVE DATACUBES
 endif else begin  ; IF I HAVE RSS SPECTRA, I NEED TO INTERPOLATE SOME INFO ON A 2D ARRAY
    cdelt1 = RESOLUTION_ELEMENT
    cdelt2 = RESOLUTION_ELEMENT
-   max_d = round(max([abs(x2d),abs(y2d)]))
+   max_d = round(max([abs(x2d),abs(y2d)]))+2.
    nbinsx = max_d*2/cdelt1
    nbinsx = fix(nbinsx/2)*2+1
    nbinsy = max_d*2/cdelt2

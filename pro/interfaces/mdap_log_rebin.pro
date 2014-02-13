@@ -109,13 +109,15 @@ pro mdap_log_rebin,spectra,errors,wavelength,library,fwhm_diff,$
 ; version  [string]            Module version. If requested, the module is not execute and only version flag is returned
 ;
 
-version_module = '0.1'
+version_module = '0.2'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
 endif
 
 
+wave_range_=[min(wavelength),max(wavelength)]
+if n_elements(wave_range) ne 0 then wave_range_=wave_range
 
 
 c = 299792.458d                                  ; Speed of light in km/s
@@ -189,41 +191,66 @@ FOR i = 0, nspec-1 DO BEGIN
 ENDFOR
 ;--
 
+;  ; ;-- log rebin of the template spectra
+;  ;step_w_gal = (max(wavelength)-min(wavelength))/n_elements(wavelength)
+;  fwhm_diff_kms = fwhm_diff/wavelength*c
+;  res = file_search(library,count=ntemplates)
+;  stddev_diff_pxl = median(fwhm_diff_kms / velscale / fwhm_sigma_conversion,/even) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
+;  if stddev_diff_pxl ge 0.0001  then lsf = psf_Gaussian(NPIXEL=8*stddev_diff_pxl, ST_DEV=stddev_diff_pxl, /NORM, NDIM=1)
+;  if stddev_diff_pxl lt 0.0001  then lsf = 0
+;  for i = 0, ntemplates-1 do begin
+;      mdap_readfits_lambda,res[i],spc,lam
+;      lamrange=[min(lam),max(lam)]
+;      ;mdap_do_log10_rebin,lamrange,spc,spcnew,loglam_templ,velscale=velscale;,flux=flux
+;      mdap_do_log_rebin,lamrange,spc,spcnew,loglam_templ,velscale=velscale,flux=flux;,/flux
+;      if i eq 0 then library_log = dblarr(n_elements(loglam_templ),ntemplates)
+;      ;spcnew_conv = spcnew;convol(spcnew,lsf,/edge_truncate) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
+;      if stddev_diff_pxl ne 0 then spcnew_conv = convol(spcnew,lsf,/edge_truncate) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
+;      if stddev_diff_pxl eq 0 then spcnew_conv = spcnew
+;      library_log[*,i]=temporary(spcnew_conv)
+;  endfor
+;--
 ;-- log rebin of the template spectra
 ;step_w_gal = (max(wavelength)-min(wavelength))/n_elements(wavelength)
-fwhm_diff_kms = fwhm_diff/wavelength*c
+;fwhm_diff_kms = fwhm_diff/wavelength*c
 res = file_search(library,count=ntemplates)
-stddev_diff_pxl = median(fwhm_diff_kms / velscale / fwhm_sigma_conversion,/even) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
-if stddev_diff_pxl ge 0.0001  then lsf = psf_Gaussian(NPIXEL=8*stddev_diff_pxl, ST_DEV=stddev_diff_pxl, /NORM, NDIM=1)
-if stddev_diff_pxl lt 0.0001  then lsf = 0
+;stddev_diff_pxl = fwhm_diff_kms/ velscale
 for i = 0, ntemplates-1 do begin
     mdap_readfits_lambda,res[i],spc,lam
     lamrange=[min(lam),max(lam)]
-    ;mdap_do_log10_rebin,lamrange,spc,spcnew,loglam_templ,velscale=velscale;,flux=flux
+
+    fwhm_diff_ = interpol(fwhm_diff,wavelength,lam);/lam*c
     mdap_do_log_rebin,lamrange,spc,spcnew,loglam_templ,velscale=velscale,flux=flux;,/flux
+    
+
+    ;-- trim stars
+    ind = where(loglam_templ ge alog(wave_range_[0]-200.) and loglam_templ le alog(wave_range_[1]+15.))
+    if ind[0] ne -1 then begin
+       loglam_templ = loglam_templ[ind]
+       spcnew = spcnew[ind]
+    endif
+    ;-- 
+
     if i eq 0 then library_log = dblarr(n_elements(loglam_templ),ntemplates)
-    ;spcnew_conv = spcnew;convol(spcnew,lsf,/edge_truncate) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
-    if stddev_diff_pxl ne 0 then spcnew_conv = convol(spcnew,lsf,/edge_truncate) ;ROOM FOR IMPROVEMENT: convolution as function of lambda
-    if stddev_diff_pxl eq 0 then spcnew_conv = spcnew
+    ;-- convolution as function of lambda
+    stddev_diff_ang = interpol(fwhm_diff_,alog(lam),loglam_templ)/2.3548
+    t0=systime(/seconds)
+    spcnew_conv = mdap_convol_sigma(float(exp(loglam_templ)),float(spcnew),float(exp(loglam_templ)),float(stddev_diff_ang));spcnew
+    ;spcnew_conv = mdap_convol_sigma(exp(loglam_templ),spcnew,exp(loglam_templ),stddev_diff_ang);spcnew
+    ;print, 'star ',mdap_stc(i+1,/integer),' of ',mdap_stc(ntemplates,/integer), '   (N=',mdap_stc(n_elements(spcnew_conv),/integer),' pixels), secs=',mdap_stc(systime(/seconds)-t0)
     library_log[*,i]=temporary(spcnew_conv)
+    
 endfor
+log_wav_library=temporary(loglam_templ)
 ;--
 
 ;-- trim galaxy
-wave_range_=[min(wavelength),max(wavelength)]
-if n_elements(wave_range) ne 0 then wave_range_=wave_range
 
 ;ind = where(loglam ge alog10(wave_range_[0]) and loglam le alog10(wave_range_[1]))
 ind = where(loglam ge alog(wave_range_[0]) and loglam le alog(wave_range_[1]))
 log_spc = log_spc[ind,*]
 log_err = log_err[ind,*]
 log_wav = loglam[ind]
-;--
-;-- trim stars
-;ind = where(loglam_templ ge alog10(wave_range_[0]-250.) and loglam_templ le alog10(wave_range_[1]+250.))
-ind = where(loglam_templ ge alog(wave_range_[0]-250.) and loglam_templ le alog(wave_range_[1]+250.))
-library_log = library_log[ind,*]
-log_wav_library = loglam_templ[ind]
 ;--
 ;stop
 end_module:
