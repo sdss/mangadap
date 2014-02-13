@@ -1,6 +1,6 @@
 ; NAME:
 ;
-; convol_sigma
+; mdap_convol_sigma
 ;
 ;
 ; AUTHOR: 
@@ -14,7 +14,7 @@
 ;
 ; USAGE:
 ;
-; Return = convol_sigma(x,vector,x_sigma,sigma,[/plot_example],[/help])
+; Return = mdap_convol_sigma(x,vector,x_sigma,sigma)
 ;
 ;
 ; RETURN VALUE
@@ -35,13 +35,6 @@
 ;                       Gaussian function. Same elements of "x_sigma"
 ;                       Units: same as X
 ;
-; OPTIONAL KEYWORDS:
-; 
-;
-;                 on "vector" are done. Return value = -1
-;
-; /help           If set, the help screen is printed. Return value = -1
-;
 ;
 ;
 ; HISTORY:
@@ -52,39 +45,44 @@
 ;                         Analitic expression used instead. Double
 ;                         precision used.
 ; v2.1   13/11/2009 by L. Coccato.  minor changes in the text.                    
+; INSERT NEW VERSION NUMBER
 ;
 ;%%%
 
+function mdap_kroneker_product,array,element
 
-function mdap_convol_sigma,x,vector,x_sigma,sigma;,help=help;,slow=slow
+  fun=fltarr(n_elements(array));*0.
+  fun[element]=array[element]
+return,fun
+end
+function mdap_convol_sigma,x,vector,x_sigma,sigma
 
-;if keyword_set(help) then begin
-;   Result = FILE_WHICH('convol_sigma.pro')
-;   readcol,Result,h,format='A,A',delimiter='@',/silent
-;   end_of_help = where(h eq ';%%%' )
-;   for i = 0, end_of_help(0) do print, h(i)
- ;  conv=-1
- ;  goto, fine
-;endif
+
 
 sigma_new=interpol(sigma,x_sigma,x)
+;print, 'N=',n_elements(vector)
+conv=fltarr(n_elements(x))
 
-conv=0.d
-
-sigma_new2=2.d*sigma_new^2
-sigma_new_sqrt2pi = sigma_new*sqrt(2.d*double(!pi))
+;sigma_new2=2.d*sigma_new^2
+sigma_new2=2.*sigma_new^2
+;sigma_new_sqrt2pi = sigma_new*sqrt(2.d*double(!pi))
+sigma_new_sqrt2pi = sigma_new*sqrt(2.*!pi)
+med_step = (max(x)-min(x))/n_elements(x)
+min_step = 1.*med_step
 for i = 0, n_elements(vector)-2 do begin
    area = (x[i+1]-x[i])*vector[i]
-   kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
-   conv=conv+kernel
+   if sigma_new(i) gt min_step then kernel = exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] else kernel = mdap_kroneker_product(vector,i)
+   conv=conv+temporary(kernel)
 endfor
 area = (x[i]-x[i-1])*vector[i]
-kernel=exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i] 
-conv+=kernel
-;stop
-;goto,fine
+if sigma_new(i) gt min_step then kernel = exp(-(x-x(i))^2/sigma_new2(i))*area/sigma_new_sqrt2pi[i]  else kernel = mdap_kroneker_product(vector,i)
+conv=conv+temporary(kernel)
 
-;fine:
+
+ind = where(sigma_new le 1.05*min_step)
+if ind[0] ne -1 then conv[ind]=vector[ind]
+
+
 return,conv
 end
 
