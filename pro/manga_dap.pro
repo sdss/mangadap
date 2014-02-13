@@ -9,7 +9,7 @@ for i=0, n_elements(command_line)-1 do d=execute(command_line[i])
 if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
 if n_elements(remove_null_templates) eq 0 then remove_null_templates = 1
 
-
+if n_elements(instrumental_fwhm_file) ne 0 then readcol, instrumental_fwhm_file, ww,r,fwhm_ang,fwhm_kms,/silent;'../../instrumental_fwhm/instrumental_fwhm.dat'
 
 
 t0=systime(/seconds)/60./60.
@@ -136,7 +136,19 @@ if sz[0] eq 2 then printf,1,'[INFO] RSS file '+root_name+' read; Nfibres: '+mdap
 
 ;**** definition of some variables
 MW_extinction = 0.                    ; will be replaced by appropriate extension in the input file
-fwhm_instr=wavelength*0.+2.73         ; will be replaced by appropriate extension in the input file
+;fwhm_instr=wavelength*0.+2.73         ; will be replaced by appropriate extension in the input file
+if n_elements(instrumental_fwhm_file) ne 0 then begin
+   fwhm_instr=interpol(fwhm_ang,ww,wavelength) 
+   fwhm_instr_kmsec_matrix = fltarr(2,n_elements(ww))
+   fwhm_instr_kmsec_matrix[0,*]=ww
+   fwhm_instr_kmsec_matrix[1,*]=fwhm_kms
+ endif else begin
+    fwhm_instr=wavelength*0.+2.54
+    ;fwhm_instr_kmsec_matrix = fltarr(2,n_elements(wavelength))
+    ;fwhm_instr_kmsec_matrix[0,*]=wavelength
+    ;fwhm_instr_kmsec_matrix[1,*]=mean(fwhm_instr/wavelength*300000.)
+endelse
+
 c=299792.458d
 mask_range=[5570.,5590.,5800.,5850.]  ; will be replaced by mask extension in the input file
 
@@ -159,7 +171,6 @@ if mode eq 'datacubes' then begin
    sn_thr_str=sn_thr_str_datacubes
    sn_thr_ems=sn_thr_ems_datacubes
    if n_elements(sn_calibration_datacubes) ne 0 then sn_calibration = sn_calibration_datacubes
-
 endif
 
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
@@ -167,7 +178,7 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
                         xbin_tpl,ybin_tpl,area_bins_tpl,bin_sn_tpl,sn_thr=sn_thr_tpl,$
                          x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                          nelements_within_bin=nelements_within_bin_tpl,sn_calibration=sn_calibration,$
-                         user_bin_map=user_bin_map_spatial_binnin_1;,/plot
+                         user_bin_map=user_bin_map_spatial_binning_1,weight_for_sn=weight_for_sn,/plot
    sxaddpar,header_2d,'BLOCK2',mdap_spatial_binning_version,'mdap_spatial_binning version'
    execute_all_modules=1
 endif
@@ -179,23 +190,23 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
                         xbin_str,ybin_str,area_bins_str,bin_sn_str,sn_thr=sn_thr_str,$
                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                         nelements_within_bin=nelements_within_bin_str,sn_calibration=sn_calibration,$
-                        user_bin_map=user_bin_map_spatial_binnin_2;,/plot
-   execute_all_modules=1
+                        user_bin_map=user_bin_map_spatial_binning_2,weight_for_sn=weight_for_sn,/plot
+   execute_all_modules=1 
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 2. SN= '+mdap_stc(sn2,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_str),/integer)
 
-
+;stop
 
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
    mdap_spatial_binning,data,error,signal,noise,sn3,x2d,y2d,cdelt1,cdelt2,spatial_binning_ems,spectra_ems,errors_ems,$
                         xbin_ems,ybin_ems,area_bins_ems,bin_sn_ems,sn_thr=sn_thr_ems,$
                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                         nelements_within_bin=nelements_within_bin_ems,sn_calibration=sn_calibration,$
-                        user_bin_map=user_bin_map_spatial_binnin_3;,/plot
+                        user_bin_map=user_bin_map_spatial_binning_3,weight_for_sn=weight_for_sn,/plot
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_ems),/integer)
-
+;stop
 
 
 ;*********************************************************************************
@@ -203,11 +214,12 @@ printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/
 
 ; BLOCK 3
 ;*** LOG-REBIN, STELLAR TEMPLATE CONVOLUTION, SELECTION OF WAVELENGTH RANGE ******
-
+;stop
 
 fwhm_stars = wavelength*0.+2.54   ; To be used for MARCS templates.
 fwhm_diff=sqrt(fwhm_instr^2 - fwhm_stars^2)
-
+indici = where(finite(fwhm_diff) ne 1)
+if indici[0] ne -1 then fwhm_diff[indici] = 0
 if mdap_log_rebin_version gt mdap_log_rebin_version_previous   or execute_all_modules eq 1 then begin
    mdap_log_rebin,spectra_tpl,errors_tpl,wavelength,stellar_library_spatial_binning_1,fwhm_diff,$
         log_spc_tpl,log_err_tpl,log_wav_tpl,library_log_tpl,log_wav_library_tpl,$
@@ -215,6 +227,8 @@ if mdap_log_rebin_version gt mdap_log_rebin_version_previous   or execute_all_mo
    sxaddpar,header_2d,'BLOCK3',mdap_log_rebin_version,'mdap_log_rebin version'
    execute_all_modules=1
 endif
+
+
 printf,1,'[INFO] mdap_log_rebin ver '+max([mdap_log_rebin_version,mdap_log_rebin_version_previous])
 printf,1,'[INFO] datacube '+root_name+'log_rebin 1'
 if mdap_log_rebin_version gt mdap_log_rebin_version_previous   or execute_all_modules eq 1 then begin
@@ -263,7 +277,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         emission_line_fluxes_tpl,emission_line_fluxes_tpl_err,emission_line_equivW_tpl,emission_line_equivW_tpl_err,wavelength_input=exp(log_wav_library_tpl),$
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,$
+        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
         extra_inputs=spectra_fittin_parameters_patial_binning_1,mask_range=mask_range,external_library=external_library,/quiet ;,$
    ;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
@@ -311,7 +325,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         stellar_kinematics_str,stellar_kinematics_str_err,stellar_weights_str,emission_line_kinematics_str,emission_line_kinematics_str_err,$
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
-        star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
+        star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=spectra_fittin_parameters_patial_binning_2,$
         mask_range=mask_range,external_library=external_library,/quiet
 ;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
@@ -348,7 +362,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
         MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_3,$
-        extra_inputs=spectra_fittin_parameters_patial_binning_3,/rest_frame_log,$
+        extra_inputs=spectra_fittin_parameters_patial_binning_3,/rest_frame_log,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
         mask_range=mask_range,external_library=external_library,/quiet;,$
 ;        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
    junk = size(emission_line_fluxes_ems) ;need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
@@ -374,14 +388,24 @@ if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block4c.idl'
 
 ;block5:
 ; BLOCK 5
-;*** MEASURE OF THE EQUIVALENT WIDTH OF ABSORPTION LINE INDICES *******************
-resolution_x_lick=[4000.,4400.,4900.,5400.,6000.]   ;CONTROLLARE
-lick_fwhm_y=[11.5,9.2,8.4,8.4,9.8]                     ;CONTROLLARE
-lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_tpl)
-rrr=poly_fit(wavelength_output_tpl,lick_resolution_tmp,4,yfit=lick_resolution)
+;*** MEASURE OF THE EQUIVALENT WIDTH OF ABSORPTION LINE INDICES
+;*******************
 
-fwhm_instr = wavelength_output_tpl*0.+2.73  ; ad hoc: I do not know the true one.
-fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0.0   ;fwhm in angstrom
+
+if n_elements(instrumental_fwhm_file) ne 0 then begin
+   fwhm_instr=interpol(fwhm_ang,ww,wavelength_output_tpl) 
+ endif else begin
+    fwhm_instr=wavelength_output_tpl*0.+2.54
+endelse
+
+;resolution_x_lick=[4000.,4400.,4900.,5400.,6000.]   ;CONTROLLARE
+;lick_fwhm_y=[11.5,9.2,8.4,8.4,9.8]                     ;CONTROLLARE
+;lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_tpl)
+;rrr=poly_fit(wavelength_output_tpl,lick_resolution_tmp,4,yfit=lick_resolution)
+miles_resolution = fwhm_instr*0.+2.54
+fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2)   ;fwhm in angstrom
+indici = where(finite(fwhm_diff_indices) NE 1)
+if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
 
 
 if mdap_measure_indices_version gt mdap_measure_indices_version_previous or execute_all_modules eq 1 then begin
@@ -389,7 +413,7 @@ if mdap_measure_indices_version gt mdap_measure_indices_version_previous or exec
    mdap_measure_indices,absorption_line_indices,wavelength_output_tpl,galaxy_minus_ems_fit_model_tpl,$
              best_template_tpl,best_template_LOSVD_conv_tpl,stellar_kinematics_tpl[*,0],residuals_tpl,$
              fwhm_diff_indices,abs_line_indices,abs_line_indices_errors,abs_line_indices_template,abs_line_indices_template_losvd,$
-             dir=output_dir,remove_outliers=5;,/noplot
+             dir=output_dir;,/noplot
    sxaddpar,header_2d,'BLOCK5',mdap_measure_indices_version,'mdap_measure_indices version'
    execute_all_modules = 1
 
@@ -405,10 +429,18 @@ if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block5.idl',
 
 ; BLOCK 6
 ;*** RADIAL PROFILE OF MEASURED QUANTITIES ***************************************
-;-- building error array from fit residuals 
-if mdap_spatial_radial_binning_version gt mdap_spatial_radial_binning_version_previous or execute_all_modules eq 1 then begin
-mdap_get_error_from_residual,residuals_ems,galaxy_minus_ems_fit_model_ems,input_errors
+;  ;-- building error array from fit residuals 
 
+if mdap_spatial_radial_binning_version gt mdap_spatial_radial_binning_version_previous or execute_all_modules eq 1 then begin
+;  mdap_get_error_from_residual,residuals_ems,galaxy_minus_ems_fit_model_ems,input_errors
+sz_ems=size(log_err_ems)
+nl=n_elements(wavelength_output_rest_frame_log)
+input_errors=fltarr(sz_ems[2],nl)
+log_step_gal=LOG_WAV_EMS[1]-LOG_WAV_EMS[0]
+for i = 0, sz_ems[2]-1 do begin
+   rf_gal_lam = exp(log_wav_ems-stellar_kinematics_ems[i,0]/velscale*(log_step_gal))
+   input_errors[i,*]=interpol(log_err_ems[*,i],rf_gal_lam,wavelength_output_rest_frame_log)
+endfor
 
 ;-- radial binning 
 ;v0.2spatial_binning_scheme
@@ -434,7 +466,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
           MW_extinction=MW_extinction,emission_line_file=emission_line_file_radial_binning,$
-          extra_inputs=spectra_fittin_parameters_patial_binning_readial,$
+          extra_inputs=spectra_fittin_parameters_patial_binning_readial,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix/3.,$
          ;extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
          range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,external_library=external_library,/quiet ;,$
    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
@@ -451,13 +483,23 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
 ;--
 ;stop
 ;--measurement of abs indices
-   lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_rbin)
-   rrr=poly_fit(wavelength_output_rbin,lick_resolution_tmp,4,yfit=lick_resolution)
-   fwhm_instr = wavelength_output_rbin*0.+2.73                           ; ad hoc: I do not know the true one.
-   fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0. ;fwhm in angstrom
+ ;  lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_rbin)
+ ;  rrr=poly_fit(wavelength_output_rbin,lick_resolution_tmp,4,yfit=lick_resolution)
+ ;  fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0. ;fwhm in angstrom
+
+   if n_elements(instrumental_fwhm_file) ne 0 then begin
+      fwhm_instr=interpol(fwhm_ang,ww,wavelength_output_rbin) 
+   endif else begin
+      fwhm_instr=wavelength_output_rbin*0.+2.54
+   endelse
+   miles_resolution = fwhm_instr*0.+2.54
+   fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
+   indici = where(finite(fwhm_diff_indices) NE 1)
+   if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
+
    mdap_measure_indices,absorption_line_indices,wavelength_output_rbin,galaxy_minus_ems_fit_model_rbin,$
         best_template_rbin,best_template_LOSVD_conv_rbin,stellar_kinematics_rbin[*,0],residuals_rbin,$
-        fwhm_diff_indices,abs_line_indices_rbin,remove_outliers=5,$
+        fwhm_diff_indices,abs_line_indices_rbin,$
         abs_line_indices_errors_rbin,abs_line_indices_template_rbin,abs_line_indices_template_losvd_rbin,dir=output_dir+'rbin_';,/noplot
 ;--
    sxaddpar,header_2d,'BLOCK6',mdap_spatial_radial_binning_version,'mdap_spatial_radial_binning_version'
