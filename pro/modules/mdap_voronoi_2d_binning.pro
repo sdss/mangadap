@@ -78,6 +78,15 @@
 ;               reasonable value to extract stellar kinematics
 ;               information from galaxy spectra.
 ;
+; OPTIONAL INPUTS:
+;
+; SN_CALIBRATION   If provided, the estimated signal-to-noise (SN_est)
+;                  is converted into the real signal-to-noise using the empirical
+;                  calibration function defined in mdap_calibrate_sn.pro:
+;
+;                    tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
+;                    SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
+;
 ; KEYWORDS:
 ;      /NO_CVT: Set this keyword to skip the Centroidal Voronoi Tessellation
 ;               (CVT) step (vii) of the algorithm in Section 5.1 of
@@ -104,6 +113,11 @@
 ;               If you use the /WVT keyword you should also include a reference to
 ;               `the WVT modification proposed by Diehl & Statler (2006).'
 ;
+; /weight_for_sn    If set, the spectra in the same spatial bin will be
+;                   weighted by $S/N^2$ before being added. If The voronoi binning scheme
+;                   is adopted, the S/N in the bin is computed via equation (3) of
+;                   Cappellari & Copin (2003), and the centers of the
+;                   spatial bins are computed by weighting spectra coordinates by $S/N^2$.
 ; OUTPUTS:
 ;       BINNUMBER: Vector (same size as X) containing the bin number assigned
 ;               to each input pixel. The index goes from zero to Nbins-1.
@@ -192,6 +206,7 @@
 ;            - Recalculate targetSN to have at least 1 bin. L.Coccato Oct 2013
 ;            - Usage of empirical calibraion between estimated S/N
 ;              and real S/N (mdap_calibrate_sn.pro)
+;            - optimal weighting by S/N^2 ( /weight_for_sn keyword).
 ;
 ;----------------------------------------------------------------------------
 
@@ -200,7 +215,7 @@ COMPILE_OPT IDL2, HIDDEN
 
 ; Computes weighted centroid of one bin.
 ; Equation (4) of Cappellari & Copin (2003)
-
+;indici = where(density gt 0)
 mass = total(density)
 xBar = total(x*density)/mass
 yBar = total(y*density)/mass
@@ -222,7 +237,7 @@ roundness = maxDistance/equivalentRadius - 1.0
 return, roundness
 end
 ;----------------------------------------------------------------------
-PRO bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, QUIET=quiet, SN_CALIBRATION=SN_CALIBRATION
+PRO bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, QUIET=quiet, SN_CALIBRATION=SN_CALIBRATION,weight_for_sn=weight_for_sn
 COMPILE_OPT IDL2, HIDDEN
 
 ; Implements steps (i)-(v) in section 5.1 of Cappellari & Copin (2003)
@@ -286,7 +301,7 @@ for ind=1,n do begin
         ;--end original
 
         ;-- start manga
-        SN_EST = total(signal[nextBin])/sqrt(total(noise[nextBin]^2))
+        if keyword_set(weight_for_sn) then SN_EST = sqrt(total((signal[nextBin]/noise[nextBin])^2))  else SN_EST = total(signal[nextBin])/sqrt(total(noise[nextBin]^2))
         SN = SN_EST
         if n_elements(sn_calibration) ne 0 then SN = mdap_calibrate_sn(SN_EST,n_elements(nextBin),sn_calibration)
         
@@ -296,21 +311,12 @@ for ind=1,n do begin
         ; current bin, whether the POSSIBLE new bin is round enough
         ; and whether the resulting S/N would get closer to targetSN
         ;
-        ;start original version
-        ;if ((sqrt(minDist) gt 1.2*pixelsize) or (roundness gt 0.3) $
-        ;     or (abs(SN-targetSN) gt abs(SNOld-targetSN))) then begin
-        ;        if (SNOld gt 0.8*targetSN) then good[currentBin] = 1
-        ;        break
-        ; endif
-        ;end original version
-
-        ;start manga version
+       
         if ((sqrt(minDist) gt 1.2*pixelsize) or (roundness gt 0.3) $
              or (abs(SN-targetSN) gt abs(SNOld-targetSN))) then begin
                 if (SNOld gt 0.8*targetSN) then good[currentBin] = 1
                 break
         endif
-        ;end manga version
 
         ; If all the above tests are negative then accept the CANDIDATE pixel,
         ; add it to the current bin, and continue accreting pixels
@@ -425,14 +431,16 @@ REPEAT BEGIN
     FOR j=0,m-1 DO BEGIN
         k = w[j]                 ; Only loop over nonzero bins
         index = r[r[k]:r[k+1]-1] ; Find subscripts of pixels in bin k.
+        ;if keyword_set(weight_for_sn) then bin2d_weighted_centroid, x[index], y[index], dens[index], xb, yb else  bin2d_weighted_centroid, x[index], y[index], dens[index]^2, xb, yb
         bin2d_weighted_centroid, x[index], y[index], dens[index]^2, xb, yb
         xnode[k] = xb
         ynode[k] = yb
         ;start original version
         ;sn[k] = total(signal[index])/sqrt(total(noise[index]^2))
         ;end original version
-
+        if finite(xb) ne 1 or finite(yb) ne 1 then stop
         ;start manga version
+        ;if keyword_set(weight_for_sn) then sn_est = total(sqrt((signal[index]/noise[index])^2)) else sn_est = total(signal[index])/sqrt(total(noise[index]^2))
         sn_est = total(signal[index])/sqrt(total(noise[index]^2))
         sn[k] = sn_est
         if n_elements(sn_calibration) ne 0 then sn[k] =mdap_calibrate_sn(sn_est,n_elements(index),sn_calibration)
@@ -443,6 +451,7 @@ REPEAT BEGIN
 
     if keyword_set(wvt) then scale = sqrt(area/sn) ; Eq. (4) of Diehl & Statler (2006)
     diff = TOTAL((xnode-xnodeOld)^2+(ynode-ynodeOld)^2)
+    
     iter = iter + 1
 
     if not keyword_set(quiet) then $
@@ -458,7 +467,7 @@ ynode = ynode[w]
 END
 ;-----------------------------------------------------------------------
 pro bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, $
-    class, xbar, ybar, sn, area,SN_CALIBRATION=SN_CALIBRATION
+    class, xbar, ybar, sn, area,SN_CALIBRATION=SN_CALIBRATION,weight_for_sn=weight_for_sn
 COMPILE_OPT IDL2, HIDDEN
 
 ; Recomputes (Weighted) Voronoi Tessellation of the pixels grid to make sure
@@ -482,8 +491,9 @@ xbar = fltarr(nbins)
 ybar = xbar
 sn = xbar
 FOR j=0,nbins-1 DO BEGIN
+   if area[j] eq 0 then continue
     index = r[r[j]:r[j+1]-1] ; Find subscripts of pixels in bin j.
-    bin2d_weighted_centroid, x[index], y[index], signal[index], xb, yb
+    if keyword_set(weight_for_sn) then bin2d_weighted_centroid, x[index], y[index], (signal[index]/noise[index])^2, xb, yb  else bin2d_weighted_centroid, x[index], y[index], signal[index], xb, yb
     xbar[j] = xb
     ybar[j] = yb
     ;start original version
@@ -491,7 +501,7 @@ FOR j=0,nbins-1 DO BEGIN
     ;end original version
 
     ;start manga version
-    sn_est = total(signal[index])/sqrt(total(noise[index]^2))
+    if keyword_set(weight_for_sn) then sn_est = sqrt(total( (signal[index]/noise[index])^2)) else sn_est =  total(signal[index])/sqrt(total(noise[index]^2))
     sn[j] = sn_est
     if n_elements(sn_calibration) ne 0 then sn[j] =mdap_calibrate_sn(sn_est,n_elements(index),sn_calibration)
     ;if sn[j] le 50 then stop
@@ -517,7 +527,7 @@ END
 ;----------------------------------------------------------------------
 PRO mdap_voronoi_2d_binning, x, y, signal, noise, targetSN, $
     class, xNode, yNode, xBar, yBar, sn, area, scale, $
-    NO_CVT=no_cvt, PLOT=plot, QUIET=quiet, WVT=wvt,SN_CALIBRATION=SN_CALIBRATION
+    NO_CVT=no_cvt, PLOT=plot, QUIET=quiet, WVT=wvt,SN_CALIBRATION=SN_CALIBRATION,weight_for_sn=weight_for_sn
 COMPILE_OPT IDL2
 ON_ERROR, 2
 ;
@@ -540,8 +550,8 @@ if not array_equal(noise ge 0, 1) then message, 'NOISE cannot be negative'
 ; Perform basic tests to catch common input errors
 
 if targetSN le 1 then goto, no_signal
-
-if total(signal)/sqrt(total(noise^2)) lt targetSN then begin ;$
+if keyword_set(weight_for_sn) then sn_total_eval = sqrt(total((signal/noise)^2)) else sn_total_eval =  total(signal)/sqrt(total(noise^2))
+if  sn_total_eval lt targetSN then begin ;$
   ;  message, 'Not enough S/N in the whole set of pixels. ' $
   ;      + 'Many pixels may have noise but virtually no signal. ' $
   ;      + 'They should not be included in the set to bin, ' $
@@ -562,21 +572,23 @@ endif
 noise = noise > min(noise[where(noise gt 0)])*1e-9
 
 if not keyword_set(quiet) then print, 'Bin-accretion...'
-bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, SN_CALIBRATION=SN_CALIBRATION,QUIET=quiet
+bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, SN_CALIBRATION=SN_CALIBRATION,QUIET=quiet,weight_for_sn=weight_for_sn
 if min(class) eq 0 and max(class) eq 0  then begin
    targetSN = targetSN*.8
    goto,redo_with_less_sn_min
 endif
 if not keyword_set(quiet) then print, strtrim(max(class),2), ' initial bins.'
 if not keyword_set(quiet) then print, 'Reassign bad bins...'
+
 bin2d_reassign_bad_bins, x, y, signal, noise, targetSN, class, xnode, ynode
 if not keyword_set(quiet) then print, strtrim(n_elements(xnode),2), ' good bins.'
-if not keyword_set(no_cvt) then begin
+if ~keyword_set(no_cvt) and ~keyword_set(weight_for_sn) then begin
     if not keyword_set(quiet) then print, 'Modified Lloyd algorithm...'
+    print, 'Modified Lloyd algorithm...'
     bin2d_cvt_equal_mass, x, y, signal, noise, xnode, ynode, scale, iter, QUIET=quiet, WVT=wvt, SN_CALIBRATION=SN_CALIBRATION
    if not keyword_set(quiet) then  print, STRTRIM(iter-1,2), ' iterations.'
 endif else scale = 1.0
-bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, SN_CALIBRATION=SN_CALIBRATION
+bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, SN_CALIBRATION=SN_CALIBRATION,weight_for_sn=weight_for_sn
 w1 = where(area eq 1, COMPLEMENT=w2, m)
 if not keyword_set(quiet) then print, 'Unbinned pixels: ', m, ' / ', npix, FORMAT='(a,g0,a,g0)'
 if not keyword_set(quiet) then print, 'Fractional S/N scatter (%):', stddev(sn[w2]-targetSN)/targetSN*100

@@ -232,12 +232,14 @@ FUNCTION CREATE_GAUSSN, X=x, PARS=newpars,INT_DISP_PIX2=int_disp_pix2
 npars=n_elements(newpars)
 npix = n_elements(x)
 y=fltarr(npix)
-;int_disp_pix2=(int_disp_pix)^2
+;stop
+;k=0
 FOR i=0, npars-3, 3 DO BEGIN
-    newpars[i+2] = sqrt(newpars[i+2]*newpars[i+2] + int_disp_pix2)
+    newpars[i+2] = sqrt(newpars[i+2]^2 + int_disp_pix2)
     w=(findgen(n_elements(x))-newpars[i+1])/newpars[i+2]
     tmp=newpars[i]*EXP(-w^2/2.)
     y=y+tmp
+    ;k=k+1
 ENDFOR
 
 return, y
@@ -272,6 +274,7 @@ gaus = dblarr(npix,nlines)
 ; single line (like Hb) or to each main line of a multiplet (like
 ; [OIII]5007)
 
+int_disp_pix2_=int_disp_pix2[i_lines]
 for i = 0,nlines-1 do begin
     ; Create the emission-line templates. 
     if not keyword_set(for_errors) then begin
@@ -279,10 +282,10 @@ for i = 0,nlines-1 do begin
         ; than the NNLS weight assigned to each template will actually correspond 
         ; to the emission-line amplitude.
         ampl_i = emission_setup.a[i_lines[i]] 
-        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[ampl_i,pars[2*i:2*i+1]],INT_DISP_PIX2=int_disp_pix2)
+        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[ampl_i,pars[2*i:2*i+1]],INT_DISP_PIX2=int_disp_pix2_[i])
     endif else begin
         ; Make Gaussian templates amplitudes specified by the input pars array
-        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[pars[3*i:3*i+2]],INT_DISP_PIX2=int_disp_pix2)
+        gaus[*,i]=create_gaussn(X=findgen(npix),PARS=[pars[3*i:3*i+2]],INT_DISP_PIX2=int_disp_pix2_[i])
     endelse
 endfor
 
@@ -291,7 +294,7 @@ endfor
 ; we just created in a)
 i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
 n_slines = n_elements(i_slines)
-
+int_disp_pix2_=int_disp_pix2[i_slines]
 if i_slines[0] ne -1 then begin
     ; loop over the satellite lines
     for i = 0,n_slines-1 do begin
@@ -333,13 +336,13 @@ if i_slines[0] ne -1 then begin
             
             gaus_sline = create_gaussn(X=findgen(npix), $
                                        PARS=[a_sline,pars[i_mline*2]-offset,pars[i_mline*2+1]], $
-                                       INT_DISP_PIX2=int_disp_pix2)
+                                       INT_DISP_PIX2=int_disp_pix2_[i])
         endif else begin
             a_sline = emission_setup.a[j]*pars[i_mline*3]
            
             gaus_sline = create_gaussn(X=findgen(npix), $
                                        PARS=[a_sline,pars[i_mline*3+1]-offset,pars[i_mline*3+2]], $
-                                       INT_DISP_PIX2=int_disp_pix2)
+                                       INT_DISP_PIX2=int_disp_pix2_[i])
         endelse
         gaus[*,i_mline] = gaus[*,i_mline] + gaus_sline 
         
@@ -821,7 +824,7 @@ if keyword_set(log10) then offset  = (alog10(lambda0)-l0_gal)/lstep_gal
 sol_final = dblarr(nlines*4)
 ; make room for the E(B-V) reddening value(s) in the final solution vector
 if n_elements(reddening) ne 0 then sol_final = dblarr(nlines*4+n_elements(reddening))
-
+int_disp2_ = int_disp[i_lines]^2
 k=0 & h=0
 for i=0,nlines-1 do begin
     if not keyword_set(for_errors) then begin
@@ -839,7 +842,7 @@ for i=0,nlines-1 do begin
         sol_final[k+3] = abs(res[h+2]*velscale)                ; Sigma (intrinsic!) of the Emission lines [km/s]
     endelse
     ; Sigma (as observed!)
-    sigma          = sqrt(sol_final[k+3]^2. + int_disp^2.)
+    sigma          = sqrt(sol_final[k+3]^2. + int_disp2_[i])
     ; Flux of the Emission lines
     sol_final[k]   = sol_final[k+1]* sqrt(2*!pi) * sigma * lambda0[i] * exp(sol_final[k+2]/c)/c 
     k=k+4
@@ -885,7 +888,7 @@ if keyword_set(err) then begin
                 ampls_i   = sol_final[k+1] + esol_final[k+1]*randomn(seed,100)
                 vels_i    = sol_final[k+2] + esol_final[k+2]*randomn(seed,100)
                 sigmas_i  = sol_final[k+3] + esol_final[k+3]*randomn(seed,100)
-                sigmas_i  = sqrt(sigmas_i^2. + int_disp^2.)
+                sigmas_i  = sqrt(sigmas_i^2. + int_disp2_[i])
                 for j=0,99 do begin 
                     fluxes_i[j] = ampls_i[j]* sqrt(2*!pi) * sigmas_i[j] * lambda0[i] * exp(vels_i[j]/c)/c 
                 endfor
@@ -1000,6 +1003,7 @@ IF n_elements(reddening) GT 0 AND degree NE -1 THEN message, 'Reddening & polyno
 IF n_elements(reddening) GT 0 AND mdegree NE 0 THEN message, 'Reddening & polynomial adjust. cannot be used together'
 IF n_elements(reddening) GT 2 THEN message, 'Sorry, can only deal with two dust components...'
 
+
 ; ------------------------------------
 ; First of all find the emission-lines which we are effectively going
 ; to fit.  That is, exclude from the input structure the lines that
@@ -1086,6 +1090,7 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
 best_pars = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
              FTOL=1d-2, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
 ;
+
 if errmsg ne '' then begin
     print, errmsg
     error = best_pars*0.0

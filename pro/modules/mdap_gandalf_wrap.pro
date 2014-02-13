@@ -143,7 +143,8 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
        quiet=quiet,FOR_ERRORS=FOR_ERRORS,$
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
        range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,$
-       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library
+       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,$
+       INT_DISP=INT_DISP,status = status
 
 
 
@@ -173,16 +174,10 @@ if n_elements(mask_range) ne 0 then begin
 endif
 
 
-int_disp = 0.
-;-
-
-
 l0_gal   = loglam_gal[0];sxpar(hdr_gal,'CRVAL1')
 lstep_gal = loglam_gal[1]-loglam_gal[0];sxpar(hdr_gal,'CD1_1')
 l0_templ = loglam_templates[0]
 lstep_templ = loglam_templates[1] - loglam_templates[0]
-
-
 
 
 offset = 0.
@@ -242,7 +237,7 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 ; H) PPXF fit! Fit only V and sigma
 ; A constant additive polynomial (degree=0) is used in together with
 ; the multiplicative polynomials (always recommended).
-
+INT_DISP_ = INT_DISP(where(emission_setup.action ne 'i') and where(emission_setup.action ne 'ski')) ;remove ignored ems lines from the int_disp vector
 if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
 
 
@@ -254,10 +249,12 @@ indici_neg = where(galaxy le 0)
 if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
 if ~keyword_set(fix_star_kin) then begin
 ;stop
-mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol,$
-    goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,$
-       range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=junk,$
-       external_library=external_library
+d = execute('mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol, goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=bestfit_ppxf, weights=weights_ppxf,external_library=external_library')
+    if d eq 0 then begin
+       status = 0
+       return
+    endif
+
 endif else begin
    ppxfsol = [start_[0]+offset,start_[1],start_[2],start_[3],0.,0.,start_[4],start_[5]]
    ERROR_stars = fltarr(6)+99.
@@ -308,20 +305,42 @@ sol_star = [ppxfsol[0],ppxfsol[1],ppxfsol[2],ppxfsol[3],0,0,-1]
 mdegree_=mdegree
 if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
 
-;stop
-;warning, if the noise vector is not defined, do not run gandalf, but set
-;the gandalf outputs to dummy values to have the workflow continue
-;without crashing.
+
+
 if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
-mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup, $
-  l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=50., $
-  BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
-  L0_TEMPL=l0_templ,DEGREE=-1, MDEGREE=mdegree_, $
-  /FOR_ERRORS, ERROR=esol,$
-  REDDENING=REDDENING,$
-  fix_gas_kin=fix_gas_kin,$
-  range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,$
-       external_library=external_library
+
+d = execute('mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup,'+ $
+  'l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=INT_DISP_,' +$
+  'BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights,' +$
+  'L0_TEMPL=l0_templ,DEGREE=-1, MDEGREE=mdegree_,' +$
+  '/FOR_ERRORS, ERROR=esol,'+$
+  'REDDENING=REDDENING,'+$
+  'fix_gas_kin=fix_gas_kin,'+$
+  'range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,'+$
+       'external_library=external_library')
+if d eq 0 then begin
+
+
+   gas_intens = fltarr(n_elements(eml_i));gas_intens[1:*]
+   gas_intens_err =fltarr(n_elements(eml_i));gas_intens_err[1:*] 
+   gas_ew = fltarr(n_elements(eml_i));gas_ew[1:*] 
+   gas_ew_err =fltarr(n_elements(eml_i));gas_ew_err[1:*]
+   gas_fluxes =fltarr(n_elements(eml_i));gas_fluxes[1:*]
+   gas_fluxes_err =fltarr(n_elements(eml_i));gas_fluxes_err[1:*]
+   if n_elements(reddening) ne 0 then REDDENING=[0.,0.]
+   if n_elements(reddening) ne 0 then err_reddening=[99,99]
+   sol =[sol_star,0./0.,0./0.]
+   sol[0] = sol[0] - offset
+   weights=weights_ppxf
+   bestfit=bestfit_ppxf
+   sol_gas_AoN = fltarr(n_elements(eml_i)) 
+   bf_comp2 = bestfit_ppxf*0.
+   error = [error_stars,99.,99.]
+
+  ; status = 0
+   return
+endif
+;stop
 sol=temporary(ppxfsol)
 fitted_pixels=goodpixels
   ;REDDENING=[0.05]
