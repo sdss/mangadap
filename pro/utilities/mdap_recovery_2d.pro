@@ -80,15 +80,15 @@ if ~keyword_set(voronoi_binning) then begin ; the field at position (x,y) is equ
       for i = 0, sz[1]-1 do begin           ; They are the closest point + everything within +/-min_dist
          dist = sqrt( (data1.x-x2d[i,j])^2 + (data1.y-y2d[i,j])^2 )
          indici = where(dist le min(dist)+min_dist)
-         map2d[i,j] =mean(quantity[indici])
+         if indici[0] ne -1 then map2d[i,j] =mean(quantity[indici])
       endfor
    endfor
    indici = where(binning_map1 eq -1)
-   map2d[indici] = 0./.0
+   if indici[0] ne -1 then map2d[indici] = 0./.0
 endif else begin                            ; I mantain the voronoi binning geometry. Use it only for datacubes, as it is not precise for RSS spectra.
    for i = 0, max(binning_map1) do begin
       indici = where(binning_map1 eq i)
-      map2d[indici] = quantity[i]
+     if indici[0] ne -1 then  map2d[indici] = quantity[i]
    endfor
 endelse
 
