@@ -23,8 +23,8 @@
   16     NI      5197.90 m	l	1.000	   0	30	f
   17     NI      5200.39 m      l	1.000	   0	30	f
   18	 HeI	 5875.60 m	l	1.000	   0	30	f
-  19     NaI     5890.00 m      l      -1.000      0    30      f
-  20     NaI     5896.00 m      l      -1.000      0    30      f
+#  19     NaI     5890.00 m      l      -1.000      0    30      f
+#  20     NaI     5896.00 m      l      -1.000      0    30      f
   21     OI	 6300.20 m	l	1.000	   0	30	f
   22     OI	 6363.67 m	l  	0.333	   0	30	f
   23	 NII	 6547.96 m	l  	0.340	   0	30	f
@@ -44,33 +44,3 @@
   37	 SIII    8830.90 m 	l	1.000	   0	30	f
   38	 SIII    9069.00 m 	l	1.000	   0	30	f
   39	 SIII    9531.80 m 	l	1.000	   0	30	f
-#
-#
-#
-# Sky lines - used to mask out regions affected by an imperfect
-#             subtraction of the sky emission. Sky lines may also be
-#             fitted instead of being subtracted.
-#
-#  90      sky     5577.00 m      l       1.000      0    10      f
-#  91      sky     6300.00 m      l       1.000      0    10      f
-#  92      sky     6363.00 m      l       1.000      0    10      f
-#
-# NaD - use to exclude regions affected by interstellar absorption, or
-#       to reproduce such features through the use of negative
-#       Gaussians, sharing the same velocity profile
-#
-#
-# BLR - to share the same position and width, but not necessarly
-#       abiding to the same Balmer decrement as for the narrow
-#       recombination lines
-#
-# 209     Hd_br   4101.73 m      l       1.000      0    1000    t224
-# 210     Hg_br   4340.46 m      l       1.000      0    1000    t224
-# 215     Hb_br	  4861.32 m	 l 	 1.000	    0	 1000	 t224
-# 224     Ha_br   6562.80 m	 l 	 1.000	    0	 1000	 f
-#
-# [OIII] blue wings - use a negative V_g offset to help achieving the
-#                     desired profile.
-#
-# 316	  [OIII]w 4958.83 m	 d317	 0.350	 -200  	 10	 f
-# 317	  [OIII]w 5006.77 m	 l	 1.000	 -200    10	 f
