@@ -34,6 +34,12 @@ output_root_dir='/home/UNI/coccatol/argo4/MANGA/'
 #
 w_range_for_sn_computation = [5560.00, 6942.00]
 #
+# You can specify a differen lambda range to compute the signal and noise for the emission line science.
+# If defined, the wavelength rage will be redshifted to match the galaxy systemic velocity (taken from the starting guess)
+# If not defined, the w_range_for_sn_computation_for_gas will be set as w_range_for_sn_computation, with no redshift applied
+#
+# This examples uses the region around Halpha+NII
+# w_range_for_sn_computation_for_gas = [6530.,6600.]
 #------------------------------- 
 #
 # Wavelength range to consider for the analysis. Galaxy spectra will be trimmed according to 
