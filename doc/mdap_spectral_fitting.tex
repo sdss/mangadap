@@ -1,0 +1,199 @@
+\subsection{{\tt mdap\_spectral\_fitting.pro}}
+\label{dap_sec:mdap_spectral_fitting}
+
+This module is responsable for i) arranging the inputs from previous
+modules/blocks and feed them into the actual spectral fitting
+procedure, and ii) re-arrange the outputs of the spectral fitting
+procedure for further processing.
+
+For each of the input galaxy spectra, the mdap\_spectral\_fitting
+module performs the following steps
+
+
+\begin{itemize}
+
+\item corrects the input spectrum by the Milky Way reddening, if
+  provided. The correction is done using the mdap\_dust\_calzetti.pro
+  provided within the GALDALF package, by M. Sarzi (see Section
+  \ref{dap_sec:mdap_dust_calzetti}).
+
+\item fits the de-reddened input spectrum with a set of stellar
+  templates and Gaussian emission lines to get the absorption and
+  emission line kinematics, the emission lines fluxes and equivalent
+  widths, the weighs of the stellar templates, the best fit models for
+  stars and gas, the best fitting stellar template and the best
+  fitting stellar template convolved by the LOSVD, the residuals, and
+  the reddening (if required).
+
+\item Resamples the output spectra over a constant $\lambda$/pixel
+  wavelength vector.
+
+\end{itemize}
+
+
+The list of input/output parameters is given in Table
+\ref{dap_tab:mdap_spectral_fitting}.
+
+
+
+%\begin{table}
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_spectral\_fitting.pro} \label{dap_tab:mdap_spectral_fitting} \\
+\hline
+\endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline
+{\bf  INPUTS} &  \\
+ galaxy &     [MxN  dblarray]. It contains the N galaxy spectra to fit, logarithmically 
+              sampled (natural log). Units: 1e-17 erg/s/cm$^2$/Angstrom.\\
+%
+  noise &     [MxN  dblarray]. It contains the N error vectors for the
+              N galaxy spectra. Same units as galaxy.\\
+%
+  loglam\_gal& [M dblarray]. It contains the log wavelength values where
+             galaxy and noise spectra are sampled. \\
+%
+  templates & [MM x NN dblarray].  It contains the NN stellar template
+            spectra, logarithmically sampled at the same \kms/pixel as the
+            galaxy spectra. Same units as galaxy, except an arbitrary
+            multiplicative factor.\\
+%
+ loglam\_templates & [MM dblarray]. It contains the log wavelength values where
+            templates are sampled. \\
+%
+ velscale & [float].  Defines the sampling of the input spectra, in \kms/pixel.\\
+%;
+\hline
+%
+{\bf OPTIONAL INPUTS } &  \\
+ extra\_inputs & [string array] It contains other inputs
+               that might be used in the fitting procedure, such as
+               the number of polinomyal degree. Variable will be
+               initialized with the IDL execute command.
+                    {\tt for i = 0, n\_elements(extra\_inputs)-1 do d = execute(extra\_inputs[i])}
+               EXAMPLE:  
+                {\tt extra\_inputs=['MOMENTS=2','DEGREE=-1','BIAS=0', 
+                'reddening=0', 'LAMBDA=exp(loglam\_gal)']}\\       
+%           
+ star\_kin\_starting\_ guesses& [N x 4 fltarray]. The stellar kinematics starting guesses for V, 
+                           $\sigma$, H3, and H4 for the N galaxy spectra to fit.
+                           Default values are 0. for V, H3, and H4, and 50 km/sec for sigma. 
+                           Starting guesses values are overrided by
+                           the /use\_ previos\_ guesses keyword, if set.\\
+%
+ gas\_kin\_starting\_ guesses & [N x 2 fltarray]. The emission line kinematics starting guesses for V, 
+                           $\sigma$, for the N galaxy spectra to fit.
+                           Default values are 0 \kms\ for V, and 50 \kms\ for sigma. 
+                           Starting guesses values are overrided by
+                           the /use\_previos\_guesses keyword, if set.\\
+%
+ MW\_extinction &  [float].  Milky-way extinction value at the target position (MAG). If non-zero,
+                 the input N galaxy spectra will be de-reddened using the mdap\_dust\_calzetti.pro 
+                 routine before fitting. Default= 0 mag.\\
+%;
+ emission\_line\_ file &[string]. It contains the name of the file with the information of the
+                    emission lines to be fitted. The input file must be an ascii file with the 
+                    following columns (comments starts with ''\#''):
+  
+                    {\tt 
+                    \#  ID  CODE \  wav  \ action  line    Int	Vel     $\sigma$ mode
+
+                    \#  \ \ \ \ \ \ \  \ \ [\AA]  \ \ f/i/m   dbl?
+
+                    \#   0   HeII\ \ 3203.15  \   m \ \ \ l   \  \ 1.0	\   0 \	10 	t25
+
+                    \#   1   [NeV]  3345.81 \    m  \ \ \ l    \ \ 1.0  \   0 \   10      t25
+
+                    \ \  2   [NeV]  3425.81  \   m  \ \ \ l   \ \ 1.0   \  0  \  10      t25
+
+                    \ \  3   [OII]  3726.03   \ m  \ \ \ l   \ \  1.0 \	   0 \	10 	t25 }
+
+                      P.S. mdap\_sgandalf.pro will use only wavelength and sign(Intensity).\\
+                      %Other entries are used by mdap\_gandalf (see gandalf.pro help for more information) \\
+%
+ range\_v\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity (in \kms). Default: starting\_guess $\pm$ 2000 \kms.\\
+%;
+ range\_s\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity dispersion (in \kms). Default: $21 < \sigma < 499$ \kms.\\
+%;
+ range\_v\_gas   &[2 elements array]. It specifies the boundaries for the emission line best fit velocity (in \kms) Default: starting\_guess $\pm$ 2000 \kms.\\
+%;
+ range\_s\_gas &[2 elements array]. It specifies the boundaries for the
+             emission line best fit velocity dispersion (in \kms). Default:
+             starting\_guess $\pm$ 2000\kms.\\
+%;
+ wavelength\_input  &[QQ elements array]. If specified, it will be used to create wavelength\_output, i.e. the wavelength
+                  vector to interpolate the final results on.\\
+%
+\hline
+ {\bf OPTIONAL KEYWORDS}  &  \\
+%;
+ /use\_previos\_ guesses &  If set, the starting guesses for spectrum $i-$th
+                       will be the best fit values from spectrum
+                      $(i-1)-$th (i$>0$). Input starting guesses will be ignored.\\
+%;
+ /fix\_star\_kin  &        If set, the stellar kinematics are not
+                       fitted. The return values is that of the starting guesses. \\
+%
+ /fix\_gas\_kin   &        If set, the emission-lines kinematics are not fitted. The return values is that of the starting guesses. \\
+%
+/quiet     &            If set, some information are not printed on screen.\\
+/rest\_ frame\_log & If set, the output spectra (galaxy\_minus\_ ems\_fit\_model, best\_fit\_model, residuals, 
+             best\_template, and best\_template\_LOSVD\_conv) are produced at rest-frame wavelength.\\
+%%
+\hline
+%
+ {\bf OUTPUTS} &  \\
+%;
+  stellar\_ kinematics   &  [N x 5 flt array].  It contains the best fit values of V, $\sigma$, h3, h4, and $\chi^2$/DOF for each of the N fitted input galaxy spectra. If /fix\_star\_kin is set, the array is not defined.\\
+%;
+  stellar\_ kinematics\_err &[N x 5 flt arrary].  It contains the errors to the best fit values of V, $\sigma$, h3, h4, and $\chi^2$/DOF for each of the N fitted input galaxy spectra.\\
+%;
+  stellar\_weights        &[N x NN dbl array]. It contains the weights of the NN templates for each of the N input galaxy spectra.\\
+%;
+  emission\_line\_ kinematics &[N x 2 flt array].  It contains the best fit values of V, $\sigma$ (emission lines) for each of the N fitted
+                            input galaxy spectra. If /fix\_gas\_kin is set, the array is not defined.\\
+%;
+ emission\_line\_ kinematics\_err & [N x 2 flt array].  It contains the errors to the best fit values of V, $\sigma$ (emission lines) for each of the N fitted input galaxy spectra. If /fix\_gas\_kin is set, the array is not defined.\\
+%;
+ emission\_line\_ fluxes  &[N x T flt array].  It contains the fluxes of the T fitted emission lines for each of the N input galaxy spectra. Values are corrected for reddening.\\
+%
+ emission\_line\_ fluxes\_err &  [N x T flt array].  Errors associated to emission\_line\_fluxes \\
+%
+ emission\_line\_ equivW      & [N x T flt array]. It contains the Equivalent widths of the T fitted emission lines for each of the N input galaxy spectra.                            Equivalent widths are computed by the ratio of emission\_line\_fluxes and the median value of the stellar spectrum within 5 and 10 $\sigma$ from the emission line. $\sigma$ is the emission line velocity dispersion. \\
+%
+ emission\_line\_ equivW\_err  & [N x T flt array]. Errors associated to emission\_line\_equivW  . \\
+%
+ wavelength\_output     & [QQ elements flt array]. It will contain the linear wavelength values over which the output spectra are sampled. 
+       Default: it is set to wavelength\_input (if defined), or automatically computed with the smallest lambda/pixel step obtained  from exp(loglam\_gal).\\
+%
+ best\_fit\_model      &[N x QQ flt array]. It will contain the best fit models for each of the input galaxy spectra (dereddended if 
+                       MW\_extinction is not zero), sampled over wavelength\_output. It is in rest-frame if the keyword /rest\_frame\_log is set. \\
+%
+ galaxy\_minus\_ ems\_fit\_model &[N x QQ flt array]. It will contain the input galaxy spectra minus the emission lines best fit models (dereddended if MW\_extinction is not zero), 
+                      sampled over wavelength\_output, for each of the N input spectra. It is in rest-frame if the keyword /rest\_frame\_log is set\\
+%
+ best\_template &[N x QQ flt array]. It will contain the best fitting template for each of the N input galaxy spectra sampled over wavelength\_output (rest frame wavelength). \\
+%
+ best\_template\_ LOSVD\_conv &[N x QQ flt array]. It will contain the best fitting template for each of the N input galaxy spectra convolved by best fitting 
+LOSVD and sampled over wavelength\_output (rest frame wavelength).\\
+%
+ reddening\_ output &[float]. best fit value for the reddening, if the fit is required (otherwise the variable is not defined). To fit the reddening, you have to pass a 
+                        starting guess value and the LAMBDA = exp(loglam\_gal) vector through the extra\_keyword parameter. Example: extra\_inputs = ['reddening=0', 'LAMBDA=exp(loglam\_gal)'].\\
+% 
+ residuals &[N x QQ flt array]. It contains the difference between the observed galaxy spectra (dereddened if the MW\_reddening is defined) and the best\_fit\_model, 
+                            sampled over wavelength\_output. It is in rest-frame if the keyword /rest\_frame\_log is set\\
+%
+\hline
+{\bf  OPTIONAL OUTPUTS} &  \\
+version & string specifying the module version. If requested, the module is not execute and only version flag is returned.\\
+\hline
+\end{longtable}
+\end{center}

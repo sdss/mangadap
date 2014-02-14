@@ -1,0 +1,105 @@
+\section{{\tt mdap\_do\_log\_rebin.pro}}
+\label{dap_sec:mdap_do_log_rebin}
+
+This module is called by the mdap\_log\_rebin.pro interface and
+performs the actual logarithmic resampling. It has been originally
+written by M. Cappellari within the ppxf package. Here we report the
+original description of the procedure written by M. Cappellari.
+
+\medskip
+
+ NAME: MDAP\_DO\_LOG\_REBIN
+
+\medskip
+
+ PURPOSE: Logarithmically rebin a spectrum, while rigorously
+ conserving the flux (if the keyword $\backslash$flux is set).
+ Basically the photons in the spectrum are simply ridistributed
+ according to a new grid of pixels, with non-uniform size in the
+ spectral direction.
+
+ This routine makes the `standard' zero-order assumption that the
+ spectrum is *constant* within each pixels. It is possible to perform
+ log-rebinning by assuming the spectrum is represented by a piece-wise
+ polynomial of higer degree, while still obtaining a uniquely defined
+ linear problem, but this reduces to a deconvolution and amplifies
+ noise.
+
+ This same routine can be used to compute approximate errors of the
+ log-rebinned spectrum. To do this type the command:
+    \[
+        {\rm MDAP\_DO\_LOG\_REBIN, lamRange, err}^2{\rm , err2New}
+    \]
+ and the desired errors will be given by SQRT(err2New).  NB: This
+ rebinning of the error-spectrum is very *approximate* as it does not
+ consider the correlation introduced by the rebinning!
+
+The list of inputs/outputs of the mdap\_do\_log\_rebin.pro is given in
+Table \ref{dap_tab:mdap_do_log_rebin}.
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_do\_log\_rebin.pro} \label{dap_tab:mdap_do_log_rebin} \\
+\hline
+\endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline
+{\bf  INPUTS} &  \\
+\hline
+LAMRANGE & two elements vector containing the central wavelength
+       of the first and last pixels in the spectrum, which is assumed
+       to have constant wavelength scale! E.g. from the values in the
+       standard FITS keywords: LAMRANGE = CRVAL1 + [0, CDELT1 * (NAXIS1-1)].
+       It must be LAMRANGE[0] < LAMRANGE[1].\\
+%
+SPEC:& N elements array. The input spectrum. \\
+%
+\hline
+{\bf  OUTPUTS} &  \\
+\hline
+SPECNEW & M elements array. The logarithmically rebinned spectrum. \\
+%
+ LOGLAM & log(lambda)M elements array. natural logarithm (ALOG) of the central 
+       wavelength of each pixel. This is the log of the geometric 
+       mean of the borders of each pixel.\\
+%
+\hline
+{\bf  OPTIONAL KEYWORDS} &  \\
+\hline
+/FLUX: & Set this keyword to preserve total flux. In this case the 
+       log rebinning changes the pixels flux in proportion to their 
+       dLam so the following command will show large differences 
+       beween the spectral shape before and after LOG\_REBIN:
+
+       \medskip
+
+        \ \   {\tt plot, exp(logLam), specNew}  
+
+       \smallskip
+
+        \ \   {\tt oplot, range(lamRange[0],lamRange[1],n\_elements(spec)), spec}
+
+       \medskip
+
+       By default, when this keyword is *not* set, the above two lines
+       produce two spectra that almost perfectly overlap each
+       other. Do not set /flux for MaNGA data.\\
+%
+OVERSAMPLE: & Oversampling can be done, not to loose spectral resolution, 
+       especally for extended wavelength ranges and to avoid aliasing.
+       Default: OVERSAMPLE=1, i.e. Same number of output pixels as input.\\
+%
+VELSCALE: &velocity scale in km/s per pixels. If this variable is
+       not defined, then it will contain in output the velocity scale.
+       If this variable is defined by the user it will be used
+       to set the output number of pixels and wavelength scale.\\
+\hline
+\end{longtable}
+\end{center}

@@ -54,6 +54,19 @@ TARGETSN & [float]. The desired signal-to-noise ratio in the final
             reasonable value to extract stellar kinematics
             information from galaxy spectra.\\
 \hline
+{\bf  OPTIONAL INPUT :}      &    \\
+\hline
+SN\_ CALIBRATION & vector. If provided, the estimated signal-to-noise
+             ({\tt SN\_est}) is converted into the real signal-to-noise ({\tt
+             SN\_real}) using the empirical calibration function defined in
+            mdap\_calibrate\_sn.pro:
+   \[
+    {\rm S/N_{REAL}} = \sum_{i=1,N} C_i \cdot \left( \frac{{\rm S/N_{ESTIMATED}}^{C_0}}{ \sqrt{{\rm N}_{\rm spax} }} \right)^{i-1} 
+   \]
+
+where {\tt Nbin} is the number of spectra added in that spatial bin.\\
+%
+\hline
 {\bf  INPUT KEYWORDS:}      &    \\
   /NO\_CVT&  Set this keyword to skip the Centroidal Voronoi Tessellation
            (CVT) step (vii) of the algorithm in Section 5.1 of
@@ -83,6 +96,17 @@ TARGETSN & [float]. The desired signal-to-noise ratio in the final
            If you use the /WVT keyword you should also include a reference to
            `the WVT modification proposed by Diehl \& Statler (2006).'\\
 %
+/weight\_for\_sn & If set, the spectra in the same spatial bin will be
+                 weighted by $S/N^2$ before being added. This is equivalent to adopt the following transformation:
+
+                 \medskip
+
+                  \ \ \ {\tt SIGNAL\_NEW = (SIGNAL\_OLD/NOISE\_OLD)}$^2$
+
+                \medskip
+
+                  \ \ \ {\tt NOISE\_NEW = SIGNAL\_OLD/NOISE\_OLD}   \\
+                             %
 \hline
 {\bf  OUTPOUTS:}        &    \\
    BINNUMBER &[flt array]. Vector (same size as X) containing the bin number assigned

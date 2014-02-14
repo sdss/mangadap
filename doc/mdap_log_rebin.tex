@@ -13,7 +13,7 @@ given in Table \ref{dap_tab:mdap_log_rebin}.
 
 \begin{center}
 \begin{longtable}{p{2.7cm}| p{11.1cm}}
-\caption{Inputs and outputs parameters of mdap\_log\_rebin.pro} \label{dap_tab::mdap_log_rebin} \\
+\caption{Inputs and outputs parameters of mdap\_log\_rebin.pro} \label{dap_tab:mdap_log_rebin} \\
 \hline
 \endfirsthead
 \hline
@@ -27,15 +27,15 @@ spectra   &   [NxT dbl array].  The N galaxy spectra to resample.\\
 %
 errors    &   [NxT dbl array].  Errors associated to the N spectra.\\
 %
-wavelength & [dbl array].     Array with T elements, that specifies the wavelengths where galaxy spectra and errors are defined.\\
+wavelength & [T elements array].     Array with T elements, that specifies the wavelengths where galaxy spectra and errors are defined.\\
 %
 library    &  [string].          Directory containing the template spectra. Template spectra must be in fits format, defined over a 
                              linear wavelength with constant ang/pix step, and must contain all the header information needed to  
                              recover the wavelenght domain (i.e. CRPIX1, CDELT1, and CRVAL1).\\
-%
-fwhm\_diff &   [dbl array].     Vector containing the FWHM(lambda) that the stellar spectra must be convolved for. At the moment, 
-                             the value median(fwhm\_diff/wavelength*c) is used for broadening. Implementation to use the full 
-                             LSF(lambda) information are foreseen.\\
+fwhm\_diff & [T elements array].  Vector containing the FWHM($\lambda$) (in \AA) measured over the vector wavelength that the stellar spectra must be
+                               convolved for. It correspond to the difference in quadrature between the instrumental FWHM of the observations, 
+                                 and the instrumental FWHM of the templates. The convolution is done with the utility module 
+                                mdap\_convo\_sigma.pro (see Section \ref{dap_sec:mdap_convol_sigma}). \\
 %
 \hline
 {\bf  OPTIONAL INPUTS} & \\
@@ -43,7 +43,7 @@ fwhm\_diff &   [dbl array].     Vector containing the FWHM(lambda) that the stel
 input\_velscale & [flt].    Constant km/sec/pixel to be used when rebinning the input spectra. If not provided, the value will be
                              automatically set by the procedure.\\
 %
-wave\_range  & [2 elem array].   If specified, the galaxy spectra will be trimmed to this wavelength range (units: angstrom). Default: 
+wave\_range  & [2 elem array].  If specified, the galaxy spectra will be trimmed to this wavelength range (units: angstrom). Default: 
                              use the entire input wavelength range. Stellar spectra will be trimmed by 
                              wave\_range[0] - 250 ang and wave\_range[1] + 250 ang.\\
 
@@ -51,8 +51,11 @@ wave\_range  & [2 elem array].   If specified, the galaxy spectra will be trimme
 \hline
 {\bf  OPTIONAL KEYWORDS}  & \\
 \hline
-/flux    &                  If set, flux conservation is applied to the log resampling. **Do not use** for template fitting.\\
-/gal\_wavelength\_ log\_step &  Set this keyword if the input galaxy spectra are logarithmically sampled (i.e. wavelength has a logarithmic progression).\\
+/flux    &                  If set, flux conservation is applied to the log resampling. **Do not use** for template fitting. Suggestion: do not use.\\
+%
+/gal\_wavelength\_ log\_step &  Set this keyword if the input galaxy spectra are logarithmically sampled (i.e. wavelength has a logarithmic progression). 
+                               Suggested for MaNGA data.\\
+%
 /quiet    &                    If set, message prompt is suppressed.\\
 \hline
 {\bf  OUTPUTS} &  \\

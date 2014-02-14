@@ -2,15 +2,18 @@
 \label{dap_sec:mdap_spatial_binning}
 
 This module is an interface for the mdap\_voronoi\_2d\_binning.pro
-module, which uses the Voronoi Binning scheme to combine adjacent
-spectra in the field of view till a minimum $S/N$ is reached (see
-Section \ref{dap_sec:mdap_voronoi_2d_binning}).
+module, which uses the Voronoi Binning scheme (modified Loyd
+algorithm) to combine adjacent spectra in the field of view till a
+minimum $S/N$ is reached (see Section
+\ref{dap_sec:mdap_voronoi_2d_binning}).
 
 If the minimum $S/N$ is not reached, the requirement will be
 automatically decreased by a factor 0.7 till convergence. By default,
 spectra with mean $S/N < 4$ per \AA will be discarded. At least, 1
 spectrum per datacube will be produced.
 
+If user-defined spatial binning is provided (via the user\_bin\_map
+keyword) the Voronoi binning scheme is overrided.
 
 Table \ref{dap_tab:mdap_spatial_binning} lists the inputs and outputs
 required for this module.
@@ -65,20 +68,31 @@ y2d\_ reconstructed & [N'xM' array] Two-dimesional map of Y coordinates where th
 %
 SN\_ CALIBRATION    & vector. If provided, the estimated signal-to-noise ({\tt SN\_est}) is converted into the real signal-to-noise ({\tt SN\_real}) using the empirical
                   calibration function defined in mdap\_calibrate\_sn.pro:
-
-                               \medskip
-
-                    {\tt t = SN\_est\textasciicircum SN\_CALIBRATION[0] / sqrt(n\_elements(Nbin))}
-
-                    {\tt SN\_real = poly(t,SN\_CALIBRATION[1:*])}, 
+           \[
+           {\rm S/N_{REAL}} = \sum_{i=1,N} C_i \cdot \left( \frac{{\rm S/N_{ESTIMATED}}^{C_0}}{ \sqrt{{\rm N}_{\rm spax} }} \right)^{i-1} 
+            \]
 
                     where {\tt Nbin} is the number of spectra added in that spatial bin.\\
+%
+user\_bin\_map   &  string  If provided, the spatial map will be created
+                      from the fits fiel specified by this input. The
+                      fits file must contain the CRVAL1, CRVAL2,
+                      CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and
+                      CRIX2 header keywords (coordinate units in
+                      arcseconds, 0,0 indicates the center of the
+                      field of view. \\
 
 \hline
 {\bf INPUT KEYWORDS} & \\
 \hline
 %
 /plot        &       If set, some plots on X11 terminal will be shown. Not suggested if the task is launched remotely. \\
+% 
+/weight\_for\_sn & If set, the spectra in the same spatial bin will be
+                 weighted by $S/N^2$ before being added. If The voronoi binning scheme
+                 is adopted, the S/N in the bin is computed via equation (3) of
+                 Cappellari \& Copin (2003) and the centers of te spatial bins are computed by
+                 weighting spectra coordinates by $S/N^2$.\\ 
 %
 \hline
 {\bf OUTPUTS} & \\

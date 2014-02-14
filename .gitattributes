@@ -1,8 +1,10 @@
 * text=auto !eol
 bin/mangadap_version -text
+doc/configuration_file.tex -text
 doc/dap.bbl -text
 doc/dap.pdf -text
 doc/dap.tex -text
+doc/dap_workflow_description.tex -text
 doc/figures/Blocks_1-3.odg -text
 doc/figures/block1.odg -text
 doc/figures/block1.pdf -text
@@ -25,9 +27,15 @@ doc/figures/mangaDAP_workflow_2.pdf -text
 doc/figures/mangaDAP_workflow_2.ps -text
 doc/mdap_calculate_spectrum_sn.tex -text
 doc/mdap_calibrate_sn.tex -text
+doc/mdap_convol_sigma.tex -text
+doc/mdap_create_starting_guesses.tex -text
+doc/mdap_do_log_rebin.tex -text
+doc/mdap_gandalf.tex -text
+doc/mdap_interpolate_2dmaps.tex -text
 doc/mdap_log_rebin.tex -text
 doc/mdap_read_datacube.tex -text
 doc/mdap_spatial_binning.tex -text
+doc/mdap_spectral_fitting.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text

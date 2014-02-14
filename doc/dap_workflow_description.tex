@@ -1,0 +1,326 @@
+\section{DAP workflow description}
+\label{dap_sec:dap_workflow}
+
+The DAP is divided into parts and blocks, the first part (blocks 1-6)
+will deliver the High Level Data products (see Figure
+\ref{dap_fig:dap_workflow_1}), the second part (blocks 7-9) will
+deliver the Model dependent data products (see Figure
+\ref{dap_fig:dap_workflow_2}). 
+
+Each block is responsable for a set of operations, such as reading
+data, fitting the input spectra. The procedure that executes an
+operation is called ``main module''. The main modules comunicates
+between them and between the various blocks via other procedures,
+which are called ``interface module''. The main and interfaces modules
+can call other modules, which are called ``unitily modules''. The
+interface module is therefore responsable to get input files from a
+previous interface, convert them in a readable format readable for the
+main module, collect the outputs of the main module and convert them
+in a form readable for the next interface. In this way, it is
+relatively easy to change the software responsible for a specific task
+(i.e. replacing the main module responsible for the spectral fitting)
+by chaning its interface.  Table \ref{dap_tab:modules} list a summary
+of the blocks, interfaces and main modules distribution.
+
+
+\begin{table}
+\begin{scriptsize}
+\caption{Summary of blocks, interfaces and main modules distribution.}
+\begin{tabular}{l |l |l | l}
+BLOCK         & Interface modules               & Main  modules    & Utility modules   \\
+\hline
+\hline
+%{\bf Block 1} &                                 &                                \\  
+              &                                 &                               &  \\  
+{\bf Block 1} & mdap\_read\_datacube            & mdap\_calculate\_spectrum\_sn  &    \\
+\hline
+%{\bf Block 2} &                                 &                                \\  
+              &                                 &                             &\\  
+{\bf Block 2} & mdap\_spatial\_binning          & mdap\_voronoi\_2d\_binning  & mdap\_calibrate\_sn   \\
+ \hline
+%{\bf Block 3} &                                 &                                \\  
+              &                                 &                            &    \\  
+{\bf Block 3} & mdap\_log\_rebin$^{1}$          & mdap\_do\_log\_rebin        & mdap\_convol\_sigma   \\
+\hline
+%{\bf Block 4} &                                 &                                \\  
+              &                                 &                           &   \\  
+{\bf Block 4} & mdap\_spectral\_fitting        & mdap\_calculate\_spectrum\_sn  & mdap\_range.pro \\
+              & mdap\_create\_starting\_guesses & mdap\_bvls(\_external)        & mdap\_stc.pro \\
+              &                                 & mdap\_dust\_calzetti          & mdap\_sgn.pro \\
+              &                                 & mdap\_get\_losvd              & mdap\_round\_str.pro \\
+              &                                 & mdap\_gandalf\_wrapf$^{2}$     & mdap\_interpolate\_2dmaps \\
+              &                                 & mdap\_gandalf$^{2}$            & mdap\_ppxf\_convol\_fft \\
+              &                                 & mdap\_ppxf$^{2}$               &  \\
+              &                                 &{\tt mpfit package}              &  \\ 
+\hline
+%{\bf Block 5} &                                 &                                         \\  
+              &                                 &                                         & \\  
+{\bf Block 5} & mdap\_measure\_indices          & mdap\_read\_indices\_definitions$^{3}$  & mdap\_round\_str.pro \\
+              &                                 & mdap\_do\_measure\_index               &  mdap\_convol\_sigma  \\
+\hline
+%{\bf Block 6} &                                 &                                         \\  
+              &                                 &                                        &   \\  
+{\bf Block 6} & mdap\_spatial\_radial\_binning  & mdap\_calculate\_spectrum\_sn       &  mdap\_convol\_sigma   \\
+              & mdap\_spectral\_fitting       &   mdap\_do\_measure\_index            & mdap\_get\_losvd     \\ 
+              & mdap\_measure\_indices          &   mdap\_dust\_calzetti             & mdap\_range.pro  \\
+              &                                 &   {\tt mpfit package}              &  mdap\_stc.pro \\
+              &                                 &   mdap\_sgandalf                   & mdap\_sgn.pro  \\
+              &                                 &   mdap\_gandalf\_wrapf$^{2}$       &  mdap\_interpolate\_2dmaps \\
+              &                                 &   mdap\_gandalf$^{2}$               & mdap\_read\_indices\_definitions$^{3}$\\
+              &                                 &   mdap\_ppxf$^{2}$                  & mdap\_ppxf\_convol\_fft\\
+              &                                 &   mdap\_bvls(\_external)         &  \\
+\hline
+              &                                 &  &  \\  
+{\bf Block 7} &                                 &                                &  \\
+\hline
+              &                                 &  &  \\  
+{\bf Block 8} &                                 &                                &  \\
+\hline
+              &                                 &  &  \\  
+{\bf Block 9} &                                 &                                &  \\
+\hline
+\hline
+\end{tabular}
+\end{scriptsize}
+\begin{minipage}{15cm}
+Notes: 
+$^{1}$ Need auxiliary files: stellar templates. 
+$^{2}$ Need auxiliary file: Emission lines definitions. 
+$^{3}$ Need auxiliary file: Absorption line index definitions.
+\end{minipage}
+\label{dap_tab:modules}
+\end{table}
+
+The input datacube is read in block 1 and information (vectors with
+galaxy spectra, errors, wavelenght, and spatial information) are
+passed to the block 2 for spatial binning. Three spatial binnings are
+foreseen, depending on the scientific requirements. The current DAP
+version uses the Voronoi binning scheme, (as implemented in IDL by
+Cappellari \& Copin 2003), as main module for the spatial binning
+task.
+
+Binned spectra are passed to block 3 for logarithmic resampling of the
+galaxy spectra (and error) and the stellar templates. Stellar
+templates are also broadened to match the instrumental set up. For
+this, the instrumental $LSF(\lambda)$ is required as input. Three sets
+of log-sampled galaxy spectra are produced, one set for each spatial
+binning.
+
+The log-sampled spectra are then passed to block 4 for spectroscopic
+measurements. Three fits are performed in block 4, one for each
+spatial sampling defined in block 2. Before each fit, the log-sampled
+Galaxy spectra are corrected for Milky Way extinction(input
+parameter). Results from the first execution will be used to constrain
+the fit of the second fit, and soforth. The current version uese: i)
+the pPPXF.pro and gandalf.pro (Cappellari \& Emsellem 2004; Sarzi et
+al. 2006); and ii) Calzetti et al. (2000) formulas for reddening
+correction as main modules in block 4 (See Section
+\ref{dap_sec:mdap_spectral_fitting} for further details). Fitting
+procedures have been modified to allow the use of external fortran
+routine, instrumental velocity dispersion variable with wavelength,
+and fitting parameter boundaries from user input.
+
+The output of block 4 are the kinematic
+parameters of stars and gas, emission lines fluxes and equivalent
+width, reddening, the weights of the stellar templates used in the fit
+(for stellar population measurements), and rest-framed galaxy spectra.
+
+Input galaxy spectra (with best-fit emission lines removed) will be
+passed to block 5 for measurement of the line strenght. The current
+design foresees that absorption line strength will be measured only
+onto spectra associated to the first spatial binning (i.e. those with
+the higher $S/N$. The current version uses the absoprtion line indices
+as defined by Worthey et al. (1994).
+
+Rest-framed spectra, Kinematic measurements, emission line fluxes,
+absorption and emission line equivalent widths are then passed to
+block 6 for the extraction of the radial profiles of the measured
+quantities, and kinemetric analysis.
+
+\subsection{DAP inputs and outputs}
+\label{dap_sec:dap_inputs_outputs}
+
+The Data Analysis Pipeline consists in a IDL procedure,
+manga\_dap.pro, and a set of ``interfaces'' modules, ``main'' modules,
+and ``utilities'', which are described in this document.
+
+To run the pipeline, the following files are needed.
+\begin{itemize}
+
+\item total\_filelist.dat. This is the file that specifies the
+  galaxies to analyse and their properties. The file must contain 5
+  columns. The first column indicates the names of the $N$ datacubes
+  (stored in .fits file, see Section
+  \ref{dap_sec:mdap_read_datacube}), the second column provides an
+  estimate of the galaxy redshift (in km/sec), the third column
+  provides an estimate of the stellar velocity dispersion (in km/sec),
+  the 4th column provides the mean galaxy ellipticity, and the 5th
+  column provides the mean galaxy position angle.
+
+\item all the $N$ files (datacubes or rss) listed in the file total\_filelist.dat.
+
+\item a set of stellar templates, in fits file format.
+
+%\item emission\_lines\_setup\_with\_Balmer\_decrement. A file containing the definitions of the emission lines to include in the fit (see Section \ref{dap_sec:mdap_spectral_fittig}).
+
+%\item absorption\_line\_indices\_definition.dat. A file containing the definitions of the absorption line indices to measure (see Section \ref{dap_sec:mdap_measure_indices}). 
+\item A file containing the definitions of the emission lines to include in the fit (see Section \ref{dap_sec:mdap_spectral_fittig}).
+
+\item A file containing the definitions of the absorption line indices to measure (see Section \ref{dap_sec:mdap_measure_indices}). 
+
+\item A configuration file, that contains all the parameters needed in the analysis.
+\end{itemize}
+
+The DAP is executed by the following IDL command line 
+
+\[
+{\tt IDL> manga\_dap,i,configuration\_file}
+\]
+
+where {\tt i} is the index number of the $i$-th entry in the
+total\_filelist.dat, column 1 to analyse, $i=0,
+N-1$. configuration\_file is a string specifying the name of the
+configuration file. For a full description of the configuration file,
+see Section \ref{dap_sec:configuration}.
+
+
+As output, the DAP returns a multilayer fits file with all the
+measured quantities (({\tt <datacube\_name> \_high\_level.fits}), an
+idl session with all the session variables stored ({\tt
+  <datacube\_name>\_mdap\_ session.idl}).  and a log file
+(<datacube\_name>\_mdap.log).
+
+The content of the {\tt <datacube\_name>\_high\_level.fits} output
+file is described in Table \ref{dap_tab:output}.
+
+
+\begin{center}
+\begin{longtable}{p{0.5cm}|p{3.5cm}| p{10.1cm}}
+\caption{Extension description of the DAP output fits file.} \label{dap_tab:output} \\
+\hline
+{\bf Ext} &  {\bf Name} &{\bf Description} \\
+\hline
+\endfirsthead
+\hline
+{\bf Ext} &  {\bf Name} &{\bf Description} \\
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+%{\bf Ext} &  {\bf Name} &{\bf Description} \\
+0 & signal              & Mean signal per pixel, produced by mdap\_read\_datacube.pro (Section \ref{dap_sec:mdap_read_datacube}). \\
+1 & noise               & Mean noise per pixel, produced by mdap\_read\_datacube.pro (Section \ref{dap_sec:mdap_read_datacube}).\\
+2 & binning map 1       & Location and geometry of the spatial bins of the first binning scheme.\\ 
+3 & binning 1 data      & Measurements performed on the first binning scheme (absorption line indices).\\ 
+4 & binning map 2       & Location and geometry of the spatial bins of the second binning scheme.\\ 
+5 & binning 2 data      & Measurements performed on the second binning scheme (stellar kinematics). \\ 
+6 & binning map 3       & Location and geometry of the spatial bins of the third binning scheme.\\ 
+7 & binning 3 data      & Measurements performed on the third binning scheme (gas kinematics and emission line properties).\\ 
+8 & binning map radial  & Location and geometry of the radial binning scheme.\\ 
+9 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion)  \\ 
+\hline
+\end{longtable}
+\end{center}
+
+\subsubsection{Extension 3: outputs related to the first binning
+  scheme} 
+\label{}
+The quantities measured and stored using the first binning scheme are
+the following:
+
+\begin{itemize}
+
+\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 3. AREA\_BIN. Area in arcsec$^2$ of the spatial bin.
+\item Column 4. STON. Estimate of the S/N of the spectrum in the
+  spatial bin. The signal is defined as the median of the best fit
+  model, the noise as the robust\_sigma of the residuals (observed
+  spectrum - best fit).
+\item Column 5. NELEMENTS. Number of spectra coadded in the spatial bin.
+\item Columns 6-end. Equivalent width of the absorption line indices
+  and their errors (Units \AA\ or magnitudes, depending on the index
+  definition. The measured indices (and their names) are defined in a
+  user-provided file. The name of this file is specified in the
+  configuration file (see Section \ref{dap_sec:configuration}).
+\end{itemize}
+
+\subsubsection{Extension 5: outputs related to the second binning
+  scheme} 
+\label{}
+The quantities measured and stored using the second binning scheme are
+the following:
+
+\begin{itemize}
+
+\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 3. AREA\_BIN. Area in arcsec$^2$ of the spatial bin.
+\item Column 4. STON. Estimate of the S/N of the spectrum in the
+  spatial bin. The signal is defined as the median of the best fit
+  model, the noise as the robust\_sigma of the residuals (observed
+  spectrum - best fit).
+\item Column 5. NELEMENTS. Number of spectra coadded in the spatial bin.
+\item Columns 6-7. VEL and VEL\_ERR. Measured stellar velocity and its error in km/sec.
+\item Columns 8-9. DISP and DISP\_ERR. Measured stellar velocity dispersion and its error in km/sec.
+\item Columns 10-11. H3 and H3\_ERR. Measured Gauss-Hermite moment of the stellar velocity distribution h3 and its error (Warning: the maximum range allowed in the
+  fitting procedure is : $-0.4 < {\rm H3} < 0.4$).
+\item Columns 12-13. H4 and H4\_ERR. Measured Gauss-Hermite moment of the stellar velocity distribution h4 and its error (Warning: the maximum range allowed in the
+  fitting procedure is : $-0.4 < {\rm H4} < 0.4$).
+\item Column 14. CHI2. Chi-squared from the fit.
+\end{itemize}
+
+\subsubsection{Extension 7: outputs related to the third binning
+  scheme} 
+
+
+The quantities measured and stored using the third binning scheme are
+the following:
+
+\begin{itemize}
+
+\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 3. AREA\_BIN. Area in arcsec$^2$ of the spatial bin.
+\item Column 4. STON. Estimate of the S/N of the spectrum in the
+  spatial bin. The signal is defined as the median of the best fit
+  model, the noise as the robust\_sigma of the residuals (observed
+  spectrum - best fit).
+\item Column 5. NELEMENTS. Number of spectra coadded in the spatial bin.
+\item Columns 6-7. VEL and VEL\_ERR. Flux-weighted mean velocity of the emission lines and its error in km/sec.
+\item Columns 8-9. DISP and DISP\_ERR. Flux-weighted mean velocity dispersion of the emission lines and its error in km/sec.
+\item Columns 10-11. E(B-V) color excess for the stellar component and its error
+\item Columns 12-13. E(B-V) color excess for the ionized gas stellar component and its error
+\item Column 14.  CHI2. Chi-squared from the fit.
+\item Columns 15-end. Flux, flux error, Equivalent widths, and
+  equivalent width errors of the emission lines.  The measured
+  emission lines (and their names) are defined in a user-provided
+  file. The name of this file is specified in the configuration file
+  (see Section \ref{dap_sec:configuration}).
+\end{itemize}
+
+\subsubsection{Extension 9: outputs related to the radial binning
+  scheme} 
+
+
+The quantities measured and stored using the radial binning scheme are
+the following:
+
+\begin{itemize}
+
+\item Column 1. AMAJ. Lenght of the semi-major axis (in arcsecs) describing the elliptical bin. AMAJ=0 is the center of the field of view.
+\item Column 2. AMAJ\_LO. Lower limit boundary (in arcsec) of elliptical bin.
+\item Column 3. AMAJ\_UP. Upper limit boundary (in arcsec) of elliptical bin.
+\item Column 4. STON. Estimate of the S/N of the spectrum in the
+  spatial bin. The signal is defined as the median of the best fit
+  model, the noise as the robust\_sigma of the residuals (observed
+  spectrum - best fit).
+\item Columns 5-6.  DISP and DISP\_ERR. Measured stellar velocity dispersion and its error in km/sec.
+\item Column 7.  CHI2. Chi-squared from the fit.
+\item Columns 8-end. Equivalent width of the absorption line indices
+  and their errors (Units \AA\ or magnitudes, depending on the index
+  definition. The measured indices (and their names) are defined in a
+  user-provided file. The name of this file is specified in the
+  configuration file (see Section \ref{dap_sec:configuration}).
+\end{itemize}

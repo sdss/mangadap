@@ -59,7 +59,8 @@ a prototype}}
 \chapter{Introduction}
 \label{dap_chap:introduction}
 
-\section{Data Analysis Pipeline: overview}
+
+\section{Data Analysis Pipeline (DAP): overview}
 \label{dap_sec:dap_overview}
 
 The scope of the Data Analysis Pipeline is to analyse the output of
@@ -95,240 +96,15 @@ Model dependent data products are:
    % \item Measurements of the Toomre Q-parameter, see Section  \ref{sec:growth_bulges}.
 \end{itemize}%
 
+\subsection{Installation and requirements}
+\label{dap_sec:installation}
+T.B.D.
 
+\include{dap_workflow_description}
 
-\subsection{DAP workflow description}
-\label{dap_sec:dap_workflow}
+\include{configuration_file}
 
-The DAP is divided into parts and blocks, the first part (blocks 1-6)
-will deliver the High Level Data products (see Figure
-\ref{dap_fig:dap_workflow_1}), the second part (blocks 7-9) will
-deliver the Model dependent data products (see Figure
-\ref{dap_fig:dap_workflow_2}). 
-
-Each block is responsable for a set of operations, such as reading
-data, fitting the input spectra. The procedure that executes an
-operation is called ``main module''. The main modules comunicates
-between them and between the various blocks via other procedures,
-which are called ``interface module''. The main and interfaces modules
-can call other modules, which are called ``unitily modules''. The
-interface module is therefore responsable to get input files from a
-previous interface, convert them in a readable format readable for the
-main module, collect the outputs of the main module and convert them
-in a form readable for the next interface. In this way, it is
-relatively easy to change the software responsible for a specific task
-(i.e. replacing the main module responsible for the spectral fitting)
-by chaning its interface.  Table \ref{dap_tab:modules} list a summary
-of the blocks, interfaces and main modules distribution.
-
-\begin{table}
-\caption{Summary of blocks, interfaces and main modules distribution.}
-\begin{tabular}{l |l |l }
-BLOCK         & Interface modules               & Main and utility modules       \\
-\hline
-\hline
-%{\bf Block 1} &                                 &                                \\  
-              &                                 &  \\  
-{\bf Block 1} & mdap\_read\_datacube            & mdap\_calculate\_spectrum\_sn  \\
-\hline
-%{\bf Block 2} &                                 &                                \\  
-              &                                 &  \\  
-{\bf Block 2} & mdap\_spatial\_binning          & mdap\_voronoi\_2d\_binning     \\
-              &                                 & mdap\_calibrate\_sn            \\
-\hline
-%{\bf Block 3} &                                 &                                \\  
-              &                                 &  \\  
-{\bf Block 3} & mdap\_log\_rebin$^{1}$          & mdap\_do\_log\_rebin           \\
-              &                                 & mdap\_convol\_sigma            \\
-\hline
-%{\bf Block 4} &                                 &                                \\  
-              &                                 &  \\  
-{\bf Block 4} & mdap\_spectral\_fitting$^{3}$   & mdap\_calculate\_spectrum\_sn  \\
-              & mdap\_create\_starting\_guesses & mdap\_bvls                     \\
-              &                                 & mdap\_dust\_calzetti           \\
-              &                                 & mdap\_get\_losvd               \\
-              &                                 & {\tt mpfit package}            \\
-              &                                 & mdap\_sgandalf                 \\
-              &                                 & mdap\_gandalf\_wrapf$^{2}$  \\
-              &                                 & mdap\_gandalf$^{2}$      \\
-              &                                 & mdap\_ppxf$^{2}$           \\
-\hline
-%{\bf Block 5} &                                 &                                         \\  
-              &                                 &  \\  
-{\bf Block 5} & mdap\_measure\_indices          & mdap\_read\_indices\_definitions$^{4}$  \\
-              &                                 & mdap\_do\_measure\_index                \\
-              &                                 & mdap\_convol\_sigma                     \\
-\hline
-%{\bf Block 6} &                                 &                                         \\  
-              &                                 &  \\  
-{\bf Block 6} & mdap\_spatial\_radial\_binning  & mdap\_calculate\_spectrum\_sn  \\
-              & mdap\_spectral\_fitting$^{3}$   & mdap\_read\_indices\_definitions$^{4}$  \\                                         
-              & mdap\_measure\_indices          & mdap\_do\_measure\_index                \\
-              &                                 & mdap\_convol\_sigma                     \\
-              &                                 & mdap\_dust\_calzetti           \\
-              &                                 & mdap\_get\_losvd               \\
-              &                                 & {\tt mpfit package}            \\
-              &                                 & mdap\_sgandalf                 \\
-              &                                 & mdap\_gandalf\_wrapf$^{2}$  \\
-              &                                 & mdap\_gandalf$^{2}$      \\
-              &                                 & mdap\_ppxf$^{2}$           \\
-              &                                 &  \\  
-\hline
-              &                                 &  \\  
-{\bf Block 7} &                                 &                                \\
-\hline
-              &                                 &  \\  
-{\bf Block 8} &                                 &                                \\
-\hline
-              &                                 &  \\  
-{\bf Block 9} &                                 &                                \\
-\hline
-\hline
-\end{tabular}
-\begin{minipage}{15cm}
-Notes: 
-$^{1}$ Need auxiliary files: stellar templates. 
-$^{2}$ Need auxiliary file: Emission lines definitions. 
-$^{3}$ It runs either mdap\_sgandalf, or the 3 routines package: mdap\_gandalf\_wrap plus
-mdap\_gandalf plus mdap\_ppxf.
-$^{4}$ Need auxiliary file: Absorption line index definitions.
-\end{minipage}
-\label{dap_tab:modules}
-\end{table}
-
-The input datacube is read in block 1 and information (vectors with
-galaxy spectra, errors, wavelenght, and spatial information) are
-passed to the block 2 for spatial binning. Three spatial binnings are
-foreseen, depending on the scientific requirements. The current DAP
-version uses the Voronoi binning scheme, (as implemented in IDL by
-Cappellari \& Copin 2003), as main module for the spatial binning
-task.
-
-Binned spectra are passed to block 3 for logarithmic resampling of the
-galaxy spectra (and error) and the stellar templates. Stellar
-templates are also broadened to match the instrumental set up. For
-this, the instrumental $LSF(\lambda)$ is required as input. Three sets
-of log-sampled galaxy spectra are produced, one set for each spatial
-binning.
-
-The log-sampled spectra are then passed to block 4 for spectroscopic
-measurements. Three fits are performed in block 4, one for each
-spatial sampling defined in block 2. Before each fit, the log-sampled
-Galaxy spectra are corrected for Milky Way extinction(input
-parameter). Results from the first execution will be used to constrain
-the fit of the second fit, and soforth. The current version uses i)
-sgandalf.pro (a modified version of ppxf.pro by Cappellari \& Emsellem
-2004, and spectral decomposition by Coccato et al. 2011); and ii)
-Calzetti et al. (2000) formulas for reddening correction as main
-modules in block 4 (See Section \ref{dap_sec:mdap_spectral_fitting}
-for further details). The output of block 4 are the kinematic
-parameters of stars and gas, emission lines fluxes and equivalent
-width, reddening, the weights of the stellar templates used in the fit
-(for stellar population measurements), and rest-framed galaxy spectra.
-
-Input galaxy spectra (with best-fit emission lines removed) will be
-passed to block 5 for measurement of the line strenght. The current
-design foresees that absorption line strength will be measured only
-onto spectra associated to the first spatial binning (i.e. those with
-the higher $S/N$. The current version uses the absoprtion line indices
-as defined by Worthey et al. (1994).
-
-Rest-framed spectra, Kinematic measurements, emission line fluxes,
-absorption and emission line equivalent widths are then passed to
-block 6 for the extraction of the radial profiles of the measured
-quantities, and kinemetric analysis.
-
-\subsection{DAP inputs and outputs}
-\label{dap_sec:dap_inputs_outputs}
-
-The Data Analysis Pipeline consists in a IDL procedure,
-manga\_dap.pro, and a set of ``interfaces'' and ``main'' modules,
-which are described in this document.
-
-To run the pipeline, the following files are needed.
-\begin{itemize}
-
-\item total\_filelist.dat. The file must contain 5 columns. The first
-  column indicates the names of the $N$ datacubes (stored in .fits
-  file, see Section \ref{dap_sec:mdap_read_datacube}), the second
-  column provides an estimate of the galaxy redshift (in km/sec), the
-  third column provides an estimate of the stellar velocity dispersion
-  (in km/sec), the 4th column provides the mean galaxy ellipticity,
-  and the 5th column provides the mean galaxy position angle.
-
-\item all the $N$ datacubes listed in the file total\_filelist.dat.
-
-\item a set of stellar templates, in fits file format (see Section \ref{dap_sec:mdap_log_rebin}).
-
-\item emission\_lines\_setup\_with\_Balmer\_decrement. A file containing the definitions of the emission lines to include in the fit (see Section \ref{dap_sec:mdap_spectral_fittig}).
-
-\item  absorption\_line\_indices\_definition.dat. A file containing the definitions of the absorption line indices to measure (see Section \ref{dap_sec:mdap_measure_indices}). 
-
-\end{itemize}
-
-The DAP is executed by the following IDL command line 
-
-\[
-{\tt IDL> manga\_dap,i,[/check\_version],[/dont\_remove\_null\_templates]}
-\]
-where {\tt i} is the index number of the $i$-th datacube in total\_filelist.dat, column 1 to analyse, $i=0, N-1$.
-
-/check\_version performs the reduced version control on already
-existing output data, and avoid to redude again the data if the
-previous reduction is up to date.
-
-/dont\_remove\_null\_templates By default, the DAP speeds up the
-analysis by excluding some stellar templates that have zero weight
-(See Section \ref{dap_sec:mdap_spectral_fitting}. If this keyword is
-set, the speed up process is not activated.
-
-
-
- As output, the DAP returns a
-multilayer fits file with all the relevant quantities (({\tt
-  <datacube\_name> \_high\_level.fits}), an idl session with all the
-session variables stored ({\tt
-  <datacube\_name>\_mdap\_ session.idl}). These outputs are stored and
-a log file (<datacube\_name>\_mdap.log) in the directory {\tt
-  results/ <datacube\_name>/}, and a log file
-(<datacube\_name>\_mdap.log).
-
-The content of the {\tt <datacube\_name>\_high\_level.fits} output
-file is described in Table \ref{dap_tab:output}.
-
-
-\begin{center}
-\begin{longtable}{p{0.5cm}|p{3.5cm}| p{10.1cm}}
-\caption{Extension description of the DAP output fits file.} \label{dap_tab:output} \\
-\hline
-{\bf Ext} &  {\bf Name} &{\bf Description} \\
-\hline
-\endfirsthead
-\hline
-{\bf Ext} &  {\bf Name} &{\bf Description} \\
-\hline
-\endhead
-\hline
-\endlastfoot
-\hline
-%{\bf Ext} &  {\bf Name} &{\bf Description} \\
-0 & signal              & Mean signal per pixel, produced by mdap\_read\_datacube.pro (Section \ref{dap_sec:mdap_read_datacube}). \\
-1 & noise               & Mean noise per pixel, produced by mdap\_read\_datacube.pro (Section \ref{dap_sec:mdap_read_datacube}).bla bla \\
-2 & binning map 1       & Location and geometry of the spatial bins of the first binning scheme.\\ 
-3 & binning 1 data      & Measurements performed on the first binning scheme (absorption line indices).\\ 
-4 & binning map 2       & Location and geometry of the spatial bins of the second binning scheme.\\ 
-5 & binning 2 data      & Measurements performed on the second binning scheme (stellar kinematics). \\ 
-6 & binning map 3       & Location and geometry of the spatial bins of the third binning scheme.\\ 
-7 & binning 3 data      & Measurements performed on the third binning scheme (gas kinematics and emission line properties).\\ 
-8 & binning map radial  & Location and geometry of the radial binning scheme.\\ 
-9 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion)  \\ 
-\hline
-\end{longtable}
-\end{center}
-
-
-
-\subsection{Version control and tags}
+\subsection{Version control and tags. Obsolete}
 \label{dap_sec:dap_version}
 
 
@@ -336,12 +112,14 @@ At the beginning of the execution, the DAP check whether the output
 .fits file and .idl sessions exist. If so, it reads the version(s)
 used to generate the existing files. If the current module versions
 are greater than those used to generate the output file, the analysis
-is performed again. 
+is performed again.
 
 \begin{itemize}
+
 \item {\bf manga\_dap\_version}. The version of the DAP. If the module
   version is greater than that stored in the output files, the entire
   analysis is performed again (currently, blocks 1-5).
+
 \item {\bf mdap\_read\_datacube\_version}. The version of modules in
   block 1. If it is greater than that stored in the output file, blocs
   1-5 are executed again.
@@ -366,13 +144,14 @@ is performed again.
 
 \end{itemize}
 
-Warning: the version control is enabled only if the keyword /check\_version is set.
+Warning: the version control is enabled only if the keyword
+/check\_version is set.
 
 \begin{figure}
 \begin{center}
 %\hspace{-2cm}
 %\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}  25 150 810 445
-\psfig{file=figures/mangaDAP_workflow_1.ps, width=9cm, clip=, bb= 22 20 340 800}
+\psfig{file=figures/mangaDAP_workflow_1.ps, width=9cm, clip=, bb= 140 20 450 800}
 %\vspace*{0cm}
 \caption{Workflow chart of the Data Analysis Pipeline (High Level Data products).}
  \label{dap_fig:dap_workflow_1}
@@ -393,12 +172,13 @@ Warning: the version control is enabled only if the keyword /check\_version is s
 
 \chapter{BLOCKs and ``interface'' modules}
 \label{dap_chap:blocks}
+
 \section{DAP Block 1: reading the input data}
 \label{dap_sec:block1}
 
 This block reads the input data (in the form of a datacube or RSS
-files) and extract the all information needed for further processing
-such as the galaxy spectra and errors, wavelength vector, and 2D maps
+files) and extracts the all information needed for further processing,
+such as the galaxy spectra and errors, wavelength vector, 2D maps
 containing the coordinates, and galaxy signal and noise. The interface
 module in this block is: mdap\_read\_datacube.pro (see Section
 \ref{dap_sec:mdap_read_datacube} for a list of inputs and outputs).
@@ -420,11 +200,7 @@ maps. Figure \ref{dap_fig:block1} illustrates the flowchart of block
 
 \begin{figure}
 \begin{center}
-%\hspace{-2cm}
-%\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
-%\psfig{file=figures/block1.ps, width=12.0cm, clip=,bb=40 215 558 710}
 \psfig{file=figures/block1.ps, width=15.0cm, clip=}
-%\vspace*{0cm}
 \caption{Workflow chart of the block 1 of the Data Analysis
   Pipeline. See Section \ref{dap_sec:mdap_read_datacube} for a
   description of inputs and outputs.}
@@ -436,8 +212,8 @@ maps. Figure \ref{dap_fig:block1} illustrates the flowchart of block
 \include{mdap_read_datacube}
 
 
-
-\section{DAP Block 2: Spatial binning}
+\section[DAP Block 2: Spatial binning]{DAP Block 2: Spatial binning}
+\label{dap_sec:block2}
 
 This block adds adjacent spectra in the field of view to reach a
 minimum signa-to-noise ratio, and organizes the observations into
@@ -456,60 +232,72 @@ are handled, depending on the scientific purposes.
 \begin{enumerate}
 
 \item First binning, which requires a minimum $S/N = 40$ per
-  pixel. The spectra binned this way will be used to measure the
+  \AA. The spectra binned this way will be used to measure the
   equivalent width ob absorption line indices, to perform the full
   spectral fitting, and to derive the stellar population properties.
 
 \item Second binning, which requires a minimum $S/N = 25$ per
-  pixel. The spectra binned this way will be used to measure the
+  \AA. The spectra binned this way will be used to measure the
   stellar kinematics and dynamical models.
 
 
 \item Third binning, which requires a minimum $S/N = 15$ per
-  pixel. The spectra binned this way will be used to measure the
+  \AA. The spectra binned this way will be used to measure the
   emission line kinematics, fluxes, and widths, the reddening, gas
   metallicities and star formation rates.
 
 \end{enumerate}
 
- $S/N$s are computed in the wavelength range $5560 < \lambda < 6942$
-(SLOAN r-band).  The interface module in this block is
-mdap\_spatial\_binning.pro (see Section
-\ref{dap_sec:mdap_spatial_binning}). The main modules are:
-mdap\_voronoi\_2d\_binning.pro (Section
-\ref{dap_sec:mdap_voronoi_2d_binning}) and mdap\_calibrate\_sn.pro
-(Section \ref{dap_sec:mdap_calibrate_sn}).
+$S/N$s are computed in the wavelength range $5560 < \lambda < 6942$
+(SLOAN r-band).
 
+
+The interface module in this block is mdap\_spatial\_binning.pro (see
+Section \ref{dap_sec:mdap_spatial_binning}). The main module is
+mdap\_voronoi\_2d\_binning.pro (Section
+\ref{dap_sec:mdap_voronoi_2d_binning}).
 
 mdap\_voronoi\_2d\_binning.pro uses an imlementation of the Voronoi
 Binning technique developed by \citet{Cappellari+03} (see Section
 \ref{dap_sec:mdap_voronoi_2d_binning}). The implementation accounts
 for spatial correlation between errors of adjacent spectra: the
 estimated $S/N$ is calibrated to the real $S/N$ via empirical relation
-and it is done by the main module mdap\_calibrate\_sn.pro.
+and it is done by the utility module mdap\_calibrate\_sn.pro.
 
 Note that RSS spectra do not require the above $S/N$ calibration,
 because the errors between adjacent RSS files are not correlated.
 
-Figure \ref{dap_fig:block2} illustrates the flowchart of
-block 2.
 
-\subsubsection{future implementations}
-Possible implementations are:
+The interface mdap\_spatial\_binning.pro accepts an user-defined fits
+file describing the spatial binning scheme. This file needs to be
+provided via the input keyword: user\_bin\_map. The names are defined
+in the DAP configuration file (see Section
+\ref{dap_sec:configuration}). The inclusion of an used-defined file
+overrides the Voronoi binning.
+
+On request, the spectra in the same spatial bin can be added together
+by weighting them with their $S/N^2$ (weight\_by\_sn keyword).
+
+Figure \ref{dap_fig:block2} illustrates the flowchart of block 2.
+
+\subsubsection{Future implementations}
+Future implementations:
 
 \begin{itemize}
 
-\item  include the possibility to perform a radial and azimuthal
-  binning, regardless of the signal-to-noise.
  \item calculation of spatial covariance matrix to account for error
    correlations and avoid the use of $S/N$ calibration relations.
+
+  \item Allow for an equal flux surface binning scheme (Sanchez et
+    al. ?) instead of the Voronoi binning scheme.
+
 \end{itemize}
 
 \begin{figure}
 \begin{center}
 %\hspace{-2cm}
 %\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
-\psfig{file=figures/block2.ps, width=16.0cm, clip=,bb=42 77 590 797}
+\psfig{file=figures/block2.ps, width=16.0cm, clip=,bb=25 77 590 815}
 %\vspace*{0cm}
 \caption{Workflow chart of the block 2 of the Data Analysis
   Pipeline.}
@@ -519,7 +307,8 @@ Possible implementations are:
 
 \include{mdap_spatial_binning}
 
-\section{DAP Block 3: Logarithmic sampling of input galaxy spectra and stellar templates}
+\section[DAP Block 3: Logarithmic sampling]{DAP Block 3: Logarithmic sampling of input galaxy spectra and stellar templates}
+\label{dap_sec:block3}
 
 This block is responsable for:
 
@@ -559,8 +348,7 @@ The current version of the DAP uses the MARCS stellar library models
 
 \begin{figure}
 \begin{center}
-%\hspace{-2cm}
-%\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
+%\hspace{-2cm} \includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
 \psfig{file=figures/block3.ps, width=13.5cm, clip=,bb=30 70 592 790}
 %\vspace*{0cm}
 \caption{Workflow chart of the block 3 of the Data Analysis
@@ -571,104 +359,123 @@ The current version of the DAP uses the MARCS stellar library models
 
 \include{mdap_log_rebin}
 
-\section{DAP Block 4: Spectral fitting}
+\section[DAP Block 4: Spectral fitting]{DAP Block 4: Spectral fitting}
 
-This block is responsable for fitting the input galaxy spectra with a
+This block is responsible for fitting the input galaxy spectra with a
 set of stellar templates and Gaussian Emission lines to derive the
 kinematics of stars, ionized gas, and emission line fluxes and
 equivalent widths.
 
-The main modules in this block are mdap\_spectral\_fitting.pro (see
-Section \ref{dap_sec:mdap_spectral_fitting}), mdap\_get\_2d\_ map.pro
-(see Section \ref{dap_sec:mdap_get_2d_map}), and
-mdap\_create\_starting\_guesses.pro (see Section
+This block has two interfaces: mdap\_spectral\_fitting.pro (see
+Section \ref{dap_sec:mdap_spectral_fitting}) and
+mdap\_ create\_starting\_guesses (see Section
 \ref{dap_sec:mdap_create_starting_guesses}).
 
-The module mdap\_spectral\_fitting.pro is an interface, that arranges
-inputs and outputs for the routine that performs the actual fit, i.e.
-mdap\_sgandalf.pro (called by mdap\_spectral\_ fitting.pro), which is
-an improved version of the pPXF routine by \citet{Cappellari+04} (see
-Section \ref{dap_sec:mdap_sgandalf} for information on how the fit is
-performed).
 
-The block executes the module mdap\_spectral\_fitting.pro three times,
-once for each set of spatially binned spectra.  The current version of
-the DAP uses the MARCS stellar library models (Maraston \& Stromback,
-2011, MNRAS, 418, 2785) for the spectral fitting.
+The interface mdap\_create\_starting\_guesses handles the starting
+guesses (either from the user input file, or using the results of a
+previous fit) and feeds the spectral fitting interface.
 
 
-
-\begin{enumerate}
-
-\item {\it First module execution.} The log-sampled Galaxy spectra are
-  fitted with a linear combination of stellar templates and Gaussian
-  Emission lines. This step requires input starting guesses of the
-  galaxy redshift and stellar velocity dispersion (more than one
-  redshift, and coordinates of galaxy centers if more galaxies are
-  presented in the field of view). The galaxy spectra with the
-  best-fit emission lines removed produced as output will be used to
-  measure the absorption line strenghts (block 5). If the Milky-Way
-  extinction value is provided, the input galaxy spectra are corrected
-  before fitting. Galaxy reddening is also fitted, if required. This
-  execution does not provide final highlevel data products, but it will
-  provides: i) galaxy spectra with the best-fit emission lines removed
-  (which will be used in block 5 to measure the absorption iline
-  indices), ii) the weights of the stellar templates (which will be
-  used to compute the stellar populations in block 7).
-  
-\item {\it Second module execution.} The results of the first
-  execution (stellar and emission lines kinematics) are re-sampled
-  over the second spatial sampling and used as starting guesses for
-  the second execution on the second set of galaxy spectra (second
-  spatial binning). This step is performed by the modules
-  mdap\_get\_2d\_map.pro (Section \ref{dap_sec:mdap_get_2d_map}) and
-  mdap\_create\_starting\_guesses.pro (Section
-  \ref{dap_sec:mdap_create_starting_guesses}). As in the first
-  execution, log-sampled Galaxy spectra are fitted with a linear
-  combination of stellar templates and Gaussian Emission lines. Only
-  those stellar templates that are selected in the first execution,
-  will be used in the second run (unless the keyword
-  /dont\_remove\_ null\_templates of the manga\_dap is set, see
-  Section \ref{dap_sec:dap_inputs_outputs}). If the Milky-Way extinction value is provided,
-  the input galaxy spectra are corrected before fitting. The final
-  high level products produced in this execution are the stellar
-  kinematics (V,$\sigma$, H3, and H4).
-
-\item {\it Third module execution.} The emission line kinematics from
-  the second execution are re-sampled over the third spatial sampling
-  and used as starting guesses for the third execution. The stellar
-  kinematics from the second execution are re-sampled over the third
-  spatial sampling and {\it fixed} in the third execution.  The
-  spatial resampling step is performed by the modules
-  mdap\_get\_2d\_map.pro (Section \ref{dap_sec:mdap_get_2d_map}) and
-  mdap\_create\_starting\_guesses.pro (Section
-  \ref{dap_sec:mdap_create_starting_guesses}). As in the first
-  execution, log-sampled Galaxy spectra are fitted with a linear
-  combination of stellar templates and Gaussian Emission lines. Only
-  those stellar templates that are selected in the first execution,
-  will be used in the third run (unless the keyword
-  /dont\_remove\_ null\_templates of the manga\_dap is set, see
-  Section \ref{dap_sec:dap_inputs_outputs}). If the Milky-Way extinction value is
-  provided, the input galaxy spectra are corrected before fitting. The
-  final high level products produced in this execution are: the
-  emission line kinematics (V,$\sigma$), reddening, and fluxes and
-  equivalent widths (reddening corrected).
-
-\end{enumerate}
+The interface mdap\_spectral\_fitting arranges inputs and outputs for
+the routine that performs the actual fit, i.e.
+mdap\_gandalf\_wrap.pro, which is an adapted version of the pPXF
+(\citealt{Cappellari+04}) and gandalf (\citealt{Sarzi+06}) routines
+(see Section \ref{dap_sec:mdap_gandalf_wrap} for information on how
+the fit is performed). 
 
 Block 4 requires as input the log-resampled spectra of the galaxy (and
 errors) and the stars, wavelenght vectors, the binning spatial
 informations, and starting guesses for the galaxy redshift and
 velocity dispersion.
 
-At the end of block 4, the two-dimensional fields of stellar
-kinematics (V, $\sigma$, h3, and h4) emission line kinematics (V,
-$\sigma$), emission line fluxes and equivalent widths, and stellar
-template weights for each of the spatial binning scheme are
-provided. A two-dimensional map of the reddening is also computed for
-the first and third spatial binning scheme. Best fit spectra are also
-produces as output, in the rest frame wavelength or in the observed
-wavelength frame, according to the user's input request.
+The fitting procedure can be fed with a vector that describes the
+variation of the instrumental velocity dispersion with
+wavelength \footnote{This affects only emission lines measurements,
+  because the stellar templates have already been convolved in Block 3
+  to match the instrumental resolution, see \ref{dap_sec:block3}}. If
+not provided, a constant instrumental velocity dispersion of 52 km/sec
+will be adopted.
+
+The block executes the module mdap\_spectral\_fitting.pro three times,
+once for each set of spatially binned spectra.  The current version of
+the DAP uses the MARCS library of ssp  (Maraston \& Stromback,
+2011, MNRAS, 418, 2785) for the spectral fitting.
+
+
+
+
+\begin{enumerate}
+
+\item {\it First module execution.} The log-sampled Galaxy spectra are
+  fitted with a linear combination of templates and Gaussian Emission
+  lines. This step requires input starting guesses of the galaxy
+  redshift and stellar velocity dispersion (more than one redshift,
+  and coordinates of galaxy centers if more galaxies are presented in
+  the field of view). The galaxy spectra with the best-fit emission
+  lines removed produced as output will be used to measure the
+  absorption line strenghts (block 5).  Galaxy reddening is also
+  fitted, if required. This execution does not provide final highlevel
+  data products, but it will provides: i) galaxy spectra with the
+  best-fit emission lines removed (which will be used in block 5 to
+  measure the absorption line indices), ii) the weights of the stellar
+  templates (which will be used to compute the stellar populations in
+  block 7).
+  %If the Milky-Way
+  %extinction value is provided, the input galaxy spectra are corrected
+  %before fitting.
+
+\item {\it Second module execution.} The results of the first
+  execution (stellar and emission lines kinematics) are re-sampled
+  over the second spatial sampling and used as starting guesses for
+  the second execution on the second set of galaxy spectra (second
+  spatial binning). This step is performed by the interface
+  mdap\_create\_starting\_guesses.pro (Section
+  \ref{dap_sec:mdap_create_starting_guesses}) and the utility
+  mdap\_interpolate\_2dmaps.pro (Section
+  \ref{dap_sec:mdap_interpolate_2dmaps}. As in the first execution,
+  log-sampled Galaxy spectra are fitted with a linear combination of
+  stellar templates and Gaussian Emission lines. Only those stellar
+  templates that are selected in the first execution, will be used in
+  the second run (unless the keyword /dont\_remove\_ null\_templates
+  of the manga\_dap is set, see Section
+  \ref{dap_sec:dap_inputs_outputs}).
+
+% If the Milky-Way extinction value
+%  is provided, the input galaxy spectra are corrected before
+%  fitting. The final high level products produced in this execution
+%  are the stellar kinematics (V,$\sigma$, H3, and H4).
+
+\item {\it Third module execution.} The emission line kinematics from
+  the second execution are re-sampled over the third spatial sampling
+  and used as starting guesses for the third execution. The stellar
+  kinematics from the second execution are re-sampled over the third
+  spatial sampling and {\it fixed} in the third execution. This step
+  is performed by the interface mdap\_create\_starting\_guesses.pro
+  (Section \ref{dap_sec:mdap_create_starting_guesses}) and the utility
+  mdap\_interpolate\_2dmaps.pro (Section
+  \ref{dap_sec:mdap_interpolate_2dmaps}. As in the first execution,
+  log-sampled Galaxy spectra are fitted with a linear combination of
+  stellar templates and Gaussian Emission lines. Only those stellar
+  templates that are selected in the first execution, will be used in
+  the third run (unless the keyword /dont\_remove\_ null\_templates of
+  the manga\_dap is set, see Section
+  \ref{dap_sec:dap_inputs_outputs}).
+
+%If the Milky-Way extinction value
+%  is provided, the input galaxy spectra are corrected before
+%  fitting. The final high level products produced in this execution
+%  are: the emission line kinematics (V,$\sigma$), reddening, and
+%  fluxes and equivalent widths (reddening corrected).
+
+\end{enumerate}
+
+
+At the end of block 4, the stellar kinematics (V, $\sigma$, h3, and
+h4), emission line kinematics (V, $\sigma$), emission line fluxes and
+equivalent widths, reddening (stars and gas) and stellar template
+weights for each of spectrum and for the spatial binning scheme are
+produced.
 
 Figures \ref{dap_fig:block4} and \ref{dap_fig:block4a} shows the
 flowchart of block 4.
@@ -677,25 +484,28 @@ flowchart of block 4.
 \begin{center}
 %\hspace{-2cm}
 %\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
-\psfig{file=figures/block4.ps, width=16cm, clip=}
+\psfig{file=figures/block4.ps, width=17cm, clip=, bb=35 25 560 620}
 %\vspace*{0cm}
 \caption{Workflow chart of the block 4 of the Data Analysis Pipeline.}
  \label{dap_fig:block4}
 \end{center}
 \end{figure}
 
+\include{mdap_create_starting_guesses}
 
-\begin{figure}
-\begin{center}
-%\hspace{-2cm}
-%\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
-\psfig{file=figures/block4.ps, width=13.5cm, clip=,bb=40 1060 1300 1950}
-%\vspace*{0cm}
-\caption{Workflow chart of the block 4 of the Data Analysis Pipeline,
-  zoom around the first fit section.}
- \label{dap_fig:block4a}
-\end{center}
-\end{figure}
+\include{mdap_spectral_fitting}
+
+%\begin{figure}
+%\begin{center}
+%%\hspace{-2cm}
+%%\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}
+%\psfig{file=figures/Block_4_zoom.ps, width=16cm, clip=}
+%%\vspace*{0cm}
+%\caption{Workflow chart of the block 4 of the Data Analysis Pipeline,
+ % zoom around the first fit section.}
+% \label{dap_fig:block4a}
+%\end{center}
+%\end{figure}
 
 
 \section{DAP Block 5: Measurement of absorption line indices}
@@ -745,281 +555,32 @@ Figure \ref{dap_fig:block5} illustrates the flowchart of the main module in this
 
 
 \section{DAP Block 6: Radial properties of high level data products}
-T.B.D.
+\label{dap_sec:block6}
 
 \section{DAP Block 7: Stellar population analysis}
+\label{dap_sec:block7}
 T.B.D.
 
 \section{DAP Block 8: Properties of the emission lines}
+\label{dap_sec:block8}
 T.B.D.
 
 \section{DAP Block 9: Mass modeling}
+\label{dap_sec:block9}
 T.B.D.
 
 
 \chapter{Main modules}
 \label{dap_chap:dap_modules}
 
-In this Dection we describe the individual modules in the DAP.
+In this Chapter we describe the main modules of the DAP.
 
 \include{mdap_calculate_spectrum_sn}
+
+\include{mdap_do_log_rebin}
+
 \include{mdap_voronoi_2d_binning}
-\include{mdap_calibrate_sn}
 
-
-
-\subsubsection{Future implementations}
-
-These implementations are foreseen:
-\begin{itemize}
-
-\item At the moment, the procedure broadens the input stellar spectra
-  (log rebinned) by a Gaussian function (i.e. constant
-  km/sec/pixel). In the future, a $LSF(\lambda)$ must be given as
-  input to match the full spectral resolution a function of
-  wavelength.
-
-\item Handle input galaxy spectra with a ln-lambda sampling. 
-
-\end{itemize}
-
-
-\subsection{{\tt mdap\_do\_log\_rebin.pro}}
-\label{dap_sec:mdap_do_log_rebin}
-
-This procedure is called by mdap\_log\_rebin.pro and performs the
-actual logarithmic resampling. It has been originally written by
-M. Cappellari within the ppxf package. Here we report the original
-description of the procedure.
-
-\medskip
-
- NAME: MDAP\_DO\_LOG\_REBIN
-
-\medskip
-
- PURPOSE: Logarithmically rebin a spectrum, while rigorously
- conserving the flux (if the keyword $\backslash$flux is set).
- Basically the photons in the spectrum are simply ridistributed
- according to a new grid of pixels, with non-uniform size in the
- spectral direction.
-
- This routine makes the `standard' zero-order assumption that the
- spectrum is *constant* within each pixels. It is possible to perform
- log-rebinning by assuming the spectrum is represented by a piece-wise
- polynomial of higer degree, while still obtaining a uniquely defined
- linear problem, but this reduces to a deconvolution and amplifies
- noise.
-
- This same routine can be used to compute approximate errors of the
- log-rebinned spectrum. To do this type the command
-    \[
-        {\rm MDAP\_DO\_LOG\_REBIN, lamRange, err}^2{\rm , err2New}
-    \]
- and the desired errors will be given by SQRT(err2New).  NB: This
- rebinning of the error-spectrum is very *approximate* as it does not
- consider the correlation introduced by the rebinning!
-
-
-\subsection{{\tt mdap\_spectral\_fitting.pro}}
-\label{dap_sec:mdap_spectral_fitting}
-
-This module is responsable for i) arranging the inputs from previous
-modules/blocks and feed them into the actual spectral fitting
-procedure, and ii) re-arrange the outputs of the spectral fitting
-procedure for further processing.
-
-For each of the input galaxy spectra, the mdap\_spectral\_fitting
-module performs the following steps
-
-
-\begin{itemize}
-
-\item corrects the input spectrum by the Milky Way reddening, if
-  provided. The correction is done using the mdap\_dust\_calzetti.pro
-  provided within the GALDALF package, by M. Sarzi (see Section
-  \ref{dap_sec:mdap_dust_calzetti}).
-
-\item fits the de-reddened input spectrum with a set of stellar
-  templates and Gaussian emission lines to get the absorption and
-  emission line kinematics, the emission lines fluxes and equivalent
-  widths, the weighs of the stellar templates, the best fit models for
-  stars and gas, the best fitting stellar template and the best
-  fitting stellar template convolved by the LOSVD, the residuals, and
-  the reddening (if required).
-
-\item Resamples the output spectra over a constant $\lambda$/pixel
-  wavelength vector.
-
-\end{itemize}
-
-
-The list of input/output parameters is given in Table
-\ref{dap_tab:mdap_spectral_fitting}.
-
-
-
-%\begin{table}
-\begin{center}
-\begin{longtable}{p{2.7cm}| p{11.1cm}}
-\caption{Inputs and outputs parameters of mdap\_spectral\_fitting.pro} \label{dap_tab:mdap_spectral_fitting} \\
-\hline
-\endfirsthead
-
-\hline
-\endhead
-
-\hline
-\endlastfoot
-
-%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
-\hline
-{\bf  INPUTS} &  \\
- galaxy &     [MxN  dblarray]. It contains the N galaxy spectra to fit, logarithmically 
-              sampled (natural log). Units: 1e-17 erg/s/cm$^2$/Angstrom.\\
-%
-  noise &     [MxN  dblarray]. It contains the N error vectors for the
-              N galaxy spectra. Same units as galaxy.\\
-%
-  loglam\_gal& [M dblarray]. It contains the log wavelength values where
-             galaxy and noise spectra are sampled. \\
-%
-  templates & [MM x NN dblarray].  It contains the NN stellar template
-            spectra, logarithmically sampled at the same \kms/pixel as the
-            galaxy spectra. Same units as galaxy, except an arbitrary
-            multiplicative factor.\\
-%
- loglam\_templates & [MM dblarray]. It contains the log wavelength values where
-            templates are sampled. \\
-%
- velscale & [float].  Defines the sampling of the input spectra, in \kms/pixel.\\
-%;
-\hline
-%
-{\bf OPTIONAL INPUTS } &  \\
- extra\_inputs & [string array] It contains other inputs
-               that might be used in the fitting procedure, such as
-               the number of polinomyal degree. Variable will be
-               initialized with the IDL execute command.
-                    {\tt for i = 0, n\_elements(extra\_inputs)-1 do d = execute(extra\_inputs[i])}
-               EXAMPLE:  
-                {\tt extra\_inputs=['MOMENTS=2','DEGREE=-1','BIAS=0', 
-                'reddening=0', 'LAMBDA=exp(loglam\_gal)']}\\       
-%           
- star\_kin\_starting\_ guesses& [N x 4 fltarray]. The stellar kinematics starting guesses for V, 
-                           $\sigma$, H3, and H4 for the N galaxy spectra to fit.
-                           Default values are 0. for V, H3, and H4, and 50 km/sec for sigma. 
-                           Starting guesses values are overrided by
-                           the /use\_ previos\_ guesses keyword, if set.\\
-%
- gas\_kin\_starting\_ guesses & [N x 2 fltarray]. The emission line kinematics starting guesses for V, 
-                           $\sigma$, for the N galaxy spectra to fit.
-                           Default values are 0 \kms\ for V, and 50 \kms\ for sigma. 
-                           Starting guesses values are overrided by
-                           the /use\_previos\_guesses keyword, if set.\\
-%
- MW\_extinction &  [float].  Milky-way extinction value at the target position (MAG). If non-zero,
-                 the input N galaxy spectra will be de-reddened using the mdap\_dust\_calzetti.pro 
-                 routine before fitting. Default= 0 mag.\\
-%;
- emission\_line\_ file &[string]. It contains the name of the file with the information of the
-                    emission lines to be fitted. The input file must be an ascii file with the 
-                    following columns (comments starts with ''\#''):
-  
-                    {\tt 
-                    \#  ID  CODE \  wav  \ action  line    Int	Vel     $\sigma$ mode
-
-                    \#  \ \ \ \ \ \ \  \ \ [\AA]  \ \ f/i/m   dbl?
-
-                    \#   0   HeII\ \ 3203.15  \   m \ \ \ l   \  \ 1.0	\   0 \	10 	t25
-
-                    \#   1   [NeV]  3345.81 \    m  \ \ \ l    \ \ 1.0  \   0 \   10      t25
-
-                    \ \  2   [NeV]  3425.81  \   m  \ \ \ l   \ \ 1.0   \  0  \  10      t25
-
-                    \ \  3   [OII]  3726.03   \ m  \ \ \ l   \ \  1.0 \	   0 \	10 	t25 }
-
-                      P.S. mdap\_sgandalf.pro will use only wavelength and sign(Intensity).\\
-                      %Other entries are used by mdap\_gandalf (see gandalf.pro help for more information) \\
-%
- range\_v\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity (in \kms). Default: starting\_guess $\pm$ 2000 \kms.\\
-%;
- range\_s\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity dispersion (in \kms). Default: $21 < \sigma < 499$ \kms.\\
-%;
- range\_v\_gas   &[2 elements array]. It specifies the boundaries for the emission line best fit velocity (in \kms) Default: starting\_guess $\pm$ 2000 \kms.\\
-%;
- range\_s\_gas &[2 elements array]. It specifies the boundaries for the
-             emission line best fit velocity dispersion (in \kms). Default:
-             starting\_guess $\pm$ 2000\kms.\\
-%;
- wavelength\_input  &[QQ elements array]. If specified, it will be used to create wavelength\_output, i.e. the wavelength
-                  vector to interpolate the final results on.\\
-%
-\hline
- {\bf OPTIONAL KEYWORDS}  &  \\
-%;
- /use\_previos\_ guesses &  If set, the starting guesses for spectrum $i-$th
-                       will be the best fit values from spectrum
-                      $(i-1)-$th (i$>0$). Input starting guesses will be ignored.\\
-%;
- /fix\_star\_kin  &        If set, the stellar kinematics are not
-                       fitted. The return values is that of the starting guesses. \\
-%
- /fix\_gas\_kin   &        If set, the emission-lines kinematics are not fitted. The return values is that of the starting guesses. \\
-%
-/quiet     &            If set, some information are not printed on screen.\\
-/rest\_ frame\_log & If set, the output spectra (galaxy\_minus\_ ems\_fit\_model, best\_fit\_model, residuals, 
-             best\_template, and best\_template\_LOSVD\_conv) are produced at rest-frame wavelength.\\
-%%
-\hline
-%
- {\bf OUTPUTS} &  \\
-%;
-  stellar\_ kinematics   &  [N x 5 flt array].  It contains the best fit values of V, $\sigma$, h3, h4, and $\chi^2$/DOF for each of the N fitted input galaxy spectra. If /fix\_star\_kin is set, the array is not defined.\\
-%;
-  stellar\_ kinematics\_err &[N x 5 flt arrary].  It contains the errors to the best fit values of V, $\sigma$, h3, h4, and $\chi^2$/DOF for each of the N fitted input galaxy spectra.\\
-%;
-  stellar\_weights        &[N x NN dbl array]. It contains the weights of the NN templates for each of the N input galaxy spectra.\\
-%;
-  emission\_line\_ kinematics &[N x 2 flt array].  It contains the best fit values of V, $\sigma$ (emission lines) for each of the N fitted
-                            input galaxy spectra. If /fix\_gas\_kin is set, the array is not defined.\\
-%;
- emission\_line\_ kinematics\_err & [N x 2 flt array].  It contains the errors to the best fit values of V, $\sigma$ (emission lines) for each of the N fitted input galaxy spectra. If /fix\_gas\_kin is set, the array is not defined.\\
-%;
- emission\_line\_ fluxes  &[N x T flt array].  It contains the fluxes of the T fitted emission lines for each of the N input galaxy spectra. Values are corrected for reddening.\\
-%
- emission\_line\_ fluxes\_err &  [N x T flt array].  Errors associated to emission\_line\_fluxes \\
-%
- emission\_line\_ equivW      & [N x T flt array]. It contains the Equivalent widths of the T fitted emission lines for each of the N input galaxy spectra.                            Equivalent widths are computed by the ratio of emission\_line\_fluxes and the median value of the stellar spectrum within 5 and 10 $\sigma$ from the emission line. $\sigma$ is the emission line velocity dispersion. \\
-%
- emission\_line\_ equivW\_err  & [N x T flt array]. Errors associated to emission\_line\_equivW  . \\
-%
- wavelength\_output     & [QQ elements flt array]. It will contain the linear wavelength values over which the output spectra are sampled. 
-       Default: it is set to wavelength\_input (if defined), or automatically computed with the smallest lambda/pixel step obtained  from exp(loglam\_gal).\\
-%
- best\_fit\_model      &[N x QQ flt array]. It will contain the best fit models for each of the input galaxy spectra (dereddended if 
-                       MW\_extinction is not zero), sampled over wavelength\_output. It is in rest-frame if the keyword /rest\_frame\_log is set. \\
-%
- galaxy\_minus\_ ems\_fit\_model &[N x QQ flt array]. It will contain the input galaxy spectra minus the emission lines best fit models (dereddended if MW\_extinction is not zero), 
-                      sampled over wavelength\_output, for each of the N input spectra. It is in rest-frame if the keyword /rest\_frame\_log is set\\
-%
- best\_template &[N x QQ flt array]. It will contain the best fitting template for each of the N input galaxy spectra sampled over wavelength\_output (rest frame wavelength). \\
-%
- best\_template\_ LOSVD\_conv &[N x QQ flt array]. It will contain the best fitting template for each of the N input galaxy spectra convolved by best fitting 
-LOSVD and sampled over wavelength\_output (rest frame wavelength).\\
-%
- reddening\_ output &[float]. best fit value for the reddening, if the fit is required (otherwise the variable is not defined). To fit the reddening, you have to pass a 
-                        starting guess value and the LAMBDA = exp(loglam\_gal) vector through the extra\_keyword parameter. Example: extra\_inputs = ['reddening=0', 'LAMBDA=exp(loglam\_gal)'].\\
-% 
- residuals &[N x QQ flt array]. It contains the difference between the observed galaxy spectra (dereddened if the MW\_reddening is defined) and the best\_fit\_model, 
-                            sampled over wavelength\_output. It is in rest-frame if the keyword /rest\_frame\_log is set\\
-%
-\hline
-{\bf  OPTIONAL OUTPUTS} &  \\
-version & string specifying the module version. If requested, the module is not execute and only version flag is returned.\\
-\hline
-\end{longtable}
-\end{center}
 
 \subsection{{\tt mdap\_sgandalf.pro}}
 \label{dap_sec:mdap_sgandalf}
@@ -1381,131 +942,6 @@ POLYWEIGHTS: &[Flt array]. A named variable to receive the weights of the additi
 \end{center}
 
 
-\subsection{{\tt mdap\_create\_starting\_guesses.pro}}
-\label{dap_sec:mdap_create_starting_guesses}
-
-This module takes the kinematic output of mdap\_spectral\_fitting.pro,
-which defined over an irregular spatial grid, and interpolates them
-over another irregular spatial grid. The procedure handles the stellar
-kinematic output (V, $\sigma$, h3, and h4, in this case the keyword
-$\backslash$h3h4 must be set) as well as the emission line kinematic
-output (V, $\sigma$). It is used in block 4 to map a set of
-measurements obtained over a specific spatial binning into a new
-spatial binning, so that they can be used as starting guesses for a
-future binning. The interpolation is actually performed by the
-mdap\_interpolate\_2dmaps.pro routine (see Section
-\ref{dap_sec:mdap_interpolate_2dmaps}), which uses the GRID\_TPS IDL
-function.
-
-The list of input/output parameters for this module is given in Table
-\ref{dap_tab:mdap_create_starting_guesses}.
-
-
-\begin{center}
-\begin{longtable}{p{2.7cm}| p{11.1cm}}
-\caption{Inputs and outputs parameters of mdap\_create\_starting\_guesses.pro} \label{dap_tab:mdap_create_starting_guesses} \\
-\hline
-\endfirsthead
-\hline
-\endhead
-\hline
-\endlastfoot
-\hline
-{\bf  INPUTS} &  \\
-%
-input\_map    &[N x I flt arrary]. Array of values measured on the N galaxy spectra. The value of I must be either 2 (in the case the measurements refer to the emission line kinematics, V and $\sigma$), or 4 (in the case the measurement refers to the stellar kinematics.) If I=4, the keyword $\backslash$h3h4 must be set. \\
-%
-input\_xbin   &[N elements array]. X coordinates of the N spatial bins (in arcsec), were the input\_map is defined.\\
-%
-input\_ybin   &[N elements array]. Y coordinates of the N spatial bins (in arcsec), were the input\_map is defined.\\
-%
-x2d & [NNxMM flt array]. X coordinates of the field of view, in arcsec (produced in block 1 by mdap\_read\_datacube.pro). 
-                        Coordinate 0 is the center of the field of view.\\
-%
-y2d & [NNxMM flt array]. Y coordinates of the field of view, in arcsec (produced in block 1 by mdap\_read\_datacube.pro). 
-                        Coordinate 0 is the center of the field of view.\\
-%
-velocity\_initial\_ guess & [float]. Value to be used for the velocity initial guess, in the case there are no enough points for spatial interpolation ($N<2$). \\
-%
-velocity\_ dispersion\_ initial\_ guess & [float]. Value to be used for the velocity dispersion initial guess, in the case there are no enough points for spatial interpolation ($N<2$). \\
-%
-H3\_initial\_guess & [float].  Value to be used for the H3 initial guess, in the case there are no enough points for spatial interpolation ($N<2$).\\
-%
-H4\_initial\_guess & [float].  Value to be used for the H4 initial guess, in the case there are no enough points for spatial interpolation ($N<2$). \\
-%
-output\_xbin &[M elements array]. X coordinates of the M spatial bins (in arcsec), were the input\_map needs to be interpolated (e.g. produced by mdap\_spatial\_bin.pro).\\
-%
-output\_ybin &[M elements array]. Y coordinates of the M spatial bins (in arcsec), were the input\_map needs to be interpolated (e.g. produced by mdap\_spatial\_bin.pro).\\
-\hline
-{\bf OPTIONAL KEYWORDS} &  \\
-/h3h4 & If set, allows for the creation H3 and H4 starting guesses. Default, only V and $\sigma$ are computed.\\
-\hline
-{\bf OUTPUTS} &  \\
-%
-output\_start\_ guess & [M x I dbl array]. Quantities in the input\_map interpolated over the coordinates output\_xbin and output\_ybin. If
-                                        $\backslash$h3h4 is set, $I=4$, otherwhise $I=2$.\\ 
-\hline
-\end{longtable}
-\end{center}
-
-
-
-
-
-\subsection{{\tt mdap\_interpolate\_2dmaps.pro}}
-\label{dap_sec:mdap_interpolate_2dmaps}
-
-This procedure is called by mdap\_create\_starting\_guesses.pro
-(Section \ref{dap_sec:mdap_create_starting_guesses}) and interpolates
-a set of measurements, which defined on a irregularly sampled
-spatial grid, over another irregularly sampled spatial grid.
-It uses the GRID\_TPS internal function to perform the interpolation.
-
-The list of input/output parameters for this module is given in Table
-\ref{dap_tab:mdap_interpolate_2dmaps}.
-
-\begin{center}
-\begin{longtable}{p{2.7cm}| p{11.1cm}}
-\caption{Inputs and outputs parameters of mdap\_interpolate\_2dmaps.pro} \label{dap_tab:mdap_interpolate_2dmaps} \\
-\hline
-\endfirsthead
-\hline
-\endhead
-\hline
-\endlastfoot
-\hline
-{\bf  INPUTS} & \\
-\hline
-input  & [N elements double array]. The N values to interpolate (defined over the x,y coordinates).  \\
-%
-x  & [N  elements flt array]. X coordinates in arcsec corresponding to the N values (it is the same vector as input\_xbin in  mdap\_create\_starting\_guesses.pro).  \\
-%
-y  & [N  elements flt array]. Y coordinates in arcsec corresponding to the N values (it is the same vector as input\_ybin in  mdap\_create\_starting\_guesses.pro).   \\
-%
-x2d\_full & [NNxMM flt array].  X coordinates of the field of view, in arcsec (produced in block 1 by mdap\_read\_datacube.pro). 
-                  Coordinate 0 is the center of the field of view. It is the same array as x2d in mdap\_create\_starting\_guesses.pro.\\
-%
-%
-y2d\_full & [NNxMM flt array].  Y coordinates of the field of view, in arcsec (produced in block 1 by mdap\_read\_datacube.pro). 
-                   Coordinate 0 is the center of the field of view. It is the same array as y2d in mdap\_create\_starting\_guesses.pro.\\ \\
-%
-x\_out  & [M elements flt array]. X coordinates in arcsec over which input must be interpolated (it is the same vector as 
-                                  output\_xbin in  mdap\_create\_starting\_guesses.pro). \\
-%  \\
-%
-y\_out  & [M elements flt array].  Y coordinates in arcsec over which input must be interpolated (it is the same vector as 
-                                  output\_ybin in  mdap\_create\_starting\_guesses.pro).  \\
-%
-\hline
-{\bf OUTPUTS} & \\
-output  &  [M elements double array].  input values interpolated over the x\_out, y\_out  coordinates.  \\
-\hline
-\end{longtable}
-\end{center}
-
-
-
-
 
 \subsection{{\tt mdap\_measure\_indices.pro}}
 \label{dap_sec:mdap_measure_indices}
@@ -1682,7 +1118,7 @@ errors    &[float].    This variable will contain the errors on the indices comp
 
 
 
-
+\include{mdap_gandalf}
 
 
 \subsection{{mdap\_dust\_calzetti.pro}}
@@ -1738,32 +1174,13 @@ spc\_obs = spc\_corr $times$ mdap\_dust\_calzetti(l0\_gal, lstep\_gal, npix, ebv
 \end{center}
 
 
+\chapter{Utility modules}
 
+\include{mdap_convol_sigma}
 
-%\section{First Light Data Analysis Plan}
-%
-%\subsection{Measurements}
-%
-%\begin{itemize}
-%\item stellar velocities/velocity dispersion (potentially high-order moments)
-%\item absorption line strengths
-%\item stellar population parameters age, metallicity, chemical element ratios (potentially IMF slope) from absorption features and full spectral fitting
-%\item dust attenuation from full spectral fitting
-%\item gas velocities (potentially velocity dispersions)
-%\item emission line widths and fluxes
-%\item star formation rates
-%\item gas metallicities
-%\item Balmer decrement and dust attenuation
-%\end{itemize}%
-%
-%\subsection{Spatial performance}
-%
-%\begin{itemize}
-%\item individual fiber and/or data cube cells
-%\item azimuthal binning
-%\item Voronoi-type radial binning
-%\end{itemize}
+\include{mdap_calibrate_sn}
 
+\include{mdap_interpolate_2dmaps}
 
 \section{Visualization and Web Interface. T.B.D.}
 \label{dap_sec:visualization}

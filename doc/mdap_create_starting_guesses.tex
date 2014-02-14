@@ -1,0 +1,86 @@
+\subsection{{\tt mdap\_create\_starting\_guesses.pro}}
+\label{dap_sec:mdap_create_starting_guesses}
+
+
+This interface is responsible to transform the kinematics measured on
+a spatial binning scheme into starting guesses for the fit of another
+spatial binning scheme. The main module that performs the computation
+is mdap\_interpolate\_2dmaps.pro (see Section
+\ref{dap_sec:mdap_interpolate_2dmaps}). 
+
+Table \ref{dap_tab:mdap_create_starting_guesses} lists the inputs and
+outputs of mdap\_create\_starting\_guesses.pro.
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs  parameters of mdap\_create\_starting\_guesses.pro} \label{dap_tab:mdap_create_starting_guesses} \\
+\hline
+{\bf  INPUTS} & \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+ input\_map  & Nx4 (or Nx2)  elements array containing the measurements  of velocity, velocity dispersion 
+              of the N spectra to be used to get the starting guesses. If the keyword /h3h4 is set, input\_map
+              must be Nx4 elements array, and previous measurements of h3 and h4 must be given.
+
+              \medskip
+
+              \ \ \ input\_map[*,0]: previous velocity measurements
+
+              \ \ \ input\_map[*,1]: previous velocity dispersion measurements
+
+              \ \ \ input\_map[*,2]: (optional) previous H3 measurements
+
+              \ \ \ input\_map[*,3]: (optional) previous H4 measurements\\
+%
+input\_xbin  &  N elements array. X coordinates of the center of the spatial bins where the measurements in input\_map refer to.  \\
+%
+input\_ybin  &  N elements array. Y coordinates of the center of the spatial bins where the measurements in input\_map refer to.  \\
+%
+x2d          &  N'xM' elements array. Two dimensional map of X coordinates of a regular grid mapping the full field of view.  \\
+%
+y2d          &   N'xM' elements array. Two dimensional map of Y coordinates of a regular grid mapping the full field of view.       \\
+%
+velocity\_initial\_guess   & Float. Guess for the velocity to be used in the case of previous measurements are NaN, or not defined.  \\
+%
+velocity\_dispersion\_initial\_guess & Float. Guess for the velocity to be used in the case of previous measurements are NaN, or not defined, 
+                                    or outside a fiducial interval $21<\sigma<499$ km/sec.     \\
+%
+H3\_initial\_guess  &  Float. Guess for the velocity to be used in the case of previous measurements are NaN, or not defined, or outside a fiducial
+                          interval $-0.399 < h3 < 0.399$.  \\
+%
+H4\_initial\_guess  &  Float. Guess for the velocity to be used in the case of previous measurements are NaN, or not defined, or outside a fiducial
+                          interval $-0.399 < h4 < 0.399$.  \\ 
+%
+output\_xbin &  M elements array. X coordinates of the center of the spatial bins where the starting guesses are to be computed. \\
+%
+output\_ybin & M elements array. Y coordinates of the center of the spatial bins where the starting guesses are to be computed. \\
+\hline
+{\bf  KEYWORD} & \\
+\hline
+/h3h4    &   If set, the guesses of Gauss Hermite moments (h3, h4) will be computed (otherwise set to H3\_initial\_guess and
+             H4\_initial\_guess) . The input input\_map must contain h3 and h4 measurements.     \\
+\hline
+{\bf  OUTPUTS} & \\
+\hline
+output\_start\_guess &   Mx4 elements array containing the interpolated velues of of velocity, velocity dispersion of the N spectra 
+             to be used as starting guesses. If the keyword /h3h4 is set, it will be Mx4 elements array.
+
+      \medskip
+
+   \  \  \                output\_start\_guess[*,0]: velocity interpolated on the  output\_xbin, output\_ybin, grid to be used as starting guesses.
+
+   \  \  \           output\_start\_guess[*,1]: velocity dispersion interpolated on the  output\_xbin, output\_ybin, grid to be used as starting guesses.
+
+   \  \  \            output\_start\_guess[*,2]: (optional) H3 interpolated on the  output\_xbin, output\_ybin, grid to be used as starting guesses.
+
+   \  \  \            output\_start\_guess[*,3]: (optional) H4 interpolated on the  output\_xbin, output\_ybin, grid to be used as starting guesses.\\
+
+\hline
+\end{longtable}
+\end{center}

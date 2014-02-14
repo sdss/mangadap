@@ -1,0 +1,348 @@
+\section{The configuration file}
+\label{dap_sec:configuration}
+
+The configuration file defines variables and parameters used in the
+DAP. No empty lines should be present, commented lines are marked with
+'\#'. The content of the configuration file is the following:
+
+\begin{itemize}
+
+ \item total\_filelist. A string indicating the full path to the file
+   listing the galaxies to analyze and their physical parameters (See
+   Section \ref{dap_sec:dap_inputs_outputs}).
+
+ \item datacube\_root\_dir. Path indicating the location of the data
+   to analyse. Files in datacube format must be stored in
+   $<$datacube\_root\_dir$>$\textbackslash datacubes; files in RSS
+   format must be stored in $<$datacube\_root\_dir$>$\textbackslash
+   rss.
+ 
+ \item output\_root\_dir. Path indicating where the results of the
+   analysis should be stored. The directories
+   $<$output\_root\_dir$>$\textbackslash resuts\_datacubes, and
+   $<$output\_root\_dir$>$\textbackslash resuts\_rss must exist.
+
+ \item w\_range\_for\_sn\_computation. Two elements array that
+   specifies the wavelength range where to compute the signal to noise
+   ratio. This array is passed to the main module
+   mdap\_read\_datacube.pro, via the optional input {\tt lrange} (See
+   Section \ref{dap_sec:mdap_read_datacube}). The suggested vaue for
+   MANGA is to adopt the r-gunn FWHM bandpasse, centered at the
+   effective wavelength (i.e.  $5560.00 < \lambda < 6942.00$
+   \AA\ Fukugita et al. 1998). Leave it undefined to use the entire
+   spectral range.
+
+
+ \item w\_range\_for\_sn\_computation\_for\_gas. Two elements array
+   that specifies the wavelength range where to compute the signal to
+   noise ratio for emission line science. This range will be
+   redshifted accordingly to the galaxy systemic velocity (from the
+   starting guesses). If not specified, the default option will be
+   adopted, i.e. use the same wavelenght range (with no redshift
+   correction) for continuum and emission line science. One possible
+   suggestion is to use the $6530 < \lambda <6600$ wavelength range,
+   which embraces H$\alpha$ and NII emission lines.
+
+  \item trim\_wav\_range\_spatial\_binning\_1. Two elements vector
+    specifying the wavelength region to analyse in the first spatial
+    binning (units: \AA). Binned galaxy spectra (of the first spatial
+    binning) will be trimmed accordingly, templates will be trimmed
+    over a sligtly larger wavelenth range.  Its value is passed to the
+    main module mdap\_log\_rebin, during the rebinning and trimming of
+    the spectra in the first spatial binning scheme through the
+    optional input wave\_range (See Section
+    \ref{dap_sec:mdap_spatial_binning}). If not defined, the entire
+    available wavelength range will be used.
+
+
+  \item trim\_wav\_range\_spatial\_binning\_2. As above, but for the
+    second spatial binning scheme (3 spatial binning schemes are
+    foreseen in the DAP, see Section \ref{dap_sec:block2}, plus a
+    radial binning scheme \ref{dap_sec:block6}).
+
+  \item trim\_wav\_range\_spatial\_binning\_3. As above, but for the
+    third spatial binning scheme (3 spatial binning schemes are
+    foreseen in the DAP, see Section \ref{dap_sec:block2}, plus a
+    radial binning scheme \ref{dap_sec:block6}).
+
+  \item trim\_wav\_range\_radial\_binning. As above, but for the
+    radial spatial binning scheme (3 spatial binning schemes are
+    foreseen in the DAP, see Section \ref{dap_sec:block2}, plus a
+    radial binning scheme \ref{dap_sec:block6}).
+
+
+  \item velscale. Float value indicating the velocity scale to adopt
+    for the logarithmic rebinned spectra (units km/sec/pixel). This
+    value is passed to mdap\_log\_rebin via the keyword
+    input\_velscale (see Section \ref{dap_sec:mdap_log_rebin}), and to
+    mdap\_spectral\_fitting via the velscale input variable (see
+    Section \ref{dap_sec:mdap_spectral_fitting}). The default is to
+    use the one automatically defined by the input galaxy
+    specta. Suggested value: 30 km/sec/pixel.
+
+  \item stellar\_library\_spatial\_binning\_1. String specifying the
+    path. Warning: files are identified with the IDL function {\tt
+      file\_search(stellar\_library\_spatial\_binning\_1)}. Therefore,
+    be sure that this is enough to identify all and only the files
+    that are needed. Warning: stellar\_library\_spatial\_binning\_1
+    will be used also for the radial binning scheme. Files in the
+    library must be fits files covering a wavelenght range
+    preferentially larger than the MANGA ($3000< \lambda <
+    10000$). They must have an uniform angstrom/pixel sampling. The
+    following header keywords need to be present: CRVAL1 (value at
+    reference pixel), CRPIX1 (reference pixel), and CDELT1 (dispersion
+    in angstrom/pixel). stellar\_library\_spatial\_binning\_1 is
+    required, and it will be passed to the interface mdap\_ log\_rebin
+    and via the library input variable.
+
+  \item stellar\_library\_spatial\_binning\_2 Same as
+    stellar\_library\_spatial\_binning\_1, but for stars to be used
+    with the spectra of the secon spatial binning.
+
+
+  \item stellar\_library\_spatial\_binning\_3. Same as
+    stellar\_library\_spatial\_binning\_1, but for stars to be used
+    with the spectra of the third spatial binning.
+
+
+  \item sn1\_rss. Float indicating the target signal-to-noise to adopt
+    in the Voronoi binning scheme for RSS format data in the first
+    spatial binning. This is mandatory and it will be passed to the
+    interface mdap\_spatial\_binning via the min\_sn input variable
+    (see Section \ref{dap_sec:mdap_spatial_binning}). Suggested entry
+    = 15.
+
+  \item sn2\_rss. Same of sn1\_rss, but for RSS format data in the
+    first spatial binning. Suggested entry = 10.
+
+  \item sn3\_rss. Same of sn1\_rss, but for RSS format data in the
+    third spatial binning. Suggested entry = 5.
+
+  \item sn1\_datacubes.  Same of sn1\_rss, but for datacube format
+    data in the first spatial binning. Suggested entry = 40.
+
+  \item sn2\_datacubes.  Same of sn1\_rss, but for datacube format
+    data in the second spatial binning. Suggested entry = 25.
+
+  \item sn3\_datacubes.  Same of sn1\_rss, but for datacube format
+    data in the third spatial binning. Suggested entry = 15.
+
+  \item sn\_thr\_tpl\_rss = 2. Threshold value for the S/N per
+    angstrom each spectrum of RSS data format needs to have to be
+    included in the analysis. S/N is computed over the wavelength
+    range defined by the w\_range\_for\_sn\_computation variable (see
+    above). Specra whose S/N are lower than this value will be
+    discarded.Default = 0. To avoid any S/N threshold, set this
+    variable to a very negative value (i.e. -100). Suggested value = 2
+
+  \item sn\_thr\_str\_rss. Same as sn\_thr\_tpl\_rss, but for RSS
+    format data in the second spatial binning scheme.  Suggested value
+    = 2.
+
+  \item sn\_thr\_ems\_rss. Same as sn\_thr\_tpl\_rss, but for RSS
+    format data in the hird spatial binning scheme. Suggested value =
+    2.
+
+  \item sn\_thr\_tpl\_datacubes. Same as sn\_thr\_tpl\_rss, but for
+    datacube format data in the first spatial binning scheme.
+    Suggested value = 2.
+
+  \item sn\_thr\_str\_datacubes.  Same as sn\_thr\_tpl\_rss, but for
+    datacube format data in the second spatial binning scheme.
+    Suggested value = 2.
+
+  \item sn\_thr\_ems\_datacubes. Same as sn\_thr\_tpl\_rss, but for
+    datacube format data in the third spatial binning scheme.
+    Suggested value = 2.
+
+  \item sn\_calibration\_rss. Calibration coefficients for RSS format
+    files. Formula is specified in the mdap\_calibrat\_sn.pro
+    function. If not defined no calibration will be used (seggested).
+    sn\_calibration\_rss is passed to mdap\_spatial\_binnin.pro and
+    mdap\_voronoi\_2d\_binning.pro via the sn\_calibration keyword
+
+
+ \item sn\_calibration\_datacubes. Calibration coefficients for
+   datacube format files. Formula is specified in the
+   mdap\_calibrat\_sn.pro function, and it is given by the following
+   expression:
+
+   \[
+    {\rm S/N_{REAL}} = \sum_{i=1,N} C_i \cdot \left( \frac{{\rm S/N_{ESTIMATED}}^{C_0}}{ \sqrt{{\rm N}_{\rm spax} }} \right)^{i-1} 
+   \]
+
+   where $C_i$ are the coefficients of sn\_calibration\_datacubes, and
+   N$_{\rm spax}$ are the number of spaxels in that spatial bin.
+
+   If sn\_calibration\_datacubes is not defined, the relation
+   S/N$_{\rm REAL}$ = S/N$_{\rm ESTIMATED}$ is used. Suggested values
+   for the MaNGA test run are: [1.1, 0.743865, 1.10317, --0.0106751,
+     4.00892$\cdot$10$^{-5}$].
+
+   Warning: Coefficient calibrations were not computed for optimally
+   weighted binned spectra (i.e. do not use if weight\_for\_sn=1.)
+
+   sn\_calibration\_datacubes is passed to mdap\_spatial\_binnin.pro
+   and mdap\_voronoi\_2d\_ binning.pro via the sn\_calibration keyword
+   (see Section \ref{dap_sec:mdap_spatial_binning}).
+
+ \item weight\_for\_sn. If set to 0, the voronoi binning scheme uses
+   the Modified Lyoid algorithm, and spectra belonging to the same
+   spatial bin are added together with no weighting. If set to 1 the
+   voronoi binning scheme uses an optimal weighting procedure (Signals
+   and Errors is weighted by $S/N^2$), and spectra belonging to the
+   same spatial bin are added with weights given by $S/N^2$. This
+   value is passed to the interface mdap\_spatial\_binning.pro and the
+   module mdap\_voronoi\_2d\_binning.pro via the keyword
+   weight\_for\_sn (see Section
+   \ref{dap_sec:mdap_spatial_binning}). If not defined, the default
+   value (0) is used (no weights are applied). Warning: if the
+   weighting is used, the suggested S/N calibration (see below) is not
+   valid.
+
+ \item user\_bin\_map\_spatial\_binning\_1. String specifying the fits
+   file to be used to set the first spatial binning scheme. If
+   provided, it will override the Voronoi binning scheme. Default: use
+   the S/N to define the voronoi binning. Its value will be passed to
+   the interface mdap\_spatial\_binning.pro via the keyword
+   user\_bin\_map (see Section \ref{dap_sec:mdap_spatial_binning})
+
+ \item user\_bin\_map\_spatial\_binnin\_2. Same as before, but for the
+   second spatial binning scheme.
+
+ \item user\_bin\_map\_spatial\_binnin\_3. Same as before, but for the
+   third spatial binning scheme.
+
+ \item emission\_line\_file\_spatial\_binnin\_1. String specifying the
+   name of the file which defines the emission lines to be fitted in
+   the first spatial binning and the fit set-up parameters (see
+   Sections \ref{dap_sec:mdap_spectral_fitting} and
+   \ref{dap_sec:mdap_gandalf}). Its value will be passed to the
+   interface mdap\_spectral\_fitting.pro via the keyword
+   emission\_line\_file (see Section
+   \ref{dap_sec:mdap_spectral_fitting}).
+
+ \item emission\_line\_file\_spatial\_binnin\_2. Same as before, but
+   for the second spatial binning.
+
+ \item emission\_line\_file\_spatial\_binnin\_3. Same as before, but
+   for the third spatial binning.
+    
+ \item emission\_line\_file\_radial\_binning. Same as before, but for
+   the radial binning.
+
+ \item absorption\_line\_indices. String specifying the name of the
+   file which defines the absorption line indices to measure. It must
+   be an ascii file with 9 columns:
+
+   \begin{itemize}
+
+     \item Column 1. Integer. Unique ID number of the absorption line
+       feature.
+
+     \item Column 2.String. Unique name of the absorption line
+       feature. This will define the name of the field in sctructure
+       of the DAP results (i.e. the name must begin with a letter,
+       special characters like comas or dots are not allowed).
+
+     \item Columns 3-4. Float (units: \AA) Lower and upper values of
+       the index passpand.
+
+     \item Columns 5-6.  Float (units: \AA) Lower and upper values of
+       the index blue pseudo-continuum.
+
+     \item Columns 7-8.  Float (units: \AA) Lower and upper values of
+       the index red pseudo-continuum.
+
+     \item Column 9. String (accepted values are: ang or
+       mag). Specifies the units (\AA\ or magnitudes) of the output.
+ 
+    \end{itemize}
+      
+   absorption\_line\_indices must be defined, and it will be passed to
+   the interface mdap\_ measure\_indices.pro and the utility
+   mdap\_read\_indices\_definitions.pro via the
+   absorption\_line\_indices input variable (see Sections
+   \ref{dap_sec:mdap_measure_indice} and
+   \ref{dap_sec:mdap_read_indices_definitions}).
+
+   Indices will be measured only if their blue and red pesudo-continua
+   bandpasses are included in the considered wavelength range. If not,
+   their values are set to NaN, and their errors to 99 in the final
+   output file.
+
+  \item save\_intermediate\_steps. If set to 1 at the end of each
+    block an idl session with all the current variables is
+    saved. Default: 0 (suggested)
+
+  \item remove\_null\_templates. If set to 1, the stellar templates
+    that have null weight after the fiting of the first spatial bin
+    will be rejected from the other fits. It is meaningful only if the
+    libraries used for the other spatial binnings are the same of that
+    used for the first spatial binning. Default: 0 Suggested value =
+    1.
+
+  \item external\_library. String indicating the location of fortran
+    or C executables that will replace some of the IDL modules for
+    speed purposes. If undefined, IDL routines will be used. The
+    current DAP structure foresees the following two values, and
+    mdap\_bvls.pro will be substituted by the mdap\_bvls\_external.pro
+    routine:
+
+    \begin{enumerate}
+
+      \item external\_library= $<$mangadap$>$/external/F90\_32/ for 32
+        bit machines;
+ 
+      \item $<$mangadap$>$/external/F90\_64/ for 64 bit machines.
+
+    \end{enumerate}
+
+   Default: undefined (using internal routines). we suggest to define
+   it and use external routines. The value of external\_library will
+   be passed to the interface mdap\_spectral\_ fitting.pro via the
+   keyword external\_library (if defined it will be used for all the
+   spatial binning)
+
+  \item spectra\_fittin\_parameters\_patial\_binning\_1. String array
+    containing the additional inputs and keyword to be passed to the
+    mdap\_spectral\_fitting.pro interface via the input keyword
+    extra\_inputs (see Section \ref{dap_sec:mdap_spectral_fitting}) to
+    be used to analyse the spectra of the first spatial binning.
+    Suggested values: {\tt ['MOMENTS = 4', 'DEGREE = -1', 'MDEGREE =
+        4']} Warning: variables will be defined via the IDL execute()
+    function within the mdap\_spectral\_fitting.pro.
+
+  \item spectra\_fittin\_parameters\_patial\_binning\_2. Same of
+    before, but for the second spatial binning. Suggested value: {\tt
+      ['MOMENTS = 4', 'DEGREE = -1', 'MDEGREE = 4']}
+
+  \item spectra\_fittin\_parameters\_patial\_binning\_3.  Same of
+    before, but for the third spatial binning. Suggested value: {\tt
+      ['MOMENTS=4', 'MDEGREE=4', 'DEGREE=-1', 'reddening =
+        [0.01,0.01]', 'LAMBDA = exp(loglam\_gal)']}
+
+  \item spectra\_fittin\_parameters\_patial\_binning\_readial.  Same
+    of before, but for the radial binning. Suggested value: {\tt
+      ['MOMENTS=4', 'DEGREE=-1', 'mdegree=4', 'reddening = [0.01]',
+        'LAMBDA = exp(loglam\_gal)']}
+
+  \item instrumental\_fwhm\_file String indicating the name of the
+    file with the wavelenght dependence of the instrumental FWHM. The
+    file needs to be ascii with 4 columns.
+
+  \begin{itemize}
+     \item Column 1 : wavelength in angstrom, where the instrumental
+       FWHM has been measured
+     \item Column 2 : Resolving power.
+     \item Column 3 : Instrumental FWHM in angstrom.
+     \item Column 4 : Instrumental FWHM in km/sec.
+  \end{itemize}
+
+  Warning: Column 2 will not be used by the DAP, but it needs to be
+  present to make the procedure running.
+
+  If instrumental\_fwhm\_file is undefined, a constant instrumental
+  FWHM of 2.54 \AA\ will be used.
+
+\end{itemize}
