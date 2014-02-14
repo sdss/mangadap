@@ -111,10 +111,13 @@ pro/utilities/mdap_display_2dmap_ps.pro -text
 pro/utilities/mdap_get_2d_map.pro -text
 pro/utilities/mdap_get_error_from_residual.pro -text
 pro/utilities/mdap_get_losvd.pro -text
+pro/utilities/mdap_ind_profiles.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
+pro/utilities/mdap_maps.pro -text
 pro/utilities/mdap_place_cbar.pro -text
 pro/utilities/mdap_place_image.pro -text
 pro/utilities/mdap_ppxf_convol_fft.pro -text
+pro/utilities/mdap_rad_spectra.pro -text
 pro/utilities/mdap_range.pro -text
 pro/utilities/mdap_read_indices_definitions.pro -text
 pro/utilities/mdap_readfits_2d.pro -text
