@@ -5,6 +5,7 @@ doc/dap.bbl -text
 doc/dap.pdf -text
 doc/dap.tex -text
 doc/dap_workflow_description.tex -text
+doc/figures/Block_4_zoom.ps -text
 doc/figures/Blocks_1-3.odg -text
 doc/figures/block1.odg -text
 doc/figures/block1.pdf -text
@@ -15,6 +16,7 @@ doc/figures/block3.pdf -text
 doc/figures/block3.ps -text
 doc/figures/block4.pdf -text
 doc/figures/block4.ps -text
+doc/figures/block5#.ps -text
 doc/figures/block5.pdf -text
 doc/figures/block5.ps -text
 doc/figures/dap_workflow_2.pdf -text
