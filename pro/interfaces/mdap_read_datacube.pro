@@ -2,7 +2,7 @@ pro mdap_read_datacube,datacube_name,data,error,wavelength,$
       x2d,y2d,signal,noise,cdelt1,cdelt2,header2d,lrange=lrange,keep_original_step=keep_original_step,$
      x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
      signal2d_reconstructed=signal2d_reconstructed,noise2d_reconstructed=noise2d_reconstructed,version=version,$
-      number_of_fibres=number_of_fibres
+      number_of_fibres=number_of_fibres,use_total=use_total
       
 ;*** INPUTS ***
 ;
@@ -46,12 +46,15 @@ pro mdap_read_datacube,datacube_name,data,error,wavelength,$
 ;
 ;*** OPTIONAL KEYWORDS ***
 ;
-;\keep_original_step      If set, the wavelength output vector will be the same as the one
+;/keep_original_step      If set, the wavelength output vector will be the same as the one
 ;                         define from the input fits file. The default
 ;                         is to re-construct (and  therefore re-inrpolate the galaxy and error
 ;                         spectra) the output wavelength vector with constant ang/pixel step
 ;                         using the minimum ang/pixel step that is stored in the wavelength
 ;                         solution. For MANGA, it is suggested to set this keyword.
+;
+; /use_total              If set, the signal is the total of the counts in the selected wavelength range, the noise is the sum in
+;                         quadrature of the noises in the selected range. Useful for emission lines.
 ;
 ;*** OUTPUTS ***
 ;
@@ -75,13 +78,13 @@ pro mdap_read_datacube,datacube_name,data,error,wavelength,$
 ;signal     [NxM dbl array]    Mean galaxy signal per \AA, obtained considering all the wavelength range 
 ;        or [N dbl array]     (or only the range specified by lrange). Calculation is done on original spectra, not those 
 ;                              resampled over the vector wavelenght.
-;                              The signal for each i,j-th spectrum is calculated as median(signal)
+;                              The signal for each i,j-th spectrum is calculated as median(signal), unless the keyword /use\_total is set.
 ;                              If inputs are in RSS format, it is a N elements float vector
 ;
 ;noise      [NxM dbl array]    Mean galaxy error per \AA, obtained considering all the wavelength range (or only the range 
 ;        or [N dbl array]      specified by lrange). Calculation is done on original spectra, not those resampled over the 
 ;                              vector wavelenght.
-;                              The noise for each i,j-th spectrum is calculated as median(noise)
+;                              The noise for each i,j-th spectrum is calculated as median(noise), unless the keyword /use\_total is set.
 ;                              If inputs are in RSS format, it is a N elements float vector
 ;
 ;cdelt1     [double]           spatial sampling along x direction (arcsec/pixel). 
@@ -323,15 +326,32 @@ if RSS eq 0 then begin      ;datacube
    noise = fltarr(sz[1],sz[2])
    for j = 0, sz[2]-1 do begin
       for i = 0, sz[1]-1 do begin
-         mdap_calculate_spectrum_sn,data[i,j,lam_Sel],error[i,j,lam_Sel],wavelength[lam_Sel],junk,signal=sss,noise=nnn
-         signal[i,j]=sss[0]
-         noise[i,j] = nnn[0]
+         if ~keyword_set(use_total) then begin
+            mdap_calculate_spectrum_sn,data[i,j,lam_Sel],error[i,j,lam_Sel],wavelength[lam_Sel],junk,signal=sss,noise=nnn
+            signal[i,j]=sss[0]
+            noise[i,j] = nnn[0]
+         endif else begin
+            signal[i,j]=total(data[i,j,lam_Sel])
+            noise[i,j] = sqrt(total(error[i,j,lam_Sel]^2))
+         endelse
       endfor
    endfor
 endif else begin        ; rss
   ; stop
-   signal = median(data[*,lam_Sel],dimension=2,/even)
-   noise =  median(error[*,lam_Sel],dimension=2,/even)
+   
+   if ~keyword_set(use_total) then begin
+      signal = median(data[*,lam_Sel],dimension=2,/even)
+      noise  = median(error[*,lam_Sel],dimension=2,/even)
+   endif else begin
+      nrss = n_elements(data[*,0])
+      signal=fltarr(nrss)
+      noise=fltarr(rss)
+      for j = 0, nrss-1 do begin
+          signal[j] = total(data[j,lam_Sel])
+          noise[j] = sqrt(total(error[j,lam_Sel]^2))
+      endfor
+   endelse
+
    indici = where(finite(noise) eq 0 or finite(signal) eq 0  or noise le 0,compl=pos)
    if indici[0] ne -1 then noise(indici) = max(noise[pos])
    if indici[0] ne -1 then signal(indici) = 0./0.

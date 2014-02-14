@@ -178,13 +178,13 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
    user_input_bins = user_bin_map(uniq(user_bin_map,sort(user_bin_map)))
    for i = 0, n_elements(user_input_bins)-1 do begin
       for j = 0, n_elements(binNum_) -1 do begin
-         inside_bin_ith = where(user_bin_map eq user_input_bins[i],comple=outise_bin_ith)
+         inside_bin_ith = where(user_bin_map eq user_input_bins[i],complent=outise_bin_ith)
          xB=x2d_user[inside_bin_ith]   ;X-coordinates of the points inside the i-th user bin
          yB=y2d_user[inside_bin_ith]   ;Y-coordinates of the points inside the i-th user bin
          dist_B = sqrt( (x2d[ind_good[j]]-xB)^2 + (y2d[ind_good[j]]-yB)^2) ;distances from the j-th datapoint to the points inside the i-th user bin
          xO=x2d_user[outise_bin_ith]   ;X-coordinates of the points outside the i-th user bin
          yO=y2d_user[outise_bin_ith]   ;Y-coordinates of the points outside the i-th user bin
-         dist_O = sqrt( (x2d[ind_good[j]]-xO)^2 + (y2d[ind_good[j]]-yO)^2) ;distances from the j-th datapoint to the points outside the i-th user bin
+         if outise_bin_ith[0] ne -1 then dist_O = sqrt( (x2d[ind_good[j]]-xO)^2 + (y2d[ind_good[j]]-yO)^2) else  dist_O = 10.^10.;distances from the j-th datapoint to the points outside the i-th user bin
          
          if min(dist_B) lt min(dist_O) then begin  ; the j-th datapoint is located inside the i-th user bin
             binNum_[J] = user_input_bins[I]
@@ -341,11 +341,13 @@ if sz[0] eq 2 then begin  ;RSS
    for j = 0, sz[2]-1 do begin
       for i = 0, sz[1]-1 do begin
          dist = sqrt((x2d_reconstructed[i,j] - xnode)^2+(y2d_reconstructed[i,j]- ynode)^2)
-         dist_rss = sqrt((x2d_reconstructed[i,j] - x2d)^2+(y2d_reconstructed[i,j]- y2d)^2)
+         ;dist_rss = sqrt((x2d_reconstructed[i,j] - x2d[])^2+(y2d_reconstructed[i,j]- y2d)^2)
+         dist_rss = sqrt((x2d_reconstructed[i,j] - x2d[ind_good])^2+(y2d_reconstructed[i,j]- y2d[ind_good])^2)
          junk = where(dist eq min(dist))
          binning_map[i,j] = junk[0]   ;IF MORE BINS ARE ENCLOSED IN THE RESOLUTION ELEMENT, ONLY THE CLOSEST TO THE CENTER RULES. IN THIS CASE THE MAP IS USELESS, BECAUSE IT FAILS IN ALLOCATING ALL THE BINS IN THE RECONSTRUCTED F.O.V.
-         dist_bad = sqrt((x2d_reconstructed[i,j] - x2d[ind_bad])^2+(y2d_reconstructed[i,j]- y2d[ind_bad])^2)
+         if ind_bad[0] ne -1 then dist_bad = sqrt((x2d_reconstructed[i,j] - x2d[ind_bad])^2+(y2d_reconstructed[i,j]- y2d[ind_bad])^2) else dist_bad=10.^10.
          ;if min(dist) ge min(dist_bad) then binning_map[i,j] = -1
+    
          if min(dist) ge min(dist_bad) or min(dist_rss) ge 1.5 then binning_map[i,j] = -1   ;If I am closer to a bad pixel than a good pixel, or if I am more distant than 3" to a fibre location
       endfor
    endfor

@@ -33,7 +33,7 @@ pro mdap_measure_indices,absorption_line_indices,wavelength,spectra, best_templa
 ;      
 ; remove_outliers     integer          If defined and positive, pixels that deviate more than remove_outliers[*] * rms will be
 ;                                      substituted by the best fit
-;                                      model. Default: 0
+;                                      model. Default: 0 (does not remove outliers)
 ;
 ; OUTPUTS
 ; abs_line_indices    [Tx37 dbl array]  Absorption line indices of the T inut spectra, corrected for intrinsic broadening. The measured 37 
@@ -120,9 +120,7 @@ FOR i = 0, sz[1]-1 DO BEGIN
     endif
    ;--
 
-     ; these lines triggers the sigma clipping procedure, which is done index by index (to have a better handle of the RMS around the index bandpass).
-   ;--
-
+  
    ;--convolution to match Lick system. NEEDS TO BE OPTIMIZED.
    if max(sigma) le 0 then begin
       x_pixels=findgen(n_elements(wavelength))
@@ -133,10 +131,6 @@ FOR i = 0, sz[1]-1 DO BEGIN
       spc_conv=mdap_convol_sigma(wavelength,spc,wavelength,sigma) 
       template_conv = mdap_convol_sigma(wavelength,template,wavelength,sigma) 
       template_LOSVD_conv = mdap_convol_sigma(wavelength,template_LOSVD,wavelength,sigma) 
-       ;x_pixels=findgen(n_elements(wavelength))
-      ;spc_conv=mdap_convol_sigma(x_pixels,spc,x_pixels,sigma) 
-      ;template_conv = mdap_convol_sigma(x_pixels,template,x_pixels,sigma) 
-      ;template_LOSVD_conv = mdap_convol_sigma(x_pixels,template_LOSVD,x_pixels,sigma) 
    endelse
    ;--
    if ~keyword_set(noplot) then device, filename=output_dir+'indices_spectrum_'+mdap_stc(i+1,/integer)+'.ps',/color,xsize=15,ysize=12
