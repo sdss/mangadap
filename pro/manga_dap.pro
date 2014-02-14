@@ -3,16 +3,17 @@ pro manga_dap,input_number,configure_file
 ;check_version=check_version,$
 ;       dont_remove_null_templates=dont_remove_null_templates;,datacubes_or_rss=datacubes_or_rss
 
+t0=systime(/seconds)/60./60.
+c=299792.458d
 ;*****SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
 readcol,configure_file,command_line,comment='#',delimiter='%',/silent,format='A'
 for i=0, n_elements(command_line)-1 do d=execute(command_line[i])
 if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
 if n_elements(remove_null_templates) eq 0 then remove_null_templates = 1
 
+
+
 if n_elements(instrumental_fwhm_file) ne 0 then readcol, instrumental_fwhm_file, ww,r,fwhm_ang,fwhm_kms,/silent;'../../instrumental_fwhm/instrumental_fwhm.dat'
-
-
-t0=systime(/seconds)/60./60.
 
 if keyword_set(check_version) then begin
    readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
@@ -126,6 +127,21 @@ if mdap_read_datacube_version gt mdap_read_datacube_version_previous or execute_
       if n_elements(noise2d_reconstructed) eq 0 then noise2d_reconstructed = noise      ;same as noise if datacube is read, not RSS.
    sxaddpar,header_2d,'BLOCK1',mdap_read_datacube_version,'mdap_read_datacube version'
    execute_all_modules=1
+
+  ;-- I compute the signal and the noise over a different wavelength range (redshifted)
+  ; The mdap_read_datacube is run again, but only the signal and noise output are stored
+  if n_elements(w_range_for_sn_computation_for_gas) ne 0 then begin
+     w_range_for_sn_computation_for_gas_redshifted = w_range_for_sn_computation_for_gas*(1.+velocity_initial_guess[0]/299792.5)
+     mdap_read_datacube,datacube_dir+datacube_name,junk,junk,junk,junk,junk,signal_for_gas,noise_for_gas,junk,junk,header_junk,$
+               lrange=w_range_for_sn_computation_for_gas_redshifted,/keep_original_step,/use_total
+      junk = 0.
+  endif else begin
+     signal_for_gas = signal
+     noise_for_gas = noise
+     w_range_for_sn_computation_for_gas = w_range_for_sn_computation
+  endelse
+  ;--
+
 endif
 
 sxaddpar,header_2d,'DAPVER',manga_dap_version,'manga_dap version',BEFORE  ='BLOCK1'
@@ -135,7 +151,7 @@ if sz[0] eq 3 then printf,1,'[INFO] datacube '+root_name+' read; size: '+mdap_st
 if sz[0] eq 2 then printf,1,'[INFO] RSS file '+root_name+' read; Nfibres: '+mdap_stc(sz[1],/integer)
 
 ;**** definition of some variables
-MW_extinction = 0.                    ; will be replaced by appropriate extension in the input file
+MW_extinction = 0.                    ; will be replaced by appropriate extension in the input file, or total_filelist
 ;fwhm_instr=wavelength*0.+2.73         ; will be replaced by appropriate extension in the input file
 if n_elements(instrumental_fwhm_file) ne 0 then begin
    fwhm_instr=interpol(fwhm_ang,ww,wavelength) 
@@ -149,8 +165,13 @@ if n_elements(instrumental_fwhm_file) ne 0 then begin
     ;fwhm_instr_kmsec_matrix[1,*]=mean(fwhm_instr/wavelength*300000.)
 endelse
 
-c=299792.458d
 mask_range=[5570.,5590.,5800.,5850.]  ; will be replaced by mask extension in the input file
+
+;*** END OF BLOCK 1 *************************************************************
+
+
+
+
 
 ;BLOCK 2
 ;*** SPATIAL BINNING *************************************************************
@@ -198,7 +219,7 @@ printf,1,'[INFO] datacube '+ root_name+' spatial binning 2. SN= '+mdap_stc(sn2,/
 ;stop
 
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
-   mdap_spatial_binning,data,error,signal,noise,sn3,x2d,y2d,cdelt1,cdelt2,spatial_binning_ems,spectra_ems,errors_ems,$
+   mdap_spatial_binning,data,error,signal_for_gas,noise_for_gas,sn3,x2d,y2d,cdelt1,cdelt2,spatial_binning_ems,spectra_ems,errors_ems,$
                         xbin_ems,ybin_ems,area_bins_ems,bin_sn_ems,sn_thr=sn_thr_ems,$
                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                         nelements_within_bin=nelements_within_bin_ems,sn_calibration=sn_calibration,$
@@ -208,8 +229,9 @@ endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_ems),/integer)
 ;stop
 
+;*** END OF BLOCK 2 *************************************************************
 
-;*********************************************************************************
+
 
 
 ; BLOCK 3
@@ -248,10 +270,14 @@ printf,1,'[INFO] datacube '+root_name+'log_rebin 3'
 ;
 ;save,filename='block3.idl',/variables
 ;
-;*********************************************************************************
+
 library_log_tpl = library_log_tpl/10.^25.
 library_log_str = library_log_str/10.^25.
 library_log_ems = library_log_ems/10.^25.
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block3.idl',/variables 
+;*** END OF BLOCK 3 *************************************************************
+
+
 ;
 ;    ##############################################
 ;    #####      HIGH LEVEL DATA PRODUCTS      #####
@@ -374,7 +400,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
 
    ;calculate the real S/N of binned spectra
    bin_sn_ems_real = bin_sn_ems
-   indxx = where(wavelength_output_rest_frame_log ge w_range_for_sn_computation[0]  and wavelength_output_rest_frame_log le w_range_for_sn_computation[1] )
+   indxx = where(wavelength_output_rest_frame_log ge w_range_for_sn_computation_for_gas[0]  and wavelength_output_rest_frame_log le w_range_for_sn_computation_for_gas[1] )
    for i = 0, n_elements(bin_sn_ems_real) -1 do begin
        mdap_calculate_spectrum_sn,best_fit_model_ems[i,indxx],residuals_ems[i,indxx],wavelength_output_rest_frame_log[indxx],sn_per_angstorm,/rms
        bin_sn_ems_real[i] = sn_per_angstorm[0]
