@@ -82,6 +82,7 @@ external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text sv
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
 /mdap_configure_file.dat -text
 pro/interfaces/mdap_create_starting_guesses.pro -text
+pro/interfaces/mdap_do_kinemetry.pro -text
 pro/interfaces/mdap_log_rebin.pro -text
 pro/interfaces/mdap_measure_indices.pro -text
 pro/interfaces/mdap_read_datacube.pro -text
