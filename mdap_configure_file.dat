@@ -98,9 +98,9 @@ sn1_rss = 15.
 sn2_rss = 10.
 sn3_rss = 5  
 #   S/N threshold for rss files, spatial binning 1-3:
-sn_thr_tpl_rss = 2.
-sn_thr_str_rss = 2.
-sn_thr_ems_rss = 2.
+sn_thr_tpl_rss = -200.
+sn_thr_str_rss = -200.
+sn_thr_ems_rss = -200.
 # Calibration coefficients for rss files. Formula is specified in the mdap_calibrat_sn.pro function.
 #sn_calibration_rss = undefined
 #
@@ -109,15 +109,15 @@ sn1_datacubes = 40.
 sn2_datacubes = 25.
 sn3_datacubes = 15.
 #   S/N threshold for datacubes files, spatial binning 1-3:
-sn_thr_tpl_datacubes = 3.
-sn_thr_str_datacubes = 3.
-sn_thr_ems_datacubes = 3.
+sn_thr_tpl_datacubes = -300.
+sn_thr_str_datacubes = -300.
+sn_thr_ems_datacubes = -300.
 # Calibration coefficients for datacubes files. Formula is specified in the mdap_calibrat_sn.pro function.
-sn_calibration_datacubes = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
+#sn_calibration_datacubes = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
 #
 #
-#weight_for_sn=1
-weight_for_sn=0
+weight_for_sn=1
+#weight_for_sn=0
 #
 # -- User supplied binning schemes for the 3 spatial binning.
 # Names of fits files specifying the binnin schemes must be provided as string. Fits files must have
@@ -201,8 +201,8 @@ remove_null_templates = 1
  external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_32/'
 # external_library='/home/UNI/coccatol/argo4/MANGA/mangadap/external/F90_64/'
 # --------------------------------------------------------------------------------------------
- spectra_fittin_parameters_patial_binning_1=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
- spectra_fittin_parameters_patial_binning_2=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
- spectra_fittin_parameters_patial_binning_3=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
- spectra_fittin_parameters_patial_binning_readial=['MOMENTS=2','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)']
+ spectra_fittin_parameters_patial_binning_1=['MOMENTS=4','DEGREE=-1','MDEGREE=6']
+ spectra_fittin_parameters_patial_binning_2=['MOMENTS=4','DEGREE=3','MDEGREE=6']
+ spectra_fittin_parameters_patial_binning_3=['MOMENTS=4','MDEGREE=6','DEGREE=3','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
+ spectra_fittin_parameters_patial_binning_readial=['MOMENTS=2','DEGREE=-1','mdegree=6']
  instrumental_fwhm_file='/home/UNI/coccatol/argo4/MANGA/mangadap/external/instrumental_fwhm.dat'
