@@ -99,6 +99,7 @@ pro/modules/mdap_do_measure_index.pro -text
 pro/modules/mdap_dust_calzetti.pro -text
 pro/modules/mdap_gandalf.pro -text
 pro/modules/mdap_gandalf_wrap.pro -text
+pro/modules/mdap_kinemetry.pro -text
 pro/modules/mdap_ppxf.pro -text
 pro/modules/mdap_voronoi_2d_binning.pro -text
 pro/obsolete/mdap_sgandalf.pro -text
