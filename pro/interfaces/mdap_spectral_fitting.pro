@@ -3,10 +3,10 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
      emission_line_fluxes,emission_line_fluxes_err,emission_line_equivW,emission_line_equivW_err,wavelength_input=wavelength_input,$
      wavelength_output,best_fit_model,galaxy_minus_ems_fit_model,best_template,best_template_LOSVD_conv,reddening_output,reddening_output_err,residuals,$
      star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-     MW_extinction=MW_extinction,emission_line_file=emission_line_file,quiet=quiet,$
+     emission_line_file=emission_line_file,quiet=quiet,$
      extra_inputs=extra_inputs,use_previos_guesses=use_previos_guesses,$
      fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-     range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,rest_frame_log=rest_frame_log,filter=filter,$
+     range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,rest_frame_log=rest_frame_log,$
      version=version,mask_range=mask_range,$
      external_library=external_library,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix
 ;,$
@@ -16,22 +16,25 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 
 
 ; *** INPUTS ***
-; galaxy     [MxN  dblarray]  It contains the N galaxy spectra to fit, logarithmically 
-;            sampled (natural log). Units: 1e-17 erg/s/cm^2/Angstrom.
+; galaxy     [MxN  array]  It contains the N galaxy spectra to fit, logarithmically 
+;            sampled (natural log). Units: 1e-17 erg/s/cm^2/Angstrom. Spectra are defined of the
+;            M elements array loglam_gal (see below).
 ;
-; noise      [MxN  dblarray]  It contains the N error vectors for the
-;            N galaxy spectra. Same units as galaxy.
+; noise      [MxN array]  It contains the N error vectors for the
+;            N galaxy spectra. Same units as galaxy. Error vectors are defined of the
+;             M elements array loglam_gal (see below).
 ;
 ; loglam_gal [M dblarray] It contains the log wavelength values where
-;            galaxy and noise spectra are sampled.
+;            galaxy and noise spectra are sampled.The vector must have a constant 
+;            log(angstrom) sampling. 
 ;
-; templates  [MM x NN dblarray]. It contains the NN stellar template
+; templates  [MM x NN array]. It contains the NN stellar template
 ;            spectra, logarithmically sampled at the same km/sec/pixel as the
 ;            galaxy spectra. Same units as galaxy, except an arbitrary
 ;            multiplicative factor.
 ;
 ; LOGLAM_TEMPLATES [MM dblarray] It contains the log wavelength values where
-;            templates are sampled.
+;            templates are sampled. It must have a constant log(angstrom) sampling.
 ;
 ; velscale   sampling of the input spectra, in km/sec/pixel.
 ;
@@ -45,7 +48,13 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ;               initialized with the IDL execute command.
 ;                    for i = 0, n_elements(extra_inputs)-1 do d = execute(extra_inputs[i])
 ;               EXAMPLE:  extra_inputs=['MOMENTS=2','DEGREE=-1','BIAS=0','reddening=0','LAMBDA=exp(loglam_gal)']       
-;          
+;
+;                Warning: The reddening (stars and/or gas) fit is
+;                 optional, and it is performed by the Gandalf module. If
+;                 the reddening fit is required, MDEGREE and DEGREE are
+;                 used as the input value for the pPXF run, but
+;                 automatically set to 0 and -1 respectively in the
+;                 Gandalf execution.
 ; 
 ; star_kin_starting_guesses [ N x 4 fltarray] The stellar kinematics starting guesses for V, 
 ;                           sigma, H3, and H4 for the N galaxy spectra to fit.
@@ -58,10 +67,6 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ;                           Default values are 0 km/sec for V, and 50 km/sec for sigma. 
 ;                           Starting guesses values are overrided by
 ;                           the \use_previos_guesses keyword, if set.
-;
-; MW_extinction   [float]  Milky-way extinction value at the target position (MAG). If non-zero,
-;                 the input N galaxy spectra will be de-reddened using the mdap_dust_calzetti.pro 
-;                 routine before fitting. Default= 0 mag.
 ;
 ; emission_line_file [string] string containing the name of the file with the information of the
 ;                    emission lines to be fitted. The input file must be an ascii file with the 
@@ -88,27 +93,40 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ; wavelength_input [QQ elements array]. If specified, it will be used to create wavelength_output, i.e. the wavelength
 ;                  vector (constant ang/pixel step, in linear units) to interpolate the final results on. 
 ;                  if keyword /rest_frame_log is set, the vector is set to exp(loglam_templates), and user inpiut will be overwritten
-;                  In this case QQ = MM
-         
+;                  In this case QQ = MM. The default is to use the wavelenth vector specified by the template stars.
+;
+; external_library [string] String that specifies the path to the external FORTRAN library, which contains the fortran versions of mdap_bvls.pro. 
+;                  If not specified, or if the path is invalid, the default internal IDL mdap_bvls code is used. 
+;
+; mask_range   If defined, it specifies the wavelength ranges to avoid
+;            in the fit. It must contain an even number of entries, in
+;           angstrom. E.g. l0,l1,l2,l3,....l(2n-1),l(2n) will mask all the pixels where the 
+;             l0 < exp(loglam_gal) <l1, or l2 < exp(loglam_gal) <l3, or l(2n-1) < exp(loglam_gal) <l(2n)
+;
+; fwhm_instr_ kmsec_matrix  2xW elements vector. It defines the instrumental FWHM as function of wavelength. 
+;                               fwhm_instr_kmsec_matrix[0,*] specifies the wavelength (in angstrom, at which the instrumental FWHM is measured. 
+;                               fwhm_instr_kmsec_matrix[1,*] specifies values of the instrumental FWHM (in km/sec) measured at fwhm_instr_kmsec_matrix[0,*]. 
+;                               If undefined, a constant instrumental FWHM=122.45 km/sec is adopted. \\
+       
 ; *** OPTIONAL KEYWORDS ***
 ;
-; \use_previos_guesses  If set, the starting guesses for spectrum i-th
+; /use_previos_guesses  If set, the starting guesses for spectrum i-th
 ;                       will be the best fit values from spectrum
 ;                      (i-1)-th (i>0). Input starting guesses will be ignored.
 ;
 ;
-; \fix_star_kin         If set, the stellar kinematics are not
+; /fix_star_kin         If set, the stellar kinematics are not
 ;                       fitted. The return value is that of the starting guesses 
 ;
-; \fix_gas_kin          If set, the emission-lines kinematics are not
+; /fix_gas_kin          If set, the emission-lines kinematics are not
 ;                       fitted. The return value is that of the starting guesses 
 ;
-; \quiet                If set, some information are not printed on screen
+; /quiet                If set, some information are not printed on screen
 ;
-; \filter
-
-
-
+;
+; /rest_frame_log  If set, the output spectra (galaxy_minus_ems_fit_model, best_fit_model, residuals, 
+;                  best_template, and best_template_LOSVD_conv) are produced at rest-frame wavelength.
+;
 ; *** OUTPUTS ***
 ;
 ;  stellar_kinematics     [N x 5 flt array]  It contains the best fit values of V, sigma, h3, h4, and chi2/DOF 
@@ -144,7 +162,7 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 
 ; wavelength_output     [QQ elements flt array] It will contain the linear wavelength values over which the output spectra are sampled. 
 ;                       Default: it is set to wavelength_input (if defined), or automatically computed with the smallest lambda/pixel 
-;                       step obtained  from exp(loglam_gal).
+;                       step obtained  from exp(loglam_gal). It is set to exp(LOGLAM\_TEMPLATES) if the keyword /rest\_ frame\_log is set.
 ;
 ; best_fit_model        [N x QQ flt array] It will contain the best fit models for each of the input galaxy spectra (dereddended if 
 ;                       MW_extinction is not zero), sampled over
@@ -247,7 +265,8 @@ endif else begin
    endif else begin
                                 ;tmp = double(10.^(loglam_gal))
       tmp = double(exp(loglam_gal))
-      stp = double(tmp[1:n_elements(tmp)-1]-tmp[0:n_elements(tmp)-2])
+      ;stp = double(tmp[1:n_elements(tmp)-1]-tmp[0:n_elements(tmp)-2])
+      stp = tmp[1]-tmp[0];double(tmp[1:n_elements(tmp)-1]-tmp[0:n_elements(tmp)-2])
       n= (max(tmp) - min(tmp) ) / stp
       wavelength_output = fltarr(round(n))*stp + min(tmp)
    endelse
