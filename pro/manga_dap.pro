@@ -57,6 +57,7 @@ endif
 output_filefits=output_dir+'high_level.fits'
 output_idlsession=output_dir+'mdap_session.idl'
 
+
 print, ''
 print, '# WORKING ON '+root_name+' ('+mode+')'
 print, ''
@@ -110,6 +111,12 @@ mdap_measure_indices,version=mdap_measure_indices_version
 mdap_spatial_radial_binning,version=mdap_spatial_radial_binning_version
 ;junk = temporary(chek_version)
 ;**********************************************************************************
+
+
+; KINEMETRY CHECK, remove it after the tests
+restore, output_idlsession
+goto, kinemetry_step
+;
 
 
 execute_all_modules=0
@@ -303,7 +310,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or ex
         emission_line_fluxes_tpl,emission_line_fluxes_tpl_err,emission_line_equivW_tpl,emission_line_equivW_tpl_err,wavelength_input=exp(log_wav_library_tpl),$
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_1,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
+        emission_line_file=emission_line_file_spatial_binnin_1,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
         extra_inputs=spectra_fittin_parameters_patial_binning_1,mask_range=mask_range,external_library=external_library,/quiet ;,$
    ;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
    junk = size(emission_line_fluxes_tpl);need to save all flux maps (warning: sgandalf computes intensities, not fluxes)
@@ -352,7 +359,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=spectra_fittin_parameters_patial_binning_2,$
+        emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=spectra_fittin_parameters_patial_binning_2,$
         mask_range=mask_range,external_library=external_library,/quiet
 ;extra_inputs=['MOMENTS=4','DEGREE=-1','MDEGREE=4']
    junk = size(emission_line_fluxes_str);need to save all flux maps
@@ -387,7 +394,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
         emission_line_fluxes_ems,emission_line_fluxes_ems_err,emission_line_equivW_ems,emission_line_equivW_ems_err,wavelength_input=wavelength_input,$
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
-        MW_extinction=MW_extinction,emission_line_file=emission_line_file_spatial_binnin_3,$
+        emission_line_file=emission_line_file_spatial_binnin_3,$
         extra_inputs=spectra_fittin_parameters_patial_binning_3,/rest_frame_log,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
         mask_range=mask_range,external_library=external_library,/quiet;,$
 ;        extra_inputs=['MOMENTS=4','MDEGREE=4','DEGREE=-1','reddening=[0.01,0.01]','LAMBDA=exp(loglam_gal)']
@@ -491,7 +498,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           emission_line_fluxes_rbin,emission_line_fluxes_rbin_err,emission_line_equivW_rbin,emission_line_equivW_rbin_err,wavelength_input=output_wav,$
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
-          MW_extinction=MW_extinction,emission_line_file=emission_line_file_radial_binning,$
+          emission_line_file=emission_line_file_radial_binning,$
           extra_inputs=spectra_fittin_parameters_patial_binning_readial,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix/3.,$
          ;extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
          range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,external_library=external_library,/quiet ;,$
@@ -532,7 +539,26 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    execute_all_modules = 1
    printf,1,'[INFO] datacube '+root_name+' radial binning: measured indices'
 endif
-if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block6.idl',/variables
+if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block6a.idl',/variables
+
+
+kinemetry_step:
+;- Rotation curves (kinemetry)
+
+;stars
+mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbin_str,ybin_str,$
+                  STELLAR_KINEMATICS_STR[*,0],STELLAR_KINEMATICS_STR_ERR[*,0],$
+                  PA_kin_str,PA_kin_std_str, q_kin_str,q_kin_std_str, Vsyst_str, Vsyst_std_str, Rad_kin_str, Vrot_str, Vrot_err_str,Vexp_str, Vexp_err_str,$
+                  Xcenter_used_for_stellar_rot_curve,Ycenter_used_for_stellar_rot_curve
+
+;gas
+mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbin_ems,ybin_ems,$
+                  emission_line_kinematics_ems[*,0],emission_line_kinematics_EMS[*,0],$
+                  PA_kin_ems, PA_kin_std_ems, q_kin_ems,q_kin_std_ems, Vsyst_ems,Vsyst_std_ems, Rad_kin_ems, Vrot_ems, Vrot_err_ems,Vexp_ems, Vexp_err_ems,$
+                  Xcenter_used_for_gas_rot_curve,Ycenter_used_for_gas_rot_curve
+
+
+ 
 ;*********************************************************************************
  
 ;-- SAVING HIGH LEVEL SCIENCE PRODUCTS RESULTS IN THE OUTPUT DATACUBE.... to be optimized
@@ -569,7 +595,7 @@ k=k+1
     d=execute('p1.'+indices[i].name+'=ABS_LINE_INDICES[*,i]')
     d=execute('p1.'+indices[i].name+'_err=ABS_LINE_INDICES_ERRORS[*,i]')
  endfor 
- mwrfits,p1,output_filefits
+ mwrfits,p1,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
  sxaddpar,h1,'EXTNAME','Binning_1_data'
  modfits,output_filefits,0,h1,exten_no=k
@@ -598,7 +624,7 @@ stringa2="{"
  p2.H4=STELLAR_KINEMATICS_STR[*,3]
  p2.H4_err=STELLAR_KINEMATICS_STR_ERR[*,3]
  p2.Chi2_DOF=STELLAR_KINEMATICS_STR[*,4]
- mwrfits,p2,output_filefits
+ mwrfits,p2,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
  sxaddpar,h1,'EXTNAME','Binning_2_data'
  modfits,output_filefits,0,h1,exten_no=k
@@ -642,7 +668,7 @@ k=k+1
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW=EMISSION_LINE_EQUIVW_EMS[*,i]')
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW_err=EMISSION_LINE_EQUIVW_EMS_ERR[*,i]')
  endfor 
- mwrfits,p3,output_filefits
+ mwrfits,p3,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
  sxaddpar,h1,'EXTNAME','Binning_3_data'
  modfits,output_filefits,0,h1,exten_no=k
@@ -673,10 +699,65 @@ stringa2="{"
     d=execute('p4.'+indices[i].name+'_rad=ABS_LINE_INDICES_RBIN[*,i]')
     d=execute('p4.'+indices[i].name+'_rad_err=ABS_LINE_INDICES_ERRORS_RBIN[*,i]')
  endfor 
- mwrfits,p4,output_filefits
+ mwrfits,p4,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
  sxaddpar,h1,'EXTNAME','Binning_radial_data'
  modfits,output_filefits,0,h1,exten_no=k
+
+;storing rotation curve of stars
+k=k+1
+stringa = ["a_rot_curve","PA_kin_stars","PA_kin_std_stars","q_kin_stars","q_kin_std_stars","Vsyst_stars","Vsyst_std_stars", "Vrot_stars", "Vrot_err_stars","Vexp_stars", "Vexp_err_stars","x0","y0"]
+stringa2="{"
+for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
+stringa2 = stringa2+stringa[i]+':0.}'
+ d = execute('str='+stringa2)
+p5=replicate(str,n_elements(Rad_kin_str))
+p5.a_rot_curve=Rad_kin_str
+p5.PA_kin_stars=replicate(PA_kin_str,n_elements(Rad_kin_str))
+p5.PA_kin_std_stars=replicate(PA_kin_std_str,n_elements(Rad_kin_str))
+p5.q_kin_stars=replicate(q_kin_str,n_elements(Rad_kin_str))
+p5.q_kin_std_stars=replicate(q_kin_std_str,n_elements(Rad_kin_str))
+p5.Vsyst_stars=Vsyst_str
+p5.Vsyst_std_stars=Vsyst_std_str
+p5.Vrot_stars= Vrot_str 
+p5.Vrot_err_stars=Vrot_err_str
+p5.Vexp_stars=Vexp_str
+p5.Vexp_err_stars=Vexp_err_str
+p5.x0=replicate(Xcenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
+p5.y0=replicate(Ycenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
+mwrfits,p5,output_filefits,/silent
+h1=HEADFITS(output_filefits,EXTEN = k)                                         
+sxaddpar,h1,'EXTNAME','Stars Rotation'
+modfits,output_filefits,0,h1,exten_no=k
+
+
+;storing rotation curve of gas
+k=k+1
+stringa = ["a_rot_curve","PA_kin_gas","PA_kin_std_gas","q_kin_gas","q_kin_std_gas","Vsyst_gas","Vsyst_std_gas", "Vrot_gas", "Vrot_err_gas","Vexp_gas", "Vexp_err_gas","x0","y0"]
+stringa2="{"
+for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
+stringa2 = stringa2+stringa[i]+':0.}'
+ d = execute('str='+stringa2)
+p6=replicate(str,n_elements(Rad_kin_ems))
+p6.a_rot_curve=Rad_kin_ems
+p6.PA_kin_gas=replicate(PA_kin_ems,n_elements(Rad_kin_ems))
+p6.PA_kin_std_gas=replicate(PA_kin_std_ems,n_elements(Rad_kin_ems))
+p6.q_kin_gas=replicate(q_kin_ems,n_elements(Rad_kin_ems))
+p6.q_kin_std_gas=replicate(q_kin_std_ems,n_elements(Rad_kin_ems))
+p6.Vsyst_gas=Vsyst_ems
+p6.Vsyst_std_gas=Vsyst_std_ems
+p6.Vrot_gas= Vrot_ems 
+p6.Vrot_err_gas=Vrot_err_ems
+p6.Vexp_gas=Vexp_ems
+p6.Vexp_err_gas=Vexp_err_ems
+p6.x0=replicate(Xcenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
+p6.y0=replicate(Ycenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
+mwrfits,p6,output_filefits,/silent
+h1=HEADFITS(output_filefits,EXTEN = k)                                         
+sxaddpar,h1,'EXTNAME','GAS rotation'
+modfits,output_filefits,0,h1,exten_no=k
+
+
 
 
 printf,1,'[INFO] '+root_name+' output saved: '+output_filefits
