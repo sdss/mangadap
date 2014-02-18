@@ -562,7 +562,8 @@ if not array_equal(noise ge 0, 1) then message, 'NOISE cannot be negative'
 ; Perform basic tests to catch common input errors
 
 if targetSN le 1 then goto, no_signal
-sn_total_eval =  total(signal)/sqrt(total(noise^2))
+sn_total_eval =  total(signal)/sqrt(total(noise^2))    ;eqn (2) of Cappellari & Copin (2003)
+if keyword_set(weight_for_sn) then sn_total_eval =  sqrt(total((signal/noise)^2))  ;eqn (3) of Cappellari & Copin (2003)
 if  sn_total_eval lt targetSN then begin ;$
   ;  message, 'Not enough S/N in the whole set of pixels. ' $
   ;      + 'Many pixels may have noise but virtually no signal. ' $
