@@ -113,10 +113,10 @@ mdap_spatial_radial_binning,version=mdap_spatial_radial_binning_version
 ;**********************************************************************************
 
 
-; KINEMETRY CHECK, remove it after the tests
-restore, output_idlsession
-goto, kinemetry_step
-;
+;; KINEMETRY CHECK, remove it after the tests
+; restore, output_idlsession
+; goto, kinemetry_step
+;;
 
 
 execute_all_modules=0
