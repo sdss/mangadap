@@ -33,6 +33,7 @@ doc/mdap_convol_sigma.tex -text
 doc/mdap_create_starting_guesses.tex -text
 doc/mdap_do_log_rebin.tex -text
 doc/mdap_gandalf.tex -text
+doc/mdap_gandalf_wrap.tex -text
 doc/mdap_interpolate_2dmaps.tex -text
 doc/mdap_log_rebin.tex -text
 doc/mdap_read_datacube.tex -text
