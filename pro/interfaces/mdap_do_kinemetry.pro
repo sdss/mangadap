@@ -54,22 +54,25 @@ xcen_pix=xcen
 ycen_pix=ycen
 y0=bilinear(y2d,xcen_pix,ycen_pix)
 
+if abs(x0) ge 4 then x0 = 0.
+if abs(y0) ge 4 then y0 = 0.
 gal_center_x = x0
 gal_center_y = y0
 
-bad_data=where(finite(velocity) ne 1 or finite(velocity_err) ne 1 or velocity_err le 0, complement=good)
+bad_data=where(finite(velocity) ne 1 or finite(velocity_err) ne 1 or velocity_err le 0 or velocity_err ge 10000., complement=good)
 ;first round to get Vsystemic
 if good[0] eq -1 then begin ;no good points to run kinemetry
-   stop
+   goto, failure_mode
 endif
-
-MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good],rad,pa,q,cf,ERROR=velocity_err[good],NPA=9,NQ=9,NTRM=2
+;stop
+d = execute('MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good],rad,pa,q,cf,ERROR=velocity_err[good],NPA=9,NQ=9,NTRM=2')
+if d eq 0 then goto, failure_mode
    vsyst = median(cf[*,0],/even)
    vsyst_std = robust_sigma(cf[*,0])
 
 ;second round performing the analysis keeping the systemic velocity at 0
-   MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good]-vsyst,rad,pa,q,cf,ERROR=velocity_err[good],$
-       NPA=15,NQ=15,NTRM=2, ER_PA=ER_PA,ER_Q=ER_Q,ER_CF=ER_CF,COVER=0.2,/VSYS
+d = execute('MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good]-vsyst,rad,pa,q,cf,ERROR=velocity_err[good], NPA=15,NQ=15,NTRM=2, ER_PA=ER_PA,ER_Q=ER_Q,ER_CF=ER_CF,COVER=0.2,/VSYS')
+if d eq 0 then goto, failure_mode
 
 
 
@@ -94,7 +97,10 @@ q_kin_std = robust_sigma(q_var)
 
 d = execute('MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good]-vsyst,rad_f,pa_f,q_f,cf_f,ERROR=velocity_err[good],NTRM=2, ER_PA=ER_PA_f,ER_Q=ER_Q_f,ER_CF=ER_CF_f,COVER=0.2,/VSYS,PAQ=[PA_kin-90,q_kin]')
   
-if d eq 0 then MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good]-vsyst,rad_f,pa_f,q_f,cf_f,ERROR=velocity_err[good],NTRM=2, ER_PA=ER_PA_f,ER_Q=ER_Q_f,ER_CF=ER_CF_f,COVER=0.3,/VSYS,PAQ=[PA_kin,q_kin]
+if d eq 0 then begin
+   dd=execute('MDAP_KINEMETRY,x[good]-x0,y[good]-y0,velocity[good]-vsyst,rad_f,pa_f,q_f,cf_f,ERROR=velocity_err[good],NTRM=2, ER_PA=ER_PA_f,ER_Q=ER_Q_f,ER_CF=ER_CF_f,COVER=0.3,/VSYS,PAQ=[PA_kin,q_kin]')
+   if dd eq 0 then goto, failure_mode
+endif
 
    indici = where(pa_f ge 180) 
    if indici[0] ne -1 then begin
@@ -112,4 +118,23 @@ Vrot_err = er_cf_f[*,2]
 Vexp = cf_f[*,1]
 Vexp_err = er_cf_f[*,1]
 
+goto, end_kinemetry
+failure_mode:
+PA_kin = [0]
+PA_kin_std =[99]
+q_kin = [0]
+q_kin_std =[99]
+Vsyst = [0]
+Vsyst_std =[99]
+Rad_kin = [0]
+Vrot = [0]
+Vrot_err =[99]
+Vexp = [0]
+Vexp_err =[99]
+gal_center_x  = [0]
+gal_center_y  = [0]
+
+
+
+end_kinemetry:
 end

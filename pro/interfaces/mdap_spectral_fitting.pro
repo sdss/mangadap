@@ -69,18 +69,45 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ;                           the \use_previos_guesses keyword, if set.
 ;
 ; emission_line_file [string] string containing the name of the file with the information of the
-;                    emission lines to be fitted. The input file must be an ascii file with the 
-;                    following columns (comments starts with "#"):
+;                    emission lines to be fitted.
+;                    The format must be compatible with the module that performs the fit of the emission lines. 
+;                    If Gandalf or S-Gandalf are used, the input file must be an ascii file with the 
+;                    following 9 columns as in the following example (comments starts with ''\#''):
 ; 
 ;                     #  ID     CODE    wavelength   action  line/    Intensity	V_g/i	sig_g/i	fit-kind
-;                     #                 [angstrom]   f/i/m   doublet
-;                     #   0	 HeII   3203.15       m	      l         1.000	   0	10	t25
-;                     #   1     [NeV]   3345.81       m       l         1.000      0    10      t25
-;                         2     [NeV]   3425.81       m       l         1.000      0    10      t25
-;                         3	[OII]	3726.03       m	      l 	1.000	   0	10	t25
+;                     #                 [angstrom]   f/i/m   doublet                           f/tN
+;                     #   0	HeII   3203.15       m	      l         1.000	   0	10	t25
+;                     #   1     NeV    3345.81       m        l         1.000      0    10      t25
+;                         2     NeV    3425.81       m        l         1.000      0    10      t25
+;                         3	OII    3726.03       m	      l 	1.000	   0	10	t25
+;               
+;                 Col 1: ID. Unique integer identifyer of the emission line.
 ;
-;                      P.S. mdap_sgandalf will use only wavelength and sign(Intensity).
-;                      Other entries are used by mdap_gandalf (see gandalf.pro help for more information)
+;                 Col 2: CODE. String. Name of the element. Special characters as ``[``, ``.'' are not permitted.;
+;
+;                 Col 3: wav. Float. Rest frame wavelength of the emission line to fit. Warning, the
+;                             name of the emission line in the final DAP output will be defined by the string: CODE  +''_''+ROUND(wav).
+;
+;                 Col 4: action. String. Possible values are ``f'' (fit), ``m'' (mask), and ``i''
+;                          (ignore). All lines are masked in the pPXF run, and then fit in the Gandalf run,
+;                          unless they are marked with ``i'', in this latter case they will be ignored.;
+;
+;                 Col 5: line. String Possible values are ``l'' (line) or ``dN'' (doublet). In this
+;                              case, N indicates the line ID to which the  doublet is linked, linked to the line with
+;                              ID=N. For example, if emission line with ID=4 has line=d3, then the 
+;                              emission line with ID=3 must have line = l.
+;
+;                 Col 6: int. Float. Relative intensity of the gas emission (positive) or absorption 
+;                             (negative) lines. It is set to 1 for lines (line = ``l''). For doublets, (line = ``dN'') 
+;                             it indicates the ration elements of the doublets.
+;
+;                 Col 7: vel. Float. Guess of the velocity offset with respect the galaxy systemic velocity (ignored in the DAP)
+;
+;                 Col 8: sigma. Float. Guess of the Velocity dispersion (ignored in the DAP)
+;
+;                 Col 9: mode. String. Possible values are ``f'' (fit) or ``tN'' (tied). If a line has mode = tN, its kinematics is tied 
+;                                       to the line with ID=N. In this case, the line with 00=N must have mode = f.
+;
 ;
 ; range_v_star  [2 elements array]. It specifies the boundaries for the stellar best fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
 ;
@@ -178,9 +205,12 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ; best_template_LOSVD_conv [N x QQ flt array] It will contain the best fitting template for each of the N input galaxy spectra
 ;                convolved by best fitting LOSVD and sampled over wavelength_output (rest frame wavelength).
 ;
-; reddening_output [float] best fit value for the reddening, if the fit is required (otherwise the variable is not defined). To
-;                   fit the reddening, you have to pass a starting guess value and the LAMBDA=exp(loglam_gal) vector through the 
-;                   extra_keyword parameter. Example: extra_inputs=['reddening=0','LAMBDA=exp(loglam_gal)']
+; reddening_output [N x 2 elements array]. Best fit values for the reddening of stars (reddening_output[*,0]) and gas (reddening_output[*,1]) 
+;                                          for all the N galaxy spectra. 
+;                                          If the reddening fit is not requred, the output value is set to 0. (reddening_output[*,0:1] = [0,0]). 
+;                                          If only the reddening of the stars is fitted, the reddening of the gas is set to 0 (reddening_output[*,1] = 0).
+;
+; reddening_output_err &[N x 2 elements array]. Errors associated to reddening\_ output. If not fitted, the error is automatically set to 99.
 ; 
 ; residuals [N x QQ flt array] It contains the difference between the observed galaxy spectra (dereddened if the MW_reddening is defined) 
 ;            and thebest_fit_model, sampled over wavelength_output. The spectrum is in rest frame if  /rest_frame_log is set.

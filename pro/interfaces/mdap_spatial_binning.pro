@@ -235,7 +235,6 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
 endif else begin  ; VORONOI SPATIAL BINNING SCHEME
    user_map_failure:
   ; if keyword_set(weight_for_sn) then WVT = 1
-   ;stop
    mdap_voronoi_2d_binning,x2d[ind_good],y2d[ind_good],signal[ind_good],noise[ind_good],min_sn,binNum_, $
       xNode, yNode, xBar, yBar, bin_sn, nPixels, scale, plot=plot,SN_CALIBRATION=SN_CALIBRATION,/QUIET,weight_for_sn=weight_for_sn;,/no_cvt
    nbins=n_elements(xnode)
@@ -338,6 +337,9 @@ if sz[0] eq 2 then begin  ;RSS
 ;stop
    reconstructed_R2d = sqrt(x2d_reconstructed^2+y2d_reconstructed^2)
    sz = size(reconstructed_R2d)
+
+ ;plot,x2d_reconstructed,y2d_reconstructed,/nodata,/iso
+ ;oplot,xnode,ynode,psym=7,color=200
    for j = 0, sz[2]-1 do begin
       for i = 0, sz[1]-1 do begin
          dist = sqrt((x2d_reconstructed[i,j] - xnode)^2+(y2d_reconstructed[i,j]- ynode)^2)
@@ -348,7 +350,9 @@ if sz[0] eq 2 then begin  ;RSS
          if ind_bad[0] ne -1 then dist_bad = sqrt((x2d_reconstructed[i,j] - x2d[ind_bad])^2+(y2d_reconstructed[i,j]- y2d[ind_bad])^2) else dist_bad=10.^10.
          ;if min(dist) ge min(dist_bad) then binning_map[i,j] = -1
     
-         if min(dist) ge min(dist_bad) or min(dist_rss) ge 1.5 then binning_map[i,j] = -1   ;If I am closer to a bad pixel than a good pixel, or if I am more distant than 3" to a fibre location
+         if min(dist_rss) ge min(dist_bad) or min(dist_rss) ge 1.5 then binning_map[i,j] = -1   ;If I am closer to a bad pixel than a good pixel, or if I am more distant than 3" to a fibre location
+         ;if binning_map[i,j] ne -1 then plots,x2d_reconstructed[i,j] ,y2d_reconstructed[i,j] ,psym=4
+         ;if binning_map[i,j] eq -1 then plots,x2d_reconstructed[i,j] ,y2d_reconstructed[i,j] ,psym=5
       endfor
    endfor
    area_bins = fltarr(nbins)
