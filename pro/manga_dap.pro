@@ -111,7 +111,7 @@ mdap_measure_indices,version=mdap_measure_indices_version
 mdap_spatial_radial_binning,version=mdap_spatial_radial_binning_version
 ;junk = temporary(chek_version)
 ;**********************************************************************************
-
+ 
 
 ;; KINEMETRY CHECK, remove it after the tests
 ; restore, output_idlsession
@@ -553,7 +553,7 @@ mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbi
 
 ;gas
 mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbin_ems,ybin_ems,$
-                  emission_line_kinematics_ems[*,0],emission_line_kinematics_EMS[*,0],$
+                  emission_line_kinematics_ems[*,0],emission_line_kinematics_EMS_err[*,0],$
                   PA_kin_ems, PA_kin_std_ems, q_kin_ems,q_kin_std_ems, Vsyst_ems,Vsyst_std_ems, Rad_kin_ems, Vrot_ems, Vrot_err_ems,Vexp_ems, Vexp_err_ems,$
                   Xcenter_used_for_gas_rot_curve,Ycenter_used_for_gas_rot_curve
 
