@@ -52,8 +52,8 @@ w_range_for_sn_computation = [5560.00, 6942.00]
 #
 trim_wav_range_spatial_binning_1 = [3650.,10300.] 
 trim_wav_range_spatial_binning_2 = [3650.,7500.]
-trim_wav_range_spatial_binning_3 = [3600.,10200.]
-trim_wav_range_radial_binning = [3700.,10000.]
+trim_wav_range_spatial_binning_3 = [3600.,10220.]
+trim_wav_range_radial_binning = [3700.,9980.]
 #
 #------------------------------- 
 #
