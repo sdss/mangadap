@@ -1,0 +1,51 @@
+\section{{\tt mdap\_dust\_calzetti.pro}}
+\label{dap_sec:mdap_dust_calzetti}
+
+
+
+This procedure uses the dust model of Calzetti et al. (2000, ApJ, 533,
+682), and for a given $E(B-V)$ value returns the flux attenuation array,
+which can be used to get reddened templates. Here the spectra are
+assumed to be binned on a ln-rebinned wavelentgh grid as defined by
+input parameters. The input receiding velocity is used to derive the
+dust reddening in the galaxy rest-frame.
+
+Can be used also to de-reddened the galaxy spectra by the Milky-Way
+dust extinction, using as $E(B-V)$ the opposite of the Schlegel et
+al. values found in NED and vstar = 0.
+
+Initial version kindly provided by S. Kaviray, Oxford, 2006.
+
+The list of input parameters and the return value for this function is
+given in Table \ref{dap_tab:mdap_dust_calzetti}.
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs parameters and return value of mdap\_dust\_calzetti.pro function} \label{dap_tab:mdap_dust_calzetti} \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+{\bf  INPUTS}  & \\
+\hline
+l0\_gal & [double]. Starting ln-wavelength where the galaxy spectrum is defined. Default ln($\lambda$), if $\backslash$log10 keyword 
+          is set, $\log_{10}(\lambda)$ is assumed. \\
+%
+lstep\_gal & [double]. Constant logarithmic step (natural log, unless  $\backslash$log10 keyword is set). \\
+%
+npix & [integer]. Number of pixels of the galaxy spectrum.\\
+%
+ebv & [double]. E(B-V) reddening coefficient.\\
+%
+vstar & [double]. Vector of lambda will be de-redshifted by this amount to provide correction at restframe.\\
+\hline
+{\bf  OPTIONAL KEYWORDS} & \\
+$\backslash$ &  If set, input quantities l0\_gal and lstep\_gal are assumed to be in $\log_{10}$. Default is natural log.\\
+\hline
+{\bf  RETURN VALUE} & [dbl array]. array with npix elements containing the reddening vector. This is used to correct an input galaxy spectrum, like
+spc\_obs = spc\_corr $times$ mdap\_dust\_calzetti(l0\_gal, lstep\_gal, npix, ebv, vstar)\\
+\end{longtable}
+\end{center}

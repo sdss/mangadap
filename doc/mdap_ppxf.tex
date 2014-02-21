@@ -1,0 +1,417 @@
+\section{{\tt mdap\_ppxf.pro}}
+\label{dap_sec:mdap_ppxf}
+
+This module fits the input galaxy spectrum with a series of stellar
+templates to get the best fit values of stellar kinematics, and
+stellar weights.
+
+The original code is by M. Cappellari and E. Emsellem (Cappellari \&
+Emsellem, 2004). The following modifications to the original code have
+been performed to adapt it to the MaNGA DAP workflow.
+
+\begin{itemize}
+
+\item Inclusion of the optional inputs range\_v\_star, and
+  range\_s\_star to set the boundaries (with respect the stating
+  guesses) where the best fit stellar velocity and velocity dispersion
+  should be searched.
+
+\item Inclusion of the keyword /fix\_star\_kin, to fix the stellar
+  kinematics to the input values.
+
+\item Inclusion of the optional keyword /external\_library, to run the
+  fortran version of the BVLS module.
+
+\end{itemize}
+
+
+Table \ref{dap_tab:mdap_ppxf} lists the inputs and outputs of
+mdap\_ppxf.pro (from the original ppxf.pro description, with the
+addition of the new implemented keywords).
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of
+  mdap\_ppxf.pro} \label{dap_tab:mdap_ppxf}
+\\ \hline \endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline
+{\bf  INPUTS} &  \\
+\hline
+   TEMPLATES &  N elements vector containing the spectrum of a single template star or more
+       commonly an array of dimensions TEMPLATES[nPixels,nTemplates] containing
+       different templates to be optimized during the fit of the kinematics.
+       nPixels has to be >= the number of galaxy pixels.
+
+      \smallskip 
+
+     - To apply linear regularization to the WEIGHTS via the keyword REGUL,
+       TEMPLATES should be an array of two {\tt TEMPLATES[nPixels, nAge]}, three
+       TEMPLATES[nPixels,nAge,nMetal] or four {\tt TEMPLATES[nPixels, nAge, nMetal, nAlpha]}
+       dimensions, depending on the number of population variables one wants to study.
+       This can be useful to try to attach a physical meaning to the output WEIGHTS, in
+       term of the galaxy star formation history and chmemical composition distribution.
+       In that case the templates may represent single stellar population SSP models
+       and should be arranged in sequence of increasing age, metallicity or alpha along 
+       the second, third or fourth dimension of the array respectively.
+
+      \smallskip 
+
+     - TEMPLATES and GALAXY do not need to span the same wavelength range. However
+       an error will be returned by PPXF, if the velocity shift in pixels,
+       required to match the galaxy with the templates, becomes larger than
+       nPixels. In that case one has to truncate either the galaxy or the
+       templates to make the two rest-frame spectral ranges more similar. \\
+%
+   GALAXY &  N elements vector containing the spectrum of the galaxy to be measured. The
+       star and the galaxy spectra have to be logarithmically rebinned but the
+       continuum does {\bf not} have to be subtracted. 
+
+      \smallskip 
+
+     - For high redshift galaxies, one should bring the spectra close
+       to the restframe wavelength, before doing the PPXF fit, to
+       prevent too large velocity shifts of the templates. This can be
+       done by dividing the observed wavelenghts by (1+z), where z is a
+       rough estimate of the galaxy redshift, before the logarithmic
+       rebinning (Warning: not yet implemented in the DAP).
+
+      \smallskip 
+
+     - GALAXY can also be an array of dimensions {\tt GALAXY[nGalPixels,2]} containing
+       two spectra to be fitted, at the same time, with a reflection-symmetric
+       LOSVD. This is useful for spectra taken at point-symmetric spatial
+       positions with respect to the center of an equilibrium stellar system.
+       For a discussion of the usefulness of this two-sided fitting
+       see e.g. Section 3.6 of Rix \& White (1992, MNRAS, 254, 389).
+       (Warning: this feature has not been tested in the context of the DAP workflow)
+
+      \smallskip 
+
+     - IMPORTANT: 1) For the two-sided fitting the VSYST keyword has to be used.
+       2) Make sure the spectra are rescaled to be not too many order of
+       magnitude different from unity, to avoid over or underflow problems
+       in the calculation. E.g. units of erg/(s cm$^2$ \AA) may cause problems!\\
+%
+   NOISE &  N elements vector containing the 1*sigma error (per pixel) in the galaxy spectrum.
+       If GALAXY is a Nx2 array, NOISE has to be an array with the same dimensions.
+ 
+      \smallskip 
+
+    - IMPORTANT: the penalty term of the pPXF method is based on the *relative*
+       change of the fit residuals. For this reason the penalty will work as
+       expected even if no reliable estimate of the NOISE is available
+       (see Cappellari \& Emsellem [2004] for details).
+       If no reliable noise is available this keyword can just be set to:
+           {\tt NOISE = galaxy*0+1} ; Same weight for all pixels.\\
+%
+   VELSCALE & Float. velocity scale of the spectra in km/s per pixel. It has to be the
+       same for both the galaxy and the template spectra.\\
+%
+   START &  two elements vector {\tt [velStart, sigmaStart]} with the initial estimate
+       for the velocity and the velocity dispersion in km/s.
+
+      \smallskip 
+
+      - Unless a good initial guess is available, it is recommended to set the starting
+       {\tt sigma >= 3*velScale} in km/s (i.e. 3 pixels). In fact when the LOSVD is severely
+       undersampled, and far from the true solution, the chi$^2$ of the fit becomes weakly
+       sensitive to small variations in sigma (see pPXF paper). In some instances the
+       near-constancy of chi$^2$ may cause premature convergence of the optimization.
+
+      \smallskip 
+
+      - In the case of two-sided fitting a good starting value for the
+       velocity is velStart=0.0 (in this case VSYST will generally be nonzero).
+       Alternatively on should keep in mind that velStart refers to the first
+       input galaxy spectrum, while the second will have velocity -velStart.\\
+%
+\hline
+{\bf  KEYWORDS} &  \\
+\hline
+   BESTFIT& a named variable to receive a vector with the best fitting
+       template: this is a linear combination of the templates, convolved with
+       the best fitting LOSVD, with added polynomial continuum terms.\\
+%
+   BIAS & This parameter biases the (h3,h4,...) measurements towards zero
+       (Gaussian LOSVD) unless their inclusion significantly decreses the
+       error in the fit. Set this to {\tt BIAS=0.0} not to bias the fit: the
+       solution (including [V,sigma]) will be noisier in that case. The
+       default BIAS should provide acceptable results in most cases, but it
+       would be safe to test it with Monte Carlo simulations. This keyword
+       precisely corresponds to the parameter $\lambda$ in the Cappellari \&
+       Emsellem (2004) paper. Note that the penalty depends on the *relative*
+       change of the fit residuals, so it is insensitive to proper scaling
+       of the NOISE vector. A nonzero BIAS can be safely used even without a
+       reliable NOISE spectrum, or with equal weighting for all pixels.\\
+%
+   /CLEAN & set this keyword to use the iterative sigma clipping method
+       described in Section 2.1 of Cappellari et al. (2002, ApJ, 578, 787).
+       This is useful to remove from the fit unmasked bad pixels, residual
+       gas emissions or cosmic rays.
+
+       \smallskip
+
+     - IMPORTANT: This is recommended *only* if a reliable estimate of the
+       NOISE spectrum is available. See also note below for SOL.\\
+%
+   DEGREE & degree of the *additive* Legendre polynomial used to correct
+       the template continuum shape during the fit (default: 4).
+       Set DEGREE = -1 not to include any additive polynomial.\\
+%
+   ERROR & a named variable that will contain a vector of *formal* errors
+       (1*sigma) for the fitted parameters in the output vector SOL. This 
+       option can be used when speed is essential, to obtain an order of 
+       magnitude estimate of the uncertainties, but we *strongly* recommend to 
+       run Monte Carlo simulations to obtain more reliable errors. In fact these 
+       errors can be severely underestimated in the region where the penalty 
+       effect is most important (sigma $<$ 2*velScale).
+
+       \smallskip
+
+     - These errors are meaningless unless Chi$^2$/DOF$\sim$1 (see
+     parameter SOL below).  However if one *assume* that the fit is
+     good, a corrected estimate of the errors is: errorCorr =
+     error*sqrt(chi$^2$/DOF) = error*sqrt(sol[6]).
+
+       \smallskip
+
+     - IMPORTANT: when running Monte Carlo simulations to determine the error,
+       the penalty (BIAS) should be set to zero, or better to a very small value.
+       See Section 3.4 of Cappellari \& Emsellem (2004) for an explanation.\\
+%
+   GOODPIXELS & integer vector containing the indices of the good pixels in the
+       GALAXY spectrum (in increasing order). Only these pixels are included in
+       the fit. If the /CLEAN keyword is set, in output this vector will be updated
+       to contain the indices of the pixels that were actually used in the fit.
+
+      \smallskip
+
+     - IMPORTANT: in all likely situations this keyword *has* to be specified.\\
+%
+   LAMBDA & When the keyword REDDENING is used, the user has to pass in this
+       keyword a vector with the same dimensions of GALAXY, giving the restframe
+       wavelength in Angstrom of every pixel in the input galaxy spectrum.\\
+%
+  MDEGREE & degree of the *multiplicative* Legendre polynomial (with mean of 1)
+       used to correct the continuum shape during the fit (default: 0). The
+       zero degree multiplicative polynomial is always included in the fit as
+       it corresponds to the weights assigned to the templates.
+       Note that the computation time is longer with multiplicative
+       polynomials than with the same number of additive polynomials.
+     - IMPORTANT: Multiplicative polynomials cannot be used when
+       the REDDENING keyword is set.\\
+%
+   MOMENTS &  Order of the Gauss-Hermite moments to fit. Set this keyword to 4
+       to fit [h3, h4] and to 6 to fit [h3,h4,h5,h6]. Note that in all cases
+       the G-H moments are fitted (nonlinearly) *together* with [V, sigma].
+ 
+      \smallskip
+
+    - If MOMENTS=2 or MOMENTS is not set then only [V,sigma] are
+       fitted and the other parameters are returned as zero.
+
+      \smallskip
+
+     - If MOMENTS=0 then only the templates and the continuum additive
+       polynomials are fitted and the WEIGHTS are returned in output.
+
+      \smallskip
+
+       Warning: The DAP workflow fits only moments up to h4. \\
+%
+   /OVERSAMPLE & Set this keyword to oversample the template by a factor 30x
+       before convolving it with a well sampled LOSVD. This can be useful to
+       extract proper velocities, even when sigma < 0.7*velScale and the 
+       dispersion information becomes totally unreliable due to undersampling. 
+       IMPORTANT: One should sample the spectrum more finely is possible, 
+       before resorting to the use of this keyword! \\
+
+      \smallskip
+ Warning: not tested in the DAP workflow.
+%
+   /PLOT &  set this keyword to plot the best fitting solution and the residuals
+       at the end of the fit. Warning: DO NOT USE IN THE DAP WORKFLOW.\\
+%
+   POLYWEIGHTS & vector with the weights of the additive Legendre polynomials.
+       The best fitting additive polynomial can be explicitly evaluated as
+  
+    \medskip
+
+        \ \ \    {\tt x = range(-1d,1d,n\_elements(galaxy))}
+
+        \ \ \    {\tt apoly = 0d} ; Additive polynomial
+
+        \ \ \    {\tt for j=0,DEGREE do apoly += legendre(x,j)*polyWeights[j]}
+
+        \medskip
+
+     - When doing a two-sided fitting (see help for GALAXY parameter), the additive
+       polynomials are allowed to be different for the left and right spectrum.
+       In that case the output weights of the additive polynomials alternate between
+       the first (left) spectrum and the second (right) spectrum.\\
+%
+   /QUIET & set this keyword to suppress verbose output of the best fitting
+       parameters at the end of the fit. \\
+%
+   REDDENING & Set this keyword to an initail estimate of the reddening $E(B-V)>=0$
+       to fit a positive reddening together with the kinematics and the templates.
+       After the fit the input estimate is replaced with the best fitting $E(B-V$) value.
+ 
+     - IMPORTANT: The MDEGREE keyword cannot be used when REDDENING is set.
+
+       Warning: This keyword is NEVER used in the DAP workflow: the reddening is measure usiong Gandalf. \\
+%
+
+   REGUL & (Warning: not tested in the DAP workflow) If this keyword is nonzero, the program applies second-degree
+       linear regularization to the WEIGHTS during the PPXF fit.
+       Regularization is done in one, two or three dimensions depending on whether
+       the array of TEMPLATES has two, three or four dimensions respectively.
+       Large REGUL values correspond to smoother WEIGHTS output. The WEIGHTS tend
+       to a linear trend for large REGUL. When this keyword is nonzero the solution
+       will be a trade-off between smoothness of WEIGHTS and goodness of fit.
+
+      \smallskip
+
+     - The effect of the regularization scheme is to enforce the
+     numerical second derivatives between neighbouring weights (in
+     every dimension) to be equal to {\tt -w[j-1]+2*w[j]-w[j+1] = 0}
+     with an error {\tt Delta=1/REGUL}. It may be helpful to define
+     REGUL=1/Delta and view Delta as the regularization error.
+
+      \smallskip
+
+      - IMPORTANT: Delta needs to be of the same order of magnitude as the typical 
+       WEIGHTS to play an effect on the regularization. One way to achieve this is: 
+       (i) divide the TEMPLATES array by a scalar in such a way that the typical 
+       template has a median of one (e.g. TEMPLATES/=median(TEMPLATES)); 
+       (ii) do the same for the input GALAXY spectrum (e.g. GALAXY/=median(GALAXY)). 
+       In this situation Delta and REGUL should be *roughly* of order unity.  
+ 
+      \smallskip
+
+     - Here is a possible recipe for chosing the regularization parameter REGUL:
+
+     \begin{enumerate}
+         \item Perform an un-regularized fit (REGUL=0) and then rescale the input
+              NOISE spectrum so that Chi$^2$/DOF = Chi$^2$/N\_ELEMENTS(goodPixels) = 1.
+              This is achieved by rescaling the input NOISE spectrum as
+              {\tt NOISE = NOISE*sqrt(Chi$^2$/DOF) = NOISE*sqrt(SOL[6])};
+         \item Increase REGUL and iteratively redo the pPXF fit until the Chi$^2$
+              increases from the unregularized Chi$^2$ = N\_ELEMENTS(goodPixels)
+              value by $\Delta$Chi$^2$ = sqrt(2*n\_elements(goodPixels)).
+     \end{enumerate}
+
+      The derived regularization corresponds to the maximum one still consistent
+       with the observations and the derived star formation history will be the
+       smoothest (minimum curvature) that is still consistent with the observations.
+
+      \smallskip
+
+       - For a detailed explanation see Section 18.5 of Press et al. (1992,
+       Numerical Recipes 2nd ed.) available here http://www.nrbook.com/a/bookfpdf.php.
+       The adopted implementation corresponds to their equation (18.5.10).\\
+% 
+ SKY & Warning: not tested in the DAP. vector containing the spectrum
+       of the sky to be included in the fit, or array of dimensions
+       SKY[nPixels,nSky] containing different sky spectra to add to
+       the model of the observed GALAXY spectrum. The SKY has to be
+       log-rebinned as the GALAXY spectrum and needs to have the same
+       number of pixels.
+
+      \smallskip
+
+     - The sky is generally subtracted from the data before the PPXF fit. However,
+       for oservations very heavily dominated by the sky spectrum, where a very
+       accurate sky subtraction is critical, it may be useful *not* to subtract
+       the sky from the spectrum, but to include it in the fit using this keyword.\\
+%
+   VSYST  & difference between the log-lam values of the wavelength of the galaxy and the template stars, expressed in km/sec.\\
+%
+   WEIGHTS & a named variable to receive the value of the weights by which each
+       template was multiplied to best fit the galaxy spectrum. The optimal
+       template can be computed with an array-vector multiplication:
+    \smallskip
+
+           T\ \ \    {\tt EMP = TEMPLATES \# WEIGHTS} (in IDL syntax)
+    \smallskip
+
+       - When the SKY keyword is used WEIGHTS[0:nTemplates-1] contains the weights
+       for the templates, while WEIGHTS[nTemplates:*] gives the ones for the sky.
+       In that case the best fitting galaxy template and sky are given by:
+    \smallskip
+
+          \ \ \    {\tt TEMP = TEMPLATES \# WEIGHTS[0:nTemplates-1]}
+
+          \ \ \    {\tt BESTSKY = SKY \# WEIGHTS[nTemplates:*]}
+    \smallskip
+
+       - When doing a two-sided fitting (see help for GALAXY parameter) *together*
+       with the SKY keyword, the sky weights are allowed to be different for the
+       left and right spectrum. In that case the output sky weights alternate
+       between the first (left) spectrum and the second (right) spectrum.\\
+%
+/fix\_star\_kin &        If set, the stellar kinematics are not
+                       fitted. The return value is that of the starting guesses.\\ 
+%
+range\_v\_star & 2 elements array]. It specifies the boundaries for the stellar best 
+           fit velocity (in km/sec). Default: starting\_guess $\pm$ 2000 km/sec.\\
+%
+range\_s\_star &  2 elements array]. It specifies the boundaries for the stellar best fit 
+     velocity dispersion (in km/sec). Default: $21 < \sigma < 499$ km/sec.\\
+%
+external\_library & String that specifies the path to the external FORTRAN library, which 
+                  contains the fortran versions of mdap\_bvls.pro. 
+                  If not specified, or if the path is invalid, the default internal IDL mdap\_bvls code is used. \\
+\hline
+{\bf  OUTPUTS} &  \\
+\hline
+  SOL & seven elements vector containing in output the values of {\tt
+     [Vel, Sigma, h3, h4, h5, h6, Chi$^2$/DOF]} of the best fitting
+     solution, where DOF is the number of Degrees of Freedom (number of
+     fitted spectral pixels).  Vel is the velocity, Sigma is the
+     velocity dispersion, h3-h6 are the Gauss-Hermite coefficients. The
+     model parameter are fitted simultaneously.  Warning: in the DAP
+     workflow, only moments up to h4 are fitted.
+
+    \smallskip
+
+     - I hardcoded the following safety limits on the fitting parameters:
+     \begin{itemize}
+         \item Vel is constrained to be $\pm$2000 km/s from the first input guess
+         \item  $velScale/10 < Sigma < 500$ km/s
+         \item  $-0.4 < [h3 ,h4, ...] < 0.4$ (limits are extreme value for real galaxies)
+         \end{itemize}
+    \smallskip
+
+     - IMPORTANT: if Chi$^2$/DOF is not ~1 it means that the errors are not
+       properly estimated, or that the template is bad and it is *not* safe
+       to set the /CLEAN keyword.
+
+    \smallskip
+
+     - When MDEGREE > 1 then SOL contains in output the 7+MDEGREE
+     elements {\tt [Vel, Sigma, h3, h4, h5, h6, Chi$^2$/DOF, cx1, cx2,
+         ..., cxn]}, where cx1, cx2, ..., cxn are the coefficients of
+     the multiplicative Legendre polynomials of order 1, 2, ...,
+     n. The polynomial can be explicitly evaluated as:
+       
+       \medskip
+   
+          \ \ \  \ {\tt x = range(-1d,1d,n\_elements(galaxy))}
+      
+          \ \ \  \ {\tt mpoly = 1d }; Multiplicative polynomial
+      
+          \ \ \  \ {\tt for j=1,MDEGREE do mpoly += legendre(x,j)*sol[6+j]}\\
+\hline
+\hline
+\end{longtable}
+\end{center}

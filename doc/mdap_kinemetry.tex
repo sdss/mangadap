@@ -1,0 +1,333 @@
+\section{{\tt mdap\_kinemetry.pro}}
+\label{dap_sec:mdap_kinemetry}
+
+This main module implements the kinemetry.pro module by Kajinovic et
+al. 2008) to measure the rotation curve (stars and gas), kinematic
+center, position angle, and axial ratio and amplitude of
+inflows/outflows.
+
+Table \ref{dap_tab:mdap_kinemetry} lists the inputs and outputs of
+mdap\_kinemetry.pro (from the original module by D. Krajinovic).
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of
+  mdap\_kinemetry.pro} \label{dap_tab:mdap_kinemetry}
+\\ \hline \endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline
+{\bf  INPUTS} &  \\
+\hline
+%
+XBIN   & 1D array with X coordinates describing the map.\\
+%
+YBIN  & 1D array with Y coordinates describing the map.\\
+%
+MOMENT & 1D array with kin.moment (e.g. velocity) values  at XBIN, YBIN positions.\\
+%
+\hline
+{\bf  OPTIONAL INPUTS KEYWORDS  } &  \\
+\hline
+NTRM  & scalar specifying the number of terms for the harmonic analysis 
+	           of the profile extracted along the best fitting ellipse. Default
+	           value is 6 odd terms, which means the following terms will be 
+	           used in the expansion: a1, b1, a3, b3, a5 and a5, or the terms
+                   corresponding to sin(x), cos(x), sin(3x), cos(3x), sin(5x), cos(5x).
+                    Warning: the DAP uses NTRM=2.\\
+%
+ERROR & 1D array with errors to VELBIN values. If this
+             keyword is specified then the program will calculate
+	           formal (1sigma) errors of the coefficients which are
+	           returned in ER\_PA, ER\_Q (determined by MPFIT), ER\_CF 
+	           (determined by SVD) variables. 
+
+              If IMG keyword is set ERROR has to be a 2D array. If if
+              is not supplied, it is creatred as 2D arrays with all
+              values equal to 1. \\  
+%
+SCALE  & scalar specifying the pixel scale on the map. If not set, the
+         SAURON pixel scale (0.8 arcsec) is assumed. Warning: DAP uses scale=1.\\
+%
+IMG    & 2D array containing an image. This keyword was designed specifically
+	           for surface photometry (analysis of the zeroth moment of the LOSVD), 
+	           to increase the spead of calculations, but if kinematic map is large 
+	           (and has many pixels) it can be also passed through this keyword and 
+	           analysis will be quicker. To use kinemetry for photometry it is also 
+	           necessary to set keyword EVEN and it can be useful to use NTRM=10
+ 	         in order to measure disky/boxy deviations (4th terms). 
+	           Images are very different from current kinematic maps. They are much larger
+            and usually not binned, so make regular 2D grids. This is the reason to
+	           treat the kinematic maps and images in a different way. If IMG is set,
+	           the treatment follows the ideas of Jedrzejewsky (1987): inner parts of
+	           (small radii, rad < 40 pixels) are interpolated while outer parts are 
+            binned in elliptical sectors (64 in angle to increase the signal and of 
+            thicknes equal to 10\% of the given radius). When IMG is used center can 
+            be also fitted (currently only in photometry, so if keyword EVEN is not 
+            set - which usually means one is analysing a velocity map - center is not fitted). 
+            An estimate of the center is given through XC and YC keywords. ERROR should be a 2D array
+            of the same size as IMG. When IMG is used, VELCIRC and VELKIN keywords contain 
+            reconstructed images. It is assumed that image coordiantes are in pixels 
+            (not physical units). Keyword SCALE is automatically set to 1. If this is not 
+            the case, set SCALE to a required number. In order to be compatible with 
+            previous versions of kinemetry XBIN, YBIN and MOMENT still have to be passed
+            but they can be dummmy 1D variables, unless certain image areas are masked 
+            (as bad pixels). IF keyword BADPIX is used, XBIN and YBIN should be 1D arrays 
+            with the actual coordinates of the IMG. One can use the following set of lines 
+            to make the arrays: 
+
+            \smallskip
+
+             \ \ \        {\tt s=size(img)}  
+
+             \ \ \        {\tt n=s[1]*s[2]}
+
+             \ \ \        {\tt yy=REPLICATE(1,s[1])\#(indgen(s[2]))}
+
+             \ \ \        {\tt xx=(indgen(s[1]))\#REPLICATE(1,s[2])}
+
+             \ \ \        {\tt xbin=REFORM(xx, n)}
+
+             \ \ \        {\tt ybin=REFORM(yy, n)} \\
+X0  & an estimate of the X coordinate of the center (in pixels). If not given X0=0.
+	           For accurate determination of the center and other ellipse parameters at small
+	           radii it is important the ellipse includes the center of the galaxy. \\
+
+Y0  & an estimate of the Y coordinate of the center (in pixels). If not given Y0=0.\\
+%
+FIXCEN * keyword, if set center will be fixed and no attempt will be made during the
+            harmonic decomposition to find new center. Center is fixed to X0 and Y0. 
+            This keyword is optional only for photometry (or even moments in general). 
+            For ODD moments, center is fixed always. \\
+%
+NRAD  & scalar specifying the number of radii along which kinemetry should be run.
+            IF not specified, NRAD=100. Kinemetry will stop when the edge of the map
+	           is encountered and NRAD is not necessary achived. To force kinemetry to 
+	           do all radii, relax condition in keyword COVER.\\
+%
+NAME & name of the object (used by VERBOSE keyword and for internal
+            plotting).\\
+%
+PAQ  & 2 element or 2*NRAD element vector specifying position angle (PA)
+	           and flattening (q) of the ellipses in that order (kept constant).
+	           It is possible to specify a set of PA and q values (that 
+	           correspond to given radii (see RADIUS keyword)), for which one
+	           wants to get the Fourier coefficients. In this case PAQ should
+	           be set as follows: PAQ=[PA1, Q1, PA2, Q2...., PAnrad, Qnrad]
+
+            It can be also used as an initial condition for determination of ellipses. 
+            In this case, it should be called together with /NOGRID keyword (currently  
+            implemented only for photometry). 
+            IF PAQ keyword is used to define ellipses along which harmonic
+            decomposition is made, then keyword NOGRID should not be used. In this case 
+            center is fixed (and should be defined via X0 and Y0 keywords if IMG keyword
+            is used).\\
+%
+NOGRID & keyword, if set it bypasses the direct minimisation via a grid in PA
+	           and Q values. It should be used together with PAQ parameters, when
+	           a good estimate of PA and Q are passed to the program, but not if PAQ
+            serve to pre-define ellipses for harmonic decomposition.
+	           It is desigend with photometry in mind, where the problem usually has
+           only one well defined minimum (in PA,Q plane). It speeds up the
+	           calculation, but for the higher kinematic moments it is not as robust and 
+            it is advised not to be used (first use the grid to find the best fit 
+            PA and Q values.).\\
+%
+NPA   & scalar specifying the number of PA used to crudely estimate
+            the parameters of the best fit ellipse before entering
+            MPFIT. Default value is 21. To speed up the process and for
+	           quick tests it is useful to use a small number (e.g 5). 
+            Complicated maps may require a bigger number (e.g. 41).\\
+%
+NQ  & scalar specifying the number of q used to crudely estimate
+            the parameters of the best fit ellipse before entering
+            MPFIT. Default value is 21. To speed up the process and for
+	           quick tests it is useful to use a small number (e.g 5). 
+            Complicated maps may require a bigger number (e.g. 41).\\
+%   
+RANGEQ & 2 element vector specifying the min and max value for 
+	           flattening Q. Default values are 0.2 and 1.0.\\
+%   
+RANGEPA & 2 element vector specifying the min and max value for 
+	           position angle PA. Default values are -90 and 90 (degrees).\\
+%
+BADPIX & 1D array containing indices of pixels which should not be
+            used during harmonic fits. This keyword is used when data 
+            are passed via IMG. It is usefull for masking stars and
+            bad pixels. When used, XBIN and YBIN should be real 
+            coordinates of the pixels of IMG (see IMG for more details). 
+            The bad pixels are passed to the routine which defines/selects
+            the ellipse coordiantes (and values) to be fitted, and they are 
+            removed from the subsequent fits. All pixels of
+            the ellipse which are 2*da from the bad pixels are removed 
+            from the array, where da is the width of the ring. \\ 
+%
+/ALL & If this keyword is set then the harmonic analysis of the rings 
+	           will include both even and odd terms. If this keyword is set,
+	           and NTRM = n then the following terms are used in the expansion:
+	           a1, b2, a2, b2, a3, b3,...., an, bn (or coeffs nex to: sin(x),
+	           cos(x), sin(2x), cos(2x), sin(3x), cos(3x),...,sin(nx),cos(nx)).\\
+%
+/EVEN & set this keyword to do kinemetry on even kinematic moments. 
+	           In this case, kinemetry reduces to photometry and the best
+	           fitting ellipse is obtained by minimising a1, b1, a2, b2
+	           terms. When this keyword is set, keyword /ALL is automatically
+	           set and NTRM should be increased (e.g. NTRM=10 will use the 
+	           following terms in the expansion: a1, b2, a2, b2, a3, b3, a4, b4
+	           (or coeffs. next to sin(x),cos(x),sin(2x), cos(2x),sin(3x),
+	           cos(3x),sin(4x),cos(4x))).\\
+%
+/VSYS & if this keyword is set the zeroth term (a0) is not extracted.
+	           (for odd moments).This might be useful for determinatio of
+	           rotation curves.One can first run kinemetry without setting 
+	           this keyword to find the systemic velocity (given as cf[*,0]). 
+                   Then subtract the systemic velocity form the velocity map and 
+	           re-run kinemetry with /vsys set. In this case the zeroth terms 
+	           will be zero. For completeness, it is also possible to input 
+	           VSYS, e.g. VSYS=10. The zeroth term will not be calculated, 
+	           but it will be set to 10 in output. Given that Fourier terms
+	           are orthogonal, it should not be necessary to set this keyword
+	           in general.\\ 
+%
+RING & scalar specifying desired radius of the first ring. Set this
+	           keyword to a value at which the extraction should begin. This 
+	           is useful in case of ring-like structures sometimes observed in 
+	           HI data.\\
+%   
+RADIUS & 1D array with values specifying the lenght of the semi-major axis
+	           at which the data (kin.profile) should be extracted from the map 
+	           for the kinemetric analisys. The values should be in pixel space 
+            (not in physical units such as arcsec).  If this keyword is set, 
+	           the values are coopied into the output variable: RAD.\\
+%   
+COVER & Keyword controling the radius at which extraction of
+	           values from the map stops. Default value is 0.2, meaning
+	           that if less than 20\% of the points along an ellipse are
+	           are not present, the program stops.\\ 
+%
+/BMODEL & If this keyword is set, a model moment map is constructed. This keyword
+            should be set together with VELCIRC and VELKIN keywords, which will
+	           contain the reconstructed map, using the first dominant term and all 
+	           terms, respectively. IF IMG keyword is used, the outputs are 2D images,
+ 	         otherwise BMODEL reconstructs the map at each input position XBIN,YBIN.
+	           If BMODEL is not set VELCIRC and VELKIN will contain reconstructed values
+	           at the positions of XELLIP and YELLIP.\\
+%
+/PLOT  & If this keyword is set, diagnostic plots are shown for each radii: 
+
+		       - the best ellipse (overploted on kin.moment map). If IMG
+		         keyword is set, the image is scaled to the size of the ellipse.
+		         The centering of the overplotted ellipse is good to 0.5 pixels
+		         so for small radii (r < a few pixels) it is possible that the 
+		         position of the center of the overplotted ellipse is not on the
+		         brightes pixel. 
+
+		       - PA-Q grid with the position of the minimum
+                        (green diamond) for the parameters of the best
+                        fit ellipse determined by MPFIT, where the
+                        initial (input to MPFIT) values of PA and Q are
+                        presented by the grid of dots and the colours
+                        show the Chi2 square contours (linearly
+                        interpolated between the PA,Q points),
+
+		       - fit to kin.profile (white are the DATA, red is the FIT, where
+		         FIT is given by a0+b1*cos(x) for odd, and a0 for even moments), 
+
+		       - residuals (DATA - FIT), and overplotted higher order
+		         terms (green: a1,a3 and b3, red: a1,a3,b3,a5 and b5; 
+		         for the /EVEN case - green: a1, b1, a2, b2, red: a1, b1, a2, b2, a4, b4)
+
+                         \smallskip
+
+                        Warning: do not use in the DAP.\\
+%
+/VERBOSE & set this keyword to print status of the fit on screen
+            including information on:
+\begin{itemize}
+               \item Radius - number of the ring that was analysed
+               \item RAD    - radius of the analysed ring (if SCALE is passed 
+                          it is given in the same units, otherwise in pixels)
+               \item PA     - position angle of the best fitting ellipse
+               \item Q      - flattening of the best fitting ellipse
+               \item Xcen   - X coordinate of the centre of the ellipse
+               \item Ycen   - Y coordinate of the centre of the ellipse
+               \item Number of ellipse elements - number of points to which the data
+                          points in the ring are sampled before derivation of
+                          the best fit parameters and harmonic analysis. It 
+                          varies between 20 and 64 (or 100 in non IMG model)
+                          depending on the ring size, giving a typical sampling 
+                          of 5.6 (3.6) degrees.
+\end{itemize}\\
+\hline
+{\bf OUTPUT}  & \\
+\hline
+   RAD & 1D array with radii at which kin.profiles were extracted.\\
+%
+   PA  & 1D array with position angle of the best fitting ellipses,
+            PA is first determined on an interval PA=[-90,90], where
+            PA=0 along positive x-axis. Above x-axis PA $>$ 0 and below
+            x-axis Pa $<$ 0. PA does not differentiate between receding
+            and approaching sides of (velocity) maps. This is
+            transformed to the usual East of North system, where the 
+	           East is the negative x-axis, and the North is the positive 
+	           y-axis. For odd kin.moments PA is measured from the North 
+	           to the receding (positive) side of the galaxy (which is 
+	           detected by checking the sign of the cos(theta) term. For
+	           the even terms it is left degenerate to 180 degrees rotation.\\
+%
+Q  & 1D array with flattening of the best fitting ellipses
+            (q=1-ellipticity), defined on interval q=[0.2,1]\\
+%
+CF  & 2D array containing coefficients of the Fourier expansion
+            for each radii cf=[Nradii, Ncoeff]. For example: 
+	           a0=cf[*,0], a1=cf[*,1], b1=cf[*,2]....\\
+\hline
+{bf OPTIONAL OUTPUT KEYWORDS} & \\
+\hline
+VELKIN & 1D array of reconstructed kin.moment using NTRM harmonic
+            terms at positions XBIN,YBIN, obtained by linear interpolation
+	           from points given in XELLIP and YELLIP keywords (if BMODEL keyword
+	           is used, otherwise at positions XELLIP and YELLIP.\\
+%   
+VELCIRC & 1D array containinng 'circular velocity' or a0 + b1*cos(theta)
+            at positions XBIN, YBIN (velcirc = a0, in case of EVEN moments), 
+	           obtained by linear interpolation from points given in XELLIP 
+	           and YELLIP keywords (if BMODEL keyword is used, otherwise at 
+	           positions XELLIP and YELLIP.\\
+%
+GASCIRC  &1D array containing circular velocity or Vcirc=cf[*,2]*cos(theta)
+            at positions XBIN and YBIN, obtained for fixed PA and q. 
+            PA and q are taken to be median values of the radial variation of PA and q. 
+            IF keyword PAQ is used than GASCIRC give the circular velocity (no systemic
+            velocity) for the median values of PA, Q values. Note that this is different
+            from VELCIRC (also VELKIN) which is obtained on the best
+            fitting ellipses and also includes Vsys (cf[*,0]) term. 
+            This keyowrd is useful for gas velocity maps, if one wants to obtain 
+            a quick disk model based on the circular velocity. \\
+%
+ER\_PA & 1D array of 1sigma errors to the ellipse position angle.\\
+%
+ER\_Q  &  1D array of 1sigma errors to the ellipse axial ratio.\\
+%
+ER\_CF  & 2D array containing 1 sigma errors to the coefficients 
+	           of the Fourier expansion for each radii.\\
+
+XELLIP & 1D array with X coordintes of the best fitting ellipses.\\
+%
+YELLIP & 1D array with Y coordintes of the best fitting ellipses.\\
+%
+XC    & the X coordinate of the center (in pixels). If X0 not fit XC=0.\\
+%
+YC    & the Y coordinate of the center (in pixels). If Y0 not fit YC=0.\\
+\hline
+\hline
+\end{longtable}
+\end{center}
+

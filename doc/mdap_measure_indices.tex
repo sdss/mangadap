@@ -1,0 +1,98 @@
+\subsection{{\tt mdap\_measure\_indices.pro}}
+\label{dap_sec:mdap_measure_indices}
+
+This interface is responsible for measuring the strength of the
+absoprtion line indices, their errors, and correct them for galaxy
+intrinsic broadening. Broadening correction is applied to the input
+galaxy spectra to match the spectral resolution of the spectral
+indices system (e.g. Lick). Input galaxy spectra must have emission
+lines removed.
+
+The measurement of the index is performed by the main module
+mdap\_do\_measure\_indices.pro, see Section
+\ref{dap_sec:mdap_do_measure_indices}.
+
+Warning: ``D4000'' and ``TiO0p89'' (i.e. TiO0.89) indices are defined
+as the ratio of the flux in the red and blue pseudocontinua. This
+alternative configuration is hardwired in the
+mdap\_measure\_indices.pro interface, and it is triggered by the index
+name (i.e. be sure that the user input file with indices definitions
+have these two names correcty spelled).
+
+Broadening correction is done according to the following formula
+
+\[
+I_{\rm corr} = I_{\rm gal} \frac{I_{\rm templ}}{I_{\rm templ\ LOSVD}}
+\]
+for atomic indices, and 
+\[
+I_{\rm corr} = I_{\rm gal} + I_{\rm templ} - I_{\rm templ\ LOSVD}
+\]
+for molecular indices.  $I_{\rm corr}$ is the index line strength
+corrected for intrinsic broadening, $I_{\rm templ}$ is the index line
+strength measured on the best fitting stellar template, and $I_{\rm
+  templ\ LOSVD}$ is the index line strength measured on the best
+fitting stellar template convolved by the best fitting LOSVD.
+
+The Convolution the input spectra to match a desired system is done by
+the utility module mdap\_convol\_sigma (Section
+\ref{dap_sec:mdap_convol_sigma}).
+
+The list of input/output parameters for this module is given in Table
+\ref{dap_tab:mdap_measure_indices}.
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_measure\_indices.pro} \label{dap_tab:mdap_measure_indices} \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+{\bf  INPUTS} & \\
+\hline
+wavelength & [N elements array]. Vector containing the wavelenghts of the input spectra. The dispersion can be also not constant.\\
+%
+spectra & [T x N elements array].  Vector containing the T input galaxy spextra, with emission line removed. Spectra are defined over the vector wavelength.\\
+%
+best\_template & [T x N elements array]. Vector containing the T best fitting stellar templates obtained when fitting the kinematics of the input spectra. 
+                Spectra are defined over the vector wavelength.\\
+%
+best\_template\_ LOSVD, & [T x N elements array]. Vector containing the T best fitting stellar templates, convolved with the best-fitting stellar LOSVD, obtained when 
+                  fitting the kinematics of the input spectra. Spectra are defined over the vector wavelength. \\
+%
+stellar\_velocity & [T elements array]. Vector containing the best fitting stellar velocity for the T input spectra in km/sec. P.S. Set it to zero if the input spectra are in rest-frame\\
+%
+residuals & [T x N elements array]. Vector containing the residuals from the best fit model to the input galaxy spectra. Residuals are defined over the vector wavelength.  \\
+%
+fwhm\_diff\_ indices\_ & [N elements array]. Vector that specifies the FWHM($\lambda$) (in \AA) that should be used to broaden the spectra, best\_template, and best\_template\_LOSVD to match the spectral resolution of the spectral indices system.\\
+\hline 
+{\bf OPTIONAL INPUTS} & \\
+\hline
+dir=dir  &  Directory where to store the ps files showing the measurements \\
+%
+\hline
+{\bf OUTPUTS} & \\
+\hline
+abs\_line\_ indices & [T x Nind array]. Absorption line indices of the T inut spectra, corrected for intrinsic broadening. The Nind measure indices are defined in 
+   aborption\_line\_ indices\_definition, specified in the configuration file (see Section \ref{dap_sec:configuration}).\\
+%
+abs\_line\_ indices\_errors & [T x Nind array]. Errors associated to abs\_line\_ indices. \\
+%
+abs\_line\_ indices\_template &  Absorption line indices measured on best\_template \\
+%
+abs\_line\_ indices\_template\_ losvd &   Absorption line indices measured on best\_template\_ LOSVD.\\
+\hline
+{\bf  OPTIONAL OUTPUTS} &  \\
+\hline
+version & string specifying the module version. If requested, the module is not execute and only version flag is returned.\\
+\hline
+\hline
+\end{longtable}
+\end{center}
+
+
+

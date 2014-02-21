@@ -1,0 +1,102 @@
+\section{{\tt mdap\_do\_measure\_indices.pro}}
+\label{dap_sec:mdap_do_measure_indices}
+
+This procedure measures the line strenght of a give index, according to the following definitions (from \citealt{Worthey+94}): 
+
+
+\begin{eqnarray}
+F\left(\lambda; \lambda_1, \lambda_2 \right) &=& \int_{\lambda_2}^{\lambda_1} F(\lambda)d\lambda/(\lambda_2 - \lambda_1) \nonumber \\
+F_{PB} &=& F\left(\lambda; \lambda_{\rm BLUE\ CONT\ 1}, \lambda_{\rm BLUE\ CONT\ 2} \right) \nonumber \\
+F_{PR} &=& F\left(\lambda; \lambda_{\rm RED\ CONT\ 1}, \lambda_{\rm RED\ CONT\ 2} \right) \nonumber  \\
+F_{I} &=& F\left(\lambda; \lambda_{\rm INDEX\ 1}, \lambda_{\rm INDEX\ 2} \right) \nonumber  \nonumber  \\
+\lambda_{\rm BLUE\ C} &=& 0.5 \cdot (\lambda_{\rm BLUE\ CONT\ 1} + \lambda_{\rm BLUE\ CONT\ 2}) \nonumber  \\
+\lambda_{\rm RED\ C} &=& 0.5 \cdot (\lambda_{\rm RED\ CONT\ 1} + \lambda_{\rm RED\ CONT\ 2}) \nonumber  \\
+\lambda_{\rm INDEX\ C} &=& 0.5 \cdot (\lambda_{\rm INDEX\ CONT\ 1} + \lambda_{\rm INDEX\ CONT\ 2}) \nonumber  \\
+F_P(\lambda) &=& (\lambda_{\rm RED\ C} -\lambda_{\rm BLUE\ C} )\frac{\lambda-\lambda_{\rm BLUE\ C}}{\lambda_{\rm RED\ C} -\lambda_{\rm BLUE\ C}}+\lambda_{\rm BLUE\ C}
+\end{eqnarray}
+
+The Equivalent width (in \AA) for atomic indices is:
+
+\[
+EW =  \int_{\lambda_{\rm INDEX\ 1}}^{\lambda_{\rm INDEX\ 2}} \left( 1 - \frac{F_I}{F_P} \right) d\lambda
+\]
+
+The Equivalent width (in magnitudes) for molecular indices is:
+
+\[
+EW =  -2.5 \ln \left[ \left( \frac{1}{\lambda_{\rm INDEX\ 2} - \lambda_{\rm INDEX\ 1}} \right)  \int_{\lambda_{\rm INDEX\ 1}}^{\lambda_{\rm INDEX\ 2}} \left( F_I/F_P\right) d\lambda \right]
+\]
+
+The list of input/output parameters for this module is given in Table
+\ref{dap_tab:mdap_do_measure_indices}.
+
+Errors on the indices are calculated using the Empirical formula by
+Cardiel et al. (1998), A\&AS, 127, 597 Equations 41 -46.
+
+Warning: ``D4000'' and ``TiO0p89'' (i.e. TiO0.89) indices are defined
+as the ratio of the flux in the red and blue pseudocontinua. This
+alternative configuration is hardwired in mdap\_measure\_indices.pro
+(Section \ref{dap_sec:mdap_measure_indices}).
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of mdap\_do\_measure\_indices.pro} \label{dap_tab:mdap_do_measure_indices} \\
+\hline
+\endfirsthead
+\hline
+\endhead
+\hline
+\endlastfoot
+\hline
+{\bf  INPUTS} & \\
+\hline
+%
+spc    &  [dbl array].  Vector containing  spectra to calculate the line strenght index. It should be without emission lines, and at the same 
+                         spectral resolution of the desired spectroscopic system.\\
+%
+lambda &  [dbl array].  Vector (same number of elements of spc) containing the wavelengths (in \AA). The vector must have constant \AA/pixel step.\\
+%
+passband & [flt array].    2 elements array defining the index passband boundaries.\\
+%
+blue\_cont &[flt array].    2 elements array defining the blue pseudocontinua boundaries.\\
+%
+red\_cont  &flt [array].    2 elements array defining the red pseudocontinua boundaries.\\
+\hline 
+{\bf OPTIONAL INPUTS} & \\
+\hline
+norm    &  [float].    Value of $\lambda$ (in \AA) at which compute the normalization. The input spectrum is normalized by spc(norm). Defaul: no normalization.\\
+%
+title   &  [string].   Title to write into the plot produced as output. \\
+%
+plbound &  [array].    Two elements array specifying the boundaries of
+                     the plot (Y axis), which will be set to [plbound[0]*midplot,plbound[1]*midplot]
+                     where midplot is the value of the spectrum at
+                     the wavelenght middle range. Default plbound=[0.6,1.35]; midplot=1.\\
+%
+rebin   &  [float].  If set, the input spectrum will be rebinned according to a new step (\AA/pixel, defined by
+                     rebin). The starting point of lambda will remains  unchaged. The input "lambda" and "spc" parameters are not overwritten.
+                     Default: no rebinning.\\
+%
+noise    & [float].   It is useful only when errors need to be retrieved. Default: noise = sqrt(spc).\\ 
+\hline
+{\bf OPTIONAL KEYWORDS}  & \\
+\hline
+/noplot     &         If set, all the plotting commands (plot, oplot, plots and xyouts) in the routine are not executed.\\
+{\bf OUTPUTS} & \\
+\hline
+ew         &[float].    Line equivalent width in angstrom.\\
+%
+index\_mag &[float].    Linestrenght index value in magnitudes.\\
+%
+\hline
+{\bf OPTIONAL OUTPUTS} & \\
+\hline
+errors    &[float].    This variable will contain the errors on the indices computed using Cardiel et al. 1998, A\&AS, 127, 597.\\
+\hline
+\hline
+\end{longtable}
+\end{center}
+
+
+
+
