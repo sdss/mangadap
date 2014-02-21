@@ -1,3 +1,251 @@
 \section{{\tt mdap\_gandalf\_wrap.pro}}
+\label{dap_sec:mdap_gandalf_wrap}
+
+This main module fits an input galaxy spectrum with a series of stellar
+templates and gas emission lines to derive the stellar and emission
+lines kinematics, and the fluxes and equivalent width of the emission
+lines.
+
+The fit of the stellar kinematics is done using an implementation of
+the pPXF routine (Cappellari \& Emsellem 2004, see Section
+\ref{dap_sec:mdap_ppxf}), the fit of the emission line kinematics, the
+weights of the stellar templates, (and reddening, if reuired) is done
+using an implementation of the Gandalf routine (Sarzi et al. 2006, see
+Section \ref{dap_sec:mdap_gandalf}).
+
+The reddening of stars and gas (Balmer decrement) are fitted, if
+required, using the Calzetti extinction law ( Calzetti et al. 2000,
+see Section \ref{dap_sec:mdap_dust_calzetti}).
+
+The steps performed by the {\tt mdap\_gandalf\_wrap.pro} main module
+are:
 
 
+\begin{itemize}
+
+\item selection of regions to mask. These are:
+   \begin{itemize} 
+
+      \item the regions around emission lines; their location is
+        computed using the velocity initial guess, and the width of
+        the region to mask is set to 250 km/sec.
+
+      \item The regions defined by the mask\_range input keyword, if
+        provided.
+
+   \end{itemize}
+
+\item Run pPXF to measure the stellar kinematics. Additive and
+  multiplicative polynomials are used in the fit, if specified in the
+  user in the configuration file. The fit of the reddening is not
+  performed. Note: The stellar kinematics is free to vary within the
+  boundaries specified by the user (keywords range\_v\_star and
+  range\_s\_star). This is an implementation to the original pPPXF
+  procedure by Cappellari \& Emsellem (2004).
+
+\item Remove the masks around the emission lines, but keeping the
+  masks defined by the mask\_range input keyword (if defined).
+
+\item Run Gandalf to measure the gas emission lines kinematics, and
+  intensities. Additive polynomials are not used. Multiplicative
+  polynomials are used (as in the previous pPXF run) only if the
+  reddening is not fitted, otherwhise they are set to 0. Note: The gas
+  kinematics is free to vary within the boundaries specified by the
+  user (keywords range\_v\_gas and range\_s\_gas).  Also, the
+  instrumental dispersion of the gas is assumed to vary with
+  wavelength, therefore each emission line has its own value for the
+  instrumental dispersion.  These are two implementations to the
+  original Gandalf procedure by Sarzi et al. (2006).
+
+\item Compute gas fluxes and equivalent widths (values are corrected
+  for reddening, if reddening fit is required) from the emission line
+  intensities.
+
+\item Computation of the mean kinematics of the emission lines. The
+  mean gas velocity and velocity dispersions are defined as the flux
+  weighted average of the velocities and velocity dispersions of the
+  detected individual emission lines.
+
+
+\end{itemize}
+
+Table \ref{dap_tab:mdap_gandalf_wrap} lists the inputs and outputs
+parameters of the mdap\_gandalf\_wrap.pro module.
+
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of
+  mdap\_gandalf\_wrap.pro} \label{dap_tab:mdap_gandalf_wrap}
+\\ \hline \endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline
+{\bf  INPUTS} &  \\
+\hline
+templates & [MM x NN array].  It contains the NN stellar template
+            spectra, logarithmically sampled at the same \kms/pixel as the
+            galaxy spectra. Same units as galaxy, except an arbitrary
+            multiplicative factor.\\
+%
+loglam\_templates & [MM dblarray]. It contains the log wavelength values where
+            templates are sampled. It must have a constant log(angstrom) sampling.  \\
+%
+galaxy & [N elements array]. Galaxy spectrum, logarithically rebinned, to be fitted. \\
+%
+loglam\_gal & [N elements array]. $log(\lambda)$ values where the galaxy spectrum is defined. \\
+%
+noise & [N elements array]. Error vector associated to galaxy, defined over the loglam\_gal vector. \\
+%
+velscale & [float].  Defines the (uniform) sampling of the input spectra, in \kms/pixel.\\
+% 
+start\_ & 6 elements array containing the starting guesses:
+            \ \ start\_[0] stellar veocity (km/sec)
+
+            \ \ start\_[1] stellar velocity dispersion (km/sec)
+
+             \ \ start\_[2] stellar h3 Gauss Hermite moment
+
+            \ \ start\_[3] stellar h4 Gauss Hermite moment
+
+            \ \ start\_[4] gas velocity (km/sec)
+
+            \ \ start\_[5] gas velocity dispersion (km/sec). \\
+%
+\hline
+{\bf  OPTIONAL INPUTS} &  \\
+\hline
+EMISSION\_ SETUP\_FILE & As in Table \ref{dap_tab:mdap_spectral_fitting}. \\
+%
+BIAS & As used Table  \ref{dap_tab:mdap_ppf}. \\
+%
+MDEGREE & Integer. Degree of multiplicative polynomials to be used in the pPXF fit and in the Gandalf fit (if reddening is not fitted). 
+           Default: 0 (no multiplicative polynomials are used).\\
+%
+DEGREE &  Integer. Degree of multiplicative polynomials to be used in the pPXF only. 
+           Default: -1 (no additive polynomials are used).\\
+% 
+reddening &  1 or 2 elements array. If specified in input, it triggers the
+             fittind of the stellar reddening (1 element array) and the gas
+             reddening (balmer decrement) (2 elements array). 
+             In output it will contain the best fit reddening values. \\
+%
+ range\_v\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity (in \kms). Default: starting\_guess $\pm$ 2000 \kms.\\
+%;
+ range\_s\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity dispersion (in \kms). Default: $21 < \sigma < 499$ \kms.\\
+%;
+ range\_v\_gas   &[2 elements array]. It specifies the boundaries for the emission line best fit velocity (in \kms) Default: starting\_guess $\pm$ 2000 \kms.\\
+%;
+ range\_s\_gas &[2 elements array]. It specifies the boundaries for the
+             emission line best fit velocity dispersion (in \kms). Default:
+             starting\_guess $\pm$ 2000\kms.\\
+%
+mask\_range  & If defined, it specifies the wavelength ranges to mask in the fit. It must contain an even number of entries, in
+           angstrom. E.g. mask\_range=[$\lambda_0$, $\lambda_1$, $\lambda_2$, $\lambda_3$, ....$\lambda_{(2n-1)}$, $\lambda_{(2n)}$] 
+            will mask all the pixels where the 
+             $\lambda_0 < exp({\rm loglam\_gal}) <\lambda_1$; $\lambda_2 < exp({\rm loglam\_gal}) <\lambda_3$; 
+             $\lambda_{(2n-1)} < exp({\rm loglam\_gal}) <\lambda_{(2n)}$.\\
+%
+external\_library & String that specifies the path to the external {\tt FORTRAN} library, which contains the fortran versions of mdap\_bvls.pro. 
+                  If not specified, or if the path is invalid, the default internal IDL mdap\_bvls code is used. \\
+% 
+INT\_DISP    &N elements array, containing the instrumental velocity dispersion (in km/sec) for all the N emission lines
+               measured at their observed wavelengths (defined by the gas starting velocity guess). \\
+\hline
+{\bf KEYWORDS}  & \\
+/FOR\_ERRORS    & If specified, it will trigger the computation of the emission lines error
+                  (see Section \ref{dap_sec:mdap_gandalf}). Mandatory for the DAP workflow.\\
+%
+/fix\_star\_ kin & If set, the stellar kinematics will be fixed to the starting guesses values.\\
+%
+/fix\_gas\_ kin & If set, the gas kinematics will be fixed to the starting guesses values.\\
+%
+\hline
+{\bf  OUTPUTS} &  \\
+\hline
+sol &  9 elements array containing the best fit kinematic parameters. 
+
+       \ \ sol[0]:stellar velocity (km/sec).
+
+       \ \ sol[1]:stellar velocity dispersion  (km/sec).
+
+       \ \ sol[2]:stellar h3 Gauss-Hermite moment.
+
+       \ \ sol[3]:stellar h4 Gauss-Hermite moment.
+
+       \ \ sol[4]:stellar h5 Gauss-Hermite moment (not used).
+
+       \ \ sol[5]:stellar h6 Gauss-Hermite moment (not used).
+
+       \ \ sol[6]:$\chi^2$.
+
+       \ \ sol[7]: mean flux weighted velocity of the emission lines (km/sec).
+
+       \ \ sol[8]: mean flux weighted velocity dispersion (km/sec).  \\
+%
+gas\_intens &  N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+                 whithin the wavelength range loglam\_gal. It specifies the intensity (corrected for reddening) 
+                 of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+                 defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}). \\
+%
+gas\_fluxes & N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+                 whithin the wavelength range loglam\_gal. It specifies the fluxes  (corrected for reddening) 
+                 of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+                 defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}). \\
+%
+gas\_ew & N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+                 whithin the wavelength range loglam\_gal. It specifies the equivalent widhts (corrected for reddening) 
+                 of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+                 defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}). Equivalent widths 
+                 are computed by comparing the emission line flux with the median flux of the stellar 
+                 continuum in the spectral region  $\lambda_{i} - 10 \cdot FWHM_i < \lambda < \lambda_{i} - 5 \cdot FWHM_i $ and 
+                 $\lambda_{i} +5 \cdot FWHM_i < \lambda < \lambda_{i} +10 \cdot FWHM_i $, where $\lambda_{i}$ is the central wavelength 
+                  of the i-th emission line, and FWHM\_i is its measured FWHM (intrinsic plus instrumental). \\
+%
+gas\_intens\_err  & N elements array, error on gas\_intens. \\ 
+%
+gas\_fluxes\_err  & N elements array, error on gas\_fluxes. \\
+%
+gas\_ew\_err &N elements array, error on gas\_ew. \\
+%
+\hline
+{\bf  OPTIONAL OUTPUTS} &  \\
+\hline
+bestfit   &   N elements array containing the best fit model (stars + gas), defined over the loglam\_gal vector. \\.
+%
+ERROR   & 8 elements array, containing the errors on the kinematic parameters.
+       \ \ ERROR [0]: error on the stellar velocity (km/sec).
+
+       \ \ ERROR [1]: error on the stellar velocity dispersion  (km/sec).
+
+       \ \ ERROR [2]: error on the stellar h3 Gauss-Hermite moment.
+
+       \ \ ERROR [3]: error on the stellar h4 Gauss-Hermite moment.
+
+       \ \ ERROR [4]: error on the stellar h5 Gauss-Hermite moment (not used).
+
+       \ \ ERROR [5]: error on the stellar h6 Gauss-Hermite moment (not used).
+
+       \ \ ERROR [6]: error on the gas mean velocity (km/sec).
+
+       \ \ ERROR [7]: error on the gas mean velocity dispersion (km/sec).  \\
+%
+reddening   & 1 or two elements array that contain the best fit reddening values 
+            for star (1 element array) and for the gas (2 elements array). Input values will be overwritten.\\
+%
+err\_reddening & errors associated to reddening, if fitted.\\
+%
+fitted\_pixels &  array. Indices of the good pixels used in the gandalf fit.\\
+%
+status & bolean. If 0, the ppxf fit did not succeeded. The gandalf  fit is still carried on, and the stellar 
+        kinematics are fixed to the starting guesses. If 1, the ppxf fit converged.\\
+\hline
+\hline
+\end{longtable}
+\end{center}

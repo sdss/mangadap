@@ -87,9 +87,12 @@ given in Table \ref{dap_tab:mdap_spectral_fitting}.
                            the /use\_previos\_guesses keyword, if set.\\
 %
 emission\_line\_ file &[string]. It contains the name of the file with the information of the
-                    emission lines to be fitted. The input file must be an ascii file with the 
-                    following columns (comments starts with ''\#''):
-  
+                    emission lines to be fitted.
+                    The format must be compatible with the module that performs the fit of the emission lines. 
+                    If Gandalf or S-Gandalf are used, the input file must be an ascii file with the 
+                    following 9 columns as in the following example (comments starts with ''\#''):
+                      \medskip
+ 
                     {\tt 
                     \#  ID  CODE \  wav  \ action  line    Int	Vel     $\sigma$ mode
 
@@ -97,11 +100,39 @@ emission\_line\_ file &[string]. It contains the name of the file with the infor
 
                     \#   0   HeII\ \ 3203.15  \   m \ \ \ l   \  \ 1.0	\   0 \	10 	t25
 
-                    \#   1   [NeV]  3345.81 \    m  \ \ \ l    \ \ 1.0  \   0 \   10      t25
+                    \#   1   NeV  3345.81 \    m  \ \ \ l    \ \ 1.0  \   0 \   10      t25
 
-                    \ \  2   [NeV]  3425.81  \   m  \ \ \ l   \ \ 1.0   \  0  \  10      t25
+                    \ \  2   NeV  3425.81  \   m  \ \ \ l   \ \ 1.0   \  0  \  10      t25
 
-                    \ \  3   [OII]  3726.03   \ m  \ \ \ l   \ \  1.0 \	   0 \	10 	t25 }\\
+                    \ \  3   OII  3726.03   \ m  \ \ \ l   \ \  1.0 \	   0 \	10 	t25 }
+
+                     \medskip
+
+                     \begin{itemize}
+                       \item {\tt ID} Unique integer identifyer of the emission line.
+
+                       \item {\tt CODE}. String. Name of the element. Special characters as ``[``, ``.'' are not permitted.
+
+                       \item {\tt wav}. Float. Rest frame wavelength of the emission line to fit. Warning, the
+                         name of the emission line in the final DAP output will be defined by the string {\tt CODE} +''\_''+ {\tt ROUND(wav)}.
+
+                         \item {\tt action}. String. Possible values are ``f'' (fit), ``m'' (mask), and ``i''
+                           (ignore). All lines are masked in the pPXF run, and then fit in the Gandalf run,
+                           unless they are marked with ``i'', in this latter case they will be ignored.
+
+                        \item {\tt line}. String Possible values are ``l'' (line) or ``dN'' (doublet). In this
+                          case, N indicates the line ID to which the  doublet is linked, linked to the line with
+                          ID=N. For example, if emission line with {\tt ID=4} has {\tt line=''d3''}, then the 
+                          emission line with {\tt ID=3} must have {\tt line = ``l''}.
+
+                        \item {\tt int}. Float. Relative intensity of the gas emission (positive) or absorption 
+                               (negative) lines. It is set to 1 for lines ({\tt line = ``l''}). For doublets, ( {\tt line = ``dN''}) 
+                               it indicates the ration elements of the doublets.
+                        \item {\tt vel}. Float. Guess of the velocity offset with respect the galaxy systemic velocity (ignored in the DAP)
+                        \item {\tt sigma}. Float. Guess of the Velocity dispersion (ignored in the DAP)
+                        \item {\tt mode}. String. Possible values are ``f'' (fit) or ``tN'' (tied). If a line has {\tt mode = tN}, its kinematics is tied 
+                                          to the line with {\tt ID=N}. In this case, the line with {\tt ID=N} must have {\tt mode = f}.
+                         \end{itemize} \\
 %
  range\_v\_star  &[2 elements array]. It specifies the boundaries for the stellar best fit velocity (in \kms). Default: starting\_guess $\pm$ 2000 \kms.\\
 %;
@@ -189,10 +220,13 @@ fwhm\_instr\_ kmsec\_matrix & 2xW elements vector. It defines the instrumental F
  best\_template\_ LOSVD\_conv &[N x QQ flt array]. It will contain the best fitting template for each of the N input galaxy spectra convolved by best fitting 
 LOSVD and sampled over wavelength\_output (rest frame wavelength).\\
 %
- reddening\_ output &[float]. best fit value for the reddening, if the fit is required (otherwise the variable is not defined). To fit the reddening, you have to pass a 
-                        starting guess value and the LAMBDA = exp(loglam\_gal) vector through the extra\_keyword parameter. Example: extra\_inputs = ['reddening=0', 'LAMBDA=exp(loglam\_gal)'].\\
+reddening\_ output &[N x 2 elements array]. Best fit values for the reddening of stars (reddening\_ output[*,0]) and gas (reddening\_ output[*,1]) for all the N galaxy spectra. 
+                                             If the reddening fit is not requred, the output value is set to 0. (reddening\_output[*,0:1] = [0,0]). 
+                                             If only the reddening of the stars is fitted, the reddening of the gas is set to 0 (reddening\_output[*,1] = 0).\\
+%
+reddening\_ output\_err &[N x 2 elements array]. Errors associated to reddening\_ output. If not fitted, the error is automatically set to 99.\\
 % 
- residuals &[N x QQ flt array]. It contains the difference between the observed galaxy spectra (dereddened if the MW\_reddening is defined) and the best\_fit\_model, 
+ residuals &[N x QQ flt array]. It contains the difference between the observed galaxy spectra and the best\_fit\_model, 
                             sampled over wavelength\_output. It is in rest-frame if the keyword /rest\_frame\_log is set\\
 %
 \hline

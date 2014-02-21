@@ -218,7 +218,9 @@ file is described in Table \ref{dap_tab:output}.
 6 & binning map 3       & Location and geometry of the spatial bins of the third binning scheme.\\ 
 7 & binning 3 data      & Measurements performed on the third binning scheme (gas kinematics and emission line properties).\\ 
 8 & binning map radial  & Location and geometry of the radial binning scheme.\\ 
-9 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion)  \\ 
+9 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion).  \\ 
+10 & Stars rotation & Kinemetric measurements on the stellar kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
+11 & Gas rotation   & Kinemetric measurements on the gas kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
 \hline
 \end{longtable}
 \end{center}
@@ -324,3 +326,27 @@ the following:
   user-provided file. The name of this file is specified in the
   configuration file (see Section \ref{dap_sec:configuration}).
 \end{itemize}
+
+\subsubsection{Extension 10 (11): outputs related to the kinemetric analysis of stellar (gas) kinematics}
+The quantities measured and stored in extension 10 (11) are:
+\begin{itemize}
+\item Column 1. Elliptical semimajor axis (computed fixing the systemic velocity and the kinematic center, position angle, and axial ratio).
+\item Column 2. Mean kinematic position angle.
+\item Column 3. Standard deviation of the kinematic position angles at each semimajor axis.
+\item Column 4. Mean kinematic axial ratio.
+\item Column 5. Standard deviation of the kinematic axial ratios at each semimajor axis.
+\item Column 6. Systemic velocity.
+\item Column 7. Standard deviation of the systemic velocities at each semimajor axis.
+\item Column 8. Rotation velocity measured at each semimajor axis.
+\item Column 9. Error on the rotation velocity measured at each semimajor axis.
+\item Column 10. Expansion velocity measured at each semimajor axis.
+\item Column 11. Error on the expansion velocity measured at each semimajor axis.
+\item Column 12. X coordiante of the assumed center of rotation (0,0 is the center of the field of view).
+\item Column 13. Y coordiante of the assumed center of rotation (0,0 is the center of the field of view).
+
+\end{itemize}
+
+
+
+See Section \ref{dap_sec:mdap_do_kinemetry} for more information on how these quantities are computed.
+

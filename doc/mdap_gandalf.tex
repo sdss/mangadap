@@ -1,5 +1,193 @@
 \section{{\tt mdap\_gandalf.pro}}
 \label{dap_sec:mdap_gandalf}
 
-T.B.D.
+This main module is an implementation of the original Gandalf program by
+Sarzi et al. (2006). 
 
+Modifications to the original procedure include:
+
+\begin{itemize}
+
+   \item It takes into account different values of the instrumental
+     velocity dispersion for each emission lines (i.e. INST\_DISP is
+     function of wavelenght).
+
+   \item It is possible to fix the gas kinematics to the starting
+     guesses (fix\_gas\_kin keyword), or specify the best fit
+     boundaries (range\_v\_gas and range\_s\_gas keywords).
+
+   \item Inclusion of the optional keyword /external\_library, to run
+     the fortran version of the BVLS module.
+
+   \item convolution is performed with the same utility module used by
+     pPXF: mdap\_ppxf\_convol\_fft.pro
+
+\end{itemize}
+
+Table \ref{mdap_tab:mdap_gandalf} lists the inputs and outputs of the
+{\tt mdap\_gandalf.pro} module.
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of
+  mdap\_gandalf.pro} \label{dap_tab:mdap_gandalf}
+\\ \hline \endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline {\bf INPUTS} & \\ \hline 
+
+TEMPLATES & vector containing the spectrum of a single template star
+         or array of dimensions nPixels\_Templates x nTemplates containing
+         different templates to be optimized during the fit of the kinematics.
+         nPixels\_Templates has to be $>=$ the number of pixels sampling the
+         galaxy spectrum nPixels\_Galaxy.\\
+%
+GALAXY & nPixels\_Galaxy elements vector containing the spectrum of
+        the galaxy to be measured.
+
+        Both star and the galaxy spectra HAVE to be logarithmically
+        rebinned on a natural ln-base (or in log10, see LOG10
+        keyword). Warning: the MaNGA DAP uses a natural ln-base.\\
+%
+NOISE & nPixels\_Galaxy elements vector containing the 1*sigma error
+        of the emission spectrum. If this is not available an array of
+        constant unity values should be passed.\\
+%
+VELSCALE & Float. Velocity scale of the spectra in km/s per pixel. It has
+       to be the same for both the galaxy and the template spectra.\\
+%   
+SOL & on INPUT it must be a vector containing the stellar ; kinematics
+      needed to convolve the input stellar spectrum or ; template library
+      (V, $\sigma$, h3, h4, h5, and h6). On OUTPUT it will contain the
+      results of the gas fit with weights assigned to the multiplicative
+      polynomial appended.\\
+
+EMISSION\_SETUP. & A structure containing the index, the name, and
+       the wavelength of the fitted emission lines. It must also
+       contain the starting/input values for the line amplitudes,
+       velocities, and widths of the lines, as well as keywords
+       specifying whether each line is a part of a doublet, and
+       whether its position and width fit freely, to be hold at its
+       input values, or to be tied that of another line.\\
+%   
+L0\_GAL & Float. the ln-lambda value corresponding to the starting pixel in
+       the galaxy spectrum.\\
+%   
+L0\_STEP. Float. the ln-lambda step of corresponding to the pixels
+       sampling the galaxy spectrum. 
+   
+      Warning:  Wavelengths are assumed to be in Angstrom. \\
+\hline
+{\bf KEYWORDS}  & \\
+\hline
+DEGREE & Integer. degree of the Legendre polynomial used for correcting the
+       template continuum shape during the fit (default: -1). Warning:
+       the DAP uses DEGREE = -1.\\
+%
+MDEGREE & Integer. degree of the Legendre polynomial used for correcting
+       the template continuum shape during the fit (default: 0).
+       This correction is MULTIPLICATIVE. Warning: the DAP sets it automatically
+       to 0 if the REDDENING is fitted.\\
+%
+GOODPIXELS &  integer vector containing the indices of the pixels in
+       the galaxy spectrum (in increasing order) that will be
+       included in the fit. IMPORTANT: in all likely situations this
+       keyword *has* to be specified.\\
+%
+INT\_DISP & Nlines elements vector, where N\_lines is the number of
+           emission li nes defined in the user-input emission line set-up file
+           (see \ref{dap_sec:configure}). It contains the instrumental velocity
+           dispersion for each line (in km/sec), as function of its observed
+           wavelength (gas velocity starting guess is used to calculate the
+           observed wavelength).\\
+%
+LOG10: allows to deal with data that have been logarithmically
+       rebinned in lambda, using a base 10. Warning: the DAP uses 
+       natural log base. \\
+%
+REDDENING & 1 or 2 elements array. It allows to include in the fit the
+          effect of reddening by dust, by specifying a single $E(B-V)$ guess for
+          extinction, or a two-element array of $E(B-V)$ guesses. A single guess
+          will trigger the use of a single-screen dust model, affecting the
+          entire spectrum, whereas passing a two-elements array of guesses will
+          add a second dust component affecting only the nebular fluxes. This
+          second option is recommended only when recombination lines are clearly
+          detected, so that a temperature-dependent prior (e.g. the decrement of
+          the Balmer lines) on their relative intensity can be use to constrain
+          such a second, internal component.\\
+%
+L0\_TEMPL & the ln-lambda value corresponding to the starting pixel
+       in the template spectra. Needed if using the REDDENING keyword
+       and the DUST\_CALZETTI function. \\
+%
+FOR\_ERRORS & A keyword specifying whether we wish errors to be
+       properly estimated. Warning: in the DAP this keyword is always activated.\\
+%
+   /QUIET: set this keyword to mute the output.\\
+%
+  /PLOT: set this keyword to plot the best fitting solution at the end
+  of the fit. Warning: do not USE it in the DAP.\\
+%
+\hline
+{\bf OUTPUT PARAMETERS}  & \\
+\hline
+SOL & A 4xNlines vector containing the values of the best fitting
+       flux, amplitude, Velocity, and velocity dispersion for each
+       emission line. If the keyword INT\_DISP has been set the velocity
+       dispersion is already the intrinsic one, otherwise it will be the
+       observed width of the line.\\
+%
+BESTFIT & a named variable to receive a vector containing sum of
+       best fitting stellar (convolved by the input LOSVD) and
+       emission-line Gaussian templates. This model include bending
+       of the stellar templates by the best fitting multiplicative
+       polynomials, and of additive polynomials, if specified.\\
+%   
+EMISSION\_TEMPLATES: a named variable to receive an
+       [nPixels\_Galaxy, Nlines] array containing the best fitting emission-lines
+       templates. The emission spectrum can be obtained from this
+       array by simply doing total(emission\_templates,2).\\
+%
+WEIGHTS& a named variable to receive the value of the weights by which
+       each template was multiplied to best fit the galaxy spectrum.\\
+%
+ERROR& a named variable that will contain a vector of formal
+       errors (1 sigma) for the parameters in the output vector
+       SOL.
+
+       If the FOR\_ERRORS keyword IS NOT specified no errors for the
+       line amplitudes and fluxes will be returned and the
+       uncertainties on the position and width of the lines should be
+       regarded only as order of magnitude estimates.  If the
+       FOR\_ERRORS keyword IS specified (Default in the DAP), a second
+       fully non-linear fit of all the emission-line parameter will
+       provide correct estimates for the errors on all emission-line
+       parameters.  Still, Keep in mind that these errors are
+       meaningless unless Chi$^2$/DOF$\sim$1. If a constant noise
+       spectrum is provided, the formal errors will be automatically
+       rescaled under the assumption the model is a good
+       representation of the data.\\
+%
+/fix\_gas\_kin &  If set, the gas kinematics are not fitted. The 
+                   return value is that of the starting guesses.\\ 
+%
+range\_v\_gas & 2 elements array]. It specifies the boundaries for the gas best 
+           fit velocity (in km/sec). Default: starting\_guess $\pm$ 2000 km/sec.\\
+%
+range\_s\_gas &  2 elements array]. It specifies the boundaries for the gas best fit 
+             velocity dispersion (in km/sec). Default: $21 < \sigma < 499$ km/sec.\\
+%
+external\_library & String that specifies the path to the external FORTRAN library, 
+                   which contains the fortran versions of mdap\_bvls.pro. If not 
+                   specified, or if the path is invalid, the default internal IDL 
+                   mdap\_bvls code is used. \\
+\hline
+\hline
+\end{longtable}
+\end{center}
