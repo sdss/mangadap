@@ -137,6 +137,20 @@
 ;       formal errors will be automatically rescaled under the
 ;       assumption the model is a good representation of the data.
 ;
+;/fix_gas_kin &  If set, the gas kinematics are not fitted. The 
+;                   return value is that of the starting guesses.
+;
+;range_v_gas & 2 elements array]. It specifies the boundaries for the gas best 
+;           fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
+;
+;range_s_gas &  2 elements array]. It specifies the boundaries for the gas best fit 
+;             velocity dispersion (in km/sec). Default: 21 < sigma < 499 km/sec.
+;
+;external_library & String that specifies the path to the external FORTRAN library, 
+;                  which contains the fortran versions of mdap_bvls.pro. If not 
+;                   specified, or if the path is invalid, the default internal IDL 
+;                   mdap_bvls code is used. 
+;
 ; REQUIRED ROUTINES:
 ;
 ;       RANGE: by M. Cappellari from http://www.strw.leidenuniv.nl/~mcappell/idl/
@@ -188,6 +202,10 @@
 ;
 ; V1.6 Major reajustment and resctructuring to include error
 ;      calculation using the keyword FOR_ERRORS
+;
+;
+; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
+; Feb 2014, L. Coccato.
 
 
 ;------------------------------------------------------------------------------------

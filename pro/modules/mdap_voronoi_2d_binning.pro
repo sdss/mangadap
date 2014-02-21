@@ -539,7 +539,7 @@ ON_ERROR, 2
 if keyword_set(weight_for_sn) then begin
    signal = (signal_/noise_)^2
    noise = signal_/noise_
-   indici = where(noise lt 0)
+   indici = where(noise le 0)
    if indici[0] ne -1 then begin
       signal[indici] = min(abs(signal))/100.
       noise[indici] = 100.
@@ -570,7 +570,7 @@ if  sn_total_eval lt targetSN then begin ;$
   ;      + 'They should not be included in the set to bin, ' $
   ;      + 'or the pixels should be optimally weighted.' $
   ;      + 'See Cappellari & Copin (2003, Sec.2.1) and README file.'
-  targetSN = targetSN*.8
+  targetSN = targetSN*.9
  print, 'targetSN is now: ',targetSN
 
   goto,redo_with_less_sn_min
@@ -587,7 +587,7 @@ noise = noise > min(noise[where(noise gt 0)])*1e-9
 if not keyword_set(quiet) then print, 'Bin-accretion...'
 bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, SN_CALIBRATION=SN_CALIBRATION,QUIET=quiet
 if min(class) eq 0 and max(class) eq 0  then begin
-   targetSN = targetSN*.8
+   targetSN = targetSN*.9
    goto,redo_with_less_sn_min
 endif
 if not keyword_set(quiet) then print, strtrim(max(class),2), ' initial bins.'

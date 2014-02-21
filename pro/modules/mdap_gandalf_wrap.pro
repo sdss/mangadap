@@ -135,8 +135,8 @@ end
 
 
 PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velscale,start_, sol,$
-       EMISSION_SETUP_FILE=EMISSION_SETUP_FILE, $
        gas_intens,gas_fluxes,gas_ew,gas_intens_err,gas_fluxes_err,gas_ew_err,$
+       EMISSION_SETUP_FILE=EMISSION_SETUP_FILE, $
        BESTFIT=bestFit, BIAS=bias,  MDEGREE=MDEGREE,DEGREE=degree, ERROR=error,$
        MOMENTS=moments, reddening=reddening,err_reddening=err_reddening,$
        VSYST=VSYST, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
@@ -146,14 +146,150 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
        mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,$
        INT_DISP=INT_DISP,status = status
 
-
-
 ; Example of an IDL wrapper calling PPXF and GANDALF in order to
 ; derive the stellar and gaseous kinematics in the case of MANGA
 ; SPECTRA. The stellar continuum is matched with a combination of
 ; stellar population models, whereas emission-lines are represented by
 ; Gaussian templates, with interdepencies regulated by the input
 ; emission-setup file
+
+
+;INPUTS
+;
+; templates  [MM x NN array].  It contains the NN stellar template
+;             spectra, logarithmically sampled at the same \kms/pixel as the
+;             galaxy spectra. Same units as galaxy, except an arbitrary
+;             multiplicative factor.
+;
+; loglam_templates  [MM dblarray]. It contains the log wavelength values where
+;                             templates are sampled. It must have a
+;                             constant log(angstrom) sampling. 
+;
+; galaxy [N elements array]. Galaxy spectrum, logarithically rebinned, to be fitted. 
+;
+; loglam_gal  [N elements array]. log(\lambda) values where the galaxy spectrum is defined. 
+;
+; noise  [N elements array]. Error vector associated to galaxy, defined over the loglam_gal vector. 
+;
+; velscale  [float].  Defines the (uniform) sampling of the input spectra, in \kms/pixel.\\
+;
+; start_  [6 elements array]. It contains the starting guesses
+;                               start_[0] stellar veocity (km/sec)
+;                               start_[1] stellar velocity dispersion (km/sec)
+;                               start_[2] stellar h3 Gauss Hermite moment
+;                               start_[3] stellar h4 Gauss Hermite moment stellar velocity dispersion
+;                               start_[4] gas velocity (km/sec)
+;                               start_[5] gas velocity dispersion (km/sec).
+;
+;
+;  OPTIONAL INPUTS 
+;
+; EMISSION_ SETUP\_FILE  String containing the definition of the emission lines to fit (as in mdap_spectral_fitting.pro)
+;
+; BIAS  As in mdap_pPXF
+;
+; MDEGREE  Integer. Degree of multiplicative polynomials to be used in the pPXF fit and in the Gandalf fit (if reddening is not fitted). 
+;           Default: 0 (no multiplicative polynomials are used).
+;
+; DEGREE   Integer. Degree of multiplicative polynomials to be used in the pPXF only. 
+;           Default: -1 (no additive polynomials are used).
+;
+; reddening   1 or 2 elements array. If specified in input, it triggers the
+;             fittind of the stellar reddening (1 element array) and the gas
+;             reddening (balmer decrement) (2 elements array). Reddening best fit
+;             In output it will store the best fit reddening values.
+;
+; range_v_star  [2 elements array]. It specifies the boundaries for the stellar best fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
+;
+; range_s_star  [2 elements array]. It specifies the boundaries for the stellar best fit velocity dispersion (in km/sec). Default: 21 < sigma < 499 km/sec.
+;
+; range_v_gas   [2 elements array]. It specifies the boundaries for the emission line best fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
+;
+; range_s_gas   [2 elements array]. It specifies the boundaries for the emission line best fit velocity dispersion (in km/sec). Default: starting_guess +/- 2000 km/sec.
+;
+; mask_range   If defined, it specifies the wavelength ranges to avoid
+;            in the fit. It must contain an even number of entries, in
+;           angstrom. E.g. l0,l1,l2,l3,....l(2n-1),l(2n) will mask all the pixels where the 
+;             l0 < exp(loglam_gal) <l1, or l2 < exp(loglam_gal) <l3, or l(2n-1) < exp(loglam_gal) <l(2n)
+;
+; external_library [string] String that specifies the path to the external FORTRAN library, which contains the fortran versions of mdap_bvls.pro. 
+;                  If not specified, or if the path is invalid, the default internal IDL mdap_bvls code is used. 
+;
+;INT_DISP   N elements array, containing the instrumental velocity dispersion (in km/sec) for all the N emission lines
+;               measured at their observed wavelengths (defined by the gas starting velocity guess).
+;
+; KEYWORDS
+;
+;/FOR\_ERRORS    & If specified, it will trigger the computation of the emission lines error
+;                  (see Section \ref{dap_sec:mdap_gandalf}). Mandatory for the DAP workflow.
+;
+; /fix\_star\_ kin If set, the stellar kinematics will be fixed to the starting guesses values.
+; 
+; /fix\_gas\_ kin  If set, the gas kinematics will be fixed to the starting guesses values.
+;
+; OUTPUTS 
+; sol  [9 elements array]. It contains the best fit kinematic parameters. 
+;                               sol[0]: stellar velocity (km/sec).
+;                               sol[1]: stellar velocity dispersion  (km/sec).
+;                               sol[2]: stellar h3 Gauss-Hermite moment (km/sec).
+;                               sol[3]: stellar h4 Gauss-Hermite moment (km/sec).
+;                               sol[4]: stellar h5 Gauss-Hermite moment.
+;                               sol[5]: stellar h6 Gauss-Hermite moment.
+;                               sol[6]: chi^2
+;                               sol[7]: mean flux weighted velocity of the emission lines (km/sec).
+;                               sol[8]: mean flux weighted velocity dispersion (km/sec).  
+;
+; gas_intens   N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+;                  whithin the wavelength range loglam\_gal. It specifies the intensity (corrected for reddening) 
+;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}).
+; 
+; gas_fluxes  N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+;                  whithin the wavelength range loglam\_gal. It specifies the fluxes  (corrected for reddening) 
+;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}).
+; 
+; gas_ew  N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
+;                  whithin the wavelength range loglam\_gal. It specifies the equivalent widhts (corrected for reddening) 
+;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
+;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}). Equivalent widths 
+;                  are computed by comparing the emission line flux with the median flux of the stellar 
+;                  continuum in the spectral region  l_i -10 * FWHM_i < l < l_i -5 * FWHM_i  and 
+;                  l_i +5 * FWHM_i < l < l_i +10 * FWHM_i , where l_i is the central wavelength 
+;                   of the i-th emission line, and FWHM_i is its measured FWHM (intrinsic plus instrumental).
+;
+; gas_intens_err   N elements array, error on gas_intens. 
+; 
+; gas_fluxes_err   N elements array, error on gas_fluxes.
+; 
+; gas_ew_err       N elements array, error on gas_ew.
+;
+;OPTIONAL OUTPUTS
+;
+;bestfit   &   N elements array containing the best fit model (stars + gas), defined over the loglam\_gal vector. \\.
+;
+;ERROR    8 elements array, containing the errors on the kinematic parameters.
+;           ERROR [0]: error on the stellar velocity (km/sec).
+;           ERROR [1]: error on the stellar velocity dispersion  (km/sec).
+;           ERROR [2]: error on the stellar h3 Gauss-Hermite moment.
+;           ERROR [3]: error on the stellar h4 Gauss-Hermite moment.
+;           ERROR [4]: error on the stellar h5 Gauss-Hermite moment (not used).
+;           ERROR [5]: error on the stellar h6 Gauss-Hermite moment (not used).
+;           ERROR [6]: error on the gas mean velocity (km/sec).
+;           ERROR [7]: error on the gas mean velocity dispersion (km/sec). 
+;
+; reddening   1 or 2 elements array. If specified in input, it triggers the
+;             fittind of the stellar reddening (1 element array) and the gas
+;             reddening (balmer decrement) (2 elements array). Reddening best fit
+;             In output it will store the best fit reddening values.
+;
+; err_reddening errors associated to reddening, if fitted.
+;
+; fitted_pixels & array. Indices of the good pixels used in the gandalf fit
+;
+; status. bloean. If 0, the ppxf fit did not succeeded. The gandalf  fit is still carried on, and the stellar kinematics are fixed to the
+;                  starting guesses. If 1, the ppxf fit converged.
+;
 
 
 c = 299792.4580d ; Speed of light in km/s
@@ -291,11 +427,11 @@ emission_setup = create_struct('i',dummy.i[i_f],'name',dummy.name[i_f],$
                                'kind',dummy.kind[i_f],'a',dummy.a[i_f],$
                                'v',dummy.v[i_f],'s',dummy.s[i_f],$
                                'fit',dummy.fit[i_f])
-; Assign the stellar systemic velocity as initial guess for the gas
+; Assign input initial guess for the gas
 ; kinematics, adding also the velocity offset specified in the
-; emission-line setup. This makes it easier to add blue or red wings to
-; the line profile.
-emission_setup.v = ppxfsol[0]-offset + emission_setup.v ; NEW - V1.3
+; emission-line setup.
+emission_setup.v = emission_setup.v*0.+start_[4]
+emission_setup.s = start_[5]
 ; save the stellar kinematics
 sol_star = [ppxfsol[0],ppxfsol[1],ppxfsol[2],ppxfsol[3],0,0,-1]
 
