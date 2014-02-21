@@ -489,12 +489,12 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
     if n_elements(indici) lt 2 then begin  ;I want at least 2 emission lines to be detected at >0.5sigma level....
        ;emission_line_intens[i,*] = 0.
        ;emission_line_intens_err[i,*] = 0.
-       emission_line_fluxes[i,*] = 0./0.
-       emission_line_fluxes_err[i,*] = 0./0.
-       emission_line_equivW[i,*] = 0./0.
-       emission_line_equivW_err[i,*] = 0./0.
-       emission_line_kinematics[i,*] = 0./0.
-       emission_line_kinematics_err[i,*] = 0./0.
+       ;emission_line_fluxes[i,*] = 0./0.
+       ;emission_line_fluxes_err[i,*] = 0./0.
+       ;emission_line_equivW[i,*] = 0./0.
+       ;emission_line_equivW_err[i,*] = 0./0.
+       ;emission_line_kinematics[i,*] = 0./0.
+       ;emission_line_kinematics_err[i,*] = 0./0.
     endif             
    ;--
 
