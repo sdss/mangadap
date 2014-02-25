@@ -83,7 +83,7 @@ pro mdap_do_kinemetry,image,x2d,y2d,x,y,velocity,velocity_err,$
 
 ; Version 0.1: 21 Feb L. Coccato
 
-if 
+
 version_module='0.1'
 if n_elements(version) ne 0 then begin
  version = version_module
@@ -133,7 +133,7 @@ endif
 
 vm = mean(cf[*,2])
 if vm le 0 then cf[*,2] = -cf[*,2]
-if vm le 0 then PA_kin=PA_kin-180
+
 
   
 pa_var=temporary(pa)
