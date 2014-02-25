@@ -354,6 +354,21 @@ mdap_create_starting_guesses,emission_line_kinematics_tpl,xbin_tpl,ybin_tpl,x2d,
 
 if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or execute_all_modules eq 1 then begin
 
+
+
+
+   ; extra FIT with only two kinematic moments, if required
+   if n_elements(spectra_fittin_parameters_patial_binning_2_two_moments) ne 0 then begin
+   mdap_spectral_fitting,log_spc_str,log_err_str,log_wav_str,library_log_str,log_wav_library_str,velscale,$
+        stellar_kinematics_str_two_moments,stellar_kinematics_str_two_moments_err,stellar_weights_str,emission_line_kinematics_str,emission_line_kinematics_str_err,$
+        emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
+        wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
+        star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
+        emission_line_file=emission_line_file_spatial_binnin_2,extra_inputs=spectra_fittin_parameters_patial_binning_2_two_moments,$
+        mask_range=mask_range,external_library=external_library,/quiet
+   endif
+   ;
+
    mdap_spectral_fitting,log_spc_str,log_err_str,log_wav_str,library_log_str,log_wav_library_str,velscale,$
         stellar_kinematics_str,stellar_kinematics_str_err,stellar_weights_str,emission_line_kinematics_str,emission_line_kinematics_str_err,$
         emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
@@ -604,7 +619,7 @@ k=k+1
 k=k+1
 mdap_add_fits_layer,output_filefits,spatial_binning_str,k,'EXTNAME','Binning_map_2'
 k=k+1
-stringa = ["X","Y","area_bin","StoN","Nelements","Vel","Vel_err","Disp","Disp_err","H3","H3_err","H4","H4_err","Chi2_DOF"]
+stringa = ["X","Y","area_bin","StoN","Nelements","Vel","Vel_err","Disp","Disp_err","H3","H3_err","H4","H4_err","Chi2_DOF","Vel_2moms","Vel_2moms_err","Disp_2moms","Disp_2moms_err"]
 stringa2="{"
  for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
  stringa2 = stringa2+stringa[i]+':0.}'
@@ -624,6 +639,20 @@ stringa2="{"
  p2.H4=STELLAR_KINEMATICS_STR[*,3]
  p2.H4_err=STELLAR_KINEMATICS_STR_ERR[*,3]
  p2.Chi2_DOF=STELLAR_KINEMATICS_STR[*,4]
+
+ if n_elements(spectra_fittin_parameters_patial_binning_2_two_moments) eq 0 then begin ; if the fit with only 2 moments is not required, I copy the results with 4 moments
+     p2.Vel_2moms=STELLAR_KINEMATICS_STR[*,0]
+     p2.Vel_2moms_err=STELLAR_KINEMATICS_STR_ERR[*,0]
+     p2.Disp_2moms=STELLAR_KINEMATICS_STR[*,1]
+     p2.Disp_2moms_err=STELLAR_KINEMATICS_STR_ERR[*,1]
+ endif else begin                                                                      ; ... otherwise, I save also the results with the fit considering only 2 moments
+     p2.Vel_2moms=STELLAR_KINEMATICS_STR_TWO_MOMENTS[*,0]
+     p2.Vel_2moms_err=STELLAR_KINEMATICS_STR_TWO_MOMENTS_ERR[*,0]
+     p2.Disp_2moms=STELLAR_KINEMATICS_STR_TWO_MOMENTS[*,1]
+     p2.Disp_2moms_err=STELLAR_KINEMATICS_STR_TWO_MOMENTS_ERR[*,1]
+ endelse
+
+
  mwrfits,p2,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
  sxaddpar,h1,'EXTNAME','Binning_2_data'
