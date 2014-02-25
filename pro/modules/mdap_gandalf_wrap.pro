@@ -373,7 +373,7 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 ; H) PPXF fit! Fit only V and sigma
 ; A constant additive polynomial (degree=0) is used in together with
 ; the multiplicative polynomials (always recommended).
-INT_DISP_ = INT_DISP(where(emission_setup.action ne 'i') and where(emission_setup.action ne 'ski')) ;remove ignored ems lines from the int_disp vector
+INT_DISP_ = INT_DISP(where(emission_setup.action ne 'i') and where(emission_setup.action ne 'sky')) ;remove ignored ems lines from the int_disp vector
 if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
 
 
@@ -567,6 +567,8 @@ gas_intens_err_ = esol_gas_A
 ;gas_fluxes = gas_intens * sol[8]/velscale*sqrt(2.*!pi)
 gas_fluxes_ = sol_gas_F
 gas_fluxes_err_ = esol_gas_F
+
+; NOW I COMPUTE THE FLUX WEIGHTED MEAN GAS VELOCITY AND VELOCITY DISPERSION
 
 where_gas_is_not_null = where(sol_gas_F gt 0 and esol_gas_F gt 0 and finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1)
 
