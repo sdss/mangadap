@@ -331,7 +331,7 @@ dv = (loglam_templates[0]-loglam_gal[0])*c
 if not keyword_set(quiet) then print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 print, 'Fitting '+mdap_stc(sz[2],/integer)+' spectra, please, wait...'
 ;  'Spectrum ',mdap_stc(i+1,/integer),'/',mdap_stc(sz[2],/integer),' fitted'
-window,0,retain=2
+;window,0,retain=2
 
 if n_elements(mdegree) ne 0 then MDEGREE_=MDEGREE
 if n_elements(reddening) ne 0 then junk = temporary(MDEGREE_)
@@ -415,13 +415,13 @@ status = 1
 if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If the error vector is flat (i.e. errors are not reliable), I rescale the formal errors for sqrt(chi2/dof), as instructed by mpfit and ppxf.  ma005_142.790030+22.746507datacubes_block5.idl
 
    ; plots for checks... remove these lines when running on remote server
-    plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3600,10350],xstyle=1
-    oplot,exp(loglam_gal),bestfit,color=200
-    if n_elements(fitted_pixels) ne 0 then OPLOT,exp(loglam_gal[fitted_pixels]),bestfit[fitted_pixels],color=200
+    ;plot,exp(loglam_gal), galaxy_,title='GANDALF + '+string(i),xrange=[3600,10350],xstyle=1
+    ;oplot,exp(loglam_gal),bestfit,color=200
+    ;if n_elements(fitted_pixels) ne 0 then OPLOT,exp(loglam_gal[fitted_pixels]),bestfit[fitted_pixels],color=200
     
-    print,'start', start
-    print,'sol',  sol
-    print,'error', error
+    ;print,'start', start
+    ;print,'sol',  sol
+    ;print,'error', error
    if n_elements(ebv) ne 0 then  print, 'reddening = ',ebv
    if n_elements(ebv) eq 0 then  print, 'reddening = Not FITTED'
    ; print, ''
