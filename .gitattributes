@@ -64,6 +64,7 @@ external/cmpfit-1.2/mpfit.h -text
 external/cmpfit-1.2/testmpfit.c -text
 external/cmpfit-1.2/testmpfit.log -text
 external/emission_lines_setup_with_Balmer_decrement -text
+external/emission_lines_setup_with_Balmer_decrement_no_doublets -text
 external/emission_lines_setup_with_Balmer_decrement_residuals -text
 external/instrumental_fwhm.dat -text
 external/mdap_color.tab -text

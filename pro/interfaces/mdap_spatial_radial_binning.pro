@@ -69,7 +69,7 @@ pro mdap_spatial_radial_binning,signal_to_noise,x2d,y2d,reference_2dmap,xbin,ybi
 ; OPTIONAL OUTPUTS
 ; output_wav
 
-version_module = '0.2'
+version_module = '0.3' ;27/03/2014
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
@@ -164,12 +164,15 @@ for i = 0, nbins-1 do begin
    
    for kk = 0, n_elements(indici)-1 do begin      ;setting the output binning scheme 2d map
       where_i = where(reference_2dmap eq indici[kk])
-      spatial_binning_scheme[where_i] = k
-      r2d_bin[where_i]  = r_bin[i]
-      r2d_bin_lo[where_i] = r_bin_lo[i]
-      r2d_bin_up[where_i] = r_bin_up[i]
+      if where_i[0] ne -1 then begin 
+         spatial_binning_scheme[where_i] = k
+         r2d_bin[where_i]  = r_bin[i]
+         r2d_bin_lo[where_i] = r_bin_lo[i]
+         r2d_bin_up[where_i] = r_bin_up[i]
+      endif
    endfor
    n_elements_bin[i] = n_elements(INDICI)
+   if indici[0] eq -1 then n_elements_bin[i] = 0
 
    ;Adding up spectra within the bin
    spc=total(input_spectra(indici,*),1)

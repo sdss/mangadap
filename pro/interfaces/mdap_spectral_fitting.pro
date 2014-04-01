@@ -1,6 +1,6 @@
 pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,velscale,$
      stellar_kinematics,stellar_kinematics_err,stellar_weights,emission_line_kinematics,emission_line_kinematics_err,$
-     emission_line_fluxes,emission_line_fluxes_err,emission_line_equivW,emission_line_equivW_err,wavelength_input=wavelength_input,$
+     emission_line_intens,emission_line_intens_err,emission_line_fluxes,emission_line_fluxes_err,emission_line_equivW,emission_line_equivW_err,wavelength_input=wavelength_input,$
      wavelength_output,best_fit_model,galaxy_minus_ems_fit_model,best_template,best_template_LOSVD_conv,reddening_output,reddening_output_err,residuals,$
      star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
      emission_line_file=emission_line_file,quiet=quiet,$
@@ -278,8 +278,8 @@ sztempl=size(templates)
 ;endif
 emission_line_kinematics=fltarr(sz[2],2)
 emission_line_kinematics_err=fltarr(sz[2],2)
-;emission_line_intens=fltarr(sz[2],n_elements(wav))
-;emission_line_intens_err=fltarr(sz[2],n_elements(wav))
+emission_line_intens=fltarr(sz[2],n_elements(wav))
+emission_line_intens_err=fltarr(sz[2],n_elements(wav))
 emission_line_fluxes=fltarr(sz[2],n_elements(wav))
 emission_line_fluxes_err=fltarr(sz[2],n_elements(wav))
 emission_line_equivW=fltarr(sz[2],n_elements(wav))
@@ -422,8 +422,8 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
     ;print,'start', start
     ;print,'sol',  sol
     ;print,'error', error
-   if n_elements(ebv) ne 0 then  print, 'reddening = ',ebv
-   if n_elements(ebv) eq 0 then  print, 'reddening = Not FITTED'
+   ;if n_elements(ebv) ne 0 then  print, 'reddening = ',ebv
+   ;if n_elements(ebv) eq 0 then  print, 'reddening = Not FITTED'
    ; print, ''
    ; print, minmax(exp(loglam_gal)).reset
 
@@ -454,8 +454,8 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
    emission_line_kinematics[i,*]=sol[7:8]
    emission_line_kinematics_err[i,*]=error[6:7]
 ;   stop
-   ;emission_line_intens[i,*]= gas_intens; corrected for reddening, if fitted
-   ;emission_line_intens_err[i,*]= gas_intens_err
+   emission_line_intens[i,*]= gas_intens; corrected for reddening, if fitted
+   emission_line_intens_err[i,*]= gas_intens_err
    emission_line_equivW[i,*]= gas_ew
    emission_line_equivW_err[i,*]= gas_ew_err
    emission_line_fluxes[i,*]= gas_fluxes     ; corrected for reddening, if fitted

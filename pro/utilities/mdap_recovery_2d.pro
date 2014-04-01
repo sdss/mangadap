@@ -93,6 +93,6 @@ endif else begin                            ; I mantain the voronoi binning geom
 endelse
 
 if n_elements(fits_file) ne 0 then writefits,fits_file,map2d,hdr
-junk = temporary(voronoi_binning)
+if n_elements(voronoi_binning) ne 0 then junk = temporary(voronoi_binning)
 ;stop
 end

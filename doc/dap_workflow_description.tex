@@ -20,7 +20,7 @@ in a form readable for the next interface. In this way, it is
 relatively easy to change the software responsible for a specific task
 (i.e. replacing the main module responsible for the spectral fitting)
 by chaning its interface.  Table \ref{dap_tab:modules} list a summary
-of the blocks, interfaces and main modules distribution.
+of the blocks, interfaces, main modules, and utilities.
 
 
 \begin{table}
@@ -40,35 +40,35 @@ BLOCK         & Interface modules               & Main  modules    & Utility mod
  \hline
 %{\bf Block 3} &                                 &                                \\  
               &                                 &                            &    \\  
-{\bf Block 3} & mdap\_log\_rebin$^{1}$          & mdap\_do\_log\_rebin        & mdap\_convol\_sigma   \\
+{\bf Block 3} & mdap\_log\_rebin                & mdap\_do\_log\_rebin        & mdap\_convol\_sigma   \\
 \hline
 %{\bf Block 4} &                                 &                                \\  
-              &                                 &                           &   \\  
-{\bf Block 4} & mdap\_spectral\_fitting        & mdap\_calculate\_spectrum\_sn  & mdap\_range.pro \\
-              & mdap\_create\_starting\_guesses & mdap\_bvls(\_external)        & mdap\_stc.pro \\
-              &                                 & mdap\_dust\_calzetti          & mdap\_sgn.pro \\
-              &                                 & mdap\_get\_losvd              & mdap\_round\_str.pro \\
-              &                                 & mdap\_gandalf\_wrapf$^{2}$     & mdap\_interpolate\_2dmaps \\
-              &                                 & mdap\_gandalf$^{2}$            & mdap\_ppxf\_convol\_fft \\
-              &                                 & mdap\_ppxf$^{2}$               &  \\
+              &                                 &                                 &   \\  
+{\bf Block 4} & mdap\_spectral\_fitting         & mdap\_calculate\_spectrum\_sn   & mdap\_range.pro \\
+              & mdap\_create\_starting\_guesses & mdap\_bvls(\_external)          & mdap\_stc.pro \\
+              &                                 & mdap\_dust\_calzetti            & mdap\_sgn.pro \\
+              &                                 & mdap\_get\_losvd                & mdap\_round\_str.pro \\
+              &                                 & mdap\_gandalf\_wrapf            & mdap\_interpolate\_2dmaps \\
+              &                                 & mdap\_gandalf                   & mdap\_ppxf\_convol\_fft \\
+              &                                 & mdap\_ppxf                      &  \\
               &                                 &{\tt mpfit package}              &  \\ 
 \hline
 %{\bf Block 5} &                                 &                                         \\  
               &                                 &                                         & \\  
-{\bf Block 5} & mdap\_measure\_indices          & mdap\_read\_indices\_definitions$^{3}$  & mdap\_round\_str.pro \\
+{\bf Block 5} & mdap\_measure\_indices    & mdap\_read\_indices\_definitions  & mdap\_round\_str.pro \\
               &                                 & mdap\_do\_measure\_index               &  mdap\_convol\_sigma  \\
 \hline
 %{\bf Block 6} &                                 &                                         \\  
               &                                 &                                        &   \\  
-{\bf Block 6} & mdap\_spatial\_radial\_binning  & mdap\_calculate\_spectrum\_sn       &  mdap\_convol\_sigma   \\
-              & mdap\_spectral\_fitting       &   mdap\_do\_measure\_index            & mdap\_get\_losvd     \\ 
+{\bf Block 6} & mdap\_spatial\_radial\_binning  & mdap\_calculate\_spectrum\_sn      &  mdap\_convol\_sigma   \\
+              & mdap\_spectral\_fitting       &   mdap\_do\_measure\_index           & mdap\_get\_losvd     \\ 
               & mdap\_measure\_indices          &   mdap\_dust\_calzetti             & mdap\_range.pro  \\
               &                                 &   {\tt mpfit package}              &  mdap\_stc.pro \\
               &                                 &   mdap\_sgandalf                   & mdap\_sgn.pro  \\
-              &                                 &   mdap\_gandalf\_wrapf$^{2}$       &  mdap\_interpolate\_2dmaps \\
-              &                                 &   mdap\_gandalf$^{2}$               & mdap\_read\_indices\_definitions$^{3}$\\
-              &                                 &   mdap\_ppxf$^{2}$                  & mdap\_ppxf\_convol\_fft\\
-              &                                 &   mdap\_bvls(\_external)         &  \\
+              &                                 &   mdap\_gandalf\_wrapf             &  mdap\_interpolate\_2dmaps \\
+              &                                 &   mdap\_gandalf                    & mdap\_read\_indices\_definitions\\
+              &                                 &   mdap\_ppxf                       & mdap\_ppxf\_convol\_fft\\
+              &                                 &   mdap\_bvls(\_external)           &  \\
 \hline
               &                                 &  &  \\  
 {\bf Block 7} &                                 &                                &  \\
@@ -82,12 +82,6 @@ BLOCK         & Interface modules               & Main  modules    & Utility mod
 \hline
 \end{tabular}
 \end{scriptsize}
-\begin{minipage}{15cm}
-Notes: 
-$^{1}$ Need auxiliary files: stellar templates. 
-$^{2}$ Need auxiliary file: Emission lines definitions. 
-$^{3}$ Need auxiliary file: Absorption line index definitions.
-\end{minipage}
 \label{dap_tab:modules}
 \end{table}
 
@@ -295,11 +289,11 @@ the following:
 \item Columns 10-11. E(B-V) color excess for the stellar component and its error
 \item Columns 12-13. E(B-V) color excess for the ionized gas stellar component and its error
 \item Column 14.  CHI2. Chi-squared from the fit.
-\item Columns 15-end. Flux, flux error, Equivalent widths, and
+\item Columns 15-end. Intensities, Intensities errors, Flux, flux error, Equivalent widths, and
   equivalent width errors of the emission lines.  The measured
   emission lines (and their names) are defined in a user-provided
   file. The name of this file is specified in the configuration file
-  (see Section \ref{dap_sec:configuration}).
+  (see Section \ref{dap_sec:configuration}). Warning: intensities and fluxes are per arcsec$^2$, i.e. the numbers measured in the spectrum are divided by the area of the spatial bin (column 3).
 \end{itemize}
 
 \subsubsection{Extension 9: outputs related to the radial binning

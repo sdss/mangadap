@@ -197,7 +197,11 @@ fwhm\_instr\_ kmsec\_matrix & 2xW elements vector. It defines the instrumental F
 %;
  emission\_line\_ kinematics\_err & [N x 2 flt array].  It contains the errors to the best fit values of V, $\sigma$ (emission lines) for each of the N fitted input galaxy spectra. If /fix\_gas\_kin is set, the array is not defined.\\
 %;
- emission\_line\_ fluxes  &[N x T flt array].  It contains the fluxes of the T fitted emission lines for each of the N input galaxy spectra. Values are corrected for reddening.\\
+ emission\_line\_ intens  &[N x T flt array].  It contains the intensities of the T fitted emission lines for each of the N input galaxy spectra. Values are corrected for reddening.\\
+%
+ emission\_line\_ intens\_err &  [N x T flt array].  Errors associated to emission\_line\_intens \\
+%
+ emission\_line\_ equivW      & [N x T flt array]. It contains the Equivalent widths of the T fitted emission lines for each of the N input galaxy spectra.                            Equivalent widths are computed by the ratio of emission\_line\_fluxes and the median value of the stellar spectrum within 5 and 10 $\sigma$ from the emission line. $\sigma$ is the emission line velocity dispersion. \\
 %
  emission\_line\_ fluxes\_err &  [N x T flt array].  Errors associated to emission\_line\_fluxes \\
 %

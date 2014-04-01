@@ -206,7 +206,7 @@
 ;
 ; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
 ; Feb 2014, L. Coccato.
-
+; v0.5 28 Mar 2014
 
 ;------------------------------------------------------------------------------------
 FUNCTION BVLSN_Solve_pxf, A, b, degree, $
@@ -312,8 +312,9 @@ endfor
 ; we just created in a)
 i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
 n_slines = n_elements(i_slines)
-int_disp_pix2_=int_disp_pix2[i_slines]
+;int_disp_pix2_=int_disp_pix2[i_slines]
 if i_slines[0] ne -1 then begin
+int_disp_pix2_=int_disp_pix2[i_slines]
     ; loop over the satellite lines
     for i = 0,n_slines-1 do begin
         ; Current index in the emission-line setup structure for 
@@ -895,13 +896,13 @@ if keyword_set(err) then begin
     endif else begin
         ; MPFIT errors only from for non-linear fit of A_gas, V_gas and S_gas fit 
         for i=0,nlines-1 do begin
-            esol_final[k+1] = err[h]            
-            esol_final[k+2] = err[h+1]*velscale 
-            esol_final[k+3] = err[h+2]*velscale 
+            esol_final[k+1] = err[h]            ;error on amplitude
+            esol_final[k+2] = err[h+1]*velscale ;error on velocity
+            esol_final[k+3] = err[h+2]*velscale ;error on sigma
             ; Simple MC error propagation to derive errors in F_gas
             ; This implicitly assumes errors in A_gas ,V_gas and S_gas
             ; are uncorrelated...
-            if esol_final[k+2] gt 0 and esol_final[k+3] gt 0 then begin
+           ; if esol_final[k+2] gt 0 and esol_final[k+3] gt 0 then begin
                 fluxes_i  = dblarr(100)
                 ampls_i   = sol_final[k+1] + esol_final[k+1]*randomn(seed,100)
                 vels_i    = sol_final[k+2] + esol_final[k+2]*randomn(seed,100)
@@ -909,9 +910,10 @@ if keyword_set(err) then begin
                 sigmas_i  = sqrt(sigmas_i^2. + int_disp2_[i])
                 for j=0,99 do begin 
                     fluxes_i[j] = ampls_i[j]* sqrt(2*!pi) * sigmas_i[j] * lambda0[i] * exp(vels_i[j]/c)/c 
-                endfor
+                 endfor
+               ; stop
                 esol_final[k]  = robust_sigma(fluxes_i)
-            endif else esol_final[k] = 0d
+          ;  endif else esol_final[k] = 0d
             k=k+4 & h=h+3
         endfor
 
@@ -930,7 +932,7 @@ endif
 
 sol=sol_final
 if keyword_set(err) then esol=esol_final
-
+;stop
 END
 
 ;------------------------------------------------------------------------------------
@@ -1251,6 +1253,8 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; Add up the best-fitting emission templates to get the emission spectrum
     if ((size(emission_templates_2))[0] eq 1) then emission_2 = emission_templates_2          
     if ((size(emission_templates_2))[0] eq 2) then emission_2 = total(emission_templates_2,2)
+
+
 
     ; -----------------
     ; Rearrange the final results in the output array SOL, which

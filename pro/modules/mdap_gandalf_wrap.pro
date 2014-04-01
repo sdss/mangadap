@@ -291,6 +291,11 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
 ;                  starting guesses. If 1, the ppxf fit converged.
 ;
 
+; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
+; Feb 2014, L. Coccato.
+; v0.5 28 Mar 2014
+
+
 
 c = 299792.4580d ; Speed of light in km/s
 
@@ -591,18 +596,19 @@ if moments eq 2 then error = [ERROR_stars[0:moments-1],0,0,0,0,mean(esol_gas_V[w
 rf_l  = exp(loglam_gal -sol[0]/velscale*lstep_gal)
 gas_ew_=gas_fluxes_*0.
 gas_ew_err_=gas_fluxes_*0.
+rf_l_line_list  = dummy.lambda[i_l]
 for j = 0, n_elements(dummy.lambda[i_l])-1 do begin
-    rf_l_line  = exp(dummy.lambda[i_l])
-    S_line     = sol[6] 
+    rf_l_line  = rf_l_line_list[j]
+    S_line     = sol[8] 
     F_obs_line = gas_fluxes_[j]
     j_buffer   = where(abs(rf_l-rf_l_line) lt 10*(S_line/c)*rf_l_line and abs(rf_l-rf_l_line) gt  5*(S_line/c)*rf_l_line)
     if j_buffer[0] ne -1 then begin
        C_line     = median(spec_neat[j_buffer])
-       gas_ew_[j]  = gas_fluxes[j]/C_line
-       gas_ew_err_[j]  = gas_fluxes_err[j]/C_line+abs(gas_fluxes[j])/C_line^2*robust_sigma(spec_neat[j_buffer])
+       gas_ew_[j]  = gas_fluxes_[j]/C_line
+       gas_ew_err_[j]  = gas_fluxes_err_[j]/C_line+abs(gas_fluxes_[j])/C_line^2*robust_sigma(spec_neat[j_buffer])
     endif
 endfor
-
+;stop
 gas_intens = [0]
 gas_intens_err =[0]
 gas_ew = [0]
@@ -612,7 +618,6 @@ gas_fluxes_err =[0]
 k=0
 kk=0
 for i = 0,n_elements(eml_lambda)-1 do begin
-   
    was_it_in_range = where(abs(emission_setup.lambda - eml_lambda[i]) le 0.001)
    if was_it_in_range[0] eq -1 then begin
       gas_intens = [gas_intens,0]
@@ -648,10 +653,7 @@ for i = 0,n_elements(eml_lambda)-1 do begin
       gas_ew = [gas_ew,gas_ew_[indici[0]]*value]
       gas_ew_err = [gas_ew_err,gas_ew_err_[indici[0]]*value]
     endelse
-    k = k+1
-
- 
-   
+    k = k+1  
 endfor
 gas_intens = gas_intens[1:*]
 gas_intens_err =gas_intens_err[1:*] 
