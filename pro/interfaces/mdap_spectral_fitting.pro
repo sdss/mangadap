@@ -224,7 +224,7 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ;
 ; version  [string]            Module version. If requested, the module is not execute and only version flag is returned
 ;
-version_module = '0.2'
+version_module = '0.7'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module

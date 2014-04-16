@@ -298,7 +298,7 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
 
 ; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
 ; Feb 2014, L. Coccato.
-; v0.5 28 Mar 2014
+; v0.7 16 Apr 2014
 
 
 

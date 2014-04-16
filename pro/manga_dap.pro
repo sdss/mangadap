@@ -26,7 +26,7 @@ if keyword_set(check_version) then begin
    if check_previous_session eq 1 then restore,output_idlsession
 endif
 
-manga_dap_version = '0.7'    ; 28 Mar 2014 by L. Coccato
+manga_dap_version = '0.7'    ; 16 Apr 2014 by L. Coccato
 ;stop
 
 readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
@@ -175,7 +175,8 @@ endelse
 mask_range=[5570.,5590.,5800.,5850.]  ; will be replaced by mask extension in the input file
 
 ;*** END OF BLOCK 1 *************************************************************
-
+;if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block1.idl',/variables 
+;stop
 
 
 
@@ -307,6 +308,7 @@ gas_kin_starting_guesses[*,1]=50.  ;str guess for sigma
 if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous or execute_all_modules eq 1 then begin
    mdap_spectral_fitting,log_spc_tpl,log_err_tpl,log_wav_tpl,library_log_tpl,log_wav_library_tpl,velscale,$
         stellar_kinematics_tpl,stellar_kinematics_tpl_err,stellar_weights_tpl,emission_line_kinematics_tpl,emission_line_kinematics_tpl_err,$
+         emission_line_kinematics_tpl_individual,emission_line_kinematics_tpl_individual_err,$
         emission_line_intens_tpl,emission_line_intens_tpl_err,emission_line_fluxes_tpl,emission_line_fluxes_tpl_err,emission_line_equivW_tpl,emission_line_equivW_tpl_err,wavelength_input=exp(log_wav_library_tpl),$
         wavelength_output_tpl,best_fit_model_tpl,galaxy_minus_ems_fit_model_tpl,best_template_tpl,best_template_LOSVD_conv_tpl,reddening_tpl,reddening_tpl_err,residuals_tpl,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
@@ -363,6 +365,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
    if n_elements(spectra_fittin_parameters_patial_binning_2_two_moments) ne 0 then begin
    mdap_spectral_fitting,log_spc_str,log_err_str,log_wav_str,library_log_str,log_wav_library_str,velscale,$
         stellar_kinematics_str_two_moments,stellar_kinematics_str_two_moments_err,stellar_weights_str,emission_line_kinematics_str,emission_line_kinematics_str_err,$
+         emission_line_kinematics_str_individual,emission_line_kinematics_str_individual_err,$
         emission_line_intens_str,emission_line_intens_str_err,emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
@@ -373,6 +376,7 @@ if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or e
 
    mdap_spectral_fitting,log_spc_str,log_err_str,log_wav_str,library_log_str,log_wav_library_str,velscale,$
         stellar_kinematics_str,stellar_kinematics_str_err,stellar_weights_str,emission_line_kinematics_str,emission_line_kinematics_str_err,$
+         emission_line_kinematics_str_individual,emission_line_kinematics_str_individual_err,$
         emission_line_intens_str,emission_line_intens_ems_str,emission_line_fluxes_str, emission_line_fluxes_str_err,emission_line_equivW_str,emission_line_equivW_str_err,wavelength_input=exp(log_wav_library_str),$
         wavelength_output_str,best_fit_model_str,galaxy_minus_ems_fit_model_str,best_template_str,best_template_LOSVD_conv_str,reddening_str,reddening_str_err,residuals_str,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix,$
@@ -410,6 +414,7 @@ wavelength_input=exp(log_wav_ems)
 if mdap_spectral_fitting_version gt mdap_spectral_fitting_version_previous  or execute_all_modules eq 1 then begin
    mdap_spectral_fitting,log_spc_ems,log_err_ems,log_wav_ems,library_log_ems,log_wav_library_ems,velscale,$
         stellar_kinematics_ems,stellar_kinematics_ems_err,stellar_weights_ems,emission_line_kinematics_ems,emission_line_kinematics_ems_err,$
+         emission_line_kinematics_ems_individual,emission_line_kinematics_ems_individual_err,$
         emission_line_intens_ems,emission_line_intens_ems_err,emission_line_fluxes_ems,emission_line_fluxes_ems_err,emission_line_equivW_ems,emission_line_equivW_ems_err,wavelength_input=wavelength_input,$
         wavelength_output_rest_frame_log,best_fit_model_ems,galaxy_minus_ems_fit_model_ems,best_template_ems,best_template_LOSVD_conv_ems,reddening_ems,reddening_ems_err,residuals_ems,$
         star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
@@ -517,6 +522,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    
    mdap_spectral_fitting,radially_binned_spectra,radially_binned_errors,loglam_gal_rbin,library_log_ems,log_wav_library_ems,velscale,$
           stellar_kinematics_rbin,stellar_kinematics_rbin_err,stellar_weights_rbin,emission_line_kinematics_rbin,emission_line_kinematics_rbin_err,$
+         emission_line_kinematics_rbin_individual,emission_line_kinematics_rbin_individual_err,$
           emission_line_intens_rbin,emission_line_intens_rbin_err,emission_line_fluxes_rbin,emission_line_fluxes_rbin_err,emission_line_equivW_rbin,emission_line_equivW_rbin_err,wavelength_input=output_wav,$
           wavelength_output_rbin,best_fit_model_rbin,galaxy_minus_ems_fit_model_rbin,best_template_rbin,best_template_LOSVD_conv_rbin,reddening_rbin,reddening_rbin_err,residuals_rbin,$
           star_kin_starting_guesses=star_kin_starting_guesses_rbin,gas_kin_starting_guesses=gas_kin_starting_guesses_rbin,$
@@ -683,6 +689,12 @@ k=k+1
  for i = 0, NLINES-1 do begin 
     stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW_err']
  endfor 
+ for i = 0, NLINES-1 do begin 
+    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel_err']
+ endfor 
+ for i = 0, NLINES-1 do begin 
+    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err']
+ endfor 
 
  stringa2="{"
  for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
@@ -703,6 +715,8 @@ k=k+1
  p3.reddening_gas = reddening_ems[*,1]
  p3.reddening_gas_err = reddening_ems_err[*,1]
  p3.Chi2_DOF=STELLAR_KINEMATICS_EMS[*,4]
+
+
  for i = 0, NLINES-1 do begin 
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens=EMISSION_LINE_INTENS_EMS[*,i]')
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens_err=EMISSION_LINE_INTENS_EMS_ERR[*,i]')
@@ -714,6 +728,14 @@ k=k+1
  for i = 0, NLINES-1 do begin 
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW=EMISSION_LINE_EQUIVW_EMS[*,i]')
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW_err=EMISSION_LINE_EQUIVW_EMS_ERR[*,i]')
+ endfor 
+ for i = 0, NLINES-1 do begin 
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel=emission_line_kinematics_ems_individual[*,i,0]')
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_VEl_err=emission_line_kinematics_ems_individual_err[*,i,0]')
+ endfor 
+ for i = 0, NLINES-1 do begin 
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig=emission_line_kinematics_ems_individual[*,i,1]')
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err=emission_line_kinematics_ems_individual_err[*,i,1]')
  endfor 
  mwrfits,p3,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         

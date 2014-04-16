@@ -50,6 +50,7 @@ lambda_profile,lambda_profile_err,vsigma_profile,vsigma_profile_err,sigma_profil
 ; sigma_profile_err   [M elem. array] errors on sigma_profile. If \add_last is set, it contains M+1 elements.
 ;
 
+;ver 0.7  16 April 2014 by L. Coccato
 
 
 ;-- rotate coordianates to align galaxy photometric major axis to

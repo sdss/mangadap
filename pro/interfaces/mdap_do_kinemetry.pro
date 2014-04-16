@@ -87,7 +87,7 @@ pro mdap_do_kinemetry,image,x2d,y2d,x,y,velocity,velocity_err,$
 ; Version 0.1: 21 Feb L. Coccato
 
 
-version_module='0.1'
+version_module='0.7'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_kinemetry
