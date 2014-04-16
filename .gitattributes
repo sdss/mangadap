@@ -105,6 +105,7 @@ pro/mangadap_version.pro -text
 pro/modules/mdap_bvls.pro -text
 pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_spectrum_sn.pro -text
+pro/modules/mdap_do_k_rprofiles.pro -text
 pro/modules/mdap_do_log_rebin.pro -text
 pro/modules/mdap_do_measure_index.pro -text
 pro/modules/mdap_dust_calzetti.pro -text
