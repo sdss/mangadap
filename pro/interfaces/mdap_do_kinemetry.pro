@@ -1,6 +1,7 @@
 pro mdap_do_kinemetry,image,x2d,y2d,x,y,velocity,velocity_err,$ 
                       PA_kin,PA_kin_std, q_kin, q_kin_std, Vsyst, Vsyst_std, Rad_kin, Vrot, Vrot_err,Vexp, Vexp_err,$
-                      gal_center_x,gal_center_y,version=version
+                      ;gal_center_x,gal_center_y
+                      version=version
 
 ; This module implements the kinemetry.pro by D. Kraijnovic to extract the rotation curve and outflow/inflows. 
 ; The following steps are executed: 
@@ -73,9 +74,11 @@ pro mdap_do_kinemetry,image,x2d,y2d,x,y,velocity,velocity_err,$
 ;
 ; Vexp_err      [W elements array] Errors on Vexp. 
 ;
-; gal_center_x  [Float] X coordinate of the galaxy center (0,0 is the center of the field of view). 
+; gal_center_x  [Float] X coordinate of the galaxy center (0,0 is the
+; center of the field of view). OBSOLETE
 ;
-; gal_center_y  [Float] Y coordinate of the galaxy center (0,0 is the center of the field of view).
+; gal_center_y  [Float] Y coordinate of the galaxy center (0,0 is the
+; center of the field of view). OBSOLETE
 ;
 ;*** OPTIONAL OUTPUTS ***
 ;
@@ -91,18 +94,21 @@ if n_elements(version) ne 0 then begin
 endif
 
 
+;-------------- removed in version 0.7 -----------
 ; get image center from signal2d_reconstructed
-sz=size(image)
-gcntrd,image,sz[1]/2.,sz[2]/2.,xcen,ycen,3.
-xcen_pix=xcen
-ycen_pix=ycen
-x0=bilinear(x2d,xcen_pix,ycen_pix) 
-xcen_pix=xcen
-ycen_pix=ycen
-y0=bilinear(y2d,xcen_pix,ycen_pix)
-
-if abs(x0) ge 4 then x0 = 0.
-if abs(y0) ge 4 then y0 = 0.
+; sz=size(image)
+; gcntrd,image,sz[1]/2.,sz[2]/2.,xcen,ycen,3.
+; xcen_pix=xcen
+; ycen_pix=ycen
+; x0=bilinear(x2d,xcen_pix,ycen_pix) 
+; xcen_pix=xcen
+; ycen_pix=ycen
+; y0=bilinear(y2d,xcen_pix,ycen_pix)
+; if abs(x0) ge 4 then x0 = 0.
+; if abs(y0) ge 4 then y0 = 0.
+;-------------------------------------------------
+x0 = 0.
+y0 = 0.
 gal_center_x = x0
 gal_center_y = y0
 

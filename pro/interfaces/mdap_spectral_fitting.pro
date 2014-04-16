@@ -1,5 +1,6 @@
 pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,velscale,$
      stellar_kinematics,stellar_kinematics_err,stellar_weights,emission_line_kinematics,emission_line_kinematics_err,$
+      emission_line_kinematics_individual,emission_line_kinematics_individual_err,$
      emission_line_intens,emission_line_intens_err,emission_line_fluxes,emission_line_fluxes_err,emission_line_equivW,emission_line_equivW_err,wavelength_input=wavelength_input,$
      wavelength_output,best_fit_model,galaxy_minus_ems_fit_model,best_template,best_template_LOSVD_conv,reddening_output,reddening_output_err,residuals,$
      star_kin_starting_guesses=star_kin_starting_guesses,gas_kin_starting_guesses=gas_kin_starting_guesses,$
@@ -173,7 +174,8 @@ pro mdap_spectral_fitting,galaxy,noise,loglam_gal,templates,loglam_templates,vel
 ; emission_line_kinematics_err [N x 2 flt array]  It contains the errors to the best fit values of V, sigma (emission lines) for each of the N fitted
 ;                            input galaxy spectra. If \fix_gas_kin is set, the array is not defined.
 ;
-;
+;emission_line_kinematics_individual,emission_line_kinematics_individual_err
+; kinematics and errors of individual emission lines.
 ; emission_line_fluxes  [N x T flt array]  It contains the fluxes of the T fitted emission lines for each of the N input galaxy spectra. 
 ;                       Values are corrected for reddening
 ;
@@ -284,6 +286,8 @@ emission_line_fluxes=fltarr(sz[2],n_elements(wav))
 emission_line_fluxes_err=fltarr(sz[2],n_elements(wav))
 emission_line_equivW=fltarr(sz[2],n_elements(wav))
 emission_line_equivW_err=fltarr(sz[2],n_elements(wav))
+emission_line_kinematics_individual=fltarr(sz[2],n_elements(wav),2)
+emission_line_kinematics_individual_err=fltarr(sz[2],n_elements(wav),2)
 
 if keyword_set(rest_frame_log) then begin
       wavelength_output=exp(loglam_templates);exp(loglam_gal-sol[0]/velscale*(log_step_gal))
@@ -380,7 +384,8 @@ FOR i = 0, sz[2]-1 DO BEGIN  ;loop over all the spectra
     
    INT_DISP=interpol(fwhm_instr_kmsec_matrix[1,*],alog(fwhm_instr_kmsec_matrix[0,*]),alog(wav*(1.+start[2]/c)))/2.3548
 status = 1
-   mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale, start, sol, $
+   mdap_gandalf_wrap,templates,loglam_templates,galaxy_,loglam_gal,noise_,velScale, start, sol,$
+       sol_gas_V,esol_gas_V,sol_gas_S,esol_gas_S, $
        EMISSION_SETUP_FILE=emission_line_file, $
        gas_intens,gas_fluxes,gas_ew,gas_intens_err,gas_fluxes_err,gas_ew_err,$
        BESTFIT=bestFit, BIAS=bias,  MDEGREE=MDEGREE,DEGREE=degree, ERROR=error, $
@@ -461,11 +466,15 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
    emission_line_fluxes[i,*]= gas_fluxes     ; corrected for reddening, if fitted
    emission_line_fluxes_err[i,*] = gas_fluxes_err
 
+   emission_line_kinematics_individual[i,*,0]=sol_gas_V
+   emission_line_kinematics_individual_err[i,*,0]=esol_gas_V
+   emission_line_kinematics_individual[i,*,1]=sol_gas_S
+   emission_line_kinematics_individual_err[i,*,1]=esol_gas_S
    ;-- check how many emission lines have intensity > 4*intensity_error
    ;      (i.e. 3 sigma detections)
    ;test = abs(emission_line_intens[i,*]) - 4.*abs(emission_line_intens_err[i,*])
-   test = abs(gas_intens) - 0.5*abs(gas_intens_err)
-   indici = where(test gt 0) 
+   test = abs(gas_intens) - abs(gas_intens_err)
+   indici = where(test gt 0 and gas_intens gt 0) 
 ;stop
   ; stop
 ;    window,0,retain=2,xsize=1900
@@ -486,15 +495,15 @@ if min(noise_) eq max(noise_) then error[0:5] = error[0:5] * sqrt(sol[6]) ; If t
 
 ;stop
 
-    if n_elements(indici) lt 2 then begin  ;I want at least 2 emission lines to be detected at >0.5sigma level....
+    if n_elements(indici) lt 3 then begin  ;I want at least 3 emission lines (with positive intensity) to be detected at 1 sigma level....
        ;emission_line_intens[i,*] = 0.
        ;emission_line_intens_err[i,*] = 0.
        ;emission_line_fluxes[i,*] = 0./0.
        ;emission_line_fluxes_err[i,*] = 0./0.
        ;emission_line_equivW[i,*] = 0./0.
        ;emission_line_equivW_err[i,*] = 0./0.
-       ;emission_line_kinematics[i,*] = 0./0.
-       ;emission_line_kinematics_err[i,*] = 0./0.
+       emission_line_kinematics[i,*] = 0./0.
+       emission_line_kinematics_err[i,*] = 0./0.
     endif             
    ;--
 

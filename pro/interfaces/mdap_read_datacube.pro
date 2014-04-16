@@ -475,5 +475,36 @@ endif else begin  ; IF I HAVE RSS SPECTRA, I NEED TO INTERPOLATE SOME INFO ON A 
              "OBJECT  =   "+datacube_name+"  /"]
 
 endelse
+
+
+
+
+;-- PATCH added from version 0.7 onwards, to center the coordinates
+;   onto the galaxy center. Header informations are updated accordingly.
+; get image center from signal2d_reconstructed
+sz_=size(signal2d_reconstructed)
+gcntrd,signal2d_reconstructed,sz_[1]/2.,sz_[2]/2.,xcen,ycen,3.
+xcen_pix=xcen
+ycen_pix=ycen
+x0=bilinear(x2d_reconstructed,xcen_pix,ycen_pix) 
+xcen_pix=xcen
+ycen_pix=ycen
+y0=bilinear(y2d_reconstructed,xcen_pix,ycen_pix)
+if abs(x0) ge 4 then x0 = 0.
+if abs(y0) ge 4 then y0 = 0.
+
+x2d=x2d-x0
+y2d=y2d-y0
+x2d_reconstructed=x2d_reconstructed-x0
+y2d_reconstructed=y2d_reconstructed-y0
+header2d[6] = "CRVAL1  =                 "+mdap_stc(-x0)+"    /"
+header2d[10] = "CRVAL2  =                "+mdap_stc(-y0)+"    /"
+
+;-------------------------------------------------
+
+
+
+
+
 end_module:
 end

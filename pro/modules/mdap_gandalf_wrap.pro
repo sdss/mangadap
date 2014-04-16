@@ -135,6 +135,7 @@ end
 
 
 PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velscale,start_, sol,$
+       gas_Velocities,gas_Velocities_err,gas_Dispersion,gas_Dispersion_err,$
        gas_intens,gas_fluxes,gas_ew,gas_intens_err,gas_fluxes_err,gas_ew_err,$
        EMISSION_SETUP_FILE=EMISSION_SETUP_FILE, $
        BESTFIT=bestFit, BIAS=bias,  MDEGREE=MDEGREE,DEGREE=degree, ERROR=error,$
@@ -239,6 +240,10 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
 ;                               sol[7]: mean flux weighted velocity of the emission lines (km/sec).
 ;                               sol[8]: mean flux weighted velocity dispersion (km/sec).  
 ;
+
+; gas_Velocities,gas_Velocities_err,gas_Dispersion,gas_Dispersion_err
+; (velocities, velocity dispersion, and errors of individual emission lines)
+
 ; gas_intens   N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
 ;                  whithin the wavelength range loglam\_gal. It specifies the intensity (corrected for reddening) 
 ;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
@@ -572,19 +577,30 @@ gas_intens_err_ = esol_gas_A
 ;gas_fluxes = gas_intens * sol[8]/velscale*sqrt(2.*!pi)
 gas_fluxes_ = sol_gas_F
 gas_fluxes_err_ = esol_gas_F
+gas_velocities_=  sol_gas_V
+gas_velocities_err_=  esol_gas_V
+gas_dispersion_=  sol_gas_S
+gas_dispersion_err_=  esol_gas_S
+
+
 
 ; NOW I COMPUTE THE FLUX WEIGHTED MEAN GAS VELOCITY AND VELOCITY DISPERSION
 
 where_gas_is_not_null = where(sol_gas_F gt 0 and esol_gas_F gt 0 and finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1)
 
-if moments eq 6 then sol = [sol_star[0]-offset,sol_star[1:moments-1],chi2,total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null]),total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])]
-if moments eq 6 then error = [ERROR_stars[0:moments-1],mean(esol_gas_V[where_gas_is_not_null]),mean(esol_gas_S[where_gas_is_not_null])]
+fw_vel = total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
+fw_sig = total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
+fw_vel_err = mean(esol_gas_V[where_gas_is_not_null])
+fw_sig_err = mean(esol_gas_S[where_gas_is_not_null])
 
-if moments eq 4 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,chi2,total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null]),total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])]
-if moments eq 4 then error = [ERROR_stars[0:moments-1],0,0,mean(esol_gas_V[where_gas_is_not_null]),mean(esol_gas_S[where_gas_is_not_null])]
+if moments eq 6 then sol = [sol_star[0]-offset,sol_star[1:moments-1],chi2,fw_vel,fw_sig]
+if moments eq 6 then error = [ERROR_stars[0:moments-1],fw_vel_err,fw_sig_err]
 
-if moments eq 2 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,0,0,chi2,total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null]),total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])]
-if moments eq 2 then error = [ERROR_stars[0:moments-1],0,0,0,0,mean(esol_gas_V[where_gas_is_not_null]),mean(esol_gas_S[where_gas_is_not_null])]
+if moments eq 4 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,chi2,fw_vel,fw_sig]
+if moments eq 4 then error = [ERROR_stars[0:moments-1],0,0,fw_vel_err,fw_sig_err]
+
+if moments eq 2 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,0,0,chi2,fw_vel,fw_sig]
+if moments eq 2 then error = [ERROR_stars[0:moments-1],0,0,0,0,fw_vel_err,fw_sig_err]
 ;-- compute gas EW (as in gandalf)
 ;stop
 
@@ -615,6 +631,10 @@ gas_ew = [0]
 gas_ew_err =[0]
 gas_fluxes = [0]
 gas_fluxes_err =[0]
+gas_velocities=[0]
+gas_velocities_err=[0]
+gas_dispersion=[0]
+gas_dispersion_err=[0]
 k=0
 kk=0
 for i = 0,n_elements(eml_lambda)-1 do begin
@@ -626,6 +646,10 @@ for i = 0,n_elements(eml_lambda)-1 do begin
       gas_fluxes_err = [gas_fluxes_err,0]
       gas_ew = [gas_ew,0]
       gas_ew_err = [gas_ew_err,0]
+      gas_velocities         = [gas_velocities,0]    
+      gas_velocities_err     = [gas_velocities_err,0]
+      gas_dispersion         = [gas_dispersion,0]    
+      gas_dispersion_err     = [gas_dispersion_err,0]
       continue
    endif
 
@@ -652,8 +676,20 @@ for i = 0,n_elements(eml_lambda)-1 do begin
       gas_fluxes_err = [gas_fluxes_err,gas_fluxes_err_[indici[0]]*value]
       gas_ew = [gas_ew,gas_ew_[indici[0]]*value]
       gas_ew_err = [gas_ew_err,gas_ew_err_[indici[0]]*value]
-    endelse
-    k = k+1  
+
+      gas_velocities         = [gas_velocities, gas_velocities_[kk]]    
+      gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[kk]]
+      gas_dispersion         = [gas_dispersion,gas_dispersion_[kk]]    
+      gas_dispersion_err     = [gas_dispersion_err,gas_dispersion_err_[kk]]
+
+
+
+   endelse
+   gas_velocities         = [gas_velocities, gas_velocities_[k]]    
+   gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[k]]
+   gas_dispersion         = [gas_dispersion,gas_dispersion_[k]]    
+   gas_dispersion_err     = [gas_dispersion_err,gas_dispersion_err_[k]]
+   k = k+1  
 endfor
 gas_intens = gas_intens[1:*]
 gas_intens_err =gas_intens_err[1:*] 
@@ -661,6 +697,10 @@ gas_ew = gas_ew[1:*]
 gas_ew_err =gas_ew_err[1:*]
 gas_fluxes =gas_fluxes[1:*]
 gas_fluxes_err =gas_fluxes_err[1:*]
+gas_velocities       = gas_velocities[1:*]     
+gas_velocities_err   = gas_velocities_err[1:*] 
+gas_dispersion       = gas_dispersion[1:*]     
+gas_dispersion_err   = gas_dispersion_err[1:*] 
 
 if n_elements(reddening) ne 0 then reddening = sol_EBmV;,esol_EBmV]
 if n_elements(reddening) ne 0 then err_reddening = esol_EBmV

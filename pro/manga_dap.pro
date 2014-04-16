@@ -26,9 +26,8 @@ if keyword_set(check_version) then begin
    if check_previous_session eq 1 then restore,output_idlsession
 endif
 
-manga_dap_version = '0.6'    ; 28 Mar 2014 by L. Coccato
+manga_dap_version = '0.7'    ; 28 Mar 2014 by L. Coccato
 ;stop
-
 
 readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
         velocity_dispersion_initial_guess_vector,ellipticity_vector,position_angle_vector,fibre_number_vector,Reff_vector,mode_vector,/silent, format='A,F,F,F,F,F,F,A',comment='#'
@@ -207,7 +206,7 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
                         xbin_tpl,ybin_tpl,area_bins_tpl,bin_sn_tpl,sn_thr=sn_thr_tpl,$
                          x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                          nelements_within_bin=nelements_within_bin_tpl,sn_calibration=sn_calibration,$
-                         user_bin_map=user_bin_map_spatial_binning_1,weight_for_sn=weight_for_sn,/plot
+                         user_bin_map=user_bin_map_spatial_binning_1,weight_for_sn=weight_for_sn;,/plot
    sxaddpar,header_2d,'BLOCK2',mdap_spatial_binning_version,'mdap_spatial_binning version'
    execute_all_modules=1
 endif
@@ -219,7 +218,7 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
                         xbin_str,ybin_str,area_bins_str,bin_sn_str,sn_thr=sn_thr_str,$
                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                         nelements_within_bin=nelements_within_bin_str,sn_calibration=sn_calibration,$
-                        user_bin_map=user_bin_map_spatial_binning_2,weight_for_sn=weight_for_sn,/plot
+                        user_bin_map=user_bin_map_spatial_binning_2,weight_for_sn=weight_for_sn;,/plot
    execute_all_modules=1 
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 2. SN= '+mdap_stc(sn2,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_str),/integer)
@@ -231,7 +230,7 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
                         xbin_ems,ybin_ems,area_bins_ems,bin_sn_ems,sn_thr=sn_thr_ems,$
                         x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed,$
                         nelements_within_bin=nelements_within_bin_ems,sn_calibration=sn_calibration,$
-                        user_bin_map=user_bin_map_spatial_binning_3,weight_for_sn=weight_for_sn,/plot
+                        user_bin_map=user_bin_map_spatial_binning_3,weight_for_sn=weight_for_sn;,/plot
    execute_all_modules=1
 endif
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 3. SN= '+mdap_stc(sn3,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_ems),/integer)
@@ -565,23 +564,27 @@ endif
 if save_intermediate_steps eq 1 then save,filename=root_name+mode+'_block6a.idl',/variables
 
 
-kinemetry_step:
 ;- Rotation curves (kinemetry)
 
 ;stars
 mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbin_str,ybin_str,$
                   STELLAR_KINEMATICS_STR[*,0],STELLAR_KINEMATICS_STR_ERR[*,0],$
-                  PA_kin_str,PA_kin_std_str, q_kin_str,q_kin_std_str, Vsyst_str, Vsyst_std_str, Rad_kin_str, Vrot_str, Vrot_err_str,Vexp_str, Vexp_err_str,$
-                  Xcenter_used_for_stellar_rot_curve,Ycenter_used_for_stellar_rot_curve
+                  PA_kin_str,PA_kin_std_str, q_kin_str,q_kin_std_str, Vsyst_str, Vsyst_std_str, Rad_kin_str, Vrot_str, Vrot_err_str,Vexp_str, Vexp_err_str;,$
+                  ;Xcenter_used_for_stellar_rot_curve,Ycenter_used_for_stellar_rot_curve
 
 ;gas
 mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbin_ems,ybin_ems,$
                   emission_line_kinematics_ems[*,0],emission_line_kinematics_EMS_err[*,0],$
-                  PA_kin_ems, PA_kin_std_ems, q_kin_ems,q_kin_std_ems, Vsyst_ems,Vsyst_std_ems, Rad_kin_ems, Vrot_ems, Vrot_err_ems,Vexp_ems, Vexp_err_ems,$
-                  Xcenter_used_for_gas_rot_curve,Ycenter_used_for_gas_rot_curve
+                  PA_kin_ems, PA_kin_std_ems, q_kin_ems,q_kin_std_ems, Vsyst_ems,Vsyst_std_ems, Rad_kin_ems, Vrot_ems, Vrot_err_ems,Vexp_ems, Vexp_err_ems;,$
+                  ;Xcenter_used_for_gas_rot_curve,Ycenter_used_for_gas_rot_curve
 
-
+;- radial profiles (lambda, V/sigma, sigma?) -- still to test
+if n_elements(radii_for_rprofiles) eq 0 then radii_rprofiles=Rad_kin_str else radii_rprofiles=radii_for_rprofiles
+mdap_do_k_rprofiles,radii_rprofiles,STELLAR_KINEMATICS_STR[*,0]-Vsyst_str[0],STELLAR_KINEMATICS_STR_ERR[*,0],STELLAR_KINEMATICS_STR[*,1],STELLAR_KINEMATICS_STR_ERR[*,1],$
+                    xbin_str,ybin_str,total(log_spc_str,1),ell,pa,$
+                    lambda_profile,lambda_profile_err,vsigma_profile,vsigma_profile_err,sigma_profile,sigma_profile_err
  
+;-
 ;*********************************************************************************
  
 ;-- SAVING HIGH LEVEL SCIENCE PRODUCTS RESULTS IN THE OUTPUT DATACUBE.... to be optimized
@@ -750,7 +753,8 @@ stringa2="{"
 
 ;storing rotation curve of stars
 k=k+1
-stringa = ["a_rot_curve","PA_kin_stars","PA_kin_std_stars","q_kin_stars","q_kin_std_stars","Vsyst_stars","Vsyst_std_stars", "Vrot_stars", "Vrot_err_stars","Vexp_stars", "Vexp_err_stars","x0","y0"]
+;stringa = ["a_rot_curve","PA_kin_stars","PA_kin_std_stars","q_kin_stars","q_kin_std_stars","Vsyst_stars","Vsyst_std_stars", "Vrot_stars", "Vrot_err_stars","Vexp_stars", "Vexp_err_stars","x0","y0"]
+stringa = ["a_rot_curve","PA_kin_stars","PA_kin_std_stars","q_kin_stars","q_kin_std_stars","Vsyst_stars","Vsyst_std_stars", "Vrot_stars", "Vrot_err_stars","Vexp_stars", "Vexp_err_stars"]
 stringa2="{"
 for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
 stringa2 = stringa2+stringa[i]+':0.}'
@@ -767,8 +771,8 @@ p5.Vrot_stars= Vrot_str
 p5.Vrot_err_stars=Vrot_err_str
 p5.Vexp_stars=Vexp_str
 p5.Vexp_err_stars=Vexp_err_str
-p5.x0=replicate(Xcenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
-p5.y0=replicate(Ycenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
+;p5.x0=replicate(Xcenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
+;p5.y0=replicate(Ycenter_used_for_stellar_rot_curve,n_elements(Rad_kin_str)) 
 mwrfits,p5,output_filefits,/silent
 h1=HEADFITS(output_filefits,EXTEN = k)                                         
 sxaddpar,h1,'EXTNAME','Stars Rotation'
@@ -777,7 +781,8 @@ modfits,output_filefits,0,h1,exten_no=k
 
 ;storing rotation curve of gas
 k=k+1
-stringa = ["a_rot_curve","PA_kin_gas","PA_kin_std_gas","q_kin_gas","q_kin_std_gas","Vsyst_gas","Vsyst_std_gas", "Vrot_gas", "Vrot_err_gas","Vexp_gas", "Vexp_err_gas","x0","y0"]
+;stringa = ["a_rot_curve","PA_kin_gas","PA_kin_std_gas","q_kin_gas","q_kin_std_gas","Vsyst_gas","Vsyst_std_gas", "Vrot_gas", "Vrot_err_gas","Vexp_gas", "Vexp_err_gas","x0","y0"]
+stringa = ["a_rot_curve","PA_kin_gas","PA_kin_std_gas","q_kin_gas","q_kin_std_gas","Vsyst_gas","Vsyst_std_gas", "Vrot_gas", "Vrot_err_gas","Vexp_gas", "Vexp_err_gas"]
 stringa2="{"
 for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
 stringa2 = stringa2+stringa[i]+':0.}'
@@ -794,14 +799,32 @@ p6.Vrot_gas= Vrot_ems
 p6.Vrot_err_gas=Vrot_err_ems
 p6.Vexp_gas=Vexp_ems
 p6.Vexp_err_gas=Vexp_err_ems
-p6.x0=replicate(Xcenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
-p6.y0=replicate(Ycenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
+;p6.x0=replicate(Xcenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
+;p6.y0=replicate(Ycenter_used_for_gas_rot_curve,n_elements(Rad_kin_ems)) 
 mwrfits,p6,output_filefits,/silent
 h1=HEADFITS(output_filefits,EXTEN = k)                                         
 sxaddpar,h1,'EXTNAME','GAS rotation'
 modfits,output_filefits,0,h1,exten_no=k
 
-
+;storing lambda, v/sigma and sigma radial profiles
+k = k+1
+stringa = ["radii_rprofiles","lambda_profile","lambda_profile_err","vsigma_profile","vsigma_profile_err","sigma_profile","sigma_profile_err"]
+stringa2="{"
+for i =0, n_elements(stringa)-2 do stringa2=stringa2+stringa[i]+':0.,'
+stringa2 = stringa2+stringa[i]+':0.}'
+d = execute('str='+stringa2)
+p7=replicate(str,n_elements(radii_rprofiles))
+p7.radii_rprofiles=radii_rprofiles
+p7.lambda_profile=lambda_profile
+p7.lambda_profile_err=lambda_profile_err
+p7.vsigma_profile=vsigma_profile
+p7.vsigma_profile_err=vsigma_profile_err
+p7.sigma_profile=sigma_profile
+p7.sigma_profile_err=sigma_profile_err
+mwrfits,p7,output_filefits,/silent
+h1=HEADFITS(output_filefits,EXTEN = k)                                         
+sxaddpar,h1,"EXTNAME","lambda, V/S, S"
+modfits,output_filefits,0,h1,exten_no=k
 
 
 printf,1,'[INFO] '+root_name+' output saved: '+output_filefits
