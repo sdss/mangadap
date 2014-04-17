@@ -49,7 +49,7 @@ pro mdap_measure_indices,absorption_line_indices,wavelength,spectra, best_templa
 ; version              [ string] It specifies the module version. If requested, the module is not execute and only version flag is returned.\\
 
 
-version_module = '0.1'
+version_module = '0.7'
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
@@ -128,9 +128,9 @@ FOR i = 0, sz[1]-1 DO BEGIN
       template_conv = template;mdap_convol_sigma(x_pixels,template,x_pixels,sigma) 
       template_LOSVD_conv = template_LOSVD;mdap_convol_sigma(x_pixels,template_LOSVD,x_pixels,sigma) 
    endif else begin
-      spc_conv=mdap_convol_sigma(wavelength,spc,wavelength,sigma) 
-      template_conv = mdap_convol_sigma(wavelength,template,wavelength,sigma) 
-      template_LOSVD_conv = mdap_convol_sigma(wavelength,template_LOSVD,wavelength,sigma) 
+     spc_conv=mdap_convol_sigma(wavelength,spc,wavelength,sigma) 
+     template_conv = mdap_convol_sigma(wavelength,template,wavelength,sigma) 
+     template_LOSVD_conv = mdap_convol_sigma(wavelength,template_LOSVD,wavelength,sigma) 
    endelse
    ;--
    if ~keyword_set(noplot) then device, filename=output_dir+'indices_spectrum_'+mdap_stc(i+1,/integer)+'.ps',/color,xsize=15,ysize=12

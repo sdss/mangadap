@@ -8,12 +8,6 @@ c=299792.458d
 ;*****SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
 readcol,configure_file,command_line,comment='#',delimiter='%',/silent,format='A'
 for i=0, n_elements(command_line)-1 do d=execute(command_line[i])
-if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
-if n_elements(remove_null_templates) eq 0 then remove_null_templates = 1
-
-
-
-if n_elements(instrumental_fwhm_file) ne 0 then readcol, instrumental_fwhm_file, ww,r,fwhm_ang,fwhm_kms,/silent;'../../instrumental_fwhm/instrumental_fwhm.dat'
 
 if keyword_set(check_version) then begin
    readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
@@ -57,12 +51,17 @@ endif
 output_filefits=output_dir+'high_level.fits'
 output_idlsession=output_dir+'mdap_session.idl'
 
+;*****RE-SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
+readcol,configure_file,command_line,comment='#',delimiter='%',/silent,format='A'
+for i=0, n_elements(command_line)-1 do d=execute(command_line[i])
+if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
+if n_elements(remove_null_templates) eq 0 then remove_null_templates = 1
+if n_elements(instrumental_fwhm_file) ne 0 then readcol, instrumental_fwhm_file, ww,r,fwhm_ang,fwhm_kms,/silent;'../../instrumental_fwhm/instrumental_fwhm.dat'
 
 print, ''
 print, '# WORKING ON '+root_name+' ('+mode+')'
 print, ''
 openw,1,output_dir+'mdap.log'
-
 
 ;BLOCK 0 
 ;*** GET MODULES VERSION AND CHECK PREVIOUS ANALYSIS ******************************
@@ -462,8 +461,10 @@ endelse
 ;lick_fwhm_y=[11.5,9.2,8.4,8.4,9.8]                     ;CONTROLLARE
 ;lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_tpl)
 ;rrr=poly_fit(wavelength_output_tpl,lick_resolution_tmp,4,yfit=lick_resolution)
-miles_resolution = fwhm_instr*0.+2.54
-fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2)   ;fwhm in angstrom
+
+;miles_resolution = fwhm_instr*0.+2.54
+lick_resolution = fwhm_instr*0.+8.4
+fwhm_diff_indices=sqrt(lick_resolution^2-fwhm_instr^2)   ;fwhm in angstrom
 indici = where(finite(fwhm_diff_indices) NE 1)
 if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
 
@@ -505,13 +506,12 @@ endfor
 
 ;-- radial binning 
 ;v0.2spatial_binning_scheme
-stop
 mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,spatial_binning_ems,xbin_ems,ybin_ems,ell,pa,$
       galaxy_minus_ems_fit_model_ems,input_errors,wavelength_output_rest_frame_log,$
       spatial_binning_rad,r_bin,r_bin_lo,r_bin_up,r2d_bin,r2d_bin_lo,r2d_bin_up,radially_binned_spectra,radially_binned_errors,$
       output_lrange=trim_wav_range_radial_binning,output_wav=output_wav,n_elements_bin=nelements_within_bin_radial,$
       low_radial_bins_user_inputs=low_radial_bins_user_inputs,upper_radial_bins_user_inputs=upper_radial_bins_user_inputs,$
-      Reff=Reff,PSFsize=PSFsize,add_default_bins=add_default_bins
+      Reff_=Reff,PSFsize_=PSFsize,add_default_bins=add_default_bins
 
 ;--
    printf,1,'[INFO] datacube '+root_name+' radial binning: ',mdap_stc(n_elements(r_bin),/integer),' bins'

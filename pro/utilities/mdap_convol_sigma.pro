@@ -58,7 +58,6 @@ end
 function mdap_convol_sigma,x,vector,x_sigma,sigma
 
 
-
 sigma_new=interpol(sigma,x_sigma,x)
 ;print, 'N=',n_elements(vector)
 conv=fltarr(n_elements(x))
