@@ -233,6 +233,18 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
    nbins = n_elements(indici_bins)
 
 
+   list_bins_within_binNum_=binNum_(uniq(binNum_,sort(binNum_)))
+   if list_bins_within_binNum_[0] eq -1 then list_bins_within_binNum_=list_bins_within_binNum_[1:*]
+   ii=0
+   for i = 0,nbins-1 do begin
+      indici = where(binNum_ eq list_bins_within_binNum_[i])
+      if indici[0] ne -1 then begin
+         binNum_[indici] = ii
+         ii = ii+1
+      endif
+   endfor
+;stop
+
 endif else begin  ; VORONOI SPATIAL BINNING SCHEME
    user_map_failure:
   ; if keyword_set(weight_for_sn) then WVT = 1
