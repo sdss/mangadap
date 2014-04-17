@@ -25,6 +25,8 @@ pro mdap_spatial_radial_binning,signal_to_noise,x2d,y2d,reference_2dmap,xbin,ybi
       input_spectra,input_errors,wav,$
       spatial_binning_scheme,r_bin,r_bin_lo,r_bin_up,r2d_bin,r2d_bin_lo,r2d_bin_up,binned_spectra,binned_errors,$
       output_lrange=output_lrange,output_wav=output_wav,n_elements_bin=n_elements_bin,$
+      low_radial_bins_user_inputs=low_radial_bins_user_inputs,upper_radial_bins_user_inputs=upper_radial_bins_user_inputs,$
+      Reff_=Reff_,PSFsize_=PSFsize_,add_default_bins=add_default_bins,$
       version=version
 
 
@@ -66,10 +68,13 @@ pro mdap_spatial_radial_binning,signal_to_noise,x2d,y2d,reference_2dmap,xbin,ybi
 ; binned_spectra  TxM array T is the number of radial bins
 ; binned_errors  TxM array T is the number of radial bins
 ;
+; radial_bins_user_inputs=radial_bins_user_inputs,Reff=Reff,PSFsize=PSFsize, TO BE DESCRIBED...
+;
 ; OPTIONAL OUTPUTS
 ; output_wav
+;
+version_module = '0.7' ;16/04/2014
 
-version_module = '0.3' ;27/03/2014
 if n_elements(version) ne 0 then begin
  version = version_module
  goto, end_module
@@ -98,10 +103,6 @@ if sz[1] eq 1 then begin   ; only 1 input spectrum.... I do not bin.
    goto, end_module
 endif
 
-nbins = 6
-if sz[1] lt 50 then nbins =5
-if sz[1] lt 15 then nbins =3
-if sz[1] lt 10 then nbins =2 
 
 spatial_binning_scheme = reference_2dmap*0
 r2d_bin  = reference_2dmap*0/0.
@@ -129,12 +130,54 @@ a2d_uniq = a2d[uniq(a2d,sort(a2d))]
 ;--
 
 ;-- definition of radial bins
-junk = mdap_range(1,max(abin)*1.1,nbins+1,/log)
-junk[0] = 0
+IF n_elements(low_radial_bins_user_inputs) eq 0 or n_elements(upper_radial_bins_user_inputs) eq 0 or n_elements(low_radial_bins_user_inputs) ne n_elements(upper_radial_bins_user_inputs)  then begin
+   nbins = 6
+   if sz[1] lt 50 then nbins =5
+   if sz[1] lt 15 then nbins =3
+   if sz[1] lt 10 then nbins =2  
+   
+   junk = mdap_range(1,max(abin)*1.1,nbins+1,/log)
+   junk[0] = 0
+   r_bin_up=junk[1:*]
+   r_bin_lo=junk[0:nbins-1]
+endif else begin   ; USER INPUT
 
-r_bin_up=junk[1:*]
-r_bin_lo=junk[0:nbins-1]
+   if n_elements(Reff_) eq 0 then Reff = max(abin)/2. else Reff=Reff_ ; If Reff is not defined, I set it to be halph of the maximum semimajor axis of the outermost datapoint.
+   if n_elements(PSFsize_) eq 0 then PSFsize = 2. else PSFsize=PSFsize_ ; If PSFsize is not defined, I set it to 2"
+
+   junk_sz=size(radial_bins_user_inputs)
+   nbins = n_elements(low_radial_bins_user_inputs)
+   low_radial_bins_user_inputs_=fltarr(nbins)
+   upper_radial_bins_user_inputs_=fltarr(nbins)
+   for i = 0, nbins-1 do begin
+      d = execute("low_radial_bins_user_inputs_[i] = "+string(low_radial_bins_user_inputs[i]))
+      d = execute("upper_radial_bins_user_inputs_[i] = "+ string(upper_radial_bins_user_inputs[i]))
+   endfor
+  ; stop
+ 
+   r_bin_lo = low_radial_bins_user_inputs_
+   r_bin_up = upper_radial_bins_user_inputs_
+
+
+   if keyword_set(add_default_bins) then begin
+
+      added_nbins = 6
+      if sz[1] lt 50 then added_nbins =5
+      if sz[1] lt 15 then added_nbins =3
+      if sz[1] lt 10 then added_nbins =2  
+   
+      junk = mdap_range(1,max(abin)*1.1,added_nbins+1,/log)
+      junk[0] = 0
+      added_r_bin_up=junk[1:*]
+      added_r_bin_lo=junk[0:added_nbins-1]
+      r_bin_lo = [r_bin_lo,added_r_bin_lo]
+      r_bin_up = [r_bin_up,added_r_bin_up]
+      nbins = nbins+added_nbins
+   endif
+
+endelse
 r_bin=(r_bin_up+r_bin_lo)/2.
+
 ;--
 
 

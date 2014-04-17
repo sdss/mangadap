@@ -178,12 +178,12 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
    user_input_bins = user_bin_map(uniq(user_bin_map,sort(user_bin_map)))
    for i = 0, n_elements(user_input_bins)-1 do begin
       for j = 0, n_elements(binNum_) -1 do begin
-         inside_bin_ith = where(user_bin_map eq user_input_bins[i],complent=outise_bin_ith)
-         xB=x2d_user[inside_bin_ith]   ;X-coordinates of the points inside the i-th user bin
-         yB=y2d_user[inside_bin_ith]   ;Y-coordinates of the points inside the i-th user bin
+         inside_bin_ith = where(user_bin_map eq user_input_bins[i],complement=outise_bin_ith)
+         if inside_bin_ith[0] ne -1 then xB=x2d_user[inside_bin_ith]   ;X-coordinates of the points inside the i-th user bin
+         if inside_bin_ith[0] ne -1 then yB=y2d_user[inside_bin_ith]   ;Y-coordinates of the points inside the i-th user bin
          dist_B = sqrt( (x2d[ind_good[j]]-xB)^2 + (y2d[ind_good[j]]-yB)^2) ;distances from the j-th datapoint to the points inside the i-th user bin
-         xO=x2d_user[outise_bin_ith]   ;X-coordinates of the points outside the i-th user bin
-         yO=y2d_user[outise_bin_ith]   ;Y-coordinates of the points outside the i-th user bin
+         if outise_bin_ith[0] ne -1 then xO=x2d_user[outise_bin_ith]   ;X-coordinates of the points outside the i-th user bin
+         if outise_bin_ith[0] ne -1 then yO=y2d_user[outise_bin_ith]   ;Y-coordinates of the points outside the i-th user bin
          if outise_bin_ith[0] ne -1 then dist_O = sqrt( (x2d[ind_good[j]]-xO)^2 + (y2d[ind_good[j]]-yO)^2) else  dist_O = 10.^10.;distances from the j-th datapoint to the points outside the i-th user bin
          
          if min(dist_B) lt min(dist_O) then begin  ; the j-th datapoint is located inside the i-th user bin
@@ -194,7 +194,7 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
             if binNum_[J] eq -1 then  binNum_[J] = user_input_bins[I]
             ;kk=1
          endif
-         
+          ;user_input_bins[I] eq 0 then stop
       endfor
       ;if kk eq 1 then print, user_input_bins[I]
       ;if kk eq 0 then print, -10.*user_input_bins[I]
@@ -207,7 +207,7 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
    bin_sn = fltarr(n_valid_user_bins)-99
    xNode  = fltarr(n_valid_user_bins)
    yNode = fltarr(n_valid_user_bins)
-   
+   binNum__=binNum_ 
    for i = 0, n_valid_user_bins-1 do begin
        sel_bin = valid_user_bins[i]
        if sel_bin eq -1 then continue
@@ -223,6 +223,7 @@ if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
        yNode[i] = total(y2d[ind_good[indici]]*signal[ind_good[indici]])/total(signal[ind_good[indici]])
        ;xNode[i] = total(x2d[indici]*signal[indici])/total(signal[indici])
        ;yNode[i] = total(y2d[indici]*signal[indici])/total(signal[indici])
+       
    endfor
 
    xnode=xnode(where(bin_sn gt -99))
@@ -313,6 +314,7 @@ if sz[0] eq 2 then begin  ;RSS
  
    for k = 0, nbins-1 do begin
       ind = where(binNum_ eq k)
+      if ind[0] eq -1 then continue
       if keyword_set(weight_for_sn) then begin
          w = signal[ind_good[ind]]/noise[ind_good[ind]]^2
          tw = total(w)/n_elements(ind)

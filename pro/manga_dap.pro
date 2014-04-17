@@ -26,7 +26,7 @@ if keyword_set(check_version) then begin
    if check_previous_session eq 1 then restore,output_idlsession
 endif
 
-manga_dap_version = '0.7'    ; 16 Apr 2014 by L. Coccato
+manga_dap_version = '0.7'    ; 28 Mar 2014 by L. Coccato
 ;stop
 
 readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
@@ -41,6 +41,7 @@ velocity_dispersion_initial_guess = velocity_dispersion_initial_guess_vector[inp
 ell=ellipticity_vector[input_number]
 pa=position_angle_vector[input_number]
 number_of_fibres=fibre_number_vector[input_number]
+Reff=Reff_vector[input_number]
 output_dir=output_root_dir+'results_'+mode+'/'+root_name+'/'+root_name+'_'
 datacube_name=root_name+'.fits'  
 if mode eq 'datacubes' then begin
@@ -504,10 +505,13 @@ endfor
 
 ;-- radial binning 
 ;v0.2spatial_binning_scheme
+stop
 mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,spatial_binning_ems,xbin_ems,ybin_ems,ell,pa,$
       galaxy_minus_ems_fit_model_ems,input_errors,wavelength_output_rest_frame_log,$
       spatial_binning_rad,r_bin,r_bin_lo,r_bin_up,r2d_bin,r2d_bin_lo,r2d_bin_up,radially_binned_spectra,radially_binned_errors,$
-      output_lrange=trim_wav_range_radial_binning,output_wav=output_wav,n_elements_bin=nelements_within_bin_radial
+      output_lrange=trim_wav_range_radial_binning,output_wav=output_wav,n_elements_bin=nelements_within_bin_radial,$
+      low_radial_bins_user_inputs=low_radial_bins_user_inputs,upper_radial_bins_user_inputs=upper_radial_bins_user_inputs,$
+      Reff=Reff,PSFsize=PSFsize,add_default_bins=add_default_bins
 
 ;--
    printf,1,'[INFO] datacube '+root_name+' radial binning: ',mdap_stc(n_elements(r_bin),/integer),' bins'
@@ -530,7 +534,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
           extra_inputs=spectra_fittin_parameters_patial_binning_readial,fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix/3.,$
          ;extra_inputs=['MOMENTS=4','DEGREE=-1','mdegree=4','reddening=[0.01]','LAMBDA=exp(loglam_gal)'],$
          range_v_star=[-50.,50.],range_v_gas=[-50.,50.],mask_range=mask_range,external_library=external_library,/quiet ;,$
-   printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting'
+   printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting' 
  
  
   ;calculate the real S/N of binned spectra
