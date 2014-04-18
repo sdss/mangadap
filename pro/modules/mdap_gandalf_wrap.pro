@@ -678,8 +678,7 @@ for i = 0,n_elements(eml_lambda)-1 do begin
       gas_ew = [gas_ew,gas_ew_[indici[0]]*value]
       gas_ew_err = [gas_ew_err,gas_ew_err_[indici[0]]*value]
 
- 
-   endelse
+    endelse
    gas_velocities         = [gas_velocities, gas_velocities_[k]]    
    gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[k]]
    gas_dispersion         = [gas_dispersion,gas_dispersion_[k]]    
