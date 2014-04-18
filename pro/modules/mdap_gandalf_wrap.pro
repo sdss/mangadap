@@ -582,16 +582,17 @@ gas_velocities_err_=  esol_gas_V
 gas_dispersion_=  sol_gas_S
 gas_dispersion_err_=  esol_gas_S
 
-
+;stop
 
 ; NOW I COMPUTE THE FLUX WEIGHTED MEAN GAS VELOCITY AND VELOCITY DISPERSION
 
 where_gas_is_not_null = where(sol_gas_F gt 0 and esol_gas_F gt 0 and finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1)
+where_eVgas_is_not_null = where(esol_gas_V gt 0 and esol_gas_S gt 0 and sol_gas_A gt 0)
 
 fw_vel = total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
 fw_sig = total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
-fw_vel_err = mean(esol_gas_V[where_gas_is_not_null])
-fw_sig_err = mean(esol_gas_S[where_gas_is_not_null])
+fw_vel_err = mean(esol_gas_V[where_eVgas_is_not_null])
+fw_sig_err = mean(esol_gas_S[where_eVgas_is_not_null])
 
 if moments eq 6 then sol = [sol_star[0]-offset,sol_star[1:moments-1],chi2,fw_vel,fw_sig]
 if moments eq 6 then error = [ERROR_stars[0:moments-1],fw_vel_err,fw_sig_err]
@@ -677,13 +678,7 @@ for i = 0,n_elements(eml_lambda)-1 do begin
       gas_ew = [gas_ew,gas_ew_[indici[0]]*value]
       gas_ew_err = [gas_ew_err,gas_ew_err_[indici[0]]*value]
 
-      gas_velocities         = [gas_velocities, gas_velocities_[kk]]    
-      gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[kk]]
-      gas_dispersion         = [gas_dispersion,gas_dispersion_[kk]]    
-      gas_dispersion_err     = [gas_dispersion_err,gas_dispersion_err_[kk]]
-
-
-
+ 
    endelse
    gas_velocities         = [gas_velocities, gas_velocities_[k]]    
    gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[k]]
