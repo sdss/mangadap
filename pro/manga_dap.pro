@@ -557,8 +557,10 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    endif else begin
       fwhm_instr=wavelength_output_rbin*0.+2.54
    endelse
-   miles_resolution = fwhm_instr*0.+2.54
-   fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
+   ;miles_resolution = fwhm_instr*0.+2.54
+   ;fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
+   lick_resolution = fwhm_instr*0.+8.4
+   fwhm_diff_indices=sqrt(lick_resolution^2-fwhm_instr^2) ;fwhm in angstrom
    indici = where(finite(fwhm_diff_indices) NE 1)
    if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
 
@@ -679,11 +681,11 @@ stringa2="{"
  sxaddpar,h1,'EXTNAME','Binning_2_data'
  modfits,output_filefits,0,h1,exten_no=k
 
-; storing emission lines kinematics, fluxes, and equivalent widths
+; storing emission lines mean kinematics, fluxes, and equivalent widths
 k=k+1
 mdap_add_fits_layer,output_filefits,spatial_binning_ems,k,'EXTNAME','Binning_map_3'
 k=k+1
- stringa = ["X","Y","area_bin","StoN","Nelements","Vel","Vel_err","Disp","Disp_err","reddening_star","reddening_star_err","reddening_gas","reddening_gas_err","Chi2_DOF"]
+ stringa = ["X","Y","area_bin","StoN","Nelements","reddening_star","reddening_star_err","reddening_gas","reddening_gas_err","Chi2_DOF"]
  for i = 0, NLINES-1 do begin 
     stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens_err']
  endfor 
@@ -692,12 +694,6 @@ k=k+1
  endfor 
  for i = 0, NLINES-1 do begin 
     stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW_err']
- endfor 
- for i = 0, NLINES-1 do begin 
-    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel_err']
- endfor 
- for i = 0, NLINES-1 do begin 
-    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err']
  endfor 
 
  stringa2="{"
@@ -710,10 +706,10 @@ k=k+1
  p3.area_bin = AREA_BINS_EMS
  p3.StoN = bin_sn_ems_real
  p3.Nelements=nelements_within_bin_ems
- p3.Vel=EMISSION_LINE_KINEMATICS_EMS[*,0]
- p3.Vel_err=EMISSION_LINE_KINEMATICS_EMS_ERR[*,0]
- p3.Disp=EMISSION_LINE_KINEMATICS_EMS[*,1]
- p3.Disp_err=EMISSION_LINE_KINEMATICS_EMS_ERR[*,1]
+; p3.Vel=EMISSION_LINE_KINEMATICS_EMS[*,0]
+; p3.Vel_err=EMISSION_LINE_KINEMATICS_EMS_ERR[*,0]
+; p3.Disp=EMISSION_LINE_KINEMATICS_EMS[*,1]
+; p3.Disp_err=EMISSION_LINE_KINEMATICS_EMS_ERR[*,1]
  p3.reddening_star = reddening_ems[*,0]
  p3.reddening_star_err = reddening_ems_err[*,0]
  p3.reddening_gas = reddening_ems[*,1]
@@ -733,18 +729,54 @@ k=k+1
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW=EMISSION_LINE_EQUIVW_EMS[*,i]')
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_EW_err=EMISSION_LINE_EQUIVW_EMS_ERR[*,i]')
  endfor 
- for i = 0, NLINES-1 do begin 
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel=emission_line_kinematics_ems_individual[*,i,0]')
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_VEl_err=emission_line_kinematics_ems_individual_err[*,i,0]')
- endfor 
- for i = 0, NLINES-1 do begin 
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig=emission_line_kinematics_ems_individual[*,i,1]')
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err=emission_line_kinematics_ems_individual_err[*,i,1]')
- endfor 
+; for i = 0, NLINES-1 do begin 
+;    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel=emission_line_kinematics_ems_individual[*,i,0]')
+;    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_VEl_err=emission_line_kinematics_ems_individual_err[*,i,0]')
+; endfor 
+; for i = 0, NLINES-1 do begin 
+;    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig=emission_line_kinematics_ems_individual[*,i,1]')
+;    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err=emission_line_kinematics_ems_individual_err[*,i,1]')
+; endfor 
  mwrfits,p3,output_filefits,/silent
  h1=HEADFITS(output_filefits,EXTEN = k)                                         
- sxaddpar,h1,'EXTNAME','Binning_3_data'
+ sxaddpar,h1,'EXTNAME','Binning_3_lines'
  modfits,output_filefits,0,h1,exten_no=k
+
+; storing  gas kinematics
+k=k+1
+ stringa = ["X","Y","mean_VEL","err_mean_VEL","mean_DISP","err_mean_DISP"]
+ for i = 0, NLINES-1 do begin 
+    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel_err']
+ endfor 
+ for i = 0, NLINES-1 do begin 
+    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err']
+ endfor 
+
+ stringa2="{"
+ for i = 0, n_elements(stringa)-2 do  stringa2 = stringa2+stringa[i]+':0.,'
+ stringa2 = stringa2+stringa[i]+':0.}'
+ d = execute('str='+stringa2)
+ p3k=replicate(str,n_elements(xbin_ems))
+ p3k.x=xbin_ems
+ p3k.y=ybin_ems
+ p3k.mean_VEL=EMISSION_LINE_KINEMATICS_EMS[*,0]
+ p3k.err_mean_VEL=EMISSION_LINE_KINEMATICS_EMS_ERR[*,0]
+ p3k.mean_DISP=EMISSION_LINE_KINEMATICS_EMS[*,1]
+ p3k.err_mean_DISP=EMISSION_LINE_KINEMATICS_EMS_ERR[*,1]
+
+ for i = 0, NLINES-1 do begin 
+    d=execute('p3k.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Vel=emission_line_kinematics_ems_individual[*,i,0]')
+    d=execute('p3k.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_VEl_err=emission_line_kinematics_ems_individual_err[*,i,0]')
+ endfor 
+ for i = 0, NLINES-1 do begin 
+    d=execute('p3k.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig=emission_line_kinematics_ems_individual[*,i,1]')
+    d=execute('p3k.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_Sig_err=emission_line_kinematics_ems_individual_err[*,i,1]')
+ endfor 
+ mwrfits,p3k,output_filefits,/silent
+ h1=HEADFITS(output_filefits,EXTEN = k)                                         
+ sxaddpar,h1,'EXTNAME','Binning_3_kinematics'
+ modfits,output_filefits,0,h1,exten_no=k
+
 
 ;storing  radial binning
 k=k+1
