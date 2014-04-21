@@ -8,7 +8,8 @@ pro mdap_recovery_2d,input,binning,field,map2d,voronoi_binning=voronoi_binning,l
 ;           kinematics is available only on the str binning scheme)
 ;                1 = tpl binning scheme
 ;                2 = str binning scheme
-;                3 = ems binning scheme
+;                3 = ems binning scheme (intensities, fluxes, and EW)
+;                3.5 = ems binning scheme (emission lines kinematics)
 ;                4 = radial binning scheme
 ;
 ; field     the quantity we want to map. e.g. VEL, VEL_ERR, CA4227.
@@ -53,10 +54,15 @@ if binning eq 3 then begin
    data1=mrdfits(input,7)
   ; d=execute('quantity = data1.'+field)
 endif
+if binning eq 3.5 then begin
+   binning_map1 = readfits(input,exten_no=6)
+   data1=mrdfits(input,8)
+  ; d=execute('quantity = data1.'+field)
+endif
 
 if binning eq 4 then begin
-   binning_map1 = readfits(input,exten_no=8)
-   data1=mrdfits(input,9)
+   binning_map1 = readfits(input,exten_no=9)
+   data1=mrdfits(input,10)
 ;   d=execute('quantity = data1.'+field)
 endif
    
