@@ -30,6 +30,7 @@ doc/mdap_calculate_spectrum_sn.tex -text
 doc/mdap_calibrate_sn.tex -text
 doc/mdap_convol_sigma.tex -text
 doc/mdap_create_starting_guesses.tex -text
+doc/mdap_do_k_rprofiles.tex -text
 doc/mdap_do_kinemetry.tex -text
 doc/mdap_do_log_rebin.tex -text
 doc/mdap_do_measure_indices.tex -text
@@ -45,6 +46,7 @@ doc/mdap_ppxf.tex -text
 doc/mdap_read_datacube.tex -text
 doc/mdap_sgandalf.tex -text
 doc/mdap_spatial_binning.tex -text
+doc/mdap_spatial_radial_binning.tex -text
 doc/mdap_spectral_fitting.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
 external/F90_32/README_from_Remco -text
