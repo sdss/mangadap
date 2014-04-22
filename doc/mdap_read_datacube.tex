@@ -3,9 +3,22 @@
 
 This interface module reads the input datacube or RSS files (which
 must be multi-layer fits file) and extract from it all the arrays and
-quantities, which are needed for the analysis. Table
-\ref{dap_tab:mdap_read_datacube} list the inputs and outputs required
-for this module.
+quantities, which are needed for the analysis. It also computes the
+center if the galaxy and set the reference coordinate system to the
+galaxy center. The galaxy center is computed via centroid fitting on
+the signal2d\_reconstructed image via the gcntrd.pro IDL routine.
+
+
+The mdap\_read\_datacube.pro interface interpretes a shift larger than
+$3''$ of the $X,Y$ coordinates of the galaxy center with respect the
+center of the field of view as bad fitting, caused by the presence of
+a foreground star or a non proper image reconstruction. Therefore, in
+this case, the coordinates of the galaxy center are set to be the same
+of the center of the field of view.
+
+
+Table \ref{dap_tab:mdap_read_datacube} list the inputs and
+outputs required for this module.
 
 
 
@@ -83,11 +96,11 @@ wavelength     & [T elements array]. Wavalenght value (in angstrom)  where data 
                the minimum available step is used (e.g. log\_lam[1]-log\_lam[0], converted into angstrom).  In the case of MANGA data, 
                we recommend to set the /keep\_original\_ step keyword, to have the wavelength output vector equal to the wavelength vector of the data.\\
 %
-x2d            & Array containing the x coordinates in arcseconds (0 is the center of the field of view). 
+x2d            & Array containing the x coordinates in arcseconds (0 is the center of the galaxy, determined via a centroid fitting). 
                [NxM elements array] in the case that the inputs are in datacube format, or 
                [N elements array] in the case the inputs are in RSS format. \\
 %
-y2d            & Array containing the y coordinates in arcseconds (0 is the center of the field of view). 
+y2d            & Array containing the y coordinates in arcseconds (0 is the center of the galaxy, determined via a centroid fitting). 
                [NxM elements array] in the case that the inputs are in datacube format, or 
                [N elements array] in the case the inputs are in RSS format. \\
 %

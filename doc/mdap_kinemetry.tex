@@ -2,8 +2,7 @@
 \label{dap_sec:mdap_kinemetry}
 
 This main module implements the kinemetry.pro module by Kajinovic et
-al. 2008) to measure the rotation curve (stars and gas), kinematic
-center, position angle, and axial ratio and amplitude of
+al. 2008) to measure the rotation curve (stars and gas), position angle, and axial ratio and amplitude of
 inflows/outflows.
 
 Table \ref{dap_tab:mdap_kinemetry} lists the inputs and outputs of
@@ -102,7 +101,7 @@ X0  & an estimate of the X coordinate of the center (in pixels). If not given X0
 
 Y0  & an estimate of the Y coordinate of the center (in pixels). If not given Y0=0.\\
 %
-FIXCEN * keyword, if set center will be fixed and no attempt will be made during the
+FIXCEN & keyword, if set center will be fixed and no attempt will be made during the
             harmonic decomposition to find new center. Center is fixed to X0 and Y0. 
             This keyword is optional only for photometry (or even moments in general). 
             For ODD moments, center is fixed always. \\

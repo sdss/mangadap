@@ -77,6 +77,7 @@ High level data products are:
      \item Reddening.
      \item Radial gradients of measured quantities.
      \item Rotation curves and kinemetric parameters.
+     \item Radial profiles of $\lambda$, $V/\sigma$, and $\sigma$.
      \item Stellar weights from full spectral fitting.
 \end{itemize}
 
@@ -91,7 +92,7 @@ Model dependent data products are:
     \item Mass to light ratio (from stellar population).
     \item Mass to light ratio, dynamical mass (from dynamical
       modeling).
-    \item Angular momentum.
+    %\item Angular momentum.
    % \item Characterization of asymmetries, see Section \ref{sec:dynamical_state}.
    % \item Measurements of the Toomre Q-parameter, see Section  \ref{sec:growth_bulges}.
 \end{itemize}%
@@ -151,7 +152,7 @@ Warning: the version control is enabled only if the keyword
 \begin{center}
 %\hspace{-2cm}
 %\includegraphics[width=6cm,angle=90]{dap_workflow_1.ps}  25 150 810 445
-\psfig{file=figures/mangaDAP_workflow_1.ps, width=9cm, clip=, bb= 140 20 450 800}
+\psfig{file=figures/mangaDAP_workflow_1.ps, width=9.5cm, clip=, bb= 140 10 480 800}
 %\vspace*{0cm}
 \caption{Workflow chart of the Data Analysis Pipeline (High Level Data products).}
  \label{dap_fig:dap_workflow_1}
@@ -182,6 +183,19 @@ such as the galaxy spectra and errors, wavelength vector, 2D maps
 containing the coordinates, and galaxy signal and noise. The interface
 module in this block is: mdap\_read\_datacube.pro (see Section
 \ref{dap_sec:mdap_read_datacube} for a list of inputs and outputs).
+
+
+The origin of the reference coordiante system of the input datacube
+(or RSS files) is set to be the center of the field of view. The
+mdap\_read\_datacube.pro interface computes the center if the galaxy
+and set the reference coordinate system to the galaxy center. The
+galaxy center is computed via centroid fitting on the
+signal2d\_reconstructed image via the gcntrd.pro IDL routine.
+
+If the change of coordinates is larger than 3'' in $X$ or $Y$, the
+galaxy center is automatically set to be the same of the field of
+view. This is to avoid failures in the centroid fitting caused by the
+presence of foregroud stars in the field of view.
 
 The main modules in the block, called by the interface, are
 mdap\_calculate\_spectrum\_sn.pro (see Section
@@ -508,7 +522,7 @@ flowchart of block 4.
 %\end{figure}
 
 
-\section{DAP Block 5: Measurement of absorption line indices T.B.D.}
+\section{DAP Block 5: Measurement of absorption line indices}
 \label{dap_sec:block5}
 
 This block is responsible for measuring the equivalent width of
@@ -560,7 +574,8 @@ module {\tt mdap\_do\_measure\_indices.pro} (Section
 \label{dap_sec:block6}
 
 This block measures the radial properties of the absorption line
-indices (part 1) and the kinematics i.e. rotation curves (part 2).
+indices (part 1) and the kinematics i.e. rotation curves (parts 2 and
+3).
 
 The first part uses the restframed galaxy spectra (and errors) with
 removed emission lines produced in block 4 from the third spatial
@@ -586,7 +601,18 @@ inflows/outflows. The interface that handles the second part is {\tt
   mdap\_do\_kinemetry.pro} (Section \ref{dap_sec:mdap_do_kinemetry}),
 which implements kinemetry.pro by Kraijnovic et al. 2008.
 
+The third part uses the stellar two-dimensional kinematics to compute
+the radial profile of the specific angular momentum ($\lambda(R)$),
+the $V/\sigma(R)$, and $\sigma(R)$ (see Section
+\ref{dap_sec:mdap_do_k_rprofiles}).
+
+
+\include{mdap_spatial_radial_binning}
+
 \include{mdap_do_kinemetry}
+
+\include{mdap_do_k_rprofiles}
+
 
 \section{DAP Block 7: Stellar population analysis}
 \label{dap_sec:block7}
@@ -620,9 +646,11 @@ In this Chapter we describe the main modules of the DAP.
 
 \include{mdap_dust_calzetti}
 
-\include{mdap_do_measure_index}
+\include{mdap_do_measure_indices}
 
 \include{mdap_kinemetry}
+
+%\include{mdap_do_k_rprofiles}
 
 \chapter{Utility modules}
 

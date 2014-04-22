@@ -63,12 +63,14 @@ BLOCK         & Interface modules               & Main  modules    & Utility mod
 {\bf Block 6} & mdap\_spatial\_radial\_binning  & mdap\_calculate\_spectrum\_sn      &  mdap\_convol\_sigma   \\
               & mdap\_spectral\_fitting       &   mdap\_do\_measure\_index           & mdap\_get\_losvd     \\ 
               & mdap\_measure\_indices          &   mdap\_dust\_calzetti             & mdap\_range.pro  \\
-              &                                 &   {\tt mpfit package}              &  mdap\_stc.pro \\
+              & mdap\_do\_kinemetry.pro         &   {\tt mpfit package}              &  mdap\_stc.pro \\
               &                                 &   mdap\_sgandalf                   & mdap\_sgn.pro  \\
               &                                 &   mdap\_gandalf\_wrapf             &  mdap\_interpolate\_2dmaps \\
               &                                 &   mdap\_gandalf                    & mdap\_read\_indices\_definitions\\
               &                                 &   mdap\_ppxf                       & mdap\_ppxf\_convol\_fft\\
               &                                 &   mdap\_bvls(\_external)           &  \\
+              &                                 &   mdap\_kinemetry.tex              &\\
+              &                                 &   mdap\_do\_k\_rprofiles.pro       & \\
 \hline
               &                                 &  &  \\  
 {\bf Block 7} &                                 &                                &  \\
@@ -210,11 +212,13 @@ file is described in Table \ref{dap_tab:output}.
 4 & binning map 2       & Location and geometry of the spatial bins of the second binning scheme.\\ 
 5 & binning 2 data      & Measurements performed on the second binning scheme (stellar kinematics). \\ 
 6 & binning map 3       & Location and geometry of the spatial bins of the third binning scheme.\\ 
-7 & binning 3 data      & Measurements performed on the third binning scheme (gas kinematics and emission line properties).\\ 
-8 & binning map radial  & Location and geometry of the radial binning scheme.\\ 
-9 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion).  \\ 
-10 & Stars rotation & Kinemetric measurements on the stellar kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
-11 & Gas rotation   & Kinemetric measurements on the gas kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
+7 & binning 3 lines      & Measurements performed on the third binning scheme: emission line properties (reddening, intensity, flux, and equivalent width).\\ 
+8 & binning 3 kinematics      & Measurements performed on the third binning scheme: mean kinematics, and kinematics of individual emission lines.\\ 
+9 & binning map radial  & Location and geometry of the radial binning scheme.\\ 
+10 & binning radial data & Measurements performed on the radial binning scheme (absorption line indices and stellar velocity dispersion).  \\ 
+11 & Stars rotation & Kinemetric measurements on the stellar kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
+12 & Gas rotation   & Kinemetric measurements on the gas kinematics (kinematic position angle, rotation curve, inflows/outflows).  \\ 
+13 & profiles       & Stellar radial profiles of $\lambda(R)$, $V/\sigma(R)$, and $\sigma(R)$.\\
 \hline
 \end{longtable}
 \end{center}
@@ -227,8 +231,8 @@ the following:
 
 \begin{itemize}
 
-\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
-\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the galaxy has coordinates (0,0).
+\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the galaxy has coordinates (0,0).
 \item Column 3. AREA\_BIN. Area in arcsec$^2$ of the spatial bin.
 \item Column 4. STON. Estimate of the S/N of the spectrum in the
   spatial bin. The signal is defined as the median of the best fit
@@ -268,7 +272,7 @@ the following:
 \end{itemize}
 
 \subsubsection{Extension 7: outputs related to the third binning
-  scheme} 
+  scheme. Emission line properties} 
 
 
 The quantities measured and stored using the third binning scheme are
@@ -276,27 +280,43 @@ the following:
 
 \begin{itemize}
 
-\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
-\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the field of view has coordinates (0,0).
+\item Column 1. X. The X coordinates (in arcsec) of the centers of the spatial bins. The center of the galaxy has coordinates (0,0).
+\item Column 2. Y. The Y coordinates (in arcsec) of the centers of the spatial bins. The center of the galaxy has coordinates (0,0).
 \item Column 3. AREA\_BIN. Area in arcsec$^2$ of the spatial bin.
 \item Column 4. STON. Estimate of the S/N of the spectrum in the
   spatial bin. The signal is defined as the median of the best fit
   model, the noise as the robust\_sigma of the residuals (observed
   spectrum - best fit).
 \item Column 5. NELEMENTS. Number of spectra coadded in the spatial bin.
-\item Columns 6-7. VEL and VEL\_ERR. Flux-weighted mean velocity of the emission lines and its error in km/sec.
-\item Columns 8-9. DISP and DISP\_ERR. Flux-weighted mean velocity dispersion of the emission lines and its error in km/sec.
-\item Columns 10-11. E(B-V) color excess for the stellar component and its error
-\item Columns 12-13. E(B-V) color excess for the ionized gas stellar component and its error
-\item Column 14.  CHI2. Chi-squared from the fit.
-\item Columns 15-end. Intensities, Intensities errors, Flux, flux error, Equivalent widths, and
+%\item Columns 6-7. VEL and VEL\_ERR. Flux-weighted mean velocity of the emission lines and its error in km/sec.
+%\item Columns 8-9. DISP and DISP\_ERR. Flux-weighted mean velocity dispersion of the emission lines and its error in km/sec.
+\item Columns 6-7. E(B-V) color excess for the stellar component and its error
+\item Columns 8-9. E(B-V) color excess for the ionized gas stellar component and its error
+\item Column 10.  CHI2. Chi-squared from the fit.
+\item Columns 11-end. Intensities, Intensities errors, Flux, flux error, Equivalent widths, and
   equivalent width errors of the emission lines.  The measured
   emission lines (and their names) are defined in a user-provided
   file. The name of this file is specified in the configuration file
   (see Section \ref{dap_sec:configuration}). Warning: intensities and fluxes are per arcsec$^2$, i.e. the numbers measured in the spectrum are divided by the area of the spatial bin (column 3).
 \end{itemize}
 
-\subsubsection{Extension 9: outputs related to the radial binning
+\subsubsection{Extension 8: outputs related to the third binning
+  scheme. Kinematics} 
+
+The quantities measured and stored using the third binning scheme are
+the following:
+
+\begin{itemize}
+\item Column 1. X. As in extension 7.
+\item Column 2. Y. As in extension 7.
+\item Columns 3-4. MEAN\_VEL and ERR\_MEAN\_VEL. Flux-weighted mean velocity of the emission lines and its error in km/sec.
+\item Columns 5-6. MEAN\_DISP and ERR\_MEAN\_DISP. Flux-weighted mean velocity dispersion of the emission lines and its error in km/sec.
+\item Columns 7-end. Velocities, velocity errors, velocity dispersions and velocity dispersino errorrs measured for the individual emission lines.
+\end{itemize}
+
+
+
+\subsubsection{Extension 10: outputs related to the radial binning
   scheme} 
 
 
@@ -321,7 +341,7 @@ the following:
   configuration file (see Section \ref{dap_sec:configuration}).
 \end{itemize}
 
-\subsubsection{Extension 10 (11): outputs related to the kinemetric analysis of stellar (gas) kinematics}
+\subsubsection{Extension 11 (12): outputs related to the kinemetric analysis of stellar (gas) kinematics}
 The quantities measured and stored in extension 10 (11) are:
 \begin{itemize}
 \item Column 1. Elliptical semimajor axis (computed fixing the systemic velocity and the kinematic center, position angle, and axial ratio).
@@ -335,8 +355,8 @@ The quantities measured and stored in extension 10 (11) are:
 \item Column 9. Error on the rotation velocity measured at each semimajor axis.
 \item Column 10. Expansion velocity measured at each semimajor axis.
 \item Column 11. Error on the expansion velocity measured at each semimajor axis.
-\item Column 12. X coordiante of the assumed center of rotation (0,0 is the center of the field of view).
-\item Column 13. Y coordiante of the assumed center of rotation (0,0 is the center of the field of view).
+%\item Column 12. X coordiante of the assumed center of rotation (0,0 is the center of the field of view).
+%\item Column 13. Y coordiante of the assumed center of rotation (0,0 is the center of the field of view).
 
 \end{itemize}
 

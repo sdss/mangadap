@@ -12,15 +12,15 @@ The following steps are executed:
 
  \begin{itemize}
 
-  \item The galaxy image is used to determine the galaxy center. If
-    the center is outside a $3''\times 3''$ box aroud the center of
-    the field of view, the galaxy center is automatically set to
-    (0,0), i.e. the center of the field of view. The galaxy kinematic
-    center is set to be the galaxy photometric center in the
-    kinemetry.pro runs.
+%  \item The galaxy image is used to determine the galaxy center. If
+%    the center is outside a $3''\times 3''$ box aroud the center of
+%    the field of view, the galaxy center is automatically set to
+%    (0,0), i.e. the center of the field of view. The galaxy kinematic
+%    center is set to be the galaxy photometric center in the
+%    kinemetry.pro runs.
 
 
- \item A first kinemetry run is executed, to get the The galaxy
+ \item A first kinemetry run is executed, to get the the galaxy
    systemic velocity is kept constant at all radii (a first
    kinemetry.pro run is executed to measure the systemic velocities
    Vs$_i$at each i-th radius. The galaxy systemic velocity (Vsyst) and
@@ -70,7 +70,7 @@ image & NxM array. Galaxy image. It is used to determine the location
 x2d & NxM array. X coordinates corresponding to image (0,0 is the
      center of the field of view.\\
 % 
-y2d NxM array. Y coordinates corresponding to image (0,0 is the
+y2d & NxM array. Y coordinates corresponding to image (0,0 is the
      center of the field of view.\\
 %
 x & T elements array. X coordinates at which the velocites are measured. \\
@@ -106,9 +106,9 @@ Vexp & W elements array. Outflow/Inflow velocity measured at Rad\_kin. \\
 %
 Vexp\_err & W elements array. Errors on Vexp. \\ 
 %
-gal\_center\_x & Float. X coordinate of the galaxy center (0,0 is the center of the field of view). \\  
+%gal\_center\_x & Float. X coordinate of the galaxy center (0,0 is the center of the field of view). \\  
 %
-gal\_center\_y & Float. Y coordinate of the galaxy center (0,0 is the center of the field of view).\\ 
+%gal\_center\_y & Float. Y coordinate of the galaxy center (0,0 is the center of the field of view).\\ 
 \hline
 {\bf OPTIONAL OUTPUTS}  & \\
 \hline

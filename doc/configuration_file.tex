@@ -213,6 +213,17 @@ DAP. No empty lines should be present, commented lines are marked with
  \item user\_bin\_map\_spatial\_binnin\_3. Same as before, but for the
    third spatial binning scheme.
 
+\item low\_radial\_bins\_user\_inputs. String array. Values of the
+  lower boundaries of the radial binning scheme. Default: 6
+  logarithmic binnings are created.
+
+ \item upper\_radial\_bins\_user\_inputs. Values of the
+  upper boundaries of the radial binning scheme. Default: 6
+  logarithmic binnings are created.
+
+ \item add\_default\_bins. If set, it adds the default 6 logarithmic
+  radial binnings in addition to those defined by the user.
+
  \item emission\_line\_file\_spatial\_binnin\_1. String specifying the
    name of the file which defines the emission lines to be fitted in
    the first spatial binning and the fit set-up parameters (see
