@@ -394,7 +394,7 @@ status = 1
        FOR_ERRORS=1,$    ; ERROR COMPUTATION MUST BE TRIGGERED!!!
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
        range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,$
-       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,INT_DISP=INT_DISP,status = status,oversampling=oversampling
+       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,INT_DISP=INT_DISP,status = status,OVERSAMPLE=oversample
    
    if status eq 0 then begin  ; if the fit failed, I set dummy outputs to not to stop the workflow.
      sol = fltarr(9)/0.
