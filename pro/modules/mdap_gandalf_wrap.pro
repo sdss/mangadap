@@ -145,7 +145,7 @@ PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velsc
        fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
        range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,$
        mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,$
-       INT_DISP=INT_DISP,status = status
+       INT_DISP=INT_DISP,status = status,oversampling=oversampling
 
 ; Example of an IDL wrapper calling PPXF and GANDALF in order to
 ; derive the stellar and gaseous kinematics in the case of MANGA
@@ -395,7 +395,7 @@ indici_neg = where(galaxy le 0)
 if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
 if ~keyword_set(fix_star_kin) then begin
 ;stop
-d = execute('mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol, goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=bestfit_ppxf, weights=weights_ppxf,external_library=external_library')
+d = execute('mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol, goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=bestfit_ppxf, weights=weights_ppxf,external_library=external_library,oversampling=oversampling')
     if d eq 0 then begin
        status = 0
        return
