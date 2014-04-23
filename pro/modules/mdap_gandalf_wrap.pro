@@ -22,8 +22,8 @@ for i = 0, n_elements(indici_to_remove_from_good_pixels)-1 do begin
   if rm[0] ne -1 then remove,rm,goodpixels
 endfor
 
-
-
+kk = goodpixels[uniq(goodpixels,sort(goodpixels))]
+goodpixels=kk
 end
 
 

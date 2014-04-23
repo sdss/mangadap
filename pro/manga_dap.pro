@@ -278,6 +278,7 @@ printf,1,'[INFO] datacube '+root_name+'log_rebin 3'
 ;
 ;save,filename='block3.idl',/variables
 ;
+if n_elements(velscale) eq 0 then velscale = log_wav_tpl[1]-log_wav_tpl[0]
 
 library_log_tpl = library_log_tpl/10.^25.
 library_log_str = library_log_str/10.^25.
