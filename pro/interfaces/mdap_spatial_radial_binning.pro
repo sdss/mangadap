@@ -159,9 +159,9 @@ endif else begin   ; USER INPUT
    r_bin_up = upper_radial_bins_user_inputs_
 
 
-   if keyword_set(add_default_bins) then begin
+   if n_elements(add_default_bins) ne 0 then begin
 
-      added_nbins = 6
+      added_nbins = add_default_bins
       if sz[1] lt 50 then added_nbins =5
       if sz[1] lt 15 then added_nbins =3
       if sz[1] lt 10 then added_nbins =2  
