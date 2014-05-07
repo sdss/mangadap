@@ -79,7 +79,7 @@ EMISSION\_SETUP. & A structure containing the index, the name, and
 L0\_GAL & Float. the ln-lambda value corresponding to the starting pixel in
        the galaxy spectrum.\\
 %   
-L0\_STEP. Float. the ln-lambda step of corresponding to the pixels
+L0\_STEP.& Float. the ln-lambda step of corresponding to the pixels
        sampling the galaxy spectrum. 
    
       Warning:  Wavelengths are assumed to be in Angstrom. \\
@@ -129,9 +129,9 @@ L0\_TEMPL & the ln-lambda value corresponding to the starting pixel
 FOR\_ERRORS & A keyword specifying whether we wish errors to be
        properly estimated. Warning: in the DAP this keyword is always activated.\\
 %
-   /QUIET: set this keyword to mute the output.\\
+   /QUIET:& set this keyword to mute the output.\\
 %
-  /PLOT: set this keyword to plot the best fitting solution at the end
+  /PLOT:& set this keyword to plot the best fitting solution at the end
   of the fit. Warning: do not USE it in the DAP.\\
 %
 \hline
@@ -149,7 +149,7 @@ BESTFIT & a named variable to receive a vector containing sum of
        of the stellar templates by the best fitting multiplicative
        polynomials, and of additive polynomials, if specified.\\
 %   
-EMISSION\_TEMPLATES: a named variable to receive an
+EMISSION\_ TEMPLATES:& a named variable to receive an
        [nPixels\_Galaxy, Nlines] array containing the best fitting emission-lines
        templates. The emission spectrum can be obtained from this
        array by simply doing total(emission\_templates,2).\\

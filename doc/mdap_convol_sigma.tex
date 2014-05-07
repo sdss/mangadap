@@ -1,4 +1,45 @@
 \section{{\tt mdap\_convol\_sigma.pro}}
 \label{dap_sec:mdap_convol_sigma}
-T.B.D.
 
+This function convolves an input vector (e.g. stellar spectrum),
+defined over a vector $x$ (e.g. wavelength) with a Gaussian kernel
+with standard deviation that depends on $x$.
+
+Tables \ref{dap_tab:mdap_convol_sigma} lists the Inputs and outputs
+parameters of {\tt mdap\_convol\_sigma.pro}.
+
+\begin{center}
+\begin{longtable}{p{2.7cm}| p{11.1cm}}
+\caption{Inputs and outputs parameters of
+  mdap\_convol\_sigma.pro} \label{dap_tab:mdap_convol_sigma}
+\\ \hline \endfirsthead
+
+\hline
+\endhead
+
+\hline
+\endlastfoot
+
+%\begin{tabular}{p{2.7cm}| p{2.5cm} |p{9cm}}
+\hline {\bf INPUTS} & \\ \hline 
+
+ x       &  [1D array]  Values for which "vector" is defined 
+                       Units: pixels (or angstrom, but with constant
+                       ang/step sampling).\\
+%
+ vector  &  [1D array]  vector to be convolved. Same elements of "x".\\
+% 
+ x_sigma &  [1D array]  Values for which "sigma" is defined/\\
+%
+ sigma   &  [1D array]  Values of the dispersion of the convolving
+                       Gaussian function. Same elements of "x_sigma"
+                       Units: same as X.\\
+%
+
+\hline
+{\bf  RETURN VALUE}  & \\
+ RETURN VALUE&  Convolved vector, same elements of "vector"\\
+\hline
+\hline
+\end{longtable}
+\end{center}

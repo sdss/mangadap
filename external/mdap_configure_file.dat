@@ -10,7 +10,7 @@
 #    Col 7. [float]  Galaxy effective radius
 #    Col 8. [string] Dataformat. Valid entries are: datacubes or rss
 #
-total_filelist = './total_filelist.dat' 
+total_filelist = './partial_filelist.dat' 
 #----------------------
 #
 # ----------------------------------
@@ -119,29 +119,38 @@ sn_calibration_datacubes = [1.1,0.743865,1.10317,-0.0106751,4.00892*10.^(-5)]
 weight_for_sn=1
 #weight_for_sn=0
 #
-# -- User supplied binning schemes for the 3 spatial binning.
+# -- User supplied binning schemes for the 3 spatial two-dimensional binning.
 # Names of fits files specifying the binnin schemes must be provided as string. Fits files must have
 # the header keywords CRVAL1, CRVAL2, CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and CRIX2: 
 # Coordinate 0,0 should indicate the center of the field of view
 # If these variable are undefined (or the specified fits file is not found, the S/N criteria defined above will be used
 # If these variable are defined, the S/N criteria defined above will be ignored
 #
-# user_bin_map_spatial_binning_1 = 'none'
+# user_bin_map_spatial_binning_1 = root_name + '_bin1.fits'
 # user_bin_map_spatial_binning_2 = 'none'
 # user_bin_map_spatial_binning_3 = 'none'
-
 #
+# -- User supplied binning schemes for the RADIAL BINNING
+# If undefined, up to 6 radial bins will be automatically defined.
+# String expressions containing 'abin', 'PSFsize', and 'Reff' are allowed as the example below
+# abin is the semimajor axis, hardwired variable, computed in mdap_spatial_radial_binning.pro. 
+# PSFsize is the size of the PSF (in arcsec). It needs to be provided in the input catalogue (default: 2" if undefined).
+# Reff is the effective radius (in arcsec). It needs to be provided in the input catalogue (default: max(abin)/2 if undefined).
+low_radial_bins_user_inputs   = ['0.'     , '0.'  ,'Reff'    ,'0.'      ,'Reff'   ,'0.'     ,'1.5*Reff','2.0*Reff']
+upper_radial_bins_user_inputs = ['PSFsize', 'Reff','1.5*Reff','1.5*Reff','2.*Reff','2.*Reff','2.0*Reff','max(abin)']
+#
+# If user bins are specified, you can still append a desired number of bins, log-spaced by setting add_default_bins to an integer value
+add_default_bins=15
 #
 #--------------------------------------------------------------------------------------------
 #
-# Definition of emission lines and their fitting set-up, for the spatial binning schemes
+# Definition of emission lines and their fitting set-up, for the spatial binning schemes 
 # Only those specified in emission_line_file_spatial_binnin_3 will be stored.
 # 
-#emission_line_file_spatial_binnin_3='./mangadap/external/emission_lines_setup_with_Balmer_decrement'
-emission_line_file_spatial_binnin_1='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
-emission_line_file_spatial_binnin_2='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
-emission_line_file_spatial_binnin_3='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
-emission_line_file_radial_binning='./mangadap/external/emission_lines_setup_with_Balmer_decrement_residuals'
+emission_line_file_binning_1='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
+emission_line_file_binning_2='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
+emission_line_file_binning_3='./mangadap/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
+emission_line_file_rad_binning='./mangadap/external/emission_lines_setup_with_Balmer_decrement_residuals'
 #
 #--------------------------------------------------------------------------------------------
 #
@@ -202,10 +211,9 @@ remove_null_templates = 1
  external_library='./mangadap/external/F90_32/'
 # external_library='./mangadap/external/F90_64/'
 # --------------------------------------------------------------------------------------------
- spectra_fittin_parameters_patial_binning_1=['MOMENTS=4','DEGREE=-1','MDEGREE=6']
- spectra_fittin_parameters_patial_binning_2_two_moments=['MOMENTS=2','DEGREE=3','MDEGREE=6']
- spectra_fittin_parameters_patial_binning_2=['MOMENTS=4','DEGREE=3','MDEGREE=6']
- spectra_fittin_parameters_patial_binning_3=['MOMENTS=4','DEGREE=3','MDEGREE=6']
-# spectra_fittin_parameters_patial_binning_readial=['MOMENTS=2','DEGREE=-1','mdegree=6',reddening=[0.01],'LAMBDA=exp(loglam_gal)']
- spectra_fittin_parameters_patial_binning_readial=['MOMENTS=2','DEGREE=-1','mdegree=6']
+ spectral_fit_par_bin1=['MOMENTS=4','DEGREE=-1','MDEGREE=6']
+ spectral_fit_par_bin2_2mns=['MOMENTS=2','DEGREE=3','MDEGREE=6']
+ spectral_fit_par_bin2=['MOMENTS=4','DEGREE=3','MDEGREE=6']
+ spectral_fit_par_bin3=['MOMENTS=4','DEGREE=3','MDEGREE=6']
+ spectral_fit_par_rbin=['MOMENTS=2','DEGREE=-1','mdegree=6','reddening=[0.01]','LAMBDA=exp(loglam_gal)']
  instrumental_fwhm_file='./mangadap/external/instrumental_fwhm.dat'

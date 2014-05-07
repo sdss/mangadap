@@ -21,9 +21,9 @@ for i = 0, n_elements(indici_to_remove_from_good_pixels)-1 do begin
    rm = where(indici_to_remove_from_good_pixels[i] eq goodpixels)
   if rm[0] ne -1 then remove,rm,goodpixels
 endfor
-
 kk = goodpixels[uniq(goodpixels,sort(goodpixels))]
 goodpixels=kk
+
 end
 
 
@@ -386,15 +386,16 @@ goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_se
 INT_DISP_ = INT_DISP(where(emission_setup.action ne 'i') and where(emission_setup.action ne 'sky')) ;remove ignored ems lines from the int_disp vector
 if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
 
+ 
 
 
-;stop
 ; If the galaxy spectrum have zero values in some regions, I increase the noise in
 ; those regions.
 indici_neg = where(galaxy le 0)
 if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
 if ~keyword_set(fix_star_kin) then begin
 ;stop
+
 d = execute('mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol, goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=bestfit_ppxf, weights=weights_ppxf,external_library=external_library,OVERSAMPLE=oversample')
     if d eq 0 then begin
        status = 0
@@ -450,7 +451,6 @@ sol_star = [ppxfsol[0],ppxfsol[1],ppxfsol[2],ppxfsol[3],0,0,-1]
 
 mdegree_=mdegree
 if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
-
 
 
 if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels

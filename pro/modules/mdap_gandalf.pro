@@ -863,7 +863,7 @@ for i=0,nlines-1 do begin
     ; Sigma (as observed!)
     sigma          = sqrt(sol_final[k+3]^2. + int_disp2_[i])
     ; Flux of the Emission lines
-    sol_final[k]   = sol_final[k+1]* sqrt(2*!pi) * sigma * lambda0[i] * exp(sol_final[k+2]/c)/c 
+    sol_final[k]   = sol_final[k+1]* sqrt(2*!pi) * sigma * lambda0[i] * exp(sol_final[k+2]/c)/c ;;CHECK!!!
     k=k+4
     if not keyword_set(for_errors) then h=h+2 else h=h+3
 endfor
