@@ -61,7 +61,7 @@ trim_wav_range_radial_binning = [3700.,9980.]
 #------------------------------- 
 # Velocity scale (km/sec/pixel), values: float
 # Comment the line to let the variable undefined and use the automatic value given by the data.
-velscale = 30.
+# velscale = 30.
 #
 #
 #-------------------------------
@@ -126,7 +126,7 @@ weight_for_sn=1
 # If these variable are undefined (or the specified fits file is not found, the S/N criteria defined above will be used
 # If these variable are defined, the S/N criteria defined above will be ignored
 #
-# user_bin_map_spatial_binning_1 = root_name + '_bin1.fits'
+# user_bin_map_spatial_binning_1 = 'binning_map_'+root_name + '.fits'
 # user_bin_map_spatial_binning_2 = 'none'
 # user_bin_map_spatial_binning_3 = 'none'
 #
@@ -208,7 +208,7 @@ remove_null_templates = 1
 #
 #
 #-- Path indicating the location of external fortran or C codes. If not specified, internal IDL procedures are used.
- external_library='./mangadap/external/F90_32/'
+# external_library='./mangadap/external/F90_32/'
 # external_library='./mangadap/external/F90_64/'
 # --------------------------------------------------------------------------------------------
  spectral_fit_par_bin1=['MOMENTS=4','DEGREE=-1','MDEGREE=6']

@@ -20,7 +20,7 @@ if keyword_set(check_version) then begin
    if check_previous_session eq 1 then restore,output_idlsession
 endif
 
-manga_dap_version = '0.7'    ; 28 Mar 2014 by L. Coccato
+manga_dap_version = '0.8'    ; 28 Mar 2014 by L. Coccato
 ;stop
 
 readcol,total_filelist,root_name_vector,velocity_initial_guess_vector,$
@@ -210,7 +210,7 @@ if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or exe
    sxaddpar,header_2d,'BLOCK2',mdap_spatial_binning_version,'mdap_spatial_binning version'
    execute_all_modules=1
 endif
-;stop
+
 printf,1,'[INFO] mdap_spatial_binning ver '+max([mdap_spatial_binning_version,mdap_spatial_binning_version_previous])
 printf,1,'[INFO] datacube '+ root_name+' spatial binning 1. SN= '+mdap_stc(sn1,/integer)+' Nbins: '+mdap_stc(n_elements(xbin_tpl),/integer)
 if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous  or execute_all_modules eq 1 then begin
@@ -464,7 +464,7 @@ endelse
 
 ;miles_resolution = fwhm_instr*0.+2.54
 lick_resolution = fwhm_instr*0.+8.4
-fwhm_diff_indices=0.*sqrt(lick_resolution^2-fwhm_instr^2)   ;fwhm in angstrom
+fwhm_diff_indices=sqrt(lick_resolution^2-fwhm_instr^2)   ;fwhm in angstrom
 indici = where(finite(fwhm_diff_indices) NE 1)
 if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
 
@@ -560,7 +560,7 @@ mdap_spatial_radial_binning,bin_sn_ems_real,x2d_reconstructed,y2d_reconstructed,
    ;miles_resolution = fwhm_instr*0.+2.54
    ;fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
    lick_resolution = fwhm_instr*0.+8.4
-   fwhm_diff_indices=0.*sqrt(lick_resolution^2-fwhm_instr^2) ;fwhm in angstrom
+   fwhm_diff_indices=sqrt(lick_resolution^2-fwhm_instr^2) ;fwhm in angstrom
    indici = where(finite(fwhm_diff_indices) NE 1)
    if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.
 
@@ -591,11 +591,11 @@ mdap_do_kinemetry,signal2d_reconstructed,x2d_reconstructed,y2d_reconstructed,xbi
                   ;Xcenter_used_for_gas_rot_curve,Ycenter_used_for_gas_rot_curve
 
 ;- radial profiles (lambda, V/sigma, sigma?) -- still to test
-if n_elements(radii_for_rprofiles) eq 0 then radii_rprofiles=Rad_kin_str else radii_rprofiles=radii_for_rprofiles
-mdap_do_k_rprofiles,radii_rprofiles,STELLAR_KINEMATICS_STR[*,0]-Vsyst_str[0],STELLAR_KINEMATICS_STR_ERR[*,0],STELLAR_KINEMATICS_STR[*,1],STELLAR_KINEMATICS_STR_ERR[*,1],$
+if n_elements(A_for_rprofiles) eq 0 then A_rprofiles=Rad_kin_str else A_rprofiles=A_for_rprofiles
+mdap_do_k_rprofiles,A_rprofiles,STELLAR_KINEMATICS_STR[*,0]-Vsyst_str[0],STELLAR_KINEMATICS_STR_ERR[*,0],STELLAR_KINEMATICS_STR[*,1],STELLAR_KINEMATICS_STR_ERR[*,1],$
                     xbin_str,ybin_str,total(log_spc_str,1),ell,pa,$
                     lambda_profile,lambda_profile_err,vsigma_profile,vsigma_profile_err,sigma_profile,sigma_profile_err
- 
+ radii_rprofiles = sqrt(A_rprofiles^2 * (1.-ell))
 ;-
 ;*********************************************************************************
  
@@ -866,13 +866,14 @@ modfits,output_filefits,0,h1,exten_no=k
 
 ;storing lambda, v/sigma and sigma radial profiles
 k = k+1
-stringa = ["radii_rprofiles","lambda_profile","lambda_profile_err","vsigma_profile","vsigma_profile_err","sigma_profile","sigma_profile_err"]
+stringa = ["radii","Amaj","lambda_profile","lambda_profile_err","vsigma_profile","vsigma_profile_err","sigma_profile","sigma_profile_err"]
 stringa2="{"
 for i =0, n_elements(stringa)-2 do stringa2=stringa2+stringa[i]+':0.,'
 stringa2 = stringa2+stringa[i]+':0.}'
 d = execute('str='+stringa2)
-p7=replicate(str,n_elements(radii_rprofiles))
-p7.radii_rprofiles=radii_rprofiles
+p7=replicate(str,n_elements(A_rprofiles))
+p7.radii=radii_rprofiles
+p7.Amaj=A_rprofiles
 p7.lambda_profile=lambda_profile
 p7.lambda_profile_err=lambda_profile_err
 p7.vsigma_profile=vsigma_profile

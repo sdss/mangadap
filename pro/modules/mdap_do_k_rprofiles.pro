@@ -91,15 +91,19 @@ FOR i = 1 ,nrad-1 DO BEGIN
    dS=sigma_err[sel]
 
    lambda_profile[i] = total(F * R * V) / total(F * R * sqrt(V^2+S^2))
-   vsigma_profile[i] = total(F * V/S) / total(F)
+   ;vsigma_profile[i] = total(F * V/S) / total(F)
+   vsigma_profile[i] = sqrt(total(F * V^2) / total(F * S^2))
    sigma_profile[i] = total(F * S) / total(F)
 
    W = total(R*F*sqrt(V^2+S^2))
    lambda_profile_err[i] = sqrt(total((F*R/W*dV)^2))
  
-   T = total(F)
-   vsigma_profile_err[i] = sqrt(total((F*dV/S/T)^2 + (F*V*dS/S^2/T)^2))
+   ;T = total(F)
+   TS = total(F*S^2)
+   TV = total(F*V^2)
+   vsigma_profile_err[i] = sqrt(total(   (2.*F*V/TS)^2 +  (TV * TS^(-2) * 2.*F*S)^2   ))
 
+   T = total(F)
    sigma_profile_err[i] = sqrt(total((F*dS/T)^2))
 
 ENDFOR
