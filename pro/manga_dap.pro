@@ -687,7 +687,7 @@ mdap_add_fits_layer,output_filefits,spatial_binning_ems,k,'EXTNAME','Binning_map
 k=k+1
  stringa = ["X","Y","area_bin","StoN","Nelements","reddening_star","reddening_star_err","reddening_gas","reddening_gas_err","Chi2_DOF"]
  for i = 0, NLINES-1 do begin 
-    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens_err']
+    stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_amplitude',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_amplitude_err']
  endfor 
  for i = 0, NLINES-1 do begin 
     stringa = [stringa,ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_flux',ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_flux_err']
@@ -718,8 +718,8 @@ k=k+1
 
 
  for i = 0, NLINES-1 do begin 
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens=EMISSION_LINE_INTENS_EMS[*,i]')
-    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_intens_err=EMISSION_LINE_INTENS_EMS_ERR[*,i]')
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_amplitude=EMISSION_LINE_INTENS_EMS[*,i]')
+    d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_amplitude_err=EMISSION_LINE_INTENS_EMS_ERR[*,i]')
  endfor 
  for i = 0, NLINES-1 do begin 
     d=execute('p3.'+ln_name[i]+'_'+mdap_stc(round(float(ln_wav[i])))+'_flux=EMISSION_LINE_FLUXES_EMS[*,i]')
