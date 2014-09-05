@@ -50,6 +50,8 @@ doc/mdap_spatial_radial_binning.tex -text
 doc/mdap_spectral_fitting.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
 etc/mangadap.module -text
+examples/mdap_config_example.inp -text
+examples/mdap_inp_nsa_v1b_0_0_v2.par -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
 external/F90_32/bvls_wrapper.c -text
@@ -104,6 +106,8 @@ pro/interfaces/mdap_spatial_radial_binning.pro -text
 pro/interfaces/mdap_spectral_fitting.pro -text
 pro/manga_dap.pro -text
 pro/mangadap_version.pro -text
+pro/mdap_create_input_table.pro -text
+pro/mdap_match_obs_nsa.pro -text
 pro/modules/mdap_bvls.pro -text
 pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_spectrum_sn.pro -text
@@ -146,4 +150,6 @@ pro/utilities/range.pro -text
 pro/utilities/read_header.pro -text
 pro/utilities/test_sn_definition.pro -text
 pro/utilities/usersymbol.pro -text
+scripts/mdap_environment.sh -text
+scripts/mdap_setup.sh -text
 ups/mangadap.table -text
