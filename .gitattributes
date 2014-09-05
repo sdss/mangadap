@@ -94,7 +94,6 @@ external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.3500.fits -text sv
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
-/mdap_configure_file.dat -text
 pro/interfaces/mdap_create_starting_guesses.pro -text
 pro/interfaces/mdap_do_kinemetry.pro -text
 pro/interfaces/mdap_log_rebin.pro -text
@@ -147,5 +146,4 @@ pro/utilities/range.pro -text
 pro/utilities/read_header.pro -text
 pro/utilities/test_sn_definition.pro -text
 pro/utilities/usersymbol.pro -text
-/total_filelist.dat -text
 ups/mangadap.table -text
