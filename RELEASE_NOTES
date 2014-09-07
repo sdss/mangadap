@@ -1,0 +1,24 @@
+
+KBW (05 Sep 2014)
+Check in using svn in working directory
+
+KBW (04 Sep 2014)
+Database structure
+New environment scripts: mdap_setup.sh, mdap_environment.sh
+
+KBW (03 Sep 2014)
+Basic compilation errors in manga_dap.pro
+New code: mdap_match_obs_nsa.pro, mdap_create_input_table.pro
+
+KBW (02 Sep 2014)
+Formatting of manga_drp.pro
+
+KBW (01 Sep 2014)
+Copied from v0_8 by L. Coccato
+Basic formatting of map_read_datacube.pro and manga_drp.pro
+Adjustments to deal with DRP v1_0_0 headers (different from prototype headers)
+
+--------------------------------------------------------------------------------
+v0_9 (01 Sep 2014)
+KBW Development version 
+

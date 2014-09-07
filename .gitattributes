@@ -1,4 +1,5 @@
 * text=auto !eol
+/RELEASE_NOTES -text
 bin/mangadap_version -text
 doc/configuration_file.tex -text
 doc/dap.bbl -text
@@ -144,6 +145,7 @@ pro/utilities/mdap_readfits_2d.pro -text
 pro/utilities/mdap_readfits_lambda.pro -text
 pro/utilities/mdap_recovery_2d.pro -text
 pro/utilities/mdap_round_str.pro -text
+pro/utilities/mdap_setup_io.pro -text
 pro/utilities/mdap_sgn.pro -text
 pro/utilities/mdap_stc.pro -text
 pro/utilities/range.pro -text

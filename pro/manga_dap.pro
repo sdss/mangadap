@@ -71,9 +71,14 @@ pro MANGA_DAP,$
 
 ;	for i=0,n_elements(command_line)-1 do $
 ;	    print, command_line[i]
-	
+
+print, "total"
+;print, total_filelist
 	for i=0, n_elements(command_line)-1 do $
 	    d=execute(command_line[i])
+print, total_filelist
+
+stop
 
 	print, total_filelist
 	print, output_root_dir
