@@ -1,157 +1,218 @@
-pro mdap_spatial_binning,data,error,signal,noise,min_sn,x2d,y2d,stepx,stepy,$
-    binning_map,spectra,errors,xNode,yNode,area_bins,bin_sn,plot=plot,sn_thr=sn_thr,$
-    x2d_reconstructed=x2d_reconstructed,y2d_reconstructed=y2d_reconstructed, $
-    nelements_within_bin=nelements_within_bin,SN_CALIBRATION=SN_CALIBRATION,user_bin_map=user_bin_map,weight_for_sn=weight_for_sn,$
-    version=version
+;+
+; NAME:
+;	MDAP_SPATIAL_BINNING
+;
+; PURPOSE:
+;	TODO: Better description
+;	Bin an input data cube to a minimum S/N level.
+;
+; CALLING SEQUENCE:
+;
+; INPUTS:
+;
+;	data dblarr[N][M][T] or dblarr[N][T]
+;		Galaxy spectra as produced by MDAP_READ_DATACUBE.
+;
+;	error dblarr[N][M][T] or dblarr[N][T]
+;		Errors associated to data, produced by MDAP_READ_DATACUBE.
+;
+;	signal dblarr[N][M] or dblarr[N]
+;		Mean galaxy signal per angstrom, produced by MDAP_READ_DATACUBE.
+;
+;	noise dblarr[N][M] or dblarr[N]
+;		Mean galaxy error per angstrom, produced by MDAP_READ_DATACUBE.
+;
+;	min_sn float
+;		Minimum S/N (per angstrom) required for the output binned spectra.  
+;
+;	x2d dblarr[N][M] or dblarr[N]
+;		Array containing the x coordinates in arcseconds (0 is the
+;		center of the field of view), produced by MDAP_READ_DATACUBE.    
+;
+;	y2d dblarr[N][M] or dblarr[N]
+;		Array containing the Y coordinates in arcseconds (0 is the
+;		center of the field of view), produced by MDAP_READ_DATACUBE.    
+;
+;	stepx float
+;		Scale arcsec/pixel along X direction, computed by
+;		MDAP_READ_DATACUBE.
+;
+;	stepy float
+;		Scale arcsec/pixel along Y direction, computed by
+;		MDAP_READ_DATACUBE.
+;
+; OPTIONAL INPUTS:
+;
+;	sn_thr float
+;		If specified, spectra with S/N lower than this value will be
+;		excluded from the analysis.  
+;
+; 	x2d_reconstructed dblarr[N'][M']
+;		Two-dimesional map of X coordinates where the output
+;		spatial_binning should be created. Required and used only if
+;		the input data are in RSS format. 
+;
+; 	y2d_reconstructed dblarr[N'][M']
+;		Two-dimesional map of Y coordinates where the output
+;		spatial_binning should be created. Required and used only if
+;		the input data are in RSS format. 
+;
+;	SN_CALIBRATION TODO: TYPE? or flag?
+;		If provided, the estimated signal-to-noise (SN_est) is converted
+;		into the real signal-to-noise using the empirical calibration
+;		function defined in MDAP_CALIBRATE_SN:
+;
+;			tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
+;			SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
+;
+;	user_bin_map  string
+;		If provided, the spatial map will be created from the fits file
+;		specified by this input. The fits file must contain the CRVAL1,
+;		CRVAL2, CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and CRIX2 header
+;		keywords (coordinate units should be in arcseconds; 0,0
+;		indicates the center of the field of view).
+;
+; OPTIONAL KEYWORDS:
+;	\plot
+;		If set, some plots on X11 terminal will be shown. Not suggested
+;		if the task is launched remotely. 
+;
+;	\weight_for_sn
+;		If set, the spectra in the same spatial bin will be weighted by
+;		$S/N^2$ before being added. If the voronoi binning scheme is
+;		adopted, the S/N in the bin is computed via equation (3) of
+;		Cappellari & Copin (2003), and the centers of the spatial bins
+;		are computed by weighting spectra coordinates by $S/N^2$.  
+;
+; OUTPUT:
+;
+;	TODO: Why double array and not integer?
+;	binning_map dblarr[N][M] or dblarr[N'][M']
+;		Two dimensional map showing the binning sheme. Pixels beloning
+;		to the i-th bin have value i (i=0, 1, ..., Nbins).  Pixels
+;		associated to no spatial bin have value -1.  
+;
+;	TODO: All the more reason to force data to be the same regardless of
+;	      input (datacube vs RSS)
+;	spectra dblarr[N][T]
+;		The binned spectra of the spatial Nbins. i-th spectrum is
+;		associated to the i-th bin. 
+;
+;	errors dblarr[N][T]
+;		Error vectors for binned spectra.
+;
+;	xNode dblarr[Nbins]
+;		X-Coordinates in arcsec of the luminosity weighted centers of
+;		the spatial bins. 
+;
+;	yNode dblarr[Nbins]
+;		Y-Coordinates in arcsec of the luminosity weighted centers of
+;		the spatial bins. 
+;
+;	area_bins dblarr[Nbins]
+;		Area (in arcsec$^2$) of each spatial bin.  
+;
+;	bin_sn dblarr[Nbins]
+;		Mean S/N per angstrom reached in each spatial bin. 
+;
+; OPTIONAL OUTPUT:
+;
+;	nelements_within_bin intarr[Nbins]
+;		Number of spaxels (in the case of DATACUBE format) or number of
+;		fibres (in the case of RSS format) coadded in each spatial bin.
+;		TODO: This should just be the the number of "spectra" regardless
+;		of where they came from.
+;
+;	version string
+;		Module version. If requested, the module is not executed and only
+;		the version flag is returned
+;
+; COMMENTS:
+;
+; EXAMPLES:
+;
+; TODO:
+;	- Also include full polygon describing the bin in output?
+;	- Include something that handles the covariance
+;	- data, spectra, error, errors need to be more distinct
+;
+; BUGS:
+;
+; PROCEDURES CALLED:
+;
+; INTERNAL SUPPORT ROUTINES:
+;
+; REVISION HISTORY:
+;	01 Sep 2014: Copied from v0_8 by L. Coccato
+;	08 Sep 2014: (KBW) Formatting and comments
+;
+;-
+;------------------------------------------------------------------------------
 
+PRO MDAP_SPATIAL_BINNING, $
+		data, error, signal, noise, min_sn, x2d, y2d, stepx, stepy, binning_map, spectra, $
+		errors, xNode, yNode, area_bins, bin_sn, plot=plot, sn_thr=sn_thr, $
+		x2d_reconstructed=x2d_reconstructed, y2d_reconstructed=y2d_reconstructed, $
+		nelements_within_bin=nelements_within_bin, SN_CALIBRATION=SN_CALIBRATION, $
+		user_bin_map=user_bin_map, weight_for_sn=weight_for_sn, version=version
 
-;*** INPUTS ***
-;
-;data       Galaxy spectra as produced by mdap_read_datacube.pro.
-;           [NxMxT dbl array] if DATACUBE format or [NxT dbl array]if RSS format.
-;
-;
-;error      Errors associated to data, produced by mdap_read_datacube.pro.
-;           [NxMxT dbl array] if DATACUBE format or [NxT dbl array]if RSS format.
-;
-;signal     Mean galaxy signal per \AA, produced by mdap_read_datacube.pro.
-;           [NxM dbl array] if DATACUBE format or [N dbl array]if RSS format.
-;
-;noise      Mean galaxy error per \AA,  produced by mdap_read_datacube.pro. 
-;           [NxM dbl array] if DATACUBE format or [N dbl array]if RSS format.
-;
-;min_sn     [float] Minimum S/N (per \AA) required for the output binned spectra.  
-;
-;x2d        Array containing the x coordinates in arcseconds (0 is the center of the field of view), produced by  mdap_read_datacube.pro.    
-;           [NxM dbl array] if DATACUBE format or [N dbl array]if RSS format.
-;
-;y2d        Array containing the y coordinates in arcseconds (0 is the center of the field of view), produced by  mdap_read_datacube.pro.    
-;           [NxM dbl array] if DATACUBE format or [N dbl array]if RSS format.
-;
-;stepx      [float] Scale arcsec/pixel along X direction, computed by  mdap_read_datacube.pro. 
-;
-;stepy      [float] Scale arcsec/pixel along Y direction, computed by  mdap_read_datacube.pro. 
-;
-;
-;*** OPTIONAL INPUTS ***
-;
-; sn_thr            [float] If specified, spectra with S/N lower than this value will be excluded from the analysis.  
-;
-; x2d_reconstructed [N'xM' array] Two-dimesional map of X coordinates where the output spatial_binning should be created. Required and used only  
-;                    if the input data are in RSS format. 
-;
-; y2d_reconstructed [N'xM' array] Two-dimesional map of Y coordinates where the output spatial_binning should be created. Required and used only 
-;                    if the input data are in RSS format. 
-;
-;SN_CALIBRATION    If provided, the estimated signal-to-noise (SN_est) is converted into the real signal-to-noise using the empirical
-;                  calibration function defined in mdap_calibrate_sn.pro:
-;
-;                    tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
-;                    SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
-;
-;user_bin_map  string   If provided, the spatial map will be created
-;                      from the fits fiel specified by this input. The
-;                      fits file must contain the CRVAL1, CRVAL2,
-;                      CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and
-;                      CRIX2 header keywords (coordinate units in
-;                      arcseconds, 0,0 indicates the center of the
-;                      field of view.
-;
-;
-;*** INPUT KEYWORDS ***
-;
-;\plot               If set, some plots on X11 terminal will be shown. Not suggested if the task is launched remotely. 
-;
-;weight_for_sn      If set, the spectra in the same spatial bin will be
-;                   weighted by $S/N^2$ before being added. If The voronoi binning scheme
-;                   is adopted, the S/N in the bin is computed via equation (3) of
-;                   Cappellari & Copin (2003), and the centers of the
-;                   spatial bins are computed by weighting spectra coordinates by $S/N^2$.
-;
-;*** OUTPUTS ***
-;
-;binning_map  Two dimensional map showing the binning sheme. Pixels beloning to the i-th bin have value i (i=0, 1, ..., Nbins). 
-;             Pixels associated to no spatial bin have value -1.  
-;             [NxM dbl array] if inputs are in DATACUBE format or [N'xM' dbl array] if inputs are in RSS format (interpolated 
-;             over x2d_reconstructed and y2d_reconstructed).
-;
-;spectra     [Nbins x T dbl array]    The binned spectra of the spatial Nbins. i-th spectrum is associated to the i-th bin. 
-;
-;errors      [Nbins x T dbl array]    Errors vectors associate do the binned spectra. 
-;
-;xNode       [Nbins elements array]   X-Coordinates in arcsec of the luminosity weighted centers of the spatial bins. 
-;
-;yNode       [Nbins elements array]   Y-Coordinates in arcsec of the luminosity weighted centers of the spatial bins. 
-;
-;area_bins   [Nbins elements array]   Area (in arcsec$^2$) of each spatial bin.  
-;
-;bin_sn      [Nbins elements array]   Mean S/N per \AA reached in each spatial bin. 
-;
+	version_module = '0.2'				; Version number
+	if n_elements(version) ne 0 then begin		; set version and return
+	    version = version_module
+	    return
+	endif
 
-;*** OPTIONAL OUTPUTS ***
-;
-; nelements_within_bin [Nbins elements array] number of spaxels (in the case of DATACUBE format) or number of fibres (in the case of RSS format) coadded in each spatial bin.
-;
-; version  [string]            Module version. If requested, the module is not execute and only version flag is returned
-;
+	if keyword_set(plot) then begin			; setup plot
+	    r = GET_SCREEN_SIZE()
+	    window, xsize=r[0]*0.4, ysize=r[1]*0.8, retain=2
+	    loadct, 32
+	endif
 
-version_module = '0.2'
-if n_elements(version) ne 0 then begin
- version = version_module
- goto, end_module
-endif
+	;min_non_Null = min(Noise(where(noise gt 0)))
+	;noise_=noise
+	;indici = where(noise eq 0)
+	;if indici[0] ne -1 then noise_[indici]=min_Non_null
+	;signal_=signal
+	;indici = where(signal lt 0)
+	;if indici[0] ne -1 then signal_[indici] = 0.
 
-if keyword_set(plot) then begin
-  r = GET_SCREEN_SIZE()
-  window, xsize=r[0]*0.4, ysize=r[1]*0.8, retain=2
-  loadct, 32
-endif
+	; TODO: Try to get rid of this if possible
+	; Determine the size of data to set RSS spectra vs. datacube input
+	sz=size(data)  ; sz[0] = 2 --> RSS; sz[0] = 3 --> DATACUBE
 
-;min_non_Null = min(Noise(where(noise gt 0)))
-;noise_=noise
-;indici = where(noise eq 0)
-;if indici[0] ne -1 then noise_[indici]=min_Non_null
-;signal_=signal
-;indici = where(signal lt 0)
-;if indici[0] ne -1 then signal_[indici] = 0.
+	; Get the S/N threshold, if provided
+	sn_thr_=0.
+	if n_elements(sn_thr) ne 0 then sn_thr_=sn_thr
 
+	; Find which spectra in the 2D map are good (and bad)
+	;	good = has a positive and finite noise, a finite signal,
+	;	and S/N > threshold
+	ind_good = where(noise gt 0 and finite(noise) eq 1  and finite(signal) eq 1 and $
+			 abs(signal/noise) ge sn_thr_,compl=ind_bad)
 
-;-- Undersand if I am dealing with RSS spectra or a datacube
-sz=size(data)  ; sz[0] = 2 --> RSS; sz[0] = 3 --> DATACUBE
+	if ind_good[0] eq -1 then begin				; No good spectra found! 
 
-sn_thr_=0.
-if n_elements(sn_thr) ne 0 then sn_thr_=sn_thr
+	    xnode=0
+	    ynode=0
+	    bin_sn=0
+	    binning_map = signal*0.
 
-;ind_good = where(noise gt 0 and finite(noise) eq 1 and signal gt 0 and finite(signal) eq 1 and signal/noise ge sn_thr_,compl=ind_bad)
-ind_good = where(noise gt 0 and finite(noise) eq 1  and finite(signal) eq 1 and abs(signal/noise) ge sn_thr_,compl=ind_bad)
+	    if sz[0] eq 3 then begin
+		spectra_ = total(data,1)
+		spectra = total(temporary(spectra_),1)
+		area_bins = n_elements(binning_map)*stepx[0]*stepy[0]
+	    endif
 
-;if indici[0] ne -2 then noise[indici] = 10.^10.
-if ind_good[0] eq -1 then begin
+	    if sz[0] eq 2 then begin
+		spectra = total(data,2)
+		area_bins = spectra*stepx[0]*stepy[0]
+	    endif
+	    
+	    errors = spectra*0.+1.
 
-   if sz[0] eq 3 then begin   ;datacube
-      xnode=0
-      ynode=0
-      bin_sn = 0
-      binning_map = signal*0.
-      spectra_ = total(data,1)
-      spectra = total(temporary(spectra_),1)
-      errors = spectra*0.+1.
-      area_bins = n_elements(binning_map)*stepx[0]*stepy[0]
-      goto, end_module
-   endif
-
-   if sz[0] eq 2 then begin  ;RSS spectra
-      xnode=0
-      ynode=0
-      bin_sn = 0
-      binning_map = signal*0.
-      spectra = total(data,2)
-      errors = spectra*0.+1.
-      area_bins = spectra*stepx[0]*stepy[0]
-      goto, end_module
-   endif
-
-endif
+	    return
+	    
+	endif
 
 
 if n_elements(user_bin_map) ne 0 then begin    ;USER INPUT SPATIAL BINNING MAP
@@ -374,7 +435,6 @@ if sz[0] eq 2 then begin  ;RSS
    
 endif 
 
-
-end_module:
-
 end
+
+

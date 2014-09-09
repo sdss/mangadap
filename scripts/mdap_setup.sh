@@ -15,7 +15,7 @@ if ( -e $1 && $3 == 0) then
 endif
 
 # Set the environmental variables that will be read by IDL
-source mdap_environment.sh
+source {$MDAP_DEV}/scripts/mdap_environment.sh
 
 # Check for the existence of the analysis directories and create them if
 # necessary

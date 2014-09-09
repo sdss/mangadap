@@ -32,6 +32,7 @@
 ;	- Figure out how restoring an old IDL session works
 ;		- need to think about how to restart these things
 ;	- Include MW extinction curve
+;	- Put all run logic and file IO checks up front!
 ;
 ; COMMENTS:
 ;
@@ -57,7 +58,6 @@ pro MANGA_DAP,$
 		input_number, configure_file
 
 	manga_dap_version = '0.9'	; set the version number
-	;stop
 
 	;check_version=check_version,$
 	;       dont_remove_null_templates=dont_remove_null_templates, $
@@ -72,13 +72,8 @@ pro MANGA_DAP,$
 ;	for i=0,n_elements(command_line)-1 do $
 ;	    print, command_line[i]
 
-print, "total"
-;print, total_filelist
 	for i=0, n_elements(command_line)-1 do $
 	    d=execute(command_line[i])
-print, total_filelist
-
-stop
 
 	print, total_filelist
 	print, output_root_dir
@@ -199,8 +194,10 @@ stop
 	print, ''
 	print, '# WORKING ON '+root_name+' ('+mode+')'
 	print, ''
-	; TODO: REOPEN
-;	openw,1,output_dir+'mdap.log'
+
+	; TODO: Need to pass this to other subroutines
+	log_file_unit = 1
+	openw,log_file_unit,output_dir+'/mdap.log'
 
 	print, 'BLOCK 0 ... '
 	; BLOCK 0 ----------------------------------------------------------------------
@@ -294,8 +291,8 @@ stop
 	print, mdap_measure_indices_version
 	print, mdap_spatial_radial_binning_version
 
+	print, 'BLOCK 0 ... done.'
 	; END BLOCK 0 ? ----------------------------------------------------------------
-
 
 ;; KINEMETRY CHECK, remove it after the tests
 ; restore, output_idlsession
@@ -319,6 +316,7 @@ stop
 
 ;goto, inizia_da_qui
 
+	print, 'BLOCK 1 ... '
 	; BLOCK 1 ----------------------------------------------------------------------
 	;	Description?
 	;-------------------------------------------------------------------------------
@@ -327,26 +325,37 @@ stop
 	if mdap_read_datacube_version gt mdap_read_datacube_version_previous $
 	   or execute_all_modules eq 1 then begin
 
-	    MDAP_READ_DATACUBE, datacube_name, data, error, wavelength, x2d, y2d, signal, noise, $
-				cdelt1, cdelt2, header_2d, lrange=w_range_for_sn_computation, $
-				/keep_original_step, x2d_reconstructed=x2d_reconstructed, $
-				y2d_reconstructed=y2d_reconstructed, $
-				signal2d_reconstructed=signal2d_reconstructed, $
-				noise2d_reconstructed=noise2d_reconstructed, $
-				number_of_fibres=number_of_fibres
+	    MDAP_READ_DRP_FITS, datacube_name, header, flux, ivar, mask, wave, sres, skyx, skyy, $
+				cdelt1, cdelt2, type=mode
 
-return
+	    MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
+
+	    MDAP_SELECT_WAVE, wave, w_range_for_sn_computation, lam_sn
+
+	    MDAP_CALCULATE_SN, flux, ivar, mask, wave, lam_sn, signal, noise, gflag=gflag
+
+;	    MDAP_READ_DATACUBE, datacube_name, data, error, wavelength, x2d, y2d, signal, noise, $
+;				cdelt1, cdelt2, header_2d, lrange=w_range_for_sn_computation, $
+;				/keep_original_step, x2d_reconstructed=x2d_reconstructed, $
+;				y2d_reconstructed=y2d_reconstructed, $
+;				signal2d_reconstructed=signal2d_reconstructed, $
+;				noise2d_reconstructed=noise2d_reconstructed, $
+;				number_of_fibres=number_of_fibres
+
 	    ;same as signal if datacube is read, not RSS.
-	    if n_elements(signal2d_reconstructed) eq 0 then signal2d_reconstructed = signal
+;	    if n_elements(signal2d_reconstructed) eq 0 then signal2d_reconstructed = signal
 
 	    ;same as x2d if datacube is read, not RSS.
-	    if n_elements(x2d_reconstructed) eq 0 then x2d_reconstructed = x2d
+;	    if n_elements(x2d_reconstructed) eq 0 then x2d_reconstructed = x2d
 	    
 	    ;same as y2d if datacube is read, not RSS.
-	    if n_elements(y2d_reconstructed) eq 0 then y2d_reconstructed = y2d
+;	    if n_elements(y2d_reconstructed) eq 0 then y2d_reconstructed = y2d
 	    
 	    ;same as noise if datacube is read, not RSS.
-	    if n_elements(noise2d_reconstructed) eq 0 then noise2d_reconstructed = noise
+;	    if n_elements(noise2d_reconstructed) eq 0 then noise2d_reconstructed = noise
+
+close, log_file_unit
+return
 
 	    ; Add the version number for block 1
 	    SXADDPAR, header_2d, 'BLOCK1', mdap_read_datacube_version, 'mdap_read_datacube version'
@@ -378,16 +387,19 @@ return
 	SXADDPAR, header_2d, 'DAPVER', manga_dap_version, 'manga_dap version', BEFORE='BLOCK1'
 
 	; Print progress
-	printf, 1, '[INFO] mdap_read_datacube ver ' $
+	printf, log_file_unit, '[INFO] mdap_read_datacube ver ' $
 	            +max([mdap_read_datacube_version, mdap_read_datacube_version_previous])
 	sz=size(data)
 	if sz[0] eq 3 then begin
-	    printf, 1, '[INFO] datacube '+root_name+' read; size: '+MDAP_STC(sz[1],/integer) $
-		       +'x'+MDAP_STC(sz[2],/integer)
+	    printf, log_file_unit, '[INFO] datacube '+root_name+' read; size: ' $
+		                   +MDAP_STC(sz[1],/integer)+'x'+MDAP_STC(sz[2],/integer)
 	endif else if sz[0] eq 2 then begin
-	    printf, 1, '[INFO] RSS file '+root_name+' read; Nfibres: '+MDAP_STC(sz[1],/integer)
+	    printf, log_file_unit, '[INFO] RSS file '+root_name+' read; Nfibres: ' $
+				   +MDAP_STC(sz[1],/integer)
 	endif else begin
-	    printf, 1, '[INFO] Unrecognized file size'
+	    printf, log_file_unit, '[INFO] Unrecognized file size'
+	    close, log_file_unit
+	    print, 'Unrecognized file size!'
 	    return
 	endelse
 
@@ -395,22 +407,35 @@ return
 	MW_extinction = 0.			; TODO: replaced with appropriate extension in the
 						;       input file, or total_filelist
 
+	; From Oliver Steele (04 Sep 2014)
+	; 	Requires galRA, galDEC, equinox, lambda_obs, spectrumdata
+	;GLACTC,galRA,galDEC,equinox,gl,gb,1,/DEGREE	; Converts RA/DEC to galactic coords 
+	;mw_ebmv = DUST_GETVAL(gl,gb,/interp)		; Grabs E(B-V) from Schlegel dust maps
+	;FM_UNRED, lambda_obs, spectrumdata, mw_ebmv	; De-reddens using ?? extinction curve
+
+	print,n_elements(wavelength)
+
 	; Initialize the instrumental resolution.  TODO: use fits extension
-	if n_elements(instrumental_fwhm_file) ne 0 then begin	; use input file
+	if n_elements(instrumental_fwhm_file) ne 0 then begin	; use data from input file
 	    fwhm_instr=interpol(fwhm_ang,ww,wavelength)
 	    fwhm_instr_kmsec_matrix = fltarr(2,n_elements(ww))
 	    fwhm_instr_kmsec_matrix[0,*]=ww
 	    fwhm_instr_kmsec_matrix[1,*]=fwhm_kms
 	endif else begin					; set to a constant
-	    fwhm_instr=wavelength*0.+2.54			; TODO: Don't like this practice
+	    fwhm_instr = MAKE_ARRAY(n_elements(wavelength),/double,value=2.54)
+;	    fwhm_instr=wavelength*0.+2.54
 	endelse
 
 	; Set mask.  TODO: use fits extension
 	mask_range=[5570.,5590.,5800.,5850.]
 
+	print, 'BLOCK 1 ... done.'
 	; END BLOCK 1 ------------------------------------------------------------------
 
-	; TODO: Why not SXADDPAR here?
+
+	; TODO: Need to clean this up using SXADDPAR?
+;	SXADDPAR, header_2d, 'DAPVER', manga_dap_version, 'manga_dap version', BEFORE='BLOCK1'
+
 	; Add the initial guesses to the header
 	header_2d = [ header_2d[0:n_elements(header_2d)-2], $
 		      'Reff = '+MDAP_STC(Reff)+'/ effective radius (arcsec)', $
@@ -420,9 +445,11 @@ return
 	for i = 0,n_elements(command_line)-1 do $
 	    header_2d=[header_2d,command_line[i]]
 
+
 	; BLOCK 2 ----------------------------------------------------------------------
 	;	Description?
 	;-------------------------------------------------------------------------------
+	print, 'BLOCK 2 ... '
 
 	; TODO: Don't really understand what's going on here
 	;	- Can I make the different SN levels part of an array and then
@@ -433,6 +460,7 @@ return
 
 	; Spatially rebin the data at 6 different S/N levels.  These levels are
 	; defined in the configuration_file
+
 
 	if mode eq 'rss' then begin
 	    sn1=sn1_rss
@@ -462,6 +490,7 @@ return
 	   or execute_all_modules eq 1 then begin
 
 	    ; Perform the spatial binning
+	    print, 'SPATIAL BINNING'
 	    MDAP_SPATIAL_BINNING, data, error, signal, noise, sn1, x2d, y2d, cdelt1, cdelt2, $
 				  spatial_binning_tpl, spectra_tpl, errors_tpl, xbin_tpl, $
 				  ybin_tpl, area_bins_tpl, bin_sn_tpl, sn_thr=sn_thr_tpl, $
@@ -470,7 +499,7 @@ return
 				  nelements_within_bin=nelements_within_bin_tpl, $
 				  sn_calibration=sn_calibration, $
 				  user_bin_map=user_bin_map_spatial_binning_1, $
-				  weight_for_sn=weight_for_sn
+				  weight_for_sn=weight_for_sn,/plot
 
 	    ; Add the version of the spatial binning procedure to the header
 	    SXADDPAR, header_2d, 'BLOCK2', mdap_spatial_binning_version, $
@@ -482,6 +511,12 @@ return
 	    ; Re-execute all the remaining modules, if that wasn't already set
 	    execute_all_modules=1
 	endif
+
+	print, 'Done spatial binning'
+
+close, log_file_unit
+return
+
 
 	; Print progress
 	printf, 1, '[INFO] mdap_spatial_binning ver ' $

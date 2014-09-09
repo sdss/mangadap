@@ -79,7 +79,7 @@ PRO MDAP_SETUP_IO, $
 	print, datacube_name+' found'
 
 	file_root = STRMID(root_name, STRPOS(root_name, '/', /reverse_search)+1)
-	print, file_root
+	print, 'File root: '+file_root
 
 	; Initialize the output directory
 	output_dir=output_root_dir+'/'+file_root
@@ -89,10 +89,10 @@ PRO MDAP_SETUP_IO, $
 	output_filefits=output_file_root+'high_level.fits'	; Output file name
 	output_idlsession=output_file_root+'mdap_session.idl'	; Output idl session
 
-	print, output_dir
-	print, output_file_root
-	print, output_filefits
-	print, output_idlsession
+	print, 'Output dir: '+output_dir
+	print, 'Output file root: '+output_file_root
+	print, 'Output fits file: '+output_filefits
+	print, 'Output idl session: '+output_idlsession
 
 ;	output_dir=output_root_dir+'results_'+mode+'/'+root_name+'/'+root_name+'_'
 

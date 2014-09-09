@@ -14,7 +14,7 @@
 ;	    5. [float]  Galaxy mean Position Angle
 ;	    6. [float]  MANGA Bundle size
 ;	    7. [float]  Galaxy effective radius
-;	    8. [string] Dataformat. Valid entries are: datacubes or rss
+;	    8. [string] Dataformat. Valid entries are: CUBE or RSS
 ;
 ;	The procedure uses a list of NSA IDs, matched to a list of DRP fits
 ;	files (see MATCH_OBS_NSA), to pull the relevant data from the NSA
@@ -60,6 +60,7 @@
 ; REVISION HISTORY:
 ;	03 Sep 2014: (KBW) Original implementation
 ;	05 Sep 2014: (KBW) Use N_ELEMENTS instead of ARRAY_LENGTH
+;	09 Sep 2014: (KBW) Change mode to either CUBE or RSS
 ;-
 ;------------------------------------------------------------------------------
 
@@ -140,10 +141,10 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	for i=0,n_manga-1 do begin
 
 	    ; Use the file name to get the dataformat	
-	    if strmatch(fitsfile[i], 'RSS') eq 1 then begin
-		frmt='rss'
+	    if strpos(fitsfile[i], 'RSS') ne -1 then begin
+		frmt='RSS'
 	    endif else begin
-		frmt='datacubes'
+		frmt='CUBE'
 	    endelse
 
 	    ; Output is different if the NSAID is or is not present
