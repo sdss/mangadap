@@ -17,6 +17,9 @@
 ;	ivar dblarr[]
 ;		Inverse variance of the flux.
 ;
+;	mask dblarr[]
+;		Bad pixel mask.
+;
 ;	wave dblarr[]
 ;		Wavelength in angstroms of each pixel in the spectrum.
 ;
@@ -58,6 +61,7 @@
 ;
 ; TODO:
 ;	- use splog
+;	- incorporate mask
 ;
 ; PROCEDURES CALLED:
 ;
@@ -66,11 +70,13 @@
 ; REVISION HISTORY:
 ;	09 Jan 2014: Original implementation by L. Coccato
 ;	09 Sep 2014: (KBW) Formatting edits
+;	11 Sep 2014: (KBW) Only use valid values of ivar
+;	15 Sep 2014: (KBW) Include mask values, but not currently used
 ;-
 ;------------------------------------------------------------------------------
 
-PRO mdap_calculate_spectrum_sn, flux, ivar, wave, sn_per_angstorm, signal=signal, noise=noise, $
-				rms=rms, sum=sum
+PRO mdap_calculate_spectrum_sn, flux, ivar, mask, wave, sn_per_angstorm, signal=signal, $
+				noise=noise, rms=rms, sum=sum
 
 	if keyword_set(rms) and keyword_set(sum) then $
 	    print, 'WARNING: Cannot calculate S/N using both /rms and /sum.  Ignoring /sum.'
@@ -82,18 +88,25 @@ PRO mdap_calculate_spectrum_sn, flux, ivar, wave, sn_per_angstorm, signal=signal
 	    lrange=(max(wavelength)-min(wavelength))	; Full wavelength range
 	    sn_per_angstorm = signal / noise * sqrt(lrange/n_elements(wavelength))	; ~S/N
 
-	endif else if keyword_set(sum) then begin
+	    return
+	endif
 
-	    signal = total(flux)			; Sum of the flux
-	    noise = sqrt(total(1.0/temporary(ivar)))	; Propagated error in the sum
-	    sn_per_angstrom = signal/noise		; S/N
+	indx = where(ivar gt 0, nv)				; indices with ivar gt 0
 
-	endif else begin				; Default behavior
-
-	    signal = median(flux,/even)		; Calculate the median signal
-	    noise = median(1./sqrt(ivar),/even);	; Calculate the median noise
-	    sn_per_angstorm = median(temporary(flux)*sqrt(temporary(ivar)), /even)	; Median S/N
-
+	if nv eq 0 then begin				; All error values are bad
+	    signal = 0.
+	    noise = 1.
+	    sn_per_angstrom=0.
+	endif else begin
+	    if keyword_set(sum) then begin
+		signal = total(flux[indx])		; Sum of the flux
+	   	noise = sqrt(total(1.0/ivar[indx]))	; Propagated error in the sum
+		sn_per_angstrom = signal/noise		; S/N
+	    endif else begin
+		signal = median(flux[indx],/even)		; Calculate the median signal
+		noise = median(1./sqrt(ivar[indx]),/even)	; Calculate the median noise
+		sn_per_angstorm = median(flux[indx]*sqrt(ivar[indx]), /even)	; Median S/N
+	    endelse
 	endelse
 
 END

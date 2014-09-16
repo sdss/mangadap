@@ -6,24 +6,23 @@
 ;	Determine and/or test the validity of a DRP-produced file type.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_DRP_FILETYPE, flux, type
+;	MDAP_DRP_FILETYPE, header, type
 ;
 ; INPUTS:
-;	flux dblarr
-;		Flux array read from a DRP-produced fits file.
-;
-;	type string
-;		String representation of the file type.  If provided on input,
-;		it is checked against the expected file types, either 'RSS' or
-;		'CUBE'.  If not provided or if the input value is invalid, the
-;		type is determined by the dimensionality of the read flux array,
-;		'RSS' files have 2 dimensions and 'CUBE' files have three.
+;	header hdu
+;		Header read from the DRP-produced fits file.
 ;
 ; OPTIONAL INPUTS:
 ;
 ; OPTIONAL KEYWORDS:
 ;
 ; OUTPUT:
+;	type string
+;		String representation of the file type.  If provided on input,
+;		it is checked against the expected file types, either 'RSS' or
+;		'CUBE'.  If not provided or if the input value is invalid, the
+;		type is determined by the keyword 'NAXIS' in the input header:
+;		for 'RSS' files, NAXIS=2; for 'CUBE' files, NAXIS=3.
 ;
 ; OPTIONAL OUTPUT:
 ;
@@ -42,22 +41,26 @@
 ;
 ; REVISION HISTORY:
 ;	09 Sep 2014: (KBW) Original implementation
+;	12 Sep 2014: (KBW) Convert input to be the fits header, not the flux
+;			   data
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_DRP_FILETYPE, $
-		flux, type
+		header, type
 
-	ndim=size(flux, /n_dimensions)			; Get the number of dimensions
+	ndim = SXPAR(header,'NAXIS')			; Get the number of dimensions
+;	ndim=size(flux, /n_dimensions)
+
 	if ndim ne 2 and ndim ne 3 then begin
 	    message, 'ERROR: Cannot determine file type because dimensionality is not 2 or 3.'
-	    return
+	    retall
 	endif
 
 	defined_type = 1				; Assume type is defined
 	if n_elements(type) eq 1 then begin		; Check the type makes sense
 	    if type ne 'RSS' and type ne 'CUBE' then begin
-		print, 'ERROR: Undefined type!  Must be either RSS or CUBE.'
+		print, 'ERROR: Undefined type!  Must be either RSS or CUBE.  Obtained from header.'
 		defined_type = 0
 	    endif
 	endif

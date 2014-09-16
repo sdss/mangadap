@@ -61,20 +61,20 @@ PRO MDAP_RESTRUCTURE_CUBE, $
 	ny = sz[2]					; Get the size in the y-dimension
 	ns = sz[3]					; Number of spectral channels
 
-	flux_=MAKE_ARRAY(nx*ny, ns, /double)		; Initialize the arrays
-	ivar_=MAKE_ARRAY(nx*ny, ns, /double)
-	mask_=MAKE_ARRAY(nx*ny, ns, /double)
+	flux_ = flux					; Copy the input
+	ivar_ = ivar
+	mask_ = mask
+
+	flux=dblarr(nx*ny, ns, /nozero)			; Initialize the arrays (quickly)
+	ivar=dblarr(nx*ny, ns, /nozero)
+	mask=dblarr(nx*ny, ns, /nozero)
 	for i=0,nx-1 do begin
 	    for j=0,ny-1 do begin
-		flux_[i*ny+j,*] = flux[i,j,*]		; Copy over the relevant data
-		ivar_[i*ny+j,*] = ivar[i,j,*]
-		mask_[i*ny+j,*] = mask[i,j,*]
+		flux[i*ny+j,*] = flux_[i,j,*]		; Reorganize the data
+		ivar[i*ny+j,*] = ivar_[i,j,*]
+		mask[i*ny+j,*] = mask_[i,j,*]
 	    endfor
 	endfor
-
-	flux=flux_					; Overwrite the input arrays
-	ivar=ivar_
-	mask=mask_
 
 END
 

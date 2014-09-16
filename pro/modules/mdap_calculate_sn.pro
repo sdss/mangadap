@@ -72,7 +72,6 @@
 ;
 ; REVISION HISTORY:
 ;	09 Sep 2014: (KBW) Original implementation
-;
 ;-
 ;------------------------------------------------------------------------------
 
@@ -81,20 +80,28 @@ PRO MDAP_CALCULATE_SN, $
 
 	sz=size(flux)
 	ns=sz[1]				; Number of spectra
+	print, ns
 	
-	flags_defined = n_elements(gflag)
+	if n_elements(gflag) eq 0 then begin
+	    gflag_=intarr(ns)
+	    gflag_[*] = 1			; Assume all spectra are good
+	endif else $
+	    gflag_ = gflag
 
 	signal=dblarr(ns)
 	noise=dblarr(ns)
 	for i=0,ns-1 do begin
-	    if flags_defined eq 1 and gflag[i] eq 0 then begin
+	    if gflag_[i] eq 0 then begin
 		signal[i] = 0.
 		noise[i] = 1.
 		continue
 	    endif
 
-	    MDAP_CALCULATE_SPECTRUM_SN, flux[i,wsel], ivar[i,wsel], wave[wsel], $
-					ston, signal=signal, noise=noise, rms=rms, sum=sum
+	    MDAP_CALCULATE_SPECTRUM_SN, flux[i,wsel], ivar[i,wsel], mask[i,wsel], wave[wsel], $
+					ston, signal=signal_, noise=noise_, rms=rms, sum=sum
+	    signal[i]=signal_
+	    noise[i]=noise_
+	
 	endfor
 
 END

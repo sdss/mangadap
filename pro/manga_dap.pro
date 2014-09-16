@@ -3,7 +3,41 @@
 ;	MANGA_DAP
 ;
 ; PURPOSE:
-;	Main wrapping routine for MaNGA data analysis pipeline
+;	Main wrapping routine for MaNGA data analysis pipeline.
+;
+;	Code is broken up into a number of blocks.  In brief:
+;	    - Initialization:
+;
+;		Reading of the parameter file, input file, and instrumental
+;		dispersion file.  Restore an old IDL session.
+;
+;	    - Block 0:
+;		Versioning and checks for required updates.  IO scheme setup.
+;		Initialize log file.
+;
+;	    - Block 1:
+;
+;		Read DRP fits file.  Determine which spectra are "good,"
+;		according to MDAP_SELECT_GOOD_SPECTRA.  Determine which pixels
+;		to use for the S/N calculation.  Calculate continuum S/N for
+;		each spectrum.  Calculate emission-line S/N for each spectrum.
+;		Add DAP and Block1 version to header.
+;
+;		Initialize extinction curve, instrumental dispersion function,
+;		and pixel mask (combination of mask from DRP + hard-wired mask).
+;
+;	    - Block 2:
+;
+;		Add input variables to the header, including those from the
+;		configuration file and the input effective radius, position
+;		angle, and ellipticity.
+;
+;		For each S/N level, spatially bin the data.
+;
+;		Add the spatial binning version to the header.
+;
+;	    - Block 3:
+;
 ;
 ; CALLING SEQUENCE:
 ;	MANGA_DAP, input_number, configure_file
@@ -66,12 +100,13 @@ pro MANGA_DAP,$
 	c=299792.458d			; TODO: there isn't some idlutils file that defines this?
 	t0=systime(/seconds)/60./60.	; start time
 
-	;*****SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
+	print, 'Initializing ... '
+	; Initialization ---------------------------------------------------------------
+
+	; TODO: Put all this initialization stuff in a wrapper
+
+	; Use configuration file to set some user-defined variables
 	READCOL, configure_file, command_line, comment='#', delimiter='%', /silent, format='A'
-
-;	for i=0,n_elements(command_line)-1 do $
-;	    print, command_line[i]
-
 	for i=0, n_elements(command_line)-1 do $
 	    d=execute(command_line[i])
 
@@ -86,7 +121,7 @@ pro MANGA_DAP,$
 	print, emission_line_file_radial_binning
 	print, absorption_line_indices
 	print, external_library
-	print, instrumental_fwhm_file
+;	print, instrumental_fwhm_file
 
 	; Restore an old IDL session if it exists (don't really know how this works)
 	; TODO: find out what restore does and whether or not I can compress these lines
@@ -162,7 +197,7 @@ pro MANGA_DAP,$
 
 	print, save_intermediate_steps
 	print, remove_null_templates
-	print, instrumental_fwhm_file
+;	print, instrumental_fwhm_file
 
 	;*****RE-SETTING THE CONFIGURATION PARAMETERS DEFINED IN THE CONFIGURATION FILE
 	; why do these need to be re-read?
@@ -173,7 +208,7 @@ pro MANGA_DAP,$
 	print, "RE-EXECUTED"
 	print, save_intermediate_steps
 	print, remove_null_templates
-	print, instrumental_fwhm_file
+;	print, instrumental_fwhm_file
 
 	; TODO: This statement does nothing, right?
 	if n_elements(save_intermediate_steps) eq 0 then save_intermediate_steps=0
@@ -187,8 +222,12 @@ pro MANGA_DAP,$
 	;	2. Resolution (lamda/delta lambda)
 	;	3. delta lamga (FWHM) in angstroms
 	;	4. delta lamga (FWHM) in km/s
-	if n_elements(instrumental_fwhm_file) ne 0 then $
-	    READCOL, instrumental_fwhm_file, ww, r, fwhm_ang, fwhm_kms, /silent
+	if n_elements(instrumental_fwhm_file) ne 0 then begin
+	    if file_test(instrumental_fwhm_file) eq 1 then begin
+		print, 'Reading '+instrumental_fwhm_file
+		READCOL, instrumental_fwhm_file, ww, r, fwhm_ang, fwhm_kms, /silent
+	    endif
+	endif
 
 	; Tell the user what's happening
 	print, ''
@@ -203,6 +242,8 @@ pro MANGA_DAP,$
 	; BLOCK 0 ----------------------------------------------------------------------
 	;	Description?
 	;-------------------------------------------------------------------------------
+
+	; TODO: Put this version control in a wrapper.
 
 	;*** GET MODULES VERSION AND CHECK PREVIOUS ANALYSIS ******************************
 	check_previous_analysis = file_test(output_filefits)	; Check for output fits file
@@ -277,7 +318,8 @@ pro MANGA_DAP,$
 	print, mdap_spatial_radial_binning_version_previous
 
 	; update the versions of each procedure to check if these procedures should be redone
-	MDAP_READ_DATACUBE,version=mdap_read_datacube_version
+;	MDAP_READ_DATACUBE,version=mdap_read_datacube_version	; TODO: OBSOLETE!
+	MDAP_READ_DRP_FITS,version=mdap_read_datacube_version	; TODO: Not all of block 1!
 	MDAP_SPATIAL_BINNING,version=mdap_spatial_binning_version
 	MDAP_LOG_REBIN,version=mdap_log_rebin_version
 	MDAP_SPECTRAL_FITTING,version=mdap_spectral_fitting_version
@@ -291,7 +333,7 @@ pro MANGA_DAP,$
 	print, mdap_measure_indices_version
 	print, mdap_spatial_radial_binning_version
 
-	print, 'BLOCK 0 ... done.'
+	print, 'BLOCK 0 ... DONE.'
 	; END BLOCK 0 ? ----------------------------------------------------------------
 
 ;; KINEMETRY CHECK, remove it after the tests
@@ -300,21 +342,15 @@ pro MANGA_DAP,$
 ;;
 
 	; If the version of THIS procedure is more recent, redo all procedures
-	execute_all_modules=0
-	if manga_dap_version gt manga_dap_version_previous then execute_all_modules=1
+;	execute_all_modules=0
+;	if manga_dap_version gt manga_dap_version_previous then execute_all_modules=1
+
+	execute_all_modules = 1				; TODO: For now, just execute all modules!
 
 	print, manga_dap_version
 	print, manga_dap_version_previous
 
 	print, execute_all_modules
-
-	; Bin the data
-	; Rebin the data to logarithmic binning
-	; Perform the spectral fitting (emission lines?)
-	; Measure the absorption-line indices
-	; Radially bin the data
-
-;goto, inizia_da_qui
 
 	print, 'BLOCK 1 ... '
 	; BLOCK 1 ----------------------------------------------------------------------
@@ -325,8 +361,11 @@ pro MANGA_DAP,$
 	if mdap_read_datacube_version gt mdap_read_datacube_version_previous $
 	   or execute_all_modules eq 1 then begin
 
+	    unit=''					; Declare unit so that it will be grabbed
 	    MDAP_READ_DRP_FITS, datacube_name, header, flux, ivar, mask, wave, sres, skyx, skyy, $
-				cdelt1, cdelt2, type=mode
+				type=mode, unit=unit
+
+	    MDAP_GET_SPAXEL_SIZE, header, spaxel_dx, spaxel_dy, type=mode, unit=unit
 
 	    MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
 
@@ -354,54 +393,65 @@ pro MANGA_DAP,$
 	    ;same as noise if datacube is read, not RSS.
 ;	    if n_elements(noise2d_reconstructed) eq 0 then noise2d_reconstructed = noise
 
-close, log_file_unit
-return
-
-	    ; Add the version number for block 1
-	    SXADDPAR, header_2d, 'BLOCK1', mdap_read_datacube_version, 'mdap_read_datacube version'
+	    ; Add/update the version number for block 1
+	    SXADDPAR, header, 'BLOCK1', mdap_read_datacube_version, 'mdap_read_datacube version'
 	    
 	    execute_all_modules=1
 
 	    ;-- I compute the signal and the noise over a different wavelength range (redshifted)
 	    ; The mdap_read_datacube is run again, but only the signal and noise output are stored
 
-	    ; Recalculate the S/N for for the gas; wasteful to rerun mdap_read_datacube?
+	    ; Recalculate the S/N for for the gas
 	    if n_elements(w_range_for_sn_computation_for_gas) ne 0 then begin
-		w_range_for_sn_computation_for_gas_redshifted = $
-			w_range_for_sn_computation_for_gas*(1.+velocity_initial_guess[0]/c)
-;			w_range_for_sn_computation_for_gas*(1.+velocity_initial_guess[0]/299792.5)
 
-		MDAP_READ_DATACUBE, datacube_name, junk, junk, junk, junk, junk, signal_for_gas, $
-				    noise_for_gas, junk, junk, header_junk, $
-				    lrange=w_range_for_sn_computation_for_gas_redshifted, $
-				    /keep_original_step, /use_total
-		junk = 0.
+		print, 'Calculating S/N for gas...'
+
+		; Expects rest wavelengths of lines, and a reasonably good guess velocity
+		; TODO: Other places 'c' is used?
+		w_range_for_sn_computation_for_gas_z = $
+			w_range_for_sn_computation_for_gas*(1.+velocity_initial_guess[0]/c)
+
+		MDAP_SELECT_WAVE, wave, w_range_for_sn_computation_for_gas_z, lam_sn_for_gas
+
+		MDAP_CALCULATE_SN, flux, ivar, mask, wave, lam_sn_for_gas, signal_for_gas, $
+				   noise_for_gas, gflag=gflag_for_gas, /sum
+
+		print, 'Calculating S/N for gas... DONE'
+
 	    endif else begin
-		signal_for_gas = signal
-		noise_for_gas = noise
-		w_range_for_sn_computation_for_gas = w_range_for_sn_computation
+		; Use the same values as used for the stellar continuum
+		signal_for_gas = signal				; Set signal ...
+		noise_for_gas = noise				; ... noise
+		gflag_for_gas = gflag				; ... flags
+		w_range_for_sn_computation_for_gas = w_range_for_sn_computation; ... and wavelength
 	    endelse
 	endif
 
-	; Add the version number for manga_dap to the header
-	SXADDPAR, header_2d, 'DAPVER', manga_dap_version, 'manga_dap version', BEFORE='BLOCK1'
+	; Will add/change DAPVER if it does not exist or has a different value
+	SXADDPAR, header, 'DAPVER', manga_dap_version, 'manga_dap version', BEFORE='BLOCK1'
 
 	; Print progress
-	printf, log_file_unit, '[INFO] mdap_read_datacube ver ' $
-	            +max([mdap_read_datacube_version, mdap_read_datacube_version_previous])
-	sz=size(data)
-	if sz[0] eq 3 then begin
-	    printf, log_file_unit, '[INFO] datacube '+root_name+' read; size: ' $
-		                   +MDAP_STC(sz[1],/integer)+'x'+MDAP_STC(sz[2],/integer)
-	endif else if sz[0] eq 2 then begin
-	    printf, log_file_unit, '[INFO] RSS file '+root_name+' read; Nfibres: ' $
-				   +MDAP_STC(sz[1],/integer)
-	endif else begin
-	    printf, log_file_unit, '[INFO] Unrecognized file size'
-	    close, log_file_unit
-	    print, 'Unrecognized file size!'
-	    return
-	endelse
+	printf, log_file_unit, '[INFO] Read DRP data using version ' $
+			       +max([mdap_read_datacube_version, $
+			            mdap_read_datacube_version_previous])+' of block 1.'
+	printf, log_file_unit, '[INFO] Input data type: '+mode
+	sz = size(flux)
+	printf, log_file_unit, '[INFO] Total number of spectra: '+MDAP_STC(sz[1])
+	printf, log_file_unit, '[INFO] Number of spectral channels: '+MDAP_STC(sz[2])
+
+;	sz=size(data)
+;	if sz[0] eq 3 then begin
+;	    printf, log_file_unit, '[INFO] datacube '+root_name+' read; size: ' $
+;		                   +MDAP_STC(sz[1],/integer)+'x'+MDAP_STC(sz[2],/integer)
+;	endif else if sz[0] eq 2 then begin
+;	    printf, log_file_unit, '[INFO] RSS file '+root_name+' read; Nfibres: ' $
+;				   +MDAP_STC(sz[1],/integer)
+;	endif else begin
+;	    printf, log_file_unit, '[INFO] Unrecognized file size'
+;	    close, log_file_unit
+;	    print, 'Unrecognized file size!'
+;	    return
+;	endelse
 
 	; Initialize the extinction curve
 	MW_extinction = 0.			; TODO: replaced with appropriate extension in the
@@ -413,56 +463,190 @@ return
 	;mw_ebmv = DUST_GETVAL(gl,gb,/interp)		; Grabs E(B-V) from Schlegel dust maps
 	;FM_UNRED, lambda_obs, spectrumdata, mw_ebmv	; De-reddens using ?? extinction curve
 
-	print,n_elements(wavelength)
-
-	; Initialize the instrumental resolution.  TODO: use fits extension
-	if n_elements(instrumental_fwhm_file) ne 0 then begin	; use data from input file
-	    fwhm_instr=interpol(fwhm_ang,ww,wavelength)
+	; Initialize the instrumental resolution.
+	if n_elements(fwhm_ang) ne 0 then begin			; use data from input file
+	    print, ' use resolution from input file '
+	    fwhm_instr=interpol(fwhm_ang,ww,wave)
 	    fwhm_instr_kmsec_matrix = fltarr(2,n_elements(ww))
 	    fwhm_instr_kmsec_matrix[0,*]=ww
 	    fwhm_instr_kmsec_matrix[1,*]=fwhm_kms
-	endif else begin					; set to a constant
-	    fwhm_instr = MAKE_ARRAY(n_elements(wavelength),/double,value=2.54)
-;	    fwhm_instr=wavelength*0.+2.54
+	endif else begin					; use fits extension
+	    fwhm_instr=wave/sres				; in angstroms
+	    fwhm_instr_kmsec_matrix = dblarr(2,n_elements(wave))
+	    fwhm_instr_kmsec_matrix[0,*]=wave
+	    fwhm_instr_kmsec_matrix[1,*]=c/sres			; in km/s
 	endelse
+
+;	plot, fwhm_instr_kmsec_matrix[0,*], fwhm_instr_kmsec_matrix[1,*]
 
 	; Set mask.  TODO: use fits extension
 	mask_range=[5570.,5590.,5800.,5850.]
 
-	print, 'BLOCK 1 ... done.'
+	print, 'BLOCK 1 ... DONE.'
 	; END BLOCK 1 ------------------------------------------------------------------
 
+	print, spaxel_dx, spaxel_dy
 
-	; TODO: Need to clean this up using SXADDPAR?
-;	SXADDPAR, header_2d, 'DAPVER', manga_dap_version, 'manga_dap version', BEFORE='BLOCK1'
+	; TODO: Decide how much of this is neccesary
+	;	Then put it in a procedure
+	
+	; Add the configuration data to the header
+	SXADDPAR, header, 'FITSLST', total_filelist, 'Input file with data files and parameters', $
+		  AFTER='DAPVER'
+	SXADDPAR, header, 'OROOT', output_root_dir, 'Root name of output directory'
 
-	; Add the initial guesses to the header
-	header_2d = [ header_2d[0:n_elements(header_2d)-2], $
-		      'Reff = '+MDAP_STC(Reff)+'/ effective radius (arcsec)', $
-		      'PA = '+MDAP_STC(PA)+'/ postion angle (0=north; 90 = east)', $
-		      'ellipticity = '+MDAP_STC(ell) +'/ ellipticity (1-b/a)' ]
-	; ... and the command-line input from the configuration file
-	for i = 0,n_elements(command_line)-1 do $
-	    header_2d=[header_2d,command_line[i]]
+	SXADDPAR, header, 'SNRANGE', MDAP_ARRAY_STRING(w_range_for_sn_computation), $
+		          'Wavelength range for S/N computation'
 
+	SXADDPAR, header, 'TRIM1', MDAP_ARRAY_STRING(trim_wav_range_spatial_binning_1), $
+			  'Wavelength range considered in spectral fitting analysis'
+
+	SXADDPAR, header, 'TRIM2', MDAP_ARRAY_STRING(trim_wav_range_spatial_binning_2), $
+			  'Wavelength range considered in spectral fitting analysis'
+
+	SXADDPAR, header, 'TRIM3', MDAP_ARRAY_STRING(trim_wav_range_spatial_binning_3), $
+			  'Wavelength range considered in spectral fitting analysis'
+
+	SXADDPAR, header, 'TRIMR', MDAP_ARRAY_STRING(trim_wav_range_radial_binning), $
+			  'Wavelength range considered in spectral fitting analysis'
+	
+	SXADDPAR, header, 'VSCALE', MDAP_STC(velscale), 'Pixel scale in km/s'
+	
+	SXADDPAR, header, 'TPLIB1', stellar_library_spatial_binning_1, $
+			  'Stellar template library used in spectral fitting analysis'
+
+	SXADDPAR, header, 'TPLIB2', stellar_library_spatial_binning_2, $
+			  'Stellar template library used in spectral fitting analysis'
+
+	SXADDPAR, header, 'TPLIB3', stellar_library_spatial_binning_3, $
+			  'Stellar template library used in spectral fitting analysis'
+
+	SXADDPAR, header, 'RSS_SN1', MDAP_STC(sn1_rss), 'S/N level for RSS binning'
+	SXADDPAR, header, 'RSS_SNT1', MDAP_STC(sn_thr_tpl_rss), 'S/N threshold for RSS binning'
+	SXADDPAR, header, 'RSS_SN2', MDAP_STC(sn2_rss), 'S/N level for RSS binning'
+	SXADDPAR, header, 'RSS_SNT2', MDAP_STC(sn_thr_str_rss), 'S/N threshold for RSS binning'
+	SXADDPAR, header, 'RSS_SN3', MDAP_STC(sn3_rss), 'S/N level for RSS binning'
+	SXADDPAR, header, 'RSS_SNT3', MDAP_STC(sn_thr_ems_rss), 'S/N threshold for RSS binning'
+
+	SXADDPAR, header, 'CUBE_SN1', MDAP_STC(sn1_datacubes), 'S/N level for CUBE binning'
+	SXADDPAR, header, 'CUBE_SNT1', MDAP_STC(sn_thr_tpl_datacubes), $
+			  'S/N threshold for CUBE binning'
+	SXADDPAR, header, 'CUBE_SN2', MDAP_STC(sn2_datacubes), 'S/N level for CUBE binning'
+	SXADDPAR, header, 'CUBE_SNT2', MDAP_STC(sn_thr_str_datacubes), $
+			  'S/N threshold for CUBE binning'
+	SXADDPAR, header, 'CUBE_SN3', MDAP_STC(sn3_datacubes), 'S/N level for CUBE binning'
+	SXADDPAR, header, 'CUBE_SNT3', MDAP_STC(sn_thr_ems_datacubes), $
+			  'S/N threshold for CUBE binning'
+
+	SXADDPAR, header, 'SNWGT', MDAP_STC(weight_for_sn), 'S/N weighting method used'
+
+	SXADDPAR, header, 'EMLINE1', emission_line_file_spatial_binnin_1, $
+			  'File with definition of emission lines and their setup'
+	SXADDPAR, header, 'EMLINE2', emission_line_file_spatial_binnin_2, $
+			  'File with definition of emission lines and their setup'
+	SXADDPAR, header, 'EMLINE3', emission_line_file_spatial_binnin_3, $
+			  'File with definition of emission lines and their setup'
+	SXADDPAR, header, 'EMLINER', emission_line_file_radial_binning, $
+			  'File with definition of emission lines and their setup'
+	
+	SXADDPAR, header, 'ABSLINE', absorption_line_indices, $
+			  'File with definition of absorption line indices'
+
+	SXADDPAR, header, 'SSTEPS', MDAP_STC(save_intermediate_steps), $
+			  'Intermediate steps are saved'
+
+	SXADDPAR, header, 'RMNTPL', MDAP_STC(remove_null_templates), $
+			  'Remove templates with null weights during spectral fitting'
+
+	SXADDPAR, header, 'EXTERN', external_library, 'Directory with external F90/C code'
+
+	SXADDPAR, header, 'SFPAR1', MDAP_ARRAY_STRING(spectra_fittin_parameters_patial_binning_1), $
+			  'Spectral fitting parameters'
+	SXADDPAR, header, 'SFPAR2_2m', $
+		  MDAP_ARRAY_STRING(spectra_fittin_parameters_patial_binning_2_two_moments), $
+		  'Spectral fitting parameters'
+	SXADDPAR, header, 'SFPAR2', MDAP_ARRAY_STRING(spectra_fittin_parameters_patial_binning_2), $
+			  'Spectral fitting parameters'
+	SXADDPAR, header, 'SFPAR3', MDAP_ARRAY_STRING(spectra_fittin_parameters_patial_binning_3), $
+			  'Spectral fitting parameters'
+	SXADDPAR, header, 'SFPARR', $
+		  MDAP_ARRAY_STRING(spectra_fittin_parameters_patial_binning_readial), $
+		  'Spectral fitting parameters'
 
 	; BLOCK 2 ----------------------------------------------------------------------
 	;	Description?
 	;-------------------------------------------------------------------------------
 	print, 'BLOCK 2 ... '
 
-	; TODO: Don't really understand what's going on here
-	;	- Can I make the different SN levels part of an array and then
+	; Set a fiducial set of coordinates to use for each spectrum
+	MDAP_FIDUCIAL_BIN_XY, skyx, skyy, bskyx, bskyy
+
+;	plot, bskyx, bskyy, psym=1
+
+	; TODO: - Can I make the different SN levels part of an array and then
 	;	  loop over the array?
-	;	- What's the difference between sn? and sn_thr_??? 
-	;	- In the configuration file, the sn_thr_??? values are all the
-	;	  same but different for rss and datacubes
 
-	; Spatially rebin the data at 6 different S/N levels.  These levels are
-	; defined in the configuration_file
+;	nsn = 1
+;	sn=fltarr(nsn)
+;	sn_thr=fltarr(nsn)
+;
+;	if mode eq 'RSS' then begin
+;	    sn[0] = sn1_rss
+;	    sn_thr[0]=sn_thr_tpl_rss
+;	    sn[0] = sn2_rss
+;	    sn_thr[0]=sn_thr_str_rss
+;	    sn[0] = sn3_rss
+;	    sn_thr[0]=sn_thr_ems_rss
+;	endif else begin
+;	    sn[0] = sn1_datacubes
+;	    sn_thr[0]=sn_thr_tpl_datacubes
+;	    sn[0] = sn2_datacubes
+;	    sn_thr[0]=sn_thr_str_datacubes
+;	    sn[0] = sn3_datacubes
+;	    sn_thr[0]=sn_thr_ems_datacubes
+;	endelse
+;	print, size(skyx)
+;	print, skyx[0,0], skyx[0,1]
+;	print, size(skyy)
+;	print, skyy[0,0], skyy[0,1]
 
+;	; Only execute the binning if required
+;	if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous $
+;	   or execute_all_modules eq 1 then begin
+;
+;	    print, 'SPATIAL BINNING'
+;
+;	    ; Add the version of the spatial binning procedure to the header
+;	    SXADDPAR, header, 'BLOCK2', mdap_spatial_binning_version, 'mdap_spatial_binning version'
+;
+;	    ; Perform the spatial binning for each S/N level
+;	    for i=0,nsn-1 do begin
+;
+;		MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, sn[i], bskyx, bskyy, $
+;				      spaxel_dx, spaxel_dy, binned_flux, binned_ivar, binned_skyx, $
+;				      binned_skyy, binned_area, binned_ston, sn_thr=sn_thr[i], $
+;				      nbin=nbin, sn_calibration=sn_calibration, $
+;				      weight_for_sn=weight_for_sn, gflag=gflag;, /plot
+;
+;		nb = n_elements(binned_skyx)
+;		for i=0,nb-1 do begin
+;		    plot, wave[*], binned_flux[i,*]
+;		    stop
+;		endfor
+;
+;	    endfor
+;
+;	    ; TODO: This will force the binning at other S/N levels to be redone
+;	    ;       as well?  Does one depend on the other?
+;
+;	    ; Re-execute all the remaining modules, if that wasn't already set
+;	    execute_all_modules=1
+;
+;	endif
+;
+;	print, 'Done spatial binning'
 
-	if mode eq 'rss' then begin
+	if mode eq 'RSS' then begin
 	    sn1=sn1_rss
 	    sn2=sn2_rss
 	    sn3=sn3_rss
@@ -470,7 +654,7 @@ return
 	    sn_thr_str=sn_thr_str_rss
 	    sn_thr_ems=sn_thr_ems_rss
 	    if n_elements(sn_calibration_rss) ne 0 then sn_calibration = sn_calibration_rss
-	endif else if mode eq 'datacubes' then begin
+	endif else if mode eq 'CUBE' then begin
 	    sn1=sn1_datacubes
 	    sn2=sn2_datacubes
 	    sn3=sn3_datacubes
@@ -485,98 +669,67 @@ return
 	     return
 	endelse
 
-	; Only execute the binning if required
+	; Run the 2nd S/N level
 	if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous $
 	   or execute_all_modules eq 1 then begin
 
-	    ; Perform the spatial binning
-	    print, 'SPATIAL BINNING'
-	    MDAP_SPATIAL_BINNING, data, error, signal, noise, sn1, x2d, y2d, cdelt1, cdelt2, $
-				  spatial_binning_tpl, spectra_tpl, errors_tpl, xbin_tpl, $
-				  ybin_tpl, area_bins_tpl, bin_sn_tpl, sn_thr=sn_thr_tpl, $
-				  x2d_reconstructed=x2d_reconstructed, $
-				  y2d_reconstructed=y2d_reconstructed, $
-				  nelements_within_bin=nelements_within_bin_tpl, $
+	    ; Perform the 1st spatial binning
+	    print, sn1
+	    MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, sn1, bskyx, bskyy, $
+	    			  spaxel_dx, spaxel_dy, flux_tpl, ivar_tpl, xbin_tpl, ybin_tpl, $
+				  area_tpl, ston_tpl, sn_thr=sn_thr_tpl, nbinned=nbin_tpl, $
 				  sn_calibration=sn_calibration, $
 				  user_bin_map=user_bin_map_spatial_binning_1, $
-				  weight_for_sn=weight_for_sn,/plot
+				  weight_for_sn=weight_for_sn, /plot
 
-	    ; Add the version of the spatial binning procedure to the header
-	    SXADDPAR, header_2d, 'BLOCK2', mdap_spatial_binning_version, $
-		      'mdap_spatial_binning version'
+	    ; Perform the 2nd spatial binning
+	    print, sn2
+	    MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, sn2, bskyx, bskyy, $
+				  spaxel_dx, spaxel_dy, flux_str, ivar_str, xbin_str, ybin_str, $
+				  area_str, ston_str, sn_thr=sn_thr_str, nbinned=nbin_str, $
+				  sn_calibration=sn_calibration, $
+				  user_bin_map=user_bin_map_spatial_binning_2, $
+				  weight_for_sn=weight_for_sn, /plot
 
-	    ; TODO: This will force the binning at other S/N levels to be redone
-	    ;       as well?  Does one depend on the other?
+	    ; Perform the spatial binning
+	    print, sn3
+	    MDAP_SPATIAL_BINNING, flux, ivar, mask, signal_for_gas, noise_for_gas, gflag_for_gas, $
+				  sn3, bskyx, bskyy, spaxel_dx, spaxel_dy, flux_ems, ivar_ems, $
+				  xbin_ems, ybin_ems, area_ems, ston_ems, sn_thr=sn_thr_ems, $
+				  nbinned=nbin_ems, sn_calibration=sn_calibration, $
+				  user_bin_map=user_bin_map_spatial_binning_3, $
+				  weight_for_sn=weight_for_sn, /plot
 
 	    ; Re-execute all the remaining modules, if that wasn't already set
 	    execute_all_modules=1
 	endif
 
-	print, 'Done spatial binning'
+	; Print progress
+	printf, log_file_unit, '[INFO] mdap_spatial_binning ver ' $
+			        +max([mdap_spatial_binning_version, $
+				      mdap_spatial_binning_version_previous])
+
+	printf, log_file_unit, '[INFO] datacube '+root_name+' spatial binning 1. SN= ' $
+			       + MDAP_STC(sn1,/integer) + ' Nbins: ' $
+			       + MDAP_STC(n_elements(xbin_tpl), /integer)
+
+	printf, log_file_unit, '[INFO] datacube '+root_name+' spatial binning 2. SN= ' $
+				+ MDAP_STC(sn2,/integer) + ' Nbins: ' $
+				+ MDAP_STC(n_elements(xbin_str), /integer)
+
+	printf, log_file_unit, '[INFO] datacube '+root_name+' spatial binning 3. SN= ' $
+				+ MDAP_STC(sn3,/integer) + ' Nbins: ' $
+				+ MDAP_STC(n_elements(xbin_ems), /integer)
+
+	; TODO: Should be able to loop three times, instead of having 3 repeats
+	;       of essentially the same code
+
+	; END BLOCK 2 ------------------------------------------------------------------
 
 close, log_file_unit
 return
 
 
-	; Print progress
-	printf, 1, '[INFO] mdap_spatial_binning ver ' $
-		   +max([mdap_spatial_binning_version, mdap_spatial_binning_version_previous])
-	printf, 1, '[INFO] datacube '+root_name+' spatial binning 1. SN= ' $
-		   +MDAP_STC(sn1,/integer)+' Nbins: '+MDAP_STC(n_elements(xbin_tpl), /integer)
-
-	; TODO: Should be able to loop three times, instead of having 3 repeats
-	;       of essentially the same code
-
-	; Run the 2nd S/N level
-	if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous $
-	   or execute_all_modules eq 1 then begin
-
-	    ; Perform the spatial binning
-	    MDAP_SPATIAL_BINNING, data, error, signal, noise, sn2, x2d, y2d, cdelt1, cdelt2, $
-				  spatial_binning_str, spectra_str,errors_str, xbin_str, $
-				  ybin_str, area_bins_str, bin_sn_str, sn_thr=sn_thr_str, $
-				  x2d_reconstructed=x2d_reconstructed, $
-				  y2d_reconstructed=y2d_reconstructed, $
-				  nelements_within_bin=nelements_within_bin_str, $
-				  sn_calibration=sn_calibration, $
-				  user_bin_map=user_bin_map_spatial_binning_2, $
-				  weight_for_sn=weight_for_sn
-
-	    ; TODO: why no information added to the header?
-
-	    ; Re-execute all the remaining modules, if that wasn't already set
-	    execute_all_modules=1
-	endif
-
-	; Print progress
-	printf, 1, '[INFO] datacube '+root_name+' spatial binning 2. SN= ' $
-		   + MDAP_STC(sn2,/integer)+' Nbins: '+MDAP_STC(n_elements(xbin_str), /integer)
-
-	; Run the final S/N level
-	if mdap_spatial_binning_version gt mdap_spatial_binning_version_previous $
-	   or execute_all_modules eq 1 then begin
-
-	    ; Perform the spatial binning
-	    MDAP_SPATIAL_BINNING, data, error, signal_for_gas, noise_for_gas, sn3, x2d, y2d, $
-				  cdelt1, cdelt2, spatial_binning_ems, spectra_ems, errors_ems, $
-				  xbin_ems, ybin_ems, area_bins_ems, bin_sn_ems, $
-				  sn_thr=sn_thr_ems, x2d_reconstructed=x2d_reconstructed, $
-				  y2d_reconstructed=y2d_reconstructed, $
-				  nelements_within_bin=nelements_within_bin_ems, $
-				  sn_calibration=sn_calibration, $
-				  user_bin_map=user_bin_map_spatial_binning_3, $
-				  weight_for_sn=weight_for_sn
-
-	    ; Re-execute all the remaining modules, if that wasn't already set
-   	    execute_all_modules=1
-
-	endif
-
-	; Print the progress
-	printf, 1, '[INFO] datacube '+root_name+' spatial binning 3. SN= ' $
-	           +MDAP_STC(sn3,/integer)+' Nbins: '+MDAP_STC(n_elements(xbin_ems), /integer)
-
-	; END BLOCK 2 ------------------------------------------------------------------
 
 
 	; BLOCK 3 ----------------------------------------------------------------------
@@ -606,7 +759,8 @@ return
 	   or execute_all_modules eq 1 then begin
 
 	    ; Rebin the spectra to a linear step in ln(wavelength)
-	    MDAP_LOG_REBIN, spectra_tpl, errors_tpl, wavelength, $
+	    errors_tpl = sqrt(1./ivar_tpl)
+	    MDAP_LOG_REBIN, flux_tpl, errors_tpl, wave, $
 			    stellar_library_spatial_binning_1, fwhm_diff, log_spc_tpl, $
 			    log_err_tpl, log_wav_tpl, library_log_tpl, log_wav_library_tpl, $
 			    input_velscale=velscale, wave_range=trim_wav_range_spatial_binning_1, $
@@ -630,7 +784,8 @@ return
 	   or execute_all_modules eq 1 then begin
 
 	    ; Rebin the spectra to a linear step in ln(wavelength)
-	    MDAP_LOG_REBIN, spectra_str, errors_str, wavelength, $
+	    errors_str = sqrt(1./ivar_str)
+	    MDAP_LOG_REBIN, flux_str, errors_str, wavelength, $
 			    stellar_library_spatial_binning_2, fwhm_diff, log_spc_str, $
 			    log_err_str, log_wav_str, library_log_str, log_wav_library_str, $
 			    input_velscale=velscale, wave_range=trim_wav_range_spatial_binning_2, $
@@ -647,7 +802,8 @@ return
 	   or execute_all_modules eq 1 then begin
 
 	    ; Rebin the spectra to a linear step in ln(wavelength)
-	    MDAP_LOG_REBIN, spectra_ems, errors_ems, wavelength, $
+	    errors_ems = sqrt(1./ivar_ems)
+	    MDAP_LOG_REBIN, flux_ems, errors_ems, wavelength, $
 			    stellar_library_spatial_binning_3, fwhm_diff, log_spc_ems, $
 			    log_err_ems, log_wav_ems, library_log_ems, log_wav_library_ems, $
 			    input_velscale=velscale, wave_range=trim_wav_range_spatial_binning_3, $
@@ -738,18 +894,18 @@ return
 	   ; Convert intensities and fluxes to surface brightness
 	   junk = size(emission_line_fluxes_tpl)
 	   for i = 0, junk[1]-1 do begin
-		emission_line_intens_tpl[i,*] = emission_line_intens_tpl[i,*] / area_bins_tpl[i]
+		emission_line_intens_tpl[i,*] = emission_line_intens_tpl[i,*] / area_tpl[i]
 		emission_line_intens_tpl_err[i,*] = emission_line_intens_tpl_err[i,*] $
-						    / sqrt(area_bins_tpl[i])
-		emission_line_fluxes_tpl[i,*] = emission_line_fluxes_tpl[i,*] / area_bins_tpl[i]
+						    / sqrt(area_tpl[i])
+		emission_line_fluxes_tpl[i,*] = emission_line_fluxes_tpl[i,*] / area_tpl[i]
 		emission_line_fluxes_tpl_err[i,*] = emission_line_fluxes_tpl_err[i,*] $
-						    / sqrt(area_bins_tpl[i])
+						    / sqrt(area_tpl[i])
 	   endfor
 
-;   for i = 0, junk[1]-1 do emission_line_intens_tpl[i,*]=emission_line_intens_tpl[i,*]/area_bins_tpl[i]
-;   for i = 0, junk[1]-1 do emission_line_intens_tpl_err[i,*]=emission_line_intens_tpl_err[i,*]/sqrt(area_bins_tpl[i])
-;   for i = 0, junk[1]-1 do emission_line_fluxes_tpl[i,*]=emission_line_fluxes_tpl[i,*]/area_bins_tpl[i]
-;   for i = 0, junk[1]-1 do emission_line_fluxes_tpl_err[i,*]=emission_line_fluxes_tpl_err[i,*]/sqrt(area_bins_tpl[i])
+;   for i = 0, junk[1]-1 do emission_line_intens_tpl[i,*]=emission_line_intens_tpl[i,*]/area_tpl[i]
+;   for i = 0, junk[1]-1 do emission_line_intens_tpl_err[i,*]=emission_line_intens_tpl_err[i,*]/sqrt(area_tpl[i])
+;   for i = 0, junk[1]-1 do emission_line_fluxes_tpl[i,*]=emission_line_fluxes_tpl[i,*]/area_tpl[i]
+;   for i = 0, junk[1]-1 do emission_line_fluxes_tpl_err[i,*]=emission_line_fluxes_tpl_err[i,*]/sqrt(area_tpl[i])
 
 	    ; Only keep templates with positive weights for the next fits
 ;	    if remove_null_templates[0] eq 1 then begin
@@ -763,7 +919,7 @@ return
 
 	    ;LC: calculate the real S/N of binned spectra
 	    ; TODO: Is this really the "real S/N"?
-	    bin_sn_tpl_real = bin_sn_tpl
+	    bin_sn_tpl_real = ston_tpl
 	    indxx = where(wavelength_output_tpl ge w_range_for_sn_computation[0] $
 			  and wavelength_output_tpl le w_range_for_sn_computation[1])
 
@@ -864,17 +1020,17 @@ return
 	    ; TODO: Is this really surface brightness?
 	    junk = size(emission_line_fluxes_str)
 	    for i = 0, junk[1]-1 do begin
-		emission_line_intens_str[i,*] = emission_line_intens_str[i,*] / area_bins_str[i]
+		emission_line_intens_str[i,*] = emission_line_intens_str[i,*] / area_str[i]
 		emission_line_intens_str_err[i,*] = emission_line_intens_str_err[i,*] $
-						    / sqrt(area_bins_str[i])
-		emission_line_fluxes_str[i,*] = emission_line_fluxes_str[i,*] / area_bins_str[i]
+						    / sqrt(area_str[i])
+		emission_line_fluxes_str[i,*] = emission_line_fluxes_str[i,*] / area_str[i]
 		emission_line_fluxes_str_err[i,*] = emission_line_fluxes_str_err[i,*] $
-						    / sqrt(area_bins_str[i])
+						    / sqrt(area_str[i])
 	    endfor
 
 	    ;LC: calculate the real S/N of binned spectra
 	    ; TODO: Is this really the "real S/N"?
-	    bin_sn_str_real = bin_sn_str
+	    bin_sn_str_real = ston_str
 	    indxx = where(wavelength_output_str ge w_range_for_sn_computation[0] $
 			  and wavelength_output_str le w_range_for_sn_computation[1] )
 	    for i = 0, n_elements(bin_sn_str_real) -1 do begin
@@ -940,12 +1096,12 @@ return
 	    ; save all flux maps, converting to surface brightness
 	    junk = size(emission_line_fluxes_ems)
 	    for i = 0, junk[1]-1 do begin
-		emission_line_intens_ems[i,*] = emission_line_intens_ems[i,*] / area_bins_ems[i]
+		emission_line_intens_ems[i,*] = emission_line_intens_ems[i,*] / area_ems[i]
 		emission_line_intens_ems_err[i,*] = emission_line_intens_ems_err[i,*] $
-						    / sqrt(area_bins_ems[i])
-		emission_line_fluxes_ems[i,*] = emission_line_fluxes_ems[i,*] / area_bins_ems[i]
+						    / sqrt(area_ems[i])
+		emission_line_fluxes_ems[i,*] = emission_line_fluxes_ems[i,*] / area_ems[i]
 		emission_line_fluxes_ems_err[i,*] = emission_line_fluxes_ems_err[i,*] $
-						    / sqrt(area_bins_ems[i])
+						    / sqrt(area_ems[i])
 	    endfor
 
 	    ; Re-execute all the remaining modules, if that wasn't already set
@@ -953,7 +1109,7 @@ return
 
 	    ;LC: calculate the real S/N of binned spectra
 	    ; TODO: Is this really the "real S/N"?
-	    bin_sn_ems_real = bin_sn_ems
+	    bin_sn_ems_real = ston_ems
 	    indxx = where(wavelength_output_rest_frame_log ge $
 			  w_range_for_sn_computation_for_gas[0] $
 			  and wavelength_output_rest_frame_log le $
@@ -985,7 +1141,7 @@ return
 	;-------------------------------------------------------------------------------
 
 	; Initialize the instrumental resolution.  TODO: use fits extension
-	if n_elements(instrumental_fwhm_file) ne 0 then begin	; use input file
+	if n_elements(fwhm_ang) ne 0 then begin			; use input file
 	    fwhm_instr=interpol(fwhm_ang,ww,wavelength_output_tpl) 
 	endif else begin					; set to a constant
 	    fwhm_instr=wavelength_output_tpl*0.+2.54		; TODO: Don't like this practice
@@ -1048,139 +1204,145 @@ return
 	;         4th binning scheme?
 	;-------------------------------------------------------------------------------
 
-	; Create error array using fit residuals, if required
-	if mdap_spatial_radial_binning_version gt mdap_spatial_radial_binning_version_previous $
-	   or execute_all_modules eq 1 then begin
-	   
-	    ; TODO: Why is mdap_get_erro_from_residual not used? Function obsolete?
-	    ;mdap_get_error_from_residual,residuals_ems,galaxy_minus_ems_fit_model_ems,input_errors
+;	TODO: Omitted this because mdap_spatial_binning no longer produces the
+;	binning map, which is used below in mdap_spatial_radial_binning.  Need
+;	to come back and fix this.
 
-	    sz_ems = size(log_err_ems)
-	    nl = n_elements(wavelength_output_rest_frame_log)
-	    input_errors = fltarr(sz_ems[2], nl)
-	    log_step_gal = LOG_WAV_EMS[1]-LOG_WAV_EMS[0]
-	    for i = 0, sz_ems[2]-1 do begin
-		rf_gal_lam = exp(log_wav_ems-stellar_kinematics_ems[i,0] / velscale*(log_step_gal))
-		input_errors[i,*] = interpol(log_err_ems[*,i], rf_gal_lam, $
-					     wavelength_output_rest_frame_log)
-	    endfor
+;	; Create error array using fit residuals, if required
+;	if mdap_spatial_radial_binning_version gt mdap_spatial_radial_binning_version_previous $
+;	   or execute_all_modules eq 1 then begin
+;	   
+;	    ; TODO: Why is mdap_get_erro_from_residual not used? Function obsolete?
+;	    ;mdap_get_error_from_residual,residuals_ems,galaxy_minus_ems_fit_model_ems,input_errors
+;
+;	    sz_ems = size(log_err_ems)
+;	    nl = n_elements(wavelength_output_rest_frame_log)
+;	    input_errors = fltarr(sz_ems[2], nl)
+;	    log_step_gal = LOG_WAV_EMS[1]-LOG_WAV_EMS[0]
+;	    for i = 0, sz_ems[2]-1 do begin
+;		rf_gal_lam = exp(log_wav_ems-stellar_kinematics_ems[i,0] / velscale*(log_step_gal))
+;		input_errors[i,*] = interpol(log_err_ems[*,i], rf_gal_lam, $
+;					     wavelength_output_rest_frame_log)
+;	    endfor
+;
+;	    ; Perform the radial binning
+;	    MDAP_SPATIAL_RADIAL_BINNING, bin_sn_ems_real, x2d_reconstructed, y2d_reconstructed, $
+;					 spatial_binning_ems, xbin_ems, ybin_ems, ell, pa, $
+;					 galaxy_minus_ems_fit_model_ems, input_errors, $
+;					 wavelength_output_rest_frame_log, spatial_binning_rad, $
+;					 r_bin, r_bin_lo, r_bin_up, r2d_bin, r2d_bin_lo, $
+;					 r2d_bin_up, radially_binned_spectra, $
+;					 radially_binned_errors, $
+;					 output_lrange=trim_wav_range_radial_binning, $
+;					 output_wav=output_wav, $
+;					 n_elements_bin=nelements_within_bin_radial, $
+;					 low_radial_bins_user_inputs=low_radial_bins_user_inputs, $
+;					 upper_radial_bins_user_inputs=upper_radial_bins_user_inputs, $
+;					 Reff_=Reff, PSFsize_=PSFsize, $
+;					 add_default_bins=add_default_bins
+;
+;	    ; Print progress
+;	    printf, 1, '[INFO] datacube '+root_name+' radial binning: ' $
+;		       +MDAP_STC(n_elements(r_bin),/integer)+' bins'
+;
+;
+;	    ; Perform the spectral fit of the radially binned data
+;	    star_kin_starting_guesses_rbin = fltarr(n_elements(r_bin),4)
+;	    gas_kin_starting_guesses_rbin  = fltarr(n_elements(r_bin),2)
+;	    star_kin_starting_guesses_rbin[*,1] = velocity_dispersion_initial_guess[0]
+;	    gas_kin_starting_guesses_rbin[*,1]=50.
+;	    
+;	    loglam_gal_rbin=alog(output_wav)
+;	    
+;	    MDAP_SPECTRAL_FITTING, radially_binned_spectra, radially_binned_errors, $
+;				   loglam_gal_rbin, library_log_ems, log_wav_library_ems, $
+;				   velscale, stellar_kinematics_rbin, stellar_kinematics_rbin_err, $
+;				   stellar_weights_rbin, emission_line_kinematics_rbin, $
+;				   emission_line_kinematics_rbin_err, $
+;				   emission_line_kinematics_rbin_individual, $
+;				   emission_line_kinematics_rbin_individual_err, $
+;				   emission_line_intens_rbin, emission_line_intens_rbin_err, $
+;				   emission_line_fluxes_rbin, emission_line_fluxes_rbin_err, $
+;				   emission_line_equivW_rbin, emission_line_equivW_rbin_err, $
+;				   wavelength_input=output_wav, wavelength_output_rbin, $
+;				   best_fit_model_rbin, galaxy_minus_ems_fit_model_rbin, $
+;				   best_template_rbin, best_template_LOSVD_conv_rbin, $
+;				   reddening_rbin, reddening_rbin_err, residuals_rbin, $
+;				   star_kin_starting_guesses=star_kin_starting_guesses_rbin, $
+;				   gas_kin_starting_guesses=gas_kin_starting_guesses_rbin, $
+;				   emission_line_file=emission_line_file_rad_binning, $
+;				   extra_inputs=spectral_fit_par_rbin, $
+;				   fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix/3., $
+;				   range_v_star=[-50.,50.], range_v_gas=[-50.,50.], $
+;				   mask_range=mask_range, external_library=external_library, /quiet
+;
+;	    ; Print progress
+;	    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting' 
+;
+;	    ;LC: calculate the real S/N of binned spectra
+;	    ; TODO: Is this really the "real S/N"?
+;	    bin_sn_rad_real = r_bin
+;	    indxx = where(wavelength_output_rbin ge w_range_for_sn_computation[0] $
+;			  and wavelength_output_rbin le w_range_for_sn_computation[1] )
+;
+;	    for i = 0, n_elements(bin_sn_rad_real) -1 do begin
+;		MDAP_CALCULATE_SPECTRUM_SN, best_fit_model_rbin[i,indxx], residuals_rbin[i,indxx], $
+;					    wavelength_output_rbin[indxx], sn_per_angstorm, /rms
+;		bin_sn_rad_real[i] = sn_per_angstorm[0]
+;	    endfor
+;
+;	    ;junk = temporary(sn_per_angstorm)
+;
+;	    ; Measure the absorption-line indices using the radially binned spectra
+;
+;	    ;lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_rbin)
+;	    ;rrr=poly_fit(wavelength_output_rbin,lick_resolution_tmp,4,yfit=lick_resolution)
+;	    ;fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0.
+;
+;	    ; Initialize the instrumental resolution.  TODO: use fits extension
+;	    if n_elements(fwhm_ang) ne 0 then begin			; use input file
+;		fwhm_instr=interpol(fwhm_ang,ww,wavelength_output_rbin) 
+;	    endif else begin						; set to a constant
+;		fwhm_instr=wavelength_output_rbin*0.+2.54		; TODO: bad practice?
+;	    endelse
+;
+;	    ;miles_resolution = fwhm_instr*0.+2.54
+;	    ;fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
+;
+;	    ; Determine the difference in instrumental resolution
+;	    lick_resolution = fwhm_instr*0.+8.4
+;	    fwhm_diff_indices=sqrt(lick_resolution^2 - fwhm_instr^2)
+;
+;	    ; Check where the Lick instrumental resolution is larger than the data resolution
+;	    indici = where(finite(fwhm_diff_indices) ne 1)
+;	    if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.  ; TODO: Forced to be the same
+;
+;	    ; Measure the absorption-line indices
+;	    MDAP_MEASURE_INDICES, absorption_line_indices, wavelength_output_rbin, $
+;				  galaxy_minus_ems_fit_model_rbin, best_template_rbin, $
+;				  best_template_LOSVD_conv_rbin, stellar_kinematics_rbin[*,0], $
+;				  residuals_rbin, fwhm_diff_indices, abs_line_indices_rbin, $
+;				  abs_line_indices_errors_rbin, abs_line_indices_template_rbin, $
+;				  abs_line_indices_template_losvd_rbin, dir=output_dir+'rbin_', $
+;				  /noplot
+;
+;	    ; Print progress
+;	    printf,1,'[INFO] datacube '+root_name+' radial binning: measured indices'
+;
+;	    ; Add the version to the header
+;	    SXADDPAR, header_2d, 'BLOCK6', mdap_spatial_radial_binning_version, $
+;		      'mdap_spatial_radial_binning_version'
+;
+;	    ; Re-execute all the remaining modules, if that wasn't already set
+;	    execute_all_modules=1
+;	endif
+;
+;	; Save progress
+;	if save_intermediate_steps eq 1 then begin
+;	    save, filename=root_name+mode+'_block6a.idl', /variables
+;	endif
 
-	    ; Perform the radial binning
-	    MDAP_SPATIAL_RADIAL_BINNING, bin_sn_ems_real, x2d_reconstructed, y2d_reconstructed, $
-					 spatial_binning_ems, xbin_ems, ybin_ems, ell, pa, $
-					 galaxy_minus_ems_fit_model_ems, input_errors, $
-					 wavelength_output_rest_frame_log, spatial_binning_rad, $
-					 r_bin, r_bin_lo, r_bin_up, r2d_bin, r2d_bin_lo, $
-					 r2d_bin_up, radially_binned_spectra, $
-					 radially_binned_errors, $
-					 output_lrange=trim_wav_range_radial_binning, $
-					 output_wav=output_wav, $
-					 n_elements_bin=nelements_within_bin_radial, $
-					 low_radial_bins_user_inputs=low_radial_bins_user_inputs, $
-					 upper_radial_bins_user_inputs=upper_radial_bins_user_inputs, $
-					 Reff_=Reff, PSFsize_=PSFsize, $
-					 add_default_bins=add_default_bins
-
-	    ; Print progress
-	    printf, 1, '[INFO] datacube '+root_name+' radial binning: ' $
-		       +MDAP_STC(n_elements(r_bin),/integer)+' bins'
-
-
-	    ; Perform the spectral fit of the radially binned data
-	    star_kin_starting_guesses_rbin = fltarr(n_elements(r_bin),4)
-	    gas_kin_starting_guesses_rbin  = fltarr(n_elements(r_bin),2)
-	    star_kin_starting_guesses_rbin[*,1] = velocity_dispersion_initial_guess[0]
-	    gas_kin_starting_guesses_rbin[*,1]=50.
-	    
-	    loglam_gal_rbin=alog(output_wav)
-	    
-	    MDAP_SPECTRAL_FITTING, radially_binned_spectra, radially_binned_errors, $
-				   loglam_gal_rbin, library_log_ems, log_wav_library_ems, $
-				   velscale, stellar_kinematics_rbin, stellar_kinematics_rbin_err, $
-				   stellar_weights_rbin, emission_line_kinematics_rbin, $
-				   emission_line_kinematics_rbin_err, $
-				   emission_line_kinematics_rbin_individual, $
-				   emission_line_kinematics_rbin_individual_err, $
-				   emission_line_intens_rbin, emission_line_intens_rbin_err, $
-				   emission_line_fluxes_rbin, emission_line_fluxes_rbin_err, $
-				   emission_line_equivW_rbin, emission_line_equivW_rbin_err, $
-				   wavelength_input=output_wav, wavelength_output_rbin, $
-				   best_fit_model_rbin, galaxy_minus_ems_fit_model_rbin, $
-				   best_template_rbin, best_template_LOSVD_conv_rbin, $
-				   reddening_rbin, reddening_rbin_err, residuals_rbin, $
-				   star_kin_starting_guesses=star_kin_starting_guesses_rbin, $
-				   gas_kin_starting_guesses=gas_kin_starting_guesses_rbin, $
-				   emission_line_file=emission_line_file_rad_binning, $
-				   extra_inputs=spectral_fit_par_rbin, $
-				   fwhm_instr_kmsec_matrix=fwhm_instr_kmsec_matrix/3., $
-				   range_v_star=[-50.,50.], range_v_gas=[-50.,50.], $
-				   mask_range=mask_range, external_library=external_library, /quiet
-
-	    ; Print progress
-	    printf,1,'[INFO] datacube '+root_name+' radial binning: spectral fitting' 
-
-	    ;LC: calculate the real S/N of binned spectra
-	    ; TODO: Is this really the "real S/N"?
-	    bin_sn_rad_real = r_bin
-	    indxx = where(wavelength_output_rbin ge w_range_for_sn_computation[0] $
-			  and wavelength_output_rbin le w_range_for_sn_computation[1] )
-
-	    for i = 0, n_elements(bin_sn_rad_real) -1 do begin
-		MDAP_CALCULATE_SPECTRUM_SN, best_fit_model_rbin[i,indxx], residuals_rbin[i,indxx], $
-					    wavelength_output_rbin[indxx], sn_per_angstorm, /rms
-		bin_sn_rad_real[i] = sn_per_angstorm[0]
-	    endfor
-
-	    ;junk = temporary(sn_per_angstorm)
-
-	    ; Measure the absorption-line indices using the radially binned spectra
-
-	    ;lick_resolution_tmp=interpol(lick_fwhm_y,resolution_x_lick,wavelength_output_rbin)
-	    ;rrr=poly_fit(wavelength_output_rbin,lick_resolution_tmp,4,yfit=lick_resolution)
-	    ;fwhm_diff_indices=sqrt(double(lick_resolution)^2.-double(fwhm_instr)^2.)*0.
-
-	    ; Initialize the instrumental resolution.  TODO: use fits extension
-	    if n_elements(instrumental_fwhm_file) ne 0 then begin		; use input file
-		fwhm_instr=interpol(fwhm_ang,ww,wavelength_output_rbin) 
-	    endif else begin						; set to a constant
-		fwhm_instr=wavelength_output_rbin*0.+2.54		; TODO: bad practice?
-	    endelse
-
-	    ;miles_resolution = fwhm_instr*0.+2.54
-	    ;fwhm_diff_indices=sqrt(miles_resolution^2-fwhm_instr^2) ;fwhm in angstrom
-
-	    ; Determine the difference in instrumental resolution
-	    lick_resolution = fwhm_instr*0.+8.4
-	    fwhm_diff_indices=sqrt(lick_resolution^2 - fwhm_instr^2)
-
-	    ; Check where the Lick instrumental resolution is larger than the data resolution
-	    indici = where(finite(fwhm_diff_indices) ne 1)
-	    if indici[0] ne -1 then fwhm_diff_indices[indici] = 0.  ; TODO: Forced to be the same
-
-	    ; Measure the absorption-line indices
-	    MDAP_MEASURE_INDICES, absorption_line_indices, wavelength_output_rbin, $
-				  galaxy_minus_ems_fit_model_rbin, best_template_rbin, $
-				  best_template_LOSVD_conv_rbin, stellar_kinematics_rbin[*,0], $
-				  residuals_rbin, fwhm_diff_indices, abs_line_indices_rbin, $
-				  abs_line_indices_errors_rbin, abs_line_indices_template_rbin, $
-				  abs_line_indices_template_losvd_rbin, dir=output_dir+'rbin_', $
-				  /noplot
-
-	    ; Print progress
-	    printf,1,'[INFO] datacube '+root_name+' radial binning: measured indices'
-
-	    ; Add the version to the header
-	    SXADDPAR, header_2d, 'BLOCK6', mdap_spatial_radial_binning_version, $
-		      'mdap_spatial_radial_binning_version'
-
-	    ; Re-execute all the remaining modules, if that wasn't already set
-	    execute_all_modules=1
-	endif
-
-	; Save progress
-	if save_intermediate_steps eq 1 then begin
-	    save, filename=root_name+mode+'_block6a.idl', /variables
-	endif
+	; TODO: Here, I continue with the rest of block 6
 
 	; Determine the stellar rotation curves using the kinemetry package
 	MDAP_DO_KINEMETRY, signal2d_reconstructed, x2d_reconstructed, y2d_reconstructed, xbin_str, $
@@ -1247,8 +1409,8 @@ return
 	k=k+1
 
 	; Binning extension
-	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_tpl, k, 'EXTNAME','Binning_map_1'
-	k=k+1
+;	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_tpl, k, 'EXTNAME','Binning_map_1'
+;	k=k+1
 
 	; Set the table column names
 	stringa = [ "X", "Y", "area_bin", "StoN", "Nelements" ]
@@ -1264,10 +1426,10 @@ return
 	p1=replicate(str,n_elements(xbin_tpl))
 	p1.x=xbin_tpl
 	p1.y=ybin_tpl
-	p1.area_bin = AREA_BINS_TPL
+	p1.area_bin = area_tpl
 	; p1.reddening = reddening_tpl
 	p1.StoN = bin_sn_tpl_real
-	p1.Nelements=nelements_within_bin_tpl
+	p1.Nelements=nbin_tpl
 
 	for i = 0, NINDICES-1 do begin
 	    d=execute('p1.'+indices[i].name+'=ABS_LINE_INDICES[*,i]')
@@ -1280,9 +1442,10 @@ return
 	MODFITS, output_filefits, 0, h1, exten_no=k		;?
 
 	; Add extension with stellar kinematics
+	; TODO: I removed this layer
 	k=k+1
-	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_str, k, 'EXTNAME', 'Binning_map_2'
-	k=k+1
+;	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_str, k, 'EXTNAME', 'Binning_map_2'
+;	k=k+1
 
 	stringa = [ "X", "Y", "area_bin", "StoN", "Nelements", "Vel", "Vel_err", "Disp", $
 		    "Disp_err", "H3", "H3_err", "H4", "H4_err", "Chi2_DOF", "Vel_2moms", $
@@ -1296,9 +1459,9 @@ return
 	p2=replicate(str,n_elements(xbin_str))
 	p2.x=xbin_str
 	p2.y=ybin_str
-	p2.area_bin = AREA_BINS_STR
+	p2.area_bin = area_str
 	p2.StoN = bin_sn_str_real
-	p2.Nelements=nelements_within_bin_str
+	p2.Nelements=nbin_str
 	p2.Vel=STELLAR_KINEMATICS_STR[*,0]
 	p2.Vel_err=STELLAR_KINEMATICS_STR_ERR[*,0]
 	p2.Disp=STELLAR_KINEMATICS_STR[*,1]
@@ -1330,8 +1493,9 @@ return
 
 	; Store emission-line kinematics, fluxes, and equivalent widths
 	k=k+1
-	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_ems, k, 'EXTNAME', 'Binning_map_3'
-	k=k+1
+	; TODO: I removed this
+;	MDAP_ADD_FITS_LAYER, output_filefits, spatial_binning_ems, k, 'EXTNAME', 'Binning_map_3'
+;	k=k+1
 
 	; Set column names
 	stringa = [ "X", "Y", "area_bin", "StoN", "Nelements", "reddening_star", $
@@ -1359,9 +1523,9 @@ return
 	p3=replicate(str,n_elements(xbin_ems))
 	p3.x=xbin_ems
 	p3.y=ybin_ems
-	p3.area_bin = AREA_BINS_EMS
+	p3.area_bin = area_ems
 	p3.StoN = bin_sn_ems_real
-	p3.Nelements=nelements_within_bin_ems
+	p3.Nelements=nbin_ems
 	; p3.Vel=EMISSION_LINE_KINEMATICS_EMS[*,0]
 	; p3.Vel_err=EMISSION_LINE_KINEMATICS_EMS_ERR[*,0]
 	; p3.Disp=EMISSION_LINE_KINEMATICS_EMS[*,1]

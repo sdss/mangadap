@@ -98,6 +98,7 @@ external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500.fits -text s
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text svneol=unset#unset
 external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
 pro/fileio/mdap_read_drp_fits.pro -text
+pro/fileio/mdap_read_user_defined_spatial_bins.pro -text
 pro/interfaces/mdap_create_starting_guesses.pro -text
 pro/interfaces/mdap_do_kinemetry.pro -text
 pro/interfaces/mdap_log_rebin.pro -text
@@ -110,6 +111,7 @@ pro/manga_dap.pro -text
 pro/mangadap_version.pro -text
 pro/mdap_create_input_table.pro -text
 pro/mdap_match_obs_nsa.pro -text
+pro/mdap_offset_xy_center.pro -text
 pro/modules/mdap_bvls.pro -text
 pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_sn.pro -text
@@ -127,16 +129,22 @@ pro/obsolete/mdap_sgandalf.pro -text
 pro/obsolete/mdap_spectral_fitting_with_sgandalf.pro -text
 pro/utilities/basic_colors.pro -text
 pro/utilities/mdap_add_fits_layer.pro -text
+pro/utilities/mdap_array_string.pro -text
 pro/utilities/mdap_calibrate_sn.pro -text
+pro/utilities/mdap_combine_spectra.pro -text
 pro/utilities/mdap_convol_sigma.pro -text
 pro/utilities/mdap_cube_onsky_xy.pro -text
 pro/utilities/mdap_display_2dmap.pro -text
 pro/utilities/mdap_display_2dmap_ps.pro -text
 pro/utilities/mdap_drp_filetype.pro -text
+pro/utilities/mdap_fiducial_bin_xy.pro -text
+pro/utilities/mdap_generate_binning_weights.pro -text
 pro/utilities/mdap_get_2d_map.pro -text
 pro/utilities/mdap_get_error_from_residual.pro -text
 pro/utilities/mdap_get_losvd.pro -text
+pro/utilities/mdap_get_spaxel_size.pro -text
 pro/utilities/mdap_ind_profiles.pro -text
+pro/utilities/mdap_insert_flagged.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_maps.pro -text
 pro/utilities/mdap_onsky_xy_arcs2center.pro -text
@@ -157,7 +165,10 @@ pro/utilities/mdap_select_good_spectra.pro -text
 pro/utilities/mdap_select_wave.pro -text
 pro/utilities/mdap_setup_io.pro -text
 pro/utilities/mdap_sgn.pro -text
+pro/utilities/mdap_spectral_bin_area.pro -text
 pro/utilities/mdap_stc.pro -text
+pro/utilities/mdap_wcs_units.pro -text
+pro/utilities/mdap_wcsunit2arcsec.pro -text
 pro/utilities/range.pro -text
 pro/utilities/read_header.pro -text
 pro/utilities/test_sn_definition.pro -text
