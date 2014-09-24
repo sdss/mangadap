@@ -6,7 +6,7 @@
 ;	Create a vector used to select out a desired wavelength range.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_SELECT_WAVE, wave, wstart, wend, selected
+;	MDAP_SELECT_WAVE, wave, wstart, wend, selected, complement=complement
 ;
 ; INPUTS:
 ;	wave dblarr[]
@@ -25,6 +25,8 @@
 ;		wavelength range.
 ;
 ; OPTIONAL OUTPUT:
+;	complement intarr[]
+;		Complement of the selected array
 ;
 ; COMMENTS:
 ;
@@ -41,11 +43,12 @@
 ;
 ; REVISION HISTORY:
 ;	09 Sep 2014: (KBW) Original implementation
+;	19 Sep 2014: (KBW) Allow for complement output
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SELECT_WAVE, $
-		wave, wrange, selected
+		wave, wrange, selected, complement=complement
 
 	if n_elements(wrange) ne 0 then begin			; Check if the range is defined
 	    if wrange[0] gt wrange[1] then begin		; Check that the order makes sense
@@ -55,9 +58,13 @@ PRO MDAP_SELECT_WAVE, $
 		wrange[0] = temp
 	    endif
 
-	    selected=where(wave ge wrange[0] and wave le wrange[1])	; Select valid pixels
-	endif else $
+	    ; Select valid pixels
+	    selected=where(wave ge wrange[0] and wave le wrange[1], complement=comp)
+	endif else begin
 	    selected = indgen(n_elements(wave))			; All are valid
+	    comp=-1L
+	endelse
 
+	complement=comp
 END
 

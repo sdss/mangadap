@@ -57,8 +57,8 @@
 ;		log10(angstroms).
 ;
 ;	sres dblarr[T]
-;		Median spectral resolution as a function of wavelength for all
-;		fibers.
+;		Median spectral resolution (R=lamda/delta lamba) as a function
+;		of wavelength for all fibers.
 ;
 ;	skyx dblarr[N][T]
 ;		Spatial X coordinate in arcseconds for each spectral channel,

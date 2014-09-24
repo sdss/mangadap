@@ -1,56 +1,67 @@
+;+
+; NAME:
+;	MDAP_LOG_REBIN
 ;
-;######################################################################
+; PURPOSE:
+;	TODO
 ;
-; Copyright (C) 2001-2003, Michele Cappellari
-; E-mail: cappellari@strw.leidenuniv.nl
+; CALLING SEQUENCE:
+;	MDAP_LOG_REBIN, flux, ivar, wave, tpl_lib, res_var_diff, flux_log, ivar_log, wave_log, $
+;			tpl_lib_log, tpl_lib_wave_log, input_velscale=input_velscale, $
+;			wave_range=wave_range, flux=flux, $
+;			gal_wavelength_log_step=gal_wavelength_log_step, quiet=quiet, $
+;			version=version,
 ;
-; This software is provided as is without any warranty whatsoever.
-; Permission to use, for non-commercial purposes is granted.
-; Permission to modify for personal or internal use is granted,
-; provided this copyright and disclaimer are included unchanged
-; at the beginning of the file. All other rights are reserved.
+; INPUTS:
+
+	flux dblarr[N][C]
+		N galaxy spectra, each with C spectral channels
+
+	ivar dblarr[N][C]
+		Inverse variance of the N galaxy spectra, each with C spectral channels
+
+	wave dblarr[C]
+		The wavelength coordinate of each of the C spectral channels
+
+	tpl_lib string
+		Directory containing the template spectra.
+
+library      string          Directory containing the template spectra. Template spectra must be in fits format, defined over a 
+                             linear wavelength with constant ang/pix step, and must contain all the header information needed to  
+                             recover the wavelenght domain (i.e. CRPIX1, CDELT1, and CRVAL1).
+
+fwhm_diff    dbl array       Vector containing the FWHM(lambda) that the stellar spectra must be convolved for. At the moment, 
+                             the value median(fwhm_diff/wavelength*c) is used for broadening. Implementation to use the full 
+                             LSF(lambda) information are foreseen.
+
+
+
 ;
-;######################################################################
+; OPTIONAL INPUTS:
 ;
+; OPTIONAL KEYWORDS:
 ;
-;----------------------------------------------------------------------
-pro mdap_do_log10_rebin, lamRange, spec, specNew, logLam, $
-    OVERSAMPLE=oversample, VELSCALE=velScale
-compile_opt idl2
-on_error, 2
+; OUTPUT:
+;
+; OPTIONAL OUTPUT:
+;
+; COMMENTS:
+;
+; EXAMPLES:
+;
+; BUGS:
+;
+; PROCEDURES CALLED:
+;
+; INTERNAL SUPPORT ROUTINES:
+;
+; REVISION HISTORY:
+;
+;-
+;------------------------------------------------------------------------------
 
-if n_elements(lamRange) ne 2 then message, 'lamRange must contain two elements'
-s = size(spec)
-if s[0] ne 1 then message, 'input spectrum must be a vector'
-n = s[1]
-if n_elements(oversample) ne 0 then m = n*oversample else m = n
 
-dLam = (lamRange[1]-lamRange[0])/(n-1d)          ; Assume constant dLam
-lim = lamRange/dLam + [-0.5d,0.5d]               ; All in units of dLam
-borders = range(lim[0],lim[1],n+1)               ; Linearly
-logLim = alog10(lim)
 
-c = 299792.458d                                  ; Speed of light in km/s
-if n_elements(velScale) gt 0 then begin          ; Velocity scale is set by user
-    logScale = velScale/c/alog(10.0d)
-    m = floor((logLim[1]-logLim[0])/logScale)    ; Number of output pixels
-    logLim[1] = logLim[0] + m*logScale
-endif else $
-    velScale = (logLim[1]-logLim[0])/m*c*alog(10.0d) ; Only for output
-
-newBorders = 10^(range(logLim[0],logLim[1],m+1)) ; Logarithmically
-k = floor(newBorders-lim[0]) < (n-1) > 0
-if n_params() ge 4 then $  ; Optional output log(wavelength): log of geometric mean!
-    logLam = alog10(sqrt((newBorders*shift(newBorders,1))[1:*])*dLam)
-
-specNew = dblarr(m,/NOZERO)
-for j=0,m-1 do begin                             ; Do analytic integration
-    a = newBorders[j] - borders[k[j]]
-    b = borders[k[j+1]+1] - newBorders[j+1]
-    specNew[j] = total(spec[k[j]:k[j+1]]) - a*spec[k[j]] - b*spec[k[j+1]]
-endfor
-
-end
 
 
 pro mdap_log_rebin,spectra,errors,wavelength,library,fwhm_diff,$
@@ -60,20 +71,6 @@ pro mdap_log_rebin,spectra,errors,wavelength,library,fwhm_diff,$
   ;  templ_wavelength_log_step=templ_wavelength_log_step,flux=flux
 
 ; ** INPUTS **
-;spectra      NxT dbl array   The N galaxy spectra to resample.
-;
-;errors       NxT dbl array   Errors associated to the N spectra.
-;
-;wavelength   dbl array       Array with T elements, that specifies the wavelengths where galaxy spectra and errors are defined;
-;
-;library      string          Directory containing the template spectra. Template spectra must be in fits format, defined over a 
-;                             linear wavelength with constant ang/pix step, and must contain all the header information needed to  
-;                             recover the wavelenght domain (i.e. CRPIX1, CDELT1, and CRVAL1).
-;
-;fwhm_diff    dbl array       Vector containing the FWHM(lambda) that the stellar spectra must be convolved for. At the moment, 
-;                             the value median(fwhm_diff/wavelength*c) is used for broadening. Implementation to use the full 
-;                             LSF(lambda) information are foreseen.
-;
 ; ** OPTIONAL INPUTS **
 ;input_velscale  flt          Constant km/sec/pixel to be used when rebinning the input spectra. If not provided, the value will be
 ;                             automatically set by the procedure.
@@ -109,6 +106,13 @@ pro mdap_log_rebin,spectra,errors,wavelength,library,fwhm_diff,$
 ;
 ; version  [string]            Module version. If requested, the module is not execute and only version flag is returned
 ;
+
+
+; Set module
+; set wavelength range; using input or existing range
+
+
+
 
 version_module = '0.2'
 if n_elements(version) ne 0 then begin

@@ -7,7 +7,7 @@
 ;	the inverse variance to the result.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_COMBINE_SPECTRA, flux, ivar, bin_id, combined_flux, combined_ivar
+;	MDAP_COMBINE_SPECTRA, flux, ivar, bin_id, combined_flux, combined_ivar, combined_mask
 ;
 ; INPUTS:
 ;	flux dblarr[N][T]
@@ -42,6 +42,9 @@
 ;	combined_ivar dblarr[B][T]
 ;		Inverse variance of weighted spectra, assuming Gaussian errors.
 ;
+;	combined_mask dblarr[B][T]
+;		Mask for combined spectra.
+;
 ; OPTIONAL OUTPUT:
 ;
 ; COMMENTS:
@@ -61,17 +64,19 @@
 ;
 ; REVISION HISTORY:
 ;	15 Sep 2014: (KBW) Original implementation
+;	22 Sep 2014: (KBW) Output mask (just a place-holder for now)
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_COMBINE_SPECTRA, $
-		flux, ivar, mask, bin_id, wgt, nbinned, combined_flux, combined_ivar
+		flux, ivar, mask, bin_id, wgt, nbinned, combined_flux, combined_ivar, combined_mask
 
 	sz=size(nbinned)
 	nb = sz[0]					; If bins are defined, will be non-zero
 	if nb eq 0 then begin				; No bins were produced!
 	    combined_flux=0
 	    combined_ivar=0
+	    combined_mask=0
 	    message, 'No spectra to combine!'
 	    return
 	endif
@@ -82,11 +87,13 @@ PRO MDAP_COMBINE_SPECTRA, $
 
 	combined_flux = dblarr(nb, nc)			; Initialize the combined spectra
 	combined_ivar = dblarr(nb, nc)			; All pixel values initialized to 0.0
+	combined_mask = dblarr(nb, nc)			; All pixels unmasked (mask=0)
 
 	for i=0,nb-1 do begin
 	    if nbinned[i] eq 0 then begin		; No spectra in this bin!
 		combined_flux[i,*] = 0.
 		combined_ivar[i,*] = 1.
+		combined_mask[i,*] = 1.
 		continue
 	    endif
 
@@ -116,9 +123,9 @@ PRO MDAP_COMBINE_SPECTRA, $
 	    combined_flux[i,def_indx] = combined_flux[i,def_indx] / sumwgt[def_indx]	; Normalize
 	    combined_ivar[i,def_indx] = sumwgt[def_indx]^2 / combined_ivar[i,def_indx]	; Prop. err
 
-	    combined_flux[i,undef_indx] = 0.
-	    combined_ivar[i,undef_indx] = 1.
-	    ; TODO: Mask these pixels
+	    combined_flux[i,undef_indx] = 0.		; Set to zero flux
+	    combined_ivar[i,undef_indx] = 1.		;  ... with unity error
+	    combined_mask[i,undef_indx] = 1.		;  ... and mask'em
 
 	endfor
 

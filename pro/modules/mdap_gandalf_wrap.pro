@@ -1,3 +1,4 @@
+;
 ; "NEW - V1.3" comments denotes V1.3 modifications. Notably these are:
 ;
 ; 1) Keyword FOR_ERRORS have been added and is passed onto GANDALF

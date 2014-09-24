@@ -7,9 +7,10 @@
 ;
 ; CALLING SEQUENCE:
 ;	MDAP_SPATIAL_BINNING, flux, ivar, signal, noise, gflag, min_sn, xcoo, ycoo, dx, dy, $
-;			      spaxel_dy, binned_indx, binned_flux, binned_ivar, binned_skyx, $
-;			      binned_skyy, binned_area, binned_ston, nbinnned=nbinnned, $
-;			      sn_calibration=sn_calibration, weight_for_sn=weight_for_sn, /plot
+;			      spaxel_dy, binned_indx, binned_flux, binned_ivar, binned_mask, $
+;			      binned_skyx, binned_skyy, binned_area, binned_ston, $
+;			      nbinnned=nbinnned, sn_calibration=sn_calibration, $
+;			      weight_for_sn=weight_for_sn, /plot
 ;
 ; INPUTS:
 ;	flux dblarr[N][T]
@@ -17,6 +18,9 @@
 ;
 ;	ivar dblarr[N][T]
 ;		Inverse variance of the flux
+;
+;	mask dblarr[N][T]
+;		Bad pixel mask.
 ;
 ;	signal dblarr[N]
 ;		Mean galaxy signal per angstrom
@@ -90,6 +94,9 @@
 ;	binned_ivar dblarr[B][T]
 ;		Inverse variance of binned spectra.
 ;
+;	binned_mask dblarr[B][T]
+;		Pixel mask.
+;
 ;	binned_xcoo dblarr[B]
 ;		X-Coordinates in arcsec of the luminosity weighted centers of
 ;		the spatial bins. 
@@ -133,13 +140,14 @@
 ;	08 Sep 2014: (KBW) Formatting and comments (incomplete)
 ;	15 Sep 2014: (KBW) Formatting and edits due to accommodate other changes
 ;	16 Sep 2014: (KBW) gflag changed from optional to required parameter
+;	22 Sep 2014: (KBW) Output mask for combined spectra (TODO: This is just a place-holder)
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SPATIAL_BINNING, $
 		flux, ivar, mask, signal, noise, gflag, min_sn, xcoo, ycoo, dx, dy, binned_flux, $
-		binned_ivar, binned_xcoo, binned_ycoo, binned_area, binned_ston, plot=plot, $
-		sn_thr=sn_thr, nbinned=nbinned, sn_calibration=sn_calibration, $
+		binned_ivar, binned_mask, binned_xcoo, binned_ycoo, binned_area, binned_ston, $
+		plot=plot, sn_thr=sn_thr, nbinned=nbinned, sn_calibration=sn_calibration, $
 		user_bin_map=user_bin_map, weight_for_sn=weight_for_sn, version=version
 
 	version_module = '0.3'				; Version number
@@ -187,7 +195,12 @@ PRO MDAP_SPATIAL_BINNING, $
 	; Use the Voronoi binning scheme
 	if apply_voronoi_binning eq 1 then begin
 
+; Plot to PS file
+
 	    if keyword_set(plot) then begin			; setup plot
+;		mydevice=!D.NAME
+;		set_plot, 'PS'
+;		device, filename='bin_plot.ps'
 		r = GET_SCREEN_SIZE()
 		window, xsize=r[0]*0.4, ysize=r[1]*0.8, retain=2
 		loadct, 32
@@ -198,6 +211,11 @@ PRO MDAP_SPATIAL_BINNING, $
 				     binned_ycoo, binned_ston, nbinned, scale, plot=plot, $
 				     sn_calibration=sn_calibration, /quiet, $
 				     weight_for_sn=weight_for_sn
+
+;	    if keyword_set(plot) then begin			; close plot
+;		device, /close
+;		set_plot, mydevice
+;	    endif
 
 	    ; Set binned_indx to same length as flux
 	    MDAP_INSERT_FLAGGED, gflag_, binned_indx, ns
@@ -213,7 +231,8 @@ PRO MDAP_SPATIAL_BINNING, $
 	MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, wgt, weight_for_sn=weight_for_sn
 
 	; Combine the spectra
-	MDAP_COMBINE_SPECTRA, flux, ivar, mask, binned_indx, wgt, nbinned, binned_flux, binned_ivar
+	MDAP_COMBINE_SPECTRA, flux, ivar, mask, binned_indx, wgt, nbinned, binned_flux, $
+			      binned_ivar, binned_mask
 
 	; Determine the effective on-sky area of each combined spectrum
 	MDAP_SPECTRAL_BIN_AREA, dx, dy, nbinned, binned_indx, binned_area
