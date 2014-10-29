@@ -9,7 +9,7 @@
 ;		https://trac.sdss.org/wiki/MANGA/Data/DAPDevelopment/DAP_v0_9_summary
 ;
 ; CALLING SEQUENCE:
-;	MANGA_DAP, input_number, /nolog, /quiet
+;	MANGA_DAP, input_number, /nolog, /quiet, /plot, /dbg
 ;
 ; INPUTS:
 ;    input_number int
@@ -27,6 +27,10 @@
 ;
 ;	/plot
 ;		Produce the Voronoi binning, PPXF and GANDALF plots
+;
+;	/dbg
+;		Only attempts to fit the first spectrum of the first
+;		execution plan as a test run mostly used for debugging
 ;
 ; OUTPUT:
 ;
@@ -174,7 +178,7 @@ FUNCTION MDAP_SET_TPL_LIB_OUTPUT_FILE, $
 END
 
 pro MANGA_DAP, $
-	input_number, nolog=nolog, quiet=quiet, plot=plot
+	input_number, nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
 
 	manga_dap_version = '0.9'	; set the version number
 	t0=systime(/seconds)/60./60.	; start time
@@ -577,6 +581,8 @@ pro MANGA_DAP, $
 
 	;-----------------------------------------------------------------------
 	; Now can begin cycling through execution plans
+	if keyword_set(dbg) then $
+	    n_plans=1				; Only run the first plan
 	for i=0,n_plans-1 do begin
 
 	    if ~keyword_set(quiet) then $
@@ -760,7 +766,7 @@ pro MANGA_DAP, $
 				   gas_kin_starting_guesses=gas_kin_starting_guesses, $
 				   eml_par=eml_par, external_library=external_library, $
 				   wave_range_analysis=execution_plan[i].wave_range_analysis, $
-				   ppxf_only=ppxf_only, quiet=quiet, plot=plot
+				   ppxf_only=ppxf_only, quiet=quiet, plot=plot, dbg=dbg
 
 	    ; TODO: Add the spectral fitting version to the header of the output file
 	    ; TODO: Add information to the log file
