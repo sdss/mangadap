@@ -50,9 +50,7 @@ PRO MDAP_GENERATE_BINNING_WEIGHTS, $
 	    return
 	endif
 
-	ns = n_elements(signal)
-	wgt=dblarr(ns)
-	wgt[*] = 1.0
+	wgt=make_array(n_elements(signal), /double, value=1.0)	; Uniform weighting
 
 END
 

@@ -8,7 +8,7 @@
 ; CALLING SEQUENCE:
 ;	MDAP_SETUP_IO, $
 ;		root_name, output_root_dir, datacube_name, file_root, output_dir, $
-;		output_file_root, output_filefits, output_idlsession
+;		output_file_root
 ;
 ; INPUTS:
 ;	root_name string
@@ -40,14 +40,6 @@
 ;		Root name for all output files.
 ;		E.g: ./analysis/v0_9_0/manga-7443-12701-LOGCUBE/manga-7443-12701-LOGCUBE_
 ;
-;	output_filefits
-;		Name of fits output file.  E.g: 
-;		./analysis/v0_9_0/manga-7443-12701-LOGCUBE/manga-7443-12701-LOGCUBE_high_level.fits
-;
-;	output_idlsession
-;		Name of idl session file output. E.g.:
-;		./analysis/v0_9_0/manga-7443-12701-LOGCUBE/manga-7443-12701-LOGCUBE_mdap_session.idl
-;
 ; OPTIONAL OUTPUT:
 ;
 ; COMMENTS:
@@ -62,12 +54,12 @@
 ;
 ; REVISION HISTORY:
 ;	05 Sep 2014: (KBW) Original implementation
+;	09 Sep 2014: (KBW) No longer outputs the output fits file or idl session
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SETUP_IO, $
-	root_name, output_root_dir, datacube_name, file_root, output_dir, output_file_root, $
-	output_filefits, output_idlsession
+	root_name, output_root_dir, datacube_name, file_root, output_dir, output_file_root
 
 	datacube_name=root_name+'.fits'  		; Set the input file
 	if FILE_TEST(datacube_name) eq 0 then $
@@ -86,19 +78,19 @@ PRO MDAP_SETUP_IO, $
 	; Initialize the output file root name; this is placed in front of every output file
 	output_file_root=output_dir+'/'+file_root+'_'
 
-	output_filefits=output_file_root+'high_level.fits'	; Output file name
-	output_idlsession=output_file_root+'mdap_session.idl'	; Output idl session
+;	output_filefits=output_file_root+'high_level.fits'	; Output file name
+;	output_idlsession=output_file_root+'mdap_session.idl'	; Output idl session
 
 	print, 'Output dir: '+output_dir
 	print, 'Output file root: '+output_file_root
-	print, 'Output fits file: '+output_filefits
-	print, 'Output idl session: '+output_idlsession
+;	print, 'Output fits file: '+output_filefits
+;	print, 'Output idl session: '+output_idlsession
 
 ;	output_dir=output_root_dir+'results_'+mode+'/'+root_name+'/'+root_name+'_'
 
 	; If the output directory does not exist create it
 	; TODO: Check for previous output
-	if FILE_TEST(output_dir) eq 0 then $
+	if FILE_TEST(output_dir, /directory) eq 0 then $
 	    SPAWN, 'mkdir -p '+output_dir
 
 END

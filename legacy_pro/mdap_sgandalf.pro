@@ -176,7 +176,7 @@
 ;       polynomials are fitted and the WEIGHTS are returned in output.
 ;   POLYWEIGHTS: vector with the weights of the additive Legendre polynomials.
 ;       The best fitting additive polynomial can be explicitly evaluated as
-;           x = range(-1d,1d,n_elements(galaxy))
+;           x = mdap_range(-1d,1d,n_elements(galaxy))
 ;           apoly = 0d ; Additive polynomial
 ;           for j=0,DEGREE do apoly += legendre(x,j)*polyWeights[j]
 ;     - When doing a two-sided fitting (see help for GALAXY parameter), the additive
@@ -263,7 +263,7 @@
 ;       [Vel_star,Sigma_Star,h3,h4,h5,h6,Chi^2/DOF,Vel_gas,Sigma_gas,cx1,cx2,...,cxn], where cx1,cx2,...,cxn
 ;       are the coefficients of the multiplicative Legendre polynomials
 ;       of order 1,2,...,n. The polynomial can be explicitly evaluated as:
-;           x = range(-1d,1d,n_elements(galaxy))
+;           x = mdap_range(-1d,1d,n_elements(galaxy))
 ;           mpoly = 1d ; Multiplicative polynomial
 ;           for j=1,MDEGREE do mpoly += legendre(x,j)*sol[6+j]
 ;     - When the reddening correction is used, SOL contains 10
@@ -407,7 +407,7 @@ npars1=n_elements(pars_comp1)
 ;
 dx = ceil(abs(vsyst)+abs(pars_comp1[0])+5d*pars_comp1[1]) ; Sample the Gaussian and GH at least to vsyst+vel+5*sigma
 n = 2*dx + 1
-x = range(dx,-dx,n)   ; Evaluate the Gaussian using steps of 1/factor pixel
+x = mdap_range(dx,-dx,n)   ; Evaluate the Gaussian using steps of 1/factor pixel
 losvd_comp1 = dblarr(n,/NOZERO)
 ;losvd_comp2 = dblarr(n,/NOZERO)
 
@@ -428,7 +428,7 @@ if npars1 gt 2 then begin
     losvd_comp1 = temporary(losvd_comp1)*poly
 endif
 ;
-x = range(-1d,1d,npix) ; X needs to be within [-1,1] for Legendre Polynomials
+x = mdap_range(-1d,1d,npix) ; X needs to be within [-1,1] for Legendre Polynomials
 mpoly = 1d  ; The loop below can be null if mdegree < 1
 
 for j=1,mdegree do  mpoly = mpoly + legendre(x,j) * pars_pol[j-1]
@@ -476,8 +476,8 @@ c_comp2 = dblarr(ncols,nrows2,/nozero)
 ; Fill first columns of the Design Matrix
 for j=0,degree do  c_comp1[0,j] = legendre(x,j)  ;only for stellar component,
 
-;pix = range(0d,s[1]-1d,s[1])
-;if factor gt 1 then pix = range(0d,s[1]-1d,s[1]*factor) ; Oversampled pixels range
+;pix = mdap_range(0d,s[1]-1d,s[1])
+;if factor gt 1 then pix = mdap_range(0d,s[1]-1d,s[1]*factor) ; Oversampled pixels range
 ;tmp = dblarr(s[1],nspec,/NOZERO)
 tmp_comp1 = dblarr(s1[1],/NOZERO)
 ;for j=0,ntemp1-1 do begin
@@ -572,7 +572,7 @@ for j=0,nrows1-1 do a_comp1[0,j] = c_comp1[*,j]/noise ; Weight all columns with 
 for j=0,nrows2-1 do a_comp2[0,j] = c_comp2[*,j]/noise ; Weight all columns with errors
 
 ;if regul gt 0 then begins
-;    aa = a[[goodPixels,range(npix*nspec,ncols-1)],*]
+;    aa = a[[goodPixels,mdap_range(npix*nspec,ncols-1)],*]
 ;    bb = [galaxy[goodPixels]/noise[goodPixels],replicate(0d,nreg)]
 ;endif else begin
 ;    aa = a[goodPixels,*]
@@ -580,12 +580,12 @@ for j=0,nrows2-1 do a_comp2[0,j] = c_comp2[*,j]/noise ; Weight all columns with 
 ;endelse
 ;stop
 if regul gt 0 then begin
-   ; aa_comp1 = a_comp1[[goodPixels,range(npix,ncols-1)],*]
-   ; aa_comp2 = a_comp2[[goodPixels,range(npix,ncols-1)],*]
+   ; aa_comp1 = a_comp1[[goodPixels,mdap_range(npix,ncols-1)],*]
+   ; aa_comp2 = a_comp2[[goodPixels,mdap_range(npix,ncols-1)],*]
    ; aa1 = [[aa_comp1],[aa_comp2*0.]]
    ; aa2 = [[aa_comp1*0.],[aa_comp2]]
    ; aa = temporary(aa1)+temporary(aa2)
-    aa = [[a_comp1[[goodPixels,range(npix,ncols-1)],*]],[a_comp2[[goodPixels,range(npix,ncols-1)],*]]]
+    aa = [[a_comp1[[goodPixels,mdap_range(npix,ncols-1)],*]],[a_comp2[[goodPixels,mdap_range(npix,ncols-1)],*]]]
     bb = [galaxy[goodPixels]/noise[goodPixels],replicate(0d,nreg)]
 endif else begin
    ; aa1 = [[a_comp1[goodPixels,*]],[a_comp2[goodPixels,*]*0.]]
@@ -930,7 +930,7 @@ if ~keyword_set(quiet) then begin
 endif
 
 ;Construct optimal stellar template, not LOSVD convolved.
-x = range(-1d,1d,s2[1])
+x = mdap_range(-1d,1d,s2[1])
 mpoly = 1d                   ; Multiplicative polynomial
 if lambda[0] eq 0 then for j=1,MDEGREE do mpoly += legendre(x,j)*sol[7+gaspars-1+j]
 if n_elements(lambda) gt 1 then mpoly =  mdap_sgandalf_reddening_curve(lambda, reddening[0])

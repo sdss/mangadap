@@ -75,11 +75,13 @@ PRO MDAP_MATCH_OBS_NSA, $
 	endfor
 
 	; Read the NSA catalog data
+	get_lun, catdb
 	FXBOPEN, catdb, nsa_cat, 1, header
 	FXBREAD, catdb, nsaid, 'NSAID'
 	FXBREAD, catdb, nsara, 'RA'
 	FXBREAD, catdb, nsadec, 'DEC'
 	FXBCLOSE, catdb
+	free_lun, catdb
 
 	n_nsa=n_elements(nsaid)						; Catalog length
 
@@ -109,20 +111,21 @@ PRO MDAP_MATCH_OBS_NSA, $
 	endfor
 
 	; Write the file
-	OPENW, 1, ofile
-	PRINTF, 1, '# '+SYSTIME()
-	PRINTF, 1, '#', 'FITSFILE', 'MANGAID', 'OBJRA', 'OBJDEC', 'NSAID', 'NSARA', 'NSADEC', $
+	OPENW, unit, ofile, /get_lun
+	PRINTF, unit, '# '+SYSTIME()
+	PRINTF, unit, '#', 'FITSFILE', 'MANGAID', 'OBJRA', 'OBJDEC', 'NSAID', 'NSARA', 'NSADEC', $
 		   format='( A1, A59, A15, A11, A11, A15, A11, A11 )'
 	for i=0,nfiles-1 do $
 	    if (nsa_index[i] ge 0) then begin
-		PRINTF, 1, fitsfile[i], mangaid[i], objra[i], objdec[i], nsaid[nsa_index[i]], $
+		PRINTF, unit, fitsfile[i], mangaid[i], objra[i], objdec[i], nsaid[nsa_index[i]], $
 			   nsara[nsa_index[i]], nsadec[nsa_index[i]], $
 			   format='( A60, A15, F11.5, F11.6, I15, F11.5, F11.6 )'
 	    endif else begin
-		PRINTF, 1, fitsfile[i], mangaid[i], objra[i], objdec[i], -1, -1.0, -1.0, $
+		PRINTF, unit, fitsfile[i], mangaid[i], objra[i], objdec[i], -1, -1.0, -1.0, $
 			   format='( A60, A15, F11.5, F11.6, I15, F11.5, F11.6 )'
 	    endelse
-	CLOSE, 1
+	CLOSE, unit
+	free_lun, unit
 
 END
 

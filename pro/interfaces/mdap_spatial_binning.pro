@@ -6,11 +6,11 @@
 ;	Bin an input set of spectra to a minimum S/N level.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_SPATIAL_BINNING, flux, ivar, signal, noise, gflag, min_sn, xcoo, ycoo, dx, dy, $
-;			      spaxel_dy, binned_indx, binned_flux, binned_ivar, binned_mask, $
-;			      binned_skyx, binned_skyy, binned_area, binned_ston, $
-;			      nbinnned=nbinnned, sn_calibration=sn_calibration, $
-;			      weight_for_sn=weight_for_sn, /plot
+;	MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, $
+;			      bin_type, bin_par, threshold_ston_bin, bin_weight_by_sn2, $
+;			      bin_weights, binned_indx, binned_flux, binned_ivar, binned_mask, $
+;			      binned_xcoo, binned_ycoo, binned_area, binned_ston, nbinned, $
+;			      sn_calibration=sn_calibration, version=version, plot=plot
 ;
 ; INPUTS:
 ;	flux dblarr[N][T]
@@ -32,9 +32,6 @@
 ;		Flag (0=false; 1=true) that the spectrum is 'good' as defined by
 ;		MDAP_SELECT_GOOD_SPECTRA.  Spectra that are NOT good are ignored.
 ;
-;	min_sn double
-;		Minimum S/N (per angstrom) required of the output binned spectra.  
-;
 ;	xcoo dblarr[N]
 ;		Array containing the x coordinates in arcseconds (0 is the
 ;		center of the field of view) for each spectrum
@@ -49,11 +46,41 @@
 ;	dy double
 ;		Scale arcsec/pixel in Y direction
 ;
-; OPTIONAL INPUTS:
+;	bin_type string
+;		Type of binning to apply.
+;		Valid values are:
+;			'NONE' - No binning is performed.
+;			'ALL' - All spectra are combined into a single bin.
+;			'STON' - Spectra are binned, using the Voronoi binning
+;				 scheme, to a minimum S/N.  This type requires a
+;				 single parameter (provided via bin_par), which
+;				 is the minimum S/N level.
+;			'RAD' - Spectra are binned in radius.  This type
+;				requires five parameters, the x and y center,
+;				ellipticity, position angle, and width of the
+;				radial bins.  
+;			
+;				TODO: When binning, the spectra are deredshifted
+;				before creating the bin, meaning that a set of
+;				velocities for each spectrum must be available!
+;			
+;				TODO: Currently only the bin width is input!!
+;			
+;	bin_par double
+;		Parameter(s) required for the binning.
+;		TODO: Change this to a pointer!
 ;
-;	sn_thr double
-;		If specified, spectra with S/N lower than this value will be
-;		excluded from the analysis.  
+;	threshold_ston_bin double
+;		The S/N threshold for the inclusion of any DRP spectrum in the
+;		binning process.
+;
+;	bin_weight_by_sn2 integer
+;		Flag to weight each spectrum by S/N^2 when producing the binned
+;		spectra.  If true (eq 1), weights are S/N^2; if false (eq 0),
+;		the spectra are added with uniform weights.
+;		See MDAP_GENERATE_BINNING_WEIGHTS.
+;		
+; OPTIONAL INPUTS:
 ;
 ;	SN_CALIBRATION TODO: TYPE? or flag?
 ;		If provided, the estimated signal-to-noise (SN_est) is converted
@@ -63,29 +90,18 @@
 ;			tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
 ;			SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
 ;
-;	user_bin_map  string
-;		If provided, the spatial map will be created from the fits file
-;		specified by this input. The fits file must contain the CRVAL1,
-;		CRVAL2, CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and CRIX2 header
-;		keywords (coordinate units should be in arcseconds; 0,0
-;		indicates the center of the field of view).
-;
 ; OPTIONAL KEYWORDS:
 ;	\plot
 ;		If set, some plots on X11 terminal will be shown. Not suggested
 ;		if the task is launched remotely. 
 ;
-;	\weight_for_sn
-;		If set, the spectra in the same spatial bin will be weighted by
-;		$S/N^2$ before being added. If the voronoi binning scheme is
-;		adopted, the S/N in the bin is computed via equation (3) of
-;		Cappellari & Copin (2003), and the centers of the spatial bins
-;		are computed by weighting spectra coordinates by $S/N^2$.  
-;
 ; OUTPUT:
+;	bin_weights dblarr[N]
+;		Weights used for each spectrum for binning.		
 ;
 ;	binned_indx intarr[N]
-;		Indicates in which bin, i=0...B-1, each of the N spectra exist.
+;		Indicates in which bin, i=0...B-1, each of the N spectra were
+;		placed.
 ;
 ;	binned_flux dblarr[B][T]
 ;		The binned spectra of the spatial B bins. i-th spectrum is
@@ -98,11 +114,11 @@
 ;		Pixel mask.
 ;
 ;	binned_xcoo dblarr[B]
-;		X-Coordinates in arcsec of the luminosity weighted centers of
+;		X-Coordinates in arcsec of the luminosity-weighted centers of
 ;		the spatial bins. 
 ;
 ;	binned_ycoo dblarr[B]
-;		Y-Coordinates in arcsec of the luminosity weighted centers of
+;		Y-Coordinates in arcsec of the luminosity-weighted centers of
 ;		the spatial bins. 
 ;
 ;	binned_area dblarr[B]
@@ -111,10 +127,10 @@
 ;	binned_ston dblarr[B]
 ;		Mean S/N per angstrom reached in each spatial bin. 
 ;
-; OPTIONAL OUTPUT:
-;
 ;	nbinned intarr[B]
 ;		Number of spectra coadded in each bin.
+;
+; OPTIONAL OUTPUT:
 ;
 ;	version string
 ;		Module version. If requested, the module is not executed and only
@@ -129,6 +145,14 @@
 ;	  binned_xvec, binned_yvec)
 ;	- Include something that handles the covariance
 ;
+;	Allow for user-defined binning
+;	user_bin_map  string
+;		If provided, the spatial map will be created from the fits file
+;		specified by this input. The fits file must contain the CRVAL1,
+;		CRVAL2, CDELT1, CDELT2, NAXIS1, NAXIS2, CRPIX1, and CRIX2 header
+;		keywords (coordinate units should be in arcseconds; 0,0
+;		indicates the center of the field of view).
+;
 ; BUGS:
 ;
 ; PROCEDURES CALLED:
@@ -141,14 +165,15 @@
 ;	15 Sep 2014: (KBW) Formatting and edits due to accommodate other changes
 ;	16 Sep 2014: (KBW) gflag changed from optional to required parameter
 ;	22 Sep 2014: (KBW) Output mask for combined spectra (TODO: This is just a place-holder)
+;	13 Oct 2014: (KBW) Changed input/output format
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SPATIAL_BINNING, $
-		flux, ivar, mask, signal, noise, gflag, min_sn, xcoo, ycoo, dx, dy, binned_flux, $
+		flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, bin_type, bin_par, $
+		threshold_ston_bin, bin_weight_by_sn2, bin_weights, binned_indx, binned_flux, $
 		binned_ivar, binned_mask, binned_xcoo, binned_ycoo, binned_area, binned_ston, $
-		plot=plot, sn_thr=sn_thr, nbinned=nbinned, sn_calibration=sn_calibration, $
-		user_bin_map=user_bin_map, weight_for_sn=weight_for_sn, version=version
+		nbinned, sn_calibration=sn_calibration, version=version, plot=plot
 
 	version_module = '0.3'				; Version number
 
@@ -157,31 +182,32 @@ PRO MDAP_SPATIAL_BINNING, $
 	    return
 	endif
 
-	sz=size(flux)
-	ns=sz[1]					; Number of spectra
-
-	; Get the S/N threshold, if provided
-	sn_thr_=0.
-	if n_elements(sn_thr) ne 0 then sn_thr_=sn_thr
-
 	; Find which spectra in the 2D map are good (and bad)
 	;	good = has a positive and finite noise, a finite signal,
 	;	and S/N > threshold
-	gflag_= where(gflag eq 1 and abs(signal/noise) ge sn_thr_, compl=bflag_)
+	gindx= where(gflag eq 1 and abs(signal/noise) ge threshold_ston_bin, compl=bindx)
 
-;	ind_good = where(noise gt 0 and finite(noise) eq 1  and finite(signal) eq 1 and $
-;			 abs(signal/noise) ge sn_thr_,compl=ind_bad)
+	if gindx[0] eq -1 then $			; No good spectra so return and fail
+	    message, 'No good spectra!'
 
-	apply_voronoi_binning = 1			; Initialize by expecting to Voronoi bin
+	ngood = n_elements(gindx)
+	sz=size(flux)
+	ns=sz[1]					; Number of spectra
 
-	if gflag_[0] eq -1 then begin			; No good spectra found! 
-	    binned_indx=intarr(ns)
-	    binned_indx[*]=-1
-	    binned_xcoo=0
-	    binned_ycoo=0
-	    binned_ston=0
-	    binned_area=0
-	    apply_voronoi_binning = 0			; Just go to "combine spectra"
+	if bin_type eq 'NONE' then begin		; No binning
+	    bin_weights = dblarr(ns)			; Initialize weights to 0
+	    bin_weights[gindx] = 1.0d			; Set weights to unity
+	    binned_indx = make_array(ns, /integer, value=-1)
+	    binned_indx[gindx] = indgen(ngood)
+	    binned_flux = flux[gindx,*]
+	    binned_ivar = ivar[gindx,*]
+	    binned_mask = mask[gindx,*]
+	    binned_xcoo = xcoo[gindx,*]
+	    binned_ycoo = ycoo[gindx,*]
+	    binned_area = make_array(ngood, /double, value=dx*dy)
+	    binned_ston = signal[gindx]/noise[gindx]
+	    nbinned = make_array(ngood, /integer, value=1)
+	    return
 	endif
 
 ;	TODO: NOT DEFINED YET -----------------------------------
@@ -192,50 +218,55 @@ PRO MDAP_SPATIAL_BINNING, $
 ;	endelse
 ;	NOT DEFINED YET ----------------------------------------
 
-	; Use the Voronoi binning scheme
-	if apply_voronoi_binning eq 1 then begin
+	if bin_weight_by_sn2 eq 1 then $			; Flag to use S/N^2 weighting
+	    weight_for_sn = 1
 
-; Plot to PS file
-
+	if bin_type eq 'ALL' then begin
+	    binned_indx = intarr(ngood)				; All spectra are in bin i=0
+	    nbinned = ngood
+	endif else if bin_type eq 'STON' then begin		; Use the Voronoi binning scheme
 	    if keyword_set(plot) then begin			; setup plot
 ;		mydevice=!D.NAME
 ;		set_plot, 'PS'
 ;		device, filename='bin_plot.ps'
-		r = GET_SCREEN_SIZE()
-		window, xsize=r[0]*0.4, ysize=r[1]*0.8, retain=2
-		loadct, 32
+		screenr = GET_SCREEN_SIZE()
+		window, xsize=screenr[0]*0.4, ysize=screenr[1]*0.8, retain=2
+		MDAP_BASIC_COLORS, black, white, red, green, blue, yellow, cyan, magenta, orange, $
+				   mint, purple, pink, olive, lightblue, gray   
+		
+;		loadct, 32
 	    endif
 
-	    MDAP_VORONOI_2D_BINNING, xcoo[gflag_], ycoo[gflag_], signal[gflag_], noise[gflag_], $
-				     min_sn, binned_indx, binned_xvec, binned_yvec, binned_xcoo, $
-				     binned_ycoo, binned_ston, nbinned, scale, plot=plot, $
-				     sn_calibration=sn_calibration, /quiet, $
-				     weight_for_sn=weight_for_sn
+	    MDAP_VORONOI_2D_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], $
+				     bin_par, binned_indx, binned_xvec, binned_yvec, binned_xcoo, $
+				     binned_ycoo, binned_ston, nbinned, scale, $
+				     sn_calibration=sn_calibration, weight_for_sn=weight_for_sn, $
+				     plot=plot, /quiet
 
 ;	    if keyword_set(plot) then begin			; close plot
 ;		device, /close
 ;		set_plot, mydevice
 ;	    endif
+	endif else if bin_type eq 'RAD' then $
+	    message, 'Cannot use radial binning scheme yet!'
 
-	    ; Set binned_indx to same length as flux
-	    MDAP_INSERT_FLAGGED, gflag_, binned_indx, ns
-	endif
+	; Set binned_indx to same length as flux
+	MDAP_INSERT_FLAGGED, gindx, binned_indx, ns
 
-	print, 'Number of spatial bins: ', mdap_stc(n_elements(nbinned),/integer)
+	print, 'Number of spatial bins: ', MDAP_STC(n_elements(nbinned),/integer)
 
 	; Generate the weights to use in combining the spectra
-
-	; TODO: Should this be output from the voronoi routine.  If so, what
-	;	should be done in the case of the user-supplied binning scheme.
-	;	Does the user supply the weights as well?
-	MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, wgt, weight_for_sn=weight_for_sn
+	; TODO: Should this be input/output from the voronoi routine in the 'STON' case?
+	MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, bin_weights, weight_for_sn=weight_for_sn
+	bin_weights[where(binned_indx lt 0)] = 0.0d
 
 	; Combine the spectra
-	MDAP_COMBINE_SPECTRA, flux, ivar, mask, binned_indx, wgt, nbinned, binned_flux, $
+	MDAP_COMBINE_SPECTRA, flux, ivar, mask, binned_indx, bin_weights, nbinned, binned_flux, $
 			      binned_ivar, binned_mask
 
 	; Determine the effective on-sky area of each combined spectrum
-	MDAP_SPECTRAL_BIN_AREA, dx, dy, nbinned, binned_indx, binned_area
+	; TODO: does not account for overlapping regions!!
+	MDAP_SPATIAL_BIN_AREA, dx, dy, nbinned, binned_indx, binned_area
 
 	; TODO: How is binned_area used?  Should it include the weights?
 

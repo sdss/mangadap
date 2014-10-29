@@ -17,6 +17,7 @@ function mdap_dust_calzetti,l0_gal,lstep_gal,npix,ebv,vstar,LOG10=log10
 ; values
 lambda = exp(dindgen(npix)*lstep_gal + l0_gal)
 if keyword_set(log10) then lambda = 10^(dindgen(npix)*lstep_gal + l0_gal)
+;lambda = lambda/exp(vstar/299792.458d)
 lambda = lambda/exp(vstar/299792.458d)
 
 ; array to hold k(lambda) values

@@ -7,8 +7,8 @@
 ;	MDAP_CALCUALTE_SPECTRUM_SN.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_CALCULATE_SPECTRUM_SN, flux, ivar, mask, wave, wsel, signal, noise, $
-;				    gflag=gflag, /rms, /sum 
+;	MDAP_CALCULATE_SN, flux, ivar, mask, wave, wsel, signal, noise, gflag=gflag, $
+;			  version=version, /rms, /sum 
 ;
 ; INPUTS:
 ;	flux dblarr[N][T]
@@ -32,6 +32,10 @@
 ;		Flag (0=false; 1=true) that the spectrum is 'good' as defined by
 ;		MDAP_SELECT_GOOD_SPECTRA.  Spectra that are NOT good, are given
 ;		signal=0. and noise=1.
+;
+;	version string
+;		Version number for calculating S/N.  If provided, the value is
+;		set to the current version and the procedure is halted.
 ;
 ; OPTIONAL KEYWORDS:
 ; 	/rms (see MDAP_CALCULATE_SPECTRUM_SN)
@@ -76,7 +80,15 @@
 ;------------------------------------------------------------------------------
 
 PRO MDAP_CALCULATE_SN, $ 
-	flux, ivar, mask, wave, wsel, signal, noise, gflag=gflag, rms=rms, sum=sum
+	flux, ivar, mask, wave, wsel, signal, noise, gflag=gflag, version=version, rms=rms, sum=sum
+
+	version_module = '0.1'				; Version
+
+	; If the version is requested, print it then quit
+	if n_elements(version) ne 0 then begin
+	    version = version_module
+	    return					; Version requested so finish
+	endif
 
 	sz=size(flux)
 	ns=sz[1]				; Number of spectra

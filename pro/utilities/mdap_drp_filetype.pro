@@ -58,7 +58,7 @@ PRO MDAP_DRP_FILETYPE, $
 	endif
 
 	defined_type = 1				; Assume type is defined
-	if n_elements(type) eq 1 then begin		; Check the type makes sense
+	if n_elements(type) ne 0 then begin		; Check the type makes sense
 	    if type ne 'RSS' and type ne 'CUBE' then begin
 		print, 'ERROR: Undefined type!  Must be either RSS or CUBE.  Obtained from header.'
 		defined_type = 0

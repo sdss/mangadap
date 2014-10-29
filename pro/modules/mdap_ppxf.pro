@@ -186,7 +186,7 @@
 ;       at the end of the fit.
 ;   POLYWEIGHTS: vector with the weights of the additive Legendre polynomials.
 ;       The best fitting additive polynomial can be explicitly evaluated as
-;           x = range(-1d,1d,n_elements(galaxy))
+;           x = mdap_range(-1d,1d,n_elements(galaxy))
 ;           apoly = 0d ; Additive polynomial
 ;           for j=0,DEGREE do apoly += legendre(x,j)*polyWeights[j]
 ;     - When doing a two-sided fitting (see help for GALAXY parameter), the additive
@@ -288,7 +288,7 @@
 ;       [Vel,Sigma,h3,h4,h5,h6,Chi^2/DOF,cx1,cx2,...,cxn], where cx1,cx2,...,cxn
 ;       are the coefficients of the multiplicative Legendre polynomials
 ;       of order 1,2,...,n. The polynomial can be explicitly evaluated as:
-;           x = range(-1d,1d,n_elements(galaxy))
+;           x = mdap_range(-1d,1d,n_elements(galaxy))
 ;           mpoly = 1d ; Multiplicative polynomial
 ;           for j=1,MDEGREE do mpoly += legendre(x,j)*sol[6+j]
 ;
@@ -450,8 +450,10 @@ else begin               ; Fitting multiple templates
     if npoly gt 0 then bnd[0,0:npoly-1] = -mx ; No bounds on Legendre polynomials
     bnd[0,npoly:*] = 0d  ; Positivity constraints on the templates (and sky spectra)
     bnd[1,*] = mx
-    if external_library[0] eq 'none' then mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr 
-    if external_library[0] ne 'none' then mdap_bvls_external, A, B, bnd, soluz, external_library, IERR=ierr
+    if external_library[0] eq 'none' then begin
+	mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr 
+    endif else $
+	mdap_bvls_external, A, B, bnd, soluz, external_library, IERR=ierr
 
     if ierr ne 0 then message, 'BVLS Error n. ' + strtrim(ierr,2)
 endelse
@@ -477,7 +479,7 @@ if n_elements(lambda) gt 1 then npars = npars - 1 ; Fitting reddening
 ;
 dx = ceil(abs(vsyst)+abs(pars[0])+5d*pars[1]) ; Sample the Gaussian and GH at least to vsyst+vel+5*sigma
 n = 2*dx*factor + 1
-x = range(dx,-dx,n)   ; Evaluate the Gaussian using steps of 1/factor pixel
+x = mdap_range(dx,-dx,n)   ; Evaluate the Gaussian using steps of 1/factor pixel
 losvd = dblarr(n,nspec,/NOZERO)
 for k=0,nspec-1 do begin    ; nspec=2 for two-sided fitting, otherwise nspec=1
     s = (k eq 0) ? 1d : -1d ; s=+1 for left spectrum, s=-1 for right one
@@ -502,7 +504,7 @@ endfor
 ; The zeroth order multiplicative term is already included in the
 ; linear fit of the templates. The polynomial below has mean of 1.
 ;
-x = range(-1d,1d,npix) ; X needs to be within [-1,1] for Legendre Polynomials
+x = mdap_range(-1d,1d,npix) ; X needs to be within [-1,1] for Legendre Polynomials
 mpoly = 1d  ; The loop below can be null if mdegree < 1
 for j=1,mdegree do $
     if nspec eq 2 then $ ; Different multiplicative poly for left and right spectra
@@ -542,7 +544,7 @@ for j=0,degree do $ ; Fill first columns of the Design Matrix
         c[0,2*j+1] = [leg*0d,leg] ; Additive polynomials for right spectrum
     endif else c[0,j] = legendre(x,j)
 
-if factor gt 1 then pix = range(0d,s[1]-1d,s[1]*factor) ; Oversampled pixels range
+if factor gt 1 then pix = mdap_range(0d,s[1]-1d,s[1]*factor) ; Oversampled pixels range
 tmp = dblarr(s[1],nspec,/NOZERO)
 for j=0,ntemp-1 do begin
     if factor eq 1 then $ ; No oversampling of the template spectrum
@@ -592,7 +594,7 @@ a = c                     ; This array is used for the actual solution of the sy
 for j=0,nrows-1 do a[0,j] = c[0:npix*nspec-1,j]/noise ; Weight all columns with errors
 
 if regul gt 0 then begin
-    aa = a[[goodPixels,range(npix*nspec,ncols-1)],*]
+    aa = a[[goodPixels,mdap_range(npix*nspec,ncols-1)],*]
     bb = [galaxy[goodPixels]/noise[goodPixels],replicate(0d,nreg)]
 endif else begin
     aa = a[goodPixels,*]
@@ -687,6 +689,9 @@ if n_elements(vsyst) eq 0 then begin
     vsyst = 0d
 endif
 
+
+if n_elements(external_library) eq 0 then external_library = 'none'
+
 if moments gt 0 then begin
 
     ; Explicitly specify the step for the numerical derivatives (pixel/100)
@@ -728,7 +733,6 @@ if moments gt 0 then begin
     ; more than 3*sigma from the best fit and repeat the minimization
     ; until the set of cleaned pixels does not change any more.
     ;
-    if n_elements(external_library) eq 0 then external_library = 'none'
     good = goodPixels
     for j=0,4 do begin ; Do at most five cleaning iterations
         if n_elements(sky) eq 0 then $
@@ -805,8 +809,11 @@ endif
 ; Plot final data-model comparison if required.
 ;
 if keyword_set(plot) then begin
-basic_colors, black, white, red, green, blue, yellow, cyan, $
-  magenta, orange, mint, purple, pink, olive, lightblue, gray   
+    mdap_basic_colors, black, white, red, green, blue, yellow, cyan, magenta, orange, mint, $
+		       purple, pink, olive, lightblue, gray   
+    screenr = GET_SCREEN_SIZE()
+    window, xsize=screenr[0]*0.5, ysize=screenr[1]*0.5, retain=2
+		       
 
     mn = min(bestfit[goodPixels], MAX=mx)
     resid = mn + galaxy - bestfit
@@ -818,7 +825,7 @@ basic_colors, black, white, red, green, blue, yellow, cyan, $
     oplot, goodPixels, resid[goodPixels], PSYM=4, COLOR=green, SYMSIZE=0.3;, /OVERPLOT
     w = where((goodPixels[1:*] - goodPixels) gt 1, m)
     for j=0,m-1 do begin
-        x = range(goodPixels[w[j]],goodPixels[w[j]+1])
+        x = mdap_range(goodPixels[w[j]],goodPixels[w[j]+1])
         oplot, x, resid[x], COLOR=blue;, /OVERPLOT
     endfor
     w = (m gt 0) ? [0,w,w+1,n-1] : [0,n-1]  ; Add first and last point
@@ -837,7 +844,7 @@ endif
 ;    cgplot, goodPixels, resid[goodPixels], PSYM=4, COLOR='forest green', SYMSIZE=0.3, /OVERPLOT
 ;    w = where((goodPixels[1:*] - goodPixels) gt 1, m)
 ;    for j=0,m-1 do begin
-;        x = range(goodPixels[w[j]],goodPixels[w[j]+1])
+;        x = mdap_range(goodPixels[w[j]],goodPixels[w[j]+1])
 ;        cgplot, x, resid[x], COLOR='blue', /OVERPLOT
 ;    endfor
 ;    w = (m gt 0) ? [0,w,w+1,n-1] : [0,n-1]  ; Add first and last point

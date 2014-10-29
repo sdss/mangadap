@@ -6,7 +6,7 @@
 ;	Create a vector used to select out a desired wavelength range.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_SELECT_WAVE, wave, wstart, wend, selected, complement=complement
+;	MDAP_SELECT_WAVE, wave, wrange, selected, complement=complement
 ;
 ; INPUTS:
 ;	wave dblarr[]

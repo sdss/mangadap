@@ -1,12 +1,12 @@
 ;+
 ; NAME:
-;	MDAP_SPECTRAL_BIN_AREA
+;	MDAP_SPATIAL_BIN_AREA
 ;
 ; PURPOSE:
 ;	Calculate the field-of-view area for each spatially binned spectrum.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_SPECTRAL_BIN_AREA, dx, dy, nbinned, binned_indx, binned_area
+;	MDAP_SPATIAL_BIN_AREA, dx, dy, nbinned, binned_indx, binned_area
 ;
 ; INPUTS:
 ;	dx double
@@ -38,6 +38,7 @@
 ;
 ; TODO:
 ;	- How is binned_area used?  Should it include the weights?
+;	- Does NOT account for overlapping bin area!!
 ;
 ; BUGS:
 ;
@@ -50,14 +51,12 @@
 ;-
 ;------------------------------------------------------------------------------
 
-PRO MDAP_SPECTRAL_BIN_AREA, $
+PRO MDAP_SPATIAL_BIN_AREA, $
 		dx, dy, nbinned, binned_indx, binned_area
 
-	sz=size(nbinned)
-	nb = sz[0]					; Number of bins
+	nb = n_elements(nbinned)			; Number of bins
 	if nb eq 0 then begin				; No bins were produced!
 	    binned_area=0
-	    message, 'No bins produced!'
 	    return
 	endif
 	

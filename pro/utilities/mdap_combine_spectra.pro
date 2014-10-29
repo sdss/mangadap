@@ -57,6 +57,7 @@
 ;	- Account for covariance?
 ;	- Add some checks for the division by ivar!
 ;	- include pixel mask
+;	- allow for spectra to have different spectral resolutions?
 ;
 ; PROCEDURES CALLED:
 ;

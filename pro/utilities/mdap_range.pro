@@ -23,11 +23,11 @@
 ;     (x < soft) and a nearly logarithmic spacing (x > soft).
 ;
 ; EXAMPLES:
-;   IDL> print, range(0,1,5)
+;   IDL> print, mdap_range(0,1,5)
 ;       0.000000  0.250000  0.500000  0.750000  1.00000
-;   IDL> print, range(0,1,5,/OPEN)
+;   IDL> print, mdap_range(0,1,5,/OPEN)
 ;       0.100000  0.300000  0.500000  0.700000  0.90000
-;   IDL> print, range(1,1e4,5,/LOG)
+;   IDL> print, mdap_range(1,1e4,5,/LOG)
 ;       1.00000   10.0000   100.000   1000.00   10000.0
 ;
 ; MODIFICATION HISTORY:

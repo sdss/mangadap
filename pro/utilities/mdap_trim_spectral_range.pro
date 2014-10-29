@@ -3,8 +3,8 @@
 ;	MDAP_TRIM_SPECTRAL_RANGE
 ;
 ; PURPOSE:
-;	Trim the flux, ivar, mask, sres, and wave vectors a specified wavelength
-;	range.
+;	Trim the flux, ivar, mask, sres, and wave vectors to a specified
+;	wavelength range.
 ;
 ; CALLING SEQUENCE:
 ;	MDAP_TRIM_SPECTRAL_RANGE, flux, ivar, mask, sres, wave, waverange, $

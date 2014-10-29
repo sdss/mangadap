@@ -88,7 +88,7 @@ FOR i = 0, sz[1]-1 DO BEGIN
   
     nbins = fix(n_elements(spc)/20)
    ; stop
-    bins = range(0, n_elements(spc),nbins+1)
+    bins = mdap_range(0, n_elements(spc),nbins+1)
     fake_x = findgen(n_elements(spc))
     rms_per_bin = fltarr(nbins)
     bin_center = fltarr(nbins)

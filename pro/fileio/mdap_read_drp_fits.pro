@@ -108,6 +108,8 @@
 ;	15 Sep 2014: (KBW) Change to useage of MDAP_OFFSET_XY_CENTER,
 ;			   MDAP_WCS_UNITS, and MDAP_WCSUNIT2ARCSEC
 ;	15 Sep 2014: (KBW) Added unit as an optional output
+;	10 Oct 2014: (KBW) Automatically set unit, does not need to check that
+;			   it exists
 ;-
 ;------------------------------------------------------------------------------
 
@@ -140,8 +142,8 @@ PRO MDAP_READ_DRP_FITS,$
 	    MDAP_WCS_UNITS, header, wcsunit		; Get WCS units
 	    MDAP_WCSUNIT2ARCSEC, wcsunit, skyx, skyy	; Convert distance to arcseconds
 
-	    if n_elements(unit) ne 0 then $		; Set unit value, if requested
-		unit=wcsunit
+	    ; TODO: Remove spectra with all zeros from list?
+	    unit=wcsunit				; Set unit value, if requested
 
 	endif else begin
 	    MDAP_RSS_ONSKY_XY, file, skyx, skyy		; Get the on-sky spaxel coordinates

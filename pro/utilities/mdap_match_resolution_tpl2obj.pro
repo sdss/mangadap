@@ -18,10 +18,9 @@
 ;	using the keyword /no_offset; and option 3 is not currently allowed.
 ;
 ;	If using option 1, the keyword /variable_offset allows the offset to be
-;	the different for all templates.  Under the expectation that the
-;	templates will be combined and tested against the object spectra, the
-;	default behavior is to force the offset to be the same for all
-;	templates.
+;	different for all templates.  Under the expectation that the templates
+;	will be combined and tested against the object spectra, the default
+;	behavior is to force the offset to be the same for all templates.
 ;
 ;	Finally, the code masks a number of pixels at the beginning and end of
 ;	the template spectra to remove regions affected by errors in the
@@ -29,6 +28,12 @@
 ;	the FWHM of the largest Gaussian applied in the convolution:
 ;	ceil(sig2fwhm*max(diff_sig_w)/dw).  This is currently hard-wired and
 ;	should be tested.
+;
+;	The detailed match of the galaxy and template spectral resolution should
+;	account for the redshift of the galaxy spectrum with respect to the
+;	template.  This is not accounted for here, assuming that the wavelength
+;	vectors of both the template and galaxy are *in the same reference
+;	frame*!
 ;
 ; CALLING SEQUENCE:
 ;	MDAP_MATCH_RESOLUTION_TPL2OBJ, tpl_flux, tpl_ivar, tpl_mask, tpl_wave, $
@@ -55,18 +60,20 @@
 ;
 ;	tpl_wave dblarr[T][S]
 ;		Wavelength of each spectral channel T in angstroms for each
-;		template spectrum S.  TODO: Assumed to be linear!
+;		template spectrum S.  TODO: Assumed to be linear!  Should be in
+;		the same reference frame as the galaxy data!
 ;
 ;	tpl_sres dblarr[T][S]
 ;		Spectral resolution (R=lamda/delta lambda) for of each spectral
 ;		channel T for each template spectrum S.  Replaced upon output
-;		with the resolution matched to the object spectra.
+;		with the matched resolution of the template spectra.
 ;
 ;	wave dblarr[C]
-;		Wavelength coordinates of each spectral channel C, in accordance
-;		with the DRP output.  That is, the vector is expected to have a
-;		constant step in log10(lambda); however, the coordinates are in
-;		angstroms, not log10(angstroms).
+;		Wavelength coordinates of each spectral channel C in the object
+;		spectrum, in accordance with the DRP output.  That is, the
+;		vector is expected to have a constant step in log10(lambda);
+;		however, the coordinates are in angstroms, not log10(angstroms).
+;		Should be in the same rerference frame as the template data!
 ;
 ;	sres dblarr[C]
 ;		Median spectral resolution (R=lamda/delta lamba) as a function
@@ -112,20 +119,30 @@
 ;
 ; REVISION HISTORY:
 ;	17 Sep 2014: (KBW) Original Implementation
+;	23 Oct 2014: (KBW) Documentation specifies that the wavelengths should
+;			   be in the same reference frame.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_MATCH_RESOLUTION_TPL2OBJ_WAVE_WITH_ZERO_OFFSET, $
-		positive_offset, unm_wave, waverange
+		positive_offset, unm_wave, waverange, zero_dispersion=zero_dispersion
+
+	if n_elements(zero_dispersion) eq 0 then $
+	    zero_dispersion = 0.0		; Base level dispersion
 
 	sz = size(positive_offset)
 	np=sz[1]				; Number of unmasked pixels
 
-	indx=where(positive_offset lt 0)
-	if indx[0] eq -1 then begin
+	indx=where(positive_offset lt zero_dispersion)
+	if indx[0] eq -1 then $
 	    message, 'Template spectrum is at lower resolution at all wavelengths!'
-	    retall
-	endif
+
+	if n_elements(indx) eq np then begin
+	    print, 'Entire spectrum is valid: ' + MDAP_STC(unm_wave[0]) + 'A - ' + $
+						 MDAP_STC(unm_wave[np-1]) + 'A'
+	    waverange = [ unm_wave[0], unm_wave[np-1] ]
+	    return
+	end
 
 	print, 'Input valid range is ' + MDAP_STC(unm_wave[0]) + 'A - ' + $
 	       MDAP_STC(unm_wave[np-1]) + 'A'
@@ -134,23 +151,23 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ_WAVE_WITH_ZERO_OFFSET, $
 	; Find the largest contiguous region of pixels that requires no offset
 
 	; Start counting from the first valid wavelength
-	indx=where(positive_offset gt 0)		; Pixels that require an offset
+	indx=where(positive_offset gt zero_dispersion)	; Pixels that require an offset
 	incw=[ unm_wave[0], unm_wave[np-1] ]		; Initialize to full range
 	j=0						; Start at low wavelength
-	while indx[0] ne -1 and j lt np do begin
+	while indx[0] ne -1 and j lt np-1 do begin
 	    j++						; Increment j
 	    incw[0] = unm_wave[j]			; Update wavelength range
-	    indx=where(positive_offset[j:np-1] gt 0)	; Update indices
+	    indx=where(positive_offset[j:np-1] gt zero_dispersion)	; Update indices
 	endwhile
 
 	; Start counting from the last valid wavelength
-	indx=where(positive_offset gt 0 )		; Pixels that require an offset
+	indx=where(positive_offset gt zero_dispersion)		; Pixels that require an offset
 	decw=[ unm_wave[0], unm_wave[np-1] ]		; Initialize to full range
 	j=np-1						; Start at high wavelength
-	while indx[0] ne -1 and j ne 0 do begin
+	while indx[0] ne -1 and j gt 0 do begin
 	    j--						; Decrement j
 	    decw[1] = unm_wave[j]			; Update wavelength range
-	    indx=where(positive_offset[0:j] gt 0)	; Update indices
+	    indx=where(positive_offset[0:j] gt zero_dispersion)	; Update indices
 	endwhile
 
 	; Select the largest region
@@ -192,7 +209,7 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 		continue
 	    endif
 
-	    print, size(unmasked)
+;	    print, size(unmasked)
 	    print, 'Number of unmasked pixels: ', n_elements(unmasked)
 	    num = n_elements(unmasked)
 
@@ -209,8 +226,9 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 	    	print, 'Number of zero valued fluxes: ', n_elements(zero_vals)
 
 	    ; Object resolution interpolated to template wavelengths
-	    obj_sres=interpol(sres, wave, reform(tpl_wave[i,unmasked]))
-	    print, size(obj_sres)
+	    unm_wave = reform(tpl_wave[i,unmasked])
+	    obj_sres=interpol(sres, wave, unm_wave)
+;	    print, size(obj_sres)
 ;	    mydevice=!D.NAME
 ;	    set_plot, 'PS'
 ;	    device, filename='res_plot.ps'
@@ -220,13 +238,11 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 ;	    set_plot, mydevice
 ;	    stop
 
-	    unm_wave = reform(tpl_wave[i,unmasked])
-
-	    print, size(tpl_wave[i,unmasked])
+;	    print, size(tpl_wave[i,unmasked])
 	    ; Variance (in angstroms) of Gaussian needed to match template and object resolution
 	    diff_var_w = (unm_wave/sig2fwhm)^2*(1.0d/(obj_sres)^2 $
 			  - 1.0d/(reform(tpl_sres[i,unmasked]))^2)
-	    print, size(diff_var_w)
+;	    print, size(diff_var_w)
 ;	    stop
 	    diff_var_v = (c/unm_wave)^2*diff_var_w		; Convert to km/s
 
@@ -234,14 +250,18 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 	    ;     Gaussian convolution kernel is always above the minimum width
 	    positive_offset = reform((c*MDAP_MINIMUM_CNVLV_SIGMA(dw)/unm_wave)^2 - diff_var_v)
 
+	    zero_dispersion = (c*MDAP_MIN_SIG_GAU_APPROX_DELTA(dw)/unm_wave)^2
+
 	    if ~keyword_set(no_offset) then begin		; Allow any offset
 		tpl_soff[i] = max([ positive_offset, 0.0d ])
 		print, 'Offset: '+MDAP_STC(tpl_soff[i])
 	    endif else begin					; Force offset to be 0
 		MDAP_MATCH_RESOLUTION_TPL2OBJ_WAVE_WITH_ZERO_OFFSET, positive_offset, unm_wave, $
-								     waverange
+								     waverange, $
+								     zero_dispersion=zero_dispersion
 		MDAP_SELECT_WAVE, reform(tpl_wave[i,*]), waverange, indx, complement=comp
-		tpl_mask[i,comp] = 1.0
+		if comp[0] ne -1 then $
+		    tpl_mask[i,comp] = 1.0
 
 		indx=where(tpl_mask[i,unmasked] lt 1)	; Save the unmasked indices wrt the old mask
 		if indx[0] eq -1 then begin
@@ -253,19 +273,21 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 
 		unmasked = where(tpl_mask[i,*] lt 1)	; Update unmasked
 		num = n_elements(unmasked)		; Update the number of unmasked pixels
-		unm_wave = reform(tpl_wave[i,unmasked])	; Update the unmasked wave vector
-
+		unm_wave = reform(tpl_wave[i,unmasked])	; Update the unmasked wave vector 
+		obj_sres = obj_sres[indx]		; Update the object spectral resolution map
 		diff_var_v = diff_var_v[indx]		; Update the variances
 
-		print, n_elements(unmasked), n_elements(unm_wave), n_elements(diff_var_v)
+;		print, n_elements(unmasked), n_elements(unm_wave), n_elements(diff_var_v)
 
 		tpl_soff[i] = 0.			; Offset is zero
 	    endelse
 
+	    indx = where(diff_var_v + tpl_soff[i] lt 0)
 	    diff_sig_w = unm_wave*sqrt(diff_var_v + tpl_soff[i])/c	; Conv sigma in angs
+	    diff_sig_w[indx] = 0.0			; Set lt 0 to 0 (within range of delta func)
 	    tpl_soff[i] = sqrt(tpl_soff[i])		; Convert from variance to sigma
 
-	    print, min(diff_sig_w), max(diff_sig_w)
+;	    print, min(diff_sig_w), max(diff_sig_w)
 
 	    ; If a variable or no offset is allowed, go ahead and do the convolution
 	    if keyword_set(variable_offset) or keyword_set(no_offset) then begin
@@ -290,13 +312,15 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 		tpl_ivar[i,unmasked] = conv_ivar
 
 		; Calculate the new resolution
-		tpl_sres[i,unmasked] = 1.0d/sqrt(1.0d/(tpl_sres[i,unmasked])^2 + $
-				       (sig2fwhm*diff_sig_w/unm_wave)^2)
+;		tpl_sres[i,unmasked] = 1.0d/sqrt(1.0d/(tpl_sres[i,unmasked])^2 + $
+;				       (sig2fwhm*diff_sig_w/unm_wave)^2)
+
+		tpl_sres[i,unmasked] = obj_sres
 	    endif
 
 	endfor
 
-	print, sigma_mask
+;	print, sigma_mask
 
 	; If not forcing a single offset, the procedure is done
 	if keyword_set(variable_offset) or keyword_set(no_offset) then $
@@ -347,8 +371,10 @@ PRO MDAP_MATCH_RESOLUTION_TPL2OBJ, $
 	    tpl_ivar[i,unmasked] = conv_ivar
 
 	    ; Calculate the new resolution
-	    tpl_sres[i,unmasked] = 1.0d/sqrt(1.0d/(tpl_sres[i,unmasked])^2 + $
-					     (sig2fwhm*diff_sig_w/unm_wave)^2)
+;	    tpl_sres[i,unmasked] = 1.0d/sqrt(1.0d/(tpl_sres[i,unmasked])^2 + $
+;					     (sig2fwhm*diff_sig_w/unm_wave)^2)
+
+	    tpl_sres[i,unmasked] = obj_sres
 	endfor
 
 END

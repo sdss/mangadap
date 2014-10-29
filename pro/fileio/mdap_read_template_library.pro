@@ -65,6 +65,7 @@
 ;
 ; REVISION HISTORY:
 ;	17 Sep 2014: (KBW) Original implementation
+;	10 Oct 2014: (KBW) Changed keyword from 'MARCS' TO 'M11-MARCS'
 ;-
 ;------------------------------------------------------------------------------
 
@@ -124,7 +125,7 @@ END
 
 FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
 		library_key
-	if library_key eq 'MARCS' then begin
+	if library_key eq 'M11-MARCS' then begin
 	    return, 2.73
 	endif else begin
 	    message, 'Unknown library keyword!'
@@ -160,8 +161,13 @@ PRO MDAP_READ_TEMPLATE_LIBRARY, $
 	    tpl_wave[i,0L:sz[1]-1] = wave[*]		; Wavelength
 	    tpl_sres[i,0L:sz[1]-1] = wave[*]/fwhm_tpl	; Spectral resolution = lambda/delta lambda
 
-	    if sz[1] lt nc then $
+	    if sz[1] lt nc then begin
+		dw=tpl_wave[i,1]-tpl_wave[i,0]	; Pixel size
+		add_wave = (dindgen(nc-sz[1])+1.0d)*dw+tplwave[i,sz[1]-1]
+		tpl_wave[i,sz[1]:nc-1] = add_wave[*]	; Add the wavelengths for the other pixels
+
 		tpl_mask[i,sz[1]:nc-1] = 1.0		; Mask pixels that have no data
+	    endif
 
 	endfor
 

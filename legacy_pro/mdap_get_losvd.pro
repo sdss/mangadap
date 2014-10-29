@@ -1,7 +1,7 @@
 pro mdap_get_losvd,sol,velscale,losvd
    dx = ceil(5d*sol[1]/velscale) 
    n = 2*dx + 1
-   x = range(dx,-dx,n)          ; Evaluate the Gaussian using steps of 1/factor pixel
+   x = mdap_range(dx,-dx,n)          ; Evaluate the Gaussian using steps of 1/factor pixel
    losvd = dblarr(n)
    w = (x )/(sol[1]/velscale)
    w2 = w*w

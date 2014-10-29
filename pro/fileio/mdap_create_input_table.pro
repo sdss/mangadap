@@ -80,6 +80,7 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	endfor
 
 	; Read the NSA catalog to get the relevant quantities
+	get_lun, catdb
 	FXBOPEN, catdb, nsa_cat, 1, header		; Open the file
 
 	FXBREAD, catdb, nsaid_, 'NSAID'			; NSA ID
@@ -104,6 +105,7 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	FXBREAD, catdb, pa_, 'SERSIC_PHI'		; Position angle from Sersic fit
 	FXBREAD, catdb, reff_, 'SERSIC_TH50'		; Half-light radius fro Sersic fit
 	FXBCLOSE, catdb					; Close up
+	free_lun, catdb
 
 	ii_ = SORT(nsaid_)				; Sorted indices for full catalog
 	ii = SORT(nsaid)				; Sorted indices for fits files
@@ -134,9 +136,9 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	c=299792.458d			; TODO: there isn't some idlutils file that defines this?
 
 	; Write the file
-	OPENW, 1, ofile
-	PRINTF, 1, '# '+SYSTIME()
-	PRINTF, 1, '#', 'FITSFILE', 'V', 'VDISP', 'ELL', 'PA', 'IFU', 'Reff', 'FORMAT', $
+	OPENW, unit, ofile, /get_lun
+	PRINTF, unit, '# '+SYSTIME()
+	PRINTF, unit, '#', 'FITSFILE', 'V', 'VDISP', 'ELL', 'PA', 'IFU', 'Reff', 'FORMAT', $
 		   format='( A1, A59, A14, A10, A10, A10, A4, A10, A10 )'
 	for i=0,n_manga-1 do begin
 
@@ -152,15 +154,15 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	    ;   b/a is converted to ellipticity on output
 	    root = STRMID(fitsfile[i], 0, STRPOS(fitsfile[i], '.fits', /reverse_search))
 	    if jj[i] ge 0 then begin 
-		PRINTF, 1, root, c*redshift_[jj[i]], vdisp_[jj[i]], 1.0-boa_[jj[i]], $
+		PRINTF, unit, root, c*redshift_[jj[i]], vdisp_[jj[i]], 1.0-boa_[jj[i]], $
 			   pa_[jj[i]], ifun[i], reff_[jj[i]], frmt, $
 			   format='( A60, E14.6, E10.2, E10.2, E10.2, I4, E10.2, A10 )'
 	    endif else begin
-		PRINTF, 1, root, -1, -1, -1, -1, ifun[i], -1, frmt, $
+		PRINTF, unit, root, -1, -1, -1, -1, ifun[i], -1, frmt, $
 			   format='( A60, I14, I10, I10, I10, I4, I10, A10 )'
 	    endelse
 	endfor
-	CLOSE, 1
-
+	CLOSE, unit
+	free_lun, unit
 END		    
 	    

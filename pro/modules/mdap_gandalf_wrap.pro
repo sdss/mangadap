@@ -1,4 +1,359 @@
+;+
+; NAME:
+;	MDAP_GANDALF_WRAP
 ;
+; PURPOSE:
+;	Wrapper that calls PPXF and GANDALF in order to derive the stellar and
+;	gaseous kinematics for an input set of spectra.  TODO: Why is this
+;	specific to MaNGA?  The stellar continuum is matched with a combination
+;	of provided templates, whereas emission-lines are represented by
+;	Gaussian functions, with interdepencies regulated by the input
+;	emission-setup file.
+;
+; CALLING SEQUENCE:
+;	MDAP_GANDALF_WRAP, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ivar, obj_mask, velScale, $
+;			   start, fitted_pixels_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
+;			   mult_poly_coeff_ppxf, bestfit_ppxf, chi2_ppxf, fitted_pixels_gndf, $
+;			   weights_gndf, mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, $
+;			   sol, err, gas_intens, gas_intens_err, gas_vel, gas_vel_err, gas_sig, $
+;			   gas_sig_err, gas_flux, gas_flux_err, gas_ew, gas_ew_err, $
+;			   eml_par=eml_par, vsyst=vsyst, bias=bias, mdegree=mdegree, $
+;			   degree=degree, moments=moments, reddening=ebv, $
+;			   range_v_star=range_v_star, range_s_star=range_s_star, $
+;			   range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
+;			   region_mask=region_mask, external_library=external_library, $
+;			   int_disp=instr_disp, err_reddening=err_reddening, $
+;			   ppxf_status=ppxf_status, gandalf_status=gandalf_status, $
+;			   ppxf_only=ppxf_only, /oversample, /for_errors, /fix_star_kin, $
+;			   /fix_gas_kin, /quiet, /plot
+;
+; INPUTS:
+;	tpl_wave dblarr[S]
+;		The wavelength in angstrom for each of S spectral channels,
+;		which must be the same for all T template spectra.
+;	
+;	tpl_flux dblarr[T][S]
+;		The fluxes for a library of T template spectra, each with S
+;		spectral channels.  The sampling of the spectra is expected to
+;		be logarithmic using base 10.  TODO: Always base 10?  All pixels
+;		are expected to be valid! TODO: Allow for mask input?  The
+;		velocity sampling of both the template and object spectra MUST
+;		be the same.
+;
+;	obj_wave dblarr[C]
+;		The wavelength in angstroms for each of C spectral channels in
+;		the object spectrum.
+;	
+;	obj_flux dblarr[C]
+;		A single object (galaxy) spectrum with C spectral channels.  The
+;		sampling of the spectra is expected to be logarithmic using base
+;		10.  The velocity sampling of both the template and object
+;		spectra MUST be the same.
+;
+;	obj_ivar dblarr[C]
+;		Inverse variance in the flux of the object spectrum.
+;
+;	obj_mask dblarr[C]
+;		Bad pixel mask for the object spectrum.  Good/bad pixels have
+;		values of 0/1.
+;		
+;	velScale double
+;		Velocity sampling of the spectra.  Must be the same for both the
+;		object and template spectra.
+;
+;		TODO: Better to just calculate this using MDAP_VELOCITY_SCALE?
+;
+;	start dblarr[6]
+;		Initial guesses for the:
+;		    start[0] stellar veocity (km/sec)
+;		    start[1] stellar velocity dispersion (km/sec)
+;		    start[2] stellar h3 Gauss Hermite moment
+;		    start[3] stellar h4 Gauss Hermite moment stellar velocity dispersion
+;		    start[4] gas velocity (km/sec)
+;		    start[5] gas velocity dispersion (km/sec).
+;
+; OPTIONAL INPUTS:
+;	eml_par EmissionLine[E]
+;		The parameters for each of E emission lines used during the
+;		fitting procedures.  The EmissionLine structure is defined as
+;		follows (see MDAP_READ_EMISSION_LINE_PARAMETERS):
+;
+;		{ EmissionLine, i:0L, name:'', lambda:0.0d, action:'', $
+;		      kind:'', a:0.0d, v:0.0d, s:0.0d, fit:'' }
+;
+;		Once created, one selects, for example, the name of the 3rd
+;		input line using: eml_par[2].name
+;
+;		If not provided, the code runs pPXF and then returns without
+;		determining any gas paramters.
+;
+;	vsyst double
+;		On input, pPXF expects the template and galaxy to have the same
+;		wavelength coordinate system.  This accounts for the fact that
+;		this may not be true, calculated (MDAP_SPECTRAL_FITTING) as the
+;		velocity offset of the template with respect to the initial
+;		wavelength of the galaxy.  That is, we determine the
+;		pseudo-velocity shift required to match the observed wavelengths
+;		of the template library and the galaxy spectrum.
+;
+;	bias float
+;		(COPIED FROM pPXF:) This parameter biases the (h3,h4,...)
+;		measurements towards zero (Gaussian LOSVD) unless their
+;		inclusion significantly decreses the error in the fit.  Set this
+;		to BIAS=0.0 not to bias the fit: the solution (including
+;		[V,sigma]) will be noisier in that case.  The default BIAS
+;		should provide acceptable results in most cases, but it would be
+;		safe to test it with Monte Carlo simulations. This keyword
+;		precisely corresponds to the parameter \lambda in the Cappellari
+;		& Emsellem (2004) paper. Note that the penalty depends on the
+;		*relative* change of the fit residuals, so it is insensitive to
+;		proper scaling of the NOISE vector. A nonzero BIAS can be safely
+;		used even without a reliable NOISE spectrum, or with equal
+;		weighting for all pixels.
+;
+;	mdegree integer
+;		Degree of *multiplicative* polynomial to be used by both  pPXF
+;		and GANDALF.  GANDALF will only use this polynomial if the
+;		reddening is NOT fit.  Default: mdegree=0 (no multiplicative
+;		polynomials are used).
+;
+;	degree integer
+;		Degree of *additive* (TODO: Check this!) polynomial to be used
+;		in pPXF only.  Default: degree=-1 (no additive polynomials are
+;		used).
+;
+;	moments integer
+;		(Copied from pPXF:) Order of the Gauss-Hermite moments to fit.
+;		Set this keyword to 4 to fit [h3, h4] and to 6 to fit [h3, h4,
+;		h5, h6].  Note that in all cases the G-H moments are fitted
+;		(nonlinearly) *together* with [V, sigma].  Default behavior is
+;		to set moments=2 such that only [V, sigma] are fitted and the
+;		other parameters are returned as zero.  If moments=0 then only
+;		the templates and the continuum additive polynomials are fitted
+;		and the WEIGHTS are returned in output.
+;
+;	reddening dblarr[1 or 2]
+;		If it exists upon input, the stellar reddening (if it is
+;		dblarr[1]) and the gas reddening (balmer decrement, if it is
+;		dblarr[2]) are fit.  On output, it is replaced by the best-fit
+;		reddening.
+;
+;	range_v_star dblarr[2]
+;		Lower [0] and upper [1] limits on the best-fitting stellar
+;		velocity in km/s.  Default values are the starting_guess +/-
+;		2000 km/s.
+;
+;	range_s_star dblarr[2]
+;		Lower [0] and upper [1] limits on the best-fitting stellar
+;		velocity dispersion in km/s.  Default values are the
+;		21<sigma<499 km/s.
+;
+;	range_v_gas dblarr[2]
+;		Lower [0] and upper [1] limits on the best-fitting gas velocity
+;		in km/s.  Default values are the starting_guess +/- 2000 km/s.
+;
+;	range_s_gas dblarr[2]
+;		Lower [0] and upper [1] limits on the best-fitting gas velocity
+;		dispersion in km/s.  Default values are the starting_guess +/-
+;		2000 km/s. TODO: Are these limits right?
+;
+;	region_mask dblarr[2*N]
+;		If defined, it provides specifies a set of wavelength ranges
+;		(lower and upper limits in angstroms) to omit from the fit.  It
+;		must contain an even number of entries such that the ranges are:
+;		    lower_wave_limit[i] = region_mask[2*i]
+;		    upper_wave_limit[i] = region_mask[2*i+1]
+;		for i=0..N-1.
+;
+;		TODO: Omit this and use the input pixel mask?
+;
+;	external_library string
+;		Path to the external FORTRAN library, which contains the fortran
+;		versions of mdap_bvls.pro.  If not specified, or if the path is
+;		invalid, the default internal IDL mdap_bvls code is used. 
+;
+;	int_disp dblarr[E]
+;		Instrumental velocity dispersion (in km/s) for all E emission
+;		lines measured at the observed wavelength of the object spectra.
+;		For MDAP_SPECTRAL_FITTING, this is genereated using the rest
+;		wavelengths from an input file and the gas starting velocity
+;		guess.
+;
+;	ppxf_only integer
+;		Flag to run the GANDALF wrapper only using PPXF to fit the stellar
+;		kinematics and optimal template.  Emission lines will be masked
+;		if eml_par is provided; however, the emissions will not be fit
+;		using GANDALF.  0/1 = false/true.
+;
+; OPTIONAL KEYWORDS:
+;	/oversample 
+;		(Copied from pPXF:) Set this keyword to oversample the template
+;		by a factor 30x before convolving it with a well sampled LOSVD.
+;		This can be useful to extract proper velocities, even when sigma
+;		< 0.7*velScale and the dispersion information becomes totally
+;		unreliable due to undersampling.  IMPORTANT: One should sample
+;		the spectrum more finely is possible, before resorting to the
+;		use of this keyword! 
+;
+;	/for_errors
+;		Compute errors in the emission-line data using GANDALF.  TODO:
+;		This is now "Mandatory for the DAP workflow."  Should it be?
+;
+;	/fix_star_kin
+;		Fix the stellar kinematics to the starting guesses during the
+;		fit.
+;
+;	/fix_gas_kin
+;		Fix the gas kinematics to the starting guesses during the fit.
+;
+;	/quiet
+;		Execute GANDALF in quiet mode.  TODO: pPXF if always quiet.
+;		Allow p_quiet and g_quiet?  Or quiet/not quiet for both?
+;
+;	/plot
+;		Produce the plots generated by PPXF and GANDALF
+;
+; OUTPUT:
+;	fitted_pixels_ppxf intarr[]
+;		Indices of the pixels used by PPXF.
+;
+;	weights_ppxf dblarr[T]
+;		The weights applied to each template spectrum to create the
+;		optimal composite template as determined by PPXF.
+;
+;	add_poly_coeff_ppxf dblarr[P]
+;		Legendre polynomial weights of the additive polynomial if used in PPXF.
+;
+;	mult_poly_coeff_ppxf dblarr[P]
+;		Legendre polynomial weights of the multiplicative polynomial if used by PPXF.
+;
+;	bestfit_ppxf dblarr[C]
+;		The best fit model determine by PPXF, defined over the
+;		wavelength range of the object data (with C spectral channels).
+;
+;	chi2_ppxf double
+;		Chi^2/DOF for the PPXF fit.
+;
+;	fitted_pixels_gndf intarr[]
+;		Indices of the pixels used by GANDALF.
+;
+;	weights_gndf dblarr[T]
+;		The weights applied to each template spectrum to create the
+;		optimal composite template as determined by GANDALF.
+;
+;	mult_poly_coeff_gndf dblarr[P]
+;		Legendre polynomial weights of the multiplicative polynomial if used by GANDALF.
+;
+;	bestfit_gndf dblarr[C]
+;		The best fit model determined by GANDALF, defined over the
+;		wavelength range of the object data (with C spectral channels).
+;
+;	chi2_gndf double
+;		Chi^2/DOF for the GANDALF fit.
+;
+;	eml_model dblarr[C]
+;		Best-fitting model of the emission lines.
+;
+;	sol dblarr[9]
+;		The best-fit kinematic parameters:
+;			sol[0]: stellar velocity (km/s).
+;			sol[1]: stellar velocity dispersion  (km/s).
+;			sol[2]: stellar h3 Gauss-Hermite moment (km/s).
+;			sol[3]: stellar h4 Gauss-Hermite moment (km/s).
+;			sol[4]: stellar h5 Gauss-Hermite moment.
+;			sol[5]: stellar h6 Gauss-Hermite moment.
+;			sol[6]: chi^2 (NOT USED)
+;			sol[7]: mean flux weighted velocity of the emission lines (km/s).
+;			sol[8]: mean flux weighted velocity dispersion (km/s).  
+;
+;	err dblarr[8]
+;		Error in the best-fit kinematic solution.  Elements are:
+;			err[0]: error on the stellar velocity (km/s).
+;			err[1]: error on the stellar velocity dispersion  (km/s).
+;			err[2]: error on the stellar h3 Gauss-Hermite moment.
+;			err[3]: error on the stellar h4 Gauss-Hermite moment.
+;			err[4]: error on the stellar h5 Gauss-Hermite moment (not used).
+;			err[5]: error on the stellar h6 Gauss-Hermite moment (not used).
+;			err[6]: error on the gas mean velocity (km/s).
+;			err[7]: error on the gas mean velocity dispersion (km/s). 
+;
+;		TODO: Use 9-element vector and ignore the chi-square (i=6)
+;
+;	gas_intens     dblarr[E]
+;	gas_intens_err dblarr[E]
+;		Intensity (corrected for reddening) of the E emission lines and
+;		their errors.  The intensities of lines in a multiplet are
+;		constrained by the flux ratio defined in the eml_par structure.
+;
+;	gas_vel     dblarr[E]
+;	gas_vel_err dblarr[E]
+;		Velocity of the E emission lines and their errors.  TODO: Are
+;		the tied velocities in this?
+;
+;	gas_sig     dblarr[E]
+;	gas_sig_err dblarr[E]
+;		Velocity dispersions of the E emission lines and their errors.
+;		TODO: Are the tied velocity dispersions in this?
+;
+;	gas_flux      dblarr[E]
+;	gas_flux_err  dblarr[E]
+;		Integrated fluxes (corrected for reddening) of the E emission
+;		lines and their errors.  The intensities of lines in a multiplet
+;		are constrained by the flux ratio defined in the eml_par
+;		structure.
+;
+;	gas_EW     dblarr[E]
+;	gas_EW_err dblarr[E]
+;		Equivalent widths (corrected for reddening) of the E emission
+;		lines and their errors.  The intensities of lines in a multiplet
+;		are constrained by the flux ratio defined in the eml_par
+;		structure.  Equivalent widths are computed by comparing the
+;		emission-line flux with the median flux of the stellar continuum
+;		in the spectral region
+;			l_i-10*FWHM_i < l < l_i-5*FWHM_i
+;		and
+;			l_i+5*FWHM_i < l < l_i+10*FWHM_i,
+;		where l_i is the central wavelength of the i-th emission line,
+;		and FWHM_i is its measured FWHM (intrinsic plus instrumental).
+;
+; OPTIONAL OUTPUT:
+;	reddening dblarr[1 or 2]
+;		If it exists upon input, the stellar reddening (if it is
+;		dblarr[1]) and the gas reddening (balmer decrement, if it is
+;		dblarr[2]) are fit.  On output, it is replaced by the best-fit
+;		reddening.
+;
+;	err_reddening dblarr[1 or 2]
+;		Error in the reddening if fitted.
+;
+;	ppxf_status integer
+;		If 0, pPXF failed; if 1, pPXF was successful.  If pPXF fails,
+;		GANDALF is still executed, but the stellar kinematics ere fixed
+;		to the starting guesses.
+;
+;	gandalf_status integer
+;		If 0, GANDALF failed; if 1, GANDALF was successful.
+;
+; COMMENTS:
+;
+; EXAMPLES:
+;
+; TODO:
+;	- Change to using structures!
+;	- Add a log10 keyword
+;
+; BUGS:
+;
+; PROCEDURES CALLED:
+;
+; INTERNAL SUPPORT ROUTINES:
+;
+; REVISION HISTORY:
+;	29 Sep 2014: Copied from v0_8 by L. Coccato (last edited 16 Apr 2014)
+;	29 Sep 2014: (KBW) Formatting and edits
+;-
+;------------------------------------------------------------------------------
+
 ; "NEW - V1.3" comments denotes V1.3 modifications. Notably these are:
 ;
 ; 1) Keyword FOR_ERRORS have been added and is passed onto GANDALF
@@ -16,690 +371,952 @@
 ;    good, 0, masked), which can be used later in making plots
 ;    with SHOW_FIT.PRO
 
-pro remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
 
-for i = 0, n_elements(indici_to_remove_from_good_pixels)-1 do begin
-   rm = where(indici_to_remove_from_good_pixels[i] eq goodpixels)
-  if rm[0] ne -1 then remove,rm,goodpixels
-endfor
-kk = goodpixels[uniq(goodpixels,sort(goodpixels))]
-goodpixels=kk
-
-end
-
-
-
-function mask_emission_lines,npix,Vsys,emission_setup,velscale,l0_gal,lstep_gal,$
-                             sigma=sigma,l_rf_range=l_rf_range,log10=log10
-
-; Return a list of goodpixels to fit that excludes regions potentially
-; affected by gas emission and by sky lines. Unless the log10 keyword
-; is specified, wavelength values are assumed to be ln-rebinned, and
-; are defined by the l0_gal, lstep_gal, npix parameters. The position of
-; gas and sky emission lines is set by the input emission_setup
-; structure and the width of the mask by the sigma parameter. If a
-; sigma value is not passed than the width of each line is taken from
-; the emission_setup structure.
+;---------------------------------------------------------------------------------------------------
+;	Description:
 ;
-; The rest-frame fitting wavelength range can be manually restricted
-; using the l_rf_range keyword to pass min and max observed
-; wavelength. Typically used to exclude regions at either side of
-; spectra.
+;PRO MDAP_GANDALFW_REMOVE_INDICES_FROM_GOODPIXELS, $
+;		goodpixels, indx
+;
+;	; TODO: Revisit what's going on here
+;	n=n_elements(indx)
+;	for i=0,n-1 do begin
+;	    rm = where(indx[i] eq goodpixels)
+;	    if rm[0] ne -1 then $
+;		REMOVE, rm, goodpixels
+;	endfor
+;
+;	kk = goodpixels[uniq(goodpixels,sort(goodpixels))]
+;	goodpixels=kk
+;end
+;---------------------------------------------------------------------------------------------------
 
 
-; speed of light
-c = 299792.458d
-; define good pixels array
-goodpixels = range(0,npix-1) 
-; if set, exclude regions at either ends of the spectra using the keyword l_rf_range
-if keyword_set(l_rf_range) then begin
-    pix0     = ceil((alog(l_rf_range[0])-l0_gal)/lstep_gal+Vsys/velscale)
-    pix1     = ceil((alog(l_rf_range[1])-l0_gal)/lstep_gal+Vsys/velscale)
-    if keyword_set(log10) then begin
-        pix0     = ceil((alog10(l_rf_range[0])-l0_gal)/lstep_gal+Vsys/velscale)
-        pix1     = ceil((alog10(l_rf_range[1])-l0_gal)/lstep_gal+Vsys/velscale)
-    endif
-    goodpixels = range(max([pix0,0]),min([pix1,npix-1])) ; NEW - V1.3 
-endif
-
-tmppixels  = goodpixels
-; looping over the listed emission-lines and mask those tagged with an
-; 'm' for mask. Mask sky lines at rest-frame wavelength
-for i = 0,n_elements(emission_setup.i)-1 do begin
-    if (emission_setup.action[i] eq 'm') then begin
-        ;print,'--> masking ' + emission_setup.name[i]
-        if (emission_setup.name[i] ne 'sky') then $
-          meml_cpix = ceil((alog(emission_setup.lambda[i])-l0_gal)/lstep_gal+Vsys/velscale)
-        if (emission_setup.name[i] ne 'sky' and keyword_set(log10)) then $
-          meml_cpix = ceil((alog10(emission_setup.lambda[i])-l0_gal)/lstep_gal+Vsys/velscale)
-        ; sky lines are at rest-frame
-        if (emission_setup.name[i] eq 'sky') then $
-          meml_cpix = ceil((alog(emission_setup.lambda[i])-l0_gal)/lstep_gal) 
-        if (emission_setup.name[i] eq 'sky' and keyword_set(log10)) then $
-          meml_cpix = ceil((alog10(emission_setup.lambda[i])-l0_gal)/lstep_gal) 
-        ; set the width of the mask in pixels using either
-        ; 3 times the sigma of each line in the emission-line setup 
-        ; or the provided sigma value 
-        if keyword_set(sigma) then msigma = 3*sigma/velscale
-        if not keyword_set(sigma) then msigma = 3*emission_setup.s[i]/velscale
-        meml_bpix = meml_cpix - msigma
-        meml_rpix = meml_cpix + msigma
-        w = where(goodpixels ge meml_bpix and goodpixels le meml_rpix) 
-        if (w[0] ne -1) then begin
-            tmppixels[w] = -1 
-        endif else begin 
-          ;  print,'this line is outside your wavelength range. We shall ignore it' ; NEW - V1.3
-            emission_setup.action[i] = 'i'                                         ; NEW - V1.3 
-        endelse
-    endif
-endfor
-w = where(tmppixels ne -1)
-goodpixels = goodpixels[w]
-
-return,goodpixels
-end
-
-function remouve_detected_emission,galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds,$
-                                   AoN=AoN,goodpixel=goodpixel
-; Given the galaxy spectrum, the best fit, the emission-line
-; amplitudes, a vector with the A/N threshold for each line, and the
-; array containing the spectra of each best-fitting emission-line
-; templates, this function simply compute the residual-noise lvl,
-; compares it the amplitude of each lines, and remouves from the
-; galaxy spectrum only the best-matching emission-line templates for
-; which the correspoding A/N exceed the input threshold.  This is a
-; necessary step prior to measurements of the strength of the stellar
-; absorption line features
-;
-; A list of goodpixels may be optionally input, for instance if any
-; pixel was excluded by sigma-clipping during the continuum and
-; emission-line fitting, or by excluding pixels on either ends of the
-; spectra
-;
-; Also optionally outputs the computed A/N ratios.
-
-; Get the Residual Noise lvl.
-resid = galaxy - bestfit
-if keyword_set(goodpixel) then resid = resid[goodpixels]
-resid_noise = robust_sigma(resid, /ZERO)
-; A/N of each line
-AoN = sol_gas_A/resid_noise
-; Create neat spectrum, that is, a spectrum where only detected
-; emission has been remouved
-neat_galaxy = galaxy
-for i = 0,n_elements(sol_gas_A)-1 do begin
-    if (AoN[i] ge AoN_thresholds[i]) then neat_galaxy = neat_galaxy - emission_templates[*,i]
-endfor
-
-return,neat_galaxy
-end
 
 
-PRO mdap_gandalf_wrap,templates,loglam_templates,galaxy, loglam_gal, noise,velscale,start_, sol,$
-       gas_Velocities,gas_Velocities_err,gas_Dispersion,gas_Dispersion_err,$
-       gas_intens,gas_fluxes,gas_ew,gas_intens_err,gas_fluxes_err,gas_ew_err,$
-       EMISSION_SETUP_FILE=EMISSION_SETUP_FILE, $
-       BESTFIT=bestFit, BIAS=bias,  MDEGREE=MDEGREE,DEGREE=degree, ERROR=error,$
-       MOMENTS=moments, reddening=reddening,err_reddening=err_reddening,$
-       VSYST=VSYST, WEIGHTS=weights, BF_COMP2 = bf_comp2,$
-       quiet=quiet,FOR_ERRORS=FOR_ERRORS,$
-       fix_star_kin=fix_star_kin,fix_gas_kin=fix_gas_kin,$
-       range_v_star=range_v_star,range_s_star=range_s_star,range_v_gas=range_v_gas,range_s_gas=range_s_gas,$
-       mask_range=mask_range,fitted_pixels=fitted_pixels,external_library=external_library,$
-       INT_DISP=INT_DISP,status = status,OVERSAMPLE=oversample
+;---------------------------------------------------------------------------------------------------
+;	Return a list of goodpixels to fit that excludes regions potentially
+;	affected by gas emission and by sky lines.  Unless the log10 keyword is
+;	specified, wavelength values are assumed to be ln-rebinned, and are
+;	defined by the l0_gal, lstep_gal, npix parameters.  The position of gas
+;	and sky emission lines is set by the input eml_par structure and the
+;	width of the mask by the sigma parameter.  If a sigma value is not
+;	passed than the width of each line is taken from the eml_par structure.
+;
+;	The rest-frame wavelength range can be manually restricted using the
+;	l_rf_range keyword to pass min and max observed wavelengths.  Typically
+;	used to exclude regions at either end of spectra.
 
-; Example of an IDL wrapper calling PPXF and GANDALF in order to
-; derive the stellar and gaseous kinematics in the case of MANGA
-; SPECTRA. The stellar continuum is matched with a combination of
-; stellar population models, whereas emission-lines are represented by
-; Gaussian templates, with interdepencies regulated by the input
-; emission-setup file
+;FUNCTION MDAP_GANDALFW_MASK_EMISSION_LINES, $
+;		npix, Vsys, eml_par, velscale, l0_gal, lstep_gal, sigma=sigma, $
+;		l_rf_range=l_rf_range, log10=log10
+;
+;	c = 299792.458d				; Speed of light in km/s
+;
+;	goodpixels = mdap_range(0,npix-1) 		; Initialize good-pixel array
+;
+;	; if set, exclude regions at either ends of the spectra using the keyword l_rf_range
+;	; TODO: THIS WON'T WORK ANYMORE
+;	if keyword_set(l_rf_range) then begin
+;	    pix0     = ceil((alog10(l_rf_range[0])-l0_gal)/lstep_gal+Vsys/velscale)
+;	    pix1     = ceil((alog10(l_rf_range[1])-l0_gal)/lstep_gal+Vsys/velscale)
+;
+;	    goodpixels = mdap_range(max([pix0,0]),min([pix1,npix-1])) ; NEW - V1.3 
+;	endif
+;
+;	tmppixels  = goodpixels
+;
+;	; looping over the listed emission-lines and mask those tagged with an
+;	; 'm' for mask. Mask sky lines at rest-frame wavelength
+;	for i = 0,n_elements(eml_par)-1 do begin
+;	    if (eml_par[i].action eq 'm') then begin
+;		if (eml_par[i].name ne 'sky') then begin
+;		    meml_cpix = ceil((alog10(eml_par[i].lambda)-l0_gal)/lstep_gal+Vsys/velscale)
+;		endif else $
+;		    meml_cpix = ceil((alog10(eml_par[i].lambda)-l0_gal)/lstep_gal) 
+;	
+;		; set the width of the mask in pixels using either 3 times the
+;		; sigma of each line in the emission-line setup or the provided
+;		; sigma value 
+;		if keyword_set(sigma) then begin
+;		    msigma = 3*sigma/velscale
+;		endif else $
+;		    msigma = 3*eml_par[i].s/velscale
+;
+;		meml_bpix = meml_cpix - msigma
+;		meml_rpix = meml_cpix + msigma
+;		w = where(goodpixels ge meml_bpix and goodpixels le meml_rpix) 
+;		if (w[0] ne -1) then begin
+;		    tmppixels[w] = -1 
+;		endif else $
+;		    eml_par[i].action = 'i'		; Ignore lines outside wavelength range
+;	    endif
+;	endfor
+;
+;	return, goodpixels[where(tmppixels ne -1)]
+;END
+
+; Mimic the output from pPXF
+; TODO: does not check that sol_in has the expected size!
+PRO MDAP_MIMIC_PPXF_KIN, $
+		sol_in, sol_out, chi2, moments=moments, mdegree=mdegree
+	if n_elements(moments) ne 0 then begin
+	    sol_out = [sol_in[0:moments-1], chi2]
+	endif else begin
+	    moments=2
+	    sol_out = [sol_in[0:1], chi2]
+	endelse
+
+	if n_elements(mdegree) eq 0 then $
+	    return
+
+	sol_out=[sol_out[*], dblarr(mdegree)]
+END
+
+PRO MDAP_SAVE_MULT_LEGENDRE, $
+		sol, mult
+
+	max_moments=6
+	nfit = n_elements(sol)-1
+	mult = nfit gt max_moments ? sol[max_moments+1:n_elements(sol)-1] : -1
+	
+END
+
+; Save the output kinematics to an array of a fixed size
+; TODO: Does not check that the input from pPXF has the correct size
+PRO MDAP_SAVE_STAR_KIN, $
+		sol_in, sol_out, voff, moments=moments, chi=chi
+	max_moments=6
+	if n_elements(moments) eq 0 then $
+	    moments=2
+
+	sol_out = [sol_in[0]-voff, sol_in[1:moments-1], dblarr(max_moments-moments)]
+	if keyword_set(chi) then $
+	    sol_out = [sol_out, sol_in[max_moments]]
+
+END
+
+FUNCTION MDAP_GANDALFW_SOL, $
+		sol_star, gas_vel, gas_sig
+
+	return, ([ sol_star, gas_vel, gas_sig ])
+END
 
 
-;INPUTS
+;-------------------------------------------------------------------------------
+; Create default or failed output for GANDALF
+PRO MDAP_GANDALFW_DEFAULT, $
+		sol_star, err_star, nc, ntpl, fitted_pixels_gndf, weights_gndf, $
+		mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, sol, err, $
+		neml_f, gas_intens, gas_intens_err, gas_vel, gas_vel_err, gas_sig, gas_sig_err, $
+		gas_flux, gas_flux_err, gas_ew, gas_ew_err, mdegree=mdegree, $
+		reddening=reddening, err_reddening=err_reddening
+
+	sol = MDAP_GANDALFW_SOL(sol_star, !VALUES.D_NAN, !VALUES.D_NAN)
+	err = MDAP_GANDALFW_SOL(err_star, 99.0d, 99.0d)	; TODO: Set errors ton NaN?
+
+	fitted_pixels_gndf=-1				; No pixels fitted by GANDALF
+	weights_gndf = dblarr(ntpl)				; No template weights
+	if n_elements(mdegree) ne 0 then begin
+	    mult_poly_coeff_gndf = dblarr(mdegree)		; No polynomial weights
+	endif else $
+	    MDAP_ERASEVAR, mult_poly_coeff_gndf		; Remove variable
+	bestfit_gndf = dblarr(nc)				; No GANDALF fit
+	chi2_gndf = -1					; No chi^2
+	eml_model = dblarr(nc)				; No emission-line model
+
+	gas_intens = neml_f gt 0 ? dblarr(neml_f) : -1
+	gas_intens_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+
+	gas_vel = neml_f gt 0 ? make_array(neml_f, /double, value=!VALUES.D_NAN) : -1
+	gas_vel_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+
+	gas_sig = neml_f gt 0 ? make_array(neml_f, /double, value=!VALUES.D_NAN) : -1
+	gas_sig_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+
+	gas_flux = neml_f gt 0 ? dblarr(neml_f) : -1
+	gas_flux_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+	    
+	gas_ew = neml_f gt 0 ? dblarr(neml_f) : -1
+	gas_ew_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+
+	if n_elements(reddening) ne 0 then begin
+	    nred = n_elements(reddening)
+	    reddening = dblarr(nred)			; Set reddening to 0 with def error
+	    err_reddening = make_array(nred, /double, value=99.0d)
+	endif
+END
+;---------------------------------------------------------------------------------------------------
+;	Adjust the mask vector of the object spectrum to mask the emission lines
+;	provided in the eml_par structure.  This masking is performed based on
+;	the ACTION parameter in the structure.  The ACTION value can be either:
 ;
-; templates  [MM x NN array].  It contains the NN stellar template
-;             spectra, logarithmically sampled at the same \kms/pixel as the
-;             galaxy spectra. Same units as galaxy, except an arbitrary
-;             multiplicative factor.
+;		'i': ignore the line, as if the line were commented out.
 ;
-; loglam_templates  [MM dblarray]. It contains the log wavelength values where
-;                             templates are sampled. It must have a
-;                             constant log(angstrom) sampling. 
+;		'f': fit the line and mask the line when fitting the stellar
+;		continuum.
 ;
-; galaxy [N elements array]. Galaxy spectrum, logarithically rebinned, to be fitted. 
+;		'm': mask the line when fitting the stellar continuum but do NOT
+;		fit the line itself
 ;
-; loglam_gal  [N elements array]. log(\lambda) values where the galaxy spectrum is defined. 
+;		's': defines a sky line that should be masked.  When masked, the
+;		wavelength of the line is NOT adjusted for the redshift of the
+;		object spectrum.
 ;
-; noise  [N elements array]. Error vector associated to galaxy, defined over the loglam_gal vector. 
+;	If provided, masked lines will use the velocity value to redshift the
+;	emission line to match the input frame.
 ;
-; velscale  [float].  Defines the (uniform) sampling of the input spectra, in \kms/pixel.\\
+;	TODO: The value of eml_par.v is NOT used to do this.
 ;
-; start_  [6 elements array]. It contains the starting guesses
-;                               start_[0] stellar veocity (km/sec)
-;                               start_[1] stellar velocity dispersion (km/sec)
-;                               start_[2] stellar h3 Gauss Hermite moment
-;                               start_[3] stellar h4 Gauss Hermite moment stellar velocity dispersion
-;                               start_[4] gas velocity (km/sec)
-;                               start_[5] gas velocity dispersion (km/sec).
+;	If provided, the width of the masking region is defined as 3 times sigma
+;	(in km/s) on either side of the line center.  If not provided, the mask
+;	size uses the eml_par.s value.
+;	
+;	TODO: Set a minimum mask size?
 ;
-;
-;  OPTIONAL INPUTS 
-;
-; EMISSION_ SETUP\_FILE  String containing the definition of the emission lines to fit (as in mdap_spectral_fitting.pro)
-;
-; BIAS  As in mdap_pPXF
-;
-; MDEGREE  Integer. Degree of multiplicative polynomials to be used in the pPXF fit and in the Gandalf fit (if reddening is not fitted). 
-;           Default: 0 (no multiplicative polynomials are used).
-;
-; DEGREE   Integer. Degree of multiplicative polynomials to be used in the pPXF only. 
-;           Default: -1 (no additive polynomials are used).
-;
-; reddening   1 or 2 elements array. If specified in input, it triggers the
-;             fittind of the stellar reddening (1 element array) and the gas
-;             reddening (balmer decrement) (2 elements array). Reddening best fit
-;             In output it will store the best fit reddening values.
-;
-; range_v_star  [2 elements array]. It specifies the boundaries for the stellar best fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
-;
-; range_s_star  [2 elements array]. It specifies the boundaries for the stellar best fit velocity dispersion (in km/sec). Default: 21 < sigma < 499 km/sec.
-;
-; range_v_gas   [2 elements array]. It specifies the boundaries for the emission line best fit velocity (in km/sec). Default: starting_guess +/- 2000 km/sec.
-;
-; range_s_gas   [2 elements array]. It specifies the boundaries for the emission line best fit velocity dispersion (in km/sec). Default: starting_guess +/- 2000 km/sec.
-;
-; mask_range   If defined, it specifies the wavelength ranges to avoid
-;            in the fit. It must contain an even number of entries, in
-;           angstrom. E.g. l0,l1,l2,l3,....l(2n-1),l(2n) will mask all the pixels where the 
-;             l0 < exp(loglam_gal) <l1, or l2 < exp(loglam_gal) <l3, or l(2n-1) < exp(loglam_gal) <l(2n)
-;
-; external_library [string] String that specifies the path to the external FORTRAN library, which contains the fortran versions of mdap_bvls.pro. 
-;                  If not specified, or if the path is invalid, the default internal IDL mdap_bvls code is used. 
-;
-;INT_DISP   N elements array, containing the instrumental velocity dispersion (in km/sec) for all the N emission lines
-;               measured at their observed wavelengths (defined by the gas starting velocity guess).
-;
-; KEYWORDS
-;
-;/FOR\_ERRORS    & If specified, it will trigger the computation of the emission lines error
-;                  (see Section \ref{dap_sec:mdap_gandalf}). Mandatory for the DAP workflow.
-;
-; /fix\_star\_ kin If set, the stellar kinematics will be fixed to the starting guesses values.
-; 
-; /fix\_gas\_ kin  If set, the gas kinematics will be fixed to the starting guesses values.
-;
-; OUTPUTS 
-; sol  [9 elements array]. It contains the best fit kinematic parameters. 
-;                               sol[0]: stellar velocity (km/sec).
-;                               sol[1]: stellar velocity dispersion  (km/sec).
-;                               sol[2]: stellar h3 Gauss-Hermite moment (km/sec).
-;                               sol[3]: stellar h4 Gauss-Hermite moment (km/sec).
-;                               sol[4]: stellar h5 Gauss-Hermite moment.
-;                               sol[5]: stellar h6 Gauss-Hermite moment.
-;                               sol[6]: chi^2
-;                               sol[7]: mean flux weighted velocity of the emission lines (km/sec).
-;                               sol[8]: mean flux weighted velocity dispersion (km/sec).  
+;	If mask_fit is defined, action='f' lines will also be masked.
 ;
 
-; gas_Velocities,gas_Velocities_err,gas_Dispersion,gas_Dispersion_err
-; (velocities, velocity dispersion, and errors of individual emission lines)
+FUNCTION MDAP_GANDALFW_EMISSION_LINE_WINDOW, $
+		eml_par, velocity=velocity, nsig=nsig, sigma=sigma
 
-; gas_intens   N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
-;                  whithin the wavelength range loglam\_gal. It specifies the intensity (corrected for reddening) 
-;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
-;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}).
-; 
-; gas_fluxes  N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
-;                  whithin the wavelength range loglam\_gal. It specifies the fluxes  (corrected for reddening) 
-;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
-;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}).
-; 
-; gas_ew  N elements array, where N is the number of emission lines defined in EMISSION\_ SETUP\_FILE, 
-;                  whithin the wavelength range loglam\_gal. It specifies the equivalent widhts (corrected for reddening) 
-;                  of the emission lines. The intensities of lines in a multiplet are constrained by the flux ratio 
-;                  defined in the EMISSION\_ SETUP\_FILE (see Table \ref{dap_tab:mdap_spectral_fitting}). Equivalent widths 
-;                  are computed by comparing the emission line flux with the median flux of the stellar 
-;                  continuum in the spectral region  l_i -10 * FWHM_i < l < l_i -5 * FWHM_i  and 
-;                  l_i +5 * FWHM_i < l < l_i +10 * FWHM_i , where l_i is the central wavelength 
-;                   of the i-th emission line, and FWHM_i is its measured FWHM (intrinsic plus instrumental).
+	if n_elements(nsig) eq 0 then $
+	    nsig=3.0d					; Default window size in +/- sigma
+
+	if n_elements(sigma) eq 0 then $
+	    sigma=eml_par.s				; Set width based on input value
+
+	; Determine the edges of the window
+	el_half_width = nsig*sigma			; The half-width of the mask in km/s
+	sign = make_array(2, /double, value=1.0d)
+	sign[0] = -1.0d					; Sign for lower edge
+	c = 299792.458d						; Speed of light in km/s
+	el_range = (1 + sign*el_half_width/c)*eml_par.lambda	; Lower and upper edge (angstroms)
+
+	; Redshift the edges to match the object wavelengths, unless it's a sky line!
+	if n_elements(velocity) ne 0 and eml_par.action ne 's' then $
+		el_range = el_range * (1+velocity/c)		; Redshifted wavelengths
+
+	return, el_range				; Return the window range
+END
+
+PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
+		eml_par, obj_wave, obj_mask_, velocity=velocity, sigma=sigma, mask_fit=mask_fit
+
+	if n_elements(eml_par) lt 1 then $	; No emission lines; TODO: Is this check necessary?
+	    return
+
+;	print, size(eml_par)
+;	print, size(eml_par.action)
+;	print, where(eml_par.action ne 'i')
+;	print, n_elements(where(eml_par.action ne 'i'))
+;	print, eml_par.action
+
+	if keyword_set(mask_fit) then begin
+	    indx = where(eml_par.action ne 'i')	; Mask 'f', 'm', and 's' lines
+	endif else $
+	    indx = where(eml_par.action ne 'i' and eml_par.action ne 'f')	; Mask 'm' and 's'
+
+;	print, indx
+;	stop
+	    
+	if indx[0] eq -1 then $
+	    return				; No lines to mask
+
+	nm = n_elements(indx)			; Number of lines to mask
+;	print, 'Number of lines to mask: ', nm
+	
+	; TODO: Do NOT include sky lines in list of 'emission lines.' Create a
+	; separate structure that contains the observed wavelengths of sky lines
+	; that should be masked.
+
+	for i=0,nm-1 do begin
+
+	    ; TODO: Number of sigma currently hard-wired to be 3.  Allow this to change?
+	    el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, $
+							  sigma=sigma)
+
+	    MDAP_SELECT_WAVE, obj_wave, el_range, wave_indx		; Get the indices
+	    if wave_indx[0] ne -1 then $
+		obj_mask_[wave_indx] = 1.0d				; Mask them
+	endfor
+
+END
+;---------------------------------------------------------------------------------------------------
+
+
+;---------------------------------------------------------------------------------------------------
 ;
-; gas_intens_err   N elements array, error on gas_intens. 
-; 
-; gas_fluxes_err   N elements array, error on gas_fluxes.
-; 
-; gas_ew_err       N elements array, error on gas_ew.
+;	Given the object spectrum, the best fit, the emission-line amplitudes, a
+;	vector with the A/N threshold for each line, and the array containing
+;	the spectra of each best-fitting emission-line template, this function
+;	computes the residual-noise lvl, compares it the amplitude of each
+;	lines, and removes from the galaxy spectrum only the best-matching
+;	emission-line templates for which the correspoding A/N exceeds the input
+;	threshold.  This is a necessary step prior to measurements of the
+;	strength of the stellar absorption line features
 ;
-;OPTIONAL OUTPUTS
+;	A list of goodpixels may be provided.  This is useful if any pixel was
+;	excluded by sigma-clipping during the continuum and emission-line
+;	fitting or on either ends of the spectra.
 ;
-;bestfit   &   N elements array containing the best fit model (stars + gas), defined over the loglam\_gal vector. \\.
+;	Also optionally outputs the computed A/N ratios.
+
+; TODO: Return to this!
+
+FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
+		galaxy, wave, noise, bestfit, eml_par, goodpixels=goodpixels, velocity=velocity, $
+		sigma=sigma, resid=resid, noise_mask=noise_mask
+;	print, 'found it!'
+
+	i_f = where(eml_par.action eq 'f') 				; Fitted emission lines
+	i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l') 	; Independent lines
+	neml_l = n_elements(i_l)				; Number of fitted emission lines
+
+	fit_noise = dblarr(neml_l, /nozero)			; Noise near the fitted line(s)
+
+	if keyword_set(resid) then $
+	    resid_gal = galaxy - bestfit			; Get the residual of the fit
+
+	if keyword_set(noise_mask) then begin
+	    for i=0,neml_l-1 do begin
+		el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i_l[i]], velocity=velocity, $
+							      sigma=sigma)
+		MDAP_SELECT_WAVE, wave, el_range, indx		; Get the indices
+		if indx[0] eq -1 then begin
+		    fit_noise[i] = 99.0d
+		    continue
+		endif
+
+		dindx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_l[i]].i)
+		if dindx[0] ne -1 then begin
+		    ntied = n_elements(dindx)
+		    for j=0,ntied-1 do begin
+			el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i_f[dindx[j]]], $
+								      velocity=velocity, $
+								      sigma=sigma)
+			MDAP_SELECT_WAVE, wave, el_range, aindx		; Get the indices
+			if aindx[0] ne -1 then $
+			    indx = [indx, aindx]
+		    endfor
+		endif
+
+		if n_elements(goodpixels) ne 0 then $
+		    indx = MDAP_SET_INTERSECTION(temporary(indx), goodpixels)
+
+		fit_noise[i_f[i]] = (keyword_set(resid) ? robust_sigma(resid_gal[indx], /zero) : $
+							  median(noise[indx]))
+	    endfor
+	endif else $
+	    fit_noise[*] = (keyword_set(resid) ? robust_sigma(resid_gal[goodpixels], /zero) : $
+						 median(noise[goodpixels]))
+
+	return, fit_noise
+
+END
+
+FUNCTION MDAP_GANDALFW_REMOVE_DETECTED_EMISSION, $
+		galaxy, bestfit, emission_templates, sol_gas_A, sol_gas_N, AoN_thresholds, $
+		AoN=AoN, positive=positive
+
+	neml = n_elements(sol_gas_A)		; Number of emission lines
+;	print, neml, n_elements(sol_gas_N)
+	AoN = sol_gas_A/sol_gas_N		; A/N of each line
+;	print, n_elements(AoN)
+;	print, n_elements(AoN_thresholds)
+
+	indx = where(sol_gas_N lt 0)		; Remove values with negative errors
+	if indx[0] ne -1 then $
+	    AoN[indx] = 0.0d
+
+	if keyword_set(positive) then begin	; Remove emission lines with negative amplitudes
+	    indx = where(sol_gas_A lt 0)
+	    if indx[0] ne -1 then $
+		AoN[indx] = 0.0d
+	endif
+
+	; Remove the model emission lines from the galaxy spectrum
+	neat_galaxy = galaxy
+	for i = 0,neml-1 do begin
+;	    print, i, neml, AoN[i], AoN_thresholds[i]
+	    if (AoN[i] gt AoN_thresholds[i]) then $
+		neat_galaxy = neat_galaxy - emission_templates[*,i]
+		; TODO: what is the order of the emission line templates
+	endfor
+
+	return, neat_galaxy
+END
+;---------------------------------------------------------------------------------------------------
+
+FUNCTION MDAP_LINES_FOR_MEAN_GAS_KINEMATICS, $
+		sol_gas_A, esol_gas_A, sol_gas_F, esol_gas_F, sol_gas_V, esol_gas_V, sol_gas_S, $
+		esol_gas_S
+
+	; TODO: esol_gas_A, sol_gas_V, sol_gas_S not used!
+
+	return, where( sol_gas_F gt 0 and $
+		       esol_gas_F gt 0 and $
+		       finite(sol_gas_F) eq 1 and $
+		       finite(esol_gas_F) eq 1 and $
+		       esol_gas_V gt 0 and $
+		       esol_gas_S gt 0 and $
+		       sol_gas_A gt 0 and $
+		       finite(sol_gas_A) eq 1 )
+END
+
+; TODO: Allow for error-based weighting
+PRO MDAP_MEAN_GAS_KINEMATICS, $
+		wgts, v, ve, s, se, wv, wve, ws, wse
+
+	wsum = total(wgts)
+	wv = total(wgts*v)/wsum
+;	wve = mean(ve)
+	wve = sqrt(total((wgts*ve)^2))/wsum
+	ws = total(wgts*s)/wsum
+;	wse = mean(se)
+	wse = sqrt(total((wgts*se)^2))/wsum
+
+END
+
+PRO MDAP_GANDALFW_MEASURE_EQUIV_WIDTH, eml_par, velocity, sigma, wave, galaxy_no_eml, flux, $
+				       flux_err, equiv_width, equiv_width_err
+
+	; TODO: Perform a more robust measurement of the EW!
+	; TODO: Only fit lines within 10 sigma of the edge (mask if part of it is there)
+
+	neml = n_elements(eml_par)
+	equiv_width = dblarr(neml, /nozero)
+	equiv_width_err  = dblarr(neml, /nozero)
+
+	for i=0,neml-1 do begin
+;	    print, velocity, sigma
+	    el_range_in = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i], velocity=velocity, $
+							     nsig=5.0d, sigma=sigma)
+	    el_range_out = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i], velocity=velocity, $
+							      nsig=10.0d, sigma=sigma)
+	    el_range_lo = [ el_range_out[0], el_range_in[0] ]
+	    el_range_hi = [ el_range_in[1], el_range_out[1] ]
+;	    print, el_range_lo
+;	    print, el_range_hi
+;	    stop
+
+	    ; TODO: Do these tests outside of the loop?
+	    MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo
+	    if indx_lo[0] eq -1 then $
+		message, 'Cannot get EW measurement!'
+	    MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi
+	    if indx_hi[0] eq -1 then $
+		message, 'Cannot get EW measurement!'
+	    indx = [ indx_lo, indx_hi ]
+
+	    cont = median(galaxy_no_eml[indx])			; Median continuum
+	    econt = robust_sigma(galaxy_no_eml[indx])		; TODO: Overestimate?
+	    
+	    equiv_width[i] = flux[i]/cont			; Approximation
+	    equiv_width_err[i] = sqrt( (flux_err[i]/cont)^2 + (equiv_width[i]*econt/cont)^2 )
+	endfor
+END
+
+; The number of output emission line fits is the same size as eml_par_fit.
+; Doublets in eml_par_fit are given the same results as their linked lines with
+; adjustments to their fluxes, etc, based on the provided line ratios.
+
+; TODO: How are doublets treated in GANDALF?
+
+PRO MDAP_GANDALFW_SAVE_RESULTS, $
+		eml_par, sol_gas_A, esol_gas_A, sol_gas_V, esol_gas_V, sol_gas_S, esol_gas_S, $
+		sol_gas_F, esol_gas_F, sol_gas_EW, esol_gas_EW, gas_intens, gas_intens_err, $
+		gas_vel, gas_vel_err, gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, $
+		gas_ew_err
+
+	i_f = where(eml_par.action eq 'f') 			; Fitted emission lines
+	i_l = where(eml_par[i_f].kind eq 'l')		 	; Independent lines
+	neml_f = n_elements(i_f)				; Number of fitted emission lines
+
+	; Initialize the vectors
+	gas_intens = dblarr(neml_f,/nozero)
+	gas_intens_err = dblarr(neml_f,/nozero)
+	gas_vel = dblarr(neml_f,/nozero)
+	gas_vel_err = dblarr(neml_f,/nozero)
+	gas_sig = dblarr(neml_f,/nozero)
+	gas_sig_err = dblarr(neml_f,/nozero)
+	gas_flux = dblarr(neml_f,/nozero)
+	gas_flux_err = dblarr(neml_f,/nozero)
+	gas_ew = dblarr(neml_f,/nozero)
+	gas_ew_err = dblarr(neml_f,/nozero)
+
+	neml_l = n_elements(i_l)				; Number of independent lines
+	for i=0,neml_l-1 do begin
+
+	    ; Copy the fitted lines
+	    gas_intens[i_l[i]] = sol_gas_A[i]
+	    gas_intens_err[i_l[i]] = esol_gas_A[i]
+	    gas_vel[i_l[i]] = sol_gas_V[i]
+	    gas_vel_err[i_l[i]] = esol_gas_V[i]
+	    gas_sig[i_l[i]] = sol_gas_S[i]
+	    gas_sig_err[i_l[i]] = esol_gas_S[i]
+	    gas_flux[i_l[i]] = sol_gas_F[i]
+	    gas_flux_err[i_l[i]] = esol_gas_F[i]
+	    gas_ew[i_l[i]] = sol_gas_EW[i]
+	    gas_ew_err[i_l[i]] = esol_gas_EW[i]
+
+	    ; Find any lines that are doublets of this line, and set the data
+	    ; after adjusting for the line ratio
+
+	    ; TODO: Set the error differently since these lines are not independently fit
+
+	    ; TODO: What about lines that are kinematically tied?
+	    indx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_f[i_l[i]]].i)
+	    if indx[0] ne -1 then begin
+		gas_intens[indx] = eml_par[i_f[indx]].a*gas_intens[i_l[i]]
+		gas_intens_err[indx] = eml_par[i_f[indx]].a*gas_intens_err[i_l[i]]
+		gas_vel[indx] = gas_vel[i_l[i]]
+		gas_vel_err[indx] = gas_vel_err[i_l[i]]
+		gas_sig[indx] = gas_sig[i_l[i]]
+		gas_sig_err[indx] = gas_sig_err[i_l[i]]
+		gas_flux[indx] = eml_par[i_f[indx]].a*gas_flux[i_l[i]]
+		gas_flux_err[indx] = eml_par[i_f[indx]].a*gas_flux_err[i_l[i]]
+		gas_ew[indx] = eml_par[i_f[indx]].a*gas_ew[i_l[i]]
+		gas_ew_err[indx] = eml_par[i_f[indx]].a*gas_ew_err[i_l[i]]
+	    endif
+	endfor
+END
+
+PRO MDAP_GANDALF_WRAP, $
+		tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ivar, obj_mask, velScale, start, $
+		fitted_pixels_ppxf, weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
+		bestfit_ppxf, chi2_ppxf, fitted_pixels_gndf, weights_gndf, mult_poly_coeff_gndf, $
+		bestfit_gndf, chi2_gndf, eml_model, sol, err, gas_intens, gas_intens_err, gas_vel, $
+		gas_vel_err, gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, gas_ew_err, $
+		eml_par=eml_par, vsyst=vsyst, bias=bias, mdegree=mdegree, degree=degree, $
+		moments=moments, reddening=ebv, range_v_star=range_v_star, $
+		range_s_star=range_s_star, range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
+		region_mask=region_mask, external_library=external_library, int_disp=int_disp, $
+		err_reddening=err_reddening, ppxf_status=ppxf_status, $
+		gandalf_status=gandalf_status, ppxf_only=ppxf_only, oversample=oversample, $
+		for_errors=for_errors, fix_star_kin=fix_star_kin, fix_gas_kin=fix_gas_kin, $
+		quiet=quiet, plot=plot
+		
+	; TODO: How degenerate are the reddening, err_reddening, and for_error checks?
+
+	; Preliminary Checks !
+	if ~keyword_set(mdegree) then $
+	    mdegree=0
+
+	; TODO: Does this need to be done here.  Probably not because pPXF does the same thing.
+	if n_elements(moments) eq 0 then $
+	    moments=2					; Defaults to fit just V,sigma
+
+;	print, 'mdegree: ', mdegree
+;	print, 'moments: ', moments
+
+	sz = size(tpl_flux)
+	ntpl = sz[1]					; Number of templates
+
+	; Initialize the error vector and the mask
+	; TODO: Could I just continue using ivar?
+	nc = n_elements(obj_flux)				; Number of spectral channels
+	obj_mask_ = obj_mask					; Copy the input mask; TODO: needed?
+
+	indx = where(obj_ivar eq 0 or finite(obj_ivar) eq 0, complement=nindx)	; Invalid variances
+	if n_elements(indx) eq nc then begin			; No pixels are valid
+	    print, 'All errors are invalid!  Ignoring errors (by setting them to unity).'
+	    obj_sige = make_array(nc, /double, value=1.0d)
+	endif else if indx[0] eq -1 then begin			; All pixels are valid
+	    obj_sige = sqrt(1.0d/obj_ivar)			; Errors
+	endif else begin
+	    obj_mask_[indx] = 1.0d				; Mask invalid variances
+	    ; TODO: Mask doesn't need to be double
+	    obj_sige = dblarr(nc, /nozero)			; Initialize
+	    obj_sige[nindx] = sqrt(1.0d/obj_ivar[nindx])	; Errors
+	    obj_sige[indx] = 1.0d				; Placeholder value (masked!)
+	endelse
+
+	; Mask the input wavelength ranges
+	; TODO: Is this still necessary?
+	if n_elements(region_mask) ne 0 then begin
+	    ; TODO: MDAP_SPECTRAL_FITTING checks this also!
+	    if n_elements(region_mask) MOD 2 ne 0 then $
+		message, 'Input region_mask does not have an even number of entries!'
+	    nm = n_elements(region_mask)/2
+	    for i=0,nm-1 do begin
+		MDAP_SELECT_WAVE, obj_wave, region_mask[2*i:2*i+1], indx
+		obj_mask_[indx] = 1.0d				; Add these regions to the mask
+	    endfor
+	endif
+
+	; Set the starting guesses for pPXF
+	start_ppxf = start[0:1]					; Copy the first two values
+	voff = (n_elements(vsyst) ne 0) ? vsyst : 0.0d		; Offset velocity
+	start_ppxf[0] = start[0]+voff				; Offset the guess velocity
+
+;	print, "Start pPXF: ", start_ppxf
+	
+	; Mask the emission lines:
+	;   Uses MDAP_GANDALFW_MASK_EMISSION_LINES to loop over the emission
+	;   lines and mask those with 'm', including sky lines.  The wavelengths
+	;   masked include the velocity shift, if they're not sky lines.  The
+	;   accuracy of the mask depends on a relatively good guess for the
+	;   velocity.  The width of the mask is set to +/-3.0*250 km/s.
+	; TODO: Allow this to change?
+
+	; TODO: Do NOT include sky lines in list of 'emission lines.' Create a
+	; separate structure that contains the observed wavelengths of sky
+	; lines that should be masked.
+
+	; Copy to the continuum mask (used in fitting the continuum, not the emission lines
+	cnt_mask_ = obj_mask_
+	neml = n_elements(eml_par)			; Number of defined emission lines
+	if neml ne 0 then begin
+	    MDAP_GANDALFW_MASK_EMISSION_LINES, eml_par, obj_wave, cnt_mask_, velocity=start[0], $
+					       sigma=250.0d, /mask_fit
+
+	    ; Remove ignored ems lines from the int_disp vector
+	    ; TODO: int_disp_ no longer has the same number of elements as eml_par!
+	    indx = where(eml_par.action ne 'i' and eml_par.action ne 'sky')
+	    int_disp_ = (indx[0] ne -1) ? int_disp[indx] : int_disp
+	endif else $
+	    int_disp_ = int_disp
+
+;	print, 'Number of unmasked pixels, continuum fit: ', n_elements(where(cnt_mask_ lt 1.0))
+
+	; If the object flux is <= 0, then increase the noise in those regions.
+	; TODO: get rid of this
+	indx = where(obj_flux le 0, complement=nindx)
+	if indx[0] ne -1 then begin
+	    if nindx[0] ne -1 then begin
+		maxerr = max(obj_sige[nindx])
+	    endif else $
+		maxerr = max(obj_sige)
+	    obj_sige[indx] = maxerr
+	endif
+
+	; Run pPXF, fitting only V and sigma.  A constant additive polynomial
+	; (degree=0) is used in together with the multiplicative polynomials
+	; (always recommended).
+	ppxf_status = 1
+	if ~keyword_set(fix_star_kin) then begin 	; TODO: How much of the above is necessary
+							;       if fix_star_kin has been set?
+
+	    print, 'Starting pPXF'
+	    fitted_pixels_ppxf = where(cnt_mask_ lt 1.)		; Select the unmasked pixels
+	    if fitted_pixels_ppxf[0] eq -1 then $
+		message, 'No pixels to fit by pPXF!'
+
+;	    plot, obj_wave, obj_flux, color=200
+;	    oplot, obj_wave[goodpixels], obj_flux[goodpixels]
+;	    stop
+
+;	    plot, obj_wave, obj_sige
+;	    stop
+
+;	    for i=0,ntpl-1 do begin
+;		print, i+1, ntpl
+;		plot, tpl_wave, tpl_flux[i,*]
+;		stop
+;	    endfor
+
+	    ; TODO: Do checks of ranges AFTER running pPXF?
+
+;	    print, size(tpl_flux)
+;	    print, size(obj_flux)
+;	    print, size(obj_sige)
+;	    moments=0
+;	    mdegree=0
+	    ; TODO: Keep the additive and multiplicative continua using polyweights and sol
+	    ; TODO: Don't like passing transpose!
+	    MDAP_PPXF, transpose(tpl_flux), obj_flux, obj_sige, velScale, start_ppxf, sol_ppxf, $
+		       bestfit=bestfit_ppxf, bias=bias, degree=degree, error=err_ppxf, $
+		       goodpixels=fitted_pixels_ppxf, mdegree=mdegree, moments=moments, $
+		       oversample=oversample, weights=weights_ppxf, range_v_star=range_v_star, $
+		       range_s_star=range_s_star, external_library=external_library, $
+		       polyweights=add_poly_coeff_ppxf, plot=plot
+	    ; TODO: Check the success of pPXF!
+	    ppxf_status = 0
+	endif
+
+	print, 'Done pPXF'
+
+	; If PPXF ended in error, or PPXF was not run then create default output
+	if ppxf_status ne 0 then begin
+
+	    ; Mimic the pPXF using the starting guesses
+	    MDAP_MIMIC_PPXF_KIN, start, sol_ppxf, 99.0d, moments=moments, mdegree=mdegree
+	    err_ppxf = make_array(moments, /double, value=99.0d)	; Set place-holder error
+
+	    weights_ppxf = dblarr(ntpl)					; No template weights
+	    bestfit_ppxf = dblarr(nc)					; No fit
+
+	    fitted_pixels_ppxf=-1					; No pixels fit
+	    add_poly_coeff_ppxf=-1					; No additive continuum
+
+	    ; TODO: If ppxf fails, shouldn't this just return?
+
+	endif
+
+	MDAP_SAVE_STAR_KIN, sol_ppxf, sol_star, voff, moments=moments, /chi
+	MDAP_SAVE_STAR_KIN, err_ppxf, err_star, 0.0d, moments=moments
+
+	; Save the multiplicative polynomial terms
+	MDAP_SAVE_MULT_LEGENDRE, sol_ppxf, mult_poly_coeff_ppxf
+
+	chi2_ppxf = sol_star[n_elements(sol_star)-1]
+
+;	print, sol_ppxf
+;	print, err_ppxf
 ;
-;ERROR    8 elements array, containing the errors on the kinematic parameters.
-;           ERROR [0]: error on the stellar velocity (km/sec).
-;           ERROR [1]: error on the stellar velocity dispersion  (km/sec).
-;           ERROR [2]: error on the stellar h3 Gauss-Hermite moment.
-;           ERROR [3]: error on the stellar h4 Gauss-Hermite moment.
-;           ERROR [4]: error on the stellar h5 Gauss-Hermite moment (not used).
-;           ERROR [5]: error on the stellar h6 Gauss-Hermite moment (not used).
-;           ERROR [6]: error on the gas mean velocity (km/sec).
-;           ERROR [7]: error on the gas mean velocity dispersion (km/sec). 
+;	print, sol_star
+;	print, err_star
 ;
-; reddening   1 or 2 elements array. If specified in input, it triggers the
-;             fittind of the stellar reddening (1 element array) and the gas
-;             reddening (balmer decrement) (2 elements array). Reddening best fit
-;             In output it will store the best fit reddening values.
-;
-; err_reddening errors associated to reddening, if fitted.
-;
-; fitted_pixels & array. Indices of the good pixels used in the gandalf fit
-;
-; status. bloean. If 0, the ppxf fit did not succeeded. The gandalf  fit is still carried on, and the stellar kinematics are fixed to the
-;                  starting guesses. If 1, the ppxf fit converged.
-;
+;	print, weights_ppxf
+;	stop
 
-; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
-; Feb 2014, L. Coccato.
-; v0.7 16 Apr 2014
+	; No emission lines, or do not want to fit them, so return with just the result of pPXF
+	if n_elements(eml_par) eq 0 or n_elements(ppxf_only) then begin
+	    if ppxf_only eq 1 then begin
+		if n_elements(eml_par) ne 0 then begin
+		    i_f = where(eml_par.action eq 'f')
+		    neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
+		endif else $
+		    neml_f = 0
+		MDAP_GANDALFW_DEFAULT, sol_star, err_star, nc, ntpl, fitted_pixels_gndf, $
+				       weights_gndf, mult_poly_coeff_gndf, bestfit_gndf, $
+				       chi2_gndf, eml_model, sol, err, neml_f, gas_intens, $
+				       gas_intens_err, gas_vel, gas_vel_err, gas_sig, gas_sig_err, $
+				       gas_flux, gas_flux_err, gas_ew, gas_ew_err, $
+				       mdegree=mdegree, reddening=reddening, $
+				       err_reddening=err_reddening
+		return
+	    endif
+	endif
 
+	; TODO: Adjust the continuum mask?
 
+	; Now create a mask that includes the emission lines to fit
+;	print, 'Number of unmasked pixels: ', n_elements(where(obj_mask_ lt 1.0))
+	ems_mask_ = obj_mask_				; Emission line mask
+	MDAP_GANDALFW_MASK_EMISSION_LINES, eml_par, obj_wave, ems_mask_, velocity=start[0], $
+					   sigma=250.0d
 
-c = 299792.4580d ; Speed of light in km/s
+;	print, 'Number of unmasked pixels, emission-line fit: ', n_elements(where(ems_mask_ lt 1.0))
 
-; Preliminary Checks !
-IF NOT KEYWORD_SET(EMISSION_SETUP_FILE) THEN message,'Please enter the filename with the emission-line setup'
-IF NOT KEYWORD_SET(MDEGREE)             THEN mdegree=0
+	; Prepare emission_setup structure for GANDALF, which should only deal
+	;   with the lines we fit
 
+	; TODO: This is done in GANDALF as well.  Does it need to be done here?
+	i_f = where(eml_par.action eq 'f')
+	if i_f[0] eq -1 then $
+	    message, 'No lines to fit!'
 
-w = where(noise eq 0 or finite(noise) eq 0) & if (w[0] ne -1) then noise[w] = max(noise)*1000.
+	nf = n_elements(i_f)
+;	print, 'Number of lines to fit: ', nf
 
-if n_elements(mask_range) ne 0 then begin 
-   indici_to_remove_from_good_pixels = [0];where(
-   for i = 0, n_elements(mask_range)-2,2 do begin
-      indici_to_remove_from_good_pixels = [indici_to_remove_from_good_pixels,where(loglam_gal ge alog(mask_range[i]) and loglam_gal le alog(mask_range[i+1]))]
-   endfor
-   indici_to_remove_from_good_pixels = indici_to_remove_from_good_pixels[1:*]
-endif
+;	eml_par_fit = MDAP_ASSIGN_EMISSION_LINE_PARAMETERS(eml_par[i_f].i, eml_par[i_f].name, $
+;							   eml_par[i_f].lambda, $
+;							   eml_par[i_f].action, $
+;							   eml_par[i_f].kind, eml_par[i_f].a, $
+;							   eml_par[i_f].v, eml_par[i_f].s, $
+;							   eml_par[i_f].fit)
 
-
-l0_gal   = loglam_gal[0];sxpar(hdr_gal,'CRVAL1')
-lstep_gal = loglam_gal[1]-loglam_gal[0];sxpar(hdr_gal,'CD1_1')
-l0_templ = loglam_templates[0]
-lstep_templ = loglam_templates[1] - loglam_templates[0]
-
-
-offset = 0.
-if n_elements(VSYST) ne 0 then offset = vsyst
-
-; ; F) Preamble to PPXF
-; print,'--> and initial guesses for pPXF using the SDSS redshifts'
-; ; this is the velocity scale spanned by each log_lambda interval
-; ; You need to include a alog(10) factor as well.
-; lstep_gal = sxpar(hdr_gal,'CD1_1')
-; velscale  = c*lstep_gal*alog(10.0d)
-; ; Initial V and sigma guesses, in km/s. For V we use the receiding
-; ; velocity derived by the SDSS (in the low-Z regime !!!), plus the
-; ; previously derived velocity offset. For sigma we stick at least to
-; ; 150 km/s
-; SDSS_z = sxpar(hdr_gal,'Z')
-; SDSS_s = sxpar(hdr_gal,'VEL_DIS')
-
-; if (SDSS_s gt velscale/2.0d) then $
-;   start  = [alog(SDSS_z+1)*c+offset,SDSS_s] else $
-;   start  = [alog(SDSS_z+1)*c+offset,150.0d]
-SDSS_z = start_[0]/c
-start=[alog(SDSS_z+1)*c+offset,start_[1]]
-; G) masking emission-lines
-; read in emission-line setup files
-;print,'--> reading in the emission-line setup file, and creating the corresponding structure'
-eml_file = emission_setup_file
-readcol,eml_file,eml_i,eml_name,eml_lambda,eml_action,eml_kind,eml_a,eml_v,eml_s,eml_fit,$
-  f='(i,a,f,a,a,f,f,f,a)',skipline=2,comment='#',/silent
-; creating emission setup structure, to be used for masking the
-; emission-line contaminated regions and fitting the emission lines in
-; GANDALF
-emission_setup = create_struct('i',eml_i,'name',eml_name,'lambda',eml_lambda,'action',eml_action,$
-                               'kind',eml_kind,'a',eml_a,'v',eml_v,'s',eml_s,'fit',eml_fit)
+	eml_par_fit = create_struct('i',eml_par[i_f].i,'name',eml_par[i_f].name,$
+                               'lambda',eml_par[i_f].lambda,'action',eml_par[i_f].action,$
+                               'kind',eml_par[i_f].kind,'a',eml_par[i_f].a,$
+                               'v',eml_par[i_f].v,'s',eml_par[i_f].s,$
+                               'fit',eml_par[i_f].fit)
 
 
+	; Assign input initial guess for the gas kinematics, adding also the
+	; velocity offset specified in the emission-line setup.
+;	eml_par_fit[*].v = start[4]			; Gas velocity
+;	eml_par_fit[*].s = start[5]			; Gas velocity dispersion
+	eml_par_fit.v[*] = start[4]			; Gas velocity
+	eml_par_fit.s[*] = start[5]			; Gas velocity dispersion
 
+; mdegree_=mdegree
+; if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
 
+	; Include a multiplicative polynomial ONLY if the reddening is not calculated
+	; TODO: Throw an error instead
+	if n_elements(reddening) eq 0 then $
+	    mdegree_=mdegree
+	; Otherwise, mdegree_ is undefined
 
-; call the function mask_emission_lines, which loops over the listed
-; emission-lines and mask those tagged with an 'm' for mask. Use
-; emission-line masks with a sigma of 200 km/s, and use only the
-; wavelength region corresponding to the rest-frame extent of the
-; templates (this relies on the fairly good SDSS guess for the
-; redshift z).
+	; Call GANDALF using only the stellar kinematics as input sol
+	fitted_pixels_gndf = where(ems_mask_ lt 1.)		; Select the unmasked pixels
+	if fitted_pixels_gndf[0] eq -1 then $
+	    message, 'No pixels to fit by GANDALF!'
 
-;;  ;l_rf_range = 10^[l0_templ,l0_templ+n_pix_templ*sxpar(hdr_templ,'CD1_1')]                       ; NEW - V1.3
-;;  l_rf_range = exp(l0_templ,l0_templ+n_pix_templ*sxpar(hdr_templ,'CD1_1'))                       ; NEW - V1.3
-n_pix_templ = n_elements(loglam_templates)
-lstep_templ = loglam_templates[1]-loglam_templates[0]
-;l_rf_range = 10^[l0_templ,l0_templ+n_pix_templ*lstep_templ]                       ; NEW - V1.3
-l_rf_range = exp([l0_templ,l0_templ+n_pix_templ*lstep_templ])                       ; NEW - V1.3
-;goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_setup,velscale,$ ; NEW - V1.3
-;                                 l0_gal,lstep_gal,sigma=200.0,/log10,l_rf_range=l_rf_range)    ; NEW - V1.3
-goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_setup,velscale,$ ; NEW - V1.3
-                                 l0_gal,lstep_gal,sigma=250.0,l_rf_range=l_rf_range)    ; NEW - V1.3
-; H) PPXF fit! Fit only V and sigma
-; A constant additive polynomial (degree=0) is used in together with
-; the multiplicative polynomials (always recommended).
-INT_DISP_ = INT_DISP(where(emission_setup.action ne 'i') and where(emission_setup.action ne 'sky')) ;remove ignored ems lines from the int_disp vector
-if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
+	; TODO: Need to check that my eml_par works the same as their emission_setup
+	l0_gal = alog10(obj_wave[0])
+	lstep_gal = alog10(obj_wave[1])-alog10(obj_wave[0])
+	l0_templ = alog10(tpl_wave[0])
 
- 
+;	print, l0_gal, lstep_gal, velScale, velScale/c/alog(10.0d), l0_templ
 
+	print, 'Starting GANDALF'
 
-; If the galaxy spectrum have zero values in some regions, I increase the noise in
-; those regions.
-indici_neg = where(galaxy le 0)
-if indici_neg[0] ne -1 then noise(indici_neg) = max(noise)
-if ~keyword_set(fix_star_kin) then begin
-;stop
+;	stop
+	sol_gas = sol_ppxf
+	MDAP_GANDALF, transpose(tpl_flux), obj_flux, obj_sige, velScale, sol_gas, eml_par_fit, $
+		      l0_gal, lstep_gal, goodpixels=fitted_pixels_gndf, int_disp=int_disp_, $
+		      bestfit=bestfit_gndf, emission_templates=emission_templates, $
+		      weights=weights_gndf, l0_templ=l0_templ, degree=-1, mdegree=mdegree_, $
+		      /for_errors, error=esol_gas, reddening=reddening, fix_gas_kin=fix_gas_kin, $
+		      range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
+		      external_library=external_library, plot=plot, /log10, $
+		      mult_poly_coeff=mult_poly_coeff_gndf;, quiet=quiet
 
-d = execute('mdap_ppxf, templates, galaxy, noise, velscale, start, ppxfsol, goodpixels=goodpixels,bias=bias, moments=moments, degree=degree, mdegree=mdegree,range_v_star=range_v_star,range_s_star=range_s_star,ERROR=ERROR_stars,/quiet,bestfit=bestfit_ppxf, weights=weights_ppxf,external_library=external_library,OVERSAMPLE=oversample')
-    if d eq 0 then begin
-       status = 0
-       return
-    endif
+	print, 'DONE GANDALF'
 
-endif else begin
-   ppxfsol = [start_[0]+offset,start_[1],start_[2],start_[3],0.,0.,start_[4],start_[5]]
-   ERROR_stars = fltarr(6)+99.
-endelse
-;,VSYST=vsyst
+	; TODO: Incude status
+	gandalf_status = 0
 
+	; TODO: Output three structures:
+	;	PolynomialFit : type[add, mult], procedure[ppxf, gandalf], order, coeffs
+	;	StellarContinuumFit : template weights, sol[v,sig,h3,h4,...], chi2
+	;	EmissionLineFit: intensity, sol[v,sig,h3,h4,...], flux, EW, chi2
+	;		Save individual fits and mean values
 
-;print,'--> Fit to the stellar continuum masking regions potentially affected by gas emission!'
-;if keyword_set(DEBUG) then pause
+	; TODO: Save continuum used in EW measurement? (Can get it from EW and flux)
 
-; J) Preamble to GANDALF
-; Switch the tag 'action' from 'm' (for mask) to 'f' (for fit) for all
-; lines we wish to fit, i.e, do not touch the ones with an
-; 'i'. Likewise keep masking the regions affected by interestella NaD
-; absorption and which were originally affected by sky lines.
-emission_setup_orig = emission_setup
-i_lines = where(emission_setup.action eq 'm' and emission_setup.name ne 'sky' ) ; NEW - V1.3
-;i_lines = where(emission_setup.action eq 'm' and emission_setup.name ne 'sky' and emission_setup.name ne 'NaI') ; NEW - V1.3
-emission_setup.action[i_lines] = 'f'
+	if gandalf_status ne 0 then begin		; GANDALF failed!
+	    neml_f = n_elements(i_f)			; Number of *fitted* emission lines
+	    MDAP_GANDALFW_DEFAULT, sol_star, err_star, nc, ntpl, fitted_pixels_gndf, weights_gndf, $
+				   mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, sol, $
+				   err, neml_f, gas_intens, gas_intens_err, gas_vel, gas_vel_err, $
+				   gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, $
+				   gas_ew_err, mdegree=mdegree, reddening=reddening, $
+				   err_reddening=err_reddening
+	    return					; Done
+	endif
 
-; Re-assign the goodpixels array, masking what is still tagged with an 'm'
-;goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_setup,velscale,$
-;                                 l0_gal,lstep_gal,sigma=200.0,/log10,l_rf_range=l_rf_range) ; NEW - V1.3
-goodpixels = mask_emission_lines(n_elements(galaxy),alog(SDSS_z+1)*c,emission_setup,velscale,$
-                                 l0_gal,lstep_gal,sigma=200.0,l_rf_range=l_rf_range) ; NEW - V1.3
-;print,'--> lift the emission-line mask...'
+;	print, size(sol_ppxf)
+;	print, size(sol_star)
+;	print, size(sol_gas)
 
-; Prepare emission_setup structure for GANDALF, which should only
-; deal with the lines we fit
-i_f = where(emission_setup.action eq 'f') 
-dummy = emission_setup
-emission_setup = create_struct('i',dummy.i[i_f],'name',dummy.name[i_f],$
-                               'lambda',dummy.lambda[i_f],'action',dummy.action[i_f],$
-                               'kind',dummy.kind[i_f],'a',dummy.a[i_f],$
-                               'v',dummy.v[i_f],'s',dummy.s[i_f],$
-                               'fit',dummy.fit[i_f])
-; Assign input initial guess for the gas
-; kinematics, adding also the velocity offset specified in the
-; emission-line setup.
-emission_setup.v = emission_setup.v*0.+start_[4]
-emission_setup.s = start_[5]
-; save the stellar kinematics
-sol_star = [ppxfsol[0],ppxfsol[1],ppxfsol[2],ppxfsol[3],0,0,-1]
+	; Select the independently fitted lines
+	i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l', complement=i_d) 
+	; TODO: Do this check earlier!
+	if i_l[0] eq -1 then $
+	    message, 'All lines are doublets!'
+	neml_l = n_elements(i_l)
 
-; H) Call Gandalf, giving it only the stellar kinematics as input
-; sol. Now include reddening 
+	; Copy over the data to new variables
+	sol_gas_F = sol_gas[indgen(neml_l)*4+0]	; Fluxes
+	sol_gas_A = sol_gas[indgen(neml_l)*4+1]	; Amplitudes
+	sol_gas_V = sol_gas[indgen(neml_l)*4+2]	; Velocities
+	sol_gas_S = sol_gas[indgen(neml_l)*4+3]	; Sigmas
+	; TODO: Higher moments in the gas?
 
-mdegree_=mdegree
-if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
+;	print, sol_gas_F
+;	stop
 
+	; Save the errors as well
+	if keyword_set(for_errors) then begin
+	    esol_gas_F = esol_gas[indgen(neml_l)*4+0]
+	    esol_gas_A = esol_gas[indgen(neml_l)*4+1]
+	    esol_gas_V = esol_gas[indgen(neml_l)*4+2]
+	    esol_gas_S = esol_gas[indgen(neml_l)*4+3]
+	endif
 
-if n_elements(indici_to_remove_from_good_pixels) ne 0 then remove_indices_from_goodpixels,goodpixels,indici_to_remove_from_good_pixels
+	; TODO: Just save directly to reddening?
+	if n_elements(reddening) ne 0 then begin	; Reddening
+	    sol_EBmV = sol_gas[neml_l*4:*]
+	endif else $
+	    sol_EBmV =-999.0d				; Default value; TODO: Why not -99?
+	if keyword_set(for_errors) then begin
+	    if n_elements(reddening) ne 0 then begin
+		esol_EBmV  = esol_gas[n_elements(i_l)*4:*]
+	    endif else $
+		esol_EBmV  = -999.0d			; Default value; TODO: Why not -99?
+	endif
 
-d = execute('mdap_gandalf, templates, galaxy, noise, velscale, ppxfsol, emission_setup,'+ $
-  'l0_gal, lstep_gal, GOODPIXELS=goodpixels, INT_DISP=INT_DISP_,' +$
-  'BESTFIT=bestfit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights,' +$
-  'L0_TEMPL=l0_templ,DEGREE=-1, MDEGREE=mdegree_,' +$
-  '/FOR_ERRORS, ERROR=esol,'+$
-  'REDDENING=REDDENING,'+$
-  'fix_gas_kin=fix_gas_kin,'+$
-  'range_v_gas=range_v_gas,range_s_gas=range_s_gas,quiet=quiet,'+$
-       'external_library=external_library')
-if d eq 0 then begin
+	; Get the noise in the amplitude either using the residual or the error
+	; TODO: Currently hard-wired to use the residual
+	sol_gas_N = MDAP_GANDALFW_EMISSION_LINE_NOISE(obj_flux, obj_wave, obj_sige, bestfit_gndf, $
+						      eml_par, goodpixels=fitted_pixels_gndf, $
+						      /resid)
+	AoN_thresholds = dblarr(neml_l)			; Set threshold=0, i.e. subtract all lines
+;	print, neml_l, n_elements(sol_gas_F), n_elements(sol_gas_N)
+;	print, size(emission_templates)
+;	nemlt = (size(emission_templates))[2]
+;	for i=0,nemlt-1 do begin
+;	    plot, obj_wave, emission_templates[*,i]
+;	    stop
+;	endfor
 
+	; Remove the model emission lines from the galaxy spectrum
+	spec_neat = MDAP_GANDALFW_REMOVE_DETECTED_EMISSION(obj_flux, bestfit_gndf, $
+							   emission_templates, sol_gas_A, $
+							   sol_gas_N, AoN_thresholds, $
+							   AoN=sol_gas_AoN, /positive)
 
-   gas_intens = fltarr(n_elements(eml_i));gas_intens[1:*]
-   gas_intens_err =fltarr(n_elements(eml_i));gas_intens_err[1:*] 
-   gas_ew = fltarr(n_elements(eml_i));gas_ew[1:*] 
-   gas_ew_err =fltarr(n_elements(eml_i));gas_ew_err[1:*]
-   gas_fluxes =fltarr(n_elements(eml_i));gas_fluxes[1:*]
-   gas_fluxes_err =fltarr(n_elements(eml_i));gas_fluxes_err[1:*]
-   if n_elements(reddening) ne 0 then REDDENING=[0.,0.]
-   if n_elements(reddening) ne 0 then err_reddening=[99,99]
-   sol =[sol_star,0./0.,0./0.]
-   sol[0] = sol[0] - offset
-   weights=weights_ppxf
-   bestfit=bestfit_ppxf
-   sol_gas_AoN = fltarr(n_elements(eml_i)) 
-   bf_comp2 = bestfit_ppxf*0.
-   error = [error_stars,99.,99.]
+;	plot, obj_wave, spec_neat
+;	stop
 
-  ; status = 0
-   return
-endif
-;stop
-sol=temporary(ppxfsol)
-fitted_pixels=goodpixels
-  ;REDDENING=[0.05]
-;stop
-;*** SONO ARRIVATO QUI, devo aggiustare gli outputs in modo che vengano passati giusti a mdap_spectral_fitting.pro ***
-;*** DEVO ANCHE INSERIRE I FIX_STAR_KIN, RANGE_V_STAR, ECC ALL'INTERNO DI MDAP_PPXF E MDAP_GANDALF.PRO
+	; TODO: Difference between this and the sum of all the (valid) emission-line templates?
+	eml_model = obj_flux-spec_neat		; model of the emission lines
 
-;if keyword_set(DEBUG) then pause
-;print,'--> ... and fit simultaneously the stellar continuum and the ionised-gas emission lines!'
+;	plot, obj_wave, eml_model
+;	stop
 
-; K) Make the unconvolved optimal template. This can be useful for the
-; line-strength analysis in order to work out the necessary correction
-; due measured indices due to kinematic broadening.
-n_templ=n_elements(templates[0,*])
- nweights = weights[0:n_templ-1]/total(weights[0:n_templ-1])
-if n_elements(GOODPIXELS) ne 0 then begin
-   chi2=total((galaxy[GOODPIXELS]-bestfit[GOODPIXELS])^2/noise[GOODPIXELS]^2)
-endif else begin
-   chi2=total((galaxy-bestfit)^2/noise^2)
-endelse
-; otemplate = dblarr(n_elements(templates[*,0]))
-; for j=0,n_templ-1 do otemplate = otemplate + templates[*,j]*nweights[j]
-;print,'--> Creating the unconvolved optimal template spectrum...'
+	; TODO: Set criteria for whether or not a line is included in the mean kinematics
+	indx = MDAP_LINES_FOR_MEAN_GAS_KINEMATICS(sol_gas_A, esol_gas_A, sol_gas_F, esol_gas_F, $
+						  sol_gas_V, esol_gas_V, sol_gas_S, esol_gas_S)
 
-; L) Call the routine that remouves only the detected emission,
-; assuming a constant A/N cut of 4. The routine will also output the
-; A/N of each line.
+	; Set the mean kinematics over the valid lines
+	if indx[0] eq -1 then begin
+	    print, 'No valid lines for use in mean kinematics'
+;	    fw_vel = !VALUES.D_NAN
+;	    fw_sig = !VALUES.D_NAN
+	    fw_vel = start[4]
+	    fw_sig = start[5]
 
-; Best fitting amplitudes
-i_l = where(emission_setup.kind eq 'l') 
-sol_gas_A = sol[dindgen(n_elements(i_l))*4+1]
-; constant A/N=4 threshold
-AoN_thresholds = dblarr(n_elements(i_l)) + 4.0-100
-;spec_neat = remouve_detected_emission(galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds*0.,AoN=sol_gas_AoN)
-; I want to remove even the smallest emission line, does not metter if
-; formally detected or not.
-spec_neat = remouve_detected_emission(galaxy,bestfit,emission_templates,sol_gas_A,AoN_thresholds ,AoN=sol_gas_AoN) 
-bf_comp2 = galaxy-spec_neat
+	    fw_vel_err = 99.0d
+	    fw_sig_err = 99.0d
 
-;print,'--> ... and cleaning the galaxy spectrum from any detected gas emission line'
+	endif else begin
+	    MDAP_MEAN_GAS_KINEMATICS, sol_gas_F[indx], sol_gas_V[indx], esol_gas_V[indx], $
+				      sol_gas_S[indx], esol_gas_S[indx], fw_vel, fw_vel_err, $
+				      fw_sig, fw_sig_err
+	endelse
 
-; M) Add to the emission setup structure the flux, amplitude and
-; kinematics of each line, and call the result the fit_results
-; structure. Add to it also the A/N values, the stellar kinematics,
-; and the normalised template weights.  This is to save not only the
-; emission-line fitting results but also the conditions under which
-; the fit was performed.
-i_l = where(emission_setup.kind eq 'l',compl=i_d) 
-sol_gas_F = sol[dindgen(n_elements(i_l))*4+0]
-sol_gas_A = sol[dindgen(n_elements(i_l))*4+1]
-sol_gas_V = sol[dindgen(n_elements(i_l))*4+2]
-sol_gas_S = sol[dindgen(n_elements(i_l))*4+3]
-;
+;	print, fw_vel, fw_sig
+;	stop
 
-if n_elements(reddening) ne 0 then sol_EBmV  = sol[n_elements(i_l)*4:*] else sol_EBmV =-999
-if n_elements(reddening) ne 0 then reddening=sol_EBmV 
-dummy = emission_setup
-if keyword_set(FOR_ERRORS) then begin
-    esol_gas_F = esol[dindgen(n_elements(i_l))*4+0]
-    esol_gas_A = esol[dindgen(n_elements(i_l))*4+1]
-    esol_gas_V = esol[dindgen(n_elements(i_l))*4+2]
-    esol_gas_S = esol[dindgen(n_elements(i_l))*4+3]
-    ;
-    if n_elements(reddening) ne 0 then esol_EBmV  = esol[n_elements(i_l)*4:*] else esol_EBmV  = -999
-    
+	; Weights are saved via input/output to GANDALF
 
-    fit_results = create_struct('i',dummy.i[i_l],'name',dummy.name[i_l],'lambda',dummy.lambda[i_l],$
-                                'action',dummy.action[i_l],'kind',dummy.kind[i_l],'a',dummy.a[i_l],$
-                                'v',dummy.v[i_l],'s',dummy.s[i_l],'fit',dummy.fit[i_l],$
-                                'Flux',sol_gas_F,'Ampl',sol_gas_A,'Vel',sol_gas_V,'Sigma',sol_gas_S,$
-                                'eFlux',esol_gas_F,'eAmpl',esol_gas_A,'eVel',esol_gas_V,'eSigma',esol_gas_S,$
-                                'AoN',sol_gas_AoN,'EBmV',sol_EBmV,'eEBmV',esol_EBmV,'Vel_stars',sol_star[0]-offset,$
-                                'Sigma_stars',sol_star[1],'Norm_Weights',nweights)
-endif else begin
-    fit_results = create_struct('i',dummy.i[i_l],'name',dummy.name[i_l],'lambda',dummy.lambda[i_l],$
-                                'action',dummy.action[i_l],'kind',dummy.kind[i_l],'a',dummy.a[i_l],$
-                                'v',dummy.v[i_l],'s',dummy.s[i_l],'fit',dummy.fit[i_l],$
-                                'Flux',sol_gas_F,'Ampl',sol_gas_A,'Vel',sol_gas_V,'Sigma',sol_gas_S,$
-                                'AoN',sol_gas_AoN,'EBmV',sol_EBmV,'Vel_stars',sol_star[0]-offset,$
-                                'Sigma_stars',sol_star[1],'Norm_Weights',nweights)
-endelse
-;i_l = where(emission_setup.kind eq 'l')
+	; Save the kinematics
+	sol = MDAP_GANDALFW_SOL(sol_star, fw_vel, fw_sig)		; Final sol vector
+	err = MDAP_GANDALFW_SOL(err_star, fw_vel_err, fw_sig_err)	; ... and error
 
-;sol = [sol_star[0]-offset,sol_star[1:3],chi2,sol_gas_V,sol_gas_S]
-;error = [ERROR_stars[0:3],esol_gas_V,esol_gas_S]
-gas_intens_ = sol_gas_A
-gas_intens_err_ = esol_gas_A 
-;gas_fluxes = gas_intens * sol[8]/velscale*sqrt(2.*!pi)
-gas_fluxes_ = sol_gas_F
-gas_fluxes_err_ = esol_gas_F
-gas_velocities_=  sol_gas_V
-gas_velocities_err_=  esol_gas_V
-gas_dispersion_=  sol_gas_S
-gas_dispersion_err_=  esol_gas_S
+	; Recalculate the chi-square including the emission-line fits
+	; TODO: Have GANDALF return this!
+	; TODO: goodpixels should always be ne 0, otherwise nothing is fit!
+	; TODO: Keep the pPXF-only chi^2
+;	chi2=total(((obj_flux[goodpixels]-bestfit[goodpixels])/obj_sige[goodpixels])^2)
+	resid = (obj_flux[fitted_pixels_gndf]-bestfit_gndf[fitted_pixels_gndf]) / $
+		obj_sige[fitted_pixels_gndf]
+	chi2_gndf = robust_sigma(resid, /zero)^2
 
-;stop
+;	print, sol
+;	print, err
 
-; NOW I COMPUTE THE FLUX WEIGHTED MEAN GAS VELOCITY AND VELOCITY DISPERSION
+	; Measure the equivalent widths
+	MDAP_GANDALFW_MEASURE_EQUIV_WIDTH, eml_par[i_l], fw_vel, fw_sig, obj_wave, spec_neat, $
+					   sol_gas_F, esol_gas_F, sol_gas_EW, esol_gas_EW
 
-where_gas_is_not_null = where(sol_gas_F gt 0 and esol_gas_F gt 0 and finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1)
-where_eVgas_is_not_null = where(esol_gas_V gt 0 and esol_gas_S gt 0 and sol_gas_A gt 0)
+	; Save the full set of results
+	MDAP_GANDALFW_SAVE_RESULTS, eml_par, sol_gas_A, esol_gas_A, sol_gas_V, esol_gas_V, $
+				    sol_gas_S, esol_gas_S, sol_gas_F, esol_gas_F, sol_gas_EW, $
+				    esol_gas_EW, gas_intens, gas_intens_err, gas_vel, gas_vel_err, $
+				    gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, gas_ew_err
 
-fw_vel = total(sol_gas_V[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
-fw_sig = total(sol_gas_S[where_gas_is_not_null]*gas_fluxes_[where_gas_is_not_null])/total(gas_fluxes_[where_gas_is_not_null])
-fw_vel_err = mean(esol_gas_V[where_eVgas_is_not_null])
-fw_sig_err = mean(esol_gas_S[where_eVgas_is_not_null])
-
-if moments eq 6 then sol = [sol_star[0]-offset,sol_star[1:moments-1],chi2,fw_vel,fw_sig]
-if moments eq 6 then error = [ERROR_stars[0:moments-1],fw_vel_err,fw_sig_err]
-
-if moments eq 4 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,chi2,fw_vel,fw_sig]
-if moments eq 4 then error = [ERROR_stars[0:moments-1],0,0,fw_vel_err,fw_sig_err]
-
-if moments eq 2 then sol = [sol_star[0]-offset,sol_star[1:moments-1],0,0,0,0,chi2,fw_vel,fw_sig]
-if moments eq 2 then error = [ERROR_stars[0:moments-1],0,0,0,0,fw_vel_err,fw_sig_err]
-;-- compute gas EW (as in gandalf)
-;stop
-
-;l0_gal   = loglam_gal[0];sxpar(hdr_gal,'CRVAL1')
-;lstep_gal = loglam_gal[1]-loglam_gal[0];sxpar(hdr_gal,'CD1_1')
-;l0_templ = loglam_templates[0]
-;lstep_templ = loglam_templates[1] - loglam_templates[0]
-
-rf_l  = exp(loglam_gal -sol[0]/velscale*lstep_gal)
-gas_ew_=gas_fluxes_*0.
-gas_ew_err_=gas_fluxes_*0.
-rf_l_line_list  = dummy.lambda[i_l]
-for j = 0, n_elements(dummy.lambda[i_l])-1 do begin
-    rf_l_line  = rf_l_line_list[j]
-    S_line     = sol[8] 
-    F_obs_line = gas_fluxes_[j]
-    j_buffer   = where(abs(rf_l-rf_l_line) lt 10*(S_line/c)*rf_l_line and abs(rf_l-rf_l_line) gt  5*(S_line/c)*rf_l_line)
-    if j_buffer[0] ne -1 then begin
-       C_line     = median(spec_neat[j_buffer])
-       gas_ew_[j]  = gas_fluxes_[j]/C_line
-       gas_ew_err_[j]  = gas_fluxes_err_[j]/C_line+abs(gas_fluxes_[j])/C_line^2*robust_sigma(spec_neat[j_buffer])
-    endif
-endfor
-;stop
-gas_intens = [0]
-gas_intens_err =[0]
-gas_ew = [0]
-gas_ew_err =[0]
-gas_fluxes = [0]
-gas_fluxes_err =[0]
-gas_velocities=[0]
-gas_velocities_err=[0]
-gas_dispersion=[0]
-gas_dispersion_err=[0]
-k=0
-kk=0
-for i = 0,n_elements(eml_lambda)-1 do begin
-   was_it_in_range = where(abs(emission_setup.lambda - eml_lambda[i]) le 0.001)
-   if was_it_in_range[0] eq -1 then begin
-      gas_intens = [gas_intens,0]
-      gas_intens_err = [gas_intens_err,0]
-      gas_fluxes = [gas_fluxes,0]
-      gas_fluxes_err = [gas_fluxes_err,0]
-      gas_ew = [gas_ew,0]
-      gas_ew_err = [gas_ew_err,0]
-      gas_velocities         = [gas_velocities,0]    
-      gas_velocities_err     = [gas_velocities_err,0]
-      gas_dispersion         = [gas_dispersion,0]    
-      gas_dispersion_err     = [gas_dispersion_err,0]
-      continue
-   endif
-
-   if emission_setup.KIND[k] eq 'l' then begin
-      gas_intens = [gas_intens,gas_intens_[kk]]
-      gas_intens_err = [gas_intens_err,gas_intens_err_[kk]]
-      gas_fluxes = [gas_fluxes,gas_fluxes_[kk]]
-      gas_fluxes_err = [gas_fluxes_err,gas_fluxes_err_[kk]]
-      gas_ew = [gas_ew,gas_ew_[kk]]
-      gas_ew_err = [gas_ew_err,gas_ew_err_[kk]]
-      kk = kk+1
-   endif else begin
-
-    ; If the line was a doublet, I assigne
-    ; the emission equal to the emission
-    ; of the main line in the doubled
-    ; times the line ratio
-      doublet_of = strmid(emission_setup.KIND[k],1)
-      indici = where(emission_setup.i[i_l] eq doublet_of)
-      value = emission_setup.A[i]
-      gas_intens = [gas_intens,gas_intens_[indici[0]]*value]
-      gas_intens_err = [gas_intens_err,gas_intens_err_[indici[0]]*value]
-      gas_fluxes = [gas_fluxes,gas_fluxes_[indici[0]]*value]
-      gas_fluxes_err = [gas_fluxes_err,gas_fluxes_err_[indici[0]]*value]
-      gas_ew = [gas_ew,gas_ew_[indici[0]]*value]
-      gas_ew_err = [gas_ew_err,gas_ew_err_[indici[0]]*value]
-
-    endelse
-   gas_velocities         = [gas_velocities, gas_velocities_[k]]    
-   gas_velocities_err     = [gas_velocities_err,gas_velocities_err_[k]]
-   gas_dispersion         = [gas_dispersion,gas_dispersion_[k]]    
-   gas_dispersion_err     = [gas_dispersion_err,gas_dispersion_err_[k]]
-   k = k+1  
-endfor
-gas_intens = gas_intens[1:*]
-gas_intens_err =gas_intens_err[1:*] 
-gas_ew = gas_ew[1:*] 
-gas_ew_err =gas_ew_err[1:*]
-gas_fluxes =gas_fluxes[1:*]
-gas_fluxes_err =gas_fluxes_err[1:*]
-gas_velocities       = gas_velocities[1:*]     
-gas_velocities_err   = gas_velocities_err[1:*] 
-gas_dispersion       = gas_dispersion[1:*]     
-gas_dispersion_err   = gas_dispersion_err[1:*] 
-
-if n_elements(reddening) ne 0 then reddening = sol_EBmV;,esol_EBmV]
-if n_elements(reddening) ne 0 then err_reddening = esol_EBmV
-
+	; Save the reddening data
+	if n_elements(reddening) ne 0 then begin
+	    reddening = sol_EBmV
+	    err_reddening = esol_EBmV
+	endif
 
 END
 

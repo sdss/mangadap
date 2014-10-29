@@ -360,7 +360,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 area = histogram(class, REVERSE_INDICES=r, MIN=1)
 good = where(area gt 0, nnodes) ; Obtain the index of the good bins
-xnode = fltarr(nnodes)
+xnode = dblarr(nnodes)
 ynode = xnode
 for j=0,nnodes-1 DO begin
     k = good[j]
@@ -486,7 +486,7 @@ ENDFOR
 ;
 area = HISTOGRAM(class, REVERSE_INDICES=r)
 nbins = n_elements(xnode)
-xbar = fltarr(nbins)
+xbar = dblarr(nbins)
 ybar = xbar
 sn = xbar
 FOR j=0,nbins-1 DO BEGIN

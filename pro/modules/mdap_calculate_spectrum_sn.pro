@@ -111,18 +111,3 @@ PRO mdap_calculate_spectrum_sn, flux, ivar, mask, wave, sn_per_angstorm, signal=
 
 END
 
-
-;  <S/N> = sum in quadrature of the signal to noises, divided by the  number of elements. (Matt's suggestion)
-; dispersion = wavelength[1:*] - wavelength[0:n_elements(wavelength)-2]
-; dispersion = [dispersion,dispersion[n_elements(dispersion)-1]]
-; sn_per_angstorm = sqrt(total(spectrum/error*sqrt(dispersion))^2)
-; signal = total(spectrum)*sqrt(dispersion)/n_elements(wavelength)
-; noise =sqrt(total(error^2))*sqrt(dispersion)/n_elements(wavelength)
-
-; <S/N> from Cardiel et al. (2008) formula (Equation 42)
-; dispersion = wavelength[1:*] - wavelength[0:n_elements(wavelength)-2]
-; dispersion = [dispersion,dispersion[n_elements(dispersion)-1]]
-; sn_per_angstorm = 1./n_elements(wavelength) * int_tabulated(wavelength,spectrum/error/sqrt(dispersion))
-; signal = 1./n_elements(wavelength) *int_tabulated(wavelength,spectrum/sqrt(dispersion))
-; noise = 1./n_elements(wavelength) *int_tabulated(wavelength,error/sqrt(dispersion))
-

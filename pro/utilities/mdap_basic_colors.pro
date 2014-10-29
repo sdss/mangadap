@@ -49,7 +49,7 @@
 ; Garching, Germany. All rights reserved. Unauthorized reproduction prohibited.
 ; -----------------------------------------------------------------------------
 ;#<
-PRO basic_colors,   black , white , red    , green , blue, $
+PRO mdap_basic_colors,   black , white , red    , green , blue, $
                     yellow, cyan  , magenta, orange, mint, $
                     purple, pink  , olive  , lightb, gray, $
                     test = test

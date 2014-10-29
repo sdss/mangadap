@@ -139,19 +139,15 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
 	    conv[ind]=vector[ind]
 	    conv_ivar[ind]=1.0/ivar[ind]
 	endif
-	print, '1: ', check_math(/print)
 
 ;	oplot, x, conv, color=200
 ;	stop
 ;	plot, x, conv-vector
 ;	stop
-	print, '2: ', check_math(/print)
 
 	conv_ivar[divbyreal] = 1.0/conv_ivar[divbyreal]
-	print, '3: ', check_math(/print)
 	if divbyzero[0] ne -1 then $
 	    conv_ivar[divbyzero] = 0.
-	print, '4: ', check_math(/print)
 ;	stop
 
 END

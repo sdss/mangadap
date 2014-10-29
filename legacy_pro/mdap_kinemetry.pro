@@ -734,7 +734,7 @@ IF keyword_set(img) THEN BEGIN
 
 
   mi=(360./(180./10))
-  theta = range(0.0,2.0*!pi, mi>10*r<64) 
+  theta = mdap_range(0.0,2.0*!pi, mi>10*r<64) 
   sp=SIZE(p)
 
 	IF r lt 200 THEN BEGIN 
@@ -767,7 +767,7 @@ ENDIF ELSE BEGIN ;keyword_set(img)
 	; used by both 'brute force' and MPFIT minimisation
 
 	mi=(360./(180./10))
-	theta = range(0.0,2.0*!pi, mi>10*r<100) 
+	theta = mdap_range(0.0,2.0*!pi, mi>10*r<100) 
 	x = r*COS(theta)
 	y = r*SIN(theta)*p[1]
 	xEll = x*COS(ang) - y*SIN(ang)
@@ -1435,7 +1435,7 @@ xellipF = 0.
 yellipF = 0.
 vvF=0.
 FOR i=0, N_elements(rad)-1 DO BEGIN
-        theta = range(0.0,2.0*!pi,100) 
+        theta = mdap_range(0.0,2.0*!pi,100) 
         xF = rad[i]*COS(theta) 
         yF = rad[i]*SIN(theta)*qfix
         xEllF = xF*COS(PAfix) - yF*SIN(PAfix) + X0s
