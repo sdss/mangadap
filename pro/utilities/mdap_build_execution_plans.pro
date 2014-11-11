@@ -152,6 +152,10 @@
 ;	10 Oct 2014: (KBW) Original implementation
 ;	13 Oct 2014: (KBW) Include bin_weight_by_sn2
 ;	15 Oct 2014: (KBW) Added analysis_extra
+;	07 Nov 2014: (KBW) Checks that analysis steps are performed in
+;			   sequential order is now done using
+;			   MDAP_ANALYSIS_BLOCKS_TO_PERFORM(), which takes into
+;			   account the blocks that have already been completed.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -168,32 +172,43 @@ FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
 	for i=0,n_steps-1 do begin
 	    if analysis[i] eq 'stellar-cont' then begin
 		analysis_[0] = 1		; Perform the stellar continuum fitting
-	    endif else if analysis[i] eq 'emission-line' then begin
+		continue
+	    endif
+	    if analysis[i] eq 'emission-line' then begin
 		analysis_[1] = 1		; Perform the emission line fitting
-	    endif else if analysis[i] eq 'abs-indices' then begin
+		continue
+	    endif
+	    if analysis[i] eq 'abs-indices' then begin
 		analysis_[2] = 1		; Perform the absorption index measurements
-	    endif else if strlen(analysis[i]) ne 0 then $
+		continue
+	    endif
+	    
+	    if strlen(analysis[i]) ne 0 then $
 		message, 'Unknown analysis step: ', analysis[i]
 	endfor
 
 	; TODO: So far all steps must occur serially.
-	analysis_out = analysis_
-	for i=2,0,-1 do begin
-	    if analysis_out[i] eq 1 then begin
-		for j=i-1,0,-1 do $
-		    analysis_out[j] = 1
-	    endif
-	endfor
 
-	; Notify the user that changes were made
-	indx = where(analysis_out - analysis_ ne 0)
-	if indx[0] ne -1 then begin
-	    print, 'WARNING: Analysis steps are sequential.  Changed execution plan to ' + $
-	           'compensate.  Previous analyses will not be redone unless it was chosen to ' + $
-		   'overwrite the previous analysis.'
-	endif
+	; TODO: This is now checked in MDAP_ANALYSIS_BLOCKS_TO_PERFORM()
 
-	return, analysis_out
+;	analysis_out = analysis_
+;	for i=2,0,-1 do begin
+;	    if analysis_out[i] eq 1 then begin
+;		for j=i-1,0,-1 do $
+;		    analysis_out[j] = 1
+;	    endif
+;	endfor
+;
+;	; Notify the user that changes were made
+;	indx = where(analysis_out - analysis_ ne 0)
+;	if indx[0] ne -1 then begin
+;	    print, 'WARNING: Analysis steps are sequential.  Changed execution plan to ' + $
+;	           'compensate.  Previous analyses will not be redone unless it was chosen to ' + $
+;		   'overwrite the previous analysis.'
+;	endif
+;
+;	return, analysis_out
+	return, analysis_
 END
 
 PRO MDAP_CHECK_EXECUTION_PLAN, $
@@ -226,6 +241,21 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
 	; Check that the selected absorption-line parameter set exists
 	if execution_plan.abs_par ne -1 and execution_plan.abs_par ge n_abs then $
 	    message, 'No absorption-line parameter set: ', execution_plan.abs_par
+
+
+	; If analysis parameters are not needed, then turn them off
+	;
+	; Absorption-line parameters only needed for that analysis
+	if execution_plan.analysis[2] eq 0 then $
+	    execution_plan.abs_par = -1
+	; Emission-line parameters used for both stellar-continuum and emission-line analysis
+	if execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then $
+	    execution_plan.ems_par = -1
+	; Template spectra used for absorption-line, emission-line, and stellar continuum analysis
+	if execution_plan.analysis[2] eq 0 and execution_plan.analysis[1] eq 0 and $
+	    execution_plan.analysis[0] eq 0 then begin
+	    execution_plan.tpl_lib = -1
+	endif
 END
 
 PRO MDAP_BUILD_EXECUTION_PLANS, $
@@ -268,7 +298,9 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
 
 	    execution_plan[i].analysis_par = analysis_par[i]	; Analysis parameters
 
-	    if (where(execution_plan[i].analysis eq 1))[0] eq -1 then begin; No analysis to perform
+	    indx = where(execution_plan[i].analysis eq 1)
+	    if indx[0] eq -1 then begin; No analysis to perform
+		print, 'bad index'
 		execution_plan[i].tpl_lib = -1		; No template library needed
 		execution_plan[i].ems_par = -1 		; No emission-line parameters needed
 		execution_plan[i].abs_par = -1	 	; No absorption-line parameters needed
@@ -280,7 +312,9 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
 
 	    execution_plan[i].overwrite = overwrite_flag[i]	; Overwrite existing files?
 
-	    MDAP_CHECK_EXECUTION_PLAN, n_tpl, n_ems, n_abs, execution_plan[i]
+	    execution_plan_i = execution_plan[i]
+	    MDAP_CHECK_EXECUTION_PLAN, n_tpl, n_ems, n_abs, execution_plan_i
+	    execution_plan[i] = execution_plan_i
 	endfor
 END
 

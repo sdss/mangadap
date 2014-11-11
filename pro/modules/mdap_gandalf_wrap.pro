@@ -823,6 +823,10 @@ END
 
 ; TODO: How are doublets treated in GANDALF?
 
+; TODO: There was a bug in the v0_8 version of the code, that may or may not be
+;	addressed by the codde below.  See line 739-740 of Brett's version, and
+;	his e-mail from 5 Nov 2014.
+
 PRO MDAP_GANDALFW_SAVE_RESULTS, $
 		eml_par, sol_gas_A, esol_gas_A, sol_gas_V, esol_gas_V, sol_gas_S, esol_gas_S, $
 		sol_gas_F, esol_gas_F, sol_gas_EW, esol_gas_EW, gas_intens, gas_intens_err, $
@@ -866,6 +870,10 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
 	    ; TODO: Set the error differently since these lines are not independently fit
 
 	    ; TODO: What about lines that are kinematically tied?
+
+	    ; TODO: Report the *measured* values, not the reddening corrected
+	    ;	    values.  Need to figure out how to do this in the context of
+	    ;	    two lines that are tied.
 	    indx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_f[i_l[i]]].i)
 	    if indx[0] ne -1 then begin
 		gas_intens[indx] = eml_par[i_f[indx]].a*gas_intens[i_l[i]]
@@ -907,6 +915,9 @@ PRO MDAP_GANDALF_WRAP, $
 	if n_elements(moments) eq 0 then $
 	    moments=2					; Defaults to fit just V,sigma
 
+	if n_elements(ppxf_only) eq 0 then $
+	    ppxf_only = 0
+
 ;	print, 'mdegree: ', mdegree
 ;	print, 'moments: ', moments
 
@@ -918,19 +929,21 @@ PRO MDAP_GANDALF_WRAP, $
 	nc = n_elements(obj_flux)				; Number of spectral channels
 	obj_mask_ = obj_mask					; Copy the input mask; TODO: needed?
 
-	indx = where(obj_ivar eq 0 or finite(obj_ivar) eq 0, complement=nindx)	; Invalid variances
-	if n_elements(indx) eq nc then begin			; No pixels are valid
-	    print, 'All errors are invalid!  Ignoring errors (by setting them to unity).'
-	    obj_sige = make_array(nc, /double, value=1.0d)
-	endif else if indx[0] eq -1 then begin			; All pixels are valid
-	    obj_sige = sqrt(1.0d/obj_ivar)			; Errors
-	endif else begin
-	    obj_mask_[indx] = 1.0d				; Mask invalid variances
-	    ; TODO: Mask doesn't need to be double
-	    obj_sige = dblarr(nc, /nozero)			; Initialize
-	    obj_sige[nindx] = sqrt(1.0d/obj_ivar[nindx])	; Errors
-	    obj_sige[indx] = 1.0d				; Placeholder value (masked!)
-	endelse
+	MDAP_NOISE_FROM_IVAR, obj_ivar, obj_mask_, obj_sige
+
+;	indx = where(obj_ivar eq 0 or finite(obj_ivar) eq 0, complement=nindx)	; Invalid variances
+;	if n_elements(indx) eq nc then begin			; No pixels are valid
+;	    print, 'All errors are invalid!  Ignoring errors (by setting them to unity).'
+;	    obj_sige = make_array(nc, /double, value=1.0d)
+;	endif else if indx[0] eq -1 then begin			; All pixels are valid
+;	    obj_sige = sqrt(1.0d/obj_ivar)			; Errors
+;	endif else begin
+;	    obj_mask_[indx] = 1.0d				; Mask invalid variances
+;	    ; TODO: Mask doesn't need to be double
+;	    obj_sige = dblarr(nc, /nozero)			; Initialize
+;	    obj_sige[nindx] = sqrt(1.0d/obj_ivar[nindx])	; Errors
+;	    obj_sige[indx] = 1.0d				; Placeholder value (masked!)
+;	endelse
 
 	; Mask the input wavelength ranges
 	; TODO: Is this still necessary?
@@ -1072,22 +1085,20 @@ PRO MDAP_GANDALF_WRAP, $
 ;	stop
 
 	; No emission lines, or do not want to fit them, so return with just the result of pPXF
-	if n_elements(eml_par) eq 0 or n_elements(ppxf_only) then begin
-	    if ppxf_only eq 1 then begin
-		if n_elements(eml_par) ne 0 then begin
-		    i_f = where(eml_par.action eq 'f')
-		    neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
-		endif else $
-		    neml_f = 0
-		MDAP_GANDALFW_DEFAULT, sol_star, err_star, nc, ntpl, fitted_pixels_gndf, $
-				       weights_gndf, mult_poly_coeff_gndf, bestfit_gndf, $
-				       chi2_gndf, eml_model, sol, err, neml_f, gas_intens, $
-				       gas_intens_err, gas_vel, gas_vel_err, gas_sig, gas_sig_err, $
-				       gas_flux, gas_flux_err, gas_ew, gas_ew_err, $
-				       mdegree=mdegree, reddening=reddening, $
-				       err_reddening=err_reddening
-		return
-	    endif
+	if n_elements(eml_par) eq 0 or ppxf_only eq 1 then begin
+	    if n_elements(eml_par) ne 0 then begin
+		i_f = where(eml_par.action eq 'f')
+		neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
+	    endif else $
+		neml_f = 0
+
+	    MDAP_GANDALFW_DEFAULT, sol_star, err_star, nc, ntpl, fitted_pixels_gndf, weights_gndf, $
+				   mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, sol, $
+				   err, neml_f, gas_intens, gas_intens_err, gas_vel, gas_vel_err, $
+				   gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, $
+				   gas_ew_err, mdegree=mdegree, reddening=reddening, $
+				   err_reddening=err_reddening
+	    return
 	endif
 
 	; TODO: Adjust the continuum mask?

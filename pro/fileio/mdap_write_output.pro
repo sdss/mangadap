@@ -28,7 +28,8 @@
 ;		15 - ELMOD : IMAGE
 ;		16 - OTPL  : IMAGE
 ;		17 - BOTPL : IMAGE
-;		18 - ALIND : BINTABLE
+;		18 - SIPAR : BINTABLE
+;		19 - SINDX : BINTABLE
 ;
 ;	ANALYSIS FLAGS:
 ;		 0 - spectrum not analyzed
@@ -36,8 +37,8 @@
 ;		91 - stellar continuum fit failed
 ;		 2 - star+gas fit
 ;		92 - star+gas fit failed
-;		 3 - absorption line measurements
-;		93 - absorption line measurements failed
+;		 3 - spectral index measurements
+;		93 - spectral index measurements failed
 ;
 ;	Output data format:
 ;
@@ -50,10 +51,12 @@
 ;		- Binning type and parameters
 ;		- S/N threshold for bin inclusion
 ;
-;		- Template library file and/or keyword
-;		- Emission line file and/or keyword
 ;		- Wavelength range of analysis
 ;		- S/N threshold for analysis
+;
+;		- Template library file and/or keyword
+;		- Emission line file and/or keyword
+;		- Absorption-line file and/or keyword
 ;
 ;	    Binary tables:
 ;	    	- For each DRP spectrum: DRPS
@@ -100,11 +103,22 @@
 ;			- gas equivalent widths and errors (vectors)
 ;			;TODO: add gas reddening correction
 ;
-;		- For absorption-line analysis of each binned spectrum: ALINDX
-;		    4 (?) [nabs] columns, nbin rows
-;		    - index name (and definition?)
-;		    - index value and error
-;		    - continuum level?
+;		- Spectral index parameters: SIPAR
+;		  2 columns, 3 [2] columns
+;		    - Name
+;		    - Passband (vector)
+;		    - Blue continuum (vector)
+;		    - Red continuum (vector)
+;		    - Units
+; 
+;		- For spectral index meaurements of each binned spectrum: SINDX
+;		  5 [nabs] columns
+;		    - For each spectral index
+;			- omission flag (vector)
+;			- index value (vector)
+;			- index error (vector)
+;			- optimal template index value (vector)
+;			- broadened optimal template index value (vector)
 ;
 ;	    Image Extensions:
 ;		- For binned spectra:
@@ -134,8 +148,8 @@
 ;			   ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
 ;			   bin_flag=bin_flag, w_range_analysis=w_range_analysis, eml_par=eml_par, $
 ;			   analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
-;			   add_poly_coeff_ppxf=add_pol_coeff_ppxf, $
-;			   mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
+;			   add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
+;			   mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
 ;			   stellar_kinematics_fit=stellar_kinematics_fit, $
 ;			   stellar_kinematics_err=stellar_kinematics_err, chi2_ppxf=chi2_ppxf, $
 ;			   obj_fit_mask_ppxf=obj_fit_mask_ppxf, bestfit_ppxf=bestfit_ppxf, $
@@ -391,6 +405,8 @@
 ; EXAMPLES:
 ;
 ; TODO:
+;	- If string table elements change, the overwrite command in mdap_setup
+;	  will not work.  FXBWRITM will likely throw an error.
 ;
 ; BUGS:
 ;
@@ -482,7 +498,9 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
 		file, header, ndrp=ndrp, dx=dx, dy=dy, w_range_sn=w_range_sn, nbin=nbin, $
 		bin_type=bin_type, bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
 		w_range_analysis=w_range_analysis, $
-		threshold_ston_analysis=threshold_ston_analysis, analysis_par=analysis_par
+		threshold_ston_analysis=threshold_ston_analysis, analysis_par=analysis_par, $
+		tpl_library_key=tpl_library_key, ems_line_key=ems_line_key, $
+		abs_line_key=abs_line_key
 
 	; Add the number of DRP spectra
 	if n_elements(ndrp) ne 0 then $
@@ -549,18 +567,13 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
 	    endif
 	endif
 
-;	; Add the list of extra inputs
-;	if n_elements(extra_inputs) ne 0 then begin
-;	    nextra = n_elements(extra_inputs)
-;	    for i=0,nextra-1 do begin
-;
-;		if strlen(strcompress(extra_inputs[i], /remove_all)) eq 0 then $
-;		    continue
-;
-;		SXADDPAR, header, 'EXTRA'+strcompress(string(i+1),/remove_all), extra_inputs[i], $
-;			  'Added analysis parameter'
-;	    endfor
-;	endif
+	; Add the template, emission-line, and absorption-line keywords
+	if n_elements(tpl_library_key) ne 0 then $
+	    SXADDPAR, header, 'TPLKEY', tpl_library_key, 'Template library identifier'
+	if n_elements(ems_line_key) ne 0 then $
+	    SXADDPAR, header, 'EMLKEY', ems_line_key, 'Emission-line parameter identifier'
+	if n_elements(abs_line_key) ne 0 then $
+	    SXADDPAR, header, 'SPIKEY', abs_line_key, 'Spectral-index parameter identifier'
 
 	MDAP_WRITE_OUTPUT_FIX_NAXES, header		; Remove all NAXIS elements, setting NAXIS=0
 	; This is the PRIMARY HDU so...
@@ -734,12 +747,14 @@ PRO MDAP_WRITE_OUTPUT_ELPAR_INITIALIZE, $
 	    MDAP_FITS_HEADER_ADD_DATE, bth, /modified		; Add/change last date modified
 	    
 	    ; Create the table columns using placeholders to define the column data type
+	    MDAP_SET_EMISSION_LINE_NAME_DEFAULT, dstr
 	    MDAP_FXBADDCOL_VALUE, 1, bth, 'ELNAME', ' Emission-line identifier', /str, $
-				  dummystr='NNNNNN-LLLL'
+				  dummystr=dstr
 	    MDAP_FXBADDCOL_VALUE, 2, bth, 'RESTWAVE', ' Rest wavelength (ang)', /dbl
 	    MDAP_FXBADDCOL_VALUE, 3, bth, 'TIEDKIN', ' Kinematics are tied to line in this row',/int
+	    MDAP_SET_EMISSION_LINE_TIED_DEFAULT, dstr
 	    MDAP_FXBADDCOL_VALUE, 4, bth, 'TIEDTYPE', ' Tied type: v-vel, s-sig, t-both', /str, $
-				  dummystr=' - '
+				  dummystr=dstr
 	    MDAP_FXBADDCOL_VALUE, 5, bth, 'DOUBLET', ' Line is a doublet of line in this row', /int
 
       	    FXBCREATE, tbl, file, bth			; Create the binary table extension
@@ -1003,6 +1018,144 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
 END
 
 ;-------------------------------------------------------------------------------
+; Set the default size for the spectral index names, which is just at most 10
+; spaces for the index name.
+PRO MDAP_SET_SPECTRAL_INDEX_NAME_DEFAULT, $
+		str
+	str='NNNNNNNNNN'
+END
+
+;-------------------------------------------------------------------------------
+; Setup the default size for the spectral index unit type.
+PRO MDAP_SET_SPECTRAL_INDEX_UNIT_DEFAULT, $
+		str
+	str='NNN'
+END
+
+;-------------------------------------------------------------------------------
+; Initialize the SIPAR extension
+;	- If the file and extension exist, nothing is done
+;	- If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;	- If the extension does not exist, the table is instantiated with all
+;	  the columns and with a single row
+PRO MDAP_WRITE_OUTPUT_SIPAR_INITIALIZE, $
+		file
+
+	; Initialize the file (does nothing if the file already exists)
+	MDAP_INITIALIZE_FITS_FILE, file
+
+	if MDAP_CHECK_EXTENSION_EXISTS(file, 'SIPAR') eq 0 then begin
+	    ; Create a base level header; only one row for now!
+	    FXBHMAKE, bth, 1, 'SIPAR', 'Binary table with the spectral index parameters'
+	    MDAP_FITS_HEADER_ADD_DATE, bth, /modified		; Add/change last date modified
+	    
+	    ; Create the table columns using placeholders to define the column data type
+	    MDAP_SET_SPECTRAL_INDEX_NAME_DEFAULT, dstr
+	    MDAP_FXBADDCOL_VALUE, 1, bth, 'SINAME', ' Spectral index identifier', /str, $
+				  dummystr=dstr
+	    MDAP_FXBADDCOL_VECTOR, 2, bth, 2, 'PASSBAND', ' Primary passband of the index (ang)', $
+				   /dbl
+	    MDAP_FXBADDCOL_VECTOR, 3, bth, 2, 'BLUEBAND', $
+				   ' Continuum band blueward of the index (ang)', /dbl
+	    MDAP_FXBADDCOL_VECTOR, 4, bth, 2, 'REDBAND', $
+				   ' Continuum band redward of the index (ang)', /dbl
+	    MDAP_SET_SPECTRAL_INDEX_UNIT_DEFAULT, dstr
+	    MDAP_FXBADDCOL_VALUE, 5, bth, 'UNIT', ' Spectral index unit (mag or ang)', /str, $
+				  dummystr=dstr
+
+      	    FXBCREATE, tbl, file, bth			; Create the binary table extension
+	    FXBFINISH, tbl				; Close up
+	    free_lun, tbl
+	endif
+END
+
+;-------------------------------------------------------------------------------
+; Initialize the SGFIT extension
+;	- If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;	- If the extension exists, check that the sizes match the input
+;	- If the size is the same as the existing extension, finish
+;	- Otherwise, modify the fits extension, either by creating it or
+;	  modifying its column prperties
+PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
+		file, abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
+		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+
+	; Initialize the file (does nothing if the file already exists)
+	MDAP_INITIALIZE_FITS_FILE, file
+
+	; Check if the extension exists
+	extension_exists = MDAP_CHECK_EXTENSION_EXISTS(file, 'SINDX')
+
+	; Determine the dimensions of the input vectors
+	inp_size = make_array(1, /int, value=-1)
+
+	; Number of spectral indices
+	if n_elements(abs_line_indx_omitted) ne 0 then begin
+	    inp_size[0]=(size(abs_line_indx_omitted))[2]
+	endif else if n_elements(abs_line_indx_val) ne 0 then begin
+	    inp_size[0]=(size(abs_line_indx_val))[2]
+	endif else if n_elements(abs_line_indx_err) ne 0 then begin
+	    inp_size[0]=(size(abs_line_indx_err))[2]
+	endif else if n_elements(abs_line_indx_otpl) ne 0 then begin
+	    inp_size[0]=(size(abs_line_indx_otpl))[2]
+	endif else if n_elements(abs_line_indx_botpl) ne 0 then $
+	    inp_size[0]=(size(abs_line_indx_botpl))[2]
+
+	; TODO: Check the number of spectral indices against the SIPAR extension?
+	if n_elements(abs_par) ne 0 and inp_size[0] gt 0 then $
+	    if n_elements(abs_par) ne inp_size[0] then $
+		message, 'Number of index structures does not match the number of index results!'
+
+	modify = 0
+	nrows = 1			; TODO: Is nrows needed?
+	if extension_exists eq 1 then begin		; If the extension exists...
+
+	    ; Get the dimensions of the existing table
+	    fxbopen, unit, file, 'SINDX', bth		; Open the file
+	    nrows = fxpar(bth, 'NAXIS2')		; Number of rows
+	    cur_size = intarr(1)
+	    cur_size[0] = fxbdimen(unit, 'SIOMIT')	; Number of spectral index elements
+	    fxbclose, unit				; Close the file
+	    free_lun, unit				; Free the LUN
+
+	    ; Compare the current size to the existing size and decide if the
+	    ; size needs to be modified
+	    MDAP_WRITE_OUTPUT_COMPARE_TABLE_SIZE, cur_size, inp_size, modify
+	endif else begin				; If it does not exist ...
+	    cur_size = inp_size				; Set the modified size to the input size
+	    modify = 1
+	endelse
+
+	; Extension exists and all the columns have the correct size, return
+	if modify eq 0 then $
+	    return
+
+	; Create the header
+	FXBHMAKE, bth, nrows, 'SINDX', 'Binary table with spectral index measurements'
+	MDAP_FITS_HEADER_ADD_DATE, bth, /modified		; Add/change last date modified
+	    
+	; Create the table columns using placeholders to define the column data type and size
+	MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], 'SIOMIT', ' Spectral index omission flag', /int
+	MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], 'INDX', ' Spectral index value', /dbl
+	MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], 'INDXERR', ' Spectral index error', /dbl
+	MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[0], 'INDX_OTPL', $
+			       ' Spectral index based on the optimal template', /dbl
+	MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[0], 'INDX_BOTPL', $
+			       ' Spectral index based on the broadened optimal template', /dbl
+
+	if extension_exists eq 0 then begin		; If the extension does not exist...
+      	    FXBCREATE, tbl, file, bth			; Create the binary table extension
+							; TODO: Write fake data to it?
+	    FXBFINISH, tbl				; Close up
+	    free_lun, tbl
+	endif else begin				; If the extension does exist...
+	    bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
+	    MODFITS, file, bytdb, bth, extname='SINDX'	; Modify the header and allocate the data
+	endelse
+END
+
+;-------------------------------------------------------------------------------
 ; Attempt to match the size of the input file extention to the input number of
 ; rows.  Currently this only works if the length is equal to or greater than the
 ; existing number of rows.
@@ -1046,6 +1199,67 @@ FUNCTION MDAP_SET_EMISSION_LINE_NAME, $
 	    elname[i]= eml_par[i].name+dash+wl
 	endfor
 	return, elname					; Return the string
+END
+
+;-------------------------------------------------------------------------------
+; Set the default size for the emission-line names, six spaces for the name and
+; 5 spaces for the truncated wavelength: NNNNNN-LLLLL (e.g., Ha-----6562)
+PRO MDAP_SET_EMISSION_LINE_NAME_DEFAULT, $
+		str
+	str='NNNNNNNNNNNN'
+END
+
+;-------------------------------------------------------------------------------
+; Setup the emission-line tied type value.  The type is only a single character,
+; but because of IDL weirdness (or more likely my use of it), the type has to be
+; 3 characters.
+FUNCTION MDAP_SET_EMISSION_LINE_TIED, $
+		type
+	if strlen(type) ne 1 then $
+	    message, 'Type is not the correct length!'
+	return, ' '+type+' '
+END
+
+;-------------------------------------------------------------------------------
+; Setup the default size for the emission-line tied type.
+PRO MDAP_SET_EMISSION_LINE_TIED_DEFAULT, $
+		str
+	str='NNN'
+END
+
+;-------------------------------------------------------------------------------
+; Setup the spectral index names, which is just at most 10 spaces for the index
+; name.
+FUNCTION MDAP_SET_SPECTRAL_INDEX_NAME, $
+		abs_par
+
+	nabs = n_elements(abs_par)			; Number of indices
+	siname = strarr(nabs)				; Array to hold the line names
+
+	; Get the length of the default string
+	;dummystr='----------' ;MDAP_SET_SPECTRAL_INDEX_NAME_DEFAULT
+	MDAP_SET_SPECTRAL_INDEX_NAME_DEFAULT, dstr
+	deflen = strlen(dstr)
+
+	; Get the names
+	for i=0,nabs-1 do begin
+	    if strlen(abs_par[i].name) gt deflen then $	; Make sure it's not too long
+		message, 'Name of spectral index is too long!'
+
+	    siname[i] = abs_par[i].name			; Set the name
+	endfor
+
+	return, siname					; Return the string
+END
+
+;-------------------------------------------------------------------------------
+; Setup the spectral index unit name. The unit should only be only 'mag' or
+; 'ang'.
+FUNCTION MDAP_SET_SPECTRAL_INDEX_UNIT, $
+		unit
+	if strlen(unit) ne 3 then $
+	    message, 'Unit is not the correct length!'
+	return, unit
 END
 
 ;-------------------------------------------------------------------------------
@@ -1180,6 +1394,33 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
 	for i=0,15 do begin
 	    if nel[i] gt 0 and nel[i] ne ninp then $
 		message, 'Input vectors for SGFIT have different lengths!'
+	endfor
+
+	something_to_write = ninp ne 0
+END
+
+;-------------------------------------------------------------------------------
+; Check the input vectors to write to the STFIT extension.  Returns a flag that
+; there is something to write, and the size of the vectors to write.  Will throw
+; an error if the input vectors are not the same size
+PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_CHECK_INPUTS, $
+		something_to_write, ninp, abs_line_indx_omitted=abs_line_indx_omitted, $
+		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+
+	; Check that ndrp matches the size of one of the existing inputs
+	; TODO: Assumes all input vectors have the same length!
+	nel = intarr(5)
+	nel[0] = n_elements(abs_line_indx_omitted) eq 0 ? 0 : (size(abs_line_indx_omitted))[1]
+	nel[1] = n_elements(abs_line_indx_val) eq 0 ? 0 : (size(abs_line_indx_val))[1]
+	nel[2] = n_elements(abs_line_indx_err) eq 0 ? 0 : (size(abs_line_indx_err))[1]
+	nel[3] = n_elements(abs_line_indx_otpl) eq 0 ? 0 : (size(abs_line_indx_otpl))[1]
+	nel[4] = n_elements(abs_line_indx_botpl) eq 0 ? 0 : (size(abs_line_indx_botpl))[1]
+	ninp = max(nel)
+
+	for i=0,4 do begin
+	    if nel[i] gt 0 and nel[i] ne ninp then $
+		message, 'Input vectors for SINDX have different lengths!'
 	endfor
 
 	something_to_write = ninp ne 0
@@ -1328,10 +1569,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
 		j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)))
 		eltied[i] = j_refline[0]		; Set to -1 if not found!
 		; Set the type of kinematic tying
-		elttyp[i] = ' '+tt+' '
+		elttyp[i] = MDAP_SET_EMISSION_LINE_TIED(tt)
 	    endif else begin
 		eltied[i] = -1				; Set untied values
-		elttyp[i] = ' - '
+		elttyp[i] = MDAP_SET_EMISSION_LINE_TIED('-')
 	    endelse
 
 	    ; Check if any of the lines are doubles
@@ -1560,6 +1801,120 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
 ;	stop
 END
 
+;-------------------------------------------------------------------------------
+; Write/update the SIPAR extension
+;	- Initialize the extension
+;	- Check that there are inputs to write
+;	- Check that the size is as expected, if provided (ndrp)
+;	- Resize (number of rows) the extension, if necessary
+;	- Write/update the data
+PRO MDAP_WRITE_OUTPUT_UPDATE_SIPAR, $
+		file, abs_par=abs_par, quiet=quiet
+
+	MDAP_WRITE_OUTPUT_SIPAR_INITIALIZE, file	; Initialize the extension
+
+	; Check that there is something to write
+	nabs = n_elements(abs_par)			; Number of elements to output
+	if nabs eq 0 then begin
+	    if ~keyword_set(quiet) then $
+		print, 'MDAP_WRITE_OUTPUT_UPDATE_SIPAR: Nothing to update'
+	    return
+	endif
+
+	; Ensure the table has the correct number of rows
+	; TODO: This will fail if the table is longer than ndrp!
+	MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nabs, 'SIPAR'
+
+	FXBOPEN, tbl, file, 'SIPAR', hdr, access='RW'	; Open the extension
+
+	siname = MDAP_SET_SPECTRAL_INDEX_NAME(abs_par)	; Set the emission-line identifiers
+	siunit = abs_par[*].units			; Copy the unit
+
+	; Copy the band definitions
+	passband = dblarr(2,nabs)			; Initialize the passband array
+	blueband = dblarr(2,nabs)			; Initialize the blue continuum band array
+	redband = dblarr(2,nabs)			; Initialize the red continuum band array
+	for i=0,nabs-1 do begin
+	    passband[*,i] = abs_par[i].passband		; Copy the passband
+	    blueband[*,i] = abs_par[i].blue_cont	; Copy the blue continuum band
+	    redband[*,i] = abs_par[i].red_cont		; Copy the red continuum band
+	endfor
+
+	; Write ALL the columns simultaneously
+	FXBWRITM, tbl, [ 'SINAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT' ], siname, passband, $
+		  blueband, redband, siunit
+
+	FXBFINISH, tbl					; Close the file
+	free_lun, tbl
+END
+
+;-------------------------------------------------------------------------------
+; Write/update the SINDX extension
+PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
+		file, nbin=nbin, abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
+		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+
+	; Initialize the extension
+	MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, file, abs_par=abs_par, $
+						      abs_line_indx_omitted=abs_line_indx_omitted, $
+						      abs_line_indx_val=abs_line_indx_val, $
+						      abs_line_indx_err=abs_line_indx_err, $
+						      abs_line_indx_otpl=abs_line_indx_otpl, $
+						      abs_line_indx_botpl=abs_line_indx_botpl
+
+	; Check that one of the vectors are input and that they have the same length
+	MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_CHECK_INPUTS, something_to_write, ninp, $
+						      abs_line_indx_omitted=abs_line_indx_omitted, $
+						      abs_line_indx_val=abs_line_indx_val, $
+						      abs_line_indx_err=abs_line_indx_err, $
+						      abs_line_indx_otpl=abs_line_indx_otpl, $
+						      abs_line_indx_botpl=abs_line_indx_botpl
+
+	; If there is nothing to write, return
+	if something_to_write eq 0 then begin
+	    if ~keyword_set(quiet) then $
+		print, 'MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES: Nothing to update'
+	    return
+	endif
+
+	; Check that the length of the vectors matched the expected value, if input
+	if n_elements(nbin) ne 0 then begin
+	    if nbin ne ninp then $
+		message, 'Input vectors do not have the expected size!'
+	endif else $
+	    nbin = ninp
+
+;	fits_info,file
+;	stop
+
+	; Ensure the table has the correct number of rows
+	; TODO: This will fail if the table is longer than nbin!
+	MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'SINDX'
+
+;	fits_info, file
+;	stop
+
+	FXBOPEN, tbl, file, 'SINDX', bth, access='RW'	; Open the file
+
+	; Write columns if they were provided; column/row ordering has to be adjusted
+	; TODO: Is this too inefficient?
+	; TODO: Need to redo column/row reordering
+	if n_elements(abs_line_indx_omitted) ne 0 then $
+	    FXBWRITM, tbl, ['SIOMIT'], transpose(abs_line_indx_omitted)
+	if n_elements(abs_line_indx_val) ne 0 then $
+	    FXBWRITM, tbl, ['INDX'], transpose(abs_line_indx_val)
+	if n_elements(abs_line_indx_err) ne 0 then $
+	    FXBWRITM, tbl, ['INDXERR'], transpose(abs_line_indx_err)
+	if n_elements(abs_line_indx_otpl) ne 0 then $
+	    FXBWRITM, tbl, ['INDX_OTPL'], transpose(abs_line_indx_otpl)
+	if n_elements(abs_line_indx_botpl) ne 0 then $
+	    FXBWRITM, tbl, ['INDX_BOTPL'], transpose(abs_line_indx_botpl)
+
+	FXBFINISH, tbl					; Close the file
+	free_lun, tbl
+
+END
 
 
 ;-------------------------------------------------------------------------------
@@ -1598,10 +1953,10 @@ PRO MDAP_WRITE_OUTPUT, $
 		wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
 		xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
 		bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
-		threshold_ston_analysis=threshold_ston_analysis, eml_par=eml_par, $
-		analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
-		add_poly_coeff_ppxf=add_pol_coeff_ppxf, $
-		mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
+		threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
+		ems_line_key=ems_line_key, eml_par=eml_par, analysis_par=analysis_par, $
+		weights_ppxf=weights_ppxf, add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
+		mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
 		stellar_kinematics_fit=stellar_kinematics_fit, $
 		stellar_kinematics_err=stellar_kinematics_err, chi2_ppxf=chi2_ppxf, $
 		obj_fit_mask_ppxf=obj_fit_mask_ppxf, bestfit_ppxf=bestfit_ppxf, $
@@ -1620,7 +1975,11 @@ PRO MDAP_WRITE_OUTPUT, $
 		reddening_val=reddening_val, reddening_err=reddening_err, $
 		obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
 		eml_model=eml_model, optimal_template=optimal_template, $
-		losvd_optimal_template=losvd_optimal_template, read_header=read_header, quiet=quiet
+		losvd_optimal_template=losvd_optimal_template, abs_par=abs_par, $
+		abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
+		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
+		read_header=read_header, quiet=quiet
 
 ;	if file_test(file) eq 1 then $
 ;	    fits_info, file
@@ -1665,7 +2024,9 @@ PRO MDAP_WRITE_OUTPUT, $
 					     threshold_ston_bin=threshold_ston_bin, $
 					     w_range_analysis=w_range_analysis, $
 					     threshold_ston_analysis=threshold_ston_analysis, $
-					     analysis_par=analysis_par
+					     analysis_par=analysis_par, $
+					     tpl_library_key=tpl_library_key, $
+					     ems_line_key=ems_line_key, abs_line_key=abs_line_key
 	endif
 
 	; Update properties of DRP spectra
@@ -1813,9 +2174,16 @@ PRO MDAP_WRITE_OUTPUT, $
 						     'Optimal template, LOSVD convolved'
 	endelse
 
-;	    fits_info, file
-;	    stop
+	; Update the spectral index parameters
+	MDAP_WRITE_OUTPUT_UPDATE_SIPAR, file, abs_par=abs_par, quiet=quiet
 
+	; Update the spectral index measurements
+	MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, file, nbin=nbin, abs_par=abs_par, $
+						   abs_line_indx_omitted=abs_line_indx_omitted, $
+						   abs_line_indx_val=abs_line_indx_val, $
+						   abs_line_indx_err=abs_line_indx_err, $
+						   abs_line_indx_otpl=abs_line_indx_otpl, $
+						   abs_line_indx_botpl=abs_line_indx_botpl
 END
 
 

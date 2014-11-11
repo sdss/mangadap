@@ -83,7 +83,7 @@ FUNCTION MDAP_GET_BROADENED_TEMPLATE, $
 
 	sz=size(template)
 	if sz[0] ne 1 then $
-	    message, 'Only supports 1D tempaltes'
+	    message, 'Only supports 1D templates'
 
 	if keyword_set(oversample) then factor = 30 else factor = 1
 

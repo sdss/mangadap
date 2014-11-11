@@ -598,18 +598,18 @@ PRO MDAP_SPECTRAL_FITTING, $
 	bestfit_ppxf = dblarr(nobj, nw)
 	chi2_ppxf = dblarr(nobj)
 
-	obj_fit_mask_gndf = make_array(nobj, nw, /double, value=1.0d)
-	weights_gndf = dblarr(nobj, ntpl)
-;	if n_elements(reddening) eq 0 and n_elements(mdegree) ne 0 then begin
-;	    if mdegree gt 0 then $
-;		mult_poly_coeff_gndf = dblarr(nobj, mdegree)
-	if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
-	    if mdegree gt 0 then $
-		mult_poly_coeff_gndf = dblarr(nobj, mdegree)
+	if ppxf_only eq 0 then begin
+	    obj_fit_mask_gndf = make_array(nobj, nw, /double, value=1.0d)
+	    weights_gndf = dblarr(nobj, ntpl)
+	    if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+		if mdegree gt 0 then $
+		    mult_poly_coeff_gndf = dblarr(nobj, mdegree)
+	    endif
+	    bestfit_gndf = dblarr(nobj, nw)
+	    chi2_gndf = dblarr(nobj)
+	    eml_model = dblarr(nobj, nw)
 	endif
-	bestfit_gndf = dblarr(nobj, nw)
-	chi2_gndf = dblarr(nobj)
-	eml_model = dblarr(nobj, nw)
+
 	best_template = dblarr(nobj, nw)
 	best_template_losvd_conv = dblarr(nobj, nw)
 
@@ -617,20 +617,22 @@ PRO MDAP_SPECTRAL_FITTING, $
 	stellar_kinematics_err= dblarr(nobj, moments)
 
 	; TODO: Allow for more than 2 kinematic moments for the gas?
-	emission_line_kinematics = dblarr(nobj, 2)
-	emission_line_kinematics_err = dblarr(nobj, 2)
-	emission_line_omitted = make_array(nobj, neml, /int, value=1)	; 0/1 -> fit/omitted
-	emission_line_kinematics_individual = dblarr(nobj, neml, 2)
-	emission_line_kinematics_individual_err = dblarr( nobj, neml, 2)
-	emission_line_intens = dblarr(nobj, neml)
-	emission_line_intens_err = dblarr(nobj, neml)
-	emission_line_fluxes = dblarr(nobj, neml)
-	emission_line_fluxes_err = dblarr(nobj, neml)
-	emission_line_EW = dblarr(nobj, neml)
-	emission_line_EW_err = dblarr(nobj, neml)
-
-	reddening_output = dblarr(nobj, 2)
-	reddening_output_err = dblarr(nobj, 2)
+	if ppxf_only eq 0 then begin
+	    emission_line_kinematics = dblarr(nobj, 2)
+	    emission_line_kinematics_err = dblarr(nobj, 2)
+	    emission_line_omitted = make_array(nobj, neml, /int, value=1)	; 0/1 -> fit/omitted
+	    emission_line_kinematics_individual = dblarr(nobj, neml, 2)
+	    emission_line_kinematics_individual_err = dblarr( nobj, neml, 2)
+	    emission_line_intens = dblarr(nobj, neml)
+	    emission_line_intens_err = dblarr(nobj, neml)
+	    emission_line_fluxes = dblarr(nobj, neml)
+	    emission_line_fluxes_err = dblarr(nobj, neml)
+	    emission_line_EW = dblarr(nobj, neml)
+	    emission_line_EW_err = dblarr(nobj, neml)
+	    
+	    reddening_output = dblarr(nobj, 2)
+	    reddening_output_err = dblarr(nobj, 2)
+	endif
 
 	; Initialize the starting guesses
 	MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4
@@ -697,7 +699,7 @@ PRO MDAP_SPECTRAL_FITTING, $
 
 	; Set to ignore emission lines that are not within the fitted wavelength range
 	eml_par_lim = eml_par
-	if n_elements(eml_par) ne 0 and ppxf_only ne 1 then begin
+	if n_elements(eml_par) ne 0 and ppxf_only eq 0 then begin
 	    MDAP_CHECK_EMISSION_LINES, eml_par_lim, obj_wave_lim, $
 				       velocity=gas_kin_starting_guesses[0]
 	endif
@@ -709,7 +711,8 @@ PRO MDAP_SPECTRAL_FITTING, $
 	;   pseudo-velocity shift required to match the observed wavelengths of the
 	;   template library and the galaxy spectrum.
 
-	voff = (alog10(tpl_wave[0]) - alog10(obj_wave_lim[0]))*velScale/(alog10(obj_wave_lim[1])-alog10(obj_wave_lim[0]))
+	voff = (alog10(tpl_wave[0]) - alog10(obj_wave_lim[0]))*velScale / $
+	       (alog10(obj_wave_lim[1])-alog10(obj_wave_lim[0]))
 
 	c=299792.458d					; Speed of light in km/s (needed below)
 ;	voff = (1.0d - obj_wave_lim[0]/tpl_wave[0])*c	; Offset velocity in km/s
@@ -818,7 +821,7 @@ PRO MDAP_SPECTRAL_FITTING, $
 	    ;   rescale the formal errors for sqrt(chi2/dof), as instructed
 	    ;   by mpfit and ppxf.
 	    if min(obj_ivar_lim[i,*]) eq max(obj_ivar_lim[i,*]) then begin
-		error = error * sqrt(sol[6]) 
+		err = err * sqrt(sol[6])
 		gas_vel_err = gas_vel_err * sqrt(sol[6]) 
 		gas_sig_err = gas_sig_err * sqrt(sol[6]) 
 	    endif
@@ -861,51 +864,64 @@ PRO MDAP_SPECTRAL_FITTING, $
 	    ; Store output
 	    ; TODO: Put input and output into structures?
 
-;	    print, 'stellar kinematics'
-	    stellar_kinematics[i,*]=sol[0:3]			; V,sigma,h3,h4 for stars
-	    stellar_kinematics_err[i,*]=err[0:3]		; V,sigma,h3,h4 errors
+	    stellar_kinematics[i,*]=sol[0:moments-1]		; V,sigma,h3,h4 for stars
+	    stellar_kinematics_err[i,*]=err[0:moments-1]	; V,sigma,h3,h4 errors
 
-;	    print, 'mean eml kinematics'
-	    emission_line_kinematics[i,*]=sol[7:8]		; V,sigma for emission lines
-	    emission_line_kinematics_err[i,*]=err[6:7]		; V,sigma errors for emission lines
+	    if ppxf_only eq 0 then begin
+		emission_line_kinematics[i,*]=sol[7:8]		; V,sigma for emission lines
+		emission_line_kinematics_err[i,*]=err[6:7]	; V,sigma errors for emission lines
 
-;	    print, 'eml fluxes'
-	    i_f = where(eml_par_lim.action eq 'f')
-	    if i_f[0] ne -1 then begin
-		emission_line_omitted[i,i_f] = 0			; Flag fitted lines
-		emission_line_intens[i,i_f]= gas_intens		; Intensity values, dereddened
-		emission_line_intens_err[i,i_f]= gas_intens_err	; Error in intensity
-		emission_line_EW[i,i_f]= gas_ew			; Emission equivalent width (EW)
-		emission_line_EW_err[i,i_f]= gas_ew_err		; error in EW
-		emission_line_fluxes[i,i_f]= gas_flux		; Gas fluxes, dereddened
-		emission_line_fluxes_err[i,i_f] = gas_flux_err	; errors in gas fluxes
-		emission_line_kinematics_individual[i,i_f,0]=gas_vel		; vel for lines
-		emission_line_kinematics_individual_err[i,i_f,0]=gas_vel_err	; vel errors
-		emission_line_kinematics_individual[i,i_f,1]=gas_sig		; sigma for lines
-		emission_line_kinematics_individual_err[i,i_f,1]=gas_sig_err	; sigma error
+		i_f = where(eml_par_lim.action eq 'f')
+		if i_f[0] ne -1 then begin
+		    emission_line_omitted[i,i_f] = 0		; Flag fitted lines
+		    emission_line_intens[i,i_f]= gas_intens	; Intensity values, dereddened
+		    emission_line_intens_err[i,i_f]= gas_intens_err	; Error in intensity
+		    emission_line_EW[i,i_f]= gas_ew		; Emission equivalent width (EW)
+		    emission_line_EW_err[i,i_f]= gas_ew_err	; error in EW
+		    emission_line_fluxes[i,i_f]= gas_flux	; Gas fluxes, dereddened
+		    emission_line_fluxes_err[i,i_f] = gas_flux_err	; errors in gas fluxes
+		    emission_line_kinematics_individual[i,i_f,0]=gas_vel	; vel for lines
+		    emission_line_kinematics_individual_err[i,i_f,0]=gas_vel_err; vel errors
+		    emission_line_kinematics_individual[i,i_f,1]=gas_sig	; sigma for lines
+		    emission_line_kinematics_individual_err[i,i_f,1]=gas_sig_err; sigma error
+		endif
+
+		if n_elements(ebv) eq 2 then begin
+		    reddening_output[i,*]= ebv
+		    reddening_output_err[i,*]= err_reddening
+		endif else if n_elements(ebv) eq 1 then begin
+		    reddening_output[i,*]= [ebv[0],0.0d]
+		    reddening_output_err[i,*]= [err_reddening[0],99.0d]
+		endif else begin
+		    reddening_output[i,*]= [0.0d,0.0d]
+		    reddening_output_err[i,*]= [99.0d,99.0d]
+		endelse
+
 	    endif
-
-;	    print, 'storing reddening'
-	    if n_elements(ebv) eq 2 then begin
-		reddening_output[i,*]= ebv
-		reddening_output_err[i,*]= err_reddening
-	    endif else if n_elements(ebv) eq 1 then begin
-		reddening_output[i,*]= [ebv[0],0.0d]
-		reddening_output_err[i,*]= [err_reddening[0],99.0d]
-	    endif else begin
-		reddening_output[i,*]= [0.0d,0.0d]
-		reddening_output_err[i,*]= [99.0d,99.0d]
-	    endelse
 
 	    ; Convert the "velocities" (velScale*pixel_shift) to redshifts
 	    ; TODO: This means that one can no longer create the correct LOSVD
 	    ;	    using these velocities!!!
-	    MDAP_CONVERT_KINEMATICS, stellar_kinematics[i,0], stellar_kinematics_err[i,0]
-	    MDAP_CONVERT_KINEMATICS, emission_line_kinematics[i,0], $
-				     emission_line_kinematics_err[i,0]
-	    if i_f[0] ne -1 then begin
-		MDAP_CONVERT_KINEMATICS, emission_line_kinematics_individual[i,i_f,0], $
-					 emission_line_kinematics_individual_err[i,i_f,0]
+	    v = stellar_kinematics[i,0]
+	    ve = stellar_kinematics_err[i,0]
+	    MDAP_CONVERT_PIXEL_KINEMATICS, v, ve
+	    stellar_kinematics[i,0] = v
+	    stellar_kinematics_err[i,0] = ve
+
+	    if ppxf_only eq 0 then begin
+		v = emission_line_kinematics[i,0]
+		ve = emission_line_kinematics_err[i,0]
+		MDAP_CONVERT_PIXEL_KINEMATICS, v, ve
+		emission_line_kinematics[i,0] = v
+		emission_line_kinematics_err[i,0] = ve
+		
+		if i_f[0] ne -1 then begin
+		    v = emission_line_kinematics_individual[i,i_f,0]
+		    ve = emission_line_kinematics_individual_err[i,i_f,0]
+		    MDAP_CONVERT_PIXEL_KINEMATICS, v, ve
+		    emission_line_kinematics_individual[i,i_f,0] = v
+		    emission_line_kinematics_individual_err[i,i_f,0] = ve
+		endif
 	    endif
 
 ;	    print, 'fit mask'
@@ -916,9 +932,7 @@ PRO MDAP_SPECTRAL_FITTING, $
 		obj_fit_mask_gndf[i,fit_indx[fitted_pixels_gndf]] = 0.0d
 
 	    weights_ppxf[i,*] = weights_ppxf_i				; Set the weights
-	    weights_gndf[i,*] = weights_gndf_i[0:ntpl-1]
-
-	    ; Set the polynomials
+	    chi2_ppxf[i] = chi2_ppxf_i
 	    if n_elements(degree) ne 0 then begin
 		if degree gt 0 then $
 		    add_poly_coeff_ppxf[i,*] = add_poly_coeff_ppxf_i
@@ -927,14 +941,15 @@ PRO MDAP_SPECTRAL_FITTING, $
 		if mdegree gt 0 then $
 		    mult_poly_coeff_ppxf[i,*] = mult_poly_coeff_ppxf_i
 	    endif
-	    if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
-		if mdegree gt 0 then $
-		    mult_poly_coeff_gndf[i,*] = mult_poly_coeff_gndf_i
-	    endif
 
-	    ; Set the chi-square values
-	    chi2_ppxf[i] = chi2_ppxf_i
-	    chi2_gndf[i] = chi2_gndf_i
+	    if ppxf_only eq 0 then begin
+		weights_gndf[i,*] = weights_gndf_i[0:ntpl-1]
+		chi2_gndf[i] = chi2_gndf_i
+		if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+		    if mdegree gt 0 then $
+			mult_poly_coeff_gndf[i,*] = mult_poly_coeff_gndf_i
+		endif
+	    endif
 
 	    ;--------------------
 	    ; TODO: This whole procedure, generating the best-fit template, the
@@ -970,11 +985,10 @@ PRO MDAP_SPECTRAL_FITTING, $
 		; Best-fit PPXF model
 		bestfit_ppxf[i,fit_indx] = bestfit_ppxf_i
 
-		; Best-fit GANDALF model
-		bestfit_gndf[i,fit_indx] = bestfit_gndf_i
-
-		; Best-fit emission-line-only model
-		eml_model[i,fit_indx] = eml_model_i
+		if ppxf_only eq 0 then begin
+		    bestfit_gndf[i,fit_indx] = bestfit_gndf_i	 ; Best-fit GANDALF model
+		    eml_model[i,fit_indx] = eml_model_i	; Best-fit emission-line-only model
+		endif
 
 		; Best fitting template (does not include LOSVD effects or reddening)
 		best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, obj_wave_lim)
@@ -996,11 +1010,11 @@ PRO MDAP_SPECTRAL_FITTING, $
 	    ; Best-fit PPXF model mapped to the output wavelength vector
 	    bestfit_ppxf[i,fit_indx] = interpol(bestfit_ppxf_i, obj_wave_lim_, wavelength_output)
 
-	    ; Best-fit GANDALF model mapped to the output wavelength vector
-	    bestfit_gndf[i,fit_indx] = interpol(bestfit_gndf_i, obj_wave_lim_, wavelength_output)
-
-	    ; Best-fit emission-line only model mapped to the output wavelength vector
-	    eml_model[i,fit_indx] = interpol(eml_model_i, obj_wave_lim_, wavelength_output)
+	    ; Best-fit GANDALF model and emission-line only model
+	    if ppxf_only eq 0 then begin
+		bestfit_gndf[i,fit_indx] = interpol(bestfit_gndf_i,obj_wave_lim_,wavelength_output)
+		eml_model[i,fit_indx] = interpol(eml_model_i, obj_wave_lim_, wavelength_output)
+	    endif
 
 	    ; Best fitting template (does not include LOSVD effects or reddening)
 	    best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, wavelength_output)

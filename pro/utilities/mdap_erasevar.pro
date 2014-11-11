@@ -21,7 +21,7 @@
 PRO MDAP_ERASEVAR, $
 	var
 
-	if n_elements(var)
+	if n_elements(var) then $
 	    tmpvar=size(temporary(var))		; Erase using temporary()
 END
 

@@ -38,6 +38,7 @@
 ;
 ; TODO:
 ;	- Does not check that the eigenvectors point in the right direction!
+;	- READ THE FULL WCS SYSTEM AND GET THE PIXEL SCALE THAT WAY!
 ;
 ; BUGS:
 ;

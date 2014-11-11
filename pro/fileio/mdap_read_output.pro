@@ -188,6 +188,9 @@
 ; EXAMPLES:
 ;
 ; TODO:
+;	- MAKE SURE THINGS ARE ABSTRACTED SUCH THAT I'M READING EXTENSIONS BY
+;	  THEIR NAME, NOT THEIR NUMBER!
+;
 ;	- Include:?
 ;	eml_par	EmissionLine[]
 ;		An array of EmissionLine structures used to define the emission
@@ -205,124 +208,16 @@
 ;-
 ;------------------------------------------------------------------------------
 
-;-------------------------------------------------------------------------------
-; Find the extension name in the list of available extensions
-FUNCTION MDAP_FIND_EXTENSION_NAME, $
-		extname, ext
-	next = n_elements(extname)		; Number of extensions
-	for i=0,next-1 do begin			; Search through all extensins
-	    if extname[i] eq ext then $
-		return, 1			; Extension found so return true
-	endfor
-	print, ext+' extension not found!'	; Warn the user
-	return, 0				; Extension name not found
-END
-
-;-------------------------------------------------------------------------------
-; Check that the table has all the necessary columns
-FUNCTION MDAP_CHECK_BINTABLE_COLUMNS, $
-		file, exten, col_list
-
-	fxbopen, unit, file, exten
-
-	ncol = n_elements(col_list)		; Number of column names
-	errmsg = ''				; Suppress error messages
-	for i=0,ncol-1 do begin
-	    if FXBCOLNUM(unit, col_list[i]) eq 0 then begin
-		print, col_list[i]+' unavailable in extension '+exten+'!'
-		fxbclose, unit			; Close up ...
-		free_lun, unit			; ... and free the LUN
-		return, 0			; All columns not found
-	    endif
-	endfor
-
-	fxbclose, unit				; Close up ...
-	free_lun, unit				; ... and free the LUN
-	return, 1				; All columns found
-END
-
-;-------------------------------------------------------------------------------
-; Functions that declare the name of the column names of the binary tables
-FUNCTION MDAP_SET_DRPS_COLS
-	return, [ 'XPOS', 'YPOS', 'SIGNAL', 'NOISE', 'BINID', 'BINW' ]
-END
-FUNCTION MDAP_SET_BINS_COLS
-	return, [ 'XBIN', 'YBIN', 'BINA', 'BINSN', 'NBIN', 'BINF' ]
-END
-FUNCTION MDAP_SET_ELPAR_COLS
-	return, [ 'ELNAME', 'RESTWAVE', 'TIEDKIN', 'TIEDTYPE', 'DOUBLET' ]
-END
-FUNCTION MDAP_SET_STFIT_COLS
-	return, [ 'TPLW', 'ADDPOLY', 'MULTPOLY', 'KIN', 'KINERR', 'RCHI2' ]
-END
-FUNCTION MDAP_SET_SGFIT_COLS
-	return, [ 'TPLW', 'MULTPOLY', 'KIN', 'KINERR', 'RCHI2', 'RED', 'REDERR', 'ELOMIT', 'AMPL', $
-		  'AMPLERR', 'IKIN', 'IKINERR', 'FLUX', 'FLUXERR', 'EW', 'EWERR' ]
-END
-
-;-------------------------------------------------------------------------------
-; Check that the file at least has the necessary properties of a DAP-produced
-; file
-FUNCTION MDAP_READ_OUTPUT_CHECK_FILE, $
-		file
-
-	; Get the number of extensions and the extension names
-	FITS_INFO, file, N_ext=next, extname=extname, /silent
-	print, next
-	extname = extname[1:next]
-	for i=0,next-1 do $
-	    extname[i] = strcompress(extname[i], /remove_all)
-
-	; Ensure that the file has the correct number of extensions
-	; TODO: Not necessary if extensions are read based on their name, not their index
-;	if next ne 17 then begin
-;	    print, file + ' has '+MDAP_STC(next)+' extensions!'
-;	    return, 0
-;	endif
-
-	; Check that the extensions have the correct names
-	if MDAP_FIND_EXTENSION_NAME(extname, 'DRPS') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'BINS') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'WAVE') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SRES') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'FLUX') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'IVAR') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'MASK') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'ELPAR') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'STFIT') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SMSK') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SMOD') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SGFIT') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SGMSK') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'SGMOD') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'ELMOD') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'OTPL') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'BOTPL') eq 0 then return, 0
-
-	; Check that the binary tables have the correct columns
-	cols = MDAP_SET_DRPS_COLS()
-	if MDAP_CHECK_BINTABLE_COLUMNS(file, 'DRPS', cols) eq 0 then return, 0
-
-	cols = MDAP_SET_BINS_COLS()
-	if MDAP_CHECK_BINTABLE_COLUMNS(file, 'BINS', cols) eq 0 then return, 0
-
-	cols = MDAP_SET_ELPAR_COLS()
-	if MDAP_CHECK_BINTABLE_COLUMNS(file, 'ELPAR', cols) eq 0 then return, 0
-
-	cols = MDAP_SET_STFIT_COLS()
-	if MDAP_CHECK_BINTABLE_COLUMNS(file, 'STFIT', cols) eq 0 then return, 0
-
-	cols = MDAP_SET_SGFIT_COLS()
-	if MDAP_CHECK_BINTABLE_COLUMNS(file, 'SGFIT', cols) eq 0 then return, 0
-
-	return, 1				; File satisfied all checks
-END
+; The file that declares the functions used to define the names of the columns
+; for the binary tables.
+@mdap_set_output_file_cols
 
 ;-------------------------------------------------------------------------------
 ; Determine if the header needs to be read
 FUNCTION MDAP_READ_NEED_HEADER, $
 		header, dx, dy, w_range_sn, bin_type, bin_par, threshold_ston_bin, $
-		w_range_analysis, threshold_ston_analysis, analysis_par
+		w_range_analysis, threshold_ston_analysis, analysis_par, tpl_library_key, $
+		ems_line_key, abs_line_key
 
 	if n_elements(header)     ne 0 then              return, 1
 	if n_elements(dx)         ne 0 then              return, 1
@@ -334,6 +229,9 @@ FUNCTION MDAP_READ_NEED_HEADER, $
 	if n_elements(w_range_analysis) ne 0 then        return, 1
 	if n_elements(threshold_ston_analysis) ne 0 then return, 1
 	if n_elements(analysis_par) ne 0 then            return, 1
+	if n_elements(tpl_library_key) ne 0 then         return, 1
+	if n_elements(ems_line_key) ne 0 then            return, 1
+	if n_elements(abs_line_key) ne 0 then            return, 1
 
 	return, 0
 END
@@ -342,7 +240,8 @@ END
 ; Read the header data
 PRO MDAP_READ_SET_HEADER_DATA, $
 		header, dx, dy, w_range_sn, bin_type, bin_par, threshold_ston_bin, $
-		w_range_analysis, threshold_ston_analysis, analysis_par
+		w_range_analysis, threshold_ston_analysis, analysis_par, tpl_library_key, $
+		ems_line_key, abs_line_key
 
 	dx = SXPAR(header, 'SPAXDX', /silent)
 	dy = SXPAR(header, 'SPAXDY', /silent)
@@ -364,6 +263,11 @@ PRO MDAP_READ_SET_HEADER_DATA, $
 	    for i=0,analysis_par.reddening_order-1 do $
 		analysis_par.reddening[i] = reddening[i]
 	endif
+
+	tpl_library_key = SXPAR(header, 'TPLKEY', /silent)
+	ems_line_key = SXPAR(header, 'EMLKEY', /silent)
+	abs_line_key = SXPAR(header, 'SPIKEY', /silent)
+
 END
 
 ;-------------------------------------------------------------------------------
@@ -452,7 +356,7 @@ FUNCTION MDAP_READ_WANT_STFIT, $
 	return, 0
 END
 
-; Read the full DRPS binary table (more efficient than reading one column at a
+; Read the full STFIT binary table (more efficient than reading one column at a
 ; time?)
 PRO MDAP_READ_STFIT, $
 		file, weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
@@ -465,6 +369,15 @@ PRO MDAP_READ_STFIT, $
 			      stellar_kinematics_fit, stellar_kinematics_err, chi2_ppxf
 	fxbclose, unit
 	free_lun, unit
+
+	; TODO: 2D data needs to be transposed!
+
+	weights_ppxf = transpose(temporary(weights_ppxf))
+	add_poly_coeff_ppxf = transpose(temporary(add_poly_coeff_ppxf))
+	mult_poly_coeff_ppxf = transpose(temporary(mult_poly_coeff_ppxf))
+	stellar_kinematics_fit = transpose(temporary(stellar_kinematics_fit))
+	stellar_kinematics_err = transpose(temporary(stellar_kinematics_err))
+
 END
 
 ;-------------------------------------------------------------------------------
@@ -496,7 +409,7 @@ FUNCTION MDAP_READ_WANT_SGFIT, $
 	return, 0
 END
 
-; Read the full DRPS binary table (more efficient than reading one column at a
+; Read the full SGFIT binary table (more efficient than reading one column at a
 ; time?)
 PRO MDAP_READ_SGFIT, $
 		file, weights_gndf, mult_poly_coeff_gndf, emission_line_kinematics_avg, $
@@ -517,12 +430,104 @@ PRO MDAP_READ_SGFIT, $
 
 	fxbclose, unit
 	free_lun, unit
+
+	; TODO: 2D data needs to be transposed!
+
+	weights_gndf = transpose(temporary(weights_gndf))
+	mult_poly_coeff_gndf = transpose(temporary(mult_poly_coeff_gndf))
+	emission_line_kinematics_avg = transpose(temporary(emission_line_kinematics_avg))
+	emission_line_kinematics_aer = transpose(temporary(emission_line_kinematics_aer))
+	reddening_val = transpose(temporary(reddening_val))
+	reddening_err = transpose(temporary(reddening_err))
+	emission_line_intens = transpose(temporary(emission_line_intens))
+	emission_line_interr = transpose(temporary(emission_line_interr))
+	emission_line_kinematics_ind = transpose(temporary(emission_line_kinematics_ind), [2,0,1])
+	emission_line_kinematics_ier = transpose(temporary(emission_line_kinematics_ier), [2,0,1])
+	emission_line_fluxes = transpose(temporary(emission_line_fluxes))
+	emission_line_flxerr = transpose(temporary(emission_line_flxerr))
+	emission_line_EWidth = transpose(temporary(emission_line_EWidth))
+	emission_line_EW_err = transpose(temporary(emission_line_EW_err))
+
+END
+
+;-------------------------------------------------------------------------------
+; Check if data from the SIPAR extension is desired
+FUNCTION MDAP_READ_WANT_SIPAR, $
+		abs_par
+
+	if n_elements(abs_par) ne 0 then return, 1
+
+	return, 0
+END
+
+; Read the full SIPAR binary table (more efficient than reading one column at a
+; time?)
+PRO MDAP_READ_SIPAR, $
+		file, abs_par
+
+	cols = MDAP_SET_SIPAR_COLS()
+
+	fxbopen, unit, file, 'SIPAR'
+	fxbreadm, unit, cols, name, passband, blue_cont, red_cont, unit
+	fxbclose, unit
+	free_lun, unit
+
+	nindx = n_elements(name)
+	id = indgen(nindx)
+
+	abs_par = MDAP_ASSIGN_ABSORPTION_LINE_PARAMETERS(id, name, reform(passband[0,*]), $
+							 reform(passband[1,*]), $
+							 reform(blue_cont[0,*]), $
+							 reform(blue_cont[1,*]), $
+							 reform(red_cont[0,*]), $
+							 reform(red_cont[1,*]), unit)
+
+END
+
+;-------------------------------------------------------------------------------
+; Check if data from the SINDX extension is desired
+FUNCTION MDAP_READ_WANT_SINDX, $ 
+		abs_line_indx_omitted, abs_line_indx_val, abs_line_indx_err, abs_line_indx_otpl, $
+		abs_line_indx_botpl
+
+	if n_elements(abs_line_indx_omitted) ne 0 then return, 1
+	if n_elements(abs_line_indx_val)     ne 0 then return, 1
+	if n_elements(abs_line_indx_err)     ne 0 then return, 1
+	if n_elements(abs_line_indx_otpl)    ne 0 then return, 1
+	if n_elements(abs_line_indx_botpl)   ne 0 then return, 1
+
+	return, 0
+END
+
+; Read the full SINDX binary table (more efficient than reading one column at a
+; time?)
+PRO MDAP_READ_SINDX, $
+		file, abs_line_indx_omitted, abs_line_indx_val, abs_line_indx_err, $
+		abs_line_indx_otpl, abs_line_indx_botpl
+
+	cols = MDAP_SET_SINDX_COLS()
+
+	fxbopen, unit, file, 'SINDX'
+	fxbreadm, unit, cols, abs_line_indx_omitted, abs_line_indx_val, abs_line_indx_err, $
+			      abs_line_indx_otpl, abs_line_indx_botpl
+	fxbclose, unit
+	free_lun, unit
+
+	; TODO: 2D data needs to be transposed!
+
+	abs_line_indx_omitted = transpose(temporary(abs_line_indx_omitted))
+	abs_line_indx_val = transpose(temporary(abs_line_indx_val))
+	abs_line_indx_err = transpose(temporary(abs_line_indx_err))
+	abs_line_indx_otpl = transpose(temporary(abs_line_indx_otpl))
+	abs_line_indx_botpl = transpose(temporary(abs_line_indx_botpl))
+
 END
 
 
 
 ;-------------------------------------------------------------------------------
 ; Order should not really be important here
+; TODO: Add information such that eml_par can be read?
 PRO MDAP_READ_OUTPUT, $
 		file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
 		signal=signal, noise=noise, bin_type=bin_type, bin_par=bin_par, $
@@ -530,9 +535,9 @@ PRO MDAP_READ_OUTPUT, $
 		wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
 		xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
 		bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
-		threshold_ston_analysis=threshold_ston_analysis, analysis_par=analysis_par, $
-		weights_ppxf=weights_ppxf, add_poly_coeff_ppxf=add_pol_coeff_ppxf, $
-		mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
+		threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
+		ems_line_key=ems_line_key, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
+		add_poly_coeff_ppxf=add_pol_coeff_ppxf, mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
 		stellar_kinematics_fit=stellar_kinematics_fit, $
 		stellar_kinematics_err=stellar_kinematics_err, chi2_ppxf=chi2_ppxf, $
 		obj_fit_mask_ppxf=obj_fit_mask_ppxf, bestfit_ppxf=bestfit_ppxf, $
@@ -551,36 +556,38 @@ PRO MDAP_READ_OUTPUT, $
 		reddening_val=reddening_val, reddening_err=reddening_err, $
 		obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
 		eml_model=eml_model, optimal_template=optimal_template, $
-		losvd_optimal_template=losvd_optimal_template
+		losvd_optimal_template=losvd_optimal_template, abs_par=abs_par, $
+		abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
+		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
 
 	if file_test(file) eq 0 then $				; Make sure file exists
 	    message, 'File does not exist!'
 
 	; Check that the file looks like a DAP file
-	if MDAP_READ_OUTPUT_CHECK_FILE(file) eq 0 then $
+	if MDAP_CHECK_OUTPUT_FILE(file) eq 0 then $
 	    message, 'File does not have DAP-like (hard-coded) properties!'
 
 	; If the header is needed/requested, read it
 	if MDAP_READ_NEED_HEADER(header, dx, dy, w_range_sn, bin_type, bin_par, $
 				 threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
-				 analysis_par) ne 0 then begin
+				 analysis_par, tpl_library_key, ems_line_key, $
+				 abs_line_key) ne 0 then begin
+
 	    header=headfits(file, exten=0)
 	    MDAP_READ_SET_HEADER_DATA, header, dx, dy, w_range_sn, bin_type, bin_par, $
 				       threshold_ston_bin, w_range_analysis, $
-				       threshold_ston_analysis, analysis_par
+				       threshold_ston_analysis, analysis_par, tpl_library_key, $
+				       ems_line_key, abs_line_key
 	endif
-
-		
 
 	; Read the DRPS extension if any of its vectors are requested
-	if MDAP_READ_WANT_DRPS(xpos, ypos, signal, noise, bin_indx, bin_weights) eq 1 then begin
-		MDAP_READ_DRPS, file, xpos, ypos, signal, noise, bin_indx, bin_weights
-	endif
+	if MDAP_READ_WANT_DRPS(xpos, ypos, signal, noise, bin_indx, bin_weights) eq 1 then $
+	    MDAP_READ_DRPS, file, xpos, ypos, signal, noise, bin_indx, bin_weights
 
 	; Read the BINS extension if any of its vectors are requested
-	if MDAP_READ_WANT_BINS(xbin, ybin, bin_area, bin_ston, bin_n, bin_flag) eq 1 then begin
-		MDAP_READ_BINS, file, xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
-	endif
+	if MDAP_READ_WANT_BINS(xbin, ybin, bin_area, bin_ston, bin_n, bin_flag) eq 1 then $
+	    MDAP_READ_BINS, file, xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
 
 	; Read the wavelength vector if requested
 	if n_elements(wave) ne 0 then $
@@ -611,8 +618,9 @@ PRO MDAP_READ_OUTPUT, $
 	if MDAP_READ_WANT_STFIT(weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
 				stellar_kinematics_fit, stellar_kinematics_err, $
 				chi2_ppxf) eq 1 then begin
-		MDAP_READ_STFIT, file, weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
-				 stellar_kinematics_fit, stellar_kinematics_err, chi2_ppxf
+
+	    MDAP_READ_STFIT, file, weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
+			     stellar_kinematics_fit, stellar_kinematics_err, chi2_ppxf
 	endif
 
 	; Read the fit_pixel mask resulting from PPXF only, if requested
@@ -631,14 +639,13 @@ PRO MDAP_READ_OUTPUT, $
 				emission_line_fluxes, emission_line_flxerr, emission_line_EWidth, $
 				emission_line_EW_err, reddening_val, reddening_err) eq 1 then begin
 
-		MDAP_READ_SGFIT, file, weights_gndf, mult_poly_coeff_gndf, $
-				 emission_line_kinematics_avg, emission_line_kinematics_aer, $
-				 chi2_gndf, emission_line_kinematics_ind, $
-				 emission_line_kinematics_ier, emission_line_omitted, $
-				 emission_line_intens, emission_line_interr, $
-				 emission_line_fluxes, emission_line_flxerr, $
-				 emission_line_EWidth, emission_line_EW_err, $
-				 reddening_val, reddening_err
+	    MDAP_READ_SGFIT, file, weights_gndf, mult_poly_coeff_gndf, $
+			     emission_line_kinematics_avg, emission_line_kinematics_aer, $
+			     chi2_gndf, emission_line_kinematics_ind, $
+			     emission_line_kinematics_ier, emission_line_omitted, $
+			     emission_line_intens, emission_line_interr, emission_line_fluxes, $
+			     emission_line_flxerr, emission_line_EWidth, emission_line_EW_err, $
+			     reddening_val, reddening_err
 
 	endif
 
@@ -661,6 +668,18 @@ PRO MDAP_READ_OUTPUT, $
 	; Read the losvd-broadened optimal template, if requested
 	if n_elements(losvd_optimal_template) ne 0 then $
 	    losvd_optimal_tempalte = MDAP_READ_IMG(file, 'BOTPL')
+
+	; Read the SIPAR extension if abs_par is requested
+	if MDAP_READ_WANT_SIPAR(abs_par) eq 1 then $
+	    MDAP_READ_SIPAR, file, abs_par
+
+	; Read the SINDX extension if any of its vectors are requested
+	if MDAP_READ_WANT_SINDX(abs_line_indx_omitted, abs_line_indx_val, abs_line_indx_err, $
+				abs_line_indx_otpl, abs_line_indx_botpl) eq 1 then begin
+
+	    MDAP_READ_SINDX, file, abs_line_indx_omitted, abs_line_indx_val, abs_line_indx_err, $
+			     abs_line_indx_otpl, abs_line_indx_botpl
+	endif
 
 END
 

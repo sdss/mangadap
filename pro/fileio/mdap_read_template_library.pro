@@ -129,7 +129,6 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
 	    return, 2.73
 	endif else begin
 	    message, 'Unknown library keyword!'
-	    retall
 	endelse
 END	
 ;------------------------------------------------------------------------------

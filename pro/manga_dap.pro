@@ -173,8 +173,420 @@ PRO MDAP_GENERATE_OUTPUT_FILE_NAMES, $
 END
 
 FUNCTION MDAP_SET_TPL_LIB_OUTPUT_FILE, $
-		file_root, library_key
-	return, file_root+library_key+'.fits'
+		file_root, library_key, abs_line_key=abs_line_key
+	if n_elements(abs_line_key) eq 0 then $
+	    return, file_root+library_key+'.fits'
+
+	return, file_root+library_key+'_'+abs_line_key+'.fits'
+END
+
+FUNCTION MDAP_OUTPUT_TABLE_ROWS, $
+		file, exten
+	unit = fxposit(file, exten)				; Set the header unit
+	hdr = headfits(unit)					; Read it
+	free_lun, unit						; Free and close up the LUN
+	return, fxpar(hdr, 'NAXIS2')				; Read and return number of rows
+END
+
+FUNCTION MDAP_OUTPUT_COLUMN_SIZE, $
+		file, exten, col
+
+	fxbopen, unit, file, exten
+	ndim_col = fxbdimen(unit, col)
+	fxbclose, unit
+	free_lun, unit
+	return, ndim_col
+END
+
+FUNCTION MDAP_OUTPUT_IMAGE_SIZE, $
+		file, exten
+	unit = fxposit(file, exten)
+	hdr=headfits(unit)
+	free_lun, unit
+	return, [ fxpar(hdr, 'NAXIS1'), fxpar(hdr, 'NAXIS2') ]
+END
+
+; Tests if the existing STFIT data in the file matches the expectation from the
+; input analysis request
+FUNCTION MDAP_CAN_USE_STFIT_DATA, $
+		file, tpl_fits, analysis_par
+
+	bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')	; Dimensions of the binned spectra
+	ntpl = (MDAP_OUTPUT_IMAGE_SIZE(tpl_fits, 'FLUX'))[0]
+
+	; The STFIT table must be populated with the correct number of rows
+	if MDAP_OUTPUT_TABLE_ROWS(file, 'STFIT') ne bin_dim[0] then $
+	    return, 0
+
+	; The columns of the STFIT table must have the correct size
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'TPLW') ne ntpl then $
+	    return, 0
+	if analysis_par.degree gt 0 then begin
+	    if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'ADDPOLY') ne analysis_par.degree then $
+		return, 0
+	endif
+	if analysis_par.mdegree gt 0 then begin
+	    if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'MULTPOLY') ne analysis_par.mdegree then $
+		return, 0
+	endif
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'KIN') ne analysis_par.moments then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'KINERR') ne analysis_par.moments then $
+	    return, 0
+
+	; The SMSK and SMOD images must be the same size as the binned spectra
+	msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SMSK')
+	if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+	    return, 0
+	mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SMOD')
+	if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+	    return, 0
+
+	return, 1
+END
+
+PRO MDAP_ADD_STFIT, $
+		file, tpl_fits, analysis_par, perform_block
+
+	if MDAP_CAN_USE_STFIT_DATA(file, tpl_fits, analysis_par) eq 1 then begin
+	    perform_block.spec_fit = 0	; Do not perform the spectral fitting
+	endif else $
+	    perform_block.spec_fit = 1	; Peform the spectral fitting block
+
+	perform_block.ppxf_only = 1	; Only perform PPXF
+END
+
+
+; Tests if the existing SGFIT data in the file can be used directly
+; TODO: NUMBER OF MOMENTS IS HARDWIRED!!
+FUNCTION MDAP_CAN_USE_SGFIT_DATA, $
+		file, tpl_fits, eml_par, analysis_par
+
+	bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')	; Dimensions of the binned spectra
+	ntpl = (MDAP_OUTPUT_IMAGE_SIZE(tpl_fits, 'FLUX'))[0]	; Number of templates
+	neml = n_elements(eml_par)				; Number of emission lines
+
+	; The SGFIT table must have the correct number of rows (one per binned spectrum)
+	if MDAP_OUTPUT_TABLE_ROWS(file, 'SGFIT') ne bin_dim[0] then $
+	    return, 0
+
+	; The columns of the SGFIT table must have the correct size
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'TPLW') ne ntpl then $
+	    return, 0
+	if analysis_par.mdegree gt 0 then begin
+	    if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'MULTPOLY') ne analysis_par.mdegree then $
+		return, 0
+	endif
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'KIN') ne 2 then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'KINERR') ne 2 then $
+	    return, 0
+	if analysis_par.reddening_order gt 0 then begin
+	    if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT','RED') ne analysis_par.reddening_order then $
+		return, 0
+	    if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT','REDERR') ne analysis_par.reddening_order then $
+		return, 0
+	endif
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'ELOMIT') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'AMPL') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'AMPLERR') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'FLUX') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'FLUXERR') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'EW') ne neml then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'EWERR') ne neml then $
+	    return, 0
+	dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'IKIN')
+	if dim[0] ne neml or dim[1] ne 2 then $
+	    return, 0
+	dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'IKINERR')
+	if dim[0] ne neml or dim[1] ne 2 then $
+	    return, 0
+
+	; The SGMSK, SGMOD, and ELMOD images must be the same size as the binned spectra
+	msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SGMSK')
+	if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+	    return, 0
+	mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SGMOD')
+	if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+	    return, 0
+	elm_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELMOD')
+	if elm_dim[0] ne bin_dim[0] or elm_dim[1] ne bin_dim[1] then $
+	    return, 0
+
+	return, 1
+END
+
+; TODO: Order is important with respect to MDAP_ADD_STFIT.  If spec_fit is
+; already turned on, this function will not turn it off even if the SGFIT data is
+; valid!  This is NOT true of MDAP_ADD_STFIT.
+PRO MDAP_ADD_SGFIT, $
+		file, tpl_fits, eml_par, analysis_par, perform_block
+	; If it's already on, don't turn it off!
+	if perform_block.spec_fit eq 0 then begin
+	    if MDAP_CAN_USE_SGFIT_DATA(file, tpl_fits, eml_par, analysis_par) eq 1 then begin
+		perform_block.spec_fit = 0	; Do not perform the spectral fitting
+	    endif else $
+		perform_block.spec_fit = 1	; Must perform the spectral fitting
+	endif
+	perform_block.ppxf_only = 0		; Perform both PPXF and GANDALF
+END
+
+
+FUNCTION MDAP_CAN_USE_SINDX_DATA, $
+		file, abs_par
+
+	bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')	; Dimensions of the binned spectra
+	nabs = n_elements(abs_par)			; Number of spectral indices
+
+	; The SINDX table must have the correct number of rows (one per binned spectrum)
+	if MDAP_OUTPUT_TABLE_ROWS(file, 'SINDX') ne bin_dim[0] then $
+	    return, 0
+
+	; The columns of the SINDX table must have the correct size
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SINDX', 'SIOMIT') ne nabs then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SINDX', 'INDX') ne nabs then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SINDX', 'INDXERR') ne nabs then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SINDX', 'INDX_OTPL') ne nabs then $
+	    return, 0
+	if MDAP_OUTPUT_COLUMN_SIZE(file, 'SINDX', 'INDX_BOTPL') ne nabs then $
+	    return, 0
+
+	return, 1
+END
+
+; If adding the spectral index measurements, the file must have:
+;	- the template weights (need the same # of templates based on the provided template file)
+;	- the stellar kinematics (need the same number of binned spectra as in the file)
+;		THIS TEST CURRENTLY ONLY RUNS IF THE BINNED SPECTRA IN THE FILE ARE TO BE USED!
+;	- the best fitting spectra (must be same size as binned spectra)
+PRO MDAP_ADD_SINDX, $
+		file, abs_par, perform_block
+
+	if MDAP_CAN_USE_SINDX_DATA(file, abs_par) eq 1 then begin
+	    perform_block.spec_indx = 0		; Do not perform the absorption_line fitting
+	endif else $
+	    perform_block.spec_indx = 1
+END
+
+
+;-------------------------------------------------------------------------------
+; Set which analyses to perform for a new file
+PRO MDAP_NEW_FILE_BLOCKS, analysis, perform_block
+
+	; TODO: Somehow put this in a common area with MDAP_BUILD_EXECUTION_PLANS
+	perform_block.ston = 1		; Always perform the S/N block
+	perform_block.bin = 1		; Always perform the spatial binning
+
+	; Order is important for the first two if statements because of ppxf_only!
+	if analysis[0] eq 1 then begin	; Wants the stellar continuum fitting
+	    perform_block.spec_fit = 1		; Perform the spectral fit
+	    perform_block.ppxf_only = 1		; Only ppxf
+	endif
+
+	; For a new file, the emission-line fits, REQUIRES the stellar continuum fit
+	if analysis[1] eq 1 then begin	; Wants the emission-line fitting
+	    perform_block.spec_fit = 1		; Perform the spectral fit
+	    perform_block.ppxf_only = 0		; Not only ppxf
+	endif
+
+	; For a new file, the spectral index fits, REQUIRES the spectral fitting
+	if analysis[2] eq 1 then begin	; Wants the absorption-line indices
+	    perform_block.spec_fit = 1				; Perform the spectral fit
+	    perform_block.ppxf_only = analysis[1] eq 0 ? 1 : 0	; Check if ppxf only
+	    perform_block.spec_indx = 1				; Do the spectral index measurements
+	endif
+
+	; If it reaches here, only the S/N calculation and the binning are performed
+END
+
+; TODO: Should only reach here if the output file already exists!
+FUNCTION MDAP_PERFORM_STON_BLOCK, $
+		execution_plan, ndrp
+
+	; Conditions to return true:
+	;	A: overwrite is true
+	;	B: output DRPS extension does not have the correct size
+
+	; TODO: Should also eventually check (?):
+	;	- the spaxel size
+	;	- the S/N wavelength range
+	;	- the on-sky positions
+
+	; CASE A ---------------------------------------------------------------
+	if execution_plan.overwrite eq 1 then $
+	    return, 1
+
+	; CASE B ---------------------------------------------------------------
+	;   MDAP_CHECK_OUTPUT_FILE has already:
+	;	- Checked for the existence of the DRPS extension
+	;	- Checked that all the appropriate columns exist
+	;   Need to:
+	;	- Check the number of rows against the expected value
+	if MDAP_OUTPUT_TABLE_ROWS(execution_plan.ofile, 'DRPS') ne ndrp then $
+	    return, 1
+
+	return, 0		; Do not need to redo the S/N calculation
+END
+
+; TODO: Should only reach here if the output file already exists!
+FUNCTION MDAP_PERFORM_BIN_BLOCK, $
+		execution_plan, ndrp
+
+	; Conditions to return true:
+	;	A: overwrite is true
+	;	B: output DRPS extension does not have the correct size
+	;	C: output BINS extension does not have the correct size
+
+	; CASE A ---------------------------------------------------------------
+	if execution_plan.overwrite eq 1 then $
+	    return, 1
+
+	;   MDAP_CHECK_OUTPUT_FILE has already:
+	;	- Checked for the existence of the DRPS and BINS extension
+	;	- Checked that all the appropriate columns exist
+	;   Need to:
+
+	; CASE B ---------------------------------------------------------------
+	;	- Check the number of DRPS rows against the expected value
+	if MDAP_OUTPUT_TABLE_ROWS(execution_plan.ofile, 'DRPS') ne ndrp then $
+	    return, 1
+
+	; CASE C ---------------------------------------------------------------
+	;	- Check the number of BINS rows against the expected value
+	nbin = (MDAP_OUTPUT_IMAGE_SIZE(execution_plan.ofile, 'FLUX'))[0]
+	if MDAP_OUTPUT_TABLE_ROWS(execution_plan.ofile, 'BINS') ne nbin then $
+	    return, 1
+
+	return, 0		; Do not need to redo the spatial binning
+END
+
+; TODO: I want to be able to add extensions to a file for new blocks, without
+; having to redo old ones.  Will it do this already?
+FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
+		execution_plan, ndrp, tpl_fits, eml_par, abs_par
+
+	perform_block = { RequiredAnalysisBlock, ston:0, bin:0, spec_fit:0, ppxf_only:0, $
+						 spec_indx:0 }
+
+	; Determine if the output file already exists
+	file_exists = file_test(execution_plan.ofile)
+
+	; - If the file exists but does not look like a DAP file and the
+	;   overwrite flag has been set to false, throw an error
+	if file_exists eq 1 and execution_plan.overwrite eq 0 then begin
+	    if MDAP_CHECK_OUTPUT_FILE(execution_plan.ofile) eq 0 then $
+		message, execution_plan.ofile+' does not look like a DAP file.  To continue, ' + $
+			 'set overwrite flag to true (1).'
+	endif
+
+	; - If the file does not exist, make sure all (requested) blocks are
+	;   performed sequentially
+	if file_exists eq 0 then begin
+	    MDAP_NEW_FILE_BLOCKS, execution_plan.analysis, perform_block
+	    return, perform_block
+	endif
+
+	; TODO: If overwriting, some of the existing data may not correspond to
+	; the new analysis, but may not be overwritten.  How do I deal with this?
+	; Via the DATEMOD keyword?
+
+	; - The file exists, so now check the data in the different extentions
+
+	; TODO: This test is not really necessary; everything hinges on bin
+	; Peform the S/N block if:
+	;	A: overwrite is true
+	;	B: output DRPS extension does not have the correct size
+	;	C: not determined by MDAP_PERFORM_STON_BLOCK(), but below
+	perform_block.ston = MDAP_PERFORM_STON_BLOCK(execution_plan, ndrp)
+	
+	; Perform the BIN block if:
+	;	A; overwrite is true
+	;	B: output DRPS extension does not have the correct size
+	;	C: output BINS extension does not have the correct size
+	perform_block.bin = MDAP_PERFORM_BIN_BLOCK(execution_plan, ndrp)
+
+	; This is redundant with the next if statement
+;	if perform_block.bin eq 1 and perform_block.ston eq 0 then $
+;	    perform_block.ston = 1			; Always calculate S/N if binning
+
+	if perform_block.bin eq 1 then begin		; If rebinning, treat like a new file
+	    MDAP_NEW_FILE_BLOCKS, execution_plan.analysis, perform_block
+	    return, perform_block
+	endif
+
+	print, 'deciding'
+
+	; Order is important for these statements!
+	if execution_plan.analysis[0] eq 1 then begin
+	    MDAP_ADD_STFIT, execution_plan.ofile, tpl_fits, execution_plan.analysis_par, $
+			    perform_block
+	endif
+	if execution_plan.analysis[1] eq 1 then begin
+	    MDAP_ADD_SGFIT, execution_plan.ofile, tpl_fits, eml_par, execution_plan.analysis_par, $
+			    perform_block
+	endif
+
+	if execution_plan.analysis[2] eq 1 then begin	; Wants the absorption-line indices
+	    ; First check that at least the STFIT results are available
+	    if execution_plan.analysis[0] eq 0 and execution_plan.analysis[1] eq 0 then begin
+		MDAP_ADD_STFIT, execution_plan.ofile, tpl_fits, execution_plan.analysis_par, $
+				perform_block
+	    endif
+	    MDAP_ADD_SINDX, execution_plan.ofile, abs_par, perform_block
+	endif
+
+	return, perform_block				; All blocks should have been completed
+END
+
+FUNCTION MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED, $
+		perform_block
+
+	if perform_block.ston eq 0 and $
+	   perform_block.bin eq 0 and $
+	   perform_block.spec_fit eq 0 and $
+	   perform_block.spec_indx eq 0 then begin
+	    return, 1					; All the blocks have been completed
+	endif
+
+	return, 0					; Blocks need to be done
+END
+
+FUNCTION MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH, $
+		perform_block, ston=ston, bin=bin, spec_fit=spec_fit, spec_indx=spec_indx
+	if keyword_set(ston) then begin
+	    if perform_block.bin eq 0 and $
+	       perform_block.spec_fit eq 0 and $
+	       perform_block.spec_indx eq 0 then begin
+		return, 0
+	    endif
+	endif
+
+	if keyword_set(bin) then begin
+	    if perform_block.spec_fit eq 0 and $
+	       perform_block.spec_indx eq 0 then begin
+		return, 0
+	    endif
+	endif
+
+	if keyword_set(spec_fit) then begin
+	    if perform_block.spec_indx eq 0 then begin
+		return, 0
+	    endif
+	endif
+
+	if keyword_set(spec_indx) then $
+	    return, 0
+
+	return, 1					; Blocks need to be done
 END
 
 pro MANGA_DAP, $
@@ -195,11 +607,12 @@ pro MANGA_DAP, $
 
 	; Execute the script the sets the user-level execution parameters
 	MDAP_EXECUTION_SETUP, total_filelist, output_root_dir, tpl_library_keys, $
-			      template_libraries, tpl_vacuum_wave, emission_line_parameters, $
-			      ems_vacuum_wave, absorption_line_parameters, abs_vacuum_wave, $
-			      signifier, bin_type, bin_par, w_range_sn, threshold_ston_bin, $
-			      bin_weight_by_sn2, w_range_analysis, threshold_ston_analysis, $
-			      analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+			      template_libraries, tpl_vacuum_wave, ems_line_keys, $
+			      emission_line_parameters, ems_vacuum_wave, abs_line_keys, $
+			      absorption_line_parameters, abs_vacuum_wave, signifier, bin_type, $
+			      bin_par, w_range_sn, threshold_ston_bin, bin_weight_by_sn2, $
+			      w_range_analysis, threshold_ston_analysis, analysis, $
+			      tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
 			      overwrite_flag, analysis_par, $
 			      save_intermediate_steps=save_intermediate_steps, $
 			      remove_null_templates=remove_null_templates, $
@@ -326,12 +739,13 @@ pro MANGA_DAP, $
 ;	manga_dap_version_previous=0
 
 	mdap_read_drp_fits_version='0'
+	mdap_tpl_lib_setup_version='0'
 	mdap_calculate_sn_version='0'
 	mdap_spatial_binning_version='0'
 
 	MDAP_READ_DRP_FITS, version= mdap_read_drp_fits_version
 	mdap_fiducial_bin_xy_version = '0.1'
-	mdap_tpl_lib_setup_version = '0.1'
+	MDAP_CREATE_DAP_TEMPLATE_LIBRARY, version=mdap_tpl_lib_setup_version
 	MDAP_CALCULATE_SN, version=mdap_calculate_sn_version
 	MDAP_SPATIAL_BINNING, version=mdap_spatial_binning_version
 
@@ -379,6 +793,7 @@ pro MANGA_DAP, $
 	    MDAP_READ_DRP_FITS, datacube_name, header, flux, ivar, mask, wave, sres, skyx, skyy, $
 				type=mode, unit=unit
 	    mask[*,*] = 0.			; TODO: Unmask everything for now
+	    ndrp = (size(flux))[1]		; Number of DRP spectra
 
 	    ; Get the spaxel size
 	    MDAP_GET_SPAXEL_SIZE, header, spaxel_dx, spaxel_dy, type=mode, unit=unit
@@ -469,6 +884,9 @@ pro MANGA_DAP, $
 		use_tpl_lib[execution_plan[i].tpl_lib] = 1
 	endfor
 
+	; Get velocity scale of the galaxy data
+	velScale=MDAP_VELOCITY_SCALE(wave, /log10)
+
 	; Cycle through all the libraries, generating the template libraries to
 	; use for the analysis, if they don't already exist!
 	indx=where(use_tpl_lib eq 1)
@@ -478,90 +896,76 @@ pro MANGA_DAP, $
 		if use_tpl_lib[i] ne 1 then $
 		    continue
 
-		; TODO: Placeholder!  Need to replace with function that grabs
-		;	the library keyword.  Not sure how to do this yet.
-		;	Maybe have a predefined link between library_key and the
-		;	files to search for?
-		;library_key = MDAP_GET_TPL_LIB_KEY(template_libraries[i])
-		library_key = tpl_library_keys[i]; 'M11-MARCS'
-		tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, library_key)
+		; TODO: Need to rethink usage of setup procedure to define library keyword?
 
 		; TODO: What are the flux units for the templates?  Does it
-		; matter because I'm normalizing them?
+		; matter because I'm renormalizing them?
 
 		; TODO: Should the convolution conserve the integral of the template spectra?
 
-		; The file exists, so just continue
-		if file_test(tpl_out_fits) eq 1 then $
-		    continue
+		; Working template library used with MDAP_SPECTRAL_FITTING
+		tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, tpl_library_keys[i])
 
-		; Read the template library
-		MDAP_READ_TEMPLATE_LIBRARY, library_key, template_libraries[i], tpl_flux, $
-					    tpl_ivar, tpl_mask, tpl_wave, tpl_sres
+		; The file does not exist, so create it
+		if file_test(tpl_out_fits) eq 0 then begin
+		    MDAP_CREATE_DAP_TEMPLATE_LIBRARY, tpl_out_fits, tpl_library_keys[i], $
+						      template_libraries[i], tpl_vacuum_wave[i], $
+						      velocity_initial_guess, wave, sres, $
+						      velscale, quiet=quiet
 
-		; Convert the wavelengths to vacuum if necessary
-		; TODO: Does not account for the effect on the spectral resolution
-		if tpl_vacuum_wave[i] eq 0 then $
-		    AIRTOVAC, tpl_wave
+		    if ~keyword_set(nolog) then begin
+			printf, log_file_unit, '[INFO] Read template library: '+tpl_library_keys[i]
+			printf, log_file_unit, '[INFO] Resolution and sampling matched to: ' + $
+				datacube_name
+			printf, log_file_unit,'[INFO] Template library setup done using version: ' $
+				+ mdap_tpl_lib_setup_version
+			printf, log_file_unit, '[INFO] Results written to: ' + tpl_out_fits
+		    endif
 
-		; TODO: Need to limit template wavelength range before running
-		; the resolution matching procedure to avoid extrapolation
-		; errors.  As with the matching, this trimming accounts for the
-		; guess redshift of the galaxy.
-
-		; Limit the spectral range of the templates to be the same as the galaxy spectra
-		c=299792.458d				; Speed of light in km/s
-		z_guess = velocity_initial_guess / c	; Guess redshift
-		if ~keyword_set(quiet) then begin
-		    print, 'Trimming templates to ' + MDAP_STC(min(wave/(1+z_guess))) + $
-			   'A to ' + MDAP_STC(max(wave/(1+z_guess))) + 'A'
 		endif
 
-		MDAP_TRIM_SPECTRAL_RANGE, tpl_flux, tpl_ivar, tpl_mask, tpl_sres, tpl_wave, $
-					  ([min(wave/(1+z_guess)), max(wave/(1+z_guess))])
+		for j=0,n_plans-1 do begin
 
-		; Match the resolution of the templates to the galaxy data
-		; accounting for the guess redshift of the galaxy.
-		MDAP_MATCH_RESOLUTION_TPL2OBJ, tpl_flux, tpl_ivar, tpl_mask, tpl_wave, $
-					       tpl_sres, wave/(1+z_guess), sres, tpl_soff, $
-					       /no_offset
+		    ; Absorption-line analysis not performed so continue
+		    if execution_plan[j].abs_par eq -1 then $
+			continue
 
-		; Get velocity scale of the galaxy data
-		velScale=MDAP_VELOCITY_SCALE(wave, /log10)
+		    ; Working template library used with MDAP_MEASURE_INDICES
+		    tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
+								tpl_library_keys[i], $
+					abs_line_key=abs_line_keys[execution_plan[j].abs_par])
 
-		; Resample the templates to match the object spectra: On input,
-		; tpl_wave expected to have the same size as tpl_flux
-		; (wavelength defined separately for each spectrum); on output,
-		; tpl_wave and tpl_sres are single vectors common to ALL
-		; template spectra.  Sampling is forced to match galaxy
-		; sampling, via velscale
-		MDAP_RESAMPLE_TEMPLATES, tpl_flux, tpl_ivar, tpl_mask, tpl_wave, tpl_sres, $
-					 velScale, /reform_sres
+		    ; The file exists, so continue
+		    if file_test(tpl_out_fits) eq 1 then $
+			continue
 
-		; Normalize the templates and save the normalization
-		MDAP_NORMALIZE_TEMPLATES, tpl_flux, tpl_ivar, tpl_mask, tpl_flux_norm
+		    ; Get the spectral resolution vector
+		    abs_sres = MDAP_ABS_LINE_RESOLUTION(abs_line_keys[execution_plan[j].abs_par], $
+							wave)
 
-		; Write the template data to a fits file
-		MDAP_WRITE_RESAMPLED_TEMPLATES, tpl_out_fits, library_key, z_guess, tpl_flux_norm, $
-						mdap_tpl_lib_setup_version, tpl_wave, tpl_flux, $
-						tpl_ivar, tpl_mask, tpl_sres, tpl_soff
+		    ; Create the template library with resolution matched to the
+		    ; absorption-line index system
+		    MDAP_CREATE_DAP_TEMPLATE_LIBRARY, tpl_out_fits, tpl_library_keys[i], $
+						      template_libraries[i], tpl_vacuum_wave[i], $
+						      velocity_initial_guess, wave, abs_sres, $
+						      velscale, quiet=quiet
 
-		if ~keyword_set(nolog) then begin
-		    printf, log_file_unit, '[INFO] Read template library: ' + library_key
-		    printf, log_file_unit, '[INFO] Resolution and sampling matched to: ' + $
-			    datacube_name
-		    printf, log_file_unit,'[INFO] Template library setup done using version: ' + $
-			    mdap_tpl_lib_setup_version
-		    printf, log_file_unit, '[INFO] Results written to: ' + tpl_out_fits
-		endif
+		    if ~keyword_set(nolog) then begin
+			printf, log_file_unit, '[INFO] Read template library: '+tpl_library_keys[i]
+			printf, log_file_unit, '[INFO] Resolution and sampling matched to: ' + $
+				datacube_name
+			printf, log_file_unit,'[INFO] Template library setup done using version: ' $
+				+ mdap_tpl_lib_setup_version
+			printf, log_file_unit, '[INFO] Results written to: ' + tpl_out_fits
+		    endif
+
+		endfor	; Loop over execution plans
 	    endfor	; Loop over template libraries
-	endif	; If any template libraries are used
+	endif		; If any template libraries are used
 
 	if ~keyword_set(quiet) then $
 	    print, 'BLOCK 2 ... DONE.'
 	; END BLOCK 2 ----------------------------------------------------------
-
-
 
 	;-----------------------------------------------------------------------
 	; ANALYSIS PREP --------------------------------------------------------
@@ -588,122 +992,16 @@ pro MANGA_DAP, $
 	    if ~keyword_set(quiet) then $
 		print, 'Beginning ExecutionPlans: ', i+1
 
-	    ; TODO: If previous file exists, read or overwrite it?
-
-	    ; BLOCK 3 ----------------------------------------------------------
-	    ; S/N CALCULATION
 	    ;-------------------------------------------------------------------
-	    if ~keyword_set(quiet) then $
-		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ...'
-
-	    ; Determine the 'good' spectra based on a set of criteria defined by
-	    ; this procedure
-	    ;	TODO: Currently gindx is not used.
-	    ;	      gflag is used by MDAP_CALCULATE_SN and MDAP_SPATIAL_BINNING
-	    MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
-
-	    ; Select the pixels to use in the S/N calculation
-	    MDAP_SELECT_WAVE, wave, execution_plan[i].wave_range_sn, lam_sn
-
-	    ; Calculate the S/N per pixel over some wavelength range
-	    MDAP_CALCULATE_SN, flux, ivar, mask, wave, lam_sn, signal, noise, gflag=gflag
-
-	    ; Write the version of the S/N calculate ot the header
-	    SXADDPAR, header, 'VDAPSTON', mdap_calculate_sn_version, 'mdap_calculate_sn version'
-
-	    ; Add some information to the log
-	    if ~keyword_set(nolog) then begin
-		printf, log_file_unit, '[INFO] S/N calculation over range: ', $
-			execution_plan[i].wave_range_sn
-		printf, log_file_unit, '[INFO] S/N calculation done using version: ' + $
-			mdap_calculate_sn_version
+	    ; Get the nominal name for the template library.  This is used to
+	    ; determine which blocks to execute (via perform_block).  This file
+	    ; is only used if checking to add the SINDX results.  I.e., this
+	    ; needs to be here to pass to MDAP_ANALYSIS_BLOCKS_TO_PERFORM, but
+	    ; it is not used unless execution_plan[i].analysis[2] eq 1.
+	    if execution_plan[i].tpl_lib ne -1 then begin
+		tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
+							tpl_library_keys[execution_plan[i].tpl_lib])
 	    endif
-
-	    ; Write basics of the DRP fits files
-	    ; TODO: Can free memory for variables if they won't be used again.  Do this?
-	    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, dx=spaxel_dx, dy=spaxel_dy, $
-			       w_range_sn=execution_plan[i].wave_range_sn, xpos=bskyx, ypos=bskyy, $
-			       signal=signal, noise=noise, quiet=quiet
-
-	    if ~keyword_set(quiet) then $
-		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ... DONE.'
-	    ; END BLOCK 3 ------------------------------------------------------
-	    ;-------------------------------------------------------------------
-
-
-	    ; BLOCK 4 ----------------------------------------------------------
-	    ; Spatial binning
-	    ;-------------------------------------------------------------------
-	    if ~keyword_set(quiet) then $
-		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ...'
-
-	    ; TODO: If previous file exists, read or overwrite it?
-
-	    MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, bskyx, bskyy, spaxel_dx, $
-				  spaxel_dy, execution_plan[i].bin_type, $
-				  execution_plan[i].bin_par, execution_plan[i].threshold_ston_bin, $
-				  execution_plan[i].bin_weight_by_sn2, bin_wgts, bin_indx, $
-				  bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_area, bin_ston, $
-				  nbin, sn_calibration=sn_calibration, plot=plot
-
-	    ; Write the version of the spatial binning to the header
-	    SXADDPAR, header, 'VDAPBIN', mdap_spatial_binning_version, $
-		      'mdap_spatial_binning version'
-
-	    ; Add some information to the log
-	    if ~keyword_set(nolog) then begin
-		printf, log_file_unit, '[INFO] Type of spatial binning: ', $
-			execution_plan[i].bin_type
-		printf, log_file_unit, '[INFO] Spatial bining version: ' + $
-			mdap_spatial_binning_version
-		if execution_plan[i].bin_type ne 'NONE' then begin
-		    if n_elements(execution_plan[i].bin_par) then $
-			printf, log_file_unit, '[INFO] Bin parameter: ', execution_plan[i].bin_par
-		    printf, log_file_unit, '[INFO] Bin threshold S/N: ', $
-			    execution_plan[i].threshold_ston_bin
-		    printf, log_file_unit, '[INFO] Weight by S/N^2: ', $
-			    execution_plan[i].bin_weight_by_sn2
-		endif
-		printf, log_file_unit, '[INFO] Number of bins: ', n_elements(nbin)
-	    endif
-
-	    ; Write the binning results
-	    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
-			       bin_type=execution_plan[i].bin_type, $
-			       bin_par=execution_plan[i].bin_par, $
-			       threshold_ston_bin=execution_plan[i].threshold_ston_bin, $
-			       bin_indx=bin_indx, bin_weights=bin_wgts, wave=wave, sres=sres, $
-			       bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
-			       xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, $
-			       bin_n=nbin, /read_header, quiet=quiet
-
-	    if ~keyword_set(quiet) then $
-		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ... DONE.'
-	    ; END BLOCK 4 ------------------------------------------------------
-	    ;-------------------------------------------------------------------
-
-
-
-	    ; ##################################################################
-	    ; BEGIN computation of "model-independent" data products ###########
-
-
-
-	    ;-------------------------------------------------------------------
-	    ; Check if any analysis was requested, if not continue with the loop
-	    indx = where(execution_plan[i].analysis eq 1)
-	    if indx[0] eq -1 then $		; No analysis to perform
-	    	continue
-
-	    ;-------------------------------------------------------------------
-	    ; Read the pre-existing template library
-	    ;	The template library is required for ANY analysis
-	    ; TODO: Should not be able to reach here without first creating tpl_out_fits!
-	    library_key = tpl_library_keys[execution_plan[i].tpl_lib]; 'M11-MARCS'
-	    tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, library_key)
-	   
-	    MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
-					   tpl_sres, tpl_soff
 
 	    ;-------------------------------------------------------------------
 	    ; Read the emission line file; this is done at every iteration
@@ -722,6 +1020,222 @@ pro MANGA_DAP, $
 	    endif else $
 		MDAP_ERASEVAR, eml_par	; Make sure it doesn't exist if no ems_par is defined
 
+	    ;-------------------------------------------------------------------
+	    ; Read the absorption-line parameters; this is done at every
+	    ; iteration because it's fairly quick.  TODO: Check that this I/O
+	    ; doesn't slow things down too much!
+	    if execution_plan[i].abs_par ne -1 then begin
+		abs_par = MDAP_READ_ABSORPTION_LINE_PARAMETERS( absorption_line_parameters[ $
+								 execution_plan[i].abs_par ])
+		nabs = n_elements(abs_par)		; Number of absorption-line indices
+		if abs_vacuum_wave[ execution_plan[i].abs_par ] eq 0 then begin
+		    for j=0,nabs-1 do begin
+			AIRTOVAC, abs_par[j].passband, lam
+			abs_par[j].passband = lam
+			AIRTOVAC, abs_par[j].blue_cont, lam
+			abs_par[j].blue_cont = lam
+			AIRTOVAC, abs_par[j].red_cont, lam
+			abs_par[j].red_cont = lam
+		    endfor
+		endif
+	    endif else $
+		MDAP_ERASEVAR, abs_par	; Make sure it doesn't exist if no abs_par is defined
+
+	    ; Setup which analysis blocks (3-6) to perform
+	    perform_block = MDAP_ANALYSIS_BLOCKS_TO_PERFORM(execution_plan[i], ndrp, tpl_out_fits, $
+							    eml_par, abs_par)
+
+	    if MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED(perform_block) eq 1 then begin
+		if ~keyword_set(quiet) then $
+		    print, 'All blocks previously completed for ExecutionPlan: ', i+1
+		continue
+	    endif
+
+	    ; Alert the user which blocks will be performed
+	    print, 'Blocks to perform:'
+	    if perform_block.ston eq 1 then begin
+		print, '    S/N calculation: YES'
+	    endif else $
+		print, '    S/N calculation: NO'
+	    if perform_block.bin eq 1 then begin
+		print, '    Spatial binning: YES'
+	    endif else $
+		print, '    Spatial binning: NO'
+	    if perform_block.spec_fit eq 1 then begin
+		print, '    Spectral fitting: YES'
+		if perform_block.ppxf_only eq 1 then begin
+		    print, '        PPXF ONLY: YES'
+		endif else $
+		    print, '        PPXF ONLY: NO'
+	    endif else $
+		print, '    Spectral fitting: NO'
+	    if perform_block.spec_indx eq 1 then begin
+		print, '    Spectral indices: YES'
+	    endif else $
+		print, '    Spectral indices: NO'
+
+	    ; BLOCK 3 ----------------------------------------------------------
+	    ; S/N CALCULATION
+	    ;-------------------------------------------------------------------
+	    if ~keyword_set(quiet) then $
+		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ...'
+
+	    if perform_block.ston eq 1 then begin
+
+		; Determine the 'good' spectra based on a set of criteria
+		; defined by this procedure
+
+		; TODO: Currently gindx is not used.  gflag is used by
+		;	MDAP_CALCULATE_SN and MDAP_SPATIAL_BINNING
+
+		MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
+
+		; Select the pixels to use in the S/N calculation
+		MDAP_SELECT_WAVE, wave, execution_plan[i].wave_range_sn, lam_sn
+
+		; Calculate the S/N per pixel over some wavelength range
+		MDAP_CALCULATE_SN, flux, ivar, mask, wave, lam_sn, signal, noise, gflag=gflag
+
+		; Write the version of the S/N calculate ot the header
+		SXADDPAR, header, 'VDAPSTON', mdap_calculate_sn_version, 'mdap_calculate_sn version'
+
+		; Add some information to the log
+		if ~keyword_set(nolog) then begin
+		    printf, log_file_unit, '[INFO] S/N calculation over range: ', $
+			    execution_plan[i].wave_range_sn
+		    printf, log_file_unit, '[INFO] S/N calculation done using version: ' + $
+			    mdap_calculate_sn_version
+		endif
+
+		; Write basics of the DRP fits files
+		; TODO: Can free memory for variables if they won't be used again.  Do this?
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, dx=spaxel_dx, $
+				   dy=spaxel_dy, w_range_sn=execution_plan[i].wave_range_sn, $
+				   xpos=bskyx, ypos=bskyy, signal=signal, noise=noise, quiet=quiet
+
+	    endif else begin
+		; TODO: spaxel_dx, spaxel_dy, bskyx, and bskyy are always
+		;	calculated!  Should they be reread here?
+
+		print, 'READING EXISTING S/N DATA'
+
+		MDAP_DEFINE_OUTPUT, header=header, dx=spaxel_dx, dy=spaxel_dy, xpos=bskyx, $
+				    ypos=bskyy, signal=signal, noise=noise
+		MDAP_READ_OUTPUT, execution_plan[i].ofile, header=header, dx=spaxel_dx, $
+				   dy=spaxel_dy, xpos=bskyx, ypos=bskyy, signal=signal, noise=noise
+	    endelse
+
+	    if ~keyword_set(quiet) then $
+		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ... DONE.'
+	    ; END BLOCK 3 ------------------------------------------------------
+	    ;-------------------------------------------------------------------
+
+	    if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /ston) eq 0 then $
+		continue
+
+	    ; BLOCK 4 ----------------------------------------------------------
+	    ; Spatial binning
+	    ;-------------------------------------------------------------------
+	    if ~keyword_set(quiet) then $
+		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ...'
+
+	    if perform_block.bin eq 1 then begin
+	    
+		MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, bskyx, bskyy, $
+				      spaxel_dx, spaxel_dy, execution_plan[i].bin_type, $
+				      execution_plan[i].bin_par, $
+				      execution_plan[i].threshold_ston_bin, $
+				      execution_plan[i].bin_weight_by_sn2, bin_wgts, bin_indx, $
+				      bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_area, $
+				      bin_ston, nbin, sn_calibration=sn_calibration, plot=plot
+
+		; Write the version of the spatial binning to the header
+		SXADDPAR, header, 'VDAPBIN', mdap_spatial_binning_version, $
+			  'mdap_spatial_binning version'
+
+		; Add some information to the log
+		if ~keyword_set(nolog) then begin
+		    printf, log_file_unit, '[INFO] Type of spatial binning: ', $
+			    execution_plan[i].bin_type
+		    printf, log_file_unit, '[INFO] Spatial bining version: ' + $
+			    mdap_spatial_binning_version
+		    if execution_plan[i].bin_type ne 'NONE' then begin
+			if n_elements(execution_plan[i].bin_par) then begin
+			    printf, log_file_unit, '[INFO] Bin parameter: ', $
+				    execution_plan[i].bin_par
+			endif
+			printf, log_file_unit, '[INFO] Bin threshold S/N: ', $
+				execution_plan[i].threshold_ston_bin
+			printf, log_file_unit, '[INFO] Weight by S/N^2: ', $
+				execution_plan[i].bin_weight_by_sn2
+		    endif
+		    printf, log_file_unit, '[INFO] Number of bins: ', n_elements(nbin)
+		endif
+
+		; Write the binning results
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
+				   bin_type=execution_plan[i].bin_type, $
+				   bin_par=execution_plan[i].bin_par, $
+				   threshold_ston_bin=execution_plan[i].threshold_ston_bin, $
+				   bin_indx=bin_indx, bin_weights=bin_wgts, wave=wave, sres=sres, $
+				   bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
+				   xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, $
+				   bin_n=nbin, /read_header, quiet=quiet
+	    endif else begin
+
+		print, 'READING EXISTING BIN DATA'
+
+		; Read the binning results
+		MDAP_DEFINE_OUTPUT, header=header, bin_indx=bin_indx, bin_weights=bin_wgts, $
+				    bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
+				    xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, $
+				    bin_n=nbin
+		MDAP_READ_OUTPUT, execution_plan[i].ofile, header=header, bin_indx=bin_indx, $
+				  bin_weights=bin_wgts, bin_flux=bin_flux, bin_ivar=bin_ivar, $
+				  bin_mask=bin_mask, xbin=xbin, ybin=ybin, bin_area=bin_area, $
+				  bin_ston=bin_ston, bin_n=nbin
+
+		; Check the size against the read in DRP data
+		; TODO: Given the way the perform_block structure is created, is this necessary?
+		sz = size(bin_flux)
+		if sz[2] ne n_elements(wave) then $
+		    message, 'Read binned spectra do not have the same length as the DRP spectra!'
+
+	    endelse
+
+	    if ~keyword_set(quiet) then $
+		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ... DONE.'
+	    ; END BLOCK 4 ------------------------------------------------------
+	    ;-------------------------------------------------------------------
+
+
+	    if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /bin) eq 0 then $
+		continue
+
+
+	    ; ##################################################################
+	    ; BEGIN computation of "model-independent" data products ###########
+
+
+	    ; PREP FOR BLOCK 5 -------------------------------------------------
+	    ;-------------------------------------------------------------------
+	    ; Check if any analysis was requested, if not continue with the loop
+	    indx = where(execution_plan[i].analysis eq 1)
+	    if indx[0] eq -1 then $		; No analysis to perform
+	    	continue
+
+	    ;-------------------------------------------------------------------
+	    ; Read the pre-existing template library
+	    ;	The template library is required for ANY analysis
+	    ; TODO: Should not be able to reach here without first creating tpl_out_fits!
+	    tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
+							tpl_library_keys[execution_plan[i].tpl_lib])
+	   
+	    MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
+					   tpl_sres, tpl_soff
+
+	    ; TODO: Need to account for tpl_soff further down the line
+
 	    ; BLOCK 5 ----------------------------------------------------------
 	    ; Run a full spectral fit including stellar population, gas and
 	    ; stellar kinematics
@@ -730,102 +1244,234 @@ pro MANGA_DAP, $
 	    if ~keyword_set(quiet) then $
 		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ...'
 
-	    ; Set the starting guesses for the kinematics
-	    ; TODO: get the guesses from a cross-correlation with a guess template?
+	    if perform_block.spec_fit eq 1 then begin
 
-	    ; TODO: convert this to a procedure that could also read in guesses
-	    ; from a previous DAP-produced file
-	    star_kin_starting_guesses = dblarr(n_elements(xbin),4)
-	    star_kin_starting_guesses[*,0] = velocity_initial_guess		; stellar velocity
-	    star_kin_starting_guesses[*,1] = velocity_dispersion_initial_guess	; stellar sigma
-	    gas_kin_starting_guesses = star_kin_starting_guesses[*,0:1]		; gas velocity
-	    gas_kin_starting_guesses[*,1]=50.					; gas sigma
+		; TODO: Allow for starting guesses from a cross-correlation with
+		; a guess template?
 
-	    ; Set ppxf_only flag; if true (1), only PPXF is run, not GANDALF
-	    ppxf_only=0
-	    if execution_plan[i].analysis[0] eq 1 and execution_plan[i].analysis[1] eq 0 then $
-		ppxf_only=1		; Only execute the PPXF step
+		; TODO: Allow for starting guesses from a previous DAP-produced
+		; file
 
-	    ; Perform the spectral fit
-	    MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, tpl_flux, $
-				   tpl_ivar, tpl_mask, wavelength_output, obj_fit_mask_ppxf, $
-				   weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
-				   bestfit_ppxf, chi2_ppxf, obj_fit_mask_gndf, weights_gndf, $
-				   mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, $
-				   best_template, best_template_losvd_conv, stellar_kinematics, $
-				   stellar_kinematics_err, emission_line_kinematics, $
-				   emission_line_kinematics_err, emission_line_omitted, $
-				   emission_line_kinematics_individual, $
-				   emission_line_kinematics_individual_err, $
-				   emission_line_intens, emission_line_intens_err, $
-				   emission_line_fluxes, emission_line_fluxes_err, $
-				   emission_line_EW, emission_line_EW_err, reddening_output, $
-				   reddening_output_err, $
-				   analysis_par=execution_plan[i].analysis_par, $
-				   star_kin_starting_guesses=star_kin_starting_guesses, $
-				   gas_kin_starting_guesses=gas_kin_starting_guesses, $
-				   eml_par=eml_par, external_library=external_library, $
-				   wave_range_analysis=execution_plan[i].wave_range_analysis, $
-				   ppxf_only=ppxf_only, quiet=quiet, plot=plot, dbg=dbg
+		; Set the starting guesses for the kinematics
+		star_kin_guesses = dblarr(n_elements(xbin),4)
+		star_kin_guesses[*,0] = velocity_initial_guess			; stellar velocity
+		star_kin_guesses[*,1] = velocity_dispersion_initial_guess	; stellar sigma
+		gas_kin_guesses = star_kin_guesses[*,0:1]			; gas velocity
+		gas_kin_guesses[*,1]=50.					; gas sigma
 
-	    ; TODO: Add the spectral fitting version to the header of the output file
-	    ; TODO: Add information to the log file
+		; Perform the spectral fit
+		MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, $
+				       tpl_flux, tpl_ivar, tpl_mask, wavelength_output, $
+				       obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
+				       mult_poly_coeff_ppxf, bestfit_ppxf, chi2_ppxf, $
+				       obj_fit_mask_gndf, weights_gndf, mult_poly_coeff_gndf, $
+				       bestfit_gndf, chi2_gndf, eml_model, best_template, $
+				       best_template_losvd_conv, stellar_kinematics, $
+				       stellar_kinematics_err, emission_line_kinematics, $
+				       emission_line_kinematics_err, emission_line_omitted, $
+				       emission_line_kinematics_individual, $
+				       emission_line_kinematics_individual_err, $
+				       emission_line_intens, emission_line_intens_err, $
+				       emission_line_fluxes, emission_line_fluxes_err, $
+				       emission_line_EW, emission_line_EW_err, reddening_output, $
+				       reddening_output_err, $
+				       analysis_par=execution_plan[i].analysis_par, $
+				       star_kin_starting_guesses=star_kin_guesses, $
+				       gas_kin_starting_guesses=gas_kin_guesses, eml_par=eml_par, $
+				       external_library=external_library, $
+				       wave_range_analysis=execution_plan[i].wave_range_analysis, $
+				       ppxf_only=perform_block.ppxf_only, quiet=quiet, plot=plot, $
+				       dbg=dbg
 
-	    ; Write the analysis wavelength range to the header
-	    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
-			       w_range_analysis=execution_plan[i].wave_range_analysis, $
-			       threshold_ston_analysis=execution_plan[i].threshold_ston_analysis, $
-			       /read_header, quiet=quiet
+		; TODO: Add the spectral fitting version to the header of the
+		; output file, and add information to the log file
+
+		; TODO: Do I need the optimal template(s) anymore given the
+		; changes to the absorption-line measurement procedure?
+
+		; Write the analysis wavelength range to the header
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
+				   w_range_analysis=execution_plan[i].wave_range_analysis, $
+				threshold_ston_analysis=execution_plan[i].threshold_ston_analysis, $
+				   /read_header, quiet=quiet
 	    
-	    ; Write the emission line parameters
-	    if (execution_plan[i].analysis[0] eq 1 and n_elements(eml_par) ne 0 ) or $
-		execution_plan[i].analysis[1] eq 1 then begin
-		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, eml_par=eml_par, quiet=quiet
-	    endif
+		; Write the emission line parameters
+		if n_elements(eml_par) ne 0 then $
+		    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, eml_par=eml_par, quiet=quiet
 
-	    ; Write the stellar kinematics results; will always be done if
-	    ; program makes it here
-	    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
-			       obj_fit_mask_ppxf=obj_fit_mask_ppxf, weights_ppxf=weights_ppxf, $
-			       add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
-			       mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
-			       bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
-			       stellar_kinematics_fit=stellar_kinematics, $
-			       stellar_kinematics_err=stellar_kinematics_err, $
-			       analysis_par=execution_plan[i].analysis_par, /read_header, $
-			       quiet=quiet
+		; Write the stellar kinematics results; will always be done if
+		; program makes it here
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
+				   tpl_library_key=tpl_library_keys[i], $
+				   obj_fit_mask_ppxf=obj_fit_mask_ppxf, weights_ppxf=weights_ppxf, $
+				   add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
+				   mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
+				   bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
+				   stellar_kinematics_fit=stellar_kinematics, $
+				   stellar_kinematics_err=stellar_kinematics_err, $
+				   analysis_par=execution_plan[i].analysis_par, /read_header, $
+				   quiet=quiet
 
-	    ; Write the results of the emission-line fitting
-	    if execution_plan[i].analysis[1] eq 1 then begin
-		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, eml_par=eml_par, $
-				   obj_fit_mask_gndf=obj_fit_mask_gndf, weights_gndf=weights_gndf, $
-				   mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
-				   emission_line_kinematics_avg=emission_line_kinematics, $
-				   emission_line_kinematics_aer=emission_line_kinematics_err, $
-				   chi2_gndf=chi2_gndf, $
-			   emission_line_kinematics_ind=emission_line_kinematics_individual, $
-		   emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
-				   emission_line_omitted=emission_line_omitted, $
-				   emission_line_intens=emission_line_intens, $
-				   emission_line_interr=emission_line_intens_err, $
-				   emission_line_fluxes=emission_line_fluxes, $
-				   emission_line_flxerr=emission_line_fluxes_err, $
-				   emission_line_EWidth=emission_line_EW, $
-				   emission_line_EW_err=emission_line_EW_err, $
-				   reddening_val=reddening, reddening_err=reddening_err, $
-				   bestfit_gndf=bestfit_gndf, eml_model=eml_model, quiet=quiet
-	    endif
+		; Write the results of the emission-line fitting
+		if perform_block.ppxf_only eq 0 then begin
+		    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
+				       ems_line_key=ems_line_keys[i], eml_par=eml_par, $
+				       obj_fit_mask_gndf=obj_fit_mask_gndf, $
+				       weights_gndf=weights_gndf, $
+				       mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
+				       emission_line_kinematics_avg=emission_line_kinematics, $
+				       emission_line_kinematics_aer=emission_line_kinematics_err, $
+				       chi2_gndf=chi2_gndf, $
+				emission_line_kinematics_ind=emission_line_kinematics_individual, $
+			emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+				       emission_line_omitted=emission_line_omitted, $
+				       emission_line_intens=emission_line_intens, $
+				       emission_line_interr=emission_line_intens_err, $
+				       emission_line_fluxes=emission_line_fluxes, $
+				       emission_line_flxerr=emission_line_fluxes_err, $
+				       emission_line_EWidth=emission_line_EW, $
+				       emission_line_EW_err=emission_line_EW_err, $
+				       reddening_val=reddening, reddening_err=reddening_err, $
+				       bestfit_gndf=bestfit_gndf, eml_model=eml_model, $
+				       quiet=quiet, /read_header
+		endif
 
-	    ; Write the optimal templates and optimal template convolved with
-	    ; the LOSVD; see MDAP_SPECTRAL_FITTING on how these are generated.
-	    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, optimal_template=best_template, $
-			       losvd_optimal_template=best_template_losvd_conv, quiet=quiet
+		; TODO: Is having the "optimal templates" useful?  Or should I be
+		; outputing the observed spectra and the optimal templates that
+		; are resolution-matched to the absorption-line index system?
+
+		; Write the optimal templates and optimal template convolved
+		; with the LOSVD; see MDAP_SPECTRAL_FITTING on how these are
+		; generated.
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, optimal_template=best_template, $
+				   losvd_optimal_template=best_template_losvd_conv, quiet=quiet
+	    endif else begin
+
+		print, 'reading spec_fit data'
+
+		; TODO: Here, I attempt to read the emission-line fitting
+		; results.  The choice of the weights to use in the next block
+		; critically depends on the size of the weights_gndf array.  If
+		; it doesn't match the necessary size, weights_ppxf is used!
+		; Add a flag to the header saying the extension is populated?
+		MDAP_DEFINE_OUTPUT, obj_fit_mask_ppxf=obj_fit_mask_ppxf, $
+				    weights_ppxf=weights_ppxf, $
+				    add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
+				    mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
+				    bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
+				    stellar_kinematics_fit=stellar_kinematics, $
+				    stellar_kinematics_err=stellar_kinematics_err, $
+				    optimal_template=best_template, $
+				    losvd_optimal_template=best_template_losvd_conv, $
+				    obj_fit_mask_gndf=obj_fit_mask_gndf, $
+				    weights_gndf=weights_gndf, $
+				    mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
+				    emission_line_kinematics_avg=emission_line_kinematics, $
+				    emission_line_kinematics_aer=emission_line_kinematics_err, $
+				    chi2_gndf=chi2_gndf, $
+			emission_line_kinematics_ind=emission_line_kinematics_individual, $
+			emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+				    emission_line_omitted=emission_line_omitted, $
+				    emission_line_intens=emission_line_intens, $
+				    emission_line_interr=emission_line_intens_err, $
+				    emission_line_fluxes=emission_line_fluxes, $
+				    emission_line_flxerr=emission_line_fluxes_err, $
+				    emission_line_EWidth=emission_line_EW, $
+				    emission_line_EW_err=emission_line_EW_err, $
+				    reddening_val=reddening, reddening_err=reddening_err, $
+				    bestfit_gndf=bestfit_gndf, eml_model=eml_model
+
+		MDAP_READ_OUTPUT, execution_plan[i].ofile, header=header, $
+				  obj_fit_mask_ppxf=obj_fit_mask_ppxf, weights_ppxf=weights_ppxf, $
+				  add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
+				  mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
+				  bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
+				  stellar_kinematics_fit=stellar_kinematics, $
+				  stellar_kinematics_err=stellar_kinematics_err, $
+				  optimal_template=best_template, $
+				  losvd_optimal_template=best_template_losvd_conv, $
+				  obj_fit_mask_gndf=obj_fit_mask_gndf, $
+				  weights_gndf=weights_gndf, $
+				  mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
+				  emission_line_kinematics_avg=emission_line_kinematics, $
+				  emission_line_kinematics_aer=emission_line_kinematics_err, $
+				  chi2_gndf=chi2_gndf, $
+			emission_line_kinematics_ind=emission_line_kinematics_individual, $
+			emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+				  emission_line_omitted=emission_line_omitted, $
+				  emission_line_intens=emission_line_intens, $
+				  emission_line_interr=emission_line_intens_err, $
+				  emission_line_fluxes=emission_line_fluxes, $
+				  emission_line_flxerr=emission_line_fluxes_err, $
+				  emission_line_EWidth=emission_line_EW, $
+				  emission_line_EW_err=emission_line_EW_err, $
+				  reddening_val=reddening, reddening_err=reddening_err, $
+				  bestfit_gndf=bestfit_gndf, eml_model=eml_model
+	    endelse
 
 	    if ~keyword_set(quiet) then $
 		print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ... DONE.'
 
 	    ; END BLOCK 5 ------------------------------------------------------
 	    ;-------------------------------------------------------------------
+
+	    if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /spec_fit) eq 0 then $
+		continue
+
+	    ; BLOCK 6 ----------------------------------------------------------
+	    ; Measure the absorption-line indices
+	    ;-------------------------------------------------------------------
+
+	    ; Check if absorption-line indices should be measured
+	    if perform_block.spec_indx eq 1 then begin
+
+		if ~keyword_set(quiet) then $
+		    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ...'
+
+		;---------------------------------------------------------------
+		; Get the weights to use to combine the templates, the bestfit
+		; to the spectrum, and the emission-line model.
+		; TODO: This is based on the size of the weights_gndf vector!
+		if (size(weights_gndf))[2] ne (size(tpl_flux))[1] then begin
+		    print, 'using ppxf results'
+		    weights = weights_ppxf
+		    bestfit = bestfit_ppxf
+		    sz = size(bin_flux)
+		    eml_model = dblarr(sz[1], sz[2])	; No emission-line model
+		endif else begin
+		    print, 'using gndf results'
+		    weights = weights_gndf
+		    bestfit = bestfit_gndf
+		endelse
+
+		; Perform the measurements
+		MDAP_ABSORPTION_LINE_INDEX_MEASUREMENTS, tpl_out_fits, weights, $
+					stellar_kinematics, abs_par, wave, sres, bin_flux, $
+					bin_ivar, bin_mask, bestfit, eml_model, $
+					abs_line_indx_omitted, abs_line_indx, abs_line_indx_err, $
+					abs_line_indx_otpl, abs_line_indx_botpl, $
+					moments=execution_plan[i].analysis_par.moments, $
+					output_file_root=output_file_root, dbg=dbg
+
+		; TODO: For now using ivar for error.  Use residual instead?
+
+		; Write the data to the output file
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, abs_line_key=abs_line_keys[i], $
+				   abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
+				   abs_line_indx_val=abs_line_indx, $
+				   abs_line_indx_err=abs_line_indx_err, $
+				   abs_line_indx_otpl=abs_line_indx_otpl, $
+				   abs_line_indx_botpl=abs_line_indx_botpl, quiet=quiet, $
+				   /read_header
+
+		if ~keyword_set(quiet) then $
+		    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
+
+	    endif
+
+
+	    ; If other blocks added, decide whether or not the absorption-line
+	    ; indices need to be read in!
 
 
 	    ; END computation of "model-independent" data products #############

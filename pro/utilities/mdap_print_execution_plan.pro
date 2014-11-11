@@ -92,12 +92,13 @@ PRO MDAP_PRINT_EXECUTION_PLAN, $
 ;		endif
 ;	    endfor
 
-	    print, '    Template library: ', template_libraries[execution_plan.tpl_lib]
-	    if execution_plan.analysis[1] eq 1 or execution_plan.analysis[2] eq 1 then begin
+	    if execution_plan.tpl_lib ne -1 then $
+		print, '    Template library: ', template_libraries[execution_plan.tpl_lib]
+	    if execution_plan.ems_par ne -1 then begin
 		print, '    Emission-line parameters: ', $
 			emission_line_parameters[execution_plan.ems_par]
 	    endif
-	    if execution_plan.analysis[2] eq 1 then begin
+	    if execution_plan.abs_par ne -1 then begin
 		print, '    Absorption-line parameters: ', $
 			absorption_line_parameters[execution_plan.abs_par]
 	    endif
