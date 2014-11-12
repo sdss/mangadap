@@ -204,9 +204,9 @@ PRO MDAP_DEFINE_OUTPUT, $
 		wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
 		xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
 		bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
-		threshold_ston_analysis=threshold_ston_analysis, analysis_par=analysis_par, $
-		weights_ppxf=weights_ppxf, add_poly_coeff_ppxf=add_pol_coeff_ppxf, $
-		mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
+		threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
+		ems_line_key=ems_line_key, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
+		add_poly_coeff_ppxf=add_pol_coeff_ppxf, mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
 		stellar_kinematics_fit=stellar_kinematics_fit, $
 		stellar_kinematics_err=stellar_kinematics_err, chi2_ppxf=chi2_ppxf, $
 		obj_fit_mask_ppxf=obj_fit_mask_ppxf, bestfit_ppxf=bestfit_ppxf, $
@@ -224,8 +224,13 @@ PRO MDAP_DEFINE_OUTPUT, $
 		emission_line_EW_err=emission_line_EW_err, $
 		reddening_val=reddening_val, reddening_err=reddening_err, $
 		obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-		eml_model=eml_model, optimal_template=optimal_template, $
-		losvd_optimal_template=losvd_optimal_template
+		eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+		abs_line_indx_omitted=abs_line_indx_omitted, abs_line_indx_val=abs_line_indx_val, $
+		abs_line_indx_err=abs_line_indx_err, abs_line_indx_otpl=abs_line_indx_otpl, $
+		abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+		si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
+		si_optimal_template=si_optimal_template, $
+		si_broad_optimal_template=si_broad_optimal_template
 
 	if n_elements(header) eq 0 then header = '0'
 	if n_elements(dx) eq 0 then dx = '0'
@@ -253,10 +258,12 @@ PRO MDAP_DEFINE_OUTPUT, $
 	if n_elements(bin_flag) eq 0 then bin_flag = '0'
 	if n_elements(w_range_analysis) eq 0 then w_range_analysis = '0'
 	if n_elements(threshold_ston_analysis) eq 0 then threshold_ston_analysis = '0'
+	if n_elements(tpl_library_key) eq 0 then tpl_library_key = '0'
+	if n_elements(ems_line_key) eq 0 then ems_line_key = '0'
 	if n_elements(analysis_par) eq 0 then analysis_par = '0'
 	if n_elements(weights_ppxf) eq 0 then weights_ppxf = '0'
-	if n_elements(add_pol_coeff_ppxf) eq 0 then add_pol_coeff_ppxf = '0'
-	if n_elements(mult_pol_coeff_ppxf) eq 0 then mult_pol_coeff_ppxf = '0'
+	if n_elements(add_poly_coeff_ppxf) eq 0 then add_pol_coeff_ppxf = '0'
+	if n_elements(mult_poly_coeff_ppxf) eq 0 then mult_pol_coeff_ppxf = '0'
 	if n_elements(stellar_kinematics_fit) eq 0 then stellar_kinematics_fit = '0'
 	if n_elements(stellar_kinematics_err) eq 0 then stellar_kinematics_err = '0'
 	if n_elements(chi2_ppxf) eq 0 then chi2_ppxf = '0'
@@ -281,8 +288,19 @@ PRO MDAP_DEFINE_OUTPUT, $
 	if n_elements(obj_fit_mask_gndf) eq 0 then obj_fit_mask_gndf = '0'
 	if n_elements(bestfit_gndf) eq 0 then bestfit_gndf = '0'
 	if n_elements(eml_model) eq 0 then eml_model = '0'
-	if n_elements(optimal_template) eq 0 then optimal_template = '0'
-	if n_elements(losvd_optimal_template) eq 0 then losvd_optimal_template = '0'
+	if n_elements(abs_par) eq 0 then abs_par = '0'
+	if n_elements(abs_line_key) eq 0 then abs_line_key = '0'
+	if n_elements(abs_line_indx_omitted) eq 0 then abs_line_indx_omitted = '0'
+	if n_elements(abs_line_indx_val) eq 0 then abs_line_indx_val = '0'
+	if n_elements(abs_line_indx_err) eq 0 then abs_line_indx_err = '0'
+	if n_elements(abs_line_indx_otpl) eq 0 then abs_line_indx_otpl = '0'
+	if n_elements(abs_line_indx_botpl) eq 0 then abs_line_indx_botpl = '0'
+	if n_elements(si_bin_wave) eq 0 then si_bin_wave = '0'
+	if n_elements(si_bin_flux) eq 0 then si_bin_flux = '0'
+	if n_elements(si_bin_ivar) eq 0 then si_bin_ivar = '0'
+	if n_elements(si_bin_mask) eq 0 then si_bin_mask = '0'
+	if n_elements(si_optimal_template) eq 0 then si_optimal_template = '0'
+	if n_elements(si_broad_optimal_template) eq 0 then si_broad_optimal_template  = '0'
 END
 
 

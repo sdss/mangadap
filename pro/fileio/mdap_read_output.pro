@@ -7,7 +7,6 @@
 ;	the provided data arrays.  See that procedure for the data model.
 ;
 ; CALLING SEQUENCE:
-;
 ;	MDAP_READ_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
 ;			  ypos=ypos, signal=signal, noise=noise, bin_type=bin_type, $
 ;			  bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
@@ -16,6 +15,7 @@
 ;			  ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
 ;			  bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
 ;			  threshold_ston_analysis=threshold_ston_analysis, $
+;			  tpl_library_key=tpl_library_key, ems_line_key=ems_line_key, $
 ;			  analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
 ;			  add_poly_coeff_ppxf=add_pol_coeff_ppxf, $
 ;			  mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
@@ -34,11 +34,18 @@
 ;			  emission_line_fluxes=emission_line_fluxes, $
 ;			  emission_line_flxerr=emission_line_flxerr, $
 ;			  emission_line_EWidth=emission_line_EWidth, $
-;			  emission_line_EW_err=emission_line_EW_err, reddening_val=reddening_val, $
-;			  reddening_err=reddening_err, obj_fit_mask_gndf=obj_fit_mask_gndf, $
-;			  bestfit_gndf=bestfit_gndf, eml_model=eml_model, $
-;			  optimal_template=optimal_template, $
-;			  losvd_optimal_template=losvd_optimal_template
+;			  emission_line_EW_err=emission_line_EW_err, $
+;			  reddening_val=reddening_val, reddening_err=reddening_err, $
+;			  obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
+;			  eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+;			  abs_line_indx_omitted=abs_line_indx_omitted, $
+;			  abs_line_indx_val=abs_line_indx_val, $
+;			  abs_line_indx_err=abs_line_indx_err, $
+;			  abs_line_indx_otpl=abs_line_indx_otpl, $
+;			  abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+;			  si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+;			  si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
+;			  si_broad_optimal_template= si_broad_optimal_template
 ;
 ; INPUTS:
 ;	file string
@@ -145,37 +152,185 @@
 ;		GANDALF.  The true fitted pixels are available from
 ;		obj_fit_mask_ppxf and obj_fit_mask_gndf.
 ;
+;	threshold_ston_analysis double
+;		S/N threshold for analysis of a binned spectrum.
+;
+;	tpl_library_key string
+;		Keyword used to signify the template library.
+;
+;	ems_line_key string
+;		Keyword used to signify the emission-line parameter file.
+;
+;	eml_par	EmissionLine[]
+;		An array of EmissionLine structures used to define the emission
+;		lines to be fit by GANDALF.
+;
+;	analysis_par AnalysisPar structure
+;		A structure that defines parameters used by PPXF and GANDALF in
+;		the fitting procedure.  See its definition in
+;		MDAP_DEFINE_ANALYSIS_PAR.pro
+;
+;	weights_ppxf dblarr[B][T]
+;		Template weights for each spectrum obtained by PPXF.
+;
+;	add_poly_coeff_ppxf dblarr[B][AD]
+;		Additive order AD legendre polynomial coefficients obtained for
+;		each of N spectra by PPXF.
+;
+;	mult_poly_coeff_ppxf dblarr[B][MD]
+;		Multiplicative order MD legendre polynomial coefficients obtained
+;		for each of N spectra by PPXF.
+;
+;	stellar_kinematics_fit dblarr[B][K]
+;		The best-fit stellar kinematics for each of the N fitted (or
+;		fixed) input galaxy spectra.
+;
+;	stellar_kinematics_err dblarr[B][K]
+;		Estimates of the errors in the best-fit stellar kinematics for
+;		each of the B fitted input galaxy spectra.
+;
+;	chi2_ppxf dblarr[B]
+;		Chi-square per degree of freedom obtained by the PPXF fit to
+;		each of the B spectra.
+;
 ;	obj_fit_mask_ppxf dblarr[B][C]
 ;		Bad pixel mask used in PPXF fit to all B spectra.  0 for a
 ;		fitted pixel, 1 for a masked one.
 ;
-;	weights_ppxf dblarr[B][T]
-;		Weights of the template spectra in the PPXF fit for each of the
-;		B spectra.
-;
-;	add_poly_coeff_ppxf dblarr[B][]
-;		Coefficients of additive polynomials used in the PPXF fit for
-;		all B spectra.
-;
-;	mult_poly_coeff_ppxf dblarr[B][]
-;		Coefficients of multiplicative polynomials used in the PPXF fit
-;		for all B spectra.
-;
 ;	bestfit_ppxf dblarr[B][C]
-;		Best-fit results from PPXF for all B spectra.
-;
-;	chi2_ppxf dblarr[B]
-;		Chi-square per degree of freedom from the PPXF fits to all B
+;		Best fitting spectrum obtained by PPXF for each of the B
 ;		spectra.
 ;
-;	stellar_kinematics_fit dblarr[B][]
-;	stellar_kinematics_err dblarr[B][]
-;		Stellar kinematics (V, sig, [h3, h4, h5, h6]) and their errors
-;		from the PPXF fit to all B spectra.
+;	weights_gndf dblarr[B][T]
+;		Template weights for each spectrum obtained by GANDALF.
 ;
-;	extra_inputs strarr[]
-;		Extra parameters set for the spectral fitting.  TODO: Change
-;		this to a structure!
+;	mult_poly_coeff_gndf dblarr[B][MD]
+;		Multiplicative order MD legendre polynomial coefficients obtained
+;		for each of N spectra by GANDALF.
+;
+;	emission_line_kinematics_avg dblarr[B][2]
+;		The best-fit V and sigma for the emission lines in the B galaxy
+;		spectra.
+;
+;	emission_line_kinematics_aer dblarr[B][2]
+;		Estimates of the errors in the best-fit V and sigma for the gas
+;		kinematics for each of the N fitted input galaxy spectra.
+;
+;	chi2_gndf dblarr[B]
+;		Chi-square per degree of freedom obtained by the GANDALF fit to
+;		each of the B spectra.
+;
+;	emission_line_kinematics_ind dblarr[B][E][2]
+;	emission_line_kinematics_ier dblarr[B][E][2]
+;		Kinematics and errors for each fitted emission line.
+;
+;	emission_line_omitted intarr[B][E]
+;		Flag setting whether or not an emission-line was fit for all E
+;		emission lines in the eml_par structure.  0 means the
+;		emission-line was fit, 1 means it was not.
+;
+;	emission_line_intens dblarr[B][E]
+;	emission_line_interr dblarr[B][E]
+;		Best-fitting emission-line intensities and errors of all fitted
+;		emission lines for each of the B galaxy spectra.
+;
+;	emission_line_fluxes dblarr[B][E]
+;	emission_line_flxerr dblarr[B][E]
+;		Reddening-corrected integrated fluxes and errors for all fitted
+;		emission lines for each of the N input galaxy spectra. 
+;
+;	emission_line_EWidth dblarr[B][E]
+;	emission_line_EW_err dblarr[B][E]
+;		Equivalent widths and errors of all fitted emission lines for
+;		each of the B input galaxy spectra.  These equivalent widths are
+;		computed by taking the ratio of the emission_line_fluxes and the
+;		median value of the stellar spectrum within 5 and 10 sigma of
+;		the emission line, where 'sigma' is the velocity dispersion.
+;
+;	reddening_val dblarr[B][2]
+;	reddening_err dblarr[B][2]
+;		Best-fit values and errors for stellar reddening
+;		(reddening_val[*,0]) and gas reddening (reddening_val[*,1]) for
+;		all B galaxy spectra.  If the reddening fit is not performed,
+;		the output value is set to 0. (reddening_output[*,0:1] = [0,0]).
+;		If only the reddening of the stars is fitted, the reddening of
+;		the gas is set to 0 (reddening_output[*,1] = 0).
+;
+;	obj_fit_mask_gndf dblarr[B][C]
+;		Bad pixel mask used in the GANDALF fit to all B spectra.  0 for
+;		a fitted pixel, 1 for a masked one.
+;
+;	bestfit_gndf dblarr[B][C]
+;		Best fitting spectrum obtained by GANDALF for each of the N
+;		spectra.
+;
+;	eml_model dblarr[B][C]
+;		Best-fitting emission-line-only model for each of the N spectra
+;		obtained by GANDALF.
+;
+;	abs_par SpectralIndex[I]
+;		Array of structures with the spectral index parameters.  See
+;		MDAP_READ_ABSORPTION_LINE_PARAMETERS.
+;
+;	abs_line_key string
+;		Keyword signifying the spectral index file.
+;
+;	abs_line_indx_omitted intarr[B][I]
+;		Flag that the spectral index I has (1) or has not (0) been
+;		omitted from the measurements of binned spectrum B.  Spectral
+;		indices are omitted if any part of their definition occurs
+;		outside of the spectral range of the spectrum.
+;
+;	abs_line_indx_val dblarr[B][I]
+;		Value of spectral index I for spectrum B.  These values have
+;		been corrected for the velocity dispersion using the factor
+;		derived from the measurements based on the broadened and
+;		unbroadened optimal template.
+;
+;	abs_line_indx_err dblarr[B][I]
+;		Error in spectral index I for spectrum B.
+;
+;	abs_line_indx_otpl dblarr[B][I]
+;		Spectral index I measured using the optimal template for
+;		spectrum B.
+;
+;	abs_line_indx_botpl dblarr[B][I]
+;		Spectral index I measured using the broadened optimal template
+;		for spectrum B.
+;
+;	si_bin_wave dblarr[D]
+;		Wavelengths of the pixels in the binned spectra that have had
+;		their resolution matched tot the spectral index system.  NOTE: D
+;		can be (and is likely) different from C because of how the
+;		resolution matching process censors the data.  See
+;		MDAP_MATCH_SPECTRAL_RESOLUTION.
+;
+;	si_bin_flux dblarr[B][D]
+;		Flux of the binned spectra that have had their resolution
+;		matched tot the spectral index system.
+;
+;	si_bin_ivar dblarr[B][D]
+;		Inverse variance of the binned spectra that have had their
+;		resolution matched tot the spectral index system.
+;
+;	si_bin_mask dblarr[B][D]
+;		Bad pixel mask (0-good, 1-bad) of the binned spectra that have
+;		had their resolution matched tot the spectral index system.
+;
+;	si_optimal_template dblarr[B][F]
+;		The best-fitting template (sum of the weighted template in the
+;		library) for each of the B galaxy spectra with the resolution
+;		matched to that of the spectral index system.  NOTE: F can be
+;		(and is likely) different from both D and C because of how the
+;		resolution matching process censors the data.  See
+;		MDAP_MATCH_SPECTRAL_RESOLUTION.
+;
+;	si_broad_optimal_template dblarr[B][F]
+;		The best-fitting template (sum of the weighted template in the
+;		library) for each of the B galaxy spectra with the resolution
+;		matched to that of the spectral index system, and broadened by
+;		the best-fitting line-of-sight velocity distribution.  TODO:
+;		Does this include the velocity shift?
 ;
 ; OPTIONAL KEYWORDS:
 ;
@@ -555,11 +710,13 @@ PRO MDAP_READ_OUTPUT, $
 		emission_line_EW_err=emission_line_EW_err, $
 		reddening_val=reddening_val, reddening_err=reddening_err, $
 		obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-		eml_model=eml_model, optimal_template=optimal_template, $
-		losvd_optimal_template=losvd_optimal_template, abs_par=abs_par, $
-		abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
-		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+		eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+		abs_line_indx_omitted=abs_line_indx_omitted, abs_line_indx_val=abs_line_indx_val, $
+		abs_line_indx_err=abs_line_indx_err, abs_line_indx_otpl=abs_line_indx_otpl, $
+		abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+		si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
+		si_optimal_template=si_optimal_template, $
+		si_broad_optimal_template=si_broad_optimal_template
 
 	if file_test(file) eq 0 then $				; Make sure file exists
 	    message, 'File does not exist!'
@@ -661,13 +818,43 @@ PRO MDAP_READ_OUTPUT, $
 	if n_elements(eml_model) ne 0 then $
 	    eml_model = MDAP_READ_IMG(file, 'ELMOD')
 
-	; Read the optimal template, if requested
-	if n_elements(optimal_template) ne 0 then $
-	    optimal_tempalte = MDAP_READ_IMG(file, 'OTPL')
+;	; Read the optimal template, if requested
+;	if n_elements(optimal_template) ne 0 then $
+;	    optimal_tempalte = MDAP_READ_IMG(file, 'OTPL')
+;
+;	; Read the losvd-broadened optimal template, if requested
+;	if n_elements(losvd_optimal_template) ne 0 then $
+;	    losvd_optimal_tempalte = MDAP_READ_IMG(file, 'BOTPL')
 
-	; Read the losvd-broadened optimal template, if requested
-	if n_elements(losvd_optimal_template) ne 0 then $
-	    losvd_optimal_tempalte = MDAP_READ_IMG(file, 'BOTPL')
+	; Read the wavelength vector for the spectral-index-system
+	; resolution-matched spectra, if requested
+	if n_elements(si_bin_wave) ne 0 then $
+	    si_bin_wave=MDAP_READ_IMG(file, 'SIWAVE')
+
+	; Read the flux for the spectral-index-system resolution-matched
+	; spectra, if requested
+	if n_elements(si_bin_flux) ne 0 then $
+	    si_bin_flux=MDAP_READ_IMG(file, 'SIFLUX')
+
+	; Read the inverse varance for the spectral-index-system
+	; resolution-matched spectra, if requested
+	if n_elements(si_bin_ivar) ne 0 then $
+	    si_bin_ivar=MDAP_READ_IMG(file, 'SIIVAR')
+
+	; Read the bad pixel mask for the spectral-index-system
+	; resolution-matched spectra, if requested
+	if n_elements(si_bin_mask) ne 0 then $
+	    si_bin_mask=MDAP_READ_IMG(file, 'SIMASK')
+
+	; Read the optimal template matched to the resolution of the
+	; spectral-index system, if requested
+	if n_elements(si_optimal_template) ne 0 then $
+	    si_optimal_template=MDAP_READ_IMG(file, 'SIOTPL')
+
+	; Read the broadened optimal template matched to the resolution of the
+	; spectral-index system, if requested
+	if n_elements(si_broad_optimal_template) ne 0 then $
+	    si_broad_optimal_template=MDAP_READ_IMG(file, 'SIBOTPL')
 
 	; Read the SIPAR extension if abs_par is requested
 	if MDAP_READ_WANT_SIPAR(abs_par) eq 1 then $

@@ -242,10 +242,8 @@ END
 FUNCTION MDAP_MATCH_SPECTRAL_RESOLUTION_UNMASKED_PIXELS, $
 		mask
 	    unmasked=where(mask lt 1, complement=masked)	; Select the valid pixels
-	    if unmasked[0] eq -1 then begin
-		print, 'ERROR: Entire spectrum masked!'
-		return, unmasked
-	    endif
+	    if unmasked[0] eq -1 then $
+		message, 'ERROR: Entire spectrum masked!'
 
 	    ; Ignore masks littered through the full spectral range; just omit the edges
 	    return, (indgen(unmasked[n_elements(unmasked)-1]+1-unmasked[0])+unmasked[0])

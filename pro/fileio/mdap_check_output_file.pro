@@ -104,10 +104,16 @@ FUNCTION MDAP_CHECK_OUTPUT_FILE, $
 	if MDAP_FIND_EXTENSION_NAME(extname, 'SGMSK') eq 0 then return, 0
 	if MDAP_FIND_EXTENSION_NAME(extname, 'SGMOD') eq 0 then return, 0
 	if MDAP_FIND_EXTENSION_NAME(extname, 'ELMOD') eq 0 then return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'OTPL') eq 0 then  return, 0
-	if MDAP_FIND_EXTENSION_NAME(extname, 'BOTPL') eq 0 then return, 0
 	if MDAP_FIND_EXTENSION_NAME(extname, 'SIPAR') eq 0 then return, 0
 	if MDAP_FIND_EXTENSION_NAME(extname, 'SINDX') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIWAVE') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIFLUX') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIIVAR') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIMASK') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIOTPL') eq 0 then return, 0
+	if MDAP_FIND_EXTENSION_NAME(extname, 'SIBOTPL') eq 0 then return, 0
+;	if MDAP_FIND_EXTENSION_NAME(extname, 'OTPL') eq 0 then  return, 0
+;	if MDAP_FIND_EXTENSION_NAME(extname, 'BOTPL') eq 0 then return, 0
 
 	; Check that the binary tables have the correct columns
 	cols = MDAP_SET_DRPS_COLS()

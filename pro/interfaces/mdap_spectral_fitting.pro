@@ -379,6 +379,15 @@
 ;	24 Sep 2014: Copied from v0_8 by L. Coccato
 ;	24 Sep 2014: (KBW) Formatting + many edits
 ;	16 Oct 2014: (KBW) Rearranged input and added more output
+;	11 Nov 2014: (KBW) Do not produce or output the optimal templates.
+;			   These were originally used as input for the spectral
+;			   index measurements; however, their resolutions had to
+;			   be matched to the index system.  To make things more
+;			   efficient, I now create a resolution matched set of
+;			   templates at the start.  The spectral index
+;			   measurements are then based on the optimal templates
+;			   created by combining these templates with the weights
+;			   determined here.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -498,9 +507,8 @@ PRO MDAP_SPECTRAL_FITTING, $
 		obj_wave, obj_flux, obj_ivar, obj_mask, obj_sres, tpl_wave, tpl_flux, tpl_ivar, $
 		tpl_mask, wavelength_output, obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
 		mult_poly_coeff_ppxf, bestfit_ppxf, chi2_ppxf, obj_fit_mask_gndf, weights_gndf, $
-		mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, best_template, $
-		best_template_losvd_conv, stellar_kinematics, stellar_kinematics_err, $
-		emission_line_kinematics, emission_line_kinematics_err, $
+		mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, stellar_kinematics, $
+		stellar_kinematics_err, emission_line_kinematics, emission_line_kinematics_err, $
 		emission_line_omitted, emission_line_kinematics_individual, $
 		emission_line_kinematics_individual_err, emission_line_intens, $
 		emission_line_intens_err, emission_line_fluxes, emission_line_fluxes_err, $
@@ -515,7 +523,7 @@ PRO MDAP_SPECTRAL_FITTING, $
 		fix_gas_kin=fix_gas_kin, quiet=quiet, rest_frame_log=rest_frame_log, $
 		plot=plot, ppxf_only=ppxf_only, dbg=dbg, version=version
 
-	version_module = '0.8'			; Version number
+	version_module = '0.9'			; Version number
 	if n_elements(version) ne 0 then begin	; If version is defined
 	    version = version_module		; ... set it to the module version
 	    return				; ... and return without doing anything
@@ -610,8 +618,8 @@ PRO MDAP_SPECTRAL_FITTING, $
 	    eml_model = dblarr(nobj, nw)
 	endif
 
-	best_template = dblarr(nobj, nw)
-	best_template_losvd_conv = dblarr(nobj, nw)
+;	best_template = dblarr(nobj, nw)
+;	best_template_losvd_conv = dblarr(nobj, nw)
 
 	stellar_kinematics = dblarr(nobj, moments)
 	stellar_kinematics_err= dblarr(nobj, moments)
@@ -966,14 +974,14 @@ PRO MDAP_SPECTRAL_FITTING, $
 ;	    print, size(reform(weights[0:ntpl-1]))
 ;	    print, size(tpl_flux)
 	    ; TODO: Check for errors
-	    best_template_i = ppxf_only eq 1 ? reform(weights_ppxf[i,*] # tpl_flux) : $
-					       reform(weights_gndf[i,*] # tpl_flux)
+;	    best_template_i = ppxf_only eq 1 ? reform(weights_ppxf[i,*] # tpl_flux) : $
+;					       reform(weights_gndf[i,*] # tpl_flux)
 ;	    print, size(bf_template)
 
 	    ; TODO: So far MDAP_GET_BROADENED_TEMPLATE is ONLY used here!
-	    best_template_losvd_i = MDAP_GET_BROADENED_TEMPLATE(best_template_i, sol, velscale, $
-								moments=moments, $
-								oversample=oversample)
+;	    best_template_losvd_i = MDAP_GET_BROADENED_TEMPLATE(best_template_i, sol, velscale, $
+;								moments=moments, $
+;								oversample=oversample)
 	    ;--------------------
 
 	    ; TODO: Put this all in a procedure!
@@ -990,12 +998,12 @@ PRO MDAP_SPECTRAL_FITTING, $
 		    eml_model[i,fit_indx] = eml_model_i	; Best-fit emission-line-only model
 		endif
 
-		; Best fitting template (does not include LOSVD effects or reddening)
-		best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, obj_wave_lim)
-
-		; Best fitting galaxy continuum (does not include reddening)
-		best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
-								obj_wave_lim)
+;		; Best fitting template (does not include LOSVD effects or reddening)
+;		best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, obj_wave_lim)
+;
+;		; Best fitting galaxy continuum (does not include reddening)
+;		best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
+;								obj_wave_lim)
 
 		continue					; Go to next spectrum
 	    endif
@@ -1016,12 +1024,12 @@ PRO MDAP_SPECTRAL_FITTING, $
 		eml_model[i,fit_indx] = interpol(eml_model_i, obj_wave_lim_, wavelength_output)
 	    endif
 
-	    ; Best fitting template (does not include LOSVD effects or reddening)
-	    best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, wavelength_output)
-	    
-	    ; Best fitting galaxy continuum (does not include reddening)
-	    best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
-							    wavelength_output)
+;	    ; Best fitting template (does not include LOSVD effects or reddening)
+;	    best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, wavelength_output)
+;	    
+;	    ; Best fitting galaxy continuum (does not include reddening)
+;	    best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
+;							    wavelength_output)
 
 ;	    endelse
 	endfor

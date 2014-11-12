@@ -11,25 +11,29 @@
 ;
 ;	EXTENSIONS ARE HARD-CODED:
 ;		0  - Empty
-;		1  - DRPS  : BINTABLE
-;		2  - BINS  : BINTABLE
-;		3  - WAVE  : IMAGE
-;		4  - SRES  : IMAGE
-;		5  - FLUX  : IMAGE
-;		6  - IVAR  : IMAGE
-;		7  - MASK  : IMAGE
-;		8  - ELPAR : BINTABLE
-;		9  - STFIT : BINTABLE
-;		10 - SMSK  : IMAGE
-;		11 - SMOD  : IMAGE
-;		12 - SGFIT : BINTABLE
-;		13 - SGMSK : IMAGE
-;		14 - SGMOD : IMAGE
-;		15 - ELMOD : IMAGE
-;		16 - OTPL  : IMAGE
-;		17 - BOTPL : IMAGE
-;		18 - SIPAR : BINTABLE
-;		19 - SINDX : BINTABLE
+;		1  - DRPS    : BINTABLE
+;		2  - BINS    : BINTABLE
+;		3  - WAVE    : IMAGE
+;		4  - SRES    : IMAGE
+;		5  - FLUX    : IMAGE
+;		6  - IVAR    : IMAGE
+;		7  - MASK    : IMAGE
+;		8  - ELPAR   : BINTABLE
+;		9  - STFIT   : BINTABLE
+;		10 - SMSK    : IMAGE
+;		11 - SMOD    : IMAGE
+;		12 - SGFIT   : BINTABLE
+;		13 - SGMSK   : IMAGE
+;		14 - SGMOD   : IMAGE
+;		15 - ELMOD   : IMAGE
+;		16 - SIWAVE  : IMAGE
+;		17 - SIFLUX  : IMAGE
+;		18 - SIIVAR  : IMAGE
+;		19 - SIMASK  : IMAGE
+;		20 - SIOTPL  : IMAGE
+;		21 - SIBOTPL : IMAGE
+;		22 - SIPAR   : BINTABLE
+;		23 - SINDX   : BINTABLE
 ;
 ;	ANALYSIS FLAGS:
 ;		 0 - spectrum not analyzed
@@ -134,20 +138,25 @@
 ;			- star+gas fit mask (2D): SGMSK
 ;			- best-fitting star+gas model (2D): SGMOD
 ;			- best-fitting emission-line only model (2D): ELMOD
-
-;			- best-fitting template (2D); no kinematics or polynomials: OTPL
-;			- best-fitting broadened template (2D); no polynomials; BOTPL
+;
+;			- spectral-index resolution matched wavelength (1D): SIWAVE
+;			-                                   flux (2D): SIFLUX
+;			-                                   ivar (2D): SIIVAR
+;			-                                   mask (2D): SIMASK
+;			-                                   optimal template (2D): SIOTPL
+;			-                                   optimal broadened template (2D): SIBOTPL
 ;
 ; CALLING SEQUENCE:
-;
 ;	MDAP_WRITE_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
 ;			   ypos=ypos, signal=signal, noise=noise, bin_type=bin_type, $
 ;			   bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
 ;			   bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
 ;			   bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin=xbin, $
 ;			   ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-;			   bin_flag=bin_flag, w_range_analysis=w_range_analysis, eml_par=eml_par, $
-;			   analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
+;			   bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
+;			   threshold_ston_analysis=threshold_ston_analysis, $
+;			   tpl_library_key=tpl_library_key, eml_line_key=eml_line_key, $
+;			   eml_par=eml_par, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
 ;			   add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
 ;			   mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
 ;			   stellar_kinematics_fit=stellar_kinematics_fit, $
@@ -168,8 +177,16 @@
 ;			   emission_line_EW_err=emission_line_EW_err, $
 ;			   reddening_val=reddening_val, reddening_err=reddening_err, $
 ;			   obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;			   eml_model=eml_model, optimal_template=optimal_template, $
-;			   losvd_optimal_template=losvd_optimal_template, read_header=read_header
+;			   eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+;			   abs_line_indx_omitted=abs_line_indx_omitted, $
+;			   abs_line_indx_val=abs_line_indx_val, $
+;			   abs_line_indx_err=abs_line_indx_err, $
+;			   abs_line_indx_otpl=abs_line_indx_otpl, $
+;			   abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+;			   si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+;			   si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
+;			   si_broad_optimal_template= si_broad_optimal_template, $
+;			   /read_header, /quiet
 ;
 ; INPUTS:
 ;	file string
@@ -272,6 +289,15 @@
 ;		further limited to accommodate some requirements of PPXF and
 ;		GANDALF.  The true fitted pixels are available from
 ;		obj_fit_mask_ppxf and obj_fit_mask_gndf.
+;
+;	threshold_ston_analysis double
+;		S/N threshold for analysis of a binned spectrum.
+;
+;	tpl_library_key string
+;		Keyword used to signify the template library.
+;
+;	ems_line_key string
+;		Keyword used to signify the emission-line parameter file.
 ;
 ;	eml_par	EmissionLine[]
 ;		An array of EmissionLine structures used to define the emission
@@ -380,15 +406,69 @@
 ;		Best-fitting emission-line-only model for each of the N spectra
 ;		obtained by GANDALF.
 ;
-;	optimal_template dblarr[B][C]
-;		The best-fitting template (sum of the weighted template in the
-;		library) for each of the B galaxy spectra.
+;	abs_par SpectralIndex[I]
+;		Array of structures with the spectral index parameters.  See
+;		MDAP_READ_ABSORPTION_LINE_PARAMETERS.
 ;
-;	losvd_optimal_template dblarr[B][C]
-;		The best-fitting template (sum of the weighted templates in the
-;		library) for each of the B galaxy spectra, convolved with the
-;		best-fitting LOSVD.  These are the best_template spectra
-;		convolved with the LOSVDs in stellar_kinematics.
+;	abs_line_key string
+;		Keyword signifying the spectral index file.
+;
+;	abs_line_indx_omitted intarr[B][I]
+;		Flag that the spectral index I has (1) or has not (0) been
+;		omitted from the measurements of binned spectrum B.  Spectral
+;		indices are omitted if any part of their definition occurs
+;		outside of the spectral range of the spectrum.
+;
+;	abs_line_indx_val dblarr[B][I]
+;		Value of spectral index I for spectrum B.  These values have
+;		been corrected for the velocity dispersion using the factor
+;		derived from the measurements based on the broadened and
+;		unbroadened optimal template.
+;
+;	abs_line_indx_err dblarr[B][I]
+;		Error in spectral index I for spectrum B.
+;
+;	abs_line_indx_otpl dblarr[B][I]
+;		Spectral index I measured using the optimal template for
+;		spectrum B.
+;
+;	abs_line_indx_botpl dblarr[B][I]
+;		Spectral index I measured using the broadened optimal template
+;		for spectrum B.
+;
+;	si_bin_wave dblarr[D]
+;		Wavelengths of the pixels in the binned spectra that have had
+;		their resolution matched tot the spectral index system.  NOTE: D
+;		can be (and is likely) different from C because of how the
+;		resolution matching process censors the data.  See
+;		MDAP_MATCH_SPECTRAL_RESOLUTION.
+;
+;	si_bin_flux dblarr[B][D]
+;		Flux of the binned spectra that have had their resolution
+;		matched tot the spectral index system.
+;
+;	si_bin_ivar dblarr[B][D]
+;		Inverse variance of the binned spectra that have had their
+;		resolution matched tot the spectral index system.
+;
+;	si_bin_mask dblarr[B][D]
+;		Bad pixel mask (0-good, 1-bad) of the binned spectra that have
+;		had their resolution matched tot the spectral index system.
+;
+;	si_optimal_template dblarr[B][F]
+;		The best-fitting template (sum of the weighted template in the
+;		library) for each of the B galaxy spectra with the resolution
+;		matched to that of the spectral index system.  NOTE: F can be
+;		(and is likely) different from both D and C because of how the
+;		resolution matching process censors the data.  See
+;		MDAP_MATCH_SPECTRAL_RESOLUTION.
+;
+;	si_broad_optimal_template dblarr[B][F]
+;		The best-fitting template (sum of the weighted template in the
+;		library) for each of the B galaxy spectra with the resolution
+;		matched to that of the spectral index system, and broadened by
+;		the best-fitting line-of-sight velocity distribution.  TODO:
+;		Does this include the velocity shift?
 ;
 ; OPTIONAL KEYWORDS:
 ;	/read_header
@@ -1974,12 +2054,14 @@ PRO MDAP_WRITE_OUTPUT, $
 		emission_line_EW_err=emission_line_EW_err, $
 		reddening_val=reddening_val, reddening_err=reddening_err, $
 		obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-		eml_model=eml_model, optimal_template=optimal_template, $
-		losvd_optimal_template=losvd_optimal_template, abs_par=abs_par, $
-		abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
+		eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+		abs_line_indx_omitted=abs_line_indx_omitted, $
 		abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
 		abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
-		read_header=read_header, quiet=quiet
+		si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+		si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
+		si_broad_optimal_template=si_broad_optimal_template, read_header=read_header, $
+		quiet=quiet
 
 ;	if file_test(file) eq 1 then $
 ;	    fits_info, file
@@ -2156,22 +2238,82 @@ PRO MDAP_WRITE_OUTPUT, $
 						     'Best-fit emission-line-only model'
 	endelse
 
-	; Optimal template created using best-fit weights; includes no polynomials or kinematics
-	if n_elements(optimal_template) ne 0 then begin
-	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'OTPL', optimal_template, $
-					    'Optimal template'
+;	; Optimal template created using best-fit weights; includes no polynomials or kinematics
+;	if n_elements(optimal_template) ne 0 then begin
+;	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'OTPL', optimal_template, $
+;					    'Optimal template'
+;	endif else begin
+;	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'OTPL', $
+;						     'Optimal template'
+;	endelse
+;
+;	; Optimal template created using best-fit weights, convolved LOSVD; includes no polynomials
+;	if n_elements(losvd_optimal_template) ne 0 then begin
+;	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'BOTPL', losvd_optimal_template, $
+;					    'Optimal template, LOSVD convolved'
+;	endif else begin
+;	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'BOTPL', $
+;						     'Optimal template, LOSVD convolved'
+;	endelse
+
+	; Wavelength vector of the binned spectra that have been resolution
+	; matched to the spectral index system.
+	if n_elements(si_bin_wave) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIWAVE', si_bin_wave, $
+						'Spectral-index resolution matched: wavelength'
 	endif else begin
-	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'OTPL', $
-						     'Optimal template'
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIWAVE', $
+						'Spectral-index resolution matched: wavelength'
 	endelse
 
-	; Optimal template created using best-fit weights, convolved LOSVD; includes no polynomials
-	if n_elements(losvd_optimal_template) ne 0 then begin
-	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'BOTPL', losvd_optimal_template, $
-					    'Optimal template, LOSVD convolved'
+	; Binned spectra that have been resolution matched to the spectral index
+	; system.
+	if n_elements(si_bin_flux) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIFLUX', si_bin_flux, $
+						'Spectral-index resolution matched: binned flux'
 	endif else begin
-	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'BOTPL', $
-						     'Optimal template, LOSVD convolved'
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIFLUX', $
+						'Spectral-index resolution matched: binned flux'
+	endelse
+
+	; Inverse variance of the binned spectra that have been resolution
+	; matched to the spectral index system.
+	if n_elements(si_bin_ivar) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIIVAR', si_bin_ivar, $
+					'Spectral-index resolution matched: inverse variance'
+	endif else begin
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIIVAR', $
+					'Spectral-index resolution matched: inverse variance'
+	endelse
+
+	; Bad pixel mask of the binned spectra that have been resolution matched
+	; to the spectral index system.
+	if n_elements(si_bin_mask) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIMASK', si_bin_mask, $
+					    'Spectral-index resolution matched: bad pixel mask'
+	endif else begin
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIMASK', $
+					    'Spectral-index resolution matched: bad pixel mask'
+	endelse
+
+	; Optimal template fit to each binned spectrum and resolution matched to
+	; the spectral index system.
+	if n_elements(si_optimal_template) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIOTPL', si_optimal_template, $
+					'Spectral-index resolution matched: optimal template'
+	endif else begin
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIOTPL', $
+					'Spectral-index resolution matched: optimal template'
+	endelse
+
+	; Broadened optimal template fit to each binned spectrum and resolution
+	; matched to the spectral index system.
+	if n_elements(si_broad_optimal_template) ne 0 then begin
+	    MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIBOTPL', si_broad_optimal_template, $
+				'Spectral-index resolution matched: broadened optimal template'
+	endif else begin
+	    MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIBOTPL', $
+				'Spectral-index resolution matched: broadened optimal template'
 	endelse
 
 	; Update the spectral index parameters
@@ -2184,6 +2326,7 @@ PRO MDAP_WRITE_OUTPUT, $
 						   abs_line_indx_err=abs_line_indx_err, $
 						   abs_line_indx_otpl=abs_line_indx_otpl, $
 						   abs_line_indx_botpl=abs_line_indx_botpl
+
 END
 
 

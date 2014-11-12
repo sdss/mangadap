@@ -7,7 +7,7 @@
 ;	coordinate at central pixel.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_FIDUCIAL_BIN_XY, skyx, skyy, bskyx, bskyy
+;	MDAP_FIDUCIAL_BIN_XY, skyx, skyy, bskyx, bskyy, version=version
 ;
 ; INPUTS:
 ;	skyx dblarr[N][T]
@@ -32,6 +32,9 @@
 ;		spectrum.
 ;
 ; OPTIONAL OUTPUT:
+;	version string
+;		Module version.  If requested, the module is not executed and
+;		only version flag is returned.
 ;
 ; COMMENTS:
 ;
@@ -45,11 +48,18 @@
 ;
 ; REVISION HISTORY:
 ;	15 Sep 2014: (KBW) Original implementation
+;	12 Nov 2014: (KBW) Added version
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_FIDUCIAL_BIN_XY, $
-		skyx, skyy, bskyx, bskyy
+		skyx, skyy, bskyx, bskyy, version=version
+
+	version_module = '0.1'			; Version number
+	if n_elements(version) ne 0 then begin	; If version is defined
+	    version = version_module		; ... set it to the module version
+	    return				; ... and return without doing anything
+	endif
 
 	sz=size(skyx)				; Size of the skyx array
 	ns=sz[1]				; Number of spectra

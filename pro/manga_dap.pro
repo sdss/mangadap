@@ -43,12 +43,16 @@
 ;	  a single IFU)
 ;
 ; COMMENTS:
+;	At some point I (KBW) switched from using 'absorption-line indices' to
+;	'spectral indices', primarily because the spectral-index analysis also
+;	measures the strengths of spectral breaks/bandheads like D4000.  This
+;	just a choice of nomenclature.
 ;
 ; EXAMPLES:
 ;
 ; BUGS:
 ;
-; PROCEDURES CALLED:
+; PROCEDURES CALLED (OUT-OF-DATE):
 ;	MDAP_EXECUTION_SETUP
 ;	READCOL
 ;	MDAP_SETUP_IO
@@ -79,7 +83,7 @@
 ;	MDAP_ERASEVAR
 ;	MDAP_SPECTRAL_FITTING
 ;
-; INTERNAL SUPPORT ROUTINES:
+; INTERNAL SUPPORT ROUTINES (OUT-OF-DATE):
 ;	MDAP_FILE_EXTENSION_DATE()
 ;	MDAP_LOG_INSTANTIATE
 ;	MDAP_LOG_CLOSE
@@ -91,9 +95,17 @@
 ;	02 Sep 2014: (KBW) Formating and minor edits
 ;	03 Sep 2014: (KBW) Basic compilation errors
 ;	26 Oct 2014: (KBW) v0.9 (see documentation linked to above)
+;	11 Nov 2014: (KBW) Inclusion of spectral index measurements, addition of
+;			   infrastructure for used to check for pre-existing
+;			   analysis results.  The latter is a bit messy.  Will
+;			   hopefully be cleaned up when we move to python.
 ;-
 ;-------------------------------------------------------------------------------
 
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+; Functions/procedures used to for the log file
 FUNCTION MDAP_FILE_EXTENSION_DATE
 
 	vec = fix(date_conv( systime(/julian,/utc), 'V'))
@@ -152,15 +164,26 @@ PRO MDAP_LOG_CLOSE, $
 	free_lun, file_unit
 END
 
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+; Sets the file names
+
 ; TODO: Eventually this will generate the files names AND check them against
 ; existing files.  Any execution plan that matches IN DETAIL the execution plan
 ; of an existing file (apart from the analyses performed) will be used to input
 ; already completed analyses, unless the overwrite flag is flipped.   This check
 ; will *include* checks of the module versions used to generate the existing
 ; analysis.
+;
+;	Some of this is already built.  See below.
 
 ; TODO: Create procedures that read and write execution plans to the headers of
-; fits files
+; fits files?
 
 PRO MDAP_GENERATE_OUTPUT_FILE_NAMES, $
 		file_root, execution_plan
@@ -179,6 +202,18 @@ FUNCTION MDAP_SET_TPL_LIB_OUTPUT_FILE, $
 
 	return, file_root+library_key+'_'+abs_line_key+'.fits'
 END
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+; TODO: Infrastructure used to check existing data.  This needs some work...
+;
+; The main function is MDAP_ANALYSIS_BLOCKS_TO_PERFORM.
+;
+; TODO: Describe these algorithms and the decision tree regarding which blocks
+; to perform given the set of desired analyses provided by the user.
 
 FUNCTION MDAP_OUTPUT_TABLE_ROWS, $
 		file, exten
@@ -204,6 +239,14 @@ FUNCTION MDAP_OUTPUT_IMAGE_SIZE, $
 	hdr=headfits(unit)
 	free_lun, unit
 	return, [ fxpar(hdr, 'NAXIS1'), fxpar(hdr, 'NAXIS2') ]
+END
+
+FUNCTION MDAP_OUTPUT_IMAGE_SIZE_1D, $
+		file, exten
+	unit = fxposit(file, exten)
+	hdr=headfits(unit)
+	free_lun, unit
+	return, fxpar(hdr, 'NAXIS1')
 END
 
 ; Tests if the existing STFIT data in the file matches the expectation from the
@@ -338,6 +381,7 @@ PRO MDAP_ADD_SGFIT, $
 END
 
 
+; TODO: Add a check for the size of the images (SIWAVE, SIFLUX, etc)?
 FUNCTION MDAP_CAN_USE_SINDX_DATA, $
 		file, abs_par
 
@@ -363,6 +407,39 @@ FUNCTION MDAP_CAN_USE_SINDX_DATA, $
 	return, 1
 END
 
+FUNCTION MDAP_CAN_USE_SINDX_IMAGES, $
+		file
+
+	wave_dim = MDAP_OUTPUT_IMAGE_SIZE_1D(file, 'SIWAVE')
+
+	if wave_dim eq 1 then $				; No wave image
+	    return, 0
+
+	si_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')	; Dimensions of the binned spectra
+	si_dim[1] = wave_dim				; Force spectrum length
+
+	; The SIFLUX, SIIVAR, SIMASK, SIOTPL, and SIBOTPL images must have the
+	; same and correct dimensions.
+	flx_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIFLUX')
+	if flx_dim[0] ne si_dim[0] or flx_dim[1] ne si_dim[1] then $
+	    return, 0
+	ivr_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIIVAR')
+	if ivr_dim[0] ne si_dim[0] or ivr_dim[1] ne si_dim[1] then $
+	    return, 0
+	msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIMASK')
+	if msk_dim[0] ne si_dim[0] or msk_dim[1] ne si_dim[1] then $
+	    return, 0
+	otp_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIOTPL')
+	if otp_dim[0] ne si_dim[0] or otp_dim[1] ne si_dim[1] then $
+	    return, 0
+	btp_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIBOTPL')
+	if btp_dim[0] ne si_dim[0] or btp_dim[1] ne si_dim[1] then $
+	    return, 0
+
+	return, 1
+END	
+
+
 ; If adding the spectral index measurements, the file must have:
 ;	- the template weights (need the same # of templates based on the provided template file)
 ;	- the stellar kinematics (need the same number of binned spectra as in the file)
@@ -372,13 +449,12 @@ PRO MDAP_ADD_SINDX, $
 		file, abs_par, perform_block
 
 	if MDAP_CAN_USE_SINDX_DATA(file, abs_par) eq 1 then begin
-	    perform_block.spec_indx = 0		; Do not perform the absorption_line fitting
+	    perform_block.spec_indx = 0		; Do not perform the spectral-index measurements
 	endif else $
 	    perform_block.spec_indx = 1
 END
 
 
-;-------------------------------------------------------------------------------
 ; Set which analyses to perform for a new file
 PRO MDAP_NEW_FILE_BLOCKS, analysis, perform_block
 
@@ -399,7 +475,7 @@ PRO MDAP_NEW_FILE_BLOCKS, analysis, perform_block
 	endif
 
 	; For a new file, the spectral index fits, REQUIRES the spectral fitting
-	if analysis[2] eq 1 then begin	; Wants the absorption-line indices
+	if analysis[2] eq 1 then begin	; Wants the spectral indices
 	    perform_block.spec_fit = 1				; Perform the spectral fit
 	    perform_block.ppxf_only = analysis[1] eq 0 ? 1 : 0	; Check if ppxf only
 	    perform_block.spec_indx = 1				; Do the spectral index measurements
@@ -535,7 +611,7 @@ FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
 			    perform_block
 	endif
 
-	if execution_plan.analysis[2] eq 1 then begin	; Wants the absorption-line indices
+	if execution_plan.analysis[2] eq 1 then begin	; Wants the spectral indices
 	    ; First check that at least the STFIT results are available
 	    if execution_plan.analysis[0] eq 0 and execution_plan.analysis[1] eq 0 then begin
 		MDAP_ADD_STFIT, execution_plan.ofile, tpl_fits, execution_plan.analysis_par, $
@@ -588,7 +664,14 @@ FUNCTION MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH, $
 
 	return, 1					; Blocks need to be done
 END
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
+
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+; This is the main wrapper procedure for the DAP.
 pro MANGA_DAP, $
 	input_number, nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
 
@@ -736,31 +819,22 @@ pro MANGA_DAP, $
 	; MDAP_GENERATE_OUTPUT_FILE_NAMES, or preferrably in a more well-named
 	; procedure
 	
-;	manga_dap_version_previous=0
-
 	mdap_read_drp_fits_version='0'
+	mdap_fiducial_bin_xy_version = '0'
 	mdap_tpl_lib_setup_version='0'
 	mdap_calculate_sn_version='0'
 	mdap_spatial_binning_version='0'
+	mdap_spectral_fitting_version='0'
+	mdap_spectral_index_version='0'
 
-	MDAP_READ_DRP_FITS, version= mdap_read_drp_fits_version
-	mdap_fiducial_bin_xy_version = '0.1'
+	MDAP_READ_DRP_FITS, version=mdap_read_drp_fits_version
+	MDAP_FIDUCIAL_BIN_XY, version=mdap_fiducial_bin_xy_version
 	MDAP_CREATE_DAP_TEMPLATE_LIBRARY, version=mdap_tpl_lib_setup_version
 	MDAP_CALCULATE_SN, version=mdap_calculate_sn_version
 	MDAP_SPATIAL_BINNING, version=mdap_spatial_binning_version
+	MDAP_SPECTRAL_FITTING, version=mdap_spectral_fitting_version
+	MDAP_SPECTRAL_INDEX_MEASUREMENTS, version=mdap_spectral_index_version
 
-;	mdap_spatial_binning_version_previous=0
-;
-;	mdap_spectral_fitting_version=0
-;	mdap_spectral_fitting_version_previous=0
-;
-;	mdap_measure_indices_version=0
-;	mdap_measure_indices_version_previous=0
-;
-;	mdap_spatial_radial_binning_version=0
-;	mdap_spatial_radial_binning_version_previous=0
-;
-;	execute_all_modules = 1
 	;-----------------------------------------------------------------------
 
 
@@ -926,7 +1000,7 @@ pro MANGA_DAP, $
 
 		for j=0,n_plans-1 do begin
 
-		    ; Absorption-line analysis not performed so continue
+		    ; Spectral-index analysis not performed so continue
 		    if execution_plan[j].abs_par eq -1 then $
 			continue
 
@@ -944,7 +1018,7 @@ pro MANGA_DAP, $
 							wave)
 
 		    ; Create the template library with resolution matched to the
-		    ; absorption-line index system
+		    ; spectral-index system
 		    MDAP_CREATE_DAP_TEMPLATE_LIBRARY, tpl_out_fits, tpl_library_keys[i], $
 						      template_libraries[i], tpl_vacuum_wave[i], $
 						      velocity_initial_guess, wave, abs_sres, $
@@ -952,8 +1026,8 @@ pro MANGA_DAP, $
 
 		    if ~keyword_set(nolog) then begin
 			printf, log_file_unit, '[INFO] Read template library: '+tpl_library_keys[i]
-			printf, log_file_unit, '[INFO] Resolution and sampling matched to: ' + $
-				datacube_name
+			printf, log_file_unit, '[INFO] Spectral index library: ' + $
+					       abs_line_keys[execution_plan[j].abs_par]
 			printf, log_file_unit,'[INFO] Template library setup done using version: ' $
 				+ mdap_tpl_lib_setup_version
 			printf, log_file_unit, '[INFO] Results written to: ' + tpl_out_fits
@@ -1021,7 +1095,7 @@ pro MANGA_DAP, $
 		MDAP_ERASEVAR, eml_par	; Make sure it doesn't exist if no ems_par is defined
 
 	    ;-------------------------------------------------------------------
-	    ; Read the absorption-line parameters; this is done at every
+	    ; Read the spectral-index parameters; this is done at every
 	    ; iteration because it's fairly quick.  TODO: Check that this I/O
 	    ; doesn't slow things down too much!
 	    if execution_plan[i].abs_par ne -1 then begin
@@ -1265,8 +1339,7 @@ pro MANGA_DAP, $
 				       obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
 				       mult_poly_coeff_ppxf, bestfit_ppxf, chi2_ppxf, $
 				       obj_fit_mask_gndf, weights_gndf, mult_poly_coeff_gndf, $
-				       bestfit_gndf, chi2_gndf, eml_model, best_template, $
-				       best_template_losvd_conv, stellar_kinematics, $
+				       bestfit_gndf, chi2_gndf, eml_model, stellar_kinematics, $
 				       stellar_kinematics_err, emission_line_kinematics, $
 				       emission_line_kinematics_err, emission_line_omitted, $
 				       emission_line_kinematics_individual, $
@@ -1285,9 +1358,6 @@ pro MANGA_DAP, $
 
 		; TODO: Add the spectral fitting version to the header of the
 		; output file, and add information to the log file
-
-		; TODO: Do I need the optimal template(s) anymore given the
-		; changes to the absorption-line measurement procedure?
 
 		; Write the analysis wavelength range to the header
 		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
@@ -1336,15 +1406,11 @@ pro MANGA_DAP, $
 				       quiet=quiet, /read_header
 		endif
 
-		; TODO: Is having the "optimal templates" useful?  Or should I be
-		; outputing the observed spectra and the optimal templates that
-		; are resolution-matched to the absorption-line index system?
-
 		; Write the optimal templates and optimal template convolved
 		; with the LOSVD; see MDAP_SPECTRAL_FITTING on how these are
 		; generated.
-		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, optimal_template=best_template, $
-				   losvd_optimal_template=best_template_losvd_conv, quiet=quiet
+;		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, optimal_template=best_template, $
+;				   losvd_optimal_template=best_template_losvd_conv, quiet=quiet
 	    endif else begin
 
 		print, 'reading spec_fit data'
@@ -1361,8 +1427,6 @@ pro MANGA_DAP, $
 				    bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
 				    stellar_kinematics_fit=stellar_kinematics, $
 				    stellar_kinematics_err=stellar_kinematics_err, $
-				    optimal_template=best_template, $
-				    losvd_optimal_template=best_template_losvd_conv, $
 				    obj_fit_mask_gndf=obj_fit_mask_gndf, $
 				    weights_gndf=weights_gndf, $
 				    mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
@@ -1388,8 +1452,6 @@ pro MANGA_DAP, $
 				  bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
 				  stellar_kinematics_fit=stellar_kinematics, $
 				  stellar_kinematics_err=stellar_kinematics_err, $
-				  optimal_template=best_template, $
-				  losvd_optimal_template=best_template_losvd_conv, $
 				  obj_fit_mask_gndf=obj_fit_mask_gndf, $
 				  weights_gndf=weights_gndf, $
 				  mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
@@ -1419,10 +1481,10 @@ pro MANGA_DAP, $
 		continue
 
 	    ; BLOCK 6 ----------------------------------------------------------
-	    ; Measure the absorption-line indices
+	    ; Perform the spectral-index measurements
 	    ;-------------------------------------------------------------------
 
-	    ; Check if absorption-line indices should be measured
+	    ; Check if spectral indices should be measured
 	    if perform_block.spec_indx eq 1 then begin
 
 		if ~keyword_set(quiet) then $
@@ -1430,7 +1492,8 @@ pro MANGA_DAP, $
 
 		;---------------------------------------------------------------
 		; Get the weights to use to combine the templates, the bestfit
-		; to the spectrum, and the emission-line model.
+		; to the spectrum, the emission-line model, and the pixel mask
+		; of the fit.
 		; TODO: This is based on the size of the weights_gndf vector!
 		if (size(weights_gndf))[2] ne (size(tpl_flux))[1] then begin
 		    print, 'using ppxf results'
@@ -1438,26 +1501,64 @@ pro MANGA_DAP, $
 		    bestfit = bestfit_ppxf
 		    sz = size(bin_flux)
 		    eml_model = dblarr(sz[1], sz[2])	; No emission-line model
+		    fit_mask = obj_fit_mask_ppxf
 		endif else begin
 		    print, 'using gndf results'
 		    weights = weights_gndf
 		    bestfit = bestfit_gndf
+		    fit_mask = obj_fit_mask_gndf
+		endelse
+
+		;---------------------------------------------------------------
+		; Get the resolution-matched, emission-free spectra to use for
+		; the spectral index measurements, both template and object.
+		; TODO: Have a version for this function?
+		; BLOCK 6a
+		if MDAP_CAN_USE_SINDX_IMAGES(execution_plan[i].ofile) eq 1 then begin
+		    MDAP_DEFINE_OUTPUT, si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, $
+					si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
+					si_optimal_template=si_optimal_template, $
+					si_broad_optimal_template=si_broad_optimal_template
+		    MDAP_READ_OUTPUT, execution_plan[i].ofile, si_bin_wave=si_bin_wave, $
+				      si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+				      si_bin_mask=si_bin_mask, $
+				      si_optimal_template=si_optimal_template, $
+				      si_broad_optimal_template=si_broad_optimal_template
+		endif else begin
+		    MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, wave, sres, bin_flux, bin_ivar, $
+							      bin_mask, tpl_out_fits, weights, $
+							      stellar_kinematics, $
+							abs_line_keys[execution_plan[i].abs_par],$
+							      si_bin_wave, si_bin_flux, $
+							      si_bin_ivar, si_bin_mask, $
+							      si_optimal_template, $
+							      si_broad_optimal_template, $
+							      bestfit=bestfit, $
+							      eml_model=eml_model, $
+							      fit_mask=fit_mask, $
+							      remove_outliers=remove_outliers, $
+						moments=execution_plan[i].analysis_par.moments
+		    MDAP_WRITE_OUTPUT, execution_plan[i].ofile, si_bin_wave=si_bin_wave, $
+				       si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+				       si_bin_mask=si_bin_mask, $
+				       si_optimal_template=si_optimal_template, $
+				       si_broad_optimal_template=si_broad_optimal_template
 		endelse
 
 		; Perform the measurements
-		MDAP_ABSORPTION_LINE_INDEX_MEASUREMENTS, tpl_out_fits, weights, $
-					stellar_kinematics, abs_par, wave, sres, bin_flux, $
-					bin_ivar, bin_mask, bestfit, eml_model, $
-					abs_line_indx_omitted, abs_line_indx, abs_line_indx_err, $
-					abs_line_indx_otpl, abs_line_indx_botpl, $
-					moments=execution_plan[i].analysis_par.moments, $
-					output_file_root=output_file_root, dbg=dbg
+		MDAP_SPECTRAL_INDEX_MEASUREMENTS, abs_par, si_bin_wave, si_bin_flux, $
+						  si_bin_ivar, si_bin_mask, si_optimal_template, $
+						  si_broad_optimal_template, stellar_kinematics, $
+						  abs_line_indx_omitted, abs_line_indx, $
+						  abs_line_indx_err, abs_line_indx_otpl, $
+						  abs_line_indx_botpl, dbg=dbg
 
 		; TODO: For now using ivar for error.  Use residual instead?
 
 		; Write the data to the output file
-		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, abs_line_key=abs_line_keys[i], $
-				   abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
+		MDAP_WRITE_OUTPUT, execution_plan[i].ofile, abs_par=abs_par, $
+				   abs_line_key=abs_line_keys[execution_plan[i].abs_par], $
+				   abs_line_indx_omitted=abs_line_indx_omitted, $
 				   abs_line_indx_val=abs_line_indx, $
 				   abs_line_indx_err=abs_line_indx_err, $
 				   abs_line_indx_otpl=abs_line_indx_otpl, $
@@ -1468,10 +1569,6 @@ pro MANGA_DAP, $
 		    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
 
 	    endif
-
-
-	    ; If other blocks added, decide whether or not the absorption-line
-	    ; indices need to be read in!
 
 
 	    ; END computation of "model-independent" data products #############
@@ -1487,5 +1584,8 @@ pro MANGA_DAP, $
 	    MDAP_LOG_CLOSE, log_file_unit
 
 END
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 

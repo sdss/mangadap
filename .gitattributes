@@ -175,7 +175,6 @@ pro/interfaces/mdap_spatial_binning.pro -text
 pro/interfaces/mdap_spectral_fitting.pro -text
 pro/manga_dap.pro -text
 pro/mangadap_version.pro -text
-pro/modules/mdap_absorption_line_index_measurements.pro -text
 pro/modules/mdap_bvls.pro -text
 pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_sn.pro -text
@@ -185,6 +184,7 @@ pro/modules/mdap_dust_calzetti.pro -text
 pro/modules/mdap_gandalf.pro -text
 pro/modules/mdap_gandalf_wrap.pro -text
 pro/modules/mdap_ppxf.pro -text
+pro/modules/mdap_spectral_index_measurements.pro -text
 pro/modules/mdap_voronoi_2d_binning.pro -text
 pro/testing/test_eml.pro -text
 pro/testing/test_key.pro -text
@@ -213,11 +213,11 @@ pro/utilities/mdap_generate_binning_weights.pro -text
 pro/utilities/mdap_get_broadened_template.pro -text
 pro/utilities/mdap_get_resolution_difference.pro -text
 pro/utilities/mdap_get_spaxel_size.pro -text
+pro/utilities/mdap_get_spectral_index.pro -text
 pro/utilities/mdap_index_is_bandhead.pro -text
 pro/utilities/mdap_insert_flagged.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_match_spectral_resolution.pro -text
-pro/utilities/mdap_measure_spectral_index.pro -text
 pro/utilities/mdap_min_sig_gau_approx_delta.pro -text
 pro/utilities/mdap_minimum_cnvlv_sigma.pro -text
 pro/utilities/mdap_noise_from_ivar.pro -text
@@ -240,6 +240,7 @@ pro/utilities/mdap_select_wave.pro -text
 pro/utilities/mdap_set_intersection.pro -text
 pro/utilities/mdap_set_output_file_cols.pro -text
 pro/utilities/mdap_spatial_bin_area.pro -text
+pro/utilities/mdap_spectral_index_measurements_spectra.pro -text
 pro/utilities/mdap_stc.pro -text
 pro/utilities/mdap_trim_spectral_range.pro -text
 pro/utilities/mdap_update_starting_guesses.pro -text
