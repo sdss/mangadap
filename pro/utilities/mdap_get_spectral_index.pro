@@ -76,7 +76,8 @@
 
 ;-------------------------------------------------------------------------------
 ; Bin edge [0] is the lower edge of pixel x[0], the upper edge of pixel x[0] is
-; bin edge [1], etc.
+; bin edge [1], etc.  The values of x are expected to be linearly or
+; geometrically spaced.
 FUNCTION MDAP_BIN_EDGES, $
 		x, geometric=geometric
 
@@ -112,9 +113,9 @@ END
 ; The error is estimated by a simple propagation of the error (i.e. error in the
 ; sum).
 ;
-; x is expected to be sorted and contiguous; x coordinate is assumed to be
-; (geometrically) at the center of the pixel.  The pixel size does not need to
-; be constant.
+; x is expected to be sorted and contiguous; x coordinates are assumed to be
+; linearly or geometrically spaced; the provided coordinate is expected to be at
+; the (geometric) center of the pixel.
 PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
 		x, y, ye, mask, xrange, integral, integral_err, err=err, geometric=geometric
 
