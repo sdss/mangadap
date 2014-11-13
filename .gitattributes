@@ -53,6 +53,7 @@ doc/mdap_voronoi_2d_binning.tex -text
 etc/mangadap.module -text
 examples/mdap_config_example.inp -text
 examples/mdap_inp_nsa_v1b_0_0_v2.par -text
+examples/mdap_setup.pro -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
 external/F90_32/bvls_wrapper.c -text
