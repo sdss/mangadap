@@ -53,6 +53,8 @@
 ; REVISION HISTORY:
 ;	03 Sep 2014: (KBW) Original impelementation
 ;	05 Sep 2014: (KBW) Use N_ELEMENTS instead of ARRAY_LENGTH
+;	13 Nov 2014: (KBW) Now allows nsa_cat to be a compressed file (by using
+;			   FTAB_EXT)
 ;-
 ;------------------------------------------------------------------------------
 
@@ -75,13 +77,23 @@ PRO MDAP_MATCH_OBS_NSA, $
 	endfor
 
 	; Read the NSA catalog data
-	get_lun, catdb
-	FXBOPEN, catdb, nsa_cat, 1, header
-	FXBREAD, catdb, nsaid, 'NSAID'
-	FXBREAD, catdb, nsara, 'RA'
-	FXBREAD, catdb, nsadec, 'DEC'
-	FXBCLOSE, catdb
-	free_lun, catdb
+	; These commands did not allow for compressed files
+;	get_lun, catdb
+;	FXBOPEN, catdb, nsa_cat, 1, header
+;	FXBREAD, catdb, nsaid, 'NSAID'
+;	FXBREAD, catdb, nsara, 'RA'
+;	FXBREAD, catdb, nsadec, 'DEC'
+;	FXBCLOSE, catdb
+;	free_lun, catdb
+	; These commands allow for compressed files
+	col_list=['NSAID', 'RA', 'DEC']
+	if MDAP_CHECK_BINTABLE_COLUMNS(nsa_cat, 1, col_list) eq 0 then $
+	    return
+
+	cols='NSAID,RA,DEC'
+	FITS_OPEN, nsa_cat, fcb
+	FTAB_EXT, fcb, cols, nsaid, nsara, nsadec, exten_no=1
+	FITS_CLOSE, fcb
 
 	n_nsa=n_elements(nsaid)						; Catalog length
 
@@ -110,19 +122,30 @@ PRO MDAP_MATCH_OBS_NSA, $
 	    endif
 	endfor
 
+	; Get the maximum string length
+	file_len = 0
+	for i=0,nfiles-1 do begin
+	    nn = strlen(fitsfile[i])
+	    if file_len lt nn then $
+		file_len = nn
+	endfor
+
+	head_format='( A1, A'+MDAP_STC(file_len+4, /integer)+', A15, A11, A11, A15, A11, A11 )'
+	data_format='( A'+MDAP_STC(file_len+5, /integer)+', A15, F11.5, F11.6, I15, F11.5, F11.6 )'
+
 	; Write the file
 	OPENW, unit, ofile, /get_lun
 	PRINTF, unit, '# '+SYSTIME()
 	PRINTF, unit, '#', 'FITSFILE', 'MANGAID', 'OBJRA', 'OBJDEC', 'NSAID', 'NSARA', 'NSADEC', $
-		   format='( A1, A59, A15, A11, A11, A15, A11, A11 )'
+		   format=head_format
 	for i=0,nfiles-1 do $
 	    if (nsa_index[i] ge 0) then begin
 		PRINTF, unit, fitsfile[i], mangaid[i], objra[i], objdec[i], nsaid[nsa_index[i]], $
 			   nsara[nsa_index[i]], nsadec[nsa_index[i]], $
-			   format='( A60, A15, F11.5, F11.6, I15, F11.5, F11.6 )'
+			   format=data_format
 	    endif else begin
 		PRINTF, unit, fitsfile[i], mangaid[i], objra[i], objdec[i], -1, -1.0, -1.0, $
-			   format='( A60, A15, F11.5, F11.6, I15, F11.5, F11.6 )'
+			   format=data_format
 	    endelse
 	CLOSE, unit
 	free_lun, unit

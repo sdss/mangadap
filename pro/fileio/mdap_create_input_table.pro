@@ -61,6 +61,7 @@
 ;	03 Sep 2014: (KBW) Original implementation
 ;	05 Sep 2014: (KBW) Use N_ELEMENTS instead of ARRAY_LENGTH
 ;	09 Sep 2014: (KBW) Change mode to either CUBE or RSS
+;	13 Nov 2014: (KBW) Allow for compressed NSA catalog
 ;-
 ;------------------------------------------------------------------------------
 
@@ -79,33 +80,31 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	    ifun[i]=ROUND(float(FXPAR(header,'IFUDSGN'))/100.)
 	endfor
 
-	; Read the NSA catalog to get the relevant quantities
-	get_lun, catdb
-	FXBOPEN, catdb, nsa_cat, 1, header		; Open the file
-
-	FXBREAD, catdb, nsaid_, 'NSAID'			; NSA ID
-;	n_nsa = ARRAY_LENGTH(nsaid_)			; Size of catalog
+	; Check the NSA catalog has all the expected columns
+	col_list=[ 'NSAID', 'Z', 'SERSIC_BA', 'SERSIC_PHI', 'SERSIC_TH50' ]
+	if MDAP_CHECK_BINTABLE_COLUMNS(nsa_cat, 1, col_list) eq 0 then $
+	    return
+	cols='NSAID,Z,SERSIC_BA,SERSIC_PHI,SERSIC_TH50'
+	FITS_OPEN, nsa_cat, fcb
+	FTAB_EXT, fcb, cols, nsaid_, redshift_, boa_, pa_, reff_, exten_no=1
+	FITS_CLOSE, fcb
 	n_nsa = n_elements(nsaid_)			; Size of catalog
-
-	FXBREAD, catdb, redshift_, 'Z'			; Redshift
 
 	; VDISP is not alway available
 	if ~keyword_set(def_vdisp) then $
 	    def_vdisp=-1.0d
 
-	fxberr=''
- 	if FXBCOLNUM(catdb, 'VDISP', errmsg=fxberr) eq 0 then begin
-	    print, 'WARNING: VDISP column not available!'
+	; Check if this NSA catalog has the VELDISP column
+	vel_disp_col=[ 'VELDISP' ]
+	if MDAP_CHECK_BINTABLE_COLUMNS(nsa_cat, 1, vel_disp_col) eq 0 then begin
+	    print, 'Using default dispersion value.'
 	    vdisp_ = MAKE_ARRAY(n_nsa, /double, value=def_vdisp); Placeholder
 	endif else begin
-	    FXBREAD, catdb, vdisp_, 'VDISP'			; Velocity dispersion
+	    cols='VELDISP'
+	    FITS_OPEN, nsa_cat, fcb
+	    FTAB_EXT, fcb, cols, vdisp_, exten_no=1
+	    FITS_CLOSE, fcb
 	endelse
-
-	FXBREAD, catdb, boa_, 'SERSIC_BA'		; B/A from Sersic fit
-	FXBREAD, catdb, pa_, 'SERSIC_PHI'		; Position angle from Sersic fit
-	FXBREAD, catdb, reff_, 'SERSIC_TH50'		; Half-light radius fro Sersic fit
-	FXBCLOSE, catdb					; Close up
-	free_lun, catdb
 
 	ii_ = SORT(nsaid_)				; Sorted indices for full catalog
 	ii = SORT(nsaid)				; Sorted indices for fits files
@@ -135,11 +134,24 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 
 	c=299792.458d			; TODO: there isn't some idlutils file that defines this?
 
+	; Get the maximum string length
+	file_len = 0
+	for i=0,n_manga-1 do begin
+	    nn = strlen(fitsfile[i])
+	    if file_len lt nn then $
+		file_len = nn
+	endfor
+
+	head_format='( A1, A'+MDAP_STC(file_len+4, /integer)+', A14, A10, A10, A10, A4, A10, A10 )'
+	wnsa_format='( A'+MDAP_STC(file_len+5, /integer) + $
+		    ', E14.6, E10.2, E10.2, E10.2, I4, E10.2, A10 )'
+	wonsa_format='( A'+MDAP_STC(file_len+5, /integer)+', I14, I10, I10, I10, I4, I10, A10 )'
+
 	; Write the file
 	OPENW, unit, ofile, /get_lun
 	PRINTF, unit, '# '+SYSTIME()
 	PRINTF, unit, '#', 'FITSFILE', 'V', 'VDISP', 'ELL', 'PA', 'IFU', 'Reff', 'FORMAT', $
-		   format='( A1, A59, A14, A10, A10, A10, A4, A10, A10 )'
+		   format=head_format
 	for i=0,n_manga-1 do begin
 
 	    ; Use the file name to get the dataformat	
@@ -155,11 +167,9 @@ PRO MDAP_CREATE_INPUT_TABLE, $
 	    root = STRMID(fitsfile[i], 0, STRPOS(fitsfile[i], '.fits', /reverse_search))
 	    if jj[i] ge 0 then begin 
 		PRINTF, unit, root, c*redshift_[jj[i]], vdisp_[jj[i]], 1.0-boa_[jj[i]], $
-			   pa_[jj[i]], ifun[i], reff_[jj[i]], frmt, $
-			   format='( A60, E14.6, E10.2, E10.2, E10.2, I4, E10.2, A10 )'
+			   pa_[jj[i]], ifun[i], reff_[jj[i]], frmt, format=wnsa_format
 	    endif else begin
-		PRINTF, unit, root, -1, -1, -1, -1, ifun[i], -1, frmt, $
-			   format='( A60, I14, I10, I10, I10, I4, I10, A10 )'
+		PRINTF, unit, root, -1, -1, -1, -1, ifun[i], -1, frmt, format=wonsa_format
 	    endelse
 	endfor
 	CLOSE, unit

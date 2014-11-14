@@ -709,6 +709,14 @@ pro MANGA_DAP, $
 	if strlen(output_root_dir) eq 0 then $
 	    message, 'Output directory must have a non-zero length.  Use ./ for current directory'
 
+	; Check that the external_library exists!
+	if n_elements(external_library) then begin
+	    bvls_shared_lib=external_library+'bvls.so'
+	    if file_test(bvls_shared_lib) eq 0 then $
+		bvls_shared_lib=external_library+'bvls.dylib'
+	    if file_test(bvls_shared_lib) eq 0 then $
+		message, 'Shared object library does not exist!'
+	endif
 
 	; Read the table with the list of fits files and initial guess values
 	print, 'Reading input table:'
@@ -1351,7 +1359,7 @@ pro MANGA_DAP, $
 				       analysis_par=execution_plan[i].analysis_par, $
 				       star_kin_starting_guesses=star_kin_guesses, $
 				       gas_kin_starting_guesses=gas_kin_guesses, eml_par=eml_par, $
-				       external_library=external_library, $
+				       external_library=bvls_shared_lib, $
 				       wave_range_analysis=execution_plan[i].wave_range_analysis, $
 				       ppxf_only=perform_block.ppxf_only, quiet=quiet, plot=plot, $
 				       dbg=dbg

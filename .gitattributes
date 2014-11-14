@@ -153,6 +153,7 @@ legacy_pro/range.pro -text
 legacy_pro/read_header.pro -text
 legacy_pro/test_sn_definition.pro -text
 legacy_pro/usersymbol.pro -text
+pro/fileio/mdap_check_bintable_columns.pro -text
 pro/fileio/mdap_check_extension_exists.pro -text
 pro/fileio/mdap_check_file_exists.pro -text
 pro/fileio/mdap_check_output_file.pro -text
@@ -176,6 +177,7 @@ pro/interfaces/mdap_spatial_binning.pro -text
 pro/interfaces/mdap_spectral_fitting.pro -text
 pro/manga_dap.pro -text
 pro/mangadap_version.pro -text
+pro/mdap_drpall_info.pro -text
 pro/modules/mdap_bvls.pro -text
 pro/modules/mdap_bvls_external.pro -text
 pro/modules/mdap_calculate_sn.pro -text
@@ -192,6 +194,7 @@ pro/testing/test_key.pro -text
 pro/testing/test_setup.pro -text
 pro/testing/test_table.pro -text
 pro/testing/test_write.pro -text
+pro/usr/mdap_execution_setup.pro -text
 pro/utilities/mdap_abs_line_resolution.pro -text
 pro/utilities/mdap_assign_absorption_line_parameters.pro -text
 pro/utilities/mdap_assign_emission_line_parameters.pro -text
@@ -252,4 +255,5 @@ scripts/mdap_environment.bash -text
 scripts/mdap_environment.csh -text
 scripts/mdap_setup.bash -text
 scripts/mdap_setup.csh -text
+scripts/run_dap.sh -text
 ups/mangadap.table -text
