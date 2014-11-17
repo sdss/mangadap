@@ -38,7 +38,7 @@ class rundap:
         self.outver = outver if outver else self.dapver
         self.drpver = self.product_version(simple=True, product='mangadrp')
         self.corever = self.product_version(simple=True, product='mangacore')
-        self.idlutilsver = idlutilsver if idlutilsver else self.getversion(simple=True, product='idlutils')
+        self.idlutilsver = idlutilsver if idlutilsver else self.product_version(simple=True, product='idlutils')
         self.ifudesignlist = ifudesignlist
         self.platelist = platelist
         #queue keywords
@@ -58,7 +58,7 @@ class rundap:
             self.nodes = 1
             self.qos='sdss-fast'
         if self.all:
-            self.label += "_clobber" if self.clobber else self.label += "_all"
+            self.label += "_clobber" if self.clobber else "_all"
         if self.redo: self.label += "_redo"
         if self.daily: self.run_daily()
         elif self.all:
@@ -76,11 +76,12 @@ class rundap:
         mode = parser.add_mutually_exclusive_group()
         mode.add_argument("-d", "--daily", help="runs dap for next mjd (as an after burner to drp)",action="store_true")
         mode.add_argument("-a", "--all", help="runs dap for all plates/ifudesigns not currently running or done",action="store_true")
-        mode.add_argument("-c", "--redo", help="runs dap for all plates/ifudesigns in platelist/ifudesignlist regardless of state",action="store_true", default=False)
+        mode.add_argument("-c", "--clobber", help="(clobber) runs dap for all plates/ifudesigns in platelist/ifudesignlist regardless of state",action="store_true", default=False)
+        mode.add_argument("-r", "--redo", help="runs dap for all plates/ifudesigns in platelist/ifudesignlist regardless of state",action="store_true", default=False)
         parser.add_argument("-q", "--quiet", help="turn off verbosity", action="store_true", default=False)
         parser.add_argument("-v", "--outver", type=str, help="optional different output reduction version than product version", default="trunk")
-        parser.add_argument("-u", "--idlutilsver", type=str, help="version of idlutils to use", default=None)
-        parser.add_argument("-i", "--ifudesignlist", type=str, help="set list of ifus to reduce", default=None)
+        parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use", default=None)
+        parser.add_argument("-b", "--ifudesignlist", type=str, help="set list of ifus to reduce", default=None)
         parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce", default=None)
 
         #queue
@@ -156,7 +157,7 @@ class rundap:
         return version
 
     def module_version(self, product='mangadap'):
-    ''' Return the module versions for the specified product.  Default product is mangadap.'''
+        ''' Return the module versions for the specified product.  Default product is mangadap.'''
         
         try: modules = os.environ['LOADEDMODULES']
         except: modules = None
