@@ -1,6 +1,6 @@
 from __future__ import division
 from __future__ import print_function
-from os.path import exists
+from os.path import exists, join, isdir
 from argparse import ArgumentParser
 from pbs import queue
 
@@ -180,13 +180,13 @@ class rundap:
         
         # Generate status path and name
         statfile = 'manga{0}-{1}-{2}.{3}'.format(stage, plate['plate'], plate['ifudesign'], status)
-        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
+        path = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
         
         # Check for path existence
-        if not os.path.isdir(path): os.makedirs(path)
+        if not isdir(path): os.makedirs(path)
                 
         # Write status file
-        fullfile = os.path.join(path,statfile)
+        fullfile = join(path,statfile)
         file = open(fullfile,'w')
         file.close()
                           
@@ -195,11 +195,11 @@ class rundap:
         
         # Generate script path and name
         statfile = 'manga{0}-{1}-{2}'.format(stage,plate['plate'],plate['ifudesign'])
-        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
+        path = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
             
-        fullfile = os.path.join(path,statfile)
-        outfile = os.path.join(path,statfile+'.out')
-        errfile = os.path.join(path,statfile+'.err')
+        fullfile = join(path,statfile)
+        outfile = join(path,statfile+'.out')
+        errfile = join(path,statfile+'.err')
         
         # Get module name
         module_version = self.module_version()
