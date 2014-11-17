@@ -27,8 +27,8 @@ __author__ = 'Kyle Westfall'
 class rundap:
     
     def __init__(self, daily=None, all=None, clobber=None, redo=None, console=None, quiet=None,
-                outver=None, idlutilsver=None, ifulist=None, platelist=None,
-                label='mangadap', nodes=18, qos=None,umask='002',walltime='240:00:00', hard=True, submit=True):
+                outver=None, idlutilsver=None, ifudesignlist=None, platelist=None,
+                label='mangadap', nodes=18, qos=None,umask='007',walltime='240:00:00', hard=True, submit=True):
         self.daily = daily
         self.all = all
         self.clobber=clobber
@@ -39,7 +39,7 @@ class rundap:
         self.drpver = self.product_version(simple=True, product='mangadrp')
         self.corever = self.product_version(simple=True, product='mangacore')
         self.idlutilsver = idlutilsver if idlutilsver else self.getversion(simple=True, product='idlutils')
-        self.ifulist = ifulist
+        self.ifudesignlist = ifudesignlist
         self.platelist = platelist
         #queue keywords
         self.label = label
@@ -75,12 +75,12 @@ class rundap:
         parser = ArgumentParser()
         mode = parser.add_mutually_exclusive_group()
         mode.add_argument("-d", "--daily", help="runs dap for next mjd (as an after burner to drp)",action="store_true")
-        mode.add_argument("-a", "--all", help="runs dap for all mjds not currently running or done",action="store_true")
-        mode.add_argument("-c", "--redo", help="runs dap for all mjds in platelist/ifulist regardless of state",action="store_true", default=False)
+        mode.add_argument("-a", "--all", help="runs dap for all plates/ifudesigns not currently running or done",action="store_true")
+        mode.add_argument("-c", "--redo", help="runs dap for all plates/ifudesigns in platelist/ifudesignlist regardless of state",action="store_true", default=False)
         parser.add_argument("-q", "--quiet", help="turn off verbosity", action="store_true", default=False)
         parser.add_argument("-v", "--outver", type=str, help="optional different output reduction version than product version", default="trunk")
         parser.add_argument("-u", "--idlutilsver", type=str, help="version of idlutils to use", default=None)
-        parser.add_argument("-i", "--ifulist", type=str, help="set list of ifus to reduce", default=None)
+        parser.add_argument("-i", "--ifudesignlist", type=str, help="set list of ifus to reduce", default=None)
         parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce", default=None)
 
         #queue
@@ -105,7 +105,7 @@ class rundap:
         if self.quiet==None: self.quiet = self.arg.quiet
         if not self.outver:
             self.outver = self.arg.outver if self.arg.outver else self.dapver
-        if self.ifulist == None: self.ifulist = self.arg.ifulist
+        if self.ifudesignlist == None: self.ifudesignlist = self.arg.ifudesignlist
         if self.platelist == None: self.platelist = self.arg.platelist
         if self.idlutilsver == None: self.idlutilsver = self.arg.idlutilsver
             
@@ -130,7 +130,10 @@ class rundap:
     def run_all(self, clobber=False):
         ''' Run all reductions not currently running or done (or regardless of whether running or done if self.clobber is specified).
             Manually called by humans. '''
-        pass
+        
+        plate = {'plate':int(self.platelist[0]),'ifudesign':int(self.ifudesignlist[0])} #hack for one plate, ifudesign
+        self.set_status(plate,status='manual')
+        self.generate_script(plate)
 
     def run_redo(self, clobber=False):
         ''' Run all reductions not currently running or done.  Manually called by humans. '''
@@ -175,8 +178,8 @@ class rundap:
         ''' Generate the touch status files for a given plate'''
         
         # Generate status path and name
-        statfile = 'manga{0}-{1}-{2}.{3}'.format(stage, plate['plate'], plate['mjd'], status)
-        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['mjd']))
+        statfile = 'manga{0}-{1}-{2}.{3}'.format(stage, plate['plate'], plate['ifudesign'], status)
+        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
         
         # Check for path existence
         if not os.path.isdir(path): os.makedirs(path)
@@ -190,8 +193,8 @@ class rundap:
         ''' Generate the manga script files for a given plate'''
         
         # Generate script path and name
-        statfile = 'manga{0}-{1}'.format(stage,plate['plate'])
-        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), 'stack')
+        statfile = 'manga{0}-{1}-{2}'.format(stage,plate['plate'],plate['ifudesign'])
+        path = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
             
         fullfile = os.path.join(path,statfile)
         outfile = os.path.join(path,statfile+'.out')
@@ -204,7 +207,7 @@ class rundap:
         file = open(fullfile,'w')
         file.write('# Auto-generated batch file '+time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())+"\n")
         file.write('\n')
-        file.write('module umload mangadap \n')
+        file.write('module unload mangadap \n')
         file.write('module load mangadap/{0} \n'.format(module_version))
         if self.idlutilsver:
             file.write('module unload idlutils \n')
@@ -214,11 +217,7 @@ class rundap:
         file.write('\n')
         file.write('touch {0}.running'.format(fullfile))
         file.write('\n')
-        if stage == 'dap':
-            #file.write("echo \"sdss_plate_sort, '{0}'\" | idl \n".format(planfile))
-            file.write("echo \"mdrp_runmanga{0}, /full, plate='{1}', inop='{2}', outop='{2}' \" | idl \n".format(stage,plate['plate'],plate['mjd']))
-        elif stage == '3d':
-            file.write("echo \"mdrp_runmanga{0}, {1}\" | idl \n".format(stage,plate['plate']))    
+        file.write("echo \"mdrp_runmanga{0}, /full, plate='{1}', inop='{2}', outop='{2}' \" | idl \n".format(stage,plate['plate'],plate['ifudesign']))
         file.write('\n')
         file.write('setStatusDone -f "{0}" \n'.format(errfile))
         # update DRP all file
