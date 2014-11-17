@@ -4,6 +4,7 @@ from os import environ, makedirs
 from os.path import exists, join, isdir
 from argparse import ArgumentParser
 from pbs import queue
+import time
 
 __author__ = 'Kyle Westfall'
 
@@ -64,7 +65,9 @@ class rundap:
         
         
         try: self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
-        except: exit()
+        except:
+            print('MANGA_SPECTRO_ANALYSIS undefined!')
+            exit()
         
         if self.daily: self.run_daily()
         elif self.all:
@@ -169,13 +172,13 @@ class rundap:
         except: modules = None
         
         if modules:
-            versions = [module.split('/')[1] for module in modules.split(':') if module.split('/')[0]==name] if modules else []
+            versions = [module.split('/')[1] for module in modules.split(':') if module.split('/')[0]==product] if modules else []
             if len(versions) == 1: version = versions[0]
             elif len(versions):
-                print('Multiple versions found for module {0}'.format(name))
+                print('Multiple versions found for module {0}'.format(product))
                 version = None 
             else: 
-                print('Module {0} is not loaded'.format(name))
+                print('Module {0} is not loaded'.format(product))
                 version = None
         else: version = None
         
@@ -229,7 +232,8 @@ class rundap:
         file.write("echo \"manga_dap, 38, /nolog \" | idl \n") # Eventually this will replace the hardcoded number: .format(stage,plate['plate'],plate['ifudesign']))
 
         file.write('\n')
-        file.write('setStatusDone -f "{0}" \n'.format(errfile))
+        #file.write('setStatusDone -f "{0}" \n'.format(errfile))
+        file.write('touch {0}.done'.format(fullfile))
         file.close()
         
         return fullfile, outfile, errfile
