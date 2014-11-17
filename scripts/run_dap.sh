@@ -6,7 +6,52 @@
 # Description
 #
 #	Execute a single instance of the MANGA DAP using the provided setup
-#	procedure and the designated DRP-produced fits file.
+#	procedure and the root name of a designated DRP-produced fits file to
+#	process.
+#
+#	The script:
+#
+#	    - does some basic checks of the directory structure and the
+#	      availability of the DRP file.
+#
+#	    - gets the list of available DRP files, excluding the mini-bundles,
+#	      hard-wired to be written to 
+#	    
+#	    list_file="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/tmp_run_dap.lst"
+#
+#	    - checks this file against the existing list of available files, if
+#	      it exists; this file is hard-wired to be
+#
+#	    drp_list="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/drp_completed.lst"
+#
+#	    - if $list_file and $drp_list are different, or the required input
+#	      table for the DAP, hard-wired to be
+#
+#	    input_table="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/manga_dap_table.inp"
+#
+#	      is not available, it is created using the IDL procedure
+#	      MDAP_DRPALL_INFO.  Eventually this should gather the required
+#	      information from the DRPall file.  For now, this procedure gathers
+#	      the information directly from the NSA catalog by first matching
+#	      the object coordinates in the DRP fits file to the galaxies in the
+#	      NSA catalog (MDAP_MATCH_OBS_NSA) and then creating the input table
+#	      by pulling the needed information from the NSA catalog
+#	      (MDAP_CREATE_INPUT_TABLE).  The match results are hard-wired to be output to
+#
+#	    nsa_match="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/manga_drp_nsa_match.inp"
+#
+#	      and the NSA catalog is hard-wired to 
+#
+#	    nsa_cat="$MANGAWORK_DIR/manga/target/temp/12-nsa_v1b_0_0_v2.fits.gz"
+#
+#	    - copies the provided setup procedure (the first argument) to
+#	      $MANGADAP_DIR/pro/usr/mdap_execution_setup.pro so that it is
+#	      accessible via IDL_PATH
+#
+#	    - determines which line in the provided input table has the
+#	      information for the requested file to process
+#
+#	    - executes the DAP for that line of the input table
 #
 # Parameters are:
 #	$1 - the IDL procedure file that is required for the setup of the DAP
@@ -26,11 +71,12 @@
 #
 #	$3 - spool file for the IDL output
 #
-# Usage example: run_dap.sh mdap_setup.pro manga-7495-12703-LOGCUBE
+# Usage example: run_dap.sh mdap_setup.pro manga-7495-12703-LOGCUBE spool_dap
 #
 ################################################################################
 
 
+################################################################################
 # FUNCTIONS
 read_file_element () {
 	local c
@@ -78,6 +124,10 @@ find_string () {
 	    *) echo 0 ;;
 	esac
 }
+################################################################################
+
+# Start time
+date
 
 ################################################################################
 # Check the number of arguments
@@ -96,7 +146,7 @@ if [ ! -e ${1} ]; then
 fi
 
 ################################################################################
-# Check that the setup file exists
+# Check that the DRP file exists
 plate=( `echo ${2} | cut -d '-' -f 2` )
 if [ ! -e $MANGA_SPECTRO_REDUX/$MANGADRP_VER/${plate}/stack/${2}.fits.gz ]; then
     echo "ERROR: File does not exist: $MANGA_SPECTRO_REDUX/$MANGADRP_VER/${plate}/stack/${2}.fits.gz"
@@ -125,7 +175,8 @@ else
 fi
 
 list_file="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/tmp_run_dap.lst"
-echo $list_file
+rm -f $list_file
+#echo $list_file
 printf '' > $list_file
 for file in $(ls $MANGA_SPECTRO_REDUX/$MANGADRP_VER/$list) ; do
     ifun=( ` echo $file | cut -d '-' -f 3 ` )
@@ -136,7 +187,7 @@ for file in $(ls $MANGA_SPECTRO_REDUX/$MANGADRP_VER/$list) ; do
 done
 
 drp_list="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/drp_completed.lst"
-echo $drp_list
+#echo $drp_list
 ((build_input_table=0))
 if [ ! -e $drp_list ]; then
     ((build_input_table=1))
@@ -149,13 +200,11 @@ fi
 
 # The file list did not previously exist or has changed
 input_table="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/manga_dap_table.inp"
-if [ ${build_input_table} -eq 1 ]; then
+if [ ${build_input_table} -eq 1 ] || [ ! -e $input_table ]; then
     echo "Building/Updating DAP input table ..."
-    nsa_match="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/manga_drp_nsa_match.inp"
+    # nsa_match="$MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER/manga_drp_nsa_match.inp"
 
     mv $list_file $drp_list
-    #cmd=' idl -e "mdap_drpall_info, "$drp_list", "$nsa_match", "$input_table" " '
-    #echo $cmd
     cmd='idl -quiet -e mdap_drpall_info'
     echo `$cmd`
 else
@@ -188,6 +237,9 @@ if [ -e ${3} ]; then
 fi
 cmd='idl -quiet -e "manga_dap, $i, /nolog" > $3'
 eval $cmd
+
+# End time
+date
 
 # END
 ####################################################################################################

@@ -524,9 +524,9 @@ FUNCTION MDAP_WRITE_OUTPUT_NUMBER_OF_BINS, $
 		bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag
 
 	length = intarr(9)
-	if n_elements(bin_flux) ne 0 then length[0] = n_elements(bin_flux)
-	if n_elements(bin_ivar) ne 0 then length[1] = n_elements(bin_ivar)
-	if n_elements(bin_mask) ne 0 then length[2] = n_elements(bin_mask)
+	if n_elements(bin_flux) ne 0 then length[0] = (size(bin_flux))[1]
+	if n_elements(bin_ivar) ne 0 then length[1] = (size(bin_ivar))[1]
+	if n_elements(bin_mask) ne 0 then length[2] = (size(bin_mask))[1]
 	if n_elements(xbin) ne 0 then     length[3] = n_elements(xbin)
 	if n_elements(ybin) ne 0 then     length[4] = n_elements(ybin)
 	if n_elements(bin_area) ne 0 then length[5] = n_elements(bin_area)
@@ -1533,8 +1533,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
 
 	; Check that the length of the vectors matched the expected value, if input
 	if n_elements(ndrp) ne 0 then begin
-	    if ndrp ne ninp then $
-		message, 'Input vectors do not have the expected size!'
+	    if ndrp ne ninp then begin
+		message, 'Input vectors do not have the expected size! ' + MDAP_STC(ndrp,/integer) $
+		         + ' ' + MDAP_STC(ninp,/integer) + ')'
+	    endif
 	endif else $
 	    ndrp = ninp
 
@@ -1584,8 +1586,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_BINS, $
 
 	; Check that the length of the vectors matched the expected value, if input
 	if n_elements(nbin) ne 0 then begin
-	    if nbin ne ninp then $
-		message, 'Input vectors do not have the expected size!'
+	    if nbin ne ninp then begin
+		message, 'Input vectors do not have the expected size! ' + MDAP_STC(nbin,/integer) $
+		         + ' ' + MDAP_STC(ninp,/integer) + ')'
+	    endif
 	endif else $
 	    nbin = ninp
 

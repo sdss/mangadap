@@ -377,8 +377,10 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
 	; Convolve the templates to a common resolution wrt the object spectra
 	; with a common offset
 	for i=0,nt-1 do begin
-	    if ~keyword_set(quiet) then $
-		print, '    Matching resolution of template: ', i+1
+	    if ~keyword_set(quiet) then begin
+		print, '    Matching resolution of template: ' + MDAP_STC(i+1,/integer) + '/' + $
+		       MDAP_STC(nt,/integer)
+	    endif
 
 	    ; List of unmasked pixels
 	    unmasked=MDAP_MATCH_SPECTRAL_RESOLUTION_UNMASKED_PIXELS(reform(mask[i,*]))
