@@ -217,14 +217,11 @@ class rundap:
         file.write('\n')
         file.write('touch {0}.running'.format(fullfile))
         file.write('\n')
-        file.write("echo \"mdrp_runmanga{0}, /full, plate='{1}', inop='{2}', outop='{2}' \" | idl \n".format(stage,plate['plate'],plate['ifudesign']))
+
+        file.write("echo \"manga_dap, 38, /nolog \" | idl \n") # Eventually this will replace the hardcoded number: .format(stage,plate['plate'],plate['ifudesign']))
+
         file.write('\n')
         file.write('setStatusDone -f "{0}" \n'.format(errfile))
-        # update DRP all file
-        if stage == '3d':
-            file.write('updateDRPall -p {0} \n'.format(plate['plate']))
-            file.write('generateImages -p {0} \n'.format(plate['plate']))
-        file.write('\n')
         file.close()
         
         return fullfile, outfile, errfile
