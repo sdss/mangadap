@@ -252,6 +252,7 @@ pro/utilities/mdap_update_starting_guesses.pro -text
 pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
+python/mangadap/__init__.py -text
 python/mangadap/rundap.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_environment.csh -text
