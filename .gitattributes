@@ -1,6 +1,7 @@
 * text=auto !eol
 /RELEASE_NOTES -text
 bin/mangadap_version -text
+bin/rundap -text
 doc/configuration_file.tex -text
 doc/dap.bbl -text
 doc/dap.pdf -text
@@ -251,6 +252,7 @@ pro/utilities/mdap_update_starting_guesses.pro -text
 pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
+python/mangadap/rundap.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_environment.csh -text
 scripts/mdap_setup.bash -text

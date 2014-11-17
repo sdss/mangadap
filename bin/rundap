@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+validation=True
+try: from mangadap import rundap
+except ImportError,e : 
+    validation = False
+    print "ImportError: %s" % str(e)
+if validation: rundap = rundap(console=True)
+
+"""example usage:
+    rundap --daily
+    rundap --all
+    rundap --all --clobber
+    rundap --redo
+"""
