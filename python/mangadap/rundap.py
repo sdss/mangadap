@@ -1,5 +1,6 @@
 from __future__ import division
 from __future__ import print_function
+from os import environ, makedirs
 from os.path import exists, join, isdir
 from argparse import ArgumentParser
 from pbs import queue
@@ -60,6 +61,11 @@ class rundap:
         if self.all:
             self.label += "_clobber" if self.clobber else "_all"
         if self.redo: self.label += "_redo"
+        
+        
+        try: self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
+        except: exit()
+        
         if self.daily: self.run_daily()
         elif self.all:
             if self.clobber: self.run_clobber()
@@ -159,7 +165,7 @@ class rundap:
     def module_version(self, product='mangadap'):
         ''' Return the module versions for the specified product.  Default product is mangadap.'''
         
-        try: modules = os.environ['LOADEDMODULES']
+        try: modules = environ['LOADEDMODULES']
         except: modules = None
         
         if modules:
@@ -178,12 +184,13 @@ class rundap:
     def set_status(self,plate,status='queued', stage='dap'):
         ''' Generate the touch status files for a given plate'''
         
+        
         # Generate status path and name
         statfile = 'manga{0}-{1}-{2}.{3}'.format(stage, plate['plate'], plate['ifudesign'], status)
-        path = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
+        path = join(self.manga_spectro_analysis, self.outver, str(plate['plate']), str(plate['ifudesign']))
         
         # Check for path existence
-        if not isdir(path): os.makedirs(path)
+        if not isdir(path): makedirs(path)
                 
         # Write status file
         fullfile = join(path,statfile)
@@ -195,7 +202,7 @@ class rundap:
         
         # Generate script path and name
         statfile = 'manga{0}-{1}-{2}'.format(stage,plate['plate'],plate['ifudesign'])
-        path = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), self.outver, str(plate['plate']), str(plate['ifudesign']))
+        path = join(self.manga_spectro_analysis, self.outver, str(plate['plate']), str(plate['ifudesign']))
             
         fullfile = join(path,statfile)
         outfile = join(path,statfile+'.out')
