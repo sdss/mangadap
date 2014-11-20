@@ -115,8 +115,10 @@ class rundap:
         if self.quiet==None: self.quiet = self.arg.quiet
         if not self.outver:
             self.outver = self.arg.outver if self.arg.outver else self.dapver
-        if self.ifudesignlist == None: self.ifudesignlist = self.arg.ifudesignlist
-        if self.platelist == None: self.platelist = self.arg.platelist
+        if self.ifudesignlist == None: self.ifudesignlist = eval(self.arg.ifudesignlist)
+	if type(self.ifudesignlist) == int: self.ifudesignlist = [self.ifudesignlist]
+        if self.platelist == None: self.platelist = eval(self.arg.platelist)
+	if type(self.platelist) == int: self.platelist = [self.platelist]
         if self.idlutilsver == None: self.idlutilsver = self.arg.idlutilsver
             
         # Set queue keywords
