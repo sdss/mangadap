@@ -124,14 +124,23 @@ class rundap:
 
         # List of files to analyze
         self.platelist = platelist
-        if type(self.platelist) == str:
+        if self.platelist is not None and type(self.platelist) == str:
             self.platelist = strcsv_to_list(self.platelist, evaluate=True)
+        if self.platelist is not None and type(self.platelist) != list:
+            self.platelist = [self.platelist]
+
         self.ifudesignlist = ifudesignlist
-        if type(self.ifudesignlist) == str:
+        if self.ifudesignlist is not None and type(self.ifudesignlist) == str:
             self.ifudesignlist = strcsv_to_list(self.ifudesignlist, evaluate=True)
+        if self.ifudesignlist is not None and type(self.ifudesignlist) != list:
+            self.ifudesignlist = [self.ifudesignlist]
+
         self.modelist = modelist
-        if type(self.modelist) == str:
+        if self.modelist is not None and type(self.modelist) == str:
             self.modelist = strcsv_to_list(self.modelist)
+        if self.modelist is not None and type(self.modelist) != list:
+            self.modelist = [self.modelist]
+
         self.combinatorics = combinatorics
 
         # NSA catalog to use for drpcomplete file (drpcomplete can
