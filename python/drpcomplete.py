@@ -537,8 +537,8 @@ class drpcomplete:
             if self.data['PLATE'][i] == plate and self.data['IFUDESIGN'][i] == ifudesign:
                 return i
 
-        raise Exception('Could not find plate=%d,ifudesign=%d in drpcomplete file!' % str(plate),
-                        str(ifudesign))
+        raise Exception('Could not find plate={0},ifudesign={1} in drpcomplete file!'.format(plate,
+                        ifudesign))
 
 
 
