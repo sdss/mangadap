@@ -376,13 +376,17 @@ class drpcomplete:
 
         if platelist is not None:
             self.platelist = platelist
-        if type(self.platelist) == str:
+        if self.platelist is not None and type(self.platelist) == str:
             self.platelist = strcsv_to_list(self.platelist, evaluate=True)
+        if self.platelist is not None and type(self.platelist) != list:    
+            self.platelist = [self.platelist]
 
         if ifudesignlist is not None:
             self.ifudesignlist = ifudesignlist
-        if type(self.ifudesignlist) == str:
+        if self.ifudesignlist is not None and type(self.ifudesignlist) == str:
             self.ifudeisnglist = strcsv_to_list(self.ifudesignlist, evaluate=True)
+        if self.ifudesignlist is not None and type(self.ifudesignlist) != list:    
+            self.ifudesignlist = [self.ifudesignlist]
 
         # TODO: _find_completed_reductions() only searches for CUBE files
         self.platelist, self.ifudesignlist = \
