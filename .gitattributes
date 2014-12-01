@@ -168,6 +168,7 @@ pro/fileio/mdap_read_1dspec_fits.pro -text
 pro/fileio/mdap_read_absorption_line_parameters.pro -text
 pro/fileio/mdap_read_drp_fits.pro -text
 pro/fileio/mdap_read_emission_line_parameters.pro -text
+pro/fileio/mdap_read_input_setup.pro -text
 pro/fileio/mdap_read_output.pro -text
 pro/fileio/mdap_read_resampled_templates.pro -text
 pro/fileio/mdap_read_template_library.pro -text
@@ -252,6 +253,8 @@ pro/utilities/mdap_update_starting_guesses.pro -text
 pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
+python/drpcomplete.py -text
+python/drpfile.py -text
 python/mangadap/__init__.py -text
 python/mangadap/rundap.py -text
 scripts/mdap_environment.bash -text

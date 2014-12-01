@@ -222,10 +222,10 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
 		wave, flux, ivar, mask, passband, blueband, redband, equiv_width, equiv_width_err, $
 		index_mag, index_mag_err, err=err, geometric=geometric
 
-;	print, 'abs:', wave[0], wave[n_elements(wave)-1]
-;	print, 'abs:', passband
-;	print, 'abs:', blueband
-;	print, 'abs:', redband
+	print, 'abs:', wave[0], wave[n_elements(wave)-1]
+	print, 'abs:', passband
+	print, 'abs:', blueband
+	print, 'abs:', redband
 	
 	; Unmasked pixels in the blue band
 	bindx = where(wave ge blueband[0] and wave le blueband[1] and mask lt 0.5)
@@ -238,12 +238,12 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
 	MDAP_GET_PSEUDOCONTINUUM, wave, flux, ivar, mask, blueband, blue_cont, blue_cont_err, $
 				  wave_integral=blue_width, err=err, geometric=geometric
 
-;	print, 'abs: ', sn_blue
-;	print, 'abs: ', nblue
-;	print, 'abs: ', bcen
-;	print, 'abs: ', blue_cont
-;	print, 'abs: ', blue_cont_err
-;	print, 'err: ', err
+	print, 'abs: ', sn_blue
+	print, 'abs: ', nblue
+	print, 'abs: ', bcen
+	print, 'abs: ', blue_cont
+	print, 'abs: ', blue_cont_err
+	print, 'err: ', err
 
 	if err eq 1 then $
 	    return				; No wavelength integral so return with error
@@ -259,13 +259,13 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
 	MDAP_GET_PSEUDOCONTINUUM, wave, flux, ivar, mask, redband, red_cont, red_cont_err, $
 				  wave_integral=red_width, err=err, geometric=geometric
 
-;	print, 'abs: ', rindx
-;	print, 'abs: ', sn_red
-;	print, 'abs: ', nred
-;	print, 'abs: ', rcen
-;	print, 'abs: ', red_cont
-;	print, 'abs: ', red_cont_err
-;	print, 'err: ', err
+	print, 'abs: ', rindx
+	print, 'abs: ', sn_red
+	print, 'abs: ', nred
+	print, 'abs: ', rcen
+	print, 'abs: ', red_cont
+	print, 'abs: ', red_cont_err
+	print, 'err: ', err
 
 	if err eq 1 then $
 	    return				; No wavelength integral so return with error
@@ -306,7 +306,7 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
 	MDAP_INTEGRATE_PIXELIZED_VALUE, wave, unity, unity, mask_, passband, pass_width, dummy, $
 					geometric=geometric
 
-;	print, 'abs: ', pass_width
+	print, 'abs: ', pass_width
 
 	integrand = flux / continuum				; EW integrand
 	integrand_err = abs(1.0d / continuum / sqrt(ivar))
