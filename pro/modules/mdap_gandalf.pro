@@ -226,7 +226,7 @@ ENDIF ELSE BEGIN               ; Fitting multiple templates
     BND = DBLARR(2,s[2],/NOZERO)
     mx = (MACHAR()).XMAX
     IF (degree GE 0) THEN BND[0,0:degree] = -mx   ; No constraints on the Legendre polynomials
-    BND[0,degree+1:*] = 0d  	    	    	  ; Positivity constraints on the templates
+    BND[0,degree+1:*] = 0d                        ; Positivity constraints on the templates
     BND[1,*] = mx
     ; If we are fitting with MPFIT also the amplitudes of the emission lines, 
     ; then fix the weights for these components, by setting them to 1.0
@@ -238,9 +238,9 @@ ENDIF ELSE BEGIN               ; Fitting multiple templates
     endif
 
     if external_library[0] eq 'none' then begin
-	mdap_BVLS, A, B, BND, soluz
+        mdap_BVLS, A, B, BND, soluz
     endif else $
-	mdap_bvls_external, A, B, BND, soluz, external_library
+        mdap_bvls_external, A, B, BND, soluz, external_library
 
 ENDELSE
 
@@ -607,15 +607,15 @@ for i = 0,nlines-1 do begin
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
         ;
         if ~keyword_set(for_errors) then begin
-;	    print, 'Keyword /for_errors not set!'
-;	    print, size(i)
-;	    print, i
-;	    print, parinfo[2*i].tied
-;	    print, string(2*i_refline)
-;	    print, str_l_refline
-;	    print, str_l_line
-;	    print, lstep_gal
-;	    stop
+;           print, 'Keyword /for_errors not set!'
+;           print, size(i)
+;           print, i
+;           print, parinfo[2*i].tied
+;           print, string(2*i_refline)
+;           print, str_l_refline
+;           print, str_l_line
+;           print, lstep_gal
+;           stop
             parinfo[2*i].tied = $ 
               strcompress('P['+string(2*i_refline)+']-alog('+str_l_refline+'/'+str_l_line+')/')+ $
               strtrim(string(lstep_gal),2)
@@ -773,7 +773,7 @@ gaus = create_templates(EMISSION_SETUP=emission_setup,LSTEP_GAL=lstep_gal, NPIX=
 ;   3.- Emission Lines, also reddened
 IF s[0] EQ 2 THEN ntemp = s[2] ELSE ntemp = 1   ; Number of template spectra
 c = dblarr(npix,degree+nlines+ntemp+1,/NOZERO)  ; This array is used for estimating predictions
-a = c               	    	    	    	; This array is used for the actual solution of the system
+a = c                                           ; This array is used for the actual solution of the system
 FOR j=0,degree   DO c[*,j] = legendre(x,j)      ; Legendre polinomials (additive)
 IF n_elements(reddening) eq 0 THEN BEGIN
     FOR j=0,ntemp-1  DO c[*,degree+1+j] = mpoly*cstar[0:npix-1,j] ; Convolved templates x mult. polinomials
@@ -829,7 +829,7 @@ PRO REARRANGE_RESULTS, res, weights, chi2, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal,  
                        VELSCALE=velscale, EMISSION_SETUP=emission_setup, SOL=sol, $
                        INT_DISP=int_disp, LOG10=log10, REDDENING=reddening,       $
                        ERR=err, ESOL=esol, FOR_ERRORS=for_errors, mdegree=mdegree,$
-		       mult_poly_coeff=mult_poly_coeff
+                       mult_poly_coeff=mult_poly_coeff
 ; Given the input res array from the MPFIT fit (with V_gas and S_gas
 ; best-fitting values - in pixels) and the weight from the BVLS fit
 ; (which with the emission-line basic amplitudes to get A_gas),
@@ -952,8 +952,8 @@ if keyword_set(err) then esol=esol_final
 
 ; ADDED BY KBW TO RETURN MULTIPLICATIVE POLYNOMIAL COEFFICIENTS
 if n_elements(reddening) eq 0 and n_elements(mdegree) ne 0 then begin
-    np = keyword_set(for_errors) ? 3 : 2			; Number of parameters per line
-    mult_poly_coeff = res[nlines*np:nlines*np+mdegree-1]	; Set the polynomial coefficients
+    np = keyword_set(for_errors) ? 3 : 2                        ; Number of parameters per line
+    mult_poly_coeff = res[nlines*np:nlines*np+mdegree-1]        ; Set the polynomial coefficients
 endif
 
 ;stop
@@ -1019,13 +1019,13 @@ END
 
 ;------------------------------------------------------------------------------------
 PRO MDAP_GANDALF, $
-		templates, galaxy, noise, velScale, sol, emission_setup, l0_gal, lstep_gal, $
-		GOODPIXELS=goodPixels, DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp, $
-		BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
-		ERROR=esol, PLOT=plot, QUIET=quiet, LOG10=log10, REDDENING=reddening, $
-		L0_TEMPL=l0_templ, FOR_ERRORS=for_errors, fix_gas_kin=fix_gas_kin, $
-		range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
-		external_library=external_library, mult_poly_coeff=mult_poly_coeff
+                templates, galaxy, noise, velScale, sol, emission_setup, l0_gal, lstep_gal, $
+                GOODPIXELS=goodPixels, DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp, $
+                BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
+                ERROR=esol, PLOT=plot, QUIET=quiet, LOG10=log10, REDDENING=reddening, $
+                L0_TEMPL=l0_templ, FOR_ERRORS=for_errors, fix_gas_kin=fix_gas_kin, $
+                range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
+                external_library=external_library, mult_poly_coeff=mult_poly_coeff
 
 compile_opt idl2
 on_error, 0
@@ -1095,7 +1095,7 @@ if n_elements(reddening) eq 0 then $
 ; and width in pixel units.
 h = 0
 for i = 0,nlines-1 do begin 
-    ; current emission-line index in the input setup structure	
+    ; current emission-line index in the input setup structure  
     j = i_lines[i]
     ; to deal with log10-lambda rebinned data, instead of ln-lambda
     if not keyword_set(log10) then $

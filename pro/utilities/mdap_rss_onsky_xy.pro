@@ -1,31 +1,31 @@
 ;+
 ; NAME:
-;	MDAP_RSS_ONSKY_XY
+;       MDAP_RSS_ONSKY_XY
 ;
 ; PURPOSE:
-;	Set the on-sky x and y coordinates of the RSS files using data from the
-;	fits file.  The order of the arrays are rearranged to match the
-;	restructured specta (see mdap_restructure_rss.pro).
+;       Set the on-sky x and y coordinates of the RSS files using data from the
+;       fits file.  The order of the arrays are rearranged to match the
+;       restructured specta (see mdap_restructure_rss.pro).
 ;
 ; CALLING SEQUENCE:
-;	MDAP_RSS_ONSKY_XY, file, skyx, skyy
+;       MDAP_RSS_ONSKY_XY, file, skyx, skyy
 ;
 ; INPUTS:
-;	file string
-;		Fits file with x and y coordinates in extensions 7 and 8.
+;       file string
+;               Fits file with x and y coordinates in extensions 7 and 8.
 ;
 ; OPTIONAL INPUTS:
 ;
 ; OPTIONAL KEYWORDS:
 ;
 ; OUTPUT:
-;	skyx dblarr[][]
-;		NAXIS1*NAXIS2 by T array with the x-coordinates of each pixel,
-;		where T is the number of spectral channels.
+;       skyx dblarr[][]
+;               NAXIS1*NAXIS2 by T array with the x-coordinates of each pixel,
+;               where T is the number of spectral channels.
 ;
-;	skyy dblarr[]][]
-;		NAXIS1*NAXIS2 by T array with the y-coordinates of each pixel,
-;		where T is the number of spectral channels.
+;       skyy dblarr[]][]
+;               NAXIS1*NAXIS2 by T array with the y-coordinates of each pixel,
+;               where T is the number of spectral channels.
 ;
 ; OPTIONAL OUTPUT:
 ;
@@ -40,19 +40,19 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;	09 Sep 2014: (KBW) Original Implementation
+;       09 Sep 2014: (KBW) Original Implementation
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_RSS_ONSKY_XY, $
-	file, skyx, skyy
+        file, skyx, skyy
 
-	skyx=double(READFITS(file, exten_no=7))		; X-coordinates in extension 7
-	skyy=double(READFITS(file, exten_no=8))		; Y-coordinates in extension 8
+        skyx=double(READFITS(file, exten_no=7))         ; X-coordinates in extension 7
+        skyy=double(READFITS(file, exten_no=8))         ; Y-coordinates in extension 8
 
-	skyx=transpose(temporary(skyx))			; Transpose the matrices to match spectra
-	skyy=transpose(temporary(skyy))
+        skyx=transpose(temporary(skyx))                 ; Transpose the matrices to match spectra
+        skyy=transpose(temporary(skyy))
 END
-	
+        
 
 

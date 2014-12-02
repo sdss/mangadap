@@ -27,6 +27,6 @@ ierr = long(0)
 ;so_file=file_search('./','bvls.so',/FULLY_QUALIFY_PATH)
 
 tmp = CALL_EXTERNAL(external_library, 'bvls', $
-    	A, M, N, B, BND, X, RNORM, NSETP, W, INDEX, IERR)
+        A, M, N, B, BND, X, RNORM, NSETP, W, INDEX, IERR)
 
 END

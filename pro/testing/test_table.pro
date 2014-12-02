@@ -45,17 +45,17 @@ pro test_table
 ;      fxbcreate,unit,'sample.fits',header
 ;
 ;      for i=0,42 do begin
-;	fxbwrite,unit, x[i], 1, i+1
-;	fxbwrite,unit, y[i], 2, i+1
-;	fxbwrite,unit, psf[*,*,i], 3, i+1
+;       fxbwrite,unit, x[i], 1, i+1
+;       fxbwrite,unit, y[i], 2, i+1
+;       fxbwrite,unit, psf[*,*,i], 3, i+1
 ;      endfor
 ;
 ;      ; (5) Use FXBWRITM to write all data to the extension in a single call
 ;;      fxbwritm,unit,['X','Y','PSF'], x, y, psf
 ;;      fxbfinish,unit                 ;Close the file
 ;
-;	file='sample.fits'
-;	fits_info, file
+;       file='sample.fits'
+;       fits_info, file
 ;
 
 ; INITIALIZE THE HEADER
@@ -84,12 +84,12 @@ pro test_table
 fits_info, file
 stop
 
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
-	print, header
-	print, fxbdimen(unit, 'X')
-	print, fxbdimen(unit, 'Y')
-	print, fxbdimen(unit, 'PSF')
-	fxbfinish, unit
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        print, header
+        print, fxbdimen(unit, 'X')
+        print, fxbdimen(unit, 'Y')
+        print, fxbdimen(unit, 'PSF')
+        fxbfinish, unit
 
 ; CREATE THE DATA ARRAYS
       x = dindgen(43)
@@ -104,39 +104,39 @@ stop
 
       MODFITS, file, 0, header, extname='TESTEXT'
 
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
-	print, header
-	print, fxbdimen(unit, 'X')
-	print, fxbdimen(unit, 'Y')
-	print, fxbdimen(unit, 'PSF')
-	fxbfinish, unit
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        print, header
+        print, fxbdimen(unit, 'X')
+        print, fxbdimen(unit, 'Y')
+        print, fxbdimen(unit, 'PSF')
+        fxbfinish, unit
 
 fits_info, file
 stop
 
 ; ADJUST THE TABLE SIZE
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
-	FXBGROW, unit, header, 43
-	fxbfinish, unit
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        FXBGROW, unit, header, 43
+        fxbfinish, unit
 
 fits_info, file
 stop
 
 ; WRITE THE DATA
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
       fxbwritm,unit,['X','Y'], x, y
       FXBFINISH, unit
 
 stop
 
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
       fxbwritm,unit,['PSF'], psf
       FXBFINISH, unit
 
       x = dindgen(43)+3
       y = dindgen(43)-4
 
-	FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
+        FXBOPEN, unit, file, 'TESTEXT', header, access='RW'
       fxbwritm,unit,['X','Y'], x, y
       FXBFINISH, unit
 
@@ -144,15 +144,15 @@ fits_info, file
 stop
 
 ; ADD DATA TO THE IMAGE EXTENSION
-	img=randomn(see,100,100)
-	mkhdr, header, img, /image
-	sxaddpar, header, 'EXTNAME', 'TESTIMG', 'Test image'
-	modfits, file, img, header, extname='TESTIMG'
+        img=randomn(see,100,100)
+        mkhdr, header, img, /image
+        sxaddpar, header, 'EXTNAME', 'TESTIMG', 'Test image'
+        modfits, file, img, header, extname='TESTIMG'
 
 ;      for i=0,42 do begin
-;	fxbwrite,unit, x[i], 1, i+1
-;	fxbwrite,unit, y[i], 2, i+1
-;	fxbwrite,unit, psf[*,*,i], 3, i+1
+;       fxbwrite,unit, x[i], 1, i+1
+;       fxbwrite,unit, y[i], 2, i+1
+;       fxbwrite,unit, psf[*,*,i], 3, i+1
 ;      endfor
 
 fits_info, file

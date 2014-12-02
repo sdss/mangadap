@@ -1,16 +1,16 @@
 ; Get the intersection of two arrays
 FUNCTION mdap_set_intersection, $
-		a, b
+                a, b
 
-	minab = min(a, MAX=maxa) > min(b, MAX=maxb) ;Only need intersection of ranges
-	maxab = maxa < maxb
+        minab = min(a, MAX=maxa) > min(b, MAX=maxb) ;Only need intersection of ranges
+        maxab = maxa < maxb
 
-	;If either set is empty, or their ranges don't intersect: result = NULL.
-	if maxab lt minab or maxab lt 0 then return, -1
-	r = where((histogram(a, MIN=minab, MAX=maxab) ne 0) and  $
-		  (histogram(b, MIN=minab, MAX=maxab) ne 0), count)
+        ;If either set is empty, or their ranges don't intersect: result = NULL.
+        if maxab lt minab or maxab lt 0 then return, -1
+        r = where((histogram(a, MIN=minab, MAX=maxab) ne 0) and  $
+                  (histogram(b, MIN=minab, MAX=maxab) ne 0), count)
 
-	return, (count eq 0 ? -1 : r+minab)
+        return, (count eq 0 ? -1 : r+minab)
 END
 
 ;;A somewhat belated reply to the numerous postings on finding the

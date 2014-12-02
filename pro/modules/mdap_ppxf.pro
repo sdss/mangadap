@@ -451,9 +451,9 @@ else begin               ; Fitting multiple templates
     bnd[0,npoly:*] = 0d  ; Positivity constraints on the templates (and sky spectra)
     bnd[1,*] = mx
     if external_library[0] eq 'none' then begin
-	mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr 
+        mdap_BVLS, A, B, bnd, soluz, ITMAX=15*s[2], IERR=ierr 
     endif else $
-	mdap_bvls_external, A, B, bnd, soluz, external_library, IERR=ierr
+        mdap_bvls_external, A, B, bnd, soluz, external_library, IERR=ierr
 
     if ierr ne 0 then message, 'BVLS Error n. ' + strtrim(ierr,2)
 endelse
@@ -810,10 +810,10 @@ endif
 ;
 if keyword_set(plot) then begin
     mdap_basic_colors, black, white, red, green, blue, yellow, cyan, magenta, orange, mint, $
-		       purple, pink, olive, lightblue, gray   
+                       purple, pink, olive, lightblue, gray   
     screenr = GET_SCREEN_SIZE()
     window, xsize=screenr[0]*0.5, ysize=screenr[1]*0.5, retain=2
-		       
+                       
 
     mn = min(bestfit[goodPixels], MAX=mx)
     resid = mn + galaxy - bestfit

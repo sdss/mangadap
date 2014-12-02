@@ -9,9 +9,9 @@
 ;                            , /test ]   
 ;
 ; Arguments    Name   I/O Type:     Description:
-;	       ----------------------------------------------------------
-;	       black   O  int	    color index black
-;	       ...     O  int	    ...
+;              ----------------------------------------------------------
+;              black   O  int       color index black
+;              ...     O  int       ...
 ;              /test   I            make an example plot of all colours
 ;
 ; Description  defines B&W, basic RGB colors, lightb(lue) and gray
@@ -24,10 +24,10 @@
 ;                              yellow, cyan  , magenta, orange   , mint, $
 ;                              purple, pink  , olive  , lightblue, gray   
 ;
-;	       plot ,[0,1],[0,4],color=yellow
-;	       oplot,[0,1],[0,3],color=blue
-;	       oplot,[0,1],[0,2],color=green
-;	       oplot,[0,1],[0,1],color=red
+;              plot ,[0,1],[0,4],color=yellow
+;              oplot,[0,1],[0,3],color=blue
+;              oplot,[0,1],[0,2],color=green
+;              oplot,[0,1],[0,1],color=red
 ;
 ; Category     UTIL
 ;
@@ -56,7 +56,7 @@ PRO mdap_basic_colors,   black , white , red    , green , blue, $
 
   common colors, r_orig, g_orig, b_orig, r_curr, g_curr, b_curr   ;for looadct
 
-;	 0 1 2 3 4 5 6 7  8   9   10  11  12  13  14
+;        0 1 2 3 4 5 6 7  8   9   10  11  12  13  14
 
 ; set this to get pseudo colors on a true color device
 ; on a pseudo color device this keyword has no effect
@@ -88,19 +88,19 @@ PRO mdap_basic_colors,   black , white , red    , green , blue, $
 
   black  = 0
   white  = 1
-  red	 = 2
+  red    = 2
   green  = 3
-  blue	 = 4
+  blue   = 4
   yellow = 5
-  cyan	 = 6
+  cyan   = 6
   magenta= 7
   orange = 8
-  mint	 = 9
+  mint   = 9
   purple = 10
   pink   = 11
   olive  = 12
   lightb = 13
-  gray	 = 14
+  gray   = 14
 
   if keyword_set(test) then begin
     if !d.name eq 'X' then $

@@ -31,59 +31,44 @@ def parse_drp_file_name(name):
     mode_start = str.find(name,'LOG')+3
     mode = name[mode_start:str.find(name,'.fits.gz')]
 
-    # TODO: Check the result?
-
     return plate, ifudesign, mode
 
 
-def strcsv_to_list(inp, evaluate=False):
+def arginp_to_list(inp, evaluate=False, quiet=True):
     """
-    Convert a comma-separated list of values to a list.  If evaluate is
-    true, evaluate each element in the list before returning.
+    Convert an input argument to a list of separated values.
+
+    If evaluate is True, evaluate each element in the list before
+    returning it.
     """
 
-    if evaluate is False:
-        return inp.split(',')
+    out = inp
 
-    out = inp.split(',')
-    n=len(out)
-    for i in range(0,n):
-        out[i] = eval(out[i])
+    # Simply return a None value
+    if out is None:
+        return out
+
+    # If the input value is a string, convert it to a list of strings
+    if type(out) == str:
+        out = out.split(',')
+
+    # If the input is still not a list, make it one
+    if type(out) != list:
+        out = [out]
+
+    # Evaluate each string, if requested
+    if evaluate:
+        n = len(out)
+        for i in range(0,n):
+            try:
+                tmp = eval(out[i])
+            except (NameError, TypeError):
+                if not quiet:
+                    print('Could not evaluate value {0}. Skipping.'.format(out[i]))
+            else:
+                out[i] = tmp
+
     return out
-
-def convert_input_drp_lists(platelist, ifudesignlist, modelist):
-    """
-    Convert an input list of DRP file attributes (plate, ifudesign,
-    mode) to python lists that will be interpreted by subsequent
-    algorithms.
-    """
-
-    if platelist is None or ifudesignlist is None or modelist is None:
-        raise ValueError('Must provide platelist, ifudesignlist, and modelist!')
-
-    # Allow input to be strings
-    if type(platelist) == str:
-        platelist_ = strcsv_to_list(platelist, evaluate=True)
-    else:
-        platelist_ = platelist
-
-    if type(ifudesignlist) == str:
-        ifudesignlist_ = strcsv_to_list(ifudesignlist, evaluate=True)
-    else:
-        ifudesignlist_ = ifudesignlist
-
-    modelist_ = strcsv_to_list(modelist) if type(modelist) == str else modelist
-         
-    # Convert to lists if necessary
-    if (type(platelist) != list) and (type(platelist) != numpy.ndarray):
-        platelist_ = [platelist_]
-    if (type(ifudesignlist_) != list) and (type(ifudesignlist_) != numpy.ndarray):
-        ifudesignlist_ = [ifudesignlist_]
-    if (type(modelist_) != list) and (type(modelist_) != numpy.ndarray):
-        modelist_ = [modelist_]
-
-    return platelist_, ifudesignlist_, modelist_
-
 
 
 def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False):
@@ -102,8 +87,8 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
 
     If the number of elements in each list is the same, the matching is
     assumed to be finished unless combinatorics is True.  If the number
-    of elements is not the same, or cominatorics is True, all the
-    matched list is all the combinations of the provided elements.
+    of elements is not the same, or cominatorics is True, the matched
+    list is all the combinations of the provided elements.
 
     REVISION HISTORY:
         20 Nov 2014: (KBW) Original implementation
@@ -112,8 +97,12 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
     if (type(drpver) != str):
         raise Exception('DRP drpver must be a string')
 
-    platelist_, ifudesignlist_, modelist_ = convert_input_drp_lists(platelist, ifudesignlist,
-                                                                    modelist)
+    if platelist is None or ifudesignlist is None or modelist is None:
+        raise ValueError('Must provide platelist, ifudesignlist, and modelist!')
+
+    platelist_ = arginp_to_list(platelist, evaluate=True)
+    ifudesignlist_ = arginp_to_list(ifudesignlist, evaluate=True)
+    modelist_ = arginp_to_list(modelist)
 
     n_plates = len(platelist_)
     n_designs = len(ifudesignlist_)
@@ -122,8 +111,15 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
     # Perform the combinatorics
     if (n_plates != n_designs or n_plates != n_modes or combinatorics is True):
 
-        # TODO: Force elements in platelist, ifudesignlist, and modelist
-        # to be unique before performing combinatorics?
+        # Force elements in platelist, ifudesignlist, and modelist
+        # to be unique before performing combinatorics
+        platelist_ = list(set(platelist_))
+        ifudesignlist_ = list(set(ifudesignlist_))
+        modelist_ = list(set(modelist_))
+
+        n_plates = len(platelist_)
+        n_designs = len(ifudesignlist_)
+        n_modes = len(modelist_)
 
         # Each element of plate list is repeated n_designs*n_modes times
         for i in range(0,n_plates):
@@ -194,11 +190,11 @@ class drpfile:
 
         inp = self.file_path()
         if (not os.path.exists(inp)):
-            raise Exception(''.join(['Cannot open file: ',inp]))
+            raise Exception('Cannot open file: {0}'.format(inp))
 
-        # TODO: This is very slow!  memmap does not help.  A way to read
-        # header without setting up the whole hdulist object?
-        # hdulist = fits.open(inp,memmap=True)
+        # TODO: This is very slow!  memmap in fits.open() does not help.
+        # A way to read header without setting up the whole hdulist
+        # object?  hdulist = fits.open(inp,memmap=True)
         hdr = fits.getheader(inp,0)
         self.manga_id = hdr['MANGAID']
         self.object_ra = hdr['OBJRA']

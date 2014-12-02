@@ -111,28 +111,28 @@ if s[0] ne 1 then message, 'input spectrum must be a vector'
 n = s[1]
 if n_elements(oversample) ne 0 then m = n*oversample else m = n
 
-dLam = (lamRange[1]-lamRange[0])/(n-1d)		; Assume constant dLam
-lim = lamRange/dLam + [-0.5d,0.5d]		; All in units of dLam
-borders = mdap_range(lim[0],lim[1],n+1)		; Linearly
+dLam = (lamRange[1]-lamRange[0])/(n-1d)         ; Assume constant dLam
+lim = lamRange/dLam + [-0.5d,0.5d]              ; All in units of dLam
+borders = mdap_range(lim[0],lim[1],n+1)         ; Linearly
 ;print, borders[0], lim[0]
 
 l10=n_elements(log10)
 
 if n_elements(newRange) ne 0 then begin
     if newRange[0] gt newRange[1] then $
-	message, 'It must be that newRange[0] lt newRange[1]'
-    lim = newRange/dLam + [-0.5d,0.5d]		; Set new limits to different wavelength range
+        message, 'It must be that newRange[0] lt newRange[1]'
+    lim = newRange/dLam + [-0.5d,0.5d]          ; Set new limits to different wavelength range
 
-    nn=floor((lamRange[1]-lamRange[0]-newRange[1]+newRange[0])/dLam)	; Adjust the length
+    nn=floor((lamRange[1]-lamRange[0]-newRange[1]+newRange[0])/dLam)    ; Adjust the length
     ;print, n, nn
     if n_elements(oversample) ne 0 then begin
-	m = m-nn*oversample
+        m = m-nn*oversample
     endif else $
-	m = m-nn
+        m = m-nn
     ;print, m
 endif
 
-if l10 ne 0 then begin				; Set the limiting wavelengths
+if l10 ne 0 then begin                          ; Set the limiting wavelengths
     logLim = alog10(lim)
 endif else $
     logLim = alog(lim)
@@ -140,14 +140,14 @@ endif else $
 c = 299792.458d                                  ; Speed of light in km/s
 if n_elements(velScale) gt 0 then begin          ; Velocity scale is set by user
 
-    logScale = velScale/c			 ; dlamba/lambda = dln(lambda)
+    logScale = velScale/c                        ; dlamba/lambda = dln(lambda)
 
-    if l10 ne 0 then $				 ; Convert to dlog10(lambda)
-	logScale = logScale/alog(10.0d)
+    if l10 ne 0 then $                           ; Convert to dlog10(lambda)
+        logScale = logScale/alog(10.0d)
 
     m = floor((logLim[1]-logLim[0])/logScale)    ; Number of output pixels
 
-    logLim[1] = logLim[0] + m*logScale		 ; Set last wavelength, based on integer # of pixels
+    logLim[1] = logLim[0] + m*logScale           ; Set last wavelength, based on integer # of pixels
     ;print, m
     ;print, 10^(logLim)
 endif else begin
@@ -155,7 +155,7 @@ endif else begin
     velScale = (logLim[1]-logLim[0])/m*c         ; Only for output
 
     if l10 ne 0 then $
-	velScale = velScale*alog(10.0d)		; Correct velocity for dlog10(lambda) sampling
+        velScale = velScale*alog(10.0d)         ; Correct velocity for dlog10(lambda) sampling
 
 endelse
 
@@ -169,9 +169,9 @@ k = floor(newBorders-borders[0]) < (n-1) > 0
 
 if n_params() ge 4 then begin  ; Optional output log(wavelength): log of geometric mean!
     if l10 ge 0 then begin
-	logLam = alog10(sqrt(newBorders[1:*]*newBorders)*dLam)
+        logLam = alog10(sqrt(newBorders[1:*]*newBorders)*dLam)
     endif else $
-	logLam = alog(sqrt(newBorders[1:*]*newBorders)*dLam)
+        logLam = alog(sqrt(newBorders[1:*]*newBorders)*dLam)
 endif
  
 specNew = dblarr(m,/NOZERO)

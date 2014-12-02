@@ -1,29 +1,29 @@
 ;+
 ; NAME:
-;	MDAP_GENERATE_BINNING_WEIGHTS
+;       MDAP_GENERATE_BINNING_WEIGHTS
 ;
 ; PURPOSE:
-;	Generate weights used when combining a set of spectra.
+;       Generate weights used when combining a set of spectra.
 ;
 ; CALLING SEQUENCE:
-;	MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, wgt, /weight_for_sn
+;       MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, wgt, /weight_for_sn
 ;
 ; INPUTS:
-;	signal dblarr[N]
-;		Signal of each spectrum; see MDAP_CALCULATE_SPECTRUM_SN.
+;       signal dblarr[N]
+;               Signal of each spectrum; see MDAP_CALCULATE_SPECTRUM_SN.
 ;
-;	noise dblarr[N]
-;		Noise of each spectrum; see MDAP_CALCULATE_SPECTRUM_SN.
+;       noise dblarr[N]
+;               Noise of each spectrum; see MDAP_CALCULATE_SPECTRUM_SN.
 ;
 ; OPTIONAL INPUTS:
-;	/weight_for_sn
-;		Weight the spectra by (S/N)^2
+;       /weight_for_sn
+;               Weight the spectra by (S/N)^2
 ;
 ; OPTIONAL KEYWORDS:
 ;
 ; OUTPUT:
-;	wgt dblarr[N]
-;		Weights to use for each spectrum
+;       wgt dblarr[N]
+;               Weights to use for each spectrum
 ;
 ; OPTIONAL OUTPUT:
 ;
@@ -38,19 +38,19 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;	15 Sep 2014: (KBW) Original implementation
+;       15 Sep 2014: (KBW) Original implementation
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_GENERATE_BINNING_WEIGHTS, $
-		signal, noise, wgt, weight_for_sn=weight_for_sn
+                signal, noise, wgt, weight_for_sn=weight_for_sn
 
-	if ~keyword_set(weight_for_sn) then begin
-	    wgt = (signal/noise)^2			; Weight by (S/N)^2
-	    return
-	endif
+        if ~keyword_set(weight_for_sn) then begin
+            wgt = (signal/noise)^2                      ; Weight by (S/N)^2
+            return
+        endif
 
-	wgt=make_array(n_elements(signal), /double, value=1.0)	; Uniform weighting
+        wgt=make_array(n_elements(signal), /double, value=1.0)  ; Uniform weighting
 
 END
 
