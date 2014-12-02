@@ -389,6 +389,7 @@ class rundap:
         self.label = '{0}_clobber'.format(self.label) if clobber else '{0}_all'.format(self.label)
 
         drpfiles = self.select_all(clobber=clobber)
+        print(len(drpfiles))
         scriptfiles, stdoutfiles, stderrfiles = self.prepare_for_analysis(drpfiles, clobber=clobber)
 
         # If submit is true and (*.done does not exist or clobber=True),
