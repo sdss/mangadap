@@ -70,7 +70,7 @@ class rundap:
                 outver=None, mangaver=None, platelist=None, ifudesignlist=None, modelist=None,
                 combinatorics=False, nsa_cat=None,
                 # Cluster options
-                label='mangadap', nodes=18, qos=None, umask='007',walltime='240:00:00', hard=True,
+                label='mangadap', nodes=18, qos=None, umask='027',walltime='240:00:00', hard=True,
                 submit=True):
         """
         Interprets the run-mode and cluster options.
@@ -198,7 +198,7 @@ class rundap:
         # See, e.g., selected_drpfile_list().
 
         # TODO: Is this needed if submit=False?
-#        self.queue = pbs.queue(verbose=not self.quiet)
+        self.queue = pbs.queue(verbose=not self.quiet)
 
         # Run the selected mode
         # TODO: Redo should automatically clobber, right?
@@ -278,7 +278,7 @@ class rundap:
         parser.add_argument('-f', '--fast', dest='qos', type=str, help='qos state',
                             default=None)
         parser.add_argument('-u', '--umask', type=str, help='umask bit for cluster job',
-                            default='002')
+                            default='027')
         parser.add_argument('-w', '--walltime', type=str, help='walltime for cluster job',
                             default='240:00:00')
         parser.add_argument('-t', '--toughness', dest='hard', action='store_false', default=True,
@@ -387,9 +387,25 @@ class rundap:
 
         # TODO: Should clobber override self.clobber?
         self.label = '{0}_clobber'.format(self.label) if clobber else '{0}_all'.format(self.label)
+        # In here, qos should never be anything but None; always set in daily
+        if self.qos is not None:
+            raise Exception('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_all(clobber=clobber)
-        scriptfiles, stdoutfiles, stderrfiles = self.prepare_for_analysis(drpfiles, clobber=clobber)
+        if len(drpfiles) == 0:
+            return
+
+#        self.queue.verbose = not self.quiet: done in __init__()
+        self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
+                          walltime=self.walltime)
+        
+        for drpf in drpfiles:
+            scriptfile, stdoutfile, stderrfile = self.prepare_for_analysis(drpf, clobber=clobber)
+            self.queue.append('source {0}'.format(scriptfile),outfile=stdoutfile,errfile=stderrfile)
+        
+        #submit to queue
+        # hard = hard-coded script files that can be seen
+        self.queue.commit(hard=self.hard,submit=self.submit)
 
         # If submit is true and (*.done does not exist or clobber=True),
         # submit the scripts to the queue?  What is done otherwise?
@@ -660,8 +676,8 @@ class rundap:
             
         # Get module name
         # TODO: Set outver?
-#        module_version = self.module_version()
-        module_version = self.outver
+        module_version = self.module_version()
+#        module_version = self.outver
 
         # Fault if no module version is available
         if module_version is None:
@@ -733,51 +749,34 @@ class rundap:
         return parfile
 
 
-    def prepare_for_analysis(self, drpfiles, status=None, clobber=False):
+    def prepare_for_analysis(self, drpfile, status=None, clobber=False):
         """
-        Cycle through the provided DRP file objects, creating a script
-        for each.
+        Create a script for the DRP file object.
         """
 
-        nn = len(drpfiles)
-        scriptfiles = []
-        stdoutfiles = []
-        stderrfiles = []
+        # Set the status, if provided; be sure to check the path otherwise
+        if status is None:
+            self._check_path(drpfiles.plate, drpfiles.ifudesign)
+        else:
+            self.set_status(drpfiles.plate, drpfiles.ifudesign, drpfiles.mode, status)
 
-        if nn == 0:
-            return scriptfiles, stdoutfiles, stderrfiles
+        # Create the parameter file
+        parfile = self.parameter_file(drpfiles.plate, drpfiles.ifudesign, drpfiles.mode)
+        print(parfile)
+        self.drpc.write_par(parfile, drpfiles.mode, plate=drpfiles.plate,
+                            ifudesign=drpfiles.ifudesign)
 
-        for i in range(0,nn):
-
-            # Set the status, if provided; be sure to check the path
-            # otherwise
-            if status is None:
-                self._check_path(drpfiles[i].plate, drpfiles[i].ifudesign)
-            else:
-                self.set_status(drpfiles[i].plate, drpfiles[i].ifudesign, drpfiles[i].mode, status)
-
-            # Create the parameter file
-            parfile = self.parameter_file(drpfiles[i].plate, drpfiles[i].ifudesign,
-                                          drpfiles[i].mode)
-            print(parfile)
-            self.drpc.write_par(parfile, drpfiles[i].mode, plate=drpfiles[i].plate,
-                                ifudesign=drpfiles[i].ifudesign)
-
-            # Write the compute script
-            try:
-                sf, of, ef = self.write_compute_script(drpfiles[i].plate, drpfiles[i].ifudesign,
-                                                       drpfiles[i].mode, clobber=clobber)
-            except Exception,e:
-                print("Exception: %s" % str(e))
-                if i < nn-1:
-                    print("Skipping to next DRP file.")
-            else:
-                scriptfiles = scriptfiles + [sf]
-                stdoutfiles = stdoutfiles + [of]
-                stderrfiles = stderrfiles + [ef]
+        # Write the compute script
+        try:
+            sf, of, ef = self.write_compute_script(drpfiles.plate, drpfiles.ifudesign,
+                                                   drpfiles.mode, clobber=clobber)
+        except Exception,e:
+            print("Exception: %s" % str(e))
+            print("Skipping to next DRP file.")
+            return None, None, None
 
         # Return the list of script, stdout, and stderr files
-        return scriptfiles, stdoutfiles, stderrfiles
+        return sf, of, ef
 
             
 
