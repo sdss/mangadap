@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import time
 import os.path
-#import pbs.queue
+import pbs.queue
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -756,20 +756,20 @@ class rundap:
 
         # Set the status, if provided; be sure to check the path otherwise
         if status is None:
-            self._check_path(drpfiles.plate, drpfiles.ifudesign)
+            self._check_path(drpfile.plate, drpfile.ifudesign)
         else:
-            self.set_status(drpfiles.plate, drpfiles.ifudesign, drpfiles.mode, status)
+            self.set_status(drpfile.plate, drpfile.ifudesign, drpfile.mode, status)
 
         # Create the parameter file
-        parfile = self.parameter_file(drpfiles.plate, drpfiles.ifudesign, drpfiles.mode)
+        parfile = self.parameter_file(drpfile.plate, drpfile.ifudesign, drpfile.mode)
         print(parfile)
-        self.drpc.write_par(parfile, drpfiles.mode, plate=drpfiles.plate,
-                            ifudesign=drpfiles.ifudesign)
+        self.drpc.write_par(parfile, drpfile.mode, plate=drpfile.plate,
+                            ifudesign=drpfile.ifudesign)
 
         # Write the compute script
         try:
-            sf, of, ef = self.write_compute_script(drpfiles.plate, drpfiles.ifudesign,
-                                                   drpfiles.mode, clobber=clobber)
+            sf, of, ef = self.write_compute_script(drpfile.plate, drpfile.ifudesign,
+                                                   drpfile.mode, clobber=clobber)
         except Exception,e:
             print("Exception: %s" % str(e))
             print("Skipping to next DRP file.")
