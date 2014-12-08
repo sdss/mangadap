@@ -154,20 +154,92 @@
 ;===============================================================================
 ;
 ;===============================================================================
-; SPATIAL BINNING TYPES
+; SPATIAL BINNING
 ;===============================================================================
-;       Type of binning to apply for each of the P plans to create.
-;       Valid values are:
-;               'NONE' - No binning is performed, all spectra are
-;                        analyzed.
-;               'ALL' - All spectra are combined into a single bin for
-;                       analysis.
-;               'STON' - Spectra are binned, using the Voronoi binning
-;                        scheme, to a minimum S/N.  This type require a
-;                        single parameter (provided via bin_par), which
-;                        is the minimum S/N level.
 ;
-;       TODO: Need to add 'RAD' option for radial binning
+;       There are currently four types of spatial binning allowed by the
+;       DAP.  This is a list of the options and the parameters in the
+;       BinPar structure that MUST accompany any usage of each binning
+;       type.  In practice, if bin_par.type is not 'ALL', 'STON', or
+;       'RADIAL' it is assumed to be 'NONE'.
+;
+;           bin_par.type='NONE'
+;               No binning is performed, all spectra are analyzed
+;               (assuming they meet the analysis criteria).  No
+;               parameters are required for this binning type.
+;
+;           bin_par.type='ALL'
+;               All spectra are combined into a single bin for analysis.
+;               The parameters required for this binning type are:
+;
+;                   bin_par.v_register
+;                       Use a prior fit of the kinematics to velocity
+;                       register the spectra to the median redshift
+;                       before binning
+;
+;                   TODO: Allow for a bin_par.v_tweak keyword that will
+;                   use a function to tweak the velocity registration.
+;
+;                   bin_par.optimal_weighting
+;                       Weight spectra by S/N^2 during their combination
+;                       (1-yes,0-no)
+;
+;           bin_par.type = 'STON'
+;               Spectra are binned, using the Voronoi binning scheme, to
+;               a minimum S/N level. In addition to setting
+;               bin_par.v_register and bin_par.optimal_weighting (see
+;               above), this bin type also requires:
+;
+;                   bin_par.ston
+;                       Minimum S/N level.
+;
+;           bin_par.type = 'RADIAL'
+;               Spectra are binned radially according to a provided
+;               planar projection.  In addition to setting
+;               bin_par.v_register and bin_par.optimal_weighting (see
+;               above under bin_par.type='ALL'), this bin type also
+;               requires:
+;
+;                   bin_par.cx, bin_par.cy:
+;                       On-sky X,Y position to use for R=0.  (0,0 by
+;                       default)
+;
+;                   bin_par.pa:
+;                       Position angle from North (0 deg) through east
+;                       (90 deg) of the MAJOR axis of a constant radius
+;                       ellipse. (0 by default)
+;
+;                   bin_par.ell:
+;                       Ellipticity (1-b/a) of a constant radius
+;                       ellipse. (0 by default)
+;
+;                   bin_par.rs:
+;                       Starting radius of the first bin (0 by default)
+;
+;                   bin_par.re:
+;                       Ending radius of the last bin (largest R by
+;                       default)
+;
+;                   bin_par.nr:
+;                       Number of radial bins (5 by default)
+;
+;                   bin_par.rlog:
+;                       Flag to logarithmically step the radial bins
+;                       (1-true;0-false -- 0 by default)
+;
+;                   bin_par.rscale:
+;                       Value by which to scale the radius in arcsec
+;                       (1.0 by default)
+;
+;               The values of bin_par.pa and bin_par.ell WILL BE SET
+;               AUTOMATICALLY using the ell and pa parameters read by
+;               MANGA_DAP.  bin_par.rscale can be set to Reff
+;               automatically by setting bin_par.rscale = -1.0.
+;               
+;               TODO: Add more options for rscale...
+;
+;       TODO: Other binning options maybe added later...
+;
 ;===============================================================================
 ;===============================================================================
 ;
@@ -206,22 +278,92 @@
 ; pick only 'emission-line' analysis.  If you do, the program will warn you and
 ; then also perform the 'stellar-cont' analysis.
 ;===============================================================================
-
+;===============================================================================
+;
+;===============================================================================
+; ANALYSIS PARAMETERS
+;===============================================================================
+;
+;       Some of the analysis steps have parameters that can be set to
+;       specify certain aspects of their execution.  These parameters
+;       are collected into a single structure called AnalysisPar and
+;       defined in mdap_define_analysis_par.pro.  The currently
+;       available parameters are:
+;
+;           AnalysisPar.moments
+;               Number of *stellar* kinematics to fit.  The number of
+;               emission-line kinematic moments is currently fixed at 2
+;               (v, sigma).
+;
+;           AnalysisPar.degree
+;               Degree of the *additive* polynomial used by pPXF when
+;               fitting the stellar continuum.
+;
+;           AnalysisPar.mdegree
+;               Degree of the *multiplicative* polynomial used by pPXF
+;               and GANDALF when fitting the stellar continuum and full
+;               spectrum, respectively.
+;
+;           AnalysisPar.reddening_order
+;               The order of the reddening fit by GANDALF:  0 means no
+;               reddening; 1 means fit a single dust-screen model; 2
+;               means fit a dust-screen model plus a nebular only
+;               component.  NOTE, if the reddening is fit, the value of
+;               MDEGREE is ignored because fitting them both is
+;               degenerate.
+;
+;           AnalysisPar.reddening
+;               A two-element array used to set the initial guess for
+;               the reddening coefficients.  The provided values must
+;               match the input reddening_order, but the array must
+;               always contain two elements.
+;
+;===============================================================================
+;===============================================================================
+;
+;===============================================================================
+; ANALYSIS PRIORS
+;===============================================================================
+;
+;       When executing a certain execution plan, you may want to use
+;       results from a previous run of the DAP as priors for another
+;       execution plan.  You can do this through the definition of the
+;       analysis_prior.  This is a string array that contains either the
+;       file name of the DAP fits file to use (must use the full path or
+;       the path from the execution directory) or the index number (in
+;       string format) of the execution plan in the current list to use
+;       as the prior.
+;        
+;       For example, for two plans where the first has no prior and the
+;       second uses the first as a prior, you would define:
+;
+;           analysis_prior[0] = ''
+;           analysis_prior[1] = '0'
+;
+;===============================================================================
+;===============================================================================
+;
 ; Setup some necessary execution variables for the MANGA DAP
 
 ; Signifier is what will be reported to the log file as the configuration file
 ; for a run of MaNGA_DAP
 
+; dapsrc is an optional input to define the DAP source path instead of
+; using environmental varaibles.
+
 PRO MDAP_EXECUTION_SETUP, $
         tpl_library_keys, template_libraries, tpl_vacuum_wave, ems_line_keys, $
         emission_line_parameters, ems_vacuum_wave, abs_line_keys, absorption_line_parameters, $
-        abs_vacuum_wave, signifier, bin_type, bin_par, w_range_sn, threshold_ston_bin, $
-        bin_weight_by_sn2, w_range_analysis, threshold_ston_analysis, analysis, tpl_lib_analysis, $
-        ems_par_analysis, abs_par_analysis, overwrite_flag, analysis_par, $
+        abs_vacuum_wave, signifier, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
+        threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+        analysis_par, analysis_prior, overwrite_flag, dapsrc=dapsrc, $
         save_intermediate_steps=save_intermediate_steps, $
         remove_null_templates=remove_null_templates, external_library=external_library
 
-;       total_filelist, output_root_dir, 
+
+        ; Define the DAP source path
+        if n_elements(dapsrc) eq 0 then $
+            dapsrc = getenv('MANGADAP_DIR')
 
         ;-----------------------------------------------------------------------
         ; Location for the output files
@@ -272,8 +414,9 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Path to a library of fortran or C codes to be used.  If commented,
         ; internal IDL procedures are used.
 
-        ; external_library=getenv('MANGA_DAP_DIR')+'/external/F90_32/'
+        ; external_library=getenv('MANGADAP_DIR')+'/external/F90_32/'
         ; external_library=getenv('MANGADAP_DIR')+'/external/F90_64/'
+        external_library=dapsrc+'/external/F90_64/'
 
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
@@ -284,7 +427,7 @@ PRO MDAP_EXECUTION_SETUP, $
         tpl_vacuum_wave = intarr(ntpl_libraries)
 
         tpl_library_keys[0] = 'M11-MARCS'
-        template_libraries[0] = getenv('MANGADAP_DIR')+'/external/templates_marcs/*_s.fits'
+        template_libraries[0] = dapsrc+'/external/templates_marcs/*_s.fits'
         tpl_vacuum_wave[0] = 0
 
         ;-----------------------------------------------------------------------
@@ -296,17 +439,16 @@ PRO MDAP_EXECUTION_SETUP, $
         ems_vacuum_wave = intarr(neml_files)
 
         ems_line_keys[0] = 'STANDARD'
-        emission_line_parameters[0] = getenv('MANGADAP_DIR') + $
-                        '/external/emission_lines_setup_with_Balmer_decrement'
+        emission_line_parameters[0] = dapsrc+'/external/emission_lines_setup_with_Balmer_decrement'
         ems_vacuum_wave[0] = 0
 
         ems_line_keys[1] = 'NODOUBLETS'
-        emission_line_parameters[1] = getenv('MANGADAP_DIR') + $
+        emission_line_parameters[1] = dapsrc + $
                         '/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
         ems_vacuum_wave[1] = 0
 
         ems_line_keys[2] = 'RESIDUAL'
-        emission_line_parameters[2] = getenv('MANGADAP_DIR') + $
+        emission_line_parameters[2] = dapsrc + $
                         '/external/emission_lines_setup_with_Balmer_decrement_residuals'
         ems_vacuum_wave[2] = 0
 
@@ -319,8 +461,7 @@ PRO MDAP_EXECUTION_SETUP, $
         abs_vacuum_wave = intarr(nabs_files)
 
         abs_line_keys[0] = 'LICK'
-        absorption_line_parameters[0] = getenv('MANGADAP_DIR') + $
-                        '/external/absorption_line_indices_definition.dat'
+        absorption_line_parameters[0] = dapsrc+'/external/absorption_line_indices_definition.dat'
         abs_vacuum_wave[0] = 0
 
         ;=======================================================================
@@ -329,23 +470,24 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Define a string used to signify this file in the header of the DAP output file(s)
 ;       cd, current=directory
 ;       signifier = directory+'/mdap_setup.pro'
-        signifier = getenv('MANGADAP_DIR')+'/pro/usr/mdap_execution_setup.pro'
+        signifier = dapsrc+'/pro/usr/mdap_execution_setup.pro'
 
         ;-----------------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 1                                       ; Number of ExecutionPlans to produce
+;       niter = 1                                       ; Number of ExecutionPlans to produce
+        niter = 2                                       ; Number of ExecutionPlans to produce
 
-        bin_type = strarr(niter)                        ; Binning type
-        bin_par = dblarr(niter)                         ; Binning parameter
+        bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
+        bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
 
         w_range_sn = dblarr(niter, 2)                   ; Wavelength range for S/N calculation
         threshold_ston_bin = dblarr(niter)              ; Threshold S/N to include spectrum in bin
-        bin_weight_by_sn2 = intarr(niter)               ; Weight by S/N^2 when combining spectra
 
         w_range_analysis = dblarr(niter, 2)             ; Wavelength range for the analysis
         threshold_ston_analysis = dblarr(niter)         ; Threshold S/N to analyze spectrum
+
         max_analysis_blocks = 3                         ; Maximum number of analysis blocks
         analysis = strarr(niter, max_analysis_blocks)   ; Analysis steps to apply
 
@@ -353,36 +495,49 @@ PRO MDAP_EXECUTION_SETUP, $
         ems_par_analysis = intarr(niter)                ; INDEX of emission-line parameter file
         abs_par_analysis = intarr(niter)                ; INDEX of absorption-line parameter file
 
-        ; A structure to hold parameters required for the analysis
-        analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()
-        analysis_par = replicate( analysis_par_def, niter)
+        analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()   ; Define the AnalysisPar structure
+        analysis_par = replicate( analysis_par_def, niter)  ; Create array of AnalysisPar structs
+
+        analysis_prior = strarr(niter)                  ; Prior information used for analysis
 
         overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
 
         ;-----------------------------------------------------------------------
         ; For each iteration:
         
-        ; Define the binning type.  The available binning types are listed
-        ; above.
-        bin_type[0] = 'STON'
+        ; Define the necessary elements of the BinPar structure.  The
+        ; available binning types and their required parameters are
+        ; provided above.
 
-        ; Define the bin parameter. See the discussion of the binning types above
-        bin_par[0] = 40.0d
+        bin_par[0].type = 'STON'
+        bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
+        bin_par[0].ston = 40.0d
+        ;   leave everything else as default (no velocity registration)
+
+        ; Try RADIAL using the results from the first ExecutionPlan to
+        ; velocity register the data -> set v_register to true here and
+        ; add the prior below.
+        bin_par[1].type = 'RADIAL'
+        bin_par[1].v_register = 1
+        bin_par[1].optimal_weighting = 1
+        bin_par[1].nr = 10
+        bin_par[1].rlog = 1
+        ;   leave everything else as default
+
 
         ; Define the wavelength range over which to calculate the mean S/N per pixel
         w_range_sn[0,*] = [5560.00, 6942.00]
+        w_range_sn[1,*] = [5560.00, 6942.00]
 
         ; Define the S/N threshold to include spectrum in any bin
-        threshold_ston_bin[0] = -300.0d
-
-        ; Set the flag for whether or not to bin by S/N^2 (1-yes, 0-no)
-        bin_weight_by_sn2[0] = 1
+        threshold_ston_bin[*] = -300.0d
 
         ; Define the wavelength range over which to perform ALL analyses
         w_range_analysis[0,*] = [3650.,10300.] 
+        w_range_analysis[1,*] = [3650.,10300.] 
 
         ; Define the S/N threshold to perform analysis
-        threshold_ston_analysis[0] = 0.0d
+        threshold_ston_analysis[*] = 0.0d
 
         ; Set the list of analyses to perform.  The available analysis steps are
         ; listed above.
@@ -396,29 +551,37 @@ PRO MDAP_EXECUTION_SETUP, $
 
 ;       analysis[0,0] = 'abs-indices'
 
+;       analysis[1,0] = 'stellar-cont'
+
         ; Set the index of the template library to use for the analysis
         ; TODO: Change this to use the library key?
-        tpl_lib_analysis[0] = 0
+        tpl_lib_analysis[*] = 0
 
         ; Set the index of the emission-line parameter set to use
-        ems_par_analysis[0] = 0
+        ems_par_analysis[*] = 0
 
         ; Set the index of the absorption-line parameter set to use
-        abs_par_analysis[0] = 0
+        abs_par_analysis[*] = 0
 
         ; Set additional parameters needed by the analysis modules
         ; The reddening order can be 0, 1, or 2
         ; TODO: Allow for oversample?
         ; IF NOT SET HERE, the default values are:
         ;       moments=2, degree=-1, mdegree=-1, reddening_order=0
-        analysis_par[0].moments = 4
-        analysis_par[0].degree = -1
-        analysis_par[0].mdegree = 6
-        analysis_par[0].reddening_order = 0
+        analysis_par[*].moments = 4
+        analysis_par[*].degree = -1
+        analysis_par[*].mdegree = 6
+        analysis_par[*].reddening_order = 0
         ; analysis_par[0].reddening[*] = [0.01,0.01]
 
+        ; Analysis priors, see description above.
+        analysis_prior[0] = ''      ; No prior for the first plan
+        analysis_prior[1] = '0'     ; Use the results from the first plan as a prior on the second
+
         ; Set a flag to overwrite existing output: 1-yes, 0-no
-        overwrite_flag[0] = 1
+;       overwrite_flag[0] = 1
+        overwrite_flag[0] = 0
+        overwrite_flag[1] = 1
 
         ;=======================================================================
         ;=======================================================================

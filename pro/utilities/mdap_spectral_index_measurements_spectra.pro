@@ -258,7 +258,7 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 
         ; 5. Match the spectral resolution of the object spectra to the
         ; absorption-line index system AT THE MEDIAN REDSHIFT OF THE SPECTRA
-        c=299792.48d                            ; Speed of light in km/s
+        c=299792.458d                                   ; Speed of light in km/s
 
         median_redshift = median(stellar_kinematics[*,0])/c     ; Median redshift
 ;       print, median_redshift

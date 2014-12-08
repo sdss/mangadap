@@ -38,9 +38,14 @@
 ;               Y-coordinates for output values.
 ;
 ; OPTIONAL INPUTS:
+;       zlim dblarr[2]
+;               Low, zlim[0], and high, zlim[1], limits for the output
+;               interpolated values.  
+;
 ;       default double
-;               Default value in the case the interpolation cannot be done.  If
-;               not specified, the default value is 0.
+;               Default value in the case the interpolation cannot be
+;               done or is outside the provided limits.  If not
+;               specified, the default value is 0.
 ;
 ; OPTIONAL KEYWORDS:
 ;       /quiet
@@ -63,27 +68,31 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       23 Sept 2014: Copied from v0_8 by L. Coccato
-;       24 Sept 2014: (KBW) Formatting and some edits; full_grid option removed
-;                     (may bring it back later); intermediate regular grid is
-;                     set to encompass all of x_in, y_in, x_out, and y_out and
-;                     sampled using the input pixel size, done to allow for
-;                     better integration of RSS spectra.
+;       23 Sep 2014: Copied from v0_8 by L. Coccato
+;       24 Sep 2014: (KBW) Formatting and some edits; full_grid option
+;                          removed (may bring it back later);
+;                          intermediate regular grid is set to encompass
+;                          all of x_in, y_in, x_out, and y_out and
+;                          sampled using the input pixel size, done to
+;                          allow for better integration of RSS spectra.
+;       03 Dec 2014: (KBW) Allow to impose limits on the output 'Z'
+;                          values
 ;-
 ;------------------------------------------------------------------------------
 
 ; Get the intermediate grid to use in one coordinate
 PRO MDAP_INTERPOLATE_2DMAPS_GRID, $
                 x, dx, buffer, xs, nx
-        xs = min(x)                             ; Minimum x coordinate
-        xe = max(x)                             ; Maximum x coordinate
-        Dx = buffer*(xe-xs)                     ; Full span in x including buffer
-        nx = ceil( Dx/dx )                      ; Number x pixels for the intermediate grid
-        xs = (xe+xs-Dx)/2.                      ; Offset initial value to account for buffer
+        xs = min(x)                         ; Minimum x coordinate
+        xe = max(x)                         ; Maximum x coordinate
+        Dx = buffer*(xe-xs)                 ; Full span in x including buffer
+        nx = ceil(Dx/dx)                    ; Number x pixels for the intermediate grid
+        xs = (xe+xs-Dx)/2.                  ; Offset initial value to account for buffer
 END
 
 PRO MDAP_INTERPOLATE_2DMAPS, $
-                x_in, y_in, z_in, dx, dy, x_out, y_out, z_out, default=default, quiet=quiet
+                x_in, y_in, z_in, dx, dy, x_out, y_out, z_out, zlim=zlim, default=default, $
+                quiet=quiet
 
         ; TODO: Check the dimensionality of the input arrays
 
@@ -111,13 +120,12 @@ PRO MDAP_INTERPOLATE_2DMAPS, $
         MDAP_INTERPOLATE_2DMAPS_GRID, [y_in,y_out], dy, buffer, ys, ny  ; Get the y grid
 
         ; Interpolate the input values to the intermediate grid
-        z_in_grid = GRID_TPS (x_in[indx], y_in[indx], z_in[indx], ngrid=[nx,ny], start=[xs,ys], $
-                              delta=[dx,dy])
+        z_in_grid = GRID_TPS(x_in[indx], y_in[indx], z_in[indx], ngrid=[nx,ny], start=[xs,ys], $
+                             delta=[dx,dy])
 
         ; Interpolate the output values based on the regular grid
-        for i=0,nout-1 do begin
+        for i=0,nout-1 do $
             z_out[i] = bilinear(z_in_grid, (x_out[i]-xs)/dx, (y_out[i]-ys)/dy)
 
 END
-
 

@@ -3,14 +3,21 @@
 ;       MDAP_SPATIAL_BINNING
 ;
 ; PURPOSE:
-;       Bin an input set of spectra to a minimum S/N level.
+;       Bin an input set of spectra using the binning parameters
+;       provided.  See MDAP_DEFINE_BIN_PAR() for a description of the
+;       available options.
+;
+;       No shifting of the spectrum is done!  The output wavelength
+;       solution is the same as the input wavelength solution and
+;       assumed to be the same for all spectra.  Shifts to the spectra
+;       can be applied using MDAP_REDSHIFT_REGISTER_SPECTRA.
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_SPATIAL_BINNING, flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, $
-;                             bin_type, bin_par, threshold_ston_bin, bin_weight_by_sn2, $
-;                             bin_weights, binned_indx, binned_flux, binned_ivar, binned_mask, $
-;                             binned_xcoo, binned_ycoo, binned_area, binned_ston, nbinned, $
-;                             sn_calibration=sn_calibration, version=version, plot=plot
+;                             bin_par, threshold_ston_bin, bin_weights, binned_indx, binned_flux, $
+;                             binned_ivar, binned_mask, binned_x_rl, binned_y_ru, binned_wrad, $
+;                             binned_area, binned_ston, nbinned, sn_calibration=sn_calibration, $
+;                             version=version, plot=plot
 ;
 ; INPUTS:
 ;       flux dblarr[N][T]
@@ -46,39 +53,14 @@
 ;       dy double
 ;               Scale arcsec/pixel in Y direction
 ;
-;       bin_type string
-;               Type of binning to apply.
-;               Valid values are:
-;                       'NONE' - No binning is performed.
-;                       'ALL' - All spectra are combined into a single bin.
-;                       'STON' - Spectra are binned, using the Voronoi binning
-;                                scheme, to a minimum S/N.  This type requires a
-;                                single parameter (provided via bin_par), which
-;                                is the minimum S/N level.
-;                       'RAD' - Spectra are binned in radius.  This type
-;                               requires five parameters, the x and y center,
-;                               ellipticity, position angle, and width of the
-;                               radial bins.  
-;                       
-;                               TODO: When binning, the spectra are deredshifted
-;                               before creating the bin, meaning that a set of
-;                               velocities for each spectrum must be available!
-;                       
-;                               TODO: Currently only the bin width is input!!
-;                       
-;       bin_par double
-;               Parameter(s) required for the binning.
-;               TODO: Change this to a pointer!
+;       bin_par BinPar[P]
+;               Structure containing the parameters used to perform the
+;               spatial binning.  See MDAP_DEFINE_BIN_PAR() for a
+;               description of the structure.
 ;
 ;       threshold_ston_bin double
 ;               The S/N threshold for the inclusion of any DRP spectrum in the
 ;               binning process.
-;
-;       bin_weight_by_sn2 integer
-;               Flag to weight each spectrum by S/N^2 when producing the binned
-;               spectra.  If true (eq 1), weights are S/N^2; if false (eq 0),
-;               the spectra are added with uniform weights.
-;               See MDAP_GENERATE_BINNING_WEIGHTS.
 ;               
 ; OPTIONAL INPUTS:
 ;
@@ -99,7 +81,7 @@
 ;       bin_weights dblarr[N]
 ;               Weights used for each spectrum for binning.             
 ;
-;       binned_indx intarr[N]
+;       binned_indx lonarr[N]
 ;               Indicates in which bin, i=0...B-1, each of the N spectra were
 ;               placed.
 ;
@@ -113,25 +95,38 @@
 ;       binned_mask dblarr[B][T]
 ;               Pixel mask.
 ;
-;       binned_xcoo dblarr[B]
-;               X-Coordinates in arcsec of the luminosity-weighted centers of
-;               the spatial bins. 
+;       binned_x_rl dblarr[B]
+;               If STON binning, x-coordinates in arcsec of the
+;               luminosity-weighted centers of the spatial bins.
 ;
-;       binned_ycoo dblarr[B]
-;               Y-Coordinates in arcsec of the luminosity-weighted centers of
-;               the spatial bins. 
+;               If RADIAL binning, lower edge of the radial bin.
+; 
+;       binned_y_ru dblarr[B]
+;               If STON binning, y-coordinates in arcsec of the
+;               luminosity-weighted centers of the spatial bins.
+;
+;               If RADIAL binning, upper edge of the radial bin.
+; 
+;       binned_wrad dblarr[B]
+;               If STON binning, luminosity-weighted sky-plane radius of
+;               the spectra in the bin.
+;
+;               IF RADIAL binning, luminosity-weighted in-plane radius
+;               of the spectra in the radial bin.
 ;
 ;       binned_area dblarr[B]
-;               Area (in arcsec^2) of each spatial bin.  
+;               Area (in arcsec^2) of each spatial bin.  This is just
+;               the sum of the area of each spectrum in the bin.  This
+;               does NOT properly account for the overlapping area for
+;               the RSS spectra.
 ;
 ;       binned_ston dblarr[B]
 ;               Mean S/N per angstrom reached in each spatial bin. 
 ;
-;       nbinned intarr[B]
+;       nbinned lonarr[B]
 ;               Number of spectra coadded in each bin.
 ;
 ; OPTIONAL OUTPUT:
-;
 ;       version string
 ;               Module version. If requested, the module is not executed and only
 ;               the version flag is returned
@@ -166,16 +161,18 @@
 ;       16 Sep 2014: (KBW) gflag changed from optional to required parameter
 ;       22 Sep 2014: (KBW) Output mask for combined spectra (TODO: This is just a place-holder)
 ;       13 Oct 2014: (KBW) Changed input/output format
+;       04 Dec 2014: (KBW) Allow for radial binning; binned_indx changed
+;                          to long; change to weight_by_sn2
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SPATIAL_BINNING, $
-                flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, bin_type, bin_par, $
-                threshold_ston_bin, bin_weight_by_sn2, bin_weights, binned_indx, binned_flux, $
-                binned_ivar, binned_mask, binned_xcoo, binned_ycoo, binned_area, binned_ston, $
+                flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, bin_par, $
+                threshold_ston_bin, bin_weights, binned_indx, binned_flux, binned_ivar, $
+                binned_mask, binned_x_rl, binned_y_ru, binned_wrad, binned_area, binned_ston, $
                 nbinned, sn_calibration=sn_calibration, version=version, plot=plot
 
-        version_module = '0.3'                          ; Version number
+        version_module = '0.4'                          ; Version number
 
         if n_elements(version) ne 0 then begin          ; set version and return
             version = version_module
@@ -194,37 +191,39 @@ PRO MDAP_SPATIAL_BINNING, $
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
 
-        if bin_type eq 'NONE' then begin                ; No binning
+        if bin_par.type eq 'NONE' then begin                ; No binning
             bin_weights = dblarr(ns)                    ; Initialize weights to 0
             bin_weights[gindx] = 1.0d                   ; Set weights to unity
-            binned_indx = make_array(ns, /integer, value=-1)
+            binned_indx = make_array(ns, /long, value=-1)
             binned_indx[gindx] = indgen(ngood)
             binned_flux = flux[gindx,*]
             binned_ivar = ivar[gindx,*]
             binned_mask = mask[gindx,*]
-            binned_xcoo = xcoo[gindx,*]
-            binned_ycoo = ycoo[gindx,*]
+            binned_x_rl = xcoo[gindx,*]
+            binned_y_ru = ycoo[gindx,*]
+            binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
             binned_area = make_array(ngood, /double, value=dx*dy)
             binned_ston = signal[gindx]/noise[gindx]
-            nbinned = make_array(ngood, /integer, value=1)
+            nbinned = make_array(ngood, /long, value=1)
             return
         endif
 
-;       TODO: NOT DEFINED YET -----------------------------------
-;       ; Check the user defined binning scheme
-;       endif else if if n_elements(user_bin_map) ne 0 then begin
-;           MDAP_READ_USER_DEFINED_SPATIAL_BINS, user_bin_map, header, binned_indx, success
-;           if success eq 1 then apply_voronoi_binning = 0      ; Successful user definition
-;       endelse
-;       NOT DEFINED YET ----------------------------------------
+        if bin_par.optimal_weighting eq 1 then $        ; Flag to use S/(N)^2 weighting
+            optimal_weighting = 1
 
-        if bin_weight_by_sn2 eq 1 then $                        ; Flag to use S/N^2 weighting
-            weight_for_sn = 1
+        ; Will only perform one of the following:
+        if bin_par.type eq 'ALL' then begin
 
-        if bin_type eq 'ALL' then begin
-            binned_indx = intarr(ngood)                         ; All spectra are in bin i=0
-            nbinned = ngood
-        endif else if bin_type eq 'STON' then begin             ; Use the Voronoi binning scheme
+            MDAP_ALL_SPECTRA_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], $
+                                      binned_indx, binned_x_rl, binned_y_ru, binned_ston, $
+                                      nbinned, sn_calibration=sn_calibration, $
+                                      optimal_weighting=optimal_weighting
+
+            ; Approximate the luminosity-weighted radius
+            binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
+        endif 
+        
+        if bin_par.type eq 'STON' then begin             ; Use the Voronoi binning scheme
             if keyword_set(plot) then begin                     ; setup plot
 ;               mydevice=!D.NAME
 ;               set_plot, 'PS'
@@ -237,27 +236,59 @@ PRO MDAP_SPATIAL_BINNING, $
 ;               loadct, 32
             endif
 
+            ; TODO: **** For now do NOT use weight_by_sn2.  Something
+            ; seems inconsistent when using this option in the voronoi
+            ; binning and the S/N calculation in
+            ; MDAP_CALCULATE_BIN_SN().  This function does not seem to
+            ; account for the change in the terms in signal and noise.
+            ; Need to fix this!!!
+
             MDAP_VORONOI_2D_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], $
-                                     bin_par, binned_indx, binned_xvec, binned_yvec, binned_xcoo, $
-                                     binned_ycoo, binned_ston, nbinned, scale, $
-                                     sn_calibration=sn_calibration, weight_for_sn=weight_for_sn, $
-                                     plot=plot, /quiet
+                                     bin_par.ston, binned_indx, binned_xvec, binned_yvec, $
+                                     binned_x_rl, binned_y_ru, binned_ston, v_area, v_scale, $
+                                     sn_calibration=sn_calibration, $
+                                     optimal_weighting=optimal_weighting, plot=plot, /quiet
+
+            ; Approximate the luminosity-weighted radius
+            binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
+
+            nbins = n_elements(binned_x_rl)
+            nbinned = lonarr(nbins)
+            for i=0,nbins-1 do begin
+                indx = where(binned_indx eq i)
+                if indx[0] eq -1 then $
+                    continue
+                nbinned[i] = n_elements(indx)
+            endfor
 
 ;           if keyword_set(plot) then begin                     ; close plot
 ;               device, /close
 ;               set_plot, mydevice
 ;           endif
-        endif else if bin_type eq 'RAD' then $
-            message, 'Cannot use radial binning scheme yet!'
+        endif
+        
+        if bin_par.type eq 'RADIAL' then begin
+            MDAP_RADIAL_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], bin_par, $
+                                 binned_indx, binned_x_rl, binned_y_ru, binned_wrad, binned_ston, $
+                                 nbinned, sn_calibration=sn_calibration, $
+                                 optimal_weighting=optimal_weighting 
+        endif
+
+;       TODO: NOT DEFINED YET -----------------------------------
+;       ; Check the user defined binning scheme, fault if check fails!
+;       if bin_par.type eq 'USER'then begin
+;           MDAP_READ_USER_DEFINED_SPATIAL_BINS, user_bin_map, header, binned_indx, success
+;       endif
+;       NOT DEFINED YET ----------------------------------------
 
         ; Set binned_indx to same length as flux
         MDAP_INSERT_FLAGGED, gindx, binned_indx, ns
-
         print, 'Number of spatial bins: ', MDAP_STC(n_elements(nbinned),/integer)
 
         ; Generate the weights to use in combining the spectra
         ; TODO: Should this be input/output from the voronoi routine in the 'STON' case?
-        MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, bin_weights, weight_for_sn=weight_for_sn
+        MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, bin_weights, $
+                                       optimal_weighting=optimal_weighting
         bin_weights[where(binned_indx lt 0)] = 0.0d
 
         ; Combine the spectra

@@ -16,16 +16,17 @@
 ;
 ; REVISION HISTORY:
 ;       07 Nov 2014: (KBW) Original implementation
+;       06 Dec 2014: (KBW) Changes to DRPS (includes BINVR)
 ;-
 ;------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 ; Functions that declare the name of the column names of the binary tables
 FUNCTION MDAP_SET_DRPS_COLS
-        return, [ 'XPOS', 'YPOS', 'SIGNAL', 'NOISE', 'BINID', 'BINW' ]
+        return, [ 'XPOS', 'YPOS', 'SIGNAL', 'NOISE', 'BINVR', 'BINID', 'BINW' ]
 END
 FUNCTION MDAP_SET_BINS_COLS
-        return, [ 'XBIN', 'YBIN', 'BINA', 'BINSN', 'NBIN', 'BINF' ]
+        return, [ 'BINXRL', 'BINYRU', 'BINR', 'BINA', 'BINSN', 'NBIN', 'BINF' ]
 END
 FUNCTION MDAP_SET_ELPAR_COLS
         return, [ 'ELNAME', 'RESTWAVE', 'TIEDKIN', 'TIEDTYPE', 'DOUBLET' ]

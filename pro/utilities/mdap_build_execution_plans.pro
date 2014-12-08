@@ -7,11 +7,11 @@
 ;       executed for a given DRP-produced fits file.
 ;
 ; CALLING SEQUENCE:
-;       MDAP_BUILD_EXECUTION_PLANS, n_tpl, n_ems, n_abs, bin_type, w_range_sn, bin_par, $
-;                                   threshold_ston_bin, bin_weight_by_sn2, w_range_analysis, $
-;                                   threshold_ston_analysis, analysis, tpl_lib_analysis, $
-;                                   ems_par_analysis, abs_par_analysis, overwrite_flag, $
-;                                   execution_plan
+;       MDAP_BUILD_EXECUTION_PLANS, n_tpl, n_ems, n_abs, bin_par, ell, pa, Reff, w_range_sn, $
+;                                   threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
+;                                   analysis, analysis_par, analysis_prior, tpl_lib_analysis, $
+;                                   ems_par_analysis, abs_par_analysis, overwrite_flag, file_root, $
+;                                   execution_plan, version=version
 ;
 ; INPUTS:
 ;       n_tpl integer
@@ -31,46 +31,34 @@
 ;               (abs_par_analysis) for each plan, if a parameter set is
 ;               required.
 ;
-;       bin_type strarr[P]
-;               Type of binning to apply for each of the P plans to create.
-;               Valid values are:
-;                       'NONE' - No binning is performed, all spectra are
-;                                analyzed.
-;                       'ALL' - All spectra are combined into a single bin for
-;                               analysis.
-;                       'STON' - Spectra are binned, using the Voronoi binning
-;                                scheme, to a minimum S/N.  This type require a
-;                                single parameter (provided via bin_par), which
-;                                is the minimum S/N level.
-;                       'RAD' - Spectra are binned in radius.  This type
-;                               requires five parameters, the x and y center,
-;                               ellipticity, position angle, and width of the
-;                               radial bins.  
-;                       
-;                               TODO: When binning, the spectra are deredshifted
-;                               before creating the bin, meaning that a set of
-;                               velocities for each spectrum must be available!
-;                       
-;                               TODO: Currently only the bin width is input!!
+;       bin_par BinPar[P]
+;               Structure containing the parameters used to perform the
+;               spatial binning.  See MDAP_DEFINE_BIN_PAR() for a
+;               description of the structure.
+;
+;       ell double
+;               Ellipticity (1-b/a) of the galaxy.  Copied to
+;               bin_par.ell for any of the P BinPar structures with type
+;               == 'RADIAL'.
+;
+;       pa double
+;               Position angle of the galaxy.  Copied to bin_par.pa for
+;               any of the P BinPar structures with type == 'RADIAL'.
+;
+;       Reff double
+;               Effective radius of the galaxy.  Copied to
+;               bin_par.rscale for any of the P BinPar structures with
+;               type == 'RADIAL' and rscale le 0.0.
 ;                       
 ;       w_range_sn dblarr[P][2]
 ;               Wavelength range used to calculate the S/N of each spectrum,
 ;               performed using each individual spectrum.  This is always
 ;               calculated, regardless of the binning type.
 ;
-;       bin_par dblarr[P]
-;               Parameters required for the binning.
-;               TODO: Can I make this a structure?
-;
 ;       threshold_ston_bin dblarr[P]
 ;               The S/N threshold for the inclusion of any DRP spectrum in the
 ;               binning process.
 ;
-;       bin_weight_by_sn2 intarr[P]
-;               Flag to weight each spectrum by S/N^2 when producing the binned
-;               spectra.  If true (eq 1), weights are S/N^2; if false (eq 0),
-;               the spectra are added with uniform weights.
-;               
 ;       w_range_analysis dblarr[P][2]
 ;               The wavelength range to use during the analysis.
 ;
@@ -104,29 +92,42 @@
 ;                                       continuum.  TODO: Also requires fit to
 ;                                       emission-line parameters?
 ;
-;       analysis_extra strarr[P][]
-;               List of extra parameters to set for each of the P analyses to
-;               perform.  Zero length strings are ignored.
+;       analysis_par AnalaysisPar[P]
+;               An array of structures that keeps the parameters used by
+;               the analysis steps.  See MDAP_DEFINE_ANALYSIS_PAR().
+;
+;       analysis_prior strarr[P]
+;               A string list of DAP files to use as a prior during each
+;               execution plan.  On input, these are expected to contain
+;               either the name of the DAP file directly (with either
+;               the full path or the path within the calling directory)
+;               or a string representation of an index of the plan to
+;               use for the prior.  (**THIS FUNCTION**) replaces the
+;               index numbered priors with the full file name, which is
+;               what is included in the ExecutionPlan structure.
 ;
 ;       tpl_lib_analysis intarr[P]
 ;               Index of template library to use for each of the P execution
 ;               plans.  -1 if no template library is to be used during the
 ;               analysis.
-;               
+;
 ;       ems_par_analysis intarr[P]
 ;               Index of emission-line parameter set to use for each of the P
 ;               execution plans.  -1 if no emission-line parameter set is to be
 ;               used during the analysis.
-;               
+;
 ;       abs_par_analysis intarr[P]
 ;               Index of absorption-line parameter set to use for each of the P
 ;               execution plans.  -1 if no absorption-line parameter set is to
 ;               be used during the analysis.
-;               
+;
 ;       overwrite_flag intarr[P]
 ;               Flag to overwrite any existing output file with the exact same
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
+;
+;       file_root string
+;               Root name for the output file of each plan.
 ;
 ; OPTIONAL INPUTS:
 ;
@@ -137,6 +138,9 @@
 ;               Array of P structures containing the execution plans.
 ;
 ; OPTIONAL OUTPUT:
+;       version string
+;               Module version. If requested, the module is not executed and only
+;               the version flag is returned
 ;
 ; COMMENTS:
 ;
@@ -156,8 +160,33 @@
 ;                          sequential order is now done using
 ;                          MDAP_ANALYSIS_BLOCKS_TO_PERFORM(), which takes into
 ;                          account the blocks that have already been completed.
+;       04 Dec 2014: (KBW) Changes to allow for RADIAL binning type,
+;                          which is mostly a change to bin_par.
+;       05 Dec 2014: (KBW) Include analysis prior in execution plan,
+;                          moved MDAP_GENERATE_OUTPUT_FILE_NAMES from
+;                          MANGA_DAP to here and converted it to a
+;                          function, added file_root to input, added
+;                          versioning.
 ;-
 ;------------------------------------------------------------------------------
+
+; TODO: Eventually this will generate the files names AND check them against
+; existing files.  Any execution plan that matches IN DETAIL the execution plan
+; of an existing file (apart from the analyses performed) will be used to input
+; already completed analyses, unless the overwrite flag is flipped.   This check
+; will *include* checks of the module versions used to generate the existing
+; analysis.
+;
+; Given the stuff in mdap_analysis_block_logic.pro, I'm not sure the
+; above is true anymore...
+
+; Below used to be MDAP_GENERATE_OUTPUT_FILE_NAMES
+;
+FUNCTION MDAP_OUTPUT_FILE_NAME, $
+                file_root, execution_plan, i
+        return, (file_root + 'BIN-' + execution_plan.bin_par.type + '-' + $
+                string(i+1,format='(I03)') + '.fits')
+END
 
 FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
                 analysis
@@ -215,18 +244,25 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
                 n_tpl, n_ems, n_abs, execution_plan
 
         ; Check bin type
-        if execution_plan.bin_type ne 'NONE' and execution_plan.bin_type ne 'ALL' and $
-           execution_plan.bin_type ne 'STON' and execution_plan.bin_type ne 'RAD' then begin 
-            message, 'Unknown binning type:' + execution_plan.bin_type
+        if execution_plan.bin_par.type ne 'NONE' and execution_plan.bin_par.type ne 'ALL' and $
+           execution_plan.bin_par.type ne 'STON' and execution_plan.bin_par.type ne 'RADIAL' $
+           then begin 
+            message, 'Unknown binning type:' + execution_plan.bin_par.type
         endif
 
-        ; Check bin parameters
-        if (execution_plan.bin_type eq 'STON' and n_elements(execution_plan.bin_par) ne 1) or $
-           (execution_plan.bin_type eq 'RAD' and n_elements(execution_plan.bin_par) ne 1) then begin
-            message, 'STON and RAD bin types must have one binning parameter (S/N and Bin width,'+ $
-                   ' respectively)'
-            
+        ; If there is no prior, cannot velocity register the spectra
+        if execution_plan.bin_par.v_register eq 1 $
+           and strlen(execution_plan.analysis_prior) eq 0 then begin
+            message, 'Cannot velocity register spectra for binning without an analysis prior!'
         endif
+
+;       ; Check bin parameters
+;       if (execution_plan.bin_type eq 'STON' and n_elements(execution_plan.bin_par) ne 1) or $
+;          (execution_plan.bin_type eq 'RAD' and n_elements(execution_plan.bin_par) ne 1) then begin
+;           message, 'STON and RAD bin types must have one binning parameter (S/N and Bin width,'+ $
+;                  ' respectively)'
+;           
+;       endif
 
         ; Analysis steps are check using MDAP_SET_EXECUTION_PLAN_ANALYSIS
 
@@ -256,39 +292,50 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
             execution_plan.analysis[0] eq 0 then begin
             execution_plan.tpl_lib = -1
         endif
+
 END
 
 PRO MDAP_BUILD_EXECUTION_PLANS, $
-                n_tpl, n_ems, n_abs, bin_type, w_range_sn, bin_par, threshold_ston_bin, $
-                bin_weight_by_sn2, w_range_analysis, threshold_ston_analysis, analysis, $
-                analysis_par, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-                overwrite_flag, execution_plan
+                n_tpl, n_ems, n_abs, bin_par, ell, pa, Reff, w_range_sn, threshold_ston_bin, $
+                w_range_analysis, threshold_ston_analysis, analysis, analysis_par, analysis_prior, $
+                tpl_lib_analysis, ems_par_analysis, abs_par_analysis, overwrite_flag, file_root, $
+                execution_plan, version=version
 
-        n_plans = n_elements(bin_type)                  ; Number of plans to execute
-        n_extra = (size(analysis_extra))[2]             ; Maximum number of analysis extras
+        version_module = '0.2'                          ; Version number
+        if n_elements(version) ne 0 then begin          ; set version and return
+            version = version_module
+            return
+        endif
 
+        n_plans = n_elements(bin_par)                   ; Number of plans to execute
+
+        bin_par_def = MDAP_DEFINE_BIN_PAR()
         analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()
 
         ; Instantiate the ExecutionPlan structure
         ; TODO: Make analysis_extra a pointer?
-        execution_plan = replicate( { ExecutionPlan, bin_type:'', wave_range_sn:dblarr(2), $
-                                                     bin_par:0.0d, threshold_ston_bin:0.0d, $
-                                                     bin_weight_by_sn2:0, $
+        execution_plan = replicate( { ExecutionPlan, bin_par:bin_par_def, wave_range_sn:dblarr(2), $
+                                                     threshold_ston_bin:0.0d, $
                                                      wave_range_analysis:dblarr(2), $
                                                      threshold_ston_analysis:0.0d, $
                                                      analysis:intarr(3), $
-                                                     analysis_par:analysis_par_def, tpl_lib:0, $
-                                                     ems_par:0, abs_par:0, overwrite:0, $
-                                                     ofile:''}, n_plans)
+                                                     analysis_par:analysis_par_def, $
+                                                     analysis_prior:'', tpl_lib:0, ems_par:0, $
+                                                     abs_par:0, overwrite:0, ofile:''}, n_plans)
 
         for i=0,n_plans-1 do begin
 
-            execution_plan[i].bin_type = bin_type[i]            ; Bin type
-            execution_plan[i].wave_range_sn = w_range_sn[i,*]   ; Wavelength range for S/N calc
-
             execution_plan[i].bin_par = bin_par[i]                      ; Binning parameters
+            if bin_par[i].type eq 'RADIAL' then begin
+                execution_plan[i].bin_par.ell = ell
+                execution_plan[i].bin_par.pa = pa
+                if execution_plan[i].bin_par.rscale le 0.0 then $
+                    execution_plan[i].bin_par.rscale = Reff
+                ; TODO: Check if prior exists.  Create warning if it does not?
+            endif
+
+            execution_plan[i].wave_range_sn = w_range_sn[i,*]   ; Wavelength range for S/N calc
             execution_plan[i].threshold_ston_bin = threshold_ston_bin[i]; Bin S/N limit
-            execution_plan[i].bin_weight_by_sn2 = bin_weight_by_sn2[i]  ; Flag to use S/N^2 weights
             
             execution_plan[i].wave_range_analysis = w_range_analysis[i,*]; Wave range for analysis
             execution_plan[i].threshold_ston_analysis = threshold_ston_analysis[i]; Analysis S/N lim
@@ -296,11 +343,39 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
             ; Set the analysis steps
             execution_plan[i].analysis = MDAP_SET_EXECUTION_PLAN_ANALYSIS(reform(analysis[i,*]))
 
-            execution_plan[i].analysis_par = analysis_par[i]    ; Analysis parameters
+            execution_plan[i].analysis_par = analysis_par[i]            ; Analysis parameters
+
+            execution_plan[i].analysis_prior = strcompress(analysis_prior[i],/remove_all)   ; Prior
+
+            ; Check that the prior makes sense
+            if strlen(execution_plan[i].analysis_prior) ne 0 then begin
+                if file_test(execution_plan[i].analysis_prior) eq 0 then begin
+                    indx = fix(execution_plan[i].analysis_prior)
+
+                    ; This is a little contrived because you can't catch
+                    ; type conversion errors in IDL, and the returned
+                    ; value when fix() fails is 0.  This statement
+                    ; checks that the conversion of the fix() value back
+                    ; to a string is the same as the input.
+
+                    if MDAP_STC(indx) ne execution_plan[i].analysis_prior then begin
+                        message, 'Cannot interpret analysis prior: ' + $
+                                 execution_plan[i].analysis_prior
+                    endif
+
+                    if indx lt 0 or indx ge i then begin
+                        message, 'Plan ' + MDAP_STC(i,/integer) + ' cannot use prior from a plan ' $
+                                 + MDAP_STC(indx, /integer) + ' either because there is no such ' $
+                                 + 'plan or the ordering is wrong!'
+                    endif
+
+                    ; Set the prior to the output file of the designated ExecutionPlan
+                    execution_plan[i].analysis_prior = execution_plan[indx].ofile
+                endif
+            endif
 
             indx = where(execution_plan[i].analysis eq 1)
             if indx[0] eq -1 then begin; No analysis to perform
-                print, 'bad index'
                 execution_plan[i].tpl_lib = -1          ; No template library needed
                 execution_plan[i].ems_par = -1          ; No emission-line parameters needed
                 execution_plan[i].abs_par = -1          ; No absorption-line parameters needed
@@ -312,6 +387,10 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
 
             execution_plan[i].overwrite = overwrite_flag[i]     ; Overwrite existing files?
 
+            ; Set the output file name
+            execution_plan[i].ofile = MDAP_OUTPUT_FILE_NAME(file_root, execution_plan[i], i)
+
+            ; Perform some (additional) checks of the plan parameters
             execution_plan_i = execution_plan[i]
             MDAP_CHECK_EXECUTION_PLAN, n_tpl, n_ems, n_abs, execution_plan_i
             execution_plan[i] = execution_plan_i

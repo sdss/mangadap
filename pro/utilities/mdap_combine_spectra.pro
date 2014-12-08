@@ -56,7 +56,6 @@
 ; TODO:
 ;       - Account for covariance?
 ;       - Add some checks for the division by ivar!
-;       - include pixel mask
 ;       - allow for spectra to have different spectral resolutions?
 ;
 ; PROCEDURES CALLED:
@@ -66,6 +65,9 @@
 ; REVISION HISTORY:
 ;       15 Sep 2014: (KBW) Original implementation
 ;       22 Sep 2014: (KBW) Output mask (just a place-holder for now)
+;       04 Dec 2014: (KBW) Account for mask of input spectra, mostly
+;                          just confirmed what was in place was already
+;                          doing this!
 ;-
 ;------------------------------------------------------------------------------
 
@@ -92,9 +94,9 @@ PRO MDAP_COMBINE_SPECTRA, $
 
         for i=0,nb-1 do begin
             if nbinned[i] eq 0 then begin               ; No spectra in this bin!
-                combined_flux[i,*] = 0.
-                combined_ivar[i,*] = 1.
-                combined_mask[i,*] = 1.
+                combined_flux[i,*] = 0.                 ; Set flux to zero
+                combined_ivar[i,*] = 1.                 ; Set unity error
+                combined_mask[i,*] = 1.                 ; Set to mask all pixels
                 continue
             endif
 
@@ -105,30 +107,38 @@ PRO MDAP_COMBINE_SPECTRA, $
             for j=0,nbinned[i]-1 do begin               ; Combine the spectra
                 ii = spec_indx[j]                       ; Spectrum to add
 
-                def_indx = where(ivar[ii,*] gt 0.)
-                sz=size(def_indx)
-                if sz[0] eq 0 then continue
-;               print, def_indx
+                ; Unmasked pixels with defined errors
+                gindx = where(ivar[ii,*] gt 0. and mask[ii,*] lt 1.)
+                if gindx[0] eq -1 then $                ; No valid pixels!
+                    continue
 
                 ; Add the flux
-                combined_flux[i,def_indx] = combined_flux[i,def_indx] + wgt[ii]*flux[ii,def_indx]
+                combined_flux[i,gindx] = combined_flux[i,gindx] + wgt[ii]*flux[ii,gindx]
                 ; Propagate the error
-                combined_ivar[i,def_indx] = combined_ivar[i,def_indx] + wgt[ii]^2/ivar[ii,def_indx]
+                combined_ivar[i,gindx] = combined_ivar[i,gindx] + wgt[ii]^2/ivar[ii,gindx]
                 ; Add the weights to the sum
-                sumwgt[def_indx] = sumwgt[def_indx] + wgt[ii]
+                sumwgt[gindx] = sumwgt[gindx] + wgt[ii]
 
             endfor
 
-            def_indx = where(sumwgt gt 0., complement=undef_indx)
+            gindx = where(sumwgt gt 0., complement=bindx)
 
-            combined_flux[i,def_indx] = combined_flux[i,def_indx] / sumwgt[def_indx]    ; Normalize
-            combined_ivar[i,def_indx] = sumwgt[def_indx]^2 / combined_ivar[i,def_indx]  ; Prop. err
+            if gindx[0] ne -1 then begin
+                ; Get the weighted sum and its error for the pixels that were valid
+                combined_flux[i,gindx] = combined_flux[i,gindx] / sumwgt[gindx]     ; Normalize
+                combined_ivar[i,gindx] = sumwgt[gindx]^2 / combined_ivar[i,gindx]   ; Prop. err
+                combined_mask[i,gindx] = 0.                                     ;  ... and unmask'em
+            endif
 
-            combined_flux[i,undef_indx] = 0.            ; Set to zero flux
-            combined_ivar[i,undef_indx] = 1.            ;  ... with unity error
-            combined_mask[i,undef_indx] = 1.            ;  ... and mask'em
+            ; Mask pixels without anything added to the sum
+            if bindx[0] ne -1 then begin
+                combined_flux[i,bindx] = 0.             ; Set to zero flux
+                combined_ivar[i,bindx] = 1.             ;  ... with unity error
+                combined_mask[i,bindx] = 1.             ;  ... and mask'em
+            endif
 
         endfor
 
 END
+
 

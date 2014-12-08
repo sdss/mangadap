@@ -125,6 +125,8 @@ PRO MDAP_READ_INPUT_SETUP, $
 
         ; Get the parameter data
         if n_elements(inptbl) ne 0 then begin
+            if file_test(inptbl) eq 0 then $
+                message, 'Cannot open '+inptbl+'!'
             READCOL, inptbl, plate_, ifudesign_, mode_, vel_, vdisp_, ell_, pa_, reff_, /silent, $
                      format='L,L,A,F,F,F,F,F', comment='#'
             nt = n_elements(plate_)
@@ -143,6 +145,9 @@ PRO MDAP_READ_INPUT_SETUP, $
         endif
         
         if n_elements(par) ne 0 then begin
+            if file_test(par) eq 0 then $
+                message, 'Cannot open '+par+'!'
+            
             params = YANNY_READONE(par)
             plate = params.plate
             ifudesign = params.ifudesign

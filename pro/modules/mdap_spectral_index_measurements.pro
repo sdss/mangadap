@@ -123,7 +123,7 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
         ; botpl
         tpl_ivar = make_array((size(flux))[2], /double, value=1.0d)
 
-        c=299792.48d                            ; Speed of light in km/s
+        c=299792.458d                           ; Speed of light in km/s
         redshift = stellar_kinematics[*,0]/c    ; Redshift of each spectrum
 
         ; Determine the minimum and maximum wavelength available to the index

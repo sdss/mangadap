@@ -43,18 +43,38 @@
 ; REVISION HISTORY:
 ;       10 Oct 2014: (KBW) Original implementation
 ;       13 Oct 2014: (KBW) Include flag for weighting by S/N^2
+;       04 Dec 2014: (KBW) Edits to print the now structure
+;                          execution_plan.bin_par.
+;       05 Dec 2014: (KBW) Print the prior
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_PRINT_EXECUTION_PLAN, $
                 template_libraries, emission_line_parameters, absorption_line_parameters, $
                 execution_plan
-        print, '    Binning type: ', execution_plan.bin_type
+        print, '    Binning type: ', execution_plan.bin_par.type
+        if execution_plan.bin_par.type ne 'NONE' then begin
+            print, '    Velocity register the spectra before binning: ', $
+                   execution_plan.bin_par.v_register
+            print, '    Use S/(N)^2 weighting when combining spectra: ', $
+                   execution_plan.bin_par.optimal_weighting
+        endif
+        if execution_plan.bin_par.type eq 'STON' then $
+            print, '    Minimum S/N per bin: ', execution_plan.bin_par.ston
+        if execution_plan.bin_par.type eq 'RADIAL' then begin
+            print, '    X center: ', execution_plan.bin_par.cx
+            print, '    Y center: ', execution_plan.bin_par.cy
+            print, '    Position angle: ', execution_plan.bin_par.pa
+            print, '    Ellipticity: ', execution_plan.bin_par.ell
+            print, '    Starting radius: ', execution_plan.bin_par.rs
+            print, '    Ending radius (-1 for maximum): ', execution_plan.bin_par.re
+            print, '    Number of radial bins: ', execution_plan.bin_par.nr
+            print, '    Logarithmic bins: ', execution_plan.bin_par.rlog
+            print, '    Radius scale parameter: ', execution_plan.bin_par.rscale
+        endif
+
         print, '    Wavelength range for S/N calculation: ', execution_plan.wave_range_sn
-        if n_elements(execution_plan.bin_par) ne 0 then $
-            print, '    Bin Parameter: ', execution_plan.bin_par
         print, '    S/N threshold for inclusion in bin: ', execution_plan.threshold_ston_bin
-        print, '    Use S/N^2 weighting when combining spectra: ', execution_plan.bin_weight_by_sn2
         print, '    Wavelength range for analysis: ', execution_plan.wave_range_analysis
         print, '    S/N threshold for inclusion in analysis: ', $
                execution_plan.threshold_ston_analysis
@@ -83,6 +103,9 @@ PRO MDAP_PRINT_EXECUTION_PLAN, $
                 str=str+']'
                 print, '      reddening coeff: ', str
             endif
+
+            if strlen(execution_plan.analysis_prior) ne 0 then $
+                print, '    Analysis Prior: '+execution_plan.analysis_prior
 
 ;           n_extras = n_elements(execution_plan.analysis_extra)
 ;           for i=0,n_extras-1 do begin

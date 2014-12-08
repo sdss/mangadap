@@ -8,12 +8,13 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_READ_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
-;                         ypos=ypos, signal=signal, noise=noise, bin_type=bin_type, $
-;                         bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
+;                         ypos=ypos, signal=signal, noise=noise, bin_par=bin_par, $
+;                         threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
 ;                         bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
-;                         bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin=xbin, $
-;                         ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-;                         bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
+;                         bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
+;                         xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, $
+;                         bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
+;                         w_range_analysis=w_range_analysis, $ 
 ;                         threshold_ston_analysis=threshold_ston_analysis, $
 ;                         tpl_library_key=tpl_library_key, ems_line_key=ems_line_key, $
 ;                         analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
@@ -85,15 +86,18 @@
 ;               Mean noise per pixel in every DRP spectrum.  Written to 'DRPS'
 ;               extension.
 ;
-;       bin_type string
-;               Type of binning algorithm used.  Written to header.
-;
-;       bin_par double
-;               Single binning parameter.  Written to header.
+;       bin_par BinPar
+;               Structure containing the binning parameters.  TODO:
+;               Currently cannot read any of the specifics related to
+;               the definition of the bin edges.
 ;
 ;       threshold_ston_bin double
 ;               Threshold for inclusion of a DRP spectrum in any bin. Written to
 ;               header.
+;
+;       bin_vreg dblarr[ndrp]
+;               Velocity of each of the DRP spectra used to de-redshift
+;               the spectra before binning.  Written to 'DRPS'.
 ;
 ;       bin_indx intarr[ndrp]
 ;               Index (0...B-1) of the bin which contains each DRP spectrum.
@@ -124,13 +128,24 @@
 ;               Pixel mask of each channel C of each binned spectrum B.  Written
 ;               as a 2D image to the 'MASK' extension.
 ;
-;       xbin dblarr[B]
-;               Luminosity-weighted X position of the bin.  Written as a column
-;               in 'BINS' extension.
+;       xbin_rlow dblarr[B]
+;               For the result of a RADIAL binning, this is the lower
+;               limit of the radial bin; otherwise, this is the
+;               luminosity-weighted X position of the bin.  Written as a
+;               column in 'BINS' extension.  
 ;
-;       ybin dblarr[B]
-;               Luminosity-weighted Y position of the bin.  Written as a column
-;               in 'BINS' extension.
+;       ybin_rupp dblarr[B]
+;               For the result of a RADIAL binning, this is the upper
+;               limit of the radial bin; otherwise, this is the
+;               luminosity-weighted Y position of the bin.  Written as a
+;               column in 'BINS' extension.  
+;
+;       rbin dblarr[B]
+;               For the result of a RADIAL binning, this is the
+;               luminosity weighted radius of the spectra in the bin;
+;               otherwise, this is the radius of the luminosity weighted
+;               on-sky coordinates.  Written as a column in teh 'BINS'
+;               extension.
 ;
 ;       bin_area dblarr[B]
 ;               Area of each bin B.  Written as a column in 'BINS' extension.
@@ -360,6 +375,8 @@
 ;
 ; REVISION HISTORY:
 ;       28 Oct 2014: (KBW) Original Implementation
+;       06 Dec 2014: (KBW) Accommodate changes for radial binning and
+;                          velocity registration
 ;-
 ;------------------------------------------------------------------------------
 
@@ -370,15 +387,13 @@
 ;-------------------------------------------------------------------------------
 ; Determine if the header needs to be read
 FUNCTION MDAP_READ_NEED_HEADER, $
-                header, dx, dy, w_range_sn, bin_type, bin_par, threshold_ston_bin, $
-                w_range_analysis, threshold_ston_analysis, analysis_par, tpl_library_key, $
-                ems_line_key, abs_line_key
+                header, dx, dy, w_range_sn, bin_par, threshold_ston_bin, w_range_analysis, $
+                threshold_ston_analysis, analysis_par, tpl_library_key, ems_line_key, abs_line_key
 
         if n_elements(header)     ne 0 then              return, 1
         if n_elements(dx)         ne 0 then              return, 1
         if n_elements(dy)         ne 0 then              return, 1
         if n_elements(w_range_sn) ne 0 then              return, 1
-        if n_elements(bin_type)   ne 0 then              return, 1
         if n_elements(bin_par)    ne 0 then              return, 1
         if n_elements(threshold_ston_bin) ne 0 then      return, 1
         if n_elements(w_range_analysis) ne 0 then        return, 1
@@ -394,19 +409,37 @@ END
 ;-------------------------------------------------------------------------------
 ; Read the header data
 PRO MDAP_READ_SET_HEADER_DATA, $
-                header, dx, dy, w_range_sn, bin_type, bin_par, threshold_ston_bin, $
-                w_range_analysis, threshold_ston_analysis, analysis_par, tpl_library_key, $
-                ems_line_key, abs_line_key
+                header, dx, dy, w_range_sn, bin_par, threshold_ston_bin, w_range_analysis, $
+                threshold_ston_analysis, analysis_par, tpl_library_key, ems_line_key, abs_line_key
 
         dx = SXPAR(header, 'SPAXDX', /silent)
         dy = SXPAR(header, 'SPAXDY', /silent)
         w_range_sn = [ SXPAR(header, 'SNWAVE1', /silent),SXPAR(header, 'SNWAVE2', /silent) ]
-        bin_type = SXPAR(header, 'BINTYPE', /silent)
-        bin_par = SXPAR(header, 'BINPAR', /silent)
+
+        ; TODO: Move to a read_bin_par_header procedure?
+        bin_par = MDAP_DEFINE_BIN_PAR()
+        bin_par.type = SXPAR(header, 'BINTYPE', /silent)
+        if bin_par.type ne 'NONE' then begin
+            if SXPAR(header, 'BINVRG', /silent) eq 'True' then $
+                bin_par.v_register = 1
+            if SXPAR(header, 'BINWGT', /silent) eq 'Optimal' then $
+                bin_par.optimal_weighting = 1
+            if bin_par.type eq 'STON' then $
+                bin_par.ston = SXPAR(header, 'BINSN', /silent)
+            if bin_par.type eq 'RADIAL' then begin
+                bin_par.cx = SXPAR(header, 'BINCX', /silent)
+                bin_par.cy = SXPAR(header, 'BINCY', /silent)
+                bin_par.pa = SXPAR(header, 'BINPA', /silent)
+                bin_par.ell = SXPAR(header, 'BINELL', /silent)
+                bin_par.rscale = SXPAR(header, 'BINSCL', /silent)
+            endif
+        endif
+
         threshold_ston_bin = SXPAR(header, 'MINSNBIN', /silent)
         w_range_analysis = [ SXPAR(header, 'FITWAVE1', /silent),SXPAR(header, 'FITWAVE2', /silent) ]
         threshold_ston_analysis = SXPAR(header, 'MINSNFIT', /silent)
 
+        ; TODO: Move to a read_analysis_par_header procedure?
         analysis_par = MDAP_DEFINE_ANALYSIS_PAR()
         analysis_par.moments = SXPAR(header, 'MOMENTS', /silent)
         analysis_par.degree = SXPAR(header, 'DEGREE', /silent)
@@ -428,12 +461,13 @@ END
 ;-------------------------------------------------------------------------------
 ; Check if data from the DRPS extension is desired
 FUNCTION MDAP_READ_WANT_DRPS, $
-                xpos, ypos, signal, noise, bin_indx, bin_weights
+                xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
 
         if n_elements(xpos)        ne 0 then return, 1
         if n_elements(ypos)        ne 0 then return, 1
         if n_elements(signal)      ne 0 then return, 1
         if n_elements(noise)       ne 0 then return, 1
+        if n_elements(bin_vreg)    ne 0 then return, 1
         if n_elements(bin_indx)    ne 0 then return, 1
         if n_elements(bin_weights) ne 0 then return, 1
 
@@ -443,12 +477,12 @@ END
 ; Read the full DRPS binary table (more efficient than reading one column at a
 ; time?)
 PRO MDAP_READ_DRPS, $
-                file, xpos, ypos, signal, noise, bin_indx, bin_weights
+                file, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
 
         cols = MDAP_SET_DRPS_COLS()
 
         fxbopen, unit, file, 'DRPS'
-        fxbreadm, unit, cols, xpos, ypos, signal, noise, bin_indx, bin_weights
+        fxbreadm, unit, cols, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
         fxbclose, unit
         free_lun, unit
 END
@@ -456,14 +490,15 @@ END
 ;-------------------------------------------------------------------------------
 ; Check if data from the BINS extension is desired
 FUNCTION MDAP_READ_WANT_BINS, $
-                xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
+                xbin_rlow, ybin_rupp, rbin, bin_area, bin_ston, bin_n, bin_flag
 
-        if n_elements(xpos)        ne 0 then return, 1
-        if n_elements(ypos)        ne 0 then return, 1
-        if n_elements(signal)      ne 0 then return, 1
-        if n_elements(noise)       ne 0 then return, 1
-        if n_elements(bin_indx)    ne 0 then return, 1
-        if n_elements(bin_weights) ne 0 then return, 1
+        if n_elements(xbin_rlow) ne 0 then return, 1
+        if n_elements(ybin_rupp) ne 0 then return, 1
+        if n_elements(rbin)      ne 0 then return, 1
+        if n_elements(bin_area)  ne 0 then return, 1
+        if n_elements(bin_ston)  ne 0 then return, 1
+        if n_elements(bin_n)     ne 0 then return, 1
+        if n_elements(bin_flag)  ne 0 then return, 1
 
         return, 0
 END
@@ -471,12 +506,12 @@ END
 ; Read the full BINS binary table (more efficient than reading one column at a
 ; time?)
 PRO MDAP_READ_BINS, $
-                file, xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
+                file, xbin_rlow, ybin_rupp, rbin, bin_area, bin_ston, bin_n, bin_flag
 
         cols = MDAP_SET_BINS_COLS()
 
         fxbopen, unit, file, 'BINS'
-        fxbreadm, unit, cols, xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
+        fxbreadm, unit, cols, xbin_rlow, ybin_rupp, rbin, bin_area, bin_ston, bin_n, bin_flag
         fxbclose, unit
         free_lun, unit
 END
@@ -685,11 +720,12 @@ END
 ; TODO: Add information such that eml_par can be read?
 PRO MDAP_READ_OUTPUT, $
                 file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
-                signal=signal, noise=noise, bin_type=bin_type, bin_par=bin_par, $
-                threshold_ston_bin=threshold_ston_bin, bin_indx=bin_indx, bin_weights=bin_weights, $
-                wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
-                xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-                bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
+                signal=signal, noise=noise, bin_par=bin_par, $
+                threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, bin_indx=bin_indx, $
+                bin_weights=bin_weights, wave=wave, sres=sres, bin_flux=bin_flux, $
+                bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
+                rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
+                w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
                 ems_line_key=ems_line_key, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
                 add_poly_coeff_ppxf=add_pol_coeff_ppxf, mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
@@ -726,25 +762,25 @@ PRO MDAP_READ_OUTPUT, $
             message, 'File does not have DAP-like (hard-coded) properties!'
 
         ; If the header is needed/requested, read it
-        if MDAP_READ_NEED_HEADER(header, dx, dy, w_range_sn, bin_type, bin_par, $
-                                 threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
-                                 analysis_par, tpl_library_key, ems_line_key, $
-                                 abs_line_key) ne 0 then begin
+        if MDAP_READ_NEED_HEADER(header, dx, dy, w_range_sn, bin_par, threshold_ston_bin, $
+                                 w_range_analysis, threshold_ston_analysis, analysis_par, $
+                                 tpl_library_key, ems_line_key, abs_line_key) ne 0 then begin
 
             header=headfits(file, exten=0)
-            MDAP_READ_SET_HEADER_DATA, header, dx, dy, w_range_sn, bin_type, bin_par, $
-                                       threshold_ston_bin, w_range_analysis, $
-                                       threshold_ston_analysis, analysis_par, tpl_library_key, $
-                                       ems_line_key, abs_line_key
+            MDAP_READ_SET_HEADER_DATA, header, dx, dy, w_range_sn, bin_par, threshold_ston_bin, $
+                                       w_range_analysis, threshold_ston_analysis, analysis_par, $
+                                       tpl_library_key, ems_line_key, abs_line_key
         endif
 
         ; Read the DRPS extension if any of its vectors are requested
-        if MDAP_READ_WANT_DRPS(xpos, ypos, signal, noise, bin_indx, bin_weights) eq 1 then $
-            MDAP_READ_DRPS, file, xpos, ypos, signal, noise, bin_indx, bin_weights
+        if MDAP_READ_WANT_DRPS(xpos,ypos,signal,noise,bin_vreg,bin_indx,bin_weights) eq 1 then $
+            MDAP_READ_DRPS, file, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
 
         ; Read the BINS extension if any of its vectors are requested
-        if MDAP_READ_WANT_BINS(xbin, ybin, bin_area, bin_ston, bin_n, bin_flag) eq 1 then $
-            MDAP_READ_BINS, file, xbin, ybin, bin_area, bin_ston, bin_n, bin_flag
+        if MDAP_READ_WANT_BINS(xbin_rlow, ybin_rupp, rbin, bin_area, bin_ston, bin_n, $
+                               bin_flag) eq 1 then begin
+            MDAP_READ_BINS, file, xbin_rlow, ybin_rupp, bin_area, bin_ston, bin_n, bin_flag
+        endif
 
         ; Read the wavelength vector if requested
         if n_elements(wave) ne 0 then $

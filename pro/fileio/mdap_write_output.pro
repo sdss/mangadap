@@ -64,14 +64,15 @@
 ;
 ;           Binary tables:
 ;               - For each DRP spectrum: DRPS
-;                 6 columns, ndrp rows
+;                 7 columns, ndrp rows
 ;                   - Fiducial X, Y, signal and noise
+;                   - Registered velocity (taken out)
 ;                   - Index of bin to which DRP spectrum is assigned
 ;                   - Weight in binned spectrum
 ;
 ;               - For each binned spectrum: BINS
-;                 6 columns, nbin rows
-;                   - Luminosity weighted position, area, S/N, and number of spectra
+;                 7 columns, nbin rows
+;                   - Luminosity weighted X, Y, R, area, S/N, and number of spectra
 ;                   - analysis flag(s)
 ;
 ;               - Gas emission-line structure (save this?): ELPAR
@@ -148,12 +149,13 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_WRITE_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
-;                          ypos=ypos, signal=signal, noise=noise, bin_type=bin_type, $
-;                          bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
+;                          ypos=ypos, signal=signal, noise=noise, bin_par=bin_par, $
+;                          threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
 ;                          bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
-;                          bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin=xbin, $
-;                          ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-;                          bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
+;                          bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
+;                          xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, $
+;                          bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
+;                          w_range_analysis=w_range_analysis, $
 ;                          threshold_ston_analysis=threshold_ston_analysis, $
 ;                          tpl_library_key=tpl_library_key, eml_line_key=eml_line_key, $
 ;                          eml_par=eml_par, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
@@ -223,15 +225,16 @@
 ;               Mean noise per pixel in every DRP spectrum.  Written to 'DRPS'
 ;               extension.
 ;
-;       bin_type string
-;               Type of binning algorithm used.  Written to header.
-;
-;       bin_par double
-;               Single binning parameter.  Written to header.
+;       bin_par BinPar
+;               Structure containing the binning parameters. Written to the header.
 ;
 ;       threshold_ston_bin double
 ;               Threshold for inclusion of a DRP spectrum in any bin. Written to
 ;               header.
+;
+;       bin_vreg dblarr[ndrp]
+;               Velocity of each of the DRP spectra used to de-redshift
+;               the spectra before binning.  Written to 'DRPS'.
 ;
 ;       bin_indx intarr[ndrp]
 ;               Index (0...B-1) of the bin which contains each DRP spectrum.
@@ -262,19 +265,33 @@
 ;               Pixel mask of each channel C of each binned spectrum B.  Written
 ;               as a 2D image to the 'MASK' extension.
 ;
-;       xbin dblarr[B]
-;               Luminosity-weighted X position of the bin.  Written as a column
-;               in 'BINS' extension.
+;       xbin_rlow dblarr[B]
+;               For the result of a RADIAL binning, this is the lower
+;               limit of the radial bin; otherwise, this is the
+;               luminosity-weighted X position of the bin.  Written as a
+;               column in 'BINS' extension.  
 ;
-;       ybin dblarr[B]
-;               Luminosity-weighted Y position of the bin.  Written as a column
-;               in 'BINS' extension.
+;       ybin_rupp dblarr[B]
+;               For the result of a RADIAL binning, this is the upper
+;               limit of the radial bin; otherwise, this is the
+;               luminosity-weighted Y position of the bin.  Written as a
+;               column in 'BINS' extension.  
+;
+;       rbin dblarr[B]
+;               For the result of a RADIAL binning, this is the
+;               luminosity weighted radius of the spectra in the bin;
+;               otherwise, this is the radius of the luminosity weighted
+;               on-sky coordinates.  Written as a column in teh 'BINS'
+;               extension.
 ;
 ;       bin_area dblarr[B]
 ;               Area of each bin B.  Written as a column in 'BINS' extension.
 ;
 ;       bin_ston dblarr[B]
 ;               S/N of each bin B.  Written as a column in 'BINS' extension.
+
+;   TODO: Radial binning parameters
+
 ;
 ;       bin_n intarr[B]
 ;               Number of spectra in each bin B.  Written as a column in 'BINS'
@@ -496,23 +513,29 @@
 ;
 ; REVISION HISTORY:
 ;       15 Oct 2014: (KBW) Original Implementation
+;       08 Dec 2014: (KBW) Write data associated with the radial binning
+;                          and velocity registration.
 ;-
 ;------------------------------------------------------------------------------
+
+; Read the binary table column names
+@mdap_set_output_file_cols
 
 ;------------------------------------------------------------------------------
 ; Determine the number of rows needed for the DRPS extention by getting the
 ; maximum length of the input vectors
 FUNCTION MDAP_WRITE_OUTPUT_NUMBER_OF_DRPS, $
-                xpos=xpos, ypos=ypos, signal=signal, noise=noise, bin_indx=bin_indx, $
-                bin_weights=bin_weights
+                xpos=xpos, ypos=ypos, signal=signal, noise=noise, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights
 
-        length = intarr(6)
+        length = intarr(7)
         if n_elements(xpos) ne 0 then        length[0] = n_elements(xpos)
         if n_elements(ypos) ne 0 then        length[1] = n_elements(ypos)
         if n_elements(signal) ne 0 then      length[2] = n_elements(signal)
         if n_elements(noise) ne 0 then       length[3] = n_elements(noise)
-        if n_elements(bin_indx) ne 0 then    length[4] = n_elements(bin_indx)
-        if n_elements(bin_weights) ne 0 then length[5] = n_elements(bin_weights)
+        if n_elements(bin_vreg) ne 0 then    length[4] = n_elements(bin_vreg)
+        if n_elements(bin_indx) ne 0 then    length[5] = n_elements(bin_indx)
+        if n_elements(bin_weights) ne 0 then length[6] = n_elements(bin_weights)
         return, max(length)
 END
         
@@ -520,19 +543,21 @@ END
 ; Determine the number of rows needed for the BINS extention by getting the
 ; maximum length of the input vectors
 FUNCTION MDAP_WRITE_OUTPUT_NUMBER_OF_BINS, $
-                bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin=xbin, ybin=ybin, $
-                bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag
+                bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, $
+                ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
+                bin_flag=bin_flag
 
-        length = intarr(9)
-        if n_elements(bin_flux) ne 0 then length[0] = (size(bin_flux))[1]
-        if n_elements(bin_ivar) ne 0 then length[1] = (size(bin_ivar))[1]
-        if n_elements(bin_mask) ne 0 then length[2] = (size(bin_mask))[1]
-        if n_elements(xbin) ne 0 then     length[3] = n_elements(xbin)
-        if n_elements(ybin) ne 0 then     length[4] = n_elements(ybin)
-        if n_elements(bin_area) ne 0 then length[5] = n_elements(bin_area)
-        if n_elements(bin_ston) ne 0 then length[6] = n_elements(bin_ston)
-        if n_elements(bin_n) ne 0 then    length[7] = n_elements(bin_n)
-        if n_elements(bin_flag) ne 0 then length[8] = n_elements(bin_flag)
+        length = intarr(10)
+        if n_elements(bin_flux) ne 0 then  length[0] = (size(bin_flux))[1]
+        if n_elements(bin_ivar) ne 0 then  length[1] = (size(bin_ivar))[1]
+        if n_elements(bin_mask) ne 0 then  length[2] = (size(bin_mask))[1]
+        if n_elements(xbin_rlow) ne 0 then length[3] = n_elements(xbin_rlow)
+        if n_elements(ybin_rupp) ne 0 then length[4] = n_elements(ybin_rupp)
+        if n_elements(rbin) ne 0 then      length[5] = n_elements(rbin)
+        if n_elements(bin_area) ne 0 then  length[6] = n_elements(bin_area)
+        if n_elements(bin_ston) ne 0 then  length[7] = n_elements(bin_ston)
+        if n_elements(bin_n) ne 0 then     length[8] = n_elements(bin_n)
+        if n_elements(bin_flag) ne 0 then  length[9] = n_elements(bin_flag)
         return, max(length)
 
 END
@@ -540,9 +565,40 @@ END
 ;-------------------------------------------------------------------------------
 ; Add the bin type and its parameter(s) to the header
 PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER_BIN, $
-                header, bin_type, bin_par
-        SXADDPAR, header, 'BINTYPE', bin_type, 'Type of binning performed (keyword)'
-        SXADDPAR, header, 'BINPAR', bin_par, 'Binning parameter'
+                header, bin_par
+        SXADDPAR, header, 'BINTYPE', bin_par.type, 'Type of binning performed (keyword)'
+
+        if bin_par.type ne 'RADIAL' then begin
+            SXADDPAR, header, 'BINSCL', 1.0d, 'Coordinate scaling for binning (arcsec)'
+        endif else $
+            SXADDPAR, header, 'BINSCL', bin_par.rscale, 'Radial binning: Radial scaling (arcsec)'
+
+        if bin_par.type eq 'NONE' then $            ; Nothing left to print
+            return
+
+        if bin_par.v_register eq 1 then begin
+            SXADDPAR, header, 'BINVRG', 'True', 'Velocity register spectra before binning'
+        endif else $
+            SXADDPAR, header, 'BINVRG', 'False', 'Velocity register spectra before binning'
+
+        if bin_par.optimal_weighting eq 1 then begin
+            SXADDPAR, header, 'BINWGT', 'Optimal', 'Weighting when combining spectra'
+        endif else $
+            SXADDPAR, header, 'BINWGT', 'Uniform', 'Weighting when combining spectra'
+
+        if bin_par.type eq 'ALL' then $             ; Nothing left to print
+            return
+
+        if bin_par.type eq 'STON' then begin
+            SXADDPAR, header, 'BINSN', bin_par.ston, 'Voronoi binning: Minimum S/N'
+            return                                  ; Nothing left to print
+        endif
+
+        ; Binning type is 'RADIAL'
+        SXADDPAR, header, 'BINCX', bin_par.cx, 'Radial binning: Ellipse X-center'
+        SXADDPAR, header, 'BINCY', bin_par.cy, 'Radial binning: Ellipse Y-center'
+        SXADDPAR, header, 'BINPA', bin_par.pa, 'Radial binning: Ellipse position angle'
+        SXADDPAR, header, 'BINELL', bin_par.ell, 'Radial binning: Ellipticity'
 END
 
 ;-------------------------------------------------------------------------------
@@ -576,7 +632,7 @@ END
 ;
 PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
                 file, header, ndrp=ndrp, dx=dx, dy=dy, w_range_sn=w_range_sn, nbin=nbin, $
-                bin_type=bin_type, bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
+                bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, $
                 w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, analysis_par=analysis_par, $
                 tpl_library_key=tpl_library_key, ems_line_key=ems_line_key, $
@@ -607,8 +663,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
             SXADDPAR, header, 'NS_BIN', nbin, 'Number of binned spectra'
 
         ; Add the bin type used
-        if n_elements(bin_type) ne 0 and n_elements(bin_par) ne 0 then $
-            MDAP_WRITE_OUTPUT_UPDATE_HEADER_BIN, header, bin_type, bin_par
+        if n_elements(bin_par) ne 0 then $
+            MDAP_WRITE_OUTPUT_UPDATE_HEADER_BIN, header, bin_par
 
         ; Add the threshold S/N for inclusion of spectra in any bin
         if n_elements(threshold_ston_bin) ne 0 then begin
@@ -633,6 +689,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
         endif
 
         ; Print the extra parameters
+        ; TODO: Move to an update_analysis_par_header procedure
         if n_elements(analysis_par) ne 0 then begin
             SXADDPAR, header, 'MOMENTS', analysis_par.moments, 'Number of stellar kinematic moments'
             SXADDPAR, header, 'DEGREE', analysis_par.degree, 'Additive polynomial degree (PPXF)'
@@ -762,14 +819,19 @@ PRO MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, $
             ; Create a base level header; only one row for now!
             FXBHMAKE, bth, 1, 'DRPS', 'Binary table with properties of DRP spectra'
             MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
+
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_DRPS_COLS()
             
             ; Create the table columns using placeholders to define the column data type
-            MDAP_FXBADDCOL_VALUE, 1, bth, 'XPOS', ' Fiducial X position of spaxel (arcsec)', /dbl
-            MDAP_FXBADDCOL_VALUE, 2, bth, 'YPOS', ' Fiducial Y position of spaxel (arcsec)', /dbl
-            MDAP_FXBADDCOL_VALUE, 3, bth, 'SIGNAL', ' Mean flux/pixel from SNWAVE1->SNWAVE2', /dbl
-            MDAP_FXBADDCOL_VALUE, 4, bth, 'NOISE', ' Mean noise/pixel from SNWAVE1->SNWAVE2', /dbl
-            MDAP_FXBADDCOL_VALUE, 5, bth, 'BINID', ' Index of bin for spectrum (-1 for no bin)',/int
-            MDAP_FXBADDCOL_VALUE, 6, bth, 'BINW', ' Weight of spectrum in bin', /dbl
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Fiducial X position of spaxel (arcsec)', /dbl
+            MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], ' Fiducial Y position of spaxel (arcsec)', /dbl
+            MDAP_FXBADDCOL_VALUE, 3, bth, cols[2], ' Mean flux/pixel from SNWAVE1->SNWAVE2', /dbl
+            MDAP_FXBADDCOL_VALUE, 4, bth, cols[3], ' Mean noise/pixel from SNWAVE1->SNWAVE2', /dbl
+            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Velocity used for deredshifting', /dbl
+            MDAP_FXBADDCOL_VALUE, 6, bth, cols[5], ' Index of bin for spectrum (-1 for no bin)',/int
+            MDAP_FXBADDCOL_VALUE, 7, bth, cols[6], ' Weight of spectrum in bin', /dbl
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
@@ -795,13 +857,22 @@ PRO MDAP_WRITE_OUTPUT_BINS_INITIALIZE, $
             FXBHMAKE, bth, 1, 'BINS', 'Binary table with properties of binned spectra'
             MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
             
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_BINS_COLS()
+            
             ; Create the table columns using placeholders to define the column data type
-            MDAP_FXBADDCOL_VALUE, 1, bth, 'XBIN', ' Luminosity weighted X position (arcsec)', /dbl
-            MDAP_FXBADDCOL_VALUE, 2, bth, 'YBIN', ' Luminosity weighted Y position (arcsec)', /dbl
-            MDAP_FXBADDCOL_VALUE, 3, bth, 'BINA', ' Area of bin (arcsec^2)', /dbl
-            MDAP_FXBADDCOL_VALUE, 4, bth, 'BINSN', ' S/N of bin', /dbl
-            MDAP_FXBADDCOL_VALUE, 5, bth, 'NBIN', ' Number of spectra in bin', /lng
-            MDAP_FXBADDCOL_VALUE, 6, bth, 'BINF', ' Analysis flag', /int
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], $
+                                 ' L-weighted X position (arcsec) or bin lower radius (BINSCL)', $
+                                  /dbl
+            MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], $
+                                 ' L-weighted Y position (arcsec) or bin upper radius (BINSCL)', $
+                                 /dbl
+            MDAP_FXBADDCOL_VALUE, 3, bth, cols[2], ' Luminosity weighted radius (BINSCL)', /dbl
+            MDAP_FXBADDCOL_VALUE, 4, bth, cols[3], ' Area of bin (arcsec^2)', /dbl
+            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' S/N of bin', /dbl
+            MDAP_FXBADDCOL_VALUE, 6, bth, cols[5], ' Number of spectra in bin', /lng
+            MDAP_FXBADDCOL_VALUE, 7, bth, cols[6], ' Analysis flag', /int
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
@@ -826,16 +897,20 @@ PRO MDAP_WRITE_OUTPUT_ELPAR_INITIALIZE, $
             FXBHMAKE, bth, 1, 'ELPAR', 'Binary table with the emission-line parameters'
             MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
             
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_ELPAR_COLS()
+            
             ; Create the table columns using placeholders to define the column data type
             MDAP_SET_EMISSION_LINE_NAME_DEFAULT, dstr
-            MDAP_FXBADDCOL_VALUE, 1, bth, 'ELNAME', ' Emission-line identifier', /str, $
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Emission-line identifier', /str, $
                                   dummystr=dstr
-            MDAP_FXBADDCOL_VALUE, 2, bth, 'RESTWAVE', ' Rest wavelength (ang)', /dbl
-            MDAP_FXBADDCOL_VALUE, 3, bth, 'TIEDKIN', ' Kinematics are tied to line in this row',/int
+            MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], ' Rest wavelength (ang)', /dbl
+            MDAP_FXBADDCOL_VALUE, 3, bth, cols[2], ' Kinematics are tied to line in this row',/int
             MDAP_SET_EMISSION_LINE_TIED_DEFAULT, dstr
-            MDAP_FXBADDCOL_VALUE, 4, bth, 'TIEDTYPE', ' Tied type: v-vel, s-sig, t-both', /str, $
+            MDAP_FXBADDCOL_VALUE, 4, bth, cols[3], ' Tied type: v-vel, s-sig, t-both', /str, $
                                   dummystr=dstr
-            MDAP_FXBADDCOL_VALUE, 5, bth, 'DOUBLET', ' Line is a doublet of line in this row', /int
+            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Line is a doublet of line in this row', /int
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
@@ -899,6 +974,10 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_INITIALIZE, $
         endif else if n_elements(stellar_kinematics_err) ne 0 then $
             inp_size[3] = (size(stellar_kinematics_err))[2]
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        ; TODO: Make this a loop, with a function that also provides the comments, column types
+        cols = MDAP_SET_STFIT_COLS()
+            
         modify = 0
         nrows = 1                       ; TODO: Is nrows needed?
         if extension_exists eq 1 then begin             ; If the extension exists...
@@ -907,10 +986,10 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_INITIALIZE, $
             fxbopen, unit, file, 'STFIT', bth           ; Open the extension
             nrows = fxpar(bth, 'NAXIS2')                ; Get the existing number of rows
             cur_size = intarr(4)
-            cur_size[0] = fxbdimen(unit, 'TPLW')        ; Number of TPLW elements
-            cur_size[1] = fxbdimen(unit, 'ADDPOLY')     ; Number of ADDPOLY elements
-            cur_size[2] = fxbdimen(unit, 'MULTPOLY')    ; Number of MULTPOLY elements
-            cur_size[3] = fxbdimen(unit, 'KIN')         ; Number of KIN elements, same as KINERR
+            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of TPLW elements
+            cur_size[1] = fxbdimen(unit, cols[1])       ; Number of ADDPOLY elements
+            cur_size[2] = fxbdimen(unit, cols[2])       ; Number of MULTPOLY elements
+            cur_size[3] = fxbdimen(unit, cols[3])       ; Number of KIN elements, same as KINERR
             fxbclose, unit                              ; Close the file
             free_lun, unit                              ; Free the LUN
 
@@ -931,14 +1010,14 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_INITIALIZE, $
         MDAP_FITS_HEADER_ADD_DATE, bth, /modified               ; Add/change last date modified
             
         ; Create the table columns using placeholders to define the column data type and size
-        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], 'TPLW', ' Template weights (PPXF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[1], 'ADDPOLY', $
+        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], ' Template weights (PPXF)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[1], cols[1], $
                                ' Coefficients of additive polynomial (PPXF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[2], 'MULTPOLY', $
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[2], cols[2], $
                                ' Coefficients of multiplicative polynomial (PPXF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[3], 'KIN', ' Stellar kinematics', /dbl
-        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[3], 'KINERR', ' Stellar kinematic errors', /dbl
-        MDAP_FXBADDCOL_VALUE, 6, bth, 'RCHI2', ' Reduced chi-square (chi-square/DOF; PPXF)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[3], cols[3], ' Stellar kinematics', /dbl
+        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[3], cols[4], ' Stellar kinematic errors', /dbl
+        MDAP_FXBADDCOL_VALUE, 6, bth, cols[5], ' Reduced chi-square (chi-square/DOF; PPXF)', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
@@ -1029,6 +1108,10 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             if n_elements(eml_par) ne inp_size[4] then $
                 message, 'Number of line structures does not match the number of line results!'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        ; TODO: Make this a loop, with a function that also provides the comments, column types
+        cols = MDAP_SET_SGFIT_COLS()
+            
         modify = 0
         nrows = 1                       ; TODO: Is nrows needed?
         if extension_exists eq 1 then begin             ; If the extension exists...
@@ -1037,11 +1120,11 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             fxbopen, unit, file, 'SGFIT', bth           ; Open the file
             nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
             cur_size = intarr(5)
-            cur_size[0] = fxbdimen(unit, 'TPLW')        ; Number of TPLW elements
-            cur_size[1] = fxbdimen(unit, 'MULTPOLY')    ; Number of MULTPOLY elements
-            cur_size[2] = fxbdimen(unit, 'KIN')         ; Number of KIN elements, same as KINERR
-            cur_size[3] = fxbdimen(unit, 'RED')         ; Number of reddening elements
-            cur_size[4] = fxbdimen(unit, 'ELOMIT')      ; Number of EML elements
+            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of TPLW elements
+            cur_size[1] = fxbdimen(unit, cols[1])       ; Number of MULTPOLY elements
+            cur_size[2] = fxbdimen(unit, cols[2])       ; Number of KIN elements, same as KINERR
+            cur_size[3] = fxbdimen(unit, cols[5])       ; Number of reddening elements
+            cur_size[4] = fxbdimen(unit, cols[7])       ; Number of EML elements
             fxbclose, unit                              ; Close the file
             free_lun, unit                              ; Free the LUN
 
@@ -1062,28 +1145,29 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         MDAP_FITS_HEADER_ADD_DATE, bth, /modified               ; Add/change last date modified
             
         ; Create the table columns using placeholders to define the column data type and size
-        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], 'TPLW', ' Template weights (GANDALF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[1], 'MULTPOLY', $
+        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], ' Template weights (GANDALF)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[1], cols[1], $
                                ' Coefficients of multiplicative polynomial (GANDALF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[2], 'KIN', ' Average emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[2], 'KINERR', $
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[2], cols[2], ' Average emission-line kinematics', $
+                               /dbl
+        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[2], cols[3], $
                                ' Average emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VALUE, 5, bth, 'RCHI2', ' Reduced chi-square (chi-square/DOF; GANDALF)', /dbl
+        MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Reduced chi-square (chi-square/DOF; GANDALF)', /dbl
 
-        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[3], 'RED', ' Reddening (GANDALF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[3], 'REDERR', ' Reddening error (GANDALF)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[4], 'ELOMIT', ' Emission-line omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[4], 'AMPL', ' Emission-line amplitude', /dbl
-        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[4], 'AMPLERR', $
-                               ' Emission-line amplitude error', /dbl
-        MDAP_FXBADDCOL_MATRIX, 11, bth, cur_size[4], cur_size[2], 'IKIN', $
+        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[3], cols[5], ' Reddening (GANDALF)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[3], cols[6], ' Reddening error (GANDALF)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[4], cols[7], ' Emission-line omission flag', /int
+        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[4], cols[8], ' Emission-line amplitude', /dbl
+        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[4], cols[9], ' Emission-line amplitude error', /dbl
+        MDAP_FXBADDCOL_MATRIX, 11, bth, cur_size[4], cur_size[2], cols[10], $
                                ' Individual emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_MATRIX, 12, bth, cur_size[4], cur_size[2], 'IKINERR', $
+        MDAP_FXBADDCOL_MATRIX, 12, bth, cur_size[4], cur_size[2], cols[11], $
                                ' Individual emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[4], 'FLUX', ' Emission-line flux', /dbl
-        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[4], 'FLUXERR', ' Emission-line flux error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[4], 'EW', ' Emission-line equivalent width', /dbl
-        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[4], 'EWERR', $
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[4], cols[12], ' Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[4], cols[13], ' Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[4], cols[14], ' Emission-line equivalent width', $
+                               /dbl
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[4], cols[15], $
                                ' Emission-line equivalent width error', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
@@ -1129,18 +1213,22 @@ PRO MDAP_WRITE_OUTPUT_SIPAR_INITIALIZE, $
             FXBHMAKE, bth, 1, 'SIPAR', 'Binary table with the spectral index parameters'
             MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
             
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_SIPAR_COLS()
+            
             ; Create the table columns using placeholders to define the column data type
             MDAP_SET_SPECTRAL_INDEX_NAME_DEFAULT, dstr
-            MDAP_FXBADDCOL_VALUE, 1, bth, 'SINAME', ' Spectral index identifier', /str, $
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Spectral index identifier', /str, $
                                   dummystr=dstr
-            MDAP_FXBADDCOL_VECTOR, 2, bth, 2, 'PASSBAND', ' Primary passband of the index (ang)', $
+            MDAP_FXBADDCOL_VECTOR, 2, bth, 2, cols[1], ' Primary passband of the index (ang)', $
                                    /dbl
-            MDAP_FXBADDCOL_VECTOR, 3, bth, 2, 'BLUEBAND', $
+            MDAP_FXBADDCOL_VECTOR, 3, bth, 2, cols[2], $
                                    ' Continuum band blueward of the index (ang)', /dbl
-            MDAP_FXBADDCOL_VECTOR, 4, bth, 2, 'REDBAND', $
+            MDAP_FXBADDCOL_VECTOR, 4, bth, 2, cols[3], $
                                    ' Continuum band redward of the index (ang)', /dbl
             MDAP_SET_SPECTRAL_INDEX_UNIT_DEFAULT, dstr
-            MDAP_FXBADDCOL_VALUE, 5, bth, 'UNIT', ' Spectral index unit (mag or ang)', /str, $
+            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Spectral index unit (mag or ang)', /str, $
                                   dummystr=dstr
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
@@ -1187,6 +1275,10 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             if n_elements(abs_par) ne inp_size[0] then $
                 message, 'Number of index structures does not match the number of index results!'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        ; TODO: Make this a loop, with a function that also provides the comments, column types
+        cols = MDAP_SET_SINDX_COLS()
+            
         modify = 0
         nrows = 1                       ; TODO: Is nrows needed?
         if extension_exists eq 1 then begin             ; If the extension exists...
@@ -1195,7 +1287,7 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             fxbopen, unit, file, 'SINDX', bth           ; Open the file
             nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
             cur_size = intarr(1)
-            cur_size[0] = fxbdimen(unit, 'SIOMIT')      ; Number of spectral index elements
+            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of spectral index elements
             fxbclose, unit                              ; Close the file
             free_lun, unit                              ; Free the LUN
 
@@ -1216,12 +1308,12 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
         MDAP_FITS_HEADER_ADD_DATE, bth, /modified               ; Add/change last date modified
             
         ; Create the table columns using placeholders to define the column data type and size
-        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], 'SIOMIT', ' Spectral index omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], 'INDX', ' Spectral index value', /dbl
-        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], 'INDXERR', ' Spectral index error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[0], 'INDX_OTPL', $
+        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], ' Spectral index omission flag', /int
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], ' Spectral index value', /dbl
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], cols[2], ' Spectral index error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[0], cols[3], $
                                ' Spectral index based on the optimal template', /dbl
-        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[0], 'INDX_BOTPL', $
+        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[0], cols[4], $
                                ' Spectral index based on the broadened optimal template', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
@@ -1348,20 +1440,21 @@ END
 ; an error if the input vectors are not the same size
 PRO MDAP_WRITE_OUTPUT_DRPS_CHECK_INPUTS, $
                 something_to_write, ninp, xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
-                bin_indx=bin_indx, bin_weights=bin_weights
+                bin_vreg=bin_vreg, bin_indx=bin_indx, bin_weights=bin_weights
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(6)
+        nel = intarr(7)
         nel[0] = n_elements(xpos)
         nel[1] = n_elements(ypos)
         nel[2] = n_elements(signal)
         nel[3] = n_elements(noise)
-        nel[4] = n_elements(bin_indx)
-        nel[5] = n_elements(bin_weights)
+        nel[4] = n_elements(bin_vreg)
+        nel[5] = n_elements(bin_indx)
+        nel[6] = n_elements(bin_weights)
         ninp = max(nel)
 
-        for i=0,5 do begin
+        for i=0,6 do begin
             if nel[i] gt 0 and nel[i] ne ninp then $
                 message, 'Input vectors for DRPS have different lengths!'
         endfor
@@ -1374,18 +1467,19 @@ END
 ; there is something to write, and the size of the vectors to write.  Will throw
 ; an error if the input vectors are not the same size
 PRO MDAP_WRITE_OUTPUT_BINS_CHECK_INPUTS, $
-                something_to_write, ninp, xbin=xbin, ybin=ybin, bin_area=bin_area, $
-                bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag
+                something_to_write, ninp, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, rbin=rbin, $
+                bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(6)
-        nel[0] = n_elements(xbin)
-        nel[1] = n_elements(ybin)
-        nel[2] = n_elements(bin_area)
-        nel[3] = n_elements(bin_ston)
-        nel[4] = n_elements(bin_n)
-        nel[5] = n_elements(bin_flag)
+        nel = intarr(7)
+        nel[0] = n_elements(xbin_rlow)
+        nel[1] = n_elements(ybin_rupp)
+        nel[2] = n_elements(rbin)
+        nel[3] = n_elements(bin_area)
+        nel[4] = n_elements(bin_ston)
+        nel[5] = n_elements(bin_n)
+        nel[6] = n_elements(bin_flag)
         ninp = max(nel)
 
         for i=0,5 do begin
@@ -1515,14 +1609,14 @@ END
 ;       - Write/update the data
 PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
                 file, ndrp=ndrp, xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
-                bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
+                bin_vreg=bin_vreg, bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
 
         MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, file         ; Initialize the extension
 
         ; Check that one of the vectors are input
         MDAP_WRITE_OUTPUT_DRPS_CHECK_INPUTS, something_to_write, ninp, xpos=xpos, ypos=ypos, $
-                                             signal=signal, noise=noise, bin_indx=bin_indx, $
-                                             bin_weights=bin_weights
+                                             signal=signal, noise=noise, bin_vreg=bin_vreg, $
+                                             bin_indx=bin_indx, bin_weights=bin_weights
 
         ; If there is nothing to write, return
         if something_to_write eq 0 then begin
@@ -1544,16 +1638,20 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
         ; TODO: This will fail if the table is longer than ndrp!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, ndrp, 'DRPS'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_DRPS_COLS()
+            
         FXBOPEN, tbl, file, 'DRPS', access='RW'         ; Open the file
 
         ; Write columns if they were provided
         ; TODO: Is this too inefficient?
-        if n_elements(xpos) ne 0 then        FXBWRITM, tbl, ['XPOS'], xpos
-        if n_elements(ypos) ne 0 then        FXBWRITM, tbl, ['YPOS'], ypos
-        if n_elements(signal) ne 0 then      FXBWRITM, tbl, ['SIGNAL'], signal
-        if n_elements(noise) ne 0 then       FXBWRITM, tbl, ['NOISE'], noise
-        if n_elements(bin_indx) ne 0 then    FXBWRITM, tbl, ['BINID'], bin_indx
-        if n_elements(bin_weights) ne 0 then FXBWRITM, tbl, ['BINW'], bin_weights
+        if n_elements(xpos) ne 0 then        FXBWRITM, tbl, [cols[0]], xpos
+        if n_elements(ypos) ne 0 then        FXBWRITM, tbl, [cols[1]], ypos
+        if n_elements(signal) ne 0 then      FXBWRITM, tbl, [cols[2]], signal
+        if n_elements(noise) ne 0 then       FXBWRITM, tbl, [cols[3]], noise
+        if n_elements(bin_vreg) ne 0 then    FXBWRITM, tbl, [cols[4]], bin_vreg
+        if n_elements(bin_indx) ne 0 then    FXBWRITM, tbl, [cols[5]], bin_indx
+        if n_elements(bin_weights) ne 0 then FXBWRITM, tbl, [cols[6]], bin_weights
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -1567,15 +1665,15 @@ END
 ;       - Resize (number of rows) the extension, if necessary
 ;       - Write/update the data
 PRO MDAP_WRITE_OUTPUT_UPDATE_BINS, $
-                file, nbin=nbin, xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, $
-                bin_n=bin_n, bin_flag=bin_flag, quiet=quiet
+                file, nbin=nbin, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, rbin=rbin, $
+                bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, quiet=quiet
 
         MDAP_WRITE_OUTPUT_BINS_INITIALIZE, file         ; Initialize the extension
 
         ; Check that one of the vectors are input
-        MDAP_WRITE_OUTPUT_BINS_CHECK_INPUTS, something_to_write, ninp, xbin=xbin, ybin=ybin, $
-                                             bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-                                             bin_flag=bin_flag
+        MDAP_WRITE_OUTPUT_BINS_CHECK_INPUTS, something_to_write, ninp, xbin_rlow=xbin_rlow, $
+                                             ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, $
+                                             bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag
 
         ; If there is nothing to write, return
         if something_to_write eq 0 then begin
@@ -1597,16 +1695,20 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_BINS, $
         ; TODO: This will fail if the table is longer than nbin!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'BINS'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_BINS_COLS()
+            
         FXBOPEN, tbl, file, 'BINS', access='RW'         ; Open the file
 
         ; Write columns if they were provided
         ; TODO: Is this too inefficient?
-        if n_elements(xbin) ne 0 then      FXBWRITM, tbl, ['XBIN'], xbin
-        if n_elements(ybin) ne 0 then      FXBWRITM, tbl, ['YBIN'], ybin
-        if n_elements(bin_area) ne 0 then  FXBWRITM, tbl, ['BINA'], bin_area
-        if n_elements(bin_ston) ne 0 then  FXBWRITM, tbl, ['BINSN'], bin_ston
-        if n_elements(bin_n) ne 0 then     FXBWRITM, tbl, ['NBIN'], bin_n
-        if n_elements(bin_flag) ne 0 then  FXBWRITM, tbl, ['BINF'], bin_flag
+        if n_elements(xbin_rlow) ne 0 then FXBWRITM, tbl, [cols[0]], xbin_rlow
+        if n_elements(ybin_rupp) ne 0 then FXBWRITM, tbl, [cols[1]], ybin_rupp
+        if n_elements(rbin) ne 0 then      FXBWRITM, tbl, [cols[2]], rbin
+        if n_elements(bin_area) ne 0 then  FXBWRITM, tbl, [cols[3]], bin_area
+        if n_elements(bin_ston) ne 0 then  FXBWRITM, tbl, [cols[4]], bin_ston
+        if n_elements(bin_n) ne 0 then     FXBWRITM, tbl, [cols[5]], bin_n
+        if n_elements(bin_flag) ne 0 then  FXBWRITM, tbl, [cols[6]], bin_flag
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -1671,9 +1773,12 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
 ;           print, '+'+elttyp[i]+'+', n_elements(elttyp[i])
 ;       print, hdr
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELPAR_COLS()
+            
         ; Write ALL the columns simultaneously
-        FXBWRITM, tbl, [ 'ELNAME', 'RESTWAVE', 'TIEDKIN', 'TIEDTYPE', 'DOUBLET' ], elname, elwave, $
-                  eltied, elttyp, eldoub
+        FXBWRITM, tbl, [ cols[0], cols[1], cols[2], cols[3], cols[4] ], elname, elwave, eltied, $
+                  elttyp, eldoub
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -1725,23 +1830,26 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STELLAR_KIN, $
         ; TODO: This will fail if the table is longer than ndrp!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'STFIT'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_STFIT_COLS()
+            
         FXBOPEN, tbl, file, 'STFIT', access='RW'        ; Open the file
 
         ; Write columns if they were provided; column/row ordering has to be flipped
         ; TODO: Is this too inefficient?
         ; TODO: Need to redo column/row reordering
         if n_elements(weights_ppxf) ne 0 then $
-            FXBWRITM, tbl, ['TPLW'], transpose(weights_ppxf)
+            FXBWRITM, tbl, [cols[0]], transpose(weights_ppxf)
         if n_elements(add_poly_coeff_ppxf) ne 0 then $
-            FXBWRITM, tbl, ['ADDPOLY'], transpose(add_poly_coeff_ppxf)
+            FXBWRITM, tbl, [cols[1]], transpose(add_poly_coeff_ppxf)
         if n_elements(mult_poly_coeff_ppxf) ne 0 then $
-            FXBWRITM, tbl, ['MULTPOLY'], transpose(mult_poly_coeff_ppxf)
+            FXBWRITM, tbl, [cols[2]], transpose(mult_poly_coeff_ppxf)
         if n_elements(stellar_kinematics_fit) ne 0 then $
-            FXBWRITM, tbl, ['KIN'], transpose(stellar_kinematics_fit)
+            FXBWRITM, tbl, [cols[3]], transpose(stellar_kinematics_fit)
         if n_elements(stellar_kinematics_err) ne 0 then $
-            FXBWRITM, tbl, ['KINERR'], transpose(stellar_kinematics_err)
+            FXBWRITM, tbl, [cols[4]], transpose(stellar_kinematics_err)
         if n_elements(chi2_ppxf) ne 0 then $
-            FXBWRITM, tbl, ['RCHI2'], chi2_ppxf
+            FXBWRITM, tbl, [cols[5]], chi2_ppxf
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -1831,6 +1939,9 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
         ; TODO: This will fail if the table is longer than nbin!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'SGFIT'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_SGFIT_COLS()
+            
 ;       fits_info, file
 ;       stop
 
@@ -1840,37 +1951,37 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
         ; TODO: Is this too inefficient?
         ; TODO: Need to redo column/row reordering
         if n_elements(weights_gndf) ne 0 then $
-            FXBWRITM, tbl, ['TPLW'], transpose(weights_gndf)
+            FXBWRITM, tbl, [cols[0]], transpose(weights_gndf)
         if n_elements(mult_poly_coeff_gndf) ne 0 then $
-            FXBWRITM, tbl, ['MULTPOLY'], transpose(mult_poly_coeff_gndf)
+            FXBWRITM, tbl, [cols[1]], transpose(mult_poly_coeff_gndf)
         if n_elements(emission_line_kinematics_avg) ne 0 then $
-            FXBWRITM, tbl, ['KIN'], transpose(emission_line_kinematics_avg)
+            FXBWRITM, tbl, [cols[2]], transpose(emission_line_kinematics_avg)
         if n_elements(emission_line_kinematics_aer) ne 0 then $
-            FXBWRITM, tbl, ['KINERR'], transpose(emission_line_kinematics_aer)
+            FXBWRITM, tbl, [cols[3]], transpose(emission_line_kinematics_aer)
         if n_elements(chi2_gndf) ne 0 then $
-            FXBWRITM, tbl, ['RCHI2'], chi2_gndf
+            FXBWRITM, tbl, [cols[4]], chi2_gndf
         if n_elements(reddening_val) ne 0 then $
-            FXBWRITM, tbl, ['RED'], transpose(reddening_val)
+            FXBWRITM, tbl, [cols[5]], transpose(reddening_val)
         if n_elements(reddening_err) ne 0 then $
-            FXBWRITM, tbl, ['REDERR'], transpose(reddening_err)
+            FXBWRITM, tbl, [cols[6]], transpose(reddening_err)
         if n_elements(emission_line_omitted) ne 0 then $
-            FXBWRITM, tbl, ['ELOMIT'], emission_line_omitted
+            FXBWRITM, tbl, [cols[7]], emission_line_omitted
         if n_elements(emission_line_intens) ne 0 then $
-            FXBWRITM, tbl, ['AMPL'], transpose(emission_line_intens)
+            FXBWRITM, tbl, [cols[8]], transpose(emission_line_intens)
         if n_elements(emission_line_interr) ne 0 then $
-            FXBWRITM, tbl, ['AMPLERR'], transpose(emission_line_interr)
+            FXBWRITM, tbl, [cols[9]], transpose(emission_line_interr)
         if n_elements(emission_line_kinematics_ind) ne 0 then $
-            FXBWRITM, tbl, ['IKIN'], transpose(emission_line_kinematics_ind, [1, 2, 0])
+            FXBWRITM, tbl, [cols[10]], transpose(emission_line_kinematics_ind, [1, 2, 0])
         if n_elements(emission_line_kinematics_ier) ne 0 then $
-            FXBWRITM, tbl, ['IKINERR'], transpose(emission_line_kinematics_ier, [1, 2, 0])
+            FXBWRITM, tbl, [cols[11]], transpose(emission_line_kinematics_ier, [1, 2, 0])
         if n_elements(emission_line_fluxes) ne 0 then $
-            FXBWRITM, tbl, ['FLUX'], transpose(emission_line_fluxes)
+            FXBWRITM, tbl, [cols[12]], transpose(emission_line_fluxes)
         if n_elements(emission_line_flxerr) ne 0 then $
-            FXBWRITM, tbl, ['FLUXERR'], transpose(emission_line_flxerr)
+            FXBWRITM, tbl, [cols[13]], transpose(emission_line_flxerr)
         if n_elements(emission_line_EWidth) ne 0 then $
-            FXBWRITM, tbl, ['EW'], transpose(emission_line_EWidth)
+            FXBWRITM, tbl, [cols[14]], transpose(emission_line_EWidth)
         if n_elements(emission_line_EW_err) ne 0 then $
-            FXBWRITM, tbl, ['EWERR'], transpose(emission_line_EW_err)
+            FXBWRITM, tbl, [cols[15]], transpose(emission_line_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -1909,6 +2020,9 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SIPAR, $
         ; TODO: This will fail if the table is longer than ndrp!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nabs, 'SIPAR'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_SIPAR_COLS()
+
         FXBOPEN, tbl, file, 'SIPAR', hdr, access='RW'   ; Open the extension
 
         siname = MDAP_SET_SPECTRAL_INDEX_NAME(abs_par)  ; Set the emission-line identifiers
@@ -1925,7 +2039,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SIPAR, $
         endfor
 
         ; Write ALL the columns simultaneously
-        FXBWRITM, tbl, [ 'SINAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT' ], siname, passband, $
+        FXBWRITM, tbl, [ cols[0], cols[1], cols[2], cols[3], cols[4] ], siname, passband, $
                   blueband, redband, siunit
 
         FXBFINISH, tbl                                  ; Close the file
@@ -1976,6 +2090,9 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
         ; TODO: This will fail if the table is longer than nbin!
         MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'SINDX'
 
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_SINDX_COLS()
+
 ;       fits_info, file
 ;       stop
 
@@ -1985,15 +2102,15 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
         ; TODO: Is this too inefficient?
         ; TODO: Need to redo column/row reordering
         if n_elements(abs_line_indx_omitted) ne 0 then $
-            FXBWRITM, tbl, ['SIOMIT'], transpose(abs_line_indx_omitted)
+            FXBWRITM, tbl, [cols[0]], transpose(abs_line_indx_omitted)
         if n_elements(abs_line_indx_val) ne 0 then $
-            FXBWRITM, tbl, ['INDX'], transpose(abs_line_indx_val)
+            FXBWRITM, tbl, [cols[1]], transpose(abs_line_indx_val)
         if n_elements(abs_line_indx_err) ne 0 then $
-            FXBWRITM, tbl, ['INDXERR'], transpose(abs_line_indx_err)
+            FXBWRITM, tbl, [cols[2]], transpose(abs_line_indx_err)
         if n_elements(abs_line_indx_otpl) ne 0 then $
-            FXBWRITM, tbl, ['INDX_OTPL'], transpose(abs_line_indx_otpl)
+            FXBWRITM, tbl, [cols[3]], transpose(abs_line_indx_otpl)
         if n_elements(abs_line_indx_botpl) ne 0 then $
-            FXBWRITM, tbl, ['INDX_BOTPL'], transpose(abs_line_indx_botpl)
+            FXBWRITM, tbl, [cols[4]], transpose(abs_line_indx_botpl)
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -2032,11 +2149,12 @@ END
 ; ORDER OF THE OPERATIONS IS IMPORTANT
 PRO MDAP_WRITE_OUTPUT, $
                 file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
-                signal=signal, noise=noise, bin_type=bin_type, bin_par=bin_par, $
-                threshold_ston_bin=threshold_ston_bin, bin_indx=bin_indx, bin_weights=bin_weights, $
-                wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
-                xbin=xbin, ybin=ybin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-                bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
+                signal=signal, noise=noise, bin_par=bin_par, $
+                threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, bin_indx=bin_indx, $
+                bin_weights=bin_weights, wave=wave, sres=sres, bin_flux=bin_flux, $
+                bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
+                rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
+                w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
                 ems_line_key=ems_line_key, eml_par=eml_par, analysis_par=analysis_par, $
                 weights_ppxf=weights_ppxf, add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
@@ -2072,7 +2190,8 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Check the number of DRP spectra
         ndrp = MDAP_WRITE_OUTPUT_NUMBER_OF_DRPS(xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
-                                                bin_indx=bin_indx, bin_weights=bin_weights)
+                                                bin_vreg=bin_vreg, bin_indx=bin_indx, $
+                                                bin_weights=bin_weights)
         if ndrp eq 0 then begin
             tmp=temporary(ndrp)
         endif else begin
@@ -2082,9 +2201,9 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Check the number of bins
         nbin = MDAP_WRITE_OUTPUT_NUMBER_OF_BINS(bin_flux=bin_flux, bin_ivar=bin_ivar, $
-                                                bin_mask=bin_mask, xbin=xbin, ybin=ybin, $
-                                                bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
-                                                bin_flag=bin_flag)
+                                                bin_mask=bin_mask, xbin_rlow=xbin_rlow, $
+                                                ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, $
+                                                bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag)
         if nbin eq 0 then begin
             tmp=temporary(nbin)
         endif else begin
@@ -2105,8 +2224,7 @@ PRO MDAP_WRITE_OUTPUT, $
         ; If file does not exist, it will be created
         if n_elements(header) ne 0 then begin
             MDAP_WRITE_OUTPUT_UPDATE_HEADER, file, header, ndrp=ndrp, dx=dx, dy=dy, $
-                                             w_range_sn=w_range_sn, nbin=nbin, bin_type=bin_type, $
-                                             bin_par=bin_par, $
+                                             w_range_sn=w_range_sn, nbin=nbin, bin_par=bin_par, $
                                              threshold_ston_bin=threshold_ston_bin, $
                                              w_range_analysis=w_range_analysis, $
                                              threshold_ston_analysis=threshold_ston_analysis, $
@@ -2116,14 +2234,14 @@ PRO MDAP_WRITE_OUTPUT, $
         endif
 
         ; Update properties of DRP spectra
-        MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, $
-                                          signal=signal, noise=noise, bin_indx=bin_indx, $
-                                          bin_weights=bin_weights, quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, signal=signal, $
+                                             noise=noise, bin_vreg=bin_vreg, bin_indx=bin_indx, $
+                                             bin_weights=bin_weights, quiet=quiet
 
         ; Update properties of binned spectra
-        MDAP_WRITE_OUTPUT_UPDATE_BINS, file, nbin=nbin, xbin=xbin, ybin=ybin, bin_area=bin_area, $
-                                       bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
-                                       quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_BINS, file, nbin=nbin, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
+                                       rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, $
+                                       bin_n=bin_n, bin_flag=bin_flag, quiet=quiet
 
         ; Update the images for the binned spectra
         if n_elements(wave) ne 0 then begin

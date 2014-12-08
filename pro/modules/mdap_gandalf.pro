@@ -501,7 +501,8 @@ if not keyword_set(for_errors) then begin
     for i=0,nlines*2 -1, 2 do begin
         parinfo[i].limits   = start_pars[i] + [-1d3,1d3]/velscale ; Limits for Vgas (from km/s to pixels)
         ;parinfo[i+1].limits = [-1d4,1d4]/velscale                ; Limits for Sgas (from km/s to pixels)
-        parinfo[i+1].limits = [0.2d,1d4/velscale]                ; Limits for Sgas (from km/s to pixels)
+        ;parinfo[i+1].limits = [0.2d,1d4/velscale]                ; Limits for Sgas (from km/s to pixels)
+        parinfo[i+1].limits = [0.2d,3d2/velscale]                ; Limits for Sgas (from km/s to pixels)
         if n_elements(range_v_gas) ne 0 then parinfo[i].limits   = start_pars[i] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+1].limits   =  [max([0.2d,start_pars[i+1]+range_s_gas[0]/velscale ]),start_pars[i+1]+range_s_gas[1]/velscale ]
         ; to avoid problems near the previous boundaries
@@ -518,7 +519,8 @@ endif else begin
     for i=0,nlines*3 -1, 3 do begin
         parinfo[i+1].limits = start_pars[i+1] + [-1d3,1d3]/velscale ; Limits for Vgas (from km/s to pixels)
         ;parinfo[i+2].limits = [-1d4,1d4]/velscale                  ; Limits for Sgas (from km/s to pixels)
-        parinfo[i+2].limits = [0.2d,1d4/velscale]                  ; Limits for Sgas (from km/s to pixels)
+        ;parinfo[i+2].limits = [0.2d,1d4/velscale]                  ; Limits for Sgas (from km/s to pixels)
+        parinfo[i+2].limits = [0.2d,3d2/velscale]                ; Limits for Sgas (from km/s to pixels)
         if n_elements(range_v_gas) ne 0 then parinfo[i+1].limits   = start_pars[i+1] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+2].limits   = [max([0.2d,start_pars[i+2]+range_s_gas[0]/velscale ]),start_pars[i+2]+range_s_gas[1]/velscale ]
         ; to avoid problems near the previous boundaries
@@ -1140,7 +1142,7 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
 ; as regards the position and width of the lines these should only be
 ; considered as lower estimates for the real uncertainties.
 best_pars = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
-             FTOL=1d-2, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
+             FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
 ;
 
 if errmsg ne '' then begin
@@ -1254,8 +1256,9 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; Re-run MPFIT starting from previous solution and using now the
     ; FOR_ERRORS keyword to specify that we solve non-linearly also for
     ; the amplitudes, and not only for the line position and width.
-    best_pars_2 = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
-                        FTOL=1d-1, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, /QUIET)
+    best_pars_2 = mpfit('FITFUNC_GAS', start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
+                        FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, $
+                        /QUIET)
 ;stop
     ; -----------------
     ; Re-evaluate the fit residuals to re-assess the fit quality and
@@ -1263,7 +1266,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; converged to the input best solution Also, the weights here are
     ; set to unity for the emission-line templates, as their amplitude
     ; is determined by MPFIT.
-    resid_2 = fitfunc_gas(best_pars_2,CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
+    resid_2 = fitfunc_gas(best_pars_2, CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
                           KINSTARS=solori[0:5], VELSCALE=velscale, DEGREE=degree, MDEGREE=mdegree, $
                           GOODPIXELS=goodpixels, BESTFIT=bestfit_2, WEIGHTS=weights_2, $
                           EMISSION_SETUP=emission_setup, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
