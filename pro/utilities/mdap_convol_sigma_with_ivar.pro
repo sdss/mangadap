@@ -62,7 +62,7 @@
 ;                         precision used.
 ; v2.1   13/11/2009 by L. Coccato.  minor changes in the text.                    
 ; v3.0   17 Sep 2014: (KBW) Formatting, editing, comments
-; v3.1   22 Sep 2014: (KBW) Include rough (probably incorrect) approximate of
+; v3.1   22 Sep 2014: (KBW) Include rough (probably incorrect) approximation of
 ;                           errors
 ;-
 ;------------------------------------------------------------------------------

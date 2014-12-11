@@ -542,9 +542,9 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Set the list of analyses to perform.  The available analysis steps are
         ; listed above.
 
-        analysis[0,0] = 'stellar-cont'
-        analysis[0,1] = 'emission-line'
-        analysis[0,2] = 'abs-indices'
+        analysis[*,0] = 'stellar-cont'
+        analysis[*,1] = 'emission-line'
+        analysis[*,2] = 'abs-indices'
 
 ;       analysis[0,0] = 'stellar-cont'
 ;       analysis[0,1] = 'abs-indices'

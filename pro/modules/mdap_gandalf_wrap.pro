@@ -577,31 +577,8 @@ END
 ;       If mask_fit is defined, action='f' lines will also be masked.
 ;
 
-FUNCTION MDAP_GANDALFW_EMISSION_LINE_WINDOW, $
-                eml_par, velocity=velocity, nsig=nsig, sigma=sigma
-
-        if n_elements(nsig) eq 0 then $
-            nsig=3.0d                                   ; Default window size in +/- sigma
-
-        if n_elements(sigma) eq 0 then $
-            sigma=eml_par.s                             ; Set width based on input value
-
-        ; Determine the edges of the window
-        el_half_width = nsig*sigma                      ; The half-width of the mask in km/s
-        sign = make_array(2, /double, value=1.0d)
-        sign[0] = -1.0d                                 ; Sign for lower edge
-        c = 299792.458d                                         ; Speed of light in km/s
-        el_range = (1 + sign*el_half_width/c)*eml_par.lambda    ; Lower and upper edge (angstroms)
-
-        ; Redshift the edges to match the object wavelengths, unless it's a sky line!
-        if n_elements(velocity) ne 0 and eml_par.action ne 's' then $
-                el_range = el_range * (1+velocity/c)            ; Redshifted wavelengths
-
-        return, el_range                                ; Return the window range
-END
-
 PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
-                eml_par, obj_wave, obj_mask_, velocity=velocity, sigma=sigma, mask_fit=mask_fit
+                eml_par, obj_wave, obj_mask, velocity=velocity, sigma=sigma, mask_fit=mask_fit
 
         if n_elements(eml_par) lt 1 then $      ; No emission lines; TODO: Is this check necessary?
             return
@@ -633,12 +610,11 @@ PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
         for i=0,nm-1 do begin
 
             ; TODO: Number of sigma currently hard-wired to be 3.  Allow this to change?
-            el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, $
-                                                          sigma=sigma)
+            el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, sigma=sigma)
 
             MDAP_SELECT_WAVE, obj_wave, el_range, wave_indx             ; Get the indices
             if wave_indx[0] ne -1 then $
-                obj_mask_[wave_indx] = 1.0d                             ; Mask them
+                obj_mask[wave_indx] = 1.0d                             ; Mask them
         endfor
 
 END
@@ -680,8 +656,8 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
 
         if keyword_set(noise_mask) then begin
             for i=0,neml_l-1 do begin
-                el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i_l[i]], velocity=velocity, $
-                                                              sigma=sigma)
+                el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[i_l[i]], velocity=velocity, $
+                                                     sigma=sigma)
                 MDAP_SELECT_WAVE, wave, el_range, indx          ; Get the indices
                 if indx[0] eq -1 then begin
                     fit_noise[i] = 99.0d
@@ -692,9 +668,8 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
                 if dindx[0] ne -1 then begin
                     ntied = n_elements(dindx)
                     for j=0,ntied-1 do begin
-                        el_range = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i_f[dindx[j]]], $
-                                                                      velocity=velocity, $
-                                                                      sigma=sigma)
+                        el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[i_f[dindx[j]]], $
+                                                             velocity=velocity, sigma=sigma)
                         MDAP_SELECT_WAVE, wave, el_range, aindx         ; Get the indices
                         if aindx[0] ne -1 then $
                             indx = [indx, aindx]
@@ -747,75 +722,6 @@ FUNCTION MDAP_GANDALFW_REMOVE_DETECTED_EMISSION, $
         return, neat_galaxy
 END
 ;---------------------------------------------------------------------------------------------------
-
-FUNCTION MDAP_LINES_FOR_MEAN_GAS_KINEMATICS, $
-                sol_gas_A, esol_gas_A, sol_gas_F, esol_gas_F, sol_gas_V, esol_gas_V, sol_gas_S, $
-                esol_gas_S
-
-        ; TODO: esol_gas_A, sol_gas_V, sol_gas_S not used!
-
-        return, where( sol_gas_F gt 0 and $
-                       esol_gas_F gt 0 and $
-                       finite(sol_gas_F) eq 1 and $
-                       finite(esol_gas_F) eq 1 and $
-                       esol_gas_V gt 0 and $
-                       esol_gas_S gt 0 and $
-                       sol_gas_A gt 0 and $
-                       finite(sol_gas_A) eq 1 )
-END
-
-; TODO: Allow for error-based weighting
-PRO MDAP_MEAN_GAS_KINEMATICS, $
-                wgts, v, ve, s, se, wv, wve, ws, wse
-
-        wsum = total(wgts)
-        wv = total(wgts*v)/wsum
-;       wve = mean(ve)
-        wve = sqrt(total((wgts*ve)^2))/wsum
-        ws = total(wgts*s)/wsum
-;       wse = mean(se)
-        wse = sqrt(total((wgts*se)^2))/wsum
-
-END
-
-PRO MDAP_GANDALFW_MEASURE_EQUIV_WIDTH, eml_par, velocity, sigma, wave, galaxy_no_eml, flux, $
-                                       flux_err, equiv_width, equiv_width_err
-
-        ; TODO: Perform a more robust measurement of the EW!
-        ; TODO: Only fit lines within 10 sigma of the edge (mask if part of it is there)
-
-        neml = n_elements(eml_par)
-        equiv_width = dblarr(neml, /nozero)
-        equiv_width_err  = dblarr(neml, /nozero)
-
-        for i=0,neml-1 do begin
-;           print, velocity, sigma
-            el_range_in = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i], velocity=velocity, $
-                                                             nsig=5.0d, sigma=sigma)
-            el_range_out = MDAP_GANDALFW_EMISSION_LINE_WINDOW(eml_par[i], velocity=velocity, $
-                                                              nsig=10.0d, sigma=sigma)
-            el_range_lo = [ el_range_out[0], el_range_in[0] ]
-            el_range_hi = [ el_range_in[1], el_range_out[1] ]
-;           print, el_range_lo
-;           print, el_range_hi
-;           stop
-
-            ; TODO: Do these tests outside of the loop?
-            MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo
-            if indx_lo[0] eq -1 then $
-                message, 'Cannot get EW measurement!'
-            MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi
-            if indx_hi[0] eq -1 then $
-                message, 'Cannot get EW measurement!'
-            indx = [ indx_lo, indx_hi ]
-
-            cont = median(galaxy_no_eml[indx])                  ; Median continuum
-            econt = robust_sigma(galaxy_no_eml[indx])           ; TODO: Overestimate?
-            
-            equiv_width[i] = flux[i]/cont                       ; Approximation
-            equiv_width_err[i] = sqrt( (flux_err[i]/cont)^2 + (equiv_width[i]*econt/cont)^2 )
-        endfor
-END
 
 ; The number of output emission line fits is the same size as eml_par_fit.
 ; Doublets in eml_par_fit are given the same results as their linked lines with
@@ -1314,8 +1220,8 @@ PRO MDAP_GANDALF_WRAP, $
 ;       print, err
 
         ; Measure the equivalent widths
-        MDAP_GANDALFW_MEASURE_EQUIV_WIDTH, eml_par[i_l], fw_vel, fw_sig, obj_wave, spec_neat, $
-                                           sol_gas_F, esol_gas_F, sol_gas_EW, esol_gas_EW
+        MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, eml_par[i_l], fw_vel, fw_sig, obj_wave, spec_neat, $
+                                                sol_gas_F, esol_gas_F, sol_gas_EW, esol_gas_EW
 
         ; Save the full set of results
         MDAP_GANDALFW_SAVE_RESULTS, eml_par, sol_gas_A, esol_gas_A, sol_gas_V, esol_gas_V, $

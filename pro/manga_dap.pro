@@ -806,7 +806,7 @@ PRO MANGA_DAP, $
                     star_kin_interp[*,0] = star_kin_interp[*,0] - bin_vreg
                     gas_kin_interp[*,0] = gas_kin_interp[*,0] - bin_vreg
 
-;                   for i=0,9 do $
+;                   for j=0,9 do $
 ;                       print, bin_vreg[i]
                 endif else $
                     bin_vreg = dblarr(ndrp)             ; Set to 0.0
@@ -928,18 +928,18 @@ PRO MANGA_DAP, $
                 if strlen(execution_plan[i].analysis_prior) ne 0 then begin
                     ; TODO: Add some limits for the guess kinematics to
                     ; make sure they're not too crazy
-                    for i=0,nb-1 do begin
-                        indx = where(bin_indx eq i)
+                    for j=0,nb-1 do begin
+                        indx = where(bin_indx eq j)
                         if indx[0] ne -1 then begin
-                            star_kin_guesses[i,0] = mean(star_kin_interp[indx,0])
-                            star_kin_guesses[i,1] = mean(star_kin_interp[indx,1])
-                            gas_kin_guesses[i,0] = mean(gas_kin_interp[indx,0])
-                            gas_kin_guesses[i,1] = mean(gas_kin_interp[indx,1])
+                            star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
+                            star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
+                            gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
+                            gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
                         endif else begin
-                            star_kin_guesses[i,0] = velocity_initial_guess
-                            star_kin_guesses[i,1] = velocity_dispersion_initial_guess
-                            gas_kin_guesses[i,0] = velocity_initial_guess
-                            gas_kin_guesses[i,1] = 50.0
+                            star_kin_guesses[j,0] = velocity_initial_guess
+                            star_kin_guesses[j,1] = velocity_dispersion_initial_guess
+                            gas_kin_guesses[j,0] = velocity_initial_guess
+                            gas_kin_guesses[j,1] = 50.0
                         endelse
                     endfor
                 endif else begin
@@ -990,7 +990,7 @@ PRO MANGA_DAP, $
                 ; Write the stellar kinematics results; will always be done if
                 ; program makes it here
                 MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
-                                   tpl_library_key=tpl_library_keys[i], $
+                                   tpl_library_key=tpl_library_keys[execution_plan[i].tpl_lib], $
                                    obj_fit_mask_ppxf=obj_fit_mask_ppxf, weights_ppxf=weights_ppxf, $
                                    add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
                                    mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
@@ -1003,8 +1003,8 @@ PRO MANGA_DAP, $
                 ; Write the results of the emission-line fitting
                 if perform_block.ppxf_only eq 0 then begin
                     MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
-                                       ems_line_key=ems_line_keys[i], eml_par=eml_par, $
-                                       obj_fit_mask_gndf=obj_fit_mask_gndf, $
+                                       ems_line_key=ems_line_keys[execution_plan[i].ems_par], $
+                                       eml_par=eml_par, obj_fit_mask_gndf=obj_fit_mask_gndf, $
                                        weights_gndf=weights_gndf, $
                                        mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                                        emission_line_kinematics_avg=emission_line_kinematics, $

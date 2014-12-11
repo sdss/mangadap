@@ -154,6 +154,12 @@ legacy_pro/range.pro -text
 legacy_pro/read_header.pro -text
 legacy_pro/test_sn_definition.pro -text
 legacy_pro/usersymbol.pro -text
+pro/contrib/Belfiore_ELfit.zip -text
+pro/contrib/Enci_ELfit.tar.gz -text
+pro/contrib/mdap_define_emission_lines_enci_belfiore.pro -text
+pro/contrib/mdap_emission_line_only_fit.pro -text
+pro/contrib/mdap_fit_emission_line_spectrum_belfiore.pro -text
+pro/contrib/mdap_fit_emission_line_spectrum_enci.pro -text
 pro/fileio/mdap_check_bintable_columns.pro -text
 pro/fileio/mdap_check_extension_exists.pro -text
 pro/fileio/mdap_check_file_exists.pro -text
@@ -218,6 +224,7 @@ pro/utilities/mdap_define_analysis_par.pro -text
 pro/utilities/mdap_define_bin_par.pro -text
 pro/utilities/mdap_distribute_binned_data.pro -text
 pro/utilities/mdap_drp_filetype.pro -text
+pro/utilities/mdap_emission_line_window.pro -text
 pro/utilities/mdap_erasevar.pro -text
 pro/utilities/mdap_fiducial_bin_xy.pro -text
 pro/utilities/mdap_fits_header_add_date.pro -text
@@ -231,7 +238,10 @@ pro/utilities/mdap_index_is_bandhead.pro -text
 pro/utilities/mdap_insert_flagged.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_interpolate_kinematics.pro -text
+pro/utilities/mdap_lines_for_mean_gas_kinematics.pro -text
 pro/utilities/mdap_match_spectral_resolution.pro -text
+pro/utilities/mdap_mean_gas_kinematics.pro -text
+pro/utilities/mdap_measure_emission_line_equiv_width.pro -text
 pro/utilities/mdap_min_sig_gau_approx_delta.pro -text
 pro/utilities/mdap_minimum_cnvlv_sigma.pro -text
 pro/utilities/mdap_noise_from_ivar.pro -text
