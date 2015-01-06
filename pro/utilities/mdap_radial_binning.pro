@@ -205,8 +205,9 @@ PRO MDAP_RADIAL_BINNING, $
 
         ; Get the binned indices
         for i=0,bin_par.nr-1 do begin
-            indx = where(R gt binned_rlow[i] and R lt binned_rupp[i])   ; Spectra in the bin
-            if indx[0] eq -1 then begin                 ; No spectra in the bin
+            indx = where(R gt binned_rlow[i] and R lt binned_rupp[i], count)   ; Spectra in the bin
+;           if indx[0] eq -1 then begin                 ; No spectra in the bin
+            if count eq 0 then begin                 ; No spectra in the bin
                 binned_wrad[i] = -1.0d                  ; Set a dummy value
                 continue                                ; nbinned and ston already 0
             endif

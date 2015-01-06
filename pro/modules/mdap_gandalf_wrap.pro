@@ -590,14 +590,15 @@ PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
 ;       print, eml_par.action
 
         if keyword_set(mask_fit) then begin
-            indx = where(eml_par.action ne 'i') ; Mask 'f', 'm', and 's' lines
+            indx = where(eml_par.action ne 'i', count) ; Mask 'f', 'm', and 's' lines
         endif else $
-            indx = where(eml_par.action ne 'i' and eml_par.action ne 'f')       ; Mask 'm' and 's'
+            indx = where(eml_par.action ne 'i' and eml_par.action ne 'f', count) ; Mask 'm' and 's'
 
 ;       print, indx
 ;       stop
             
-        if indx[0] eq -1 then $
+;       if indx[0] eq -1 then $
+        if count eq 0 then $
             return                              ; No lines to mask
 
         nm = n_elements(indx)                   ; Number of lines to mask
@@ -612,8 +613,9 @@ PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
             ; TODO: Number of sigma currently hard-wired to be 3.  Allow this to change?
             el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, sigma=sigma)
 
-            MDAP_SELECT_WAVE, obj_wave, el_range, wave_indx             ; Get the indices
-            if wave_indx[0] ne -1 then $
+            MDAP_SELECT_WAVE, obj_wave, el_range, wave_indx, count=count    ; Get the indices
+;           if wave_indx[0] ne -1 then $
+            if count ne 0 then $
                 obj_mask[wave_indx] = 1.0d                             ; Mask them
         endfor
 
@@ -645,9 +647,13 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
                 sigma=sigma, resid=resid, noise_mask=noise_mask
 ;       print, 'found it!'
 
-        i_f = where(eml_par.action eq 'f')                              ; Fitted emission lines
-        i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l')      ; Independent lines
-        neml_l = n_elements(i_l)                                ; Number of fitted emission lines
+        i_f = where(eml_par.action eq 'f', count)                       ; Fitted emission lines
+        if count eq 0 then $
+            message, 'No emission lines to fit!'
+        i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l', neml_l) ; Independent lines
+        if neml_l eq 0 then $
+            message, 'No fitted lines, all doublets!'
+;       neml_l = n_elements(i_l)                                ; Number of fitted emission lines
 
         fit_noise = dblarr(neml_l, /nozero)                     ; Noise near the fitted line(s)
 
@@ -658,27 +664,34 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
             for i=0,neml_l-1 do begin
                 el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[i_l[i]], velocity=velocity, $
                                                      sigma=sigma)
-                MDAP_SELECT_WAVE, wave, el_range, indx          ; Get the indices
-                if indx[0] eq -1 then begin
+                MDAP_SELECT_WAVE, wave, el_range, indx, count=count     ; Get the indices
+;               if indx[0] eq -1 then begin
+                if count eq 0 then begin
                     fit_noise[i] = 99.0d
                     continue
                 endif
 
-                dindx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_l[i]].i)
-                if dindx[0] ne -1 then begin
+                dindx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_l[i]].i, count)
+;               if dindx[0] ne -1 then begin
+                if count ne 0 then begin
                     ntied = n_elements(dindx)
                     for j=0,ntied-1 do begin
                         el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[i_f[dindx[j]]], $
                                                              velocity=velocity, sigma=sigma)
-                        MDAP_SELECT_WAVE, wave, el_range, aindx         ; Get the indices
-                        if aindx[0] ne -1 then $
+                        MDAP_SELECT_WAVE, wave, el_range, aindx, count=acount    ; Get the indices
+;                       if aindx[0] ne -1 then $
+                        if acount ne 0 then $
                             indx = [indx, aindx]
                     endfor
                 endif
 
-                if n_elements(goodpixels) ne 0 then $
-                    indx = MDAP_SET_INTERSECTION(temporary(indx), goodpixels)
-
+                if n_elements(goodpixels) ne 0 then begin
+                    indx = MDAP_SET_INTERSECTION(temporary(indx), goodpixels, count=count)
+                    if count eq 0 then begin
+                        fit_noise[i] = 99.0d
+                        continue
+                    endif 
+                endif 
                 fit_noise[i_f[i]] = (keyword_set(resid) ? robust_sigma(resid_gal[indx], /zero) : $
                                                           median(noise[indx]))
             endfor
@@ -700,13 +713,15 @@ FUNCTION MDAP_GANDALFW_REMOVE_DETECTED_EMISSION, $
 ;       print, n_elements(AoN)
 ;       print, n_elements(AoN_thresholds)
 
-        indx = where(sol_gas_N lt 0)            ; Remove values with negative errors
-        if indx[0] ne -1 then $
+        indx = where(sol_gas_N lt 0, count)     ; Remove values with negative errors
+;       if indx[0] ne -1 then $
+        if count ne 0 then $
             AoN[indx] = 0.0d
 
         if keyword_set(positive) then begin     ; Remove emission lines with negative amplitudes
-            indx = where(sol_gas_A lt 0)
-            if indx[0] ne -1 then $
+            indx = where(sol_gas_A lt 0, count)
+;           if indx[0] ne -1 then $
+            if count ne 0 then $
                 AoN[indx] = 0.0d
         endif
 
@@ -739,9 +754,13 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
                 gas_vel, gas_vel_err, gas_sig, gas_sig_err, gas_flux, gas_flux_err, gas_ew, $
                 gas_ew_err
 
-        i_f = where(eml_par.action eq 'f')                      ; Fitted emission lines
-        i_l = where(eml_par[i_f].kind eq 'l')                   ; Independent lines
-        neml_f = n_elements(i_f)                                ; Number of fitted emission lines
+        i_f = where(eml_par.action eq 'f', neml_f)              ; Fitted emission lines
+;       neml_f = n_elements(i_f)                                ; Number of fitted emission lines
+        if neml_f eq 0 then $
+            message, 'No emission lines to fit!'
+        i_l = where(eml_par[i_f].kind eq 'l', neml_l)           ; Independent lines
+        if neml_l eq 0 then $
+            message, 'No fitted lines, all doublets!'
 
         ; Initialize the vectors
         gas_intens = dblarr(neml_f,/nozero)
@@ -755,7 +774,7 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
         gas_ew = dblarr(neml_f,/nozero)
         gas_ew_err = dblarr(neml_f,/nozero)
 
-        neml_l = n_elements(i_l)                                ; Number of independent lines
+;       neml_l = n_elements(i_l)                                ; Number of independent lines
         for i=0,neml_l-1 do begin
 
             ; Copy the fitted lines
@@ -780,8 +799,8 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
             ; TODO: Report the *measured* values, not the reddening corrected
             ;       values.  Need to figure out how to do this in the context of
             ;       two lines that are tied.
-            indx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_f[i_l[i]]].i)
-            if indx[0] ne -1 then begin
+            indx = where(fix(strmid(eml_par[i_f].kind,1)) eq eml_par[i_f[i_l[i]]].i, count)
+            if count ne 0 then begin
                 gas_intens[indx] = eml_par[i_f[indx]].a*gas_intens[i_l[i]]
                 gas_intens_err[indx] = eml_par[i_f[indx]].a*gas_intens_err[i_l[i]]
                 gas_vel[indx] = gas_vel[i_l[i]]
@@ -859,8 +878,9 @@ PRO MDAP_GANDALF_WRAP, $
                 message, 'Input region_mask does not have an even number of entries!'
             nm = n_elements(region_mask)/2
             for i=0,nm-1 do begin
-                MDAP_SELECT_WAVE, obj_wave, region_mask[2*i:2*i+1], indx
-                obj_mask_[indx] = 1.0d                          ; Add these regions to the mask
+                MDAP_SELECT_WAVE, obj_wave, region_mask[2*i:2*i+1], indx, count=count
+                if count ne 0 then $
+                    obj_mask_[indx] = 1.0d                      ; Add these regions to the mask
             endfor
         endif
 
@@ -892,8 +912,8 @@ PRO MDAP_GANDALF_WRAP, $
 
             ; Remove ignored ems lines from the int_disp vector
             ; TODO: int_disp_ no longer has the same number of elements as eml_par!
-            indx = where(eml_par.action ne 'i' and eml_par.action ne 'sky')
-            int_disp_ = (indx[0] ne -1) ? int_disp[indx] : int_disp
+            indx = where(eml_par.action ne 'i' and eml_par.action ne 'sky', count)
+            int_disp_ = (count ne 0) ? int_disp[indx] : int_disp
         endif else $
             int_disp_ = int_disp
 
@@ -901,9 +921,11 @@ PRO MDAP_GANDALF_WRAP, $
 
         ; If the object flux is <= 0, then increase the noise in those regions.
         ; TODO: get rid of this
-        indx = where(obj_flux le 0, complement=nindx)
-        if indx[0] ne -1 then begin
-            if nindx[0] ne -1 then begin
+        indx = where(obj_flux le 0, count, complement=nindx, ncomplement=ncount)
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
+;           if nindx[0] ne -1 then begin
+            if ncount ne 0 then begin
                 maxerr = max(obj_sige[nindx])
             endif else $
                 maxerr = max(obj_sige)
@@ -918,8 +940,9 @@ PRO MDAP_GANDALF_WRAP, $
                                                         ;       if fix_star_kin has been set?
 
             print, 'Starting pPXF'
-            fitted_pixels_ppxf = where(cnt_mask_ lt 1.)         ; Select the unmasked pixels
-            if fitted_pixels_ppxf[0] eq -1 then $
+            fitted_pixels_ppxf = where(cnt_mask_ lt 1., count)      ; Select the unmasked pixels
+;           if fitted_pixels_ppxf[0] eq -1 then $
+            if count eq 0 then $
                 message, 'No pixels to fit by pPXF!'
 
 ;           plot, obj_wave, obj_flux, color=200
@@ -993,8 +1016,8 @@ PRO MDAP_GANDALF_WRAP, $
         ; No emission lines, or do not want to fit them, so return with just the result of pPXF
         if n_elements(eml_par) eq 0 or ppxf_only eq 1 then begin
             if n_elements(eml_par) ne 0 then begin
-                i_f = where(eml_par.action eq 'f')
-                neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
+                i_f = where(eml_par.action eq 'f', neml_f)
+;               neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
             endif else $
                 neml_f = 0
 
@@ -1021,11 +1044,12 @@ PRO MDAP_GANDALF_WRAP, $
         ;   with the lines we fit
 
         ; TODO: This is done in GANDALF as well.  Does it need to be done here?
-        i_f = where(eml_par.action eq 'f')
-        if i_f[0] eq -1 then $
+        i_f = where(eml_par.action eq 'f', nf)
+;       if i_f[0] eq -1 then $
+        if nf eq 0 then $
             message, 'No lines to fit!'
 
-        nf = n_elements(i_f)
+;       nf = n_elements(i_f)
 ;       print, 'Number of lines to fit: ', nf
 
 ;       eml_par_fit = MDAP_ASSIGN_EMISSION_LINE_PARAMETERS(eml_par[i_f].i, eml_par[i_f].name, $
@@ -1059,8 +1083,9 @@ PRO MDAP_GANDALF_WRAP, $
         ; Otherwise, mdegree_ is undefined
 
         ; Call GANDALF using only the stellar kinematics as input sol
-        fitted_pixels_gndf = where(ems_mask_ lt 1.)             ; Select the unmasked pixels
-        if fitted_pixels_gndf[0] eq -1 then $
+        fitted_pixels_gndf = where(ems_mask_ lt 1., count)      ; Select the unmasked pixels
+;       if fitted_pixels_gndf[0] eq -1 then $
+        if count eq 0 then $
             message, 'No pixels to fit by GANDALF!'
 
         ; TODO: Need to check that my eml_par works the same as their emission_setup
@@ -1112,9 +1137,10 @@ PRO MDAP_GANDALF_WRAP, $
 ;       print, size(sol_gas)
 
         ; Select the independently fitted lines
-        i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l', complement=i_d) 
+        i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l', count);, complement=i_d) 
         ; TODO: Do this check earlier!
-        if i_l[0] eq -1 then $
+;       if i_l[0] eq -1 then $
+        if count eq 0 then $
             message, 'All lines are doublets!'
         neml_l = n_elements(i_l)
 
@@ -1179,10 +1205,12 @@ PRO MDAP_GANDALF_WRAP, $
 
         ; TODO: Set criteria for whether or not a line is included in the mean kinematics
         indx = MDAP_LINES_FOR_MEAN_GAS_KINEMATICS(sol_gas_A, esol_gas_A, sol_gas_F, esol_gas_F, $
-                                                  sol_gas_V, esol_gas_V, sol_gas_S, esol_gas_S)
+                                                  sol_gas_V, esol_gas_V, sol_gas_S, esol_gas_S, $
+                                                  count=count)
 
         ; Set the mean kinematics over the valid lines
-        if indx[0] eq -1 then begin
+;       if indx[0] eq -1 then begin
+        if count eq 0 then begin
             print, 'No valid lines for use in mean kinematics'
 ;           fw_vel = !VALUES.D_NAN
 ;           fw_sig = !VALUES.D_NAN

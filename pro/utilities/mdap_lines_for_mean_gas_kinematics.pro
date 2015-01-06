@@ -68,7 +68,7 @@
 
 FUNCTION MDAP_LINES_FOR_MEAN_GAS_KINEMATICS, $
                 sol_gas_A, esol_gas_A, sol_gas_F, esol_gas_F, sol_gas_V, esol_gas_V, sol_gas_S, $
-                esol_gas_S, omitted=omitted
+                esol_gas_S, omitted=omitted, count=count
 
         ; TODO: esol_gas_A, sol_gas_V, sol_gas_S not used!
 
@@ -78,13 +78,13 @@ FUNCTION MDAP_LINES_FOR_MEAN_GAS_KINEMATICS, $
                            sol_gas_F gt 0 and esol_gas_F gt 0 and $
                            finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1 and $
                            esol_gas_V gt 0 and esol_gas_S gt 0 and $
-                           sol_gas_A gt 0 and finite(sol_gas_A) eq 1 )
+                           sol_gas_A gt 0 and finite(sol_gas_A) eq 1, count )
         endif
 
         return, where( sol_gas_F gt 0 and esol_gas_F gt 0 and $
                        finite(sol_gas_F) eq 1 and finite(esol_gas_F) eq 1 and $
                        esol_gas_V gt 0 and esol_gas_S gt 0 and $
-                       sol_gas_A gt 0 and finite(sol_gas_A) eq 1 )
+                       sol_gas_A gt 0 and finite(sol_gas_A) eq 1, count )
 END
 
 

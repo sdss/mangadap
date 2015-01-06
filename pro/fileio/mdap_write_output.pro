@@ -26,14 +26,18 @@
 ;               13 - SGMSK   : IMAGE
 ;               14 - SGMOD   : IMAGE
 ;               15 - ELMOD   : IMAGE
-;               16 - SIWAVE  : IMAGE
-;               17 - SIFLUX  : IMAGE
-;               18 - SIIVAR  : IMAGE
-;               19 - SIMASK  : IMAGE
-;               20 - SIOTPL  : IMAGE
-;               21 - SIBOTPL : IMAGE
-;               22 - SIPAR   : BINTABLE
-;               23 - SINDX   : BINTABLE
+;               16 - ELOPAR  : BINTABLE
+;               17 - ELOFIT  : BINTABLE
+;               18 - ELOMEW  : IMAGE
+;               19 - ELOMFB  : IMAGE
+;               20 - SIWAVE  : IMAGE
+;               21 - SIFLUX  : IMAGE
+;               22 - SIIVAR  : IMAGE
+;               23 - SIMASK  : IMAGE
+;               24 - SIOTPL  : IMAGE
+;               25 - SIBOTPL : IMAGE
+;               26 - SIPAR   : BINTABLE
+;               27 - SINDX   : BINTABLE
 ;
 ;       ANALYSIS FLAGS:
 ;                0 - spectrum not analyzed
@@ -41,8 +45,10 @@
 ;               91 - stellar continuum fit failed
 ;                2 - star+gas fit
 ;               92 - star+gas fit failed
-;                3 - spectral index measurements
-;               93 - spectral index measurements failed
+;                3 - emission-line only fit
+;               93 - emission-line only fit
+;                4 - spectral index measurements
+;               94 - spectral index measurements failed
 ;
 ;       Output data format:
 ;
@@ -108,6 +114,22 @@
 ;                       - gas equivalent widths and errors (vectors)
 ;                       ;TODO: add gas reddening correction
 ;
+;               - Emission-line-only line fit details(save this?): ELOPAR
+;                 2 columns, nemlo rows
+;                   - gas line name: NNNNNN-LLLL, e.g. Ha-----6562, ArIII--7136
+;                   - rest wavelength (in vacuum)
+;
+;               - For the emission-line only fit of each binned spectrum: ELOFIT
+;                 4 [moments] columns, 16 [nemlo] columns, 4 [nemlo][moments] columns, nbin rows
+;                   - mean gas kinematics and errors, EW and FB (vectors)
+;                   - For each emission line (only good fits):
+;                       - gas line omission flag, EW and FB (vector)
+;                       - gas kinematics and errors, EW and FB (vector)
+;                       - instrumental dispersion at the fitted wavelength, EW and FB (vector)
+;                       - gas intensities and errors, EW and FB (vector)
+;                       - gas fluxes and errors, EW and FB (vector)
+;                       - gas equivalent widths and errors, EW and FB (vector)
+;
 ;               - Spectral index parameters: SIPAR
 ;                 2 columns, 3 [2] columns
 ;                   - Name
@@ -139,6 +161,10 @@
 ;                       - star+gas fit mask (2D): SGMSK
 ;                       - best-fitting star+gas model (2D): SGMOD
 ;                       - best-fitting emission-line only model (2D): ELMOD
+;                       - Best-fitting model from Enci Wang's
+;                         emission-line only fit (2D): ELOEW
+;                       - Best-fitting model from Francesco Belfiore's
+;                         emission-line only fit (2D): ELOFB
 ;
 ;                       - spectral-index resolution matched wavelength (1D): SIWAVE
 ;                       -                                   flux (2D): SIFLUX
@@ -179,8 +205,26 @@
 ;                          emission_line_EW_err=emission_line_EW_err, $
 ;                          reddening_val=reddening_val, reddening_err=reddening_err, $
 ;                          obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;                          eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
-;                          abs_line_indx_omitted=abs_line_indx_omitted, $
+;                          eml_model=eml_model, emlo_par=emlo_par, $
+;                          elo_ew_kinematics_fit=elo_ew_kinematics_fit, $
+;                          elo_ew_kinematics_err=elo_ew_kinematics_err, $
+;                          elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+;                          elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
+;                          elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
+;                          elo_ew_intens=elo_ew_intens, elo_ew_interr=elo_ew_interr, $
+;                          elo_ew_fluxes=elo_ew_fluxes, elo_ew_flxerr=elo_ew_flxerr, $
+;                          elo_ew_EWidth=elo_ew_EWidth, elo_ew_EW_err=elo_ew_EW_err, $
+;                          elo_ew_eml_model=elo_ew_eml_model, $
+;                          elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+;                          elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+;                          elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+;                          elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
+;                          elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
+;                          elo_fb_intens=elo_fb_intens, elo_fb_interr=elo_fb_interr, $
+;                          elo_fb_fluxes=elo_fb_fluxes, elo_fb_flxerr=elo_fb_flxerr, $
+;                          elo_fb_EWidth=elo_fb_EWidth, elo_fb_EW_err=elo_fb_EW_err, $
+;                          elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
+;                          abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
 ;                          abs_line_indx_val=abs_line_indx_val, $
 ;                          abs_line_indx_err=abs_line_indx_err, $
 ;                          abs_line_indx_otpl=abs_line_indx_otpl, $
@@ -423,6 +467,101 @@
 ;               Best-fitting emission-line-only model for each of the N spectra
 ;               obtained by GANDALF.
 ;
+;       emlo_par EmissionLine[O]
+;               Structure with the emission-line parameters used during
+;               the emission-line only fit.  The only things written to
+;               the file are the name (the same as done for the GANDALF
+;               parameter structure) and the rest wavelength of the line
+;               (in vacuum).  The lines fit during the emission-line
+;               only analysis are hard-coded (see
+;               MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE).
+;
+;       elo_ew_kinematics_avg dblarr[B][2]
+;       elo_ew_kinematics_aer dblarr[B][2]
+;               The mean kinematics (and errors) of the emission lines
+;               determined using Enci Wang's code.
+;
+;       elo_ew_kinematics_ind dblarr[B][O][2]
+;       elo_ew_kinematics_ierr dblarr[B][O][2]
+;               Kinematics of the individual lines (and errors)
+;               determined using Enci Wang's code.
+;
+;       elo_ew_sinst dblarr[B][O]
+;               The instrumental dispersion at the measured centroid of
+;               the emission lines returned by Enci Wang's code.
+;
+;       elo_ew_omitted intarr[B][O]
+;               Flag that a line has been omitted from the emission-line
+;               analysis using Enci Wang's code.  All fits are actually
+;               analyzed; this flag is tripped (set to 1) if fitted flux
+;               is not greater than 0 (see
+;               MDAP_SAVE_EMISSION_LINE_FIT_ENCI).
+;
+;       elo_ew_intens dblarr[B][O]
+;       elo_ew_interr dblarr[B][O]
+;               Measured intensity (and error) of each of the lines fit
+;               by Enci Wang's code.  Note this is a post calculation;
+;               Enci's code actually uses the Gaussian area (flux) as
+;               the fitting parameter.
+;
+;       elo_ew_fluxes dblarr[B][O]
+;       elo_ew_flxerr dblarr[B][O]
+;               Measured flux (and error) of each of the lines fit
+;               by Enci Wang's code.
+;
+;       elo_ew_EWidth dblarr[B][O]
+;       elo_ew_EW_err dblarr[B][O]
+;               Measured equivalent width (and error) of each of the
+;               lines fit by Enci Wang's code.  Post-calculated.
+;
+;       elo_ew_eml_model dblarr[B][C]
+;               The best-fitting emission-line-only spectrum determined
+;               by Enci Wang's code.
+;
+;       elo_fb_kinematics_avg dblarr[B][2]
+;       elo_fb_kinematics_aer dblarr[B][2]
+;               The mean kinematics (and errors) of the emission lines
+;               determined using Francesco Belfiore's code.
+;
+;       elo_fb_kinematics_ind dblarr[B][O][2]
+;       elo_fb_kinematics_ierr dblarr[B][O][2]
+;               Kinematics of the individual lines (and errors)
+;               determined using Francesco Belfiore's code.
+;
+;       elo_fb_sinst dblarr[B][O]
+;               The instrumental dispersion at the measured centroid of
+;               the emission lines returned by Francesco Belfiore's
+;               code.
+;
+;       elo_fb_omitted intarr[B][O]
+;               Flag that a line has been omitted from the emission-line
+;               analysis using Francesco Belfiore's code.  All fits are
+;               actually analyzed; this flag is tripped (set to 1) if
+;               fitted amplitude is not greater than 0 (see
+;               MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE).
+;
+;       elo_fb_intens dblarr[B][O]
+;       elo_fb_interr dblarr[B][O]
+;               Measured intensity (and error) of each of the lines fit
+;               by Francesco Belfiore's code.
+;
+;       elo_fb_fluxes dblarr[B][O]
+;       elo_fb_flxerr dblarr[B][O]
+;               Measured flux (and error) of each of the lines fit by
+;               Francesco Belfiore's code.  Note this is a post
+;               calculation; Francesco's code actually uses the
+;               intensity as the fitting parameter.
+;
+;       elo_fb_EWidth dblarr[B][O]
+;       elo_fb_EW_err dblarr[B][O]
+;               Measured equivalent width (and error) of each of the
+;               lines fit by Francesco Belfiore's code.
+;               Post-calculated.
+;
+;       elo_fb_eml_model dblarr[B][C]
+;               The best-fitting emission-line-only spectrum determined
+;               by Francesco Belfiore's code.
+;
 ;       abs_par SpectralIndex[I]
 ;               Array of structures with the spectral index parameters.  See
 ;               MDAP_READ_ABSORPTION_LINE_PARAMETERS.
@@ -515,6 +654,8 @@
 ;       15 Oct 2014: (KBW) Original Implementation
 ;       08 Dec 2014: (KBW) Write data associated with the radial binning
 ;                          and velocity registration.
+;       12 Dec 2014: (KBW) New format incorporating emission-line only
+;                          results
 ;-
 ;------------------------------------------------------------------------------
 
@@ -1038,7 +1179,7 @@ END
 ;       - If the size is the same as the existing extension, finish
 ;       - Otherwise, modify the fits extension, either by creating it or
 ;         modifying its column prperties
-PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
+PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
                 file, eml_par=eml_par, weights_gndf=weights_gndf, $
                 mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                 emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -1071,7 +1212,7 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         if n_elements(emission_line_kinematics_avg) ne 0 then begin
             inp_size[2]=(size(emission_line_kinematics_avg))[2]
         endif else if n_elements(emission_line_kinematics_aer) ne 0 then begin
-            inp_size[2]=(size(emission_line_kinematics_avg))[2]
+            inp_size[2]=(size(emission_line_kinematics_aer))[2]
         endif else if n_elements(emission_line_kinematics_ind) ne 0 then begin
             inp_size[2]=(size(emission_line_kinematics_ind))[3]
         endif else if n_elements(emission_line_kinematics_ier) ne 0 then $
@@ -1178,6 +1319,231 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
             MODFITS, file, bytdb, bth, extname='SGFIT'  ; Modify the header and allocate the data
+        endelse
+END
+
+;-------------------------------------------------------------------------------
+; Initialize the ELOPAR extension
+;       - If the file and extension exist, nothing is done
+;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;       - If the extension does not exist, the table is instantiated with all
+;         the columns and with a single row
+PRO MDAP_WRITE_OUTPUT_ELOPAR_INITIALIZE, $
+                file
+
+        ; Initialize the file (does nothing if the file already exists)
+        MDAP_INITIALIZE_FITS_FILE, file
+
+        if MDAP_CHECK_EXTENSION_EXISTS(file, 'ELOPAR') eq 0 then begin
+            ; Create a base level header; only one row for now!
+            FXBHMAKE, bth, 1, 'ELOPAR', 'Binary table with emission-lines fit by EM-only spectra'
+            MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
+            
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_ELOPAR_COLS()
+            
+            ; Create the table columns using placeholders to define the column data type
+            MDAP_SET_EMISSION_LINE_NAME_DEFAULT, dstr
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Emission-line identifier', /str, $
+                                  dummystr=dstr
+            MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], ' Rest wavelength (ang)', /dbl
+
+            FXBCREATE, tbl, file, bth                   ; Create the binary table extension
+            FXBFINISH, tbl                              ; Close up
+            free_lun, tbl
+        endif
+END
+
+;-------------------------------------------------------------------------------
+; Initialize the SGFIT extension
+;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;       - If the extension exists, check that the sizes match the input
+;       - If the size is the same as the existing extension, finish
+;       - Otherwise, modify the fits extension, either by creating it or
+;         modifying its column prperties
+PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
+                file, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                elo_fb_EW_err=elo_fb_EW_err
+
+        ; Initialize the file (does nothing if the file already exists)
+        MDAP_INITIALIZE_FITS_FILE, file
+
+        ; Check if the extension exists
+        extension_exists = MDAP_CHECK_EXTENSION_EXISTS(file, 'ELOFIT')
+
+        ; Determine the dimensions of the input vectors
+        inp_size = make_array(2, /int, value=-1)
+
+        ; Number of kinematic moments
+        if n_elements(elo_ew_kinematics_avg) ne 0 then begin
+            inp_size[0]=(size(elo_ew_kinematics_avg))[2]
+        endif else if n_elements(elo_ew_kinematics_aer) ne 0 then begin
+            inp_size[0]=(size(elo_ew_kinematics_aer))[2]
+        endif else if n_elements(elo_ew_kinematics_ind) ne 0 then begin
+            inp_size[0]=(size(elo_ew_kinematics_ind))[3]
+        endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
+            inp_size[0]=(size(elo_ew_kinematics_ier))[3]
+        endif else if n_elements(elo_fb_kinematics_avg) ne 0 then begin
+            inp_size[0]=(size(elo_fb_kinematics_avg))[2]
+        endif else if n_elements(elo_fb_kinematics_aer) ne 0 then begin
+            inp_size[0]=(size(elo_fb_kinematics_aer))[2]
+        endif else if n_elements(elo_fb_kinematics_ind) ne 0 then begin
+            inp_size[0]=(size(elo_fb_kinematics_ind))[3]
+        endif else if n_elements(elo_fb_kinematics_ier) ne 0 then $
+            inp_size[0]=(size(elo_fb_kinematics_ier))[3]
+
+        ; Number of emission-lines
+        if n_elements(elo_ew_kinematics_ind) ne 0 then begin
+            inp_size[1]=(size(elo_ew_kinematics_ind))[2]
+        endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
+            inp_size[1]=(size(elo_ew_kinematics_ier))[2]
+        endif else if n_elements(elo_ew_sinst) ne 0 then begin
+            inp_size[1]=(size(elo_ew_sinst))[2]
+        endif else if n_elements(elo_ew_omitted) ne 0 then begin
+            inp_size[1]=(size(elo_ew_omitted))[2]
+        endif else if n_elements(elo_ew_intens) ne 0 then begin
+            inp_size[1]=(size(elo_ew_intens))[2]
+        endif else if n_elements(elo_ew_interr) ne 0 then begin
+            inp_size[1]=(size(elo_ew_interr))[2]
+        endif else if n_elements(elo_ew_fluxes) ne 0 then begin
+            inp_size[1]=(size(elo_ew_fluxes))[2]
+        endif else if n_elements(elo_ew_flxerr) ne 0 then begin
+            inp_size[1]=(size(elo_ew_flxerr))[2]
+        endif else if n_elements(elo_ew_EWidth) ne 0 then begin
+            inp_size[1]=(size(elo_ew_EWidth))[2]
+        endif else if n_elements(elo_ew_EW_err) ne 0 then begin
+            inp_size[1]=(size(elo_ew_EW_err))[2]
+        endif else if n_elements(elo_fb_kinematics_ind) ne 0 then begin
+            inp_size[1]=(size(elo_fb_kinematics_ind))[2]
+        endif else if n_elements(elo_fb_kinematics_ier) ne 0 then begin
+            inp_size[1]=(size(elo_fb_kinematics_ier))[2]
+        endif else if n_elements(elo_fb_sinst) ne 0 then begin
+            inp_size[1]=(size(elo_fb_sinst))[2]
+        endif else if n_elements(elo_fb_omitted) ne 0 then begin
+            inp_size[1]=(size(elo_fb_omitted))[2]
+        endif else if n_elements(elo_fb_intens) ne 0 then begin
+            inp_size[1]=(size(elo_fb_intens))[2]
+        endif else if n_elements(elo_fb_interr) ne 0 then begin
+            inp_size[1]=(size(elo_fb_interr))[2]
+        endif else if n_elements(elo_fb_fluxes) ne 0 then begin
+            inp_size[1]=(size(elo_fb_fluxes))[2]
+        endif else if n_elements(elo_fb_flxerr) ne 0 then begin
+            inp_size[1]=(size(elo_fb_flxerr))[2]
+        endif else if n_elements(elo_fb_EWidth) ne 0 then begin
+            inp_size[1]=(size(elo_fb_EWidth))[2]
+        endif else if n_elements(elo_fb_EW_err) ne 0 then $
+            inp_size[1]=(size(elo_fb_EW_err))[2]
+
+        ; TODO: Check the number of emission lines against the ELOPAR extension?
+        if n_elements(emlo_par) ne 0 and inp_size[1] gt 0 then $
+            if n_elements(emlo_par) ne inp_size[1] then $
+                message, 'Number of line structures does not match the number of line results!'
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        ; TODO: Make this a loop, with a function that also provides the comments, column types
+        cols = MDAP_SET_ELOFIT_COLS()
+            
+        modify = 0
+        nrows = 1                       ; TODO: Is nrows needed?
+        if extension_exists eq 1 then begin             ; If the extension exists...
+
+            ; Get the dimensions of the existing table
+            fxbopen, unit, file, 'ELOFIT', bth           ; Open the file
+            nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
+            cur_size = intarr(2)
+            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of EW_KIN elements (num of moments)
+            cur_size[1] = fxbdimen(unit, cols[2])       ; Number of emission lines
+            fxbclose, unit                              ; Close the file
+            free_lun, unit                              ; Free the LUN
+
+            ; Compare the current size to the existing size and decide if the
+            ; size needs to be modified
+            MDAP_WRITE_OUTPUT_COMPARE_TABLE_SIZE, cur_size, inp_size, modify
+        endif else begin                                ; If it does not exist ...
+            cur_size = inp_size                         ; Set the modified size to the input size
+            modify = 1
+        endelse
+
+        ; Extension exists and all the columns have the correct size, return
+        if modify eq 0 then $
+            return
+
+        ; Create the header
+        FXBHMAKE, bth, nrows, 'ELOFIT', 'Binary table with emission-line-only fit results'
+        MDAP_FITS_HEADER_ADD_DATE, bth, /modified               ; Add/change last date modified
+            
+        ; Create the table columns using placeholders to define the column data type and size
+        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], $
+                               ' Enci: Average emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], $
+                               ' Enci: Average emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[1], cols[2], $
+                               ' Enci: Emission-line omission flag', /int
+        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[1], cols[3], $
+                               ' Enci: Emission-line amplitude', /dbl
+        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[1], cols[4], $
+                               ' Enci: Emission-line amplitude error', /dbl
+        MDAP_FXBADDCOL_MATRIX, 6, bth, cur_size[1], cur_size[0], cols[5], $
+                               ' Enci: Individual emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_MATRIX, 7, bth, cur_size[1], cur_size[0], cols[6], $
+                               ' Enci: Individual emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[1], cols[7], $
+                               ' Enci: Instrumental dispersion at fitted centroid', /dbl
+        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[1], cols[8], $
+                               ' Enci: Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[1], cols[9], $
+                               ' Enci: Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[1], cols[10], $
+                               ' Enci: Emission-line equivalent width', /dbl
+        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[1], cols[11], $
+                               ' Enci: Emission-line equivalent width error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[0], cols[12], $
+                               ' Belfiore: Average emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[0], cols[13], $
+                               ' Belfiore: Average emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[1], cols[14], $
+                               ' Belfiore: Emission-line omission flag', /int
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[1], cols[15], $
+                               ' Belfiore: Emission-line amplitude', /dbl
+        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[1], cols[16], $
+                               ' Belfiore: Emission-line amplitude error', /dbl
+        MDAP_FXBADDCOL_MATRIX, 18, bth, cur_size[1], cur_size[0], cols[17], $
+                               ' Belfiore: Individual emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_MATRIX, 19, bth, cur_size[1], cur_size[0], cols[18], $
+                               ' Belfiore: Individual emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[1], cols[19], $
+                               ' Belfiore: Instrumental dispersion at fitted centroid', /dbl
+        MDAP_FXBADDCOL_VECTOR, 21, bth, cur_size[1], cols[20], $
+                               ' Belfiore: Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 22, bth, cur_size[1], cols[21], $
+                               ' Belfiore: Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 23, bth, cur_size[1], cols[22], $
+                               ' Belfiore: Emission-line equivalent width', /dbl
+        MDAP_FXBADDCOL_VECTOR, 24, bth, cur_size[1], cols[23], $
+                               ' Belfiore: Emission-line equivalent width error', /dbl
+
+        if extension_exists eq 0 then begin             ; If the extension does not exist...
+            FXBCREATE, tbl, file, bth                   ; Create the binary table extension
+                                                        ; TODO: Write fake data to it?
+            FXBFINISH, tbl                              ; Close up
+            free_lun, tbl
+        endif else begin                                ; If the extension does exist...
+            bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
+            MODFITS, file, bytdb, bth, extname='ELOFIT' ; Modify the header and allocate the data
         endelse
 END
 
@@ -1524,7 +1890,7 @@ END
 ; Check the input vectors to write to the STFIT extension.  Returns a flag that
 ; there is something to write, and the size of the vectors to write.  Will throw
 ; an error if the input vectors are not the same size
-PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
+PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
                 something_to_write, ninp, weights_gndf=weights_gndf, $
                 mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                 emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -1568,6 +1934,64 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
         for i=0,15 do begin
             if nel[i] gt 0 and nel[i] ne ninp then $
                 message, 'Input vectors for SGFIT have different lengths!'
+        endfor
+
+        something_to_write = ninp ne 0
+END
+
+;-------------------------------------------------------------------------------
+; Check the input vectors to write to the STFIT extension.  Returns a flag that
+; there is something to write, and the size of the vectors to write.  Will throw
+; an error if the input vectors are not the same size
+PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
+                something_to_write, ninp, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                elo_fb_EW_err=elo_fb_EW_err
+
+        ; Check that ndrp matches the size of one of the existing inputs
+        ; TODO: Assumes all input vectors have the same length!
+        nel = intarr(24)
+        nel[0] = n_elements(elo_ew_kinematics_avg) eq 0 ? 0 : (size(elo_ew_kinematics_avg))[1]
+        nel[1] = n_elements(elo_ew_kinematics_aer) eq 0 ? 0 : (size(elo_ew_kinematics_aer))[1]
+        nel[2] = n_elements(elo_ew_kinematics_ind) eq 0 ? 0 : (size(elo_ew_kinematics_ind))[1]
+        nel[3] = n_elements(elo_ew_kinematics_ier) eq 0 ? 0 : (size(elo_ew_kinematics_ier))[1]
+        nel[4] = n_elements(elo_ew_sinst) eq 0 ? 0 : (size(elo_ew_sinst))[1]
+        nel[5] = n_elements(elo_ew_omitted) eq 0 ? 0 : (size(elo_ew_omitted))[1]
+        nel[6] = n_elements(elo_ew_intens) eq 0 ? 0 : (size(elo_ew_intens))[1]
+        nel[7] = n_elements(elo_ew_interr) eq 0 ? 0 : (size(elo_ew_interr))[1]
+        nel[8] = n_elements(elo_ew_fluxes) eq 0 ? 0 : (size(elo_ew_fluxes))[1]
+        nel[9] = n_elements(elo_ew_flxerr) eq 0 ? 0 : (size(elo_ew_flxerr))[1]
+        nel[10] = n_elements(elo_ew_EWidth) eq 0 ? 0 : (size(elo_ew_EWidth))[1]
+        nel[11] = n_elements(elo_ew_EW_err) eq 0 ? 0 : (size(elo_ew_EW_err))[1]
+        nel[12] = n_elements(elo_fb_kinematics_avg) eq 0 ? 0 : (size(elo_fb_kinematics_avg))[1]
+        nel[13] = n_elements(elo_fb_kinematics_aer) eq 0 ? 0 : (size(elo_fb_kinematics_aer))[1]
+        nel[14] = n_elements(elo_fb_kinematics_ind) eq 0 ? 0 : (size(elo_fb_kinematics_ind))[1]
+        nel[15] = n_elements(elo_fb_kinematics_ier) eq 0 ? 0 : (size(elo_fb_kinematics_ier))[1]
+        nel[16] = n_elements(elo_fb_sinst) eq 0 ? 0 : (size(elo_fb_sinst))[1]
+        nel[17] = n_elements(elo_fb_omitted) eq 0 ? 0 : (size(elo_fb_omitted))[1]
+        nel[18] = n_elements(elo_fb_intens) eq 0 ? 0 : (size(elo_fb_intens))[1]
+        nel[19] = n_elements(elo_fb_interr) eq 0 ? 0 : (size(elo_fb_interr))[1]
+        nel[20] = n_elements(elo_fb_fluxes) eq 0 ? 0 : (size(elo_fb_fluxes))[1]
+        nel[21] = n_elements(elo_fb_flxerr) eq 0 ? 0 : (size(elo_fb_flxerr))[1]
+        nel[22] = n_elements(elo_fb_EWidth) eq 0 ? 0 : (size(elo_fb_EWidth))[1]
+        nel[23] = n_elements(elo_fb_EW_err) eq 0 ? 0 : (size(elo_fb_EW_err))[1]
+        ninp = max(nel)
+
+        for i=0,23 do begin
+            if nel[i] gt 0 and nel[i] ne ninp then $
+                message, 'Input vectors for ELOFIT have different lengths!'
         endfor
 
         something_to_write = ninp ne 0
@@ -1752,8 +2176,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
             ; Check if any of the kinematics are tied
             tt=strmid(eml_par[i].fit,0,1)
             if tt eq 't' or tt eq 'v' or tt eq 's' then begin
-                j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)))
-                eltied[i] = j_refline[0]                ; Set to -1 if not found!
+;               j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)))
+;               eltied[i] = j_refline[0]                ; Set to -1 if not found!
+                j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)), count)
+                eltied[i] = count eq 0 ? -1 : j_refline[0]                ; Set to -1 if not found!
                 ; Set the type of kinematic tying
                 elttyp[i] = MDAP_SET_EMISSION_LINE_TIED(tt)
             endif else begin
@@ -1763,8 +2189,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
 
             ; Check if any of the lines are doubles
             if strmid(eml_par[i].kind,0,1) eq 'd' then begin
-                j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].kind,1)))
-                eldoub[i] = j_refline[0]                ; Set to -1 if not found!
+;               j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].kind,1)))
+;               eldoub[i] = j_refline[0]                ; Set to -1 if not found!
+                j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].kind,1)), count)
+                eldoub[i] = count eq 0 ? -1 : j_refline[0]                ; Set to -1 if not found!
             endif else $
                 eldoub[i] = -1
         endfor
@@ -1866,7 +2294,7 @@ END
 ;-------------------------------------------------------------------------------
 ; Write/update the SGFIT extension
 ; TODO: Expects reddening and reddening error to have the same size!
-PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
+PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
                 file, nbin=nbin, eml_par=eml_par, weights_gndf=weights_gndf, $
                 mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                 emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -1883,7 +2311,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                 reddening_val=reddening_val, reddening_err=reddening_err, quiet=quiet
 
         ; Initialize the extension
-        MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, file, eml_par=eml_par, $
+        MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, file, eml_par=eml_par, $
                                         weights_gndf=weights_gndf, $
                                         mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                                         emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -1901,7 +2329,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                                         reddening_err=reddening_err
 
         ; Check that one of the vectors are input and that they have the same length
-        MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, something_to_write, ninp, $
+        MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, something_to_write, ninp, $
                                         weights_gndf=weights_gndf, $
                                         mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                                         emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -1921,7 +2349,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
         ; If there is nothing to write, return
         if something_to_write eq 0 then begin
             if ~keyword_set(quiet) then $
-                print, 'MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT: Nothing to update'
+                print, 'MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT: Nothing to update'
             return
         endif
 
@@ -1994,6 +2422,186 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
 ;       FXBCLOSE, tbl
 ;       free_lun, tbl
 ;       stop
+END
+
+;-------------------------------------------------------------------------------
+; Write/update the ELOPAR extension
+;       - Initialize the extension
+;       - Check that there are inputs to write
+;       - Write/update the data
+PRO MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, $
+                file, emlo_par=emlo_par, quiet=quiet
+
+        MDAP_WRITE_OUTPUT_ELOPAR_INITIALIZE, file       ; Initialize the extension
+
+        ; Check that there is something to write
+        neml = n_elements(emlo_par)                      ; Number of elements to output
+        if neml eq 0 then begin
+            if ~keyword_set(quiet) then $
+                print, 'MDAP_WRITE_OUTPUT_UPDATE_ELOPAR: Nothing to update'
+            return
+        endif
+
+        ; Ensure the table has the correct number of rows
+        ; TODO: This will fail if the table is longer than ndrp!
+        MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, neml, 'ELOPAR'
+
+        FXBOPEN, tbl, file, 'ELOPAR', hdr, access='RW'   ; Open the extension
+
+        elname = MDAP_SET_EMISSION_LINE_NAME(emlo_par)   ; Set the emission-line identifiers
+        elwave = emlo_par[*].lambda                      ; Copy the wavelengths
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELOPAR_COLS()
+            
+        ; Write ALL the columns simultaneously
+        FXBWRITM, tbl, [ cols[0], cols[1] ], elname, elwave
+
+        FXBFINISH, tbl                                  ; Close the file
+        free_lun, tbl
+END
+
+;-------------------------------------------------------------------------------
+; Write/update the ELOFIT extension
+; TODO: Expects reddening and reddening error to have the same size!
+PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
+                file, nbin=nbin, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
+                elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                elo_fb_EW_err=elo_fb_EW_err
+
+        ; Initialize the extension
+        MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, file, emlo_par=emlo_par, $
+                        elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                        elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                        elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                        elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                        elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                        elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                        elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                        elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                        elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                        elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                        elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                        elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                        elo_fb_EW_err=elo_fb_EW_err
+
+        ; Check that one of the vectors are input and that they have the same length
+        MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, something_to_write, ninp, $
+                        elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                        elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                        elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                        elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                        elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                        elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                        elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                        elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                        elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                        elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                        elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                        elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                        elo_fb_EW_err=elo_fb_EW_err
+
+        ; If there is nothing to write, return
+        if something_to_write eq 0 then begin
+            if ~keyword_set(quiet) then $
+                print, 'MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT: Nothing to update'
+            return
+        endif
+
+        ; Check that the length of the vectors matched the expected value, if input
+        if n_elements(nbin) ne 0 then begin
+            if nbin ne ninp then $
+                message, 'Input vectors do not have the expected size!'
+        endif else $
+            nbin = ninp
+
+;       fits_info,file
+;       stop
+
+        ; Ensure the table has the correct number of rows
+        ; TODO: This will fail if the table is longer than nbin!
+        MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'ELOFIT'
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELOFIT_COLS()
+            
+;       fits_info, file
+;       stop
+
+        FXBOPEN, tbl, file, 'ELOFIT', bth, access='RW'   ; Open the file
+
+        ; Write columns if they were provided; column/row ordering has to be adjusted
+        ; TODO: Is this too inefficient?
+        ; TODO: Need to redo column/row reordering
+        if n_elements(elo_ew_kinematics_avg) ne 0 then $
+            FXBWRITM, tbl, [cols[0]], transpose(elo_ew_kinematics_avg)
+        if n_elements(elo_ew_kinematics_aer) ne 0 then $
+            FXBWRITM, tbl, [cols[1]], transpose(elo_ew_kinematics_aer)
+        if n_elements(elo_ew_omitted) ne 0 then $
+            FXBWRITM, tbl, [cols[2]], elo_ew_omitted
+        if n_elements(elo_ew_intens) ne 0 then $
+            FXBWRITM, tbl, [cols[3]], transpose(elo_ew_intens)
+        if n_elements(elo_ew_interr) ne 0 then $
+            FXBWRITM, tbl, [cols[4]], transpose(elo_ew_interr)
+        if n_elements(elo_ew_kinematics_ind) ne 0 then $
+            FXBWRITM, tbl, [cols[5]], transpose(elo_ew_kinematics_ind, [1, 2, 0])
+        if n_elements(elo_ew_kinematics_ier) ne 0 then $
+            FXBWRITM, tbl, [cols[6]], transpose(elo_ew_kinematics_ier, [1, 2, 0])
+        if n_elements(elo_ew_sinst) ne 0 then $
+            FXBWRITM, tbl, [cols[7]], transpose(elo_ew_sinst)
+        if n_elements(elo_ew_fluxes) ne 0 then $
+            FXBWRITM, tbl, [cols[8]], transpose(elo_ew_fluxes)
+        if n_elements(elo_ew_flxerr) ne 0 then $
+            FXBWRITM, tbl, [cols[9]], transpose(elo_ew_flxerr)
+        if n_elements(elo_ew_EWidth) ne 0 then $
+            FXBWRITM, tbl, [cols[10]], transpose(elo_ew_EWidth)
+        if n_elements(elo_ew_EW_err) ne 0 then $
+            FXBWRITM, tbl, [cols[11]], transpose(elo_ew_EW_err)
+        if n_elements(elo_fb_kinematics_avg) ne 0 then $
+            FXBWRITM, tbl, [cols[12]], transpose(elo_fb_kinematics_avg)
+        if n_elements(elo_fb_kinematics_aer) ne 0 then $
+            FXBWRITM, tbl, [cols[13]], transpose(elo_fb_kinematics_aer)
+        if n_elements(elo_fb_omitted) ne 0 then $
+            FXBWRITM, tbl, [cols[14]], elo_fb_omitted
+        if n_elements(elo_fb_intens) ne 0 then $
+            FXBWRITM, tbl, [cols[15]], transpose(elo_fb_intens)
+        if n_elements(elo_fb_interr) ne 0 then $
+            FXBWRITM, tbl, [cols[16]], transpose(elo_fb_interr)
+        if n_elements(elo_fb_kinematics_ind) ne 0 then $
+            FXBWRITM, tbl, [cols[17]], transpose(elo_fb_kinematics_ind, [1, 2, 0])
+        if n_elements(elo_fb_kinematics_ier) ne 0 then $
+            FXBWRITM, tbl, [cols[18]], transpose(elo_fb_kinematics_ier, [1, 2, 0])
+        if n_elements(elo_fb_sinst) ne 0 then $
+            FXBWRITM, tbl, [cols[19]], transpose(elo_fb_sinst)
+        if n_elements(elo_fb_fluxes) ne 0 then $
+            FXBWRITM, tbl, [cols[20]], transpose(elo_fb_fluxes)
+        if n_elements(elo_fb_flxerr) ne 0 then $
+            FXBWRITM, tbl, [cols[21]], transpose(elo_fb_flxerr)
+        if n_elements(elo_fb_EWidth) ne 0 then $
+            FXBWRITM, tbl, [cols[22]], transpose(elo_fb_EWidth)
+        if n_elements(elo_fb_EW_err) ne 0 then $
+            FXBWRITM, tbl, [cols[23]], transpose(elo_fb_EW_err)
+
+        FXBFINISH, tbl                                  ; Close the file
+        free_lun, tbl
+
 END
 
 ;-------------------------------------------------------------------------------
@@ -2176,8 +2784,24 @@ PRO MDAP_WRITE_OUTPUT, $
                 emission_line_EW_err=emission_line_EW_err, $
                 reddening_val=reddening_val, reddening_err=reddening_err, $
                 obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-                eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
-                abs_line_indx_omitted=abs_line_indx_omitted, $
+                eml_model=eml_model, emlo_par=emlo_par, $
+                elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
+                elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                elo_fb_EW_err=elo_fb_EW_err, elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
+                abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
                 abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
                 abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
                 si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
@@ -2315,7 +2939,7 @@ PRO MDAP_WRITE_OUTPUT, $
         endelse
 
         ; Update the emission-line fitting results
-        MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, file, nbin=nbin, eml_par=eml_par, $
+        MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, file, nbin=nbin, eml_par=eml_par, $
                                                     weights_gndf=weights_gndf, $
                                                     mult_poly_coeff_gndf=mult_poly_coeff_gndf, $
                                     emission_line_kinematics_avg=emission_line_kinematics_avg, $
@@ -2360,23 +2984,46 @@ PRO MDAP_WRITE_OUTPUT, $
                                                      'Best-fit emission-line-only model'
         endelse
 
-;       ; Optimal template created using best-fit weights; includes no polynomials or kinematics
-;       if n_elements(optimal_template) ne 0 then begin
-;           MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'OTPL', optimal_template, $
-;                                           'Optimal template'
-;       endif else begin
-;           MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'OTPL', $
-;                                                    'Optimal template'
-;       endelse
-;
-;       ; Optimal template created using best-fit weights, convolved LOSVD; includes no polynomials
-;       if n_elements(losvd_optimal_template) ne 0 then begin
-;           MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'BOTPL', losvd_optimal_template, $
-;                                           'Optimal template, LOSVD convolved'
-;       endif else begin
-;           MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'BOTPL', $
-;                                                    'Optimal template, LOSVD convolved'
-;       endelse
+        ; Update the emission-line parameters
+        MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, file, emlo_par=emlo_par, quiet=quiet
+
+        ; Update the emission-line fitting results
+        MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, file, nbin=nbin, emlo_par=emlo_par, $
+                        elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                        elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                        elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                        elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                        elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                        elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                        elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                        elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                        elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                        elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                        elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                        elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                        elo_fb_EW_err=elo_fb_EW_err
+
+        ; The best-fitting emission-line model from the
+        ; emission-line-only analysis provided by Enci Wang
+        if n_elements(elo_ew_eml_model) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'ELOMEW', elo_ew_eml_model, $
+                                                'Emission-line-only model (Enci Wang)'
+        endif else begin
+            MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'ELOMEW', $
+                                                'Emission-line-only model (Enci Wang)'
+        endelse
+
+        ; The best-fitting emission-line model from the
+        ; emission-line-only analysis provided by Francesco Belfiore
+        if n_elements(elo_fb_eml_model) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'ELOMFB', elo_fb_eml_model, $
+                                                'Emission-line-only model (Francesco Belfiore)'
+        endif else begin
+            MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'ELOMFB', $
+                                                'Emission-line-only model (Francesco Belfiore)'
+        endelse
 
         ; Wavelength vector of the binned spectra that have been resolution
         ; matched to the spectral index system.
@@ -2448,6 +3095,9 @@ PRO MDAP_WRITE_OUTPUT, $
                                                    abs_line_indx_err=abs_line_indx_err, $
                                                    abs_line_indx_otpl=abs_line_indx_otpl, $
                                                    abs_line_indx_botpl=abs_line_indx_botpl
+
+;       fits_info, file
+;       stop
 
 END
 

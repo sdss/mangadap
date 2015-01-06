@@ -79,6 +79,7 @@
 ;                          wavelength solution.
 ;       13 Oct 2014: (KBW) Reform the tpl_sres vector to a single vector
 ;                          applicable to all template spectra
+;       05 Jan 2015: (KBW) Allow for some templates to be fully masked
 ;-
 ;------------------------------------------------------------------------------
 
@@ -91,14 +92,25 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
         ns = 0                          ; New maximum size of template spectra
 
         common_wave=dblarr(2)           ; Wavelength range common to ALL template spectra
-        gtpl = where(tpl_mask[0,*] lt 1)
-        common_wave[0] = min(tpl_wave[0,gtpl])
-        common_wave[1] = max(tpl_wave[0,gtpl])
+        i = 0
+        gtpl = where(tpl_mask[i,*] lt 1, count)
+        while count eq 0 and i lt nt do begin
+            i = i+1
+            gtpl = where(tpl_mask[i,*] lt 1, count)
+        endwhile
+
+        if count eq 0 then $
+            message, 'ALL templates fully masked!'
+
+        common_wave[0] = min(tpl_wave[i,gtpl])
+        common_wave[1] = max(tpl_wave[i,gtpl])
 
         lamRange=dblarr(nt,2)           ; Wavelength range of each template spectrum
         for i=0,nt-1 do begin
-            gtpl = where(tpl_mask[i,*] lt 1)
-            ng = n_elements(gtpl)       ; Number of unmasked pixels
+            gtpl = where(tpl_mask[i,*] lt 1, ng)
+            if ng eq 0 then $
+                continue
+;           ng = n_elements(gtpl)       ; Number of unmasked pixels
             if ns lt ng then $          ; If larger than current maximum, save it
                 ns = ng
 
@@ -135,7 +147,10 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 
             ; TODO: Must only select a single, contiguous spectral region
             ;           - What happens if the are masked regions spread through the spectral range?
-            gtpl = where(tpl_mask_[i,*] lt 1 and tpl_ivar_[i,*] gt 0.)  ; Select unmasked pixels
+            ; Select unmasked pixels
+            gtpl = where(tpl_mask_[i,*] lt 1 and tpl_ivar_[i,*] gt 0., count)
+            if count eq 0 then $
+                continue
 
             ; Rebin both the spectrum and the mask
             ;    Use reform() to pass a 1D vector, as expected by MDAP_DO_LOG_REBIN
@@ -160,8 +175,9 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
             tpl_ivar[i,0:ng-1] = 1.0/tpl_ivr_rebin[0:ng-1]      ; Save the variances
 ;           tpl_wave[i,0:ng-1] = 10^(logLam[0:ng-1])            ; Save the wavelengths in angstroms
 
-            gthalf = where(tpl_msk_rebin gt 0.5)        ; Find rebinned mask pixels with >0.5
-            if gthalf ne -1 then $
+            gthalf = where(tpl_msk_rebin gt 0.5, count)        ; Find rebinned mask pixels with >0.5
+;           if gthalf ne -1 then $
+            if count ne 0 then $
                 tpl_mask[i,gthalf]=1.0                  ;  ... and set these to masked pixels
             if ng lt ns then $
                 tpl_mask[i,ng:ns-1]=1.0                 ; Mask all pixels without data

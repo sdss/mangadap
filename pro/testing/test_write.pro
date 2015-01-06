@@ -28,7 +28,9 @@ PRO MDAP_RANDOMIZE_FLAG, $
         sz=size(inp)
         out=randomn(seed, sz[1:sz[0]])
         inp = intarr(sz[1:sz[0]])
-        inp[where(out gt 0)] = 1
+        indx = where(out gt 0, count)
+        if count ne 0 then $
+            inp[indx] = 1
 
 END
 
@@ -160,7 +162,7 @@ pro test_write
 
         i = 0
 
-        MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
+        MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, count=gcount
 
         ; Select the pixels to use in the S/N calculation
         MDAP_SELECT_WAVE, wave, execution_plan[i].wave_range_sn, lam_sn

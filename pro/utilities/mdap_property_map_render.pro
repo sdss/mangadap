@@ -42,9 +42,10 @@ PRO MDAP_PROPERTY_MAP_RENDER_PIXELS, $
         i = floor((x_samp-map_xs)/map_dx)
         j = floor((y_samp-map_ys)/map_dy)
 
-        k = where(x_samp gt map_xs and i lt map_nx and y_samp gt map_ys and j lt map_ny)
+        k = where(x_samp gt map_xs and i lt map_nx and y_samp gt map_ys and j lt map_ny, count)
         
-        if k[0] ne -1 then $
+;       if k[0] ne -1 then $
+        if count ne 0 then $
             z_map[i[k],j[k]] = z_samp[k]
 END
 
@@ -94,11 +95,13 @@ PRO MDAP_PROPERTY_MAP_RENDER_APERTURE, $
                                             aperture_radius/map_dy, z_map, nap
         endfor
 
-        indx = where(nap gt 0, complement=nindx)
-        if indx[0] ne -1 then $
+        indx = where(nap gt 0, count, complement=nindx, ncomplement=ncount)
+;       if indx[0] ne -1 then $
+        if count ne 0 then $
             z_map[indx] = z_map[indx]/nap[indx]     ; Average the values
 
-        if n_elements(default) ne 0 and nindx[0] ne -1 then $
+;       if n_elements(default) ne 0 and nindx[0] ne -1 then $
+        if n_elements(default) ne 0 and ncount ne 0 then $
             z_map[nindx] = default                  ; Set default values for pixels with no data
 
 END

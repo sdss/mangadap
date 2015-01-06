@@ -46,6 +46,7 @@
 ;       04 Dec 2014: (KBW) Edits to print the now structure
 ;                          execution_plan.bin_par.
 ;       05 Dec 2014: (KBW) Print the prior
+;       11 Dec 2014: (KBW) Change to allow for emission-line-only fits
 ;-
 ;------------------------------------------------------------------------------
 
@@ -79,16 +80,19 @@ PRO MDAP_PRINT_EXECUTION_PLAN, $
         print, '    S/N threshold for inclusion in analysis: ', $
                execution_plan.threshold_ston_analysis
 
-        indx=where(execution_plan.analysis eq 1)
-        if indx[0] eq -1 then begin
+        indx=where(execution_plan.analysis eq 1, count)
+;       if indx[0] eq -1 then begin
+        if count eq 0 then begin
             print, '    Analyses to complete: NONE'
         endif else begin
             print, '    Analyses to complete: '
             if execution_plan.analysis[0] eq 1 then $
                 print, '                          stellar-cont'
             if execution_plan.analysis[1] eq 1 then $
-                print, '                          emission-line'
+                print, '                          star+gas'
             if execution_plan.analysis[2] eq 1 then $
+                print, '                          emission-line'
+            if execution_plan.analysis[3] eq 1 then $
                 print, '                          abs-indices'
 
             print, '    Analysis parameters: '

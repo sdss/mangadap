@@ -1,6 +1,6 @@
 ; Get the intersection of two arrays
 FUNCTION mdap_set_intersection, $
-                a, b
+                a, b, count=count
 
         minab = min(a, MAX=maxa) > min(b, MAX=maxb) ;Only need intersection of ranges
         maxab = maxa < maxb

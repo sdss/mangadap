@@ -39,6 +39,8 @@
 ;               Indices of good spectra.
 ;
 ; OPTIONAL OUTPUT:
+;       count integer
+;               Number of good spectra
 ;
 ; COMMENTS:
 ;
@@ -56,11 +58,12 @@
 ;
 ; REVISION HISTORY:
 ;       09 Sep 2014: (KBW) Original implementation
+;       05 Jan 2015: (KBW) Bug in size of indx check; return count
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SELECT_GOOD_SPECTRA, $
-                flux, ivar, mask, gflag, goods
+                flux, ivar, mask, gflag, goods, count=count
 
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
@@ -70,16 +73,17 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
         for i=0,ns-1 do begin
 
             ; Which pixels satisfy the criteria listed above
-            indx=where(ivar[i,*] le 0 or finite(ivar[i,*]) eq 0 or finite(flux[i,*]) eq 0)
+            indx=where(ivar[i,*] le 0 or finite(ivar[i,*]) eq 0 or finite(flux[i,*]) eq 0, count)
 
             ; Spectrum is either made up of 20% or more bad pixels, or it is constant (not real)
-            if n_elements(indici) ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
+;           if n_elements(indici) ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
+            if count ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
                 gflag[i] = 0                            ; Flag spectrum as bad
             endif else $
                 gflag[i] = 1                            ; Flag spectrum as good
         endfor
 
-        gindx=where(gflag eq 1)                         ; List the indices of good spectra
+        gindx=where(gflag eq 1, count)                  ; List the indices of good spectra
 END
                 
 

@@ -131,23 +131,27 @@ PRO MDAP_VELOCITY_REGISTER, $
             mask[i,*] = interpol(mask_[i,*], wave/(1.0d + redshift[i]), wave)
 
             ; Fix the mask to be either 1 (masked) or 0 (unmasked)
-            indx = where(mask lt 0.5, complement=nindx)
-            if indx[0] ne -1 then $
+            indx = where(mask lt 0.5, count, complement=nindx, ncomplement=ncount)
+;           if indx[0] ne -1 then $
+            if count ne 0 then $
                 mask[i,indx] = 0.0
-            if nindx[0] ne -1 then $
+;           if nindx[0] ne -1 then $
+            if ncount ne 0 then $
                 mask[i,nindx] = 1.0
 
             ; Mask bad ivar interpolations
             if keyword_set(bad_ivar) then begin
-                indx = where(ivar le 0.)
-                if indx[0] ne -1 then $
+                indx = where(ivar le 0., count)
+;               if indx[0] ne -1 then $
+                if count ne 0 then $
                     mask[i,indx] = 1.0
             endif
 
             ; Find the extrapolated pixels and mask them
             indx = where(wave lt wave[0]/(1.0d + redshift[i]) $
-                         or wave gt wave[nw-1]/(1.0d + redshift[i]))
-            if indx[0] ne -1 then begin
+                         or wave gt wave[nw-1]/(1.0d + redshift[i]), count)
+;           if indx[0] ne -1 then begin
+            if count ne 0 then begin
                 flux[i,indx] = 0.0d
                 ivar[i,indx] = 1.0d
                 mask[i,indx] = 1.0d

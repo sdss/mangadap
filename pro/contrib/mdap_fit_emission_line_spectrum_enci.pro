@@ -147,8 +147,9 @@ if keyword_set(OII3727) then begin
 
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt 3727-bin and lambda lt 3727+bin)
-   emfit[indx] = result1[0]+GAUSS1(lambda[indx],result1[1:3])
+   indx=where(lambda gt 3727-bin and lambda lt 3727+bin, count)
+   if count ne 0 then $
+       emfit[indx] = emfit[indx] + result1[0]+GAUSS1(lambda[indx],result1[1:3])
 if keyword_set(plotsp) then begin
 
    plot,lam1,emi1,title='OII3727'
@@ -190,8 +191,9 @@ if keyword_set(Hb4861) then begin
         result.Hb4861=[result1[1:3],perror[1:3]]
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt 4861-bin and lambda lt 4861+bin)
-   emfit[indx] = result1[0]+GAUSS1(lambda[indx],result1[1:3])
+   indx=where(lambda gt 4861-bin and lambda lt 4861+bin, count)
+   if count ne 0 then $
+        emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3])
 if keyword_set(plotsp) then begin
 
    plot,lam1,emi1,title='H_beta'
@@ -244,8 +246,10 @@ if (keyword_set(OIII5007) or keyword_set(OIII4959)) then begin
         result.OIII5007=[result1[4:6],perror[4:6]]
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt 4959-bin and lambda lt 5007+bin)
-   emfit[indx] = result1[0]+GAUSS1(lambda[indx],result1[1:3])+GAUSS1(lambda[indx],result1[4:6])
+   indx=where(lambda gt 4959-bin and lambda lt 5007+bin, count)
+   if count ne 0 then $
+    emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3]) $
+                              + GAUSS1(lambda[indx],result1[4:6])
 if keyword_set(plotsp) then begin
    plot,lam1,emi1,title='OIII_4959+5007';,$;ytitle='flux(unit of 10^-15)'
 ;               position=[0.25,0.35,0.40,0.55]
@@ -309,9 +313,10 @@ if keyword_set(Ha6563) or keyword_set(NII6583) then begin
         result.NII6583=[result1[7:9],perror[7:9]]
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt 6548-bin and lambda lt 6583+bin)
-   emfit[indx] = result1[0]+GAUSS1(lambda[indx],result1[1:3])+GAUSS1(lambda[indx],result1[4:6])$
-                           +GAUSS1(lambda[indx],result1[7:9])
+   indx=where(lambda gt 6548-bin and lambda lt 6583+bin, count)
+   if count ne 0 then $
+    emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3]) $
+                  + GAUSS1(lambda[indx],result1[4:6]) + GAUSS1(lambda[indx],result1[7:9])
 if keyword_set(plotsp) then begin
    plot,lam1,emi1,title='Ha+NII'
    ;oplot,lam1,result1[0]+gauss1(lam1,result1[1:3]),color=djs_icolor('red')
@@ -363,8 +368,10 @@ if (keyword_set(SII6717) or keyword_set(SII6731)) then begin
         result.SII6731=[result1[4:6],perror[4:6]]
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt 6717-bin and lambda lt 6731+bin)
-   emfit[indx] = result1[0]+GAUSS1(lambda[indx],result1[1:3])+GAUSS1(lambda[indx],result1[4:6])
+   indx=where(lambda gt 6717-bin and lambda lt 6731+bin, count)
+   if count ne 0 then $
+    emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3]) $
+                              + GAUSS1(lambda[indx],result1[4:6])
 if keyword_set(plotsp) then begin
    plot,lam1,emi1,title='SII_6717+6731';,$;ytitle='flux(unit of 10^-15)'
 ;               position=[0.25,0.35,0.40,0.55]

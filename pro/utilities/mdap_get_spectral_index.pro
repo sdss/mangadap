@@ -131,17 +131,19 @@ PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
         endif
 
         ; Set the values to 0.0 for masked pixels
-        indx = where(mask gt 0.5)
+        indx = where(mask gt 0.5, count)
         ym = y
         yme = ye
-        if indx[0] ne -1 then begin
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
             ym[indx] = 0.0d
             yme[indx] = 0.0d
         endif
 
         ; Interval is smaller than the nearest pixel
-        indx = where(bin_edges gt xrange[0] and bin_edges lt xrange[1])
-        if indx[0] eq -1 then begin
+        indx = where(bin_edges gt xrange[0] and bin_edges lt xrange[1], ni)
+;       if indx[0] eq -1 then begin
+        if ni eq 0 then begin
             indx = where(bin_edges gt xrange[1])
             integral = ym[indx[0]-1]*(xrange[1]-xrange[0])
             integral_err = yme[indx[0]-1]*(xrange[1]-xrange[0])
@@ -152,7 +154,7 @@ PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
         integral = 0.0d
         integral_err = 0.0d
 
-        ni = n_elements(indx)                           ; Number of edges
+;       ni = n_elements(indx)                           ; Number of edges
         ; Add partial pixel at the blue end
         if indx[0] gt 0 then begin
             integral = integral + ym[indx[0]-1]*(bin_edges[indx[0]]-xrange[0])
@@ -193,9 +195,10 @@ PRO MDAP_GET_PSEUDOCONTINUUM, $
         unity = make_array(n, /double, value=1.0d)
 
         sige = sqrt(1.0d/ivar)
-        indx = where(ivar le 0.0d)
+        indx = where(ivar le 0.0d, count)
         mask_ = mask
-        if indx[0] ne -1 then begin
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
             mask_[indx] = 1.0d
             sige[indx] = 1.0d
         endif
@@ -228,8 +231,9 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
 ;       print, 'abs:', redband
         
         ; Unmasked pixels in the blue band
-        bindx = where(wave ge blueband[0] and wave le blueband[1] and mask lt 0.5)
-        if bindx[0] eq -1 then $
+        bindx = where(wave ge blueband[0] and wave le blueband[1] and mask lt 0.5, count)
+;       if bindx[0] eq -1 then $
+        if count eq 0 then $
             message, 'Blue wavelengths unavailable!'
         sn_blue = total(flux[bindx]*sqrt(ivar[bindx]))  ; Approximate S/N in the blue region
         nblue = n_elements(bindx)
@@ -249,8 +253,9 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
             return                              ; No wavelength integral so return with error
 
         ; Unmasked pixels in the red band
-        rindx = where(wave ge  redband[0] and wave le  redband[1] and mask lt 0.5)
-        if rindx[0] eq -1 then $
+        rindx = where(wave ge  redband[0] and wave le  redband[1] and mask lt 0.5, count)
+;       if rindx[0] eq -1 then $
+        if count eq 0 then $
             message, 'Red wavelengths unavailable!'
         sn_red = total(flux[rindx]*sqrt(ivar[rindx]))   ; Approximate S/N in the red region
         nred = n_elements(rindx)
@@ -271,8 +276,9 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
             return                              ; No wavelength integral so return with error
 
         ; Unmasked pixels in the main passband
-        pindx = where(wave ge passband[0] and wave le passband[1] and mask lt 0.5)
-        if pindx[0] eq -1 then $
+        pindx = where(wave ge passband[0] and wave le passband[1] and mask lt 0.5, count)
+;       if pindx[0] eq -1 then $
+        if count eq 0 then $
             message, 'Passband wavelengths unavailable!'
         sn_pass = total(flux[pindx]*sqrt(ivar[pindx]))  ; Approximate S/N in the red region
         npass = n_elements(pindx)
@@ -289,8 +295,9 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
         integrand = 1.0d - flux / continuum                     ; EW integrand
         integrand_err = abs(1.0d / continuum / sqrt(ivar))
         mask_ = mask
-        indx = where(ivar le 0.0d)
-        if indx[0] ne -1 then begin
+        indx = where(ivar le 0.0d, count)
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
             mask_[indx] = 1.0d
             integrand_err[indx] = 1.0d
         endif
@@ -349,8 +356,9 @@ PRO MDAP_GET_SPECTRUM_BANDHEAD, $
         err = 0 
 
         ; Unmasked pixels in the red band
-        rindx = where(mask lt 0.5 and wave ge red_cont[0] and wave le red_cont[1])
-        if rindx[0] eq -1 then begin                            ; No red pixels
+        rindx = where(mask lt 0.5 and wave ge red_cont[0] and wave le red_cont[1], count)
+;       if rindx[0] eq -1 then begin                            ; No red pixels
+        if count eq 0 then begin                            ; No red pixels
             err = 1                                             ; Set error and return
             return
         endif
@@ -359,8 +367,9 @@ PRO MDAP_GET_SPECTRUM_BANDHEAD, $
 ;       print, 'bandhead: ', rcont, rivar
 
         ; Unmasked pixels in the blue band
-        bindx = where(mask lt 0.5 and wave ge blue_cont[0] and wave le blue_cont[1])
-        if bindx[0] eq -1 then begin                            ; No blue pixels
+        bindx = where(mask lt 0.5 and wave ge blue_cont[0] and wave le blue_cont[1], count)
+;       if bindx[0] eq -1 then begin                            ; No blue pixels
+        if count eq 0 then begin                            ; No blue pixels
             err = 1                                             ; Set error and return
             return
         endif
@@ -433,10 +442,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX_LODO, $
 
         ; TODO: Need to mask ivar and include mask
 
-        bindx = where(wave ge blue_cont[0] and wave le blue_cont[1])    ; Pixels in the blue band
-        if bindx[0] eq -1 then $
+        bindx = where(wave ge blue_cont[0] and wave le blue_cont[1], nblue); Pixels in the blue band
+;       if bindx[0] eq -1 then $
+        if nblue eq 0 then $
             message, 'Blue wavelengths unavailable!'
-        nblue = n_elements(bindx)                                       ; Number of pixels
+;       nblue = n_elements(bindx)                                       ; Number of pixels
         bcen = (blue_cont[0] + blue_cont[1])/2.0                        ; Blue band center
 
         blue_width = (blue_cont[1]-blue_cont[0])                        ; Width of the blue band
@@ -450,10 +460,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX_LODO, $
         MDAP_GET_PSEUDOCONTINUUM, wave_resample, flux_resample, blue_pseudocont, blue_pseudofit
 
 
-        rindx = where(wave ge  red_cont[0] and wave le  red_cont[1])    ; Pixel in the red band
-        if rindx[0] eq -1 then $
+        rindx = where(wave ge  red_cont[0] and wave le  red_cont[1], nred)  ; Pixel in the red band
+;       if rindx[0] eq -1 then $
+        if nred eq 0 then $
             message, 'Red wavelengths unavailable!'
-        nred = n_elements(rindx)                                        ; Number of pixels
+;       nred = n_elements(rindx)                                        ; Number of pixels
         rcen = (red_cont[0] + red_cont[1])/2.0                          ; Red band center
 
         red_width = (red_cont[1]-red_cont[0])                           ; Width of the red band
@@ -467,10 +478,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX_LODO, $
         MDAP_GET_PSEUDOCONTINUUM, wave_resample, flux_resample, red_pseudocont, red_pseudofit
 
 
-        pindx = where(wave ge passband[0] and wave le passband[1])      ; Pixels in the band
-        if pindx[0] eq -1 then $
+        pindx = where(wave ge passband[0] and wave le passband[1], npass)  ; Pixels in the band
+;       if pindx[0] eq -1 then $
+        if npass eq 0 then $
             message, 'Passband wavelengths unavailable!'
-        npass = n_elements(pindx)                                       ; Number of pixels
+;       npass = n_elements(pindx)                                       ; Number of pixels
         pcen = (passband[0] + passband[1])/2.0                          ; Passband center
 
         pass_width = (passband[1]-passband[0])                          ; Width of the passband
@@ -520,6 +532,7 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX_LODO, $
         if n_elements(plbound) eq 0 then plbound = [0.6,1.35]
         midplot=interpol(flux, wave, 0.5*(min(wave)+max(wave)))
 
+        ; TODO: Where should always provide indicies given checks above?
         inddd = where( wave ge blue_cont[0]-20 and wave le red_cont[1]+20 )
         mn=min(flux(inddd))
         mx=max(flux(inddd))

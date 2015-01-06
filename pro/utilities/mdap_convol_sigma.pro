@@ -117,8 +117,9 @@ FUNCTION MDAP_CONVOL_SIGMA, $
         
         ; Force regions where the convolution sigma is too close to the minimum
         ; sigma to have exactly the input value
-        ind = where(sigma_new le 1.05*min_sig)
-        if ind[0] ne -1 then conv[ind]=vector[ind]
+        ind = where(sigma_new le 1.05*min_sig, count)
+;       if ind[0] ne -1 then conv[ind]=vector[ind]
+        if count ne 0 then conv[ind]=vector[ind]
 
 ;       oplot, x, vector, color=200
 ;       stop

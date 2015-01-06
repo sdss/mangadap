@@ -107,13 +107,15 @@
 ;-
 ;------------------------------------------------------------------------------
 
-PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kinematics_err, $
+PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, voff, result, omitted, kinematics, kinematics_err, $
                                       intens, intens_err, fluxes, fluxes_err, i
+
+        c=299792.458d                           ; Speed of light in km/s
 
         j = 0
 
         omitted[i,j] = result.OII3727[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OII3727[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.OII3727[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.OII3727[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.OII3727[1]*c/result.OII3727[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -126,7 +128,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.Hb4861[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.Hb4861[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.Hb4861[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.Hb4861[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.Hb4861[1]*c/result.Hb4861[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -139,7 +141,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.OIII4959[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OIII4959[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.OIII4959[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.OIII4959[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.OIII4959[1]*c/result.OIII4959[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -152,7 +154,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.OIII5007[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OIII5007[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.OIII5007[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.OIII5007[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.OIII5007[1]*c/result.OIII5007[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -165,7 +167,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.NII6548[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.NII6548[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.NII6548[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.NII6548[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.NII6548[1]*c/result.NII6548[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -178,7 +180,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.Ha6563[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.Ha6563[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.Ha6563[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.Ha6563[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.Ha6563[1]*c/result.Ha6563[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -191,7 +193,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.NII6583[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.NII6583[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.NII6583[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.NII6583[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.NII6583[1]*c/result.NII6583[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -204,7 +206,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.SII6717[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.SII6717[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.SII6717[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.SII6717[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.SII6717[1]*c/result.SII6717[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -217,7 +219,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
         j = j+1
 
         omitted[i,j] = result.SII6731[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.SII6731[0]/eml_par[j].lambda - 1.0d)*c
+        kinematics[i,j,0] = (result.SII6731[0]/eml_par[j].lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result.SII6731[3]*c/eml_par[j].lambda
         kinematics[i,j,1] = result.SII6731[1]*c/result.SII6731[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
@@ -232,29 +234,29 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, omitted, kinematics, kine
 END
 
 ; CERTAIN ORDER EXPECTED FOR BELFIORE RESULT
-PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, redshift, result, omitted, kinematics, $
+PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, omitted, kinematics, $
                                           kinematics_err, intens, intens_err, fluxes, fluxes_err, i
 
         c=299792.458d                           ; Speed of light in km/s
         neml = n_elements(eml_par)              ; Number of emission lines fitted
 
         for j=0,neml-1 do begin
-            omitted[i,j] = result[j].Ampl gt 0.0 ? 0 : 1
-            kinematics[i,j,0] = result[j].Vel
-            kinematics_err[i,j,0] = result[j].eVel
-            kinematics[i,j,1] = result[j].Sigma
-            kinematics_err[i,j,1] = result[j].eSigma
-            intens[i,j] = result[j].Ampl
-            intens_err[i,j] = result[j].eAmpl
+            omitted[i,j] = result.Ampl[j] gt 0.0 ? 0 : 1
+            kinematics[i,j,0] = result.Vel[j]
+            kinematics_err[i,j,0] = result.eVel[j]
+            kinematics[i,j,1] = result.Sigma[j]
+            kinematics_err[i,j,1] = result.eSigma[j]
+            intens[i,j] = result.Ampl[j]
+            intens_err[i,j] = result.eAmpl[j]
 
 
-            fluxes[i,j] = result[j].Ampl * sqrt(2*!pi) * result[j].Sigma * eml_par[j].lambda $
-                          * (1+result[j].Vel/c+redshift)/c
+            fluxes[i,j] = result.Ampl[j] * sqrt(2*!pi) * result.Sigma[j] * eml_par[j].lambda $
+                          * (1+(result.Vel[j]+voff)/c)/c
 
-            fluxes_err[i,j] = sqrt( (fluxes[i,j]*result[j].eAmpl/result[j].Ampl)^2 + $
-                                    (fluxes[i,j]*result[j].eSigma/result[j].Sigma)^2 + $
-                                    (result[j].Ampl * sqrt(2*!pi) * result[j].Sigma * $
-                                     eml_par[j].lambda * result[j].eVel/c/c)^2 )
+            fluxes_err[i,j] = sqrt( (fluxes[i,j]*result.eAmpl[j]/result.Ampl[j])^2 + $
+                                    (fluxes[i,j]*result.eSigma[j]/result.Sigma[j])^2 + $
+                                    (result.Ampl[j] * sqrt(2*!pi) * result.Sigma[j] * $
+                                     eml_par[j].lambda * result.eVel[j]/c/c)^2 )
         endfor
 END
 
@@ -265,11 +267,11 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 emission_line_kinematics_individual, emission_line_kinematics_individual_err, $
                 emission_line_intens, emission_line_intens_err, emission_line_fluxes, $
                 emission_line_fluxes_err, emission_line_EW, emission_line_EW_err, $
-                eml_par=eml_par, enci=enci, belfiore=belfiore, quiet=quiet
+                eml_par=eml_par, enci=enci, belfiore=belfiore, quiet=quiet, dbg=dbg
 
         if keyword_set(enci) and keyword_set(belfiore) then begin
             message, 'Cannot run both Enci and Belfiore fits simultaneously.  Make separate ' $
-                     'calls to MDAP_EMISSION_LINE_ONLY_FIT'
+                     + 'calls to MDAP_EMISSION_LINE_ONLY_FIT'
         endif
         if ~keyword_set(enci) and ~keyword_set(belfiore) and ~keyword_set(quiet) then $
             print, 'No mode selected for MDAP_EMISSION_LINE_ONLY_FIT.  Default is /enci.'
@@ -279,8 +281,11 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
         eml_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
 
         ; Convert the inverse variance to an error, adjusting the mask for bad values
-        indx = where(ivar gt 0.0d, complement=nindx)
-        if indx[0] eq -1 then $
+;       indx = where(ivar gt 0.0d, complement=nindx)
+;       if indx[0] eq -1 then $
+;           message, 'All pixels are masked!'
+        indx = where(ivar gt 0.0d, count, complement=nindx)
+        if count eq 0 then $
             message, 'All pixels are masked!'
 
         flux_err = ivar
@@ -310,13 +315,18 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
         emission_line_fluxes_err = dblarr(nobj, neml)
         emission_line_EW = dblarr(nobj, neml)
         emission_line_EW_err = dblarr(nobj, neml)
+
+        ; TODO: Calculate a chi-square for the full fit using the
+        ; eml_model
    
         ; Fit each spectrum and save the results
+        if keyword_set(dbg) then $
+            nobj = 1
         for i=0,nobj-1 do begin
 
             ; Set the wavelength vector to the rest wavelength
             ; TODO: Could also just pass velocity to MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI
-            rest_wave = reform(wave[i,*])/(1+stellar_kinematics[i,0]/c)
+            rest_wave = wave/(1+stellar_kinematics[i,0]/c)
 
             ; Remove the stellar continuum
             galaxy_eml_only = reform(flux[i,*] - best_fit_continuum[i,*])
@@ -326,11 +336,11 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, rest_wave, galaxy_eml_only, $
                                                           reform(flux_err[i,*]), $
                                                           reform(mask[i,*]), $
-                                                          stellar_kinematics[i,1], 0.0d, result,
+                                                          stellar_kinematics[i,1], 0.0d, result, $
                                                           emfit, quiet=quiet
 
                 ; Save the fitted parameters
-                MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, 0.0d, result, $
+                MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, stellar_kinematics[i,0], result, $
                                                       emission_line_omitted, $
                                                       emission_line_kinematics_individual, $
                                                       emission_line_kinematics_individual_err, $
@@ -346,7 +356,8 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                                                       /Ha6563, /SII6717
 
                 ; Save the fitted parameters
-                MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, result, emission_line_omitted, $
+                MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, stellar_kinematics[i,0], result, $
+                                                  emission_line_omitted, $
                                                   emission_line_kinematics_individual, $
                                                   emission_line_kinematics_individual_err, $
                                                   emission_line_intens, emission_line_intens_err, $
@@ -377,10 +388,11 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                                                     emission_line_kinematics_individual_err[i,*,0],$
                                                     emission_line_kinematics_individual[i,*,1], $
                                                     emission_line_kinematics_individual_err[i,*,1],$
-                                                    omitted=emission_line_omitted[i,*])
+                                                    omitted=emission_line_omitted[i,*], count=count)
 
             ; Get the mean kinematics; use dummy values if no good lines
-            if indx[0] eq -1 then begin
+;           if indx[0] eq -1 then begin
+            if count eq 0 then begin
                 emission_line_kinematics[i,*] = 0.0d
                 emission_line_kinematics_err[i,*] = 99.0d
             endif else begin

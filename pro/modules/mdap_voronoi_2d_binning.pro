@@ -348,7 +348,7 @@ for ind=1,n do begin
 
     ; Get the centroid of all the binned pixels
     ;
-    unBinned = where(class eq 0, COMPLEMENT=binned, m)
+    unBinned = where(class eq 0, m, COMPLEMENT=binned)
     if (m eq 0) then break ; Stop if all pixels are binned
     xBar = mean(x[binned])
     yBar = mean(y[binned])
@@ -582,8 +582,8 @@ if targetSN le 1 then $
     message, 'Target S/N must be larger than 1.'
 
 ston = signal/noise
-indx = where(ston gt 0. and finite(ston))
-if indx[0] eq -1 then $
+indx = where(ston gt 0. and finite(ston), count)
+if count eq 0 then $
     message, 'No bins with finite S/N and S/N > 0!'
 
 sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], sn_calibration=sn_calibration, $
@@ -606,7 +606,12 @@ endif
 ; Prevent division by zero for pixels with signal=0 and
 ; noise=sqrt(signal)=0 as can happen with X-ray data
 ;
-noise = noise > min(noise[where(noise gt 0)])*1e-9
+;noise = noise > min(noise[where(noise gt 0)])*1e-9
+indx = where(noise gt 0, count)
+if count ne 0 then begin
+    noise = noise > min(noise[indx])*1e-9
+endif else $
+    noise = make_array(n_elements(noise), /double, value=1.)
 
 if not keyword_set(quiet) then print, 'Bin-accretion...'
 
@@ -637,7 +642,7 @@ bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, c
                                      sn, area, SN_CALIBRATION=SN_CALIBRATION, $
                                      OPTIMAL_WEIGHTING=optimal_weighting
 
-w1 = where(area eq 1, COMPLEMENT=w2, m)
+w1 = where(area eq 1, m, COMPLEMENT=w2)
 if not keyword_set(quiet) then print, 'Unbinned pixels: ', m, ' / ', npix, FORMAT='(a,g0,a,g0)'
 if not keyword_set(quiet) then $
     print, 'Fractional S/N scatter (%):', stddev(sn[w2]-targetSN)/targetSN*100

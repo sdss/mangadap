@@ -26,38 +26,22 @@
 FUNCTION MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE
 
         ; The fitted lines and their vacuum rest wavelengths:
-        OII_3727_rest_wave = 3726.03
-        AIRTOVAC, OII_3727_rest_wave
-
-        Hb_4861_rest_wave = 4861.32
-        AIRTOVAC, Hb_4861_rest_wave
-
-        OIII_4959_rest_wave = 4958.83
-        AIRTOVAC, OIII_4959_rest_wave
-
-        OIII_5007_rest_wave = 5006.77
-        AIRTOVAC, OIII_5007_rest_wave
-
-        NII_6548_rest_wave = 6547.96
-        AIRTOVAC, NII_6548_rest_wave
-
-        Ha_6563_rest_wave = 6562.80
-        AIRTOVAC, Ha_6563_rest_wave
-
-        NII_6583_rest_wave = 6583.34
-        AIRTOVAC, NII_6583_rest_wave
-
-        SII_6717_rest_wave = 6716.31
-        AIRTOVAC, SII_6717_rest_wave
-
-        SII_6730_rest_wave = 6730.68
-        AIRTOVAC, SII_6730_rest_wave
+        OII_3727_rest_wave = 3727.092d
+        Hb_4861_rest_wave = 4862.691d
+        OIII_4959_rest_wave = 4960.295d
+        OIII_5007_rest_wave = 5008.240d
+        NII_6548_rest_wave = 6549.86d
+        Ha_6563_rest_wave = 6564.632d
+        NII_6583_rest_wave = 6585.271d
+        SII_6717_rest_wave = 6718.294d
+        SII_6730_rest_wave = 6732.674d
 
         ; Create the eml_par equivalent for these lines
         id = indgen(9)
         name = [ 'OII', 'Hb', 'OIII', 'OIII', 'NII', 'Ha', 'NII', 'SII', 'SII' ]
-        lambda = [ OII_3727_rest_wave, Hb_4861_rest_wave, OIII_4959_rest_wave, NII_6548_rest_wave, $
-                   Ha_6563_rest_wave, NII_6583_rest_wave, SII_6717_rest_wave, SII_6730_rest_wave ]
+        lambda = [ OII_3727_rest_wave, Hb_4861_rest_wave, OIII_4959_rest_wave, $
+                   OIII_5007_rest_wave, NII_6548_rest_wave, Ha_6563_rest_wave, NII_6583_rest_wave, $
+                   SII_6717_rest_wave, SII_6730_rest_wave ]
         action = [ 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f', 'f' ]
         kind = [ 'l', 'l', 'l', 'l', 'l', 'l', 'l', 'l', 'l' ]
         a = [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]

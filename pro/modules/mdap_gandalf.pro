@@ -286,14 +286,16 @@ FUNCTION CREATE_TEMPLATES, EMISSION_SETUP=emission_setup, PARS=pars, NPIX=npix  
 ; This happens when we are evaluating the errors in the Gaussian
 ; parameters around the best solution.
 
-i_lines   = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+i_lines   = where(emission_setup.kind eq 'l', nlines)
+
+; KBW: No errors caught here.  Assume input to CREATE_TEMPLATES has at least one kind='l'
+
+;nlines   = n_elements(i_lines)
 ;print, 'create tpl nlines: ', nlines
 if not keyword_set(for_errors) then n_pars = nlines*2 else n_pars = nlines*3
 if (n_pars ne n_elements(pars)) then message,'Hey, this is not the right emission-line parameter array'
 ; array that will contain the emission-line templates, including multiplets
 gaus = dblarr(npix,nlines)
-
 ; a) First create the emission-line templates corresponding to each
 ; single line (like Hb) or to each main line of a multiplet (like
 ; [OIII]5007)
@@ -316,10 +318,11 @@ endfor
 ; b) Then find all the satellite lines belonging to multiplets
 ; (like [OIII]4959), and add them the main emission-line template 
 ; we just created in a)
-i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
-n_slines = n_elements(i_slines)
-;int_disp_pix2_=int_disp_pix2[i_slines]
-if i_slines[0] ne -1 then begin
+;i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
+;n_slines = n_elements(i_slines)
+;if i_slines[0] ne -1 then begin
+i_slines = where(strmid(emission_setup.kind,0,1) eq 'd', n_slines)
+if n_slines ne 0 then begin
 int_disp_pix2_=int_disp_pix2[i_slines]
     ; loop over the satellite lines
     for i = 0,n_slines-1 do begin
@@ -334,7 +337,12 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; structure that was passed to this function (e.g. still 2, if
         ; the indices of the lines in the emission setup start at 0 and
         ; increase by 1)
-        j_mline = where(emission_setup.i eq k_mline)
+        j_mline = where(emission_setup.i eq k_mline, count)
+        ; KBW edits.  TODO: Perform these checks elsewhere?
+        if count eq 0 then $
+            message, 'No line '+string(k_mline)
+        if j eq j_mline then $
+            message, 'Line tied to itself!'
         ; Get the wavelengths of both satellite and main lines
         ; and compute the offset (in pix) that we need to apply in order
         ; to correctly place the satellite line.     
@@ -347,7 +355,12 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; to the main line of the present multiplet, so that we can add the 
         ; satellite emission-line template in the right place in the
         ; gaussian templates array
-        i_mline = where(emission_setup.i[i_lines] eq k_mline)
+;       i_mline = where(emission_setup.i[i_lines] eq k_mline)
+        i_mline = where(emission_setup.i[i_lines] eq k_mline, count)
+        if count eq 0 then $
+            message, 'Line '+string(k_mline)+' is not a fitted line!'
+;       if i_mline[0] eq -1 then $
+;           message, 'Problem with input emission-line parameters!'
         ; Finally, create the satellite template, and add it to that of
         ; the corresponding main line of this multiplet.
         ; Use the amplitude given in the emission setup structure as the
@@ -355,7 +368,7 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; of the main lines. 
         ; In turn these are as specified either by the emission-lines
         ; setup or by the input pars array.
-   
+
        if not keyword_set(for_errors) then begin
             a_sline = emission_setup.a[j]*emission_setup.a[j_mline]
             
@@ -475,8 +488,12 @@ PRO SET_CONSTRAINTS, GALAXY=galaxy, NOISE=noise, CSTAR=cstar,                   
 ; them), plus the order of the multiplicative polynomials and if
 ; needed the reddening parameters
 ; 
-i_lines   = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+;i_lines   = where(emission_setup.kind eq 'l')
+;nlines   = n_elements(i_lines)
+i_lines   = where(emission_setup.kind eq 'l', nlines)
+
+; KBW: No errors caught here.  Assume input to SET_CONSTRAINTS provided at least one kind='l'
+
 if not keyword_set(for_errors) then n_pars = nlines*2 + mdegree else n_pars = nlines*3 + mdegree
 if n_elements(reddening) ne 0 then n_pars = n_pars + n_elements(reddening)
 ;stop
@@ -598,12 +615,16 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline[0] eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline[0] eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
@@ -644,12 +665,16 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
@@ -679,12 +704,16 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
@@ -747,6 +776,9 @@ npix = n_elements(galaxy)
 x = mdap_range(-1d,1d,npix)             ; X needs to be within [-1,1] for Legendre Polynomials
 
 nlines = n_elements(where(emission_setup.kind eq 'l'))
+
+; KBW: No errors caught here.  Assume input to FITFUNC_GAS has at least one kind='l'
+
 IF NOT KEYWORD_SET(for_errors) THEN npars = nlines*2 ELSE npars = nlines*3
 ;print,npars
 ; append the reddening parameters if needed
@@ -851,8 +883,10 @@ PRO REARRANGE_RESULTS, res, weights, chi2, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal,  
 ; the res and err input arrays
 
 c = 299792.458d ; Speed of light in km/s
-i_lines = where(emission_setup.kind eq 'l')
-nlines = n_elements(where(emission_setup.kind eq 'l'))
+i_lines = where(emission_setup.kind eq 'l', nlines)
+;nlines = n_elements(where(emission_setup.kind eq 'l'))
+; KBW: No errors caught here.  Assume input to REARRANGE_RESULTS has at least one kind='l'
+
 lambda0 = emission_setup.lambda[i_lines]
 offset  = (alog(lambda0)-l0_gal)/lstep_gal
 ; to deal with log10-lambda rebinned data, instead of ln-lambda
@@ -1055,12 +1089,15 @@ IF n_elements(reddening) GT 2 THEN message, 'Sorry, can only deal with two dust 
 ; First of all find the emission-lines which we are effectively going
 ; to fit.  That is, exclude from the input structure the lines that
 ; are either being masked or not fitted.
-i_f = where(emission_setup.action eq 'f') 
+i_f = where(emission_setup.action eq 'f', count)
+if count eq 0 then $
+    message, 'No lines to fit!'
+
 ;print, n_elements(i_f)
 ;print, emission_setup
 dummy = emission_setup ; This will help us restoring later the input emission_setup structure
-di_lines  = where(dummy.kind eq 'l')
-dnlines   = n_elements(di_lines)
+;di_lines  = where(dummy.kind eq 'l')
+;dnlines   = n_elements(di_lines)
 ;print, 'dnlines, kind=l: ', dnlines
 
 emission_setup = create_struct('i',dummy.i[i_f],'name',dummy.name[i_f],$
@@ -1069,8 +1106,11 @@ emission_setup = create_struct('i',dummy.i[i_f],'name',dummy.name[i_f],$
                                'v',dummy.v[i_f],'s',dummy.s[i_f],$
                                'fit',dummy.fit[i_f])
 ; Count the number of single lines or the number of multiplets
-i_lines  = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+;i_lines  = where(emission_setup.kind eq 'l')
+;nlines   = n_elements(i_lines)
+i_lines  = where(emission_setup.kind eq 'l', nlines)
+if nlines eq 0 then $
+    message, 'No lines, only doublets!'
 ;print, 'nlines, kind=l: ', nlines
 
 ; ------------------------------------
@@ -1141,9 +1181,14 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
 ; Note that we evalutate also the errors on the best parameters, but
 ; as regards the position and width of the lines these should only be
 ; considered as lower estimates for the real uncertainties.
+;print, 'entering mpfit'
 best_pars = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
              FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
 ;
+;if errmsg ne '' then begin
+;    print, errmsg
+;    stop
+;endif
 
 if errmsg ne '' then begin
     print, errmsg

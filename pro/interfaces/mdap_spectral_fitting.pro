@@ -494,15 +494,6 @@ FUNCTION MDAP_SPECTRAL_FITTING_START_KIN, $
         return, [ star_kin_starting_guesses, gas_kin_starting_guesses ]
 END
 
-; Convert velocities and velocity errors from pixel shifts to redshifts
-PRO MDAP_CONVERT_KINEMATICS, $
-        v, ve
-
-        c=299792.458d                           ; Speed of light in km/s
-        ve = exp(v/c)*ve                        ; error in cz (done here because v is replaced next)
-        v = (exp(v/c)-1.0d)*c                   ; cz
-END
-
 PRO MDAP_SPECTRAL_FITTING, $
                 obj_wave, obj_flux, obj_ivar, obj_mask, obj_sres, tpl_wave, tpl_flux, tpl_ivar, $
                 tpl_mask, wavelength_output, obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
@@ -588,6 +579,8 @@ PRO MDAP_SPECTRAL_FITTING, $
         print, 'Number of emission lines: ', neml
         print, 'Number of spectral channels for output: ', nw
 
+;       stop
+
         ; Initialize the output arrays
         ; TODO: Convert this to a structure?
 
@@ -596,7 +589,7 @@ PRO MDAP_SPECTRAL_FITTING, $
         degree=analysis_par.degree
         if n_elements(degree) ne 0 then begin
             if degree gt 0 then $
-                add_poly_coeff_ppxf = dblarr(nobj, degree)
+                add_poly_coeff_ppxf = dblarr(nobj, degree+1)
         endif
         mdegree=analysis_par.mdegree
         if n_elements(mdegree) ne 0 then begin
@@ -655,8 +648,9 @@ PRO MDAP_SPECTRAL_FITTING, $
         ; 1. Apply the wavelength range limit, if provided
         now=(size(obj_wave))[1]
         if n_elements(wave_range_analysis) then begin
-            MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx
-            if indx[0] eq -1 then $
+            MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
+;           if fit_indx[0] eq -1 then $
+            if count eq 0 then $
                 message, 'wave_range_analysis selects no pixels!'
         endif else $
             fit_indx = indgen(now)
@@ -676,13 +670,17 @@ PRO MDAP_SPECTRAL_FITTING, $
             z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c
 
             ; Indices of wavelengths redward of the redshifted template
-            indx=where(obj_wave gt tpl_wave[0]*(1. + z_min))
+            indx=where(obj_wave gt tpl_wave[0]*(1. + z_min), count)
+            if count eq 0 then $
+                message, 'No overlapping wavelengths between galaxy and template!'
 
             now_=(size(obj_wave[indx]))[1]
             if ntw lt now_ then $
                 indx=indx[0:ntw-1]                      ; Truncate the red edge as well
-            fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx)) ; Merge with current index
-            if fit_indx[0] eq -1 then $
+            ; Merge with current index
+            fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
+;           if fit_indx[0] eq -1 then $
+            if count eq 0 then $
                 message, 'No overlapping wavelengths between galaxy and template!'
         endif
         now=(size(obj_wave[fit_indx]))[1]               ; Update number of object pixels
@@ -694,8 +692,10 @@ PRO MDAP_SPECTRAL_FITTING, $
         ; Mask to the range that should be unaffected by alias errors
         wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]/(1+z_min) ]
         MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias*(1. + z_min), indx
-        fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx))     ; Merge with current index
-        if fit_indx[0] eq -1 then $
+        ; Merge with current index
+        fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
+;       if fit_indx[0] eq -1 then $
+        if count eq 0 then $
             message, 'No intersection between wave_range_tpl_unalias and fit_indx!'
 
         ; Truncate the vectors to the valid pixels
@@ -711,6 +711,10 @@ PRO MDAP_SPECTRAL_FITTING, $
             MDAP_CHECK_EMISSION_LINES, eml_par_lim, obj_wave_lim, $
                                        velocity=gas_kin_starting_guesses[0]
         endif
+
+        print, n_elements(eml_par_lim)
+
+;       stop
 
         ; On input, pPXF expects the template and galaxy to have the same
         ;   wavelength coordinate system.  To account for the fact that this may not
@@ -879,8 +883,9 @@ PRO MDAP_SPECTRAL_FITTING, $
                 emission_line_kinematics[i,*]=sol[7:8]          ; V,sigma for emission lines
                 emission_line_kinematics_err[i,*]=err[6:7]      ; V,sigma errors for emission lines
 
-                i_f = where(eml_par_lim.action eq 'f')
-                if i_f[0] ne -1 then begin
+                i_f = where(eml_par_lim.action eq 'f', count)
+;               if i_f[0] ne -1 then begin
+                if count ne 0 then begin
                     emission_line_omitted[i,i_f] = 0            ; Flag fitted lines
                     emission_line_intens[i,i_f]= gas_intens     ; Intensity values, dereddened
                     emission_line_intens_err[i,i_f]= gas_intens_err     ; Error in intensity

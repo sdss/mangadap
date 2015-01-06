@@ -67,8 +67,8 @@ PRO MDAP_SPATIAL_BIN_AREA, $
             if nbinned[i] eq 0 then $                   ; No spectra in this bin!
                 continue
 
-            spec_indx=where(binned_indx eq i)                   ; Indices of spectra in this bin
-            binned_area[i] = n_elements(spec_indx)*dx*dy        ; Total area
+            spec_indx=where(binned_indx eq i, count)    ; Indices of spectra in this bin
+            binned_area[i] = count*dx*dy                ; Total area
         endfor
 
 END

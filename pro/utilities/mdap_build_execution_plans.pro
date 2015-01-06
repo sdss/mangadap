@@ -69,28 +69,62 @@
 ;       analysis strarr[P][]
 ;               List of analyses to perform.  Valid values are:
 ;
-;                       'stellar-cont' - Fit the stellar continuum.  Requires
-;                                        the template library.  Will mask
-;                                        emission lines, if a set of
-;                                        emission-line parameters are provided.
-;                                        Determines the optimal template mix and
-;                                        the stellar kinematics.
+;           'stellar-cont'
+;               Fit the stellar continuum using pPXF.  Requires the
+;               template library.  Will mask emission lines, if a set of
+;               GANDALF-style emission-line parameters are provided.
+;               Determines the optimal template mix and the stellar
+;               kinematics.
 ;
-;                       'emission-line' - Fits the emission lines.  Requires a
-;                                         template library and a set of
-;                                         emission-line parameters and a
-;                                         previous fit to the stellar
-;                                         kinematics.  Will re-optimize the
-;                                         template mix, but does not adjust the
-;                                         stellar kinematics.  Determines the
-;                                         emission-line kinematics, intensities,
-;                                         fluxes, and equivalent widths.
+;           'star+gas'
+;               This step uses GANDALF to fit the spectrum, which will
+;               re-optimize the template mix, but does not adjust
+;               the stellar kinematics.  Determines the emission-line
+;               kinematics, intensities, fluxes, and equivalent widths.
 ;
-;                       'abs-indices' - Calculates the absorption-line indices.
-;                                       Requires an absorption-line parameter
-;                                       set and a previous fit to the stellar
-;                                       continuum.  TODO: Also requires fit to
-;                                       emission-line parameters?
+;           'emission-line'
+;               Fits an emission-line-only spectrum assuming a zero
+;               baseline.  If either 'stellar-cont' or 'star+gas' have
+;               been applied, the best-fitting stellar continuum (where
+;               the GANDALF results take preference) will be subtracted
+;               from the input spectra before fitting the
+;               emission-line-only model.  If this has not been
+;               performed, **no continuum is subtracted from the
+;               spectra!**  This fit, therefore, does not require a
+;               template library to be provided.  Currently, the lines
+;               fit are hard-coded to be:
+;
+;               #   Line    Rest Wave (air)
+;                   OII     3726.03
+;                   Hb      4861.32
+;                   OIII    4958.83
+;                   OIII    5006.77
+;                   NII     6547.96
+;                   Ha      6562.80
+;                   NII     6583.34
+;                   SII     6716.31
+;                   SII     6730.68
+;
+;               The fit is done twice using two different contributed
+;               codes, one from Enci Wang and another from Francesco
+;               Belfiore.  For these lines only, this step determines
+;               the emission-line kinematics, intensities, fluxes, and
+;               equivalent widths.
+;
+;           'abs-indices'
+;               Calculates the absorption-line indices.  Requires an
+;               absorption-line parameter set and a fit to the stellar
+;               continuum.  If an emission-line model has been fit (with
+;               the one from GANDALF taking precedence), it will be
+;               subtracted from the galaxy spectra before performing the
+;               measurements.  Other steps applied before performing the
+;               index measurements is to replace aberrant pixels and to
+;               match the spectral resolution to that of the index
+;               system.  Index measurements performed on the
+;               best-fitting template and its broadened version are used
+;               to correct the measurements made for the data in a
+;               differential way.  This step provides index measurements
+;               and their errors.
 ;
 ;       analysis_par AnalaysisPar[P]
 ;               An array of structures that keeps the parameters used by
@@ -167,6 +201,7 @@
 ;                          MANGA_DAP to here and converted it to a
 ;                          function, added file_root to input, added
 ;                          versioning.
+;       11 Dec 2014: (KBW) Allow for the emission-line only fitting.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -180,6 +215,7 @@
 ; Given the stuff in mdap_analysis_block_logic.pro, I'm not sure the
 ; above is true anymore...
 
+;-----------------------------------------------------------------------
 ; Below used to be MDAP_GENERATE_OUTPUT_FILE_NAMES
 ;
 FUNCTION MDAP_OUTPUT_FILE_NAME, $
@@ -187,15 +223,21 @@ FUNCTION MDAP_OUTPUT_FILE_NAME, $
         return, (file_root + 'BIN-' + execution_plan.bin_par.type + '-' + $
                 string(i+1,format='(I03)') + '.fits')
 END
+;-----------------------------------------------------------------------
 
+
+;-----------------------------------------------------------------------
 FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
-                analysis
+                analysis, n_analyses
 
         n_steps = n_elements(analysis)          ; Number of analysis steps
 
-        analysis_ = intarr(3)                   ; Currently only 3 possible analysis steps
+        analysis_ = intarr(n_analyses)          ; Flag array used to toggle the analysis steps
         if n_steps eq 0 then $
             return, analysis_                   ; All analysis steps set to zero
+
+        if n_steps gt n_analyses then $
+            message, 'Too many analysis steps provided!'
 
         ; Set the steps
         for i=0,n_steps-1 do begin
@@ -203,12 +245,16 @@ FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
                 analysis_[0] = 1                ; Perform the stellar continuum fitting
                 continue
             endif
+            if analysis[i] eq 'star+gas' then begin
+                analysis_[1] = 1                ; Perform the "simultaneous" star+gas fit
+                continue
+            endif
             if analysis[i] eq 'emission-line' then begin
-                analysis_[1] = 1                ; Perform the emission line fitting
+                analysis_[2] = 1                ; Perform the emission-line-only fitting
                 continue
             endif
             if analysis[i] eq 'abs-indices' then begin
-                analysis_[2] = 1                ; Perform the absorption index measurements
+                analysis_[3] = 1                ; Perform the absorption index measurements
                 continue
             endif
             
@@ -216,7 +262,8 @@ FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
                 message, 'Unknown analysis step: ', analysis[i]
         endfor
 
-        ; TODO: So far all steps must occur serially.
+        ; TODO: So far all steps must occur serially.  True?  Can
+        ;       abs-indices be done without doing star+gas?
 
         ; TODO: This is now checked in MDAP_ANALYSIS_BLOCKS_TO_PERFORM()
 
@@ -282,18 +329,24 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         ; If analysis parameters are not needed, then turn them off
         ;
         ; Absorption-line parameters only needed for that analysis
-        if execution_plan.analysis[2] eq 0 then $
+        if execution_plan.analysis[3] eq 0 then $
             execution_plan.abs_par = -1
-        ; Emission-line parameters used for both stellar-continuum and emission-line analysis
+        ; Emission-line parameters used for both stellar-continuum and star+gas analysis
         if execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then $
             execution_plan.ems_par = -1
-        ; Template spectra used for absorption-line, emission-line, and stellar continuum analysis
-        if execution_plan.analysis[2] eq 0 and execution_plan.analysis[1] eq 0 and $
-            execution_plan.analysis[0] eq 0 then begin
+        ; Template spectra can be used for all analyses (what to do with [2]?)
+        if execution_plan.analysis[3] eq 0 and execution_plan.analysis[2] eq 0 and $
+           execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then begin
             execution_plan.tpl_lib = -1
         endif
 
 END
+
+; TODO: A better "analysis structure"?
+;           .name
+;           .requested
+;           .perform
+;           .dependencies
 
 PRO MDAP_BUILD_EXECUTION_PLANS, $
                 n_tpl, n_ems, n_abs, bin_par, ell, pa, Reff, w_range_sn, threshold_ston_bin, $
@@ -301,7 +354,7 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
                 tpl_lib_analysis, ems_par_analysis, abs_par_analysis, overwrite_flag, file_root, $
                 execution_plan, version=version
 
-        version_module = '0.2'                          ; Version number
+        version_module = '0.3'                          ; Version number
         if n_elements(version) ne 0 then begin          ; set version and return
             version = version_module
             return
@@ -312,13 +365,15 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
         bin_par_def = MDAP_DEFINE_BIN_PAR()
         analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()
 
+        n_analyses = 4                                  ; Number of analyses that can be selected
+
         ; Instantiate the ExecutionPlan structure
         ; TODO: Make analysis_extra a pointer?
         execution_plan = replicate( { ExecutionPlan, bin_par:bin_par_def, wave_range_sn:dblarr(2), $
                                                      threshold_ston_bin:0.0d, $
                                                      wave_range_analysis:dblarr(2), $
                                                      threshold_ston_analysis:0.0d, $
-                                                     analysis:intarr(3), $
+                                                     analysis:intarr(n_analyses), $
                                                      analysis_par:analysis_par_def, $
                                                      analysis_prior:'', tpl_lib:0, ems_par:0, $
                                                      abs_par:0, overwrite:0, ofile:''}, n_plans)
@@ -341,7 +396,8 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
             execution_plan[i].threshold_ston_analysis = threshold_ston_analysis[i]; Analysis S/N lim
 
             ; Set the analysis steps
-            execution_plan[i].analysis = MDAP_SET_EXECUTION_PLAN_ANALYSIS(reform(analysis[i,*]))
+            execution_plan[i].analysis = $
+                    MDAP_SET_EXECUTION_PLAN_ANALYSIS(reform(analysis[i,*]), n_analyses)
 
             execution_plan[i].analysis_par = analysis_par[i]            ; Analysis parameters
 
@@ -374,8 +430,9 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
                 endif
             endif
 
-            indx = where(execution_plan[i].analysis eq 1)
-            if indx[0] eq -1 then begin; No analysis to perform
+            indx = where(execution_plan[i].analysis eq 1, count)
+;           if indx[0] eq -1 then begin; No analysis to perform
+            if count eq 0 then begin; No analysis to perform
                 execution_plan[i].tpl_lib = -1          ; No template library needed
                 execution_plan[i].ems_par = -1          ; No emission-line parameters needed
                 execution_plan[i].abs_par = -1          ; No absorption-line parameters needed

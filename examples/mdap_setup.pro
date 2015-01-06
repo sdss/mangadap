@@ -9,6 +9,7 @@
 ;                 KEY    resolution (ang)       
 ;       -------------    ----------------
 ;           M11-MARCS                2.73
+;          M11-STELIB                3.10
 ;
 ;       The fits files must have CRVAL1, CRPIX1, and CDELT1 keywords used to
 ;       define the wavelength coordinates of each pixel:
@@ -248,35 +249,68 @@
 ;===============================================================================
 ;       The currently available analysis steps are:
 ;
-;               'stellar-cont' - Fit the stellar continuum.  Requires
-;                                the template library.  Will mask
-;                                emission lines, if a set of
-;                                emission-line parameters are provided.
-;                                Determines the optimal template mix and
-;                                the stellar kinematics.
+;           'stellar-cont'
+;               Fit the stellar continuum using pPXF.  Requires the
+;               template library.  Will mask emission lines, if a set of
+;               GANDALF-style emission-line parameters are provided.
+;               Determines the optimal template mix and the stellar
+;               kinematics.
 ;
-;               'emission-line' - Fits the emission lines.  Requires a
-;                                 template library and a set of
-;                                 emission-line parameters and a
-;                                 previous fit to the stellar
-;                                 kinematics.  Will re-optimize the
-;                                 template mix, but does not adjust the
-;                                 stellar kinematics.  Determines the
-;                                 emission-line kinematics, intensities,
-;                                 fluxes, and equivalent widths.
+;           'star+gas'
+;               This step uses GANDALF to fit the spectrum, which will
+;               re-optimize the template mix, but does not adjust
+;               the stellar kinematics.  Determines the emission-line
+;               kinematics, intensities, fluxes, and equivalent widths.
 ;
-;               'abs-indices' - Calculates the absorption-line indices.
-;                               Requires an absorption-line parameter
-;                               set and a previous fit to the stellar
-;                               continuum.  TODO: Also requires fit to
-;                               emission-line parameters?
+;           'emission-line'
+;               Fits an emission-line-only spectrum assuming a zero
+;               baseline.  If either 'stellar-cont' or 'star+gas' have
+;               been applied, the best-fitting stellar continuum (where
+;               the GANDALF results take preference) will be subtracted
+;               from the input spectra before fitting the
+;               emission-line-only model.  If this has not been
+;               performed, **no continuum is subtracted from the
+;               spectra!**  This fit, therefore, does not require a
+;               template library to be provided.  Currently, the lines
+;               fit are hard-coded to be:
 ;
-;                               TODO: Absorption-line analysis currently not
-;                               performed!
+;               #   Line    Rest Wave (air)
+;                   OII     3726.03
+;                   Hb      4861.32
+;                   OIII    4958.83
+;                   OIII    5006.77
+;                   NII     6547.96
+;                   Ha      6562.80
+;                   NII     6583.34
+;                   SII     6716.31
+;                   SII     6730.68
 ;
-; NOTE: The current list of fits must occur sequentially.  That is, you cannot
-; pick only 'emission-line' analysis.  If you do, the program will warn you and
-; then also perform the 'stellar-cont' analysis.
+;               The fit is done twice using two different contributed
+;               codes, one from Enci Wang and another from Francesco
+;               Belfiore.  For these lines only, this step determines
+;               the emission-line kinematics, intensities, fluxes, and
+;               equivalent widths.
+;
+;           'abs-indices'
+;               Calculates the absorption-line indices.  Requires an
+;               absorption-line parameter set and a fit to the stellar
+;               continuum.  If an emission-line model has been fit (with
+;               the one from GANDALF taking precedence), it will be
+;               subtracted from the galaxy spectra before performing the
+;               measurements.  Other steps applied before performing the
+;               index measurements is to replace aberrant pixels and to
+;               match the spectral resolution to that of the index
+;               system.  Index measurements performed on the
+;               best-fitting template and its broadened version are used
+;               to correct the measurements made for the data in a
+;               differential way.  This step provides index measurements
+;               and their errors.
+;
+; NOTE: The current list of fits must occur sequentially, except the
+; emission-line only fit, which can be done without any continuum fit,
+; although this is not recommended!  Based on the requested analysis
+; steps, the code has logic in place that will determine what other
+; steps need to be performed, and will do so after warning the user.
 ;===============================================================================
 ;===============================================================================
 ;
@@ -421,36 +455,41 @@ PRO MDAP_EXECUTION_SETUP, $
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
         ; files is described above.
-        ntpl_libraries = 1
+        ntpl_libraries = 2
         tpl_library_keys = strarr(ntpl_libraries)
         template_libraries = strarr(ntpl_libraries)
         tpl_vacuum_wave = intarr(ntpl_libraries)
 
         tpl_library_keys[0] = 'M11-MARCS'
-        template_libraries[0] = dapsrc+'/external/templates_marcs/*_s.fits'
+        template_libraries[0] = dapsrc+'/external/templates_m11_marcs/*_s.fits'
         tpl_vacuum_wave[0] = 0
+
+        tpl_library_keys[1] = 'M11-STELIB'
+        template_libraries[1] = dapsrc+'/external/templates_m11_stelib/*_s.fits'
+        tpl_vacuum_wave[1] = 0
 
         ;-----------------------------------------------------------------------
         ; Define the set of emission-line parameter files.  The format expected
         ; for these files is described above.
-        neml_files = 3
+        neml_files = 1
+;       neml_files = 3
         ems_line_keys = strarr(neml_files)
         emission_line_parameters = strarr(neml_files)
         ems_vacuum_wave = intarr(neml_files)
 
         ems_line_keys[0] = 'STANDARD'
-        emission_line_parameters[0] = dapsrc+'/external/emission_lines_setup_with_Balmer_decrement'
-        ems_vacuum_wave[0] = 0
+        emission_line_parameters[0] = dapsrc+'/external/manga_emission_line_list_nominal.par'
+        ems_vacuum_wave[0] = 1
 
-        ems_line_keys[1] = 'NODOUBLETS'
-        emission_line_parameters[1] = dapsrc + $
-                        '/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
-        ems_vacuum_wave[1] = 0
+;       ems_line_keys[1] = 'NODOUBLETS'
+;       emission_line_parameters[1] = dapsrc + $
+;                       '/external/emission_lines_setup_with_Balmer_decrement_no_doublets'
+;       ems_vacuum_wave[1] = 0
 
-        ems_line_keys[2] = 'RESIDUAL'
-        emission_line_parameters[2] = dapsrc + $
-                        '/external/emission_lines_setup_with_Balmer_decrement_residuals'
-        ems_vacuum_wave[2] = 0
+;       ems_line_keys[2] = 'RESIDUAL'
+;       emission_line_parameters[2] = dapsrc + $
+;                       '/external/emission_lines_setup_with_Balmer_decrement_residuals'
+;       ems_vacuum_wave[2] = 0
 
         ;-----------------------------------------------------------------------
         ; Define the set of absorption-line parameter files.  The format expected
@@ -476,8 +515,8 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-;       niter = 1                                       ; Number of ExecutionPlans to produce
         niter = 2                                       ; Number of ExecutionPlans to produce
+;       niter = 4                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -488,7 +527,7 @@ PRO MDAP_EXECUTION_SETUP, $
         w_range_analysis = dblarr(niter, 2)             ; Wavelength range for the analysis
         threshold_ston_analysis = dblarr(niter)         ; Threshold S/N to analyze spectrum
 
-        max_analysis_blocks = 3                         ; Maximum number of analysis blocks
+        max_analysis_blocks = 4                         ; Maximum number of analysis blocks
         analysis = strarr(niter, max_analysis_blocks)   ; Analysis steps to apply
 
         tpl_lib_analysis = intarr(niter)                ; INDEX of template library to use
@@ -509,79 +548,174 @@ PRO MDAP_EXECUTION_SETUP, $
         ; available binning types and their required parameters are
         ; provided above.
 
-        bin_par[0].type = 'STON'
-        bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
-        bin_par[0].ston = 40.0d
+
+;-------------------------------------------------------------------------------
+; To fit things similarly to the PDAP:
+;       bin_par[0:2].type = 'STON'
+;       bin_par[0].ston = 40.0d
+;       bin_par[1].ston = 25.0d
+;       bin_par[2].ston = 15.0d
+
+;       bin_par[3].type = 'RADIAL'
+;       bin_par[3].v_register = 1
+;       bin_par[3].nr = 6
+;       bin_par[3].rs = 1.0
+;       bin_par[3].rlog = 1
+
+;       bin_par[*].optimal_weighting = 1
+
+;       w_range_sn[0,*] = [5560.00, 6942.00]
+;       w_range_sn[1,*] = [5560.00, 6942.00]
+;       w_range_sn[2,*] = [5560.00, 6942.00]
+;       w_range_sn[3,*] = [5560.00, 6942.00]
+
+;       threshold_ston_bin[*] = -300.0d
+
+;       w_range_analysis[0,*] = [3650.,10300.]
+;       w_range_analysis[1,*] = [3650.,7500.] 
+;       w_range_analysis[2,*] = [3600.,10220.]
+;       w_range_analysis[3,*] = [3700.,9980.]
+
+;       threshold_ston_analysis[*] = 0.0d
+
+;       analysis[*,0] = 'stellar-cont'
+;       analysis[*,1] = 'star+gas'
+;       analysis[*,2] = 'emission-line'
+;       analysis[*,3] = 'abs-indices'
+
+;       tpl_lib_analysis[*] = 0
+;       ems_par_analysis[*] = 0
+;       abs_par_analysis[*] = 0
+
+;       analysis_par[0:2].moments = 4
+;       analysis_par[3].moments = 2
+;       analysis_par[0].degree = -1
+;       analysis_par[1:2].degree = 3
+;       analysis_Par[3].degree = -1
+;       analysis_par[*].mdegree = 6
+;       analysis_par[0:1].reddening_order = 0
+;       analysis_par[3].reddening_order = 0
+;       analysis_par[2].reddening_order = 2
+;       analysis_par[2].reddening[*] = [0.01,0.01]
+
+;       analysis_prior[0] = ''
+;       analysis_prior[1] = '0'
+;       analysis_prior[2] = '1'
+;       analysis_prior[3] = '2'
+
+;       overwrite_flag[*] = 0
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+
+;-------------------------------------------------------------------------------
+; To fit just the high S/N case (with both MARCS and STELIB):
+        bin_par[*].type = 'STON'
+        bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
+        bin_par[*].ston = 40.0d
+
+        w_range_sn[0,*] = [5560.00, 6942.00]
+        w_range_sn[1,*] = [5560.00, 6942.00]
+        threshold_ston_bin[*] = -300.0d
+
+        w_range_analysis[0,*] = [3650.,10300.] 
+        w_range_analysis[1,*] = [3650.,10300.] 
+        threshold_ston_analysis[*] = 0.0d
+
+        analysis[*,0] = 'stellar-cont'
+        analysis[*,1] = 'star+gas'
+        analysis[*,2] = 'emission-line'
+        analysis[*,3] = 'abs-indices'
+
+        tpl_lib_analysis[0] = 0
+        tpl_lib_analysis[1] = 1
+        ems_par_analysis[*] = 0
+        abs_par_analysis[*] = 0
+
+        analysis_par[*].moments = 4
+        analysis_par[*].degree = -1
+        analysis_par[*].mdegree = 6
+        analysis_par[*].reddening_order = 0
+
+        analysis_prior[*] = ''      ; No prior for the first plan
+
+        overwrite_flag[*] = 1
+
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+
+
+
+
+
+
+;       bin_par[0].type = 'STON'
+;       bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
+;       bin_par[0].ston = 40.0d
         ;   leave everything else as default (no velocity registration)
 
         ; Try RADIAL using the results from the first ExecutionPlan to
         ; velocity register the data -> set v_register to true here and
         ; add the prior below.
-        bin_par[1].type = 'RADIAL'
-        bin_par[1].v_register = 1
-        bin_par[1].optimal_weighting = 1
-        bin_par[1].nr = 10
-        bin_par[1].rlog = 1
+;       bin_par[1].type = 'RADIAL'
+;       bin_par[1].v_register = 1
+;       bin_par[1].optimal_weighting = 1
+;       bin_par[1].nr = 10
+;       bin_par[1].rlog = 1
         ;   leave everything else as default
 
-
         ; Define the wavelength range over which to calculate the mean S/N per pixel
-        w_range_sn[0,*] = [5560.00, 6942.00]
-        w_range_sn[1,*] = [5560.00, 6942.00]
+;       w_range_sn[0,*] = [5560.00, 6942.00]
+;       w_range_sn[1,*] = [5560.00, 6942.00]
 
         ; Define the S/N threshold to include spectrum in any bin
-        threshold_ston_bin[*] = -300.0d
+;       threshold_ston_bin[*] = -300.0d
 
         ; Define the wavelength range over which to perform ALL analyses
-        w_range_analysis[0,*] = [3650.,10300.] 
-        w_range_analysis[1,*] = [3650.,10300.] 
+;       w_range_analysis[0,*] = [3650.,10300.] 
+;       w_range_analysis[1,*] = [3650.,10300.] 
 
         ; Define the S/N threshold to perform analysis
-        threshold_ston_analysis[*] = 0.0d
+;       threshold_ston_analysis[*] = 0.0d
 
         ; Set the list of analyses to perform.  The available analysis steps are
         ; listed above.
 
-        analysis[*,0] = 'stellar-cont'
-        analysis[*,1] = 'emission-line'
-        analysis[*,2] = 'abs-indices'
-
-;       analysis[0,0] = 'stellar-cont'
-;       analysis[0,1] = 'abs-indices'
-
-;       analysis[0,0] = 'abs-indices'
-
-;       analysis[1,0] = 'stellar-cont'
+;       analysis[*,0] = 'stellar-cont'
+;       analysis[*,1] = 'star+gas'
+;       analysis[*,2] = 'emission-line'
+;       analysis[*,3] = 'abs-indices'
 
         ; Set the index of the template library to use for the analysis
         ; TODO: Change this to use the library key?
-        tpl_lib_analysis[*] = 0
+;       tpl_lib_analysis[*] = 0
 
         ; Set the index of the emission-line parameter set to use
-        ems_par_analysis[*] = 0
+;       ems_par_analysis[*] = 0
 
         ; Set the index of the absorption-line parameter set to use
-        abs_par_analysis[*] = 0
+;       abs_par_analysis[*] = 0
 
         ; Set additional parameters needed by the analysis modules
         ; The reddening order can be 0, 1, or 2
         ; TODO: Allow for oversample?
         ; IF NOT SET HERE, the default values are:
         ;       moments=2, degree=-1, mdegree=-1, reddening_order=0
-        analysis_par[*].moments = 4
-        analysis_par[*].degree = -1
-        analysis_par[*].mdegree = 6
-        analysis_par[*].reddening_order = 0
+;       analysis_par[*].moments = 4
+;       analysis_par[*].degree = -1
+;       analysis_par[*].mdegree = 6
+;       analysis_par[*].reddening_order = 0
         ; analysis_par[0].reddening[*] = [0.01,0.01]
 
         ; Analysis priors, see description above.
-        analysis_prior[0] = ''      ; No prior for the first plan
-        analysis_prior[1] = '0'     ; Use the results from the first plan as a prior on the second
+;       analysis_prior[0] = ''      ; No prior for the first plan
+;       analysis_prior[1] = '0'     ; Use the results from the first plan as a prior on the second
 
         ; Set a flag to overwrite existing output: 1-yes, 0-no
 ;       overwrite_flag[0] = 1
-        overwrite_flag[0] = 0
-        overwrite_flag[1] = 1
+;       overwrite_flag[0] = 1
+;       overwrite_flag[1] = 1
 
         ;=======================================================================
         ;=======================================================================

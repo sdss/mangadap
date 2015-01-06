@@ -55,6 +55,7 @@ etc/mangadap.module -text
 examples/mdap_config_example.inp -text
 examples/mdap_inp_nsa_v1b_0_0_v2.par -text
 examples/mdap_setup.pro -text
+examples/mdap_setup_old.pro -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
 external/F90_32/bvls_wrapper.c -text
@@ -75,52 +76,113 @@ external/emission_lines_setup_with_Balmer_decrement -text
 external/emission_lines_setup_with_Balmer_decrement_no_doublets -text
 external/emission_lines_setup_with_Balmer_decrement_residuals -text
 external/instrumental_fwhm.dat -text
+external/manga_emission_line_list_nominal.par -text
 external/mdap_color.tab -text
 external/mdap_configure_file.dat -text
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_-2.2500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_-2.2500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_-2.2500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_-2.2500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.3500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000_s.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
-external/templates_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_-2.2500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_-2.2500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_11.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_12.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_13.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_15.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_3.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_5.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_-2.2500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_-2.2500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_7.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_-2.2500_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000_s.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
+external/templates_m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.200000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.200000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.200000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.200000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.400000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.400000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.500000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.500000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.500000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_0.500000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_1.00000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_11.0000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_13.0000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_15.0000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_3.00000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_5.00000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_7.00000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.01.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.01_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.02.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.02_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.04.fits -text svneol=unset#unset
+external/templates_m11_stelib/M11_STELIB_res3.1_imf_ss_age_9.00000_z_0.04_s.fits -text svneol=unset#unset
+external/templates_m11_stelib/check.pro -text
+external/templates_m11_stelib/rebin_stelib.pro -text
 legacy_pro/manga_dap_0.pro -text
 legacy_pro/manga_dap_1.pro -text
 legacy_pro/mdap_add_fits_layer.pro -text
@@ -276,6 +338,7 @@ pro/utilities/mdap_velocity_register.pro -text
 pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
+python/dapfile.py -text
 python/drpcomplete.py -text
 python/drpfile.py -text
 python/mangadap/__init__.py -text

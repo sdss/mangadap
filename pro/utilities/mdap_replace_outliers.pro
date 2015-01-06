@@ -55,8 +55,9 @@ PRO MDAP_REPLACE_OUTLIERS, $
                 data, model, sigma, nsigma
 
         chi = abs((data-model)/sigma)           ; Absolute deviation in units of sigma
-        indx = where(chi gt nsigma)             ; Indices of outlying data
-        if indx[0] = -1 then $                  ; No outliers, so just return
+        indx = where(chi gt nsigma, ncount)             ; Indices of outlying data
+;       if indx[0] eq -1 then $                  ; No outliers, so just return
+        if ncount eq 0 then $                  ; No outliers, so just return
             return
         data[indx] = model[indx]                ; Replace data with model values for outliers
 END

@@ -40,7 +40,25 @@
 ;                           emission_line_EW_err=emission_line_EW_err, $
 ;                           reddening_val=reddening_val, reddening_err=reddening_err, $
 ;                           obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;                           eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
+;                           eml_model=eml_model, elo_ew_kinematics_fit=elo_ew_kinematics_fit, $
+;                           elo_ew_kinematics_err=elo_ew_kinematics_err, $
+;                           elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+;                           elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
+;                           elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
+;                           elo_ew_intens=elo_ew_intens, elo_ew_interr=elo_ew_interr, $
+;                           elo_ew_fluxes=elo_ew_fluxes, elo_ew_flxerr=elo_ew_flxerr, $
+;                           elo_ew_EWidth=elo_ew_EWidth, elo_ew_EW_err=elo_ew_EW_err, $
+;                           elo_ew_eml_model=elo_ew_eml_model, $
+;                           elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+;                           elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+;                           elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+;                           elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
+;                           elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
+;                           elo_fb_intens=elo_fb_intens, elo_fb_interr=elo_fb_interr, $
+;                           elo_fb_fluxes=elo_fb_fluxes, elo_fb_flxerr=elo_fb_flxerr, $
+;                           elo_fb_EWidth=elo_fb_EWidth, elo_fb_EW_err=elo_fb_EW_err, $
+;                           elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
+;                           abs_line_key=abs_line_key, $
 ;                           abs_line_indx_omitted=abs_line_indx_omitted, $
 ;                           abs_line_indx_val=abs_line_indx_val, $
 ;                           abs_line_indx_err=abs_line_indx_err, $
@@ -265,6 +283,92 @@
 ;               Best-fitting emission-line-only model for each of the N spectra
 ;               obtained by GANDALF.
 ;
+;       elo_ew_kinematics_avg dblarr[B][2]
+;       elo_ew_kinematics_aer dblarr[B][2]
+;               The mean kinematics (and errors) of the emission lines
+;               determined using Enci Wang's code.
+;
+;       elo_ew_kinematics_ind dblarr[B][O][2]
+;       elo_ew_kinematics_ierr dblarr[B][O][2]
+;               Kinematics of the individual lines (and errors)
+;               determined using Enci Wang's code.
+;
+;       elo_ew_sinst dblarr[B][O]
+;               The instrumental dispersion at the measured centroid of
+;               the emission lines returned by Enci Wang's code.
+;
+;       elo_ew_omitted intarr[B][O]
+;               Flag that a line has been omitted from the emission-line
+;               analysis using Enci Wang's code.  All fits are actually
+;               analyzed; this flag is tripped (set to 1) if fitted flux
+;               is not greater than 0 (see
+;               MDAP_SAVE_EMISSION_LINE_FIT_ENCI).
+;
+;       elo_ew_intens dblarr[B][O]
+;       elo_ew_interr dblarr[B][O]
+;               Measured intensity (and error) of each of the lines fit
+;               by Enci Wang's code.  Note this is a post calculation;
+;               Enci's code actually uses the Gaussian area (flux) as
+;               the fitting parameter.
+;
+;       elo_ew_fluxes dblarr[B][O]
+;       elo_ew_flxerr dblarr[B][O]
+;               Measured flux (and error) of each of the lines fit
+;               by Enci Wang's code.
+;
+;       elo_ew_EWidth dblarr[B][O]
+;       elo_ew_EW_err dblarr[B][O]
+;               Measured equivalent width (and error) of each of the
+;               lines fit by Enci Wang's code.  Post-calculated.
+;
+;       elo_ew_eml_model dblarr[B][C]
+;               The best-fitting emission-line-only spectrum determined
+;               by Enci Wang's code.
+;
+;       elo_fb_kinematics_avg dblarr[B][2]
+;       elo_fb_kinematics_aer dblarr[B][2]
+;               The mean kinematics (and errors) of the emission lines
+;               determined using Francesco Belfiore's code.
+;
+;       elo_fb_kinematics_ind dblarr[B][O][2]
+;       elo_fb_kinematics_ierr dblarr[B][O][2]
+;               Kinematics of the individual lines (and errors)
+;               determined using Francesco Belfiore's code.
+;
+;       elo_fb_sinst dblarr[B][O]
+;               The instrumental dispersion at the measured centroid of
+;               the emission lines returned by Francesco Belfiore's
+;               code.
+;
+;       elo_fb_omitted intarr[B][O]
+;               Flag that a line has been omitted from the emission-line
+;               analysis using Francesco Belfiore's code.  All fits are
+;               actually analyzed; this flag is tripped (set to 1) if
+;               fitted amplitude is not greater than 0 (see
+;               MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE).
+;
+;       elo_fb_intens dblarr[B][O]
+;       elo_fb_interr dblarr[B][O]
+;               Measured intensity (and error) of each of the lines fit
+;               by Francesco Belfiore's code.
+;
+;       elo_fb_fluxes dblarr[B][O]
+;       elo_fb_flxerr dblarr[B][O]
+;               Measured flux (and error) of each of the lines fit by
+;               Francesco Belfiore's code.  Note this is a post
+;               calculation; Francesco's code actually uses the
+;               intensity as the fitting parameter.
+;
+;       elo_fb_EWidth dblarr[B][O]
+;       elo_fb_EW_err dblarr[B][O]
+;               Measured equivalent width (and error) of each of the
+;               lines fit by Francesco Belfiore's code.
+;               Post-calculated.
+;
+;       elo_fb_eml_model dblarr[B][C]
+;               The best-fitting emission-line-only spectrum determined
+;               by Francesco Belfiore's code.
+;
 ;       abs_par SpectralIndex[I]
 ;               Array of structures with the spectral index parameters.  See
 ;               MDAP_READ_ABSORPTION_LINE_PARAMETERS.
@@ -349,8 +453,11 @@
 ;       28 Oct 2014: (KBW) Original Implementation
 ;       08 Dec 2014: (KBW) Accommodate radial binning and velocity
 ;                          registration
+;       12 Dec 2014: (KBW) New format incorporating emission-line only
+;                          results
 ;-
 ;------------------------------------------------------------------------------
+
 
 ;-------------------------------------------------------------------------------
 ; Define all the supplied variables
@@ -382,12 +489,27 @@ PRO MDAP_DEFINE_OUTPUT, $
                 emission_line_EW_err=emission_line_EW_err, $
                 reddening_val=reddening_val, reddening_err=reddening_err, $
                 obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-                eml_model=eml_model, abs_par=abs_par, abs_line_key=abs_line_key, $
-                abs_line_indx_omitted=abs_line_indx_omitted, abs_line_indx_val=abs_line_indx_val, $
-                abs_line_indx_err=abs_line_indx_err, abs_line_indx_otpl=abs_line_indx_otpl, $
-                abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
-                si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
-                si_optimal_template=si_optimal_template, $
+                eml_model=eml_model, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+                elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
+                elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
+                elo_ew_interr=elo_ew_interr, elo_ew_fluxes=elo_ew_fluxes, $
+                elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
+                elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
+                elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
+                elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
+                elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
+                elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
+                elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
+                elo_fb_EW_err=elo_fb_EW_err, elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
+                abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
+                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
+                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
+                si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
+                si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
                 si_broad_optimal_template=si_broad_optimal_template
 
         if n_elements(header) eq 0 then header = '0'
@@ -447,6 +569,32 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(obj_fit_mask_gndf) eq 0 then obj_fit_mask_gndf = '0'
         if n_elements(bestfit_gndf) eq 0 then bestfit_gndf = '0'
         if n_elements(eml_model) eq 0 then eml_model = '0'
+        if n_elements(elo_ew_kinematics_avg) eq 0 then elo_ew_kinematics_avg = '0'
+        if n_elements(elo_ew_kinematics_aer) eq 0 then elo_ew_kinematics_aer = '0'
+        if n_elements(elo_ew_kinematics_ind) eq 0 then elo_ew_kinematics_ind = '0'
+        if n_elements(elo_ew_kinematics_ier) eq 0 then elo_ew_kinematics_ier = '0'
+        if n_elements(elo_ew_sinst) eq 0 then elo_ew_sinst = '0'
+        if n_elements(elo_ew_omitted) eq 0 then elo_ew_omitted = '0'
+        if n_elements(elo_ew_intens) eq 0 then elo_ew_intens = '0'
+        if n_elements(elo_ew_interr) eq 0 then elo_ew_interr = '0'
+        if n_elements(elo_ew_fluxes) eq 0 then elo_ew_fluxes = '0'
+        if n_elements(elo_ew_flxerr) eq 0 then elo_ew_flxerr = '0'
+        if n_elements(elo_ew_EWidth) eq 0 then elo_ew_EWidth = '0'
+        if n_elements(elo_ew_EW_err) eq 0 then elo_ew_EW_err = '0'
+        if n_elements(elo_ew_eml_model) eq 0 then elo_ew_eml_model = '0'
+        if n_elements(elo_fb_kinematics_avg) eq 0 then elo_fb_kinematics_avg = '0'
+        if n_elements(elo_fb_kinematics_aer) eq 0 then elo_fb_kinematics_aer = '0'
+        if n_elements(elo_fb_kinematics_ind) eq 0 then elo_fb_kinematics_ind = '0'
+        if n_elements(elo_fb_kinematics_ier) eq 0 then elo_fb_kinematics_ier = '0'
+        if n_elements(elo_fb_sinst) eq 0 then elo_fb_sinst = '0'
+        if n_elements(elo_fb_omitted) eq 0 then elo_fb_omitted = '0'
+        if n_elements(elo_fb_intens) eq 0 then elo_fb_intens = '0'
+        if n_elements(elo_fb_interr) eq 0 then elo_fb_interr = '0'
+        if n_elements(elo_fb_fluxes) eq 0 then elo_fb_fluxes = '0'
+        if n_elements(elo_fb_flxerr) eq 0 then elo_fb_flxerr = '0'
+        if n_elements(elo_fb_EWidth) eq 0 then elo_fb_EWidth = '0'
+        if n_elements(elo_fb_EW_err) eq 0 then elo_fb_EW_err = '0'
+        if n_elements(elo_fb_eml_model) eq 0 then elo_fb_eml_model = '0'
         if n_elements(abs_par) eq 0 then abs_par = '0'
         if n_elements(abs_line_key) eq 0 then abs_line_key = '0'
         if n_elements(abs_line_indx_omitted) eq 0 then abs_line_indx_omitted = '0'

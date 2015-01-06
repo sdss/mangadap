@@ -251,8 +251,9 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 
         ; 4. Replace masked pixels with the best-fit model
         if keyword_set(replace_masked) then begin
-            indx = where(mask gt 0.5)                   ; Select masked pixels
-            if indx[0] ne -1 then $
+            indx = where(mask gt 0.5, count)                   ; Select masked pixels
+;           if indx[0] ne -1 then $
+            if count ne 0 then $
                 flux_indx[indx] = bestfit[indx]         ; Set them to the best-fit model
         endif
 

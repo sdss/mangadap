@@ -182,9 +182,10 @@ PRO MDAP_SPATIAL_BINNING, $
         ; Find which spectra in the 2D map are good (and bad)
         ;       good = has a positive and finite noise, a finite signal,
         ;       and S/N > threshold
-        gindx= where(gflag eq 1 and abs(signal/noise) ge threshold_ston_bin, compl=bindx)
+        gindx= where(gflag eq 1 and abs(signal/noise) ge threshold_ston_bin, count, compl=bindx)
 
-        if gindx[0] eq -1 then $                        ; No good spectra so return and fail
+;        if gindx[0] eq -1 then $                        ; No good spectra so return and fail
+        if count eq 0 then $                        ; No good spectra so return and fail
             message, 'No good spectra!'
 
         ngood = n_elements(gindx)
@@ -255,8 +256,9 @@ PRO MDAP_SPATIAL_BINNING, $
             nbins = n_elements(binned_x_rl)
             nbinned = lonarr(nbins)
             for i=0,nbins-1 do begin
-                indx = where(binned_indx eq i)
-                if indx[0] eq -1 then $
+                indx = where(binned_indx eq i, count)
+;               if indx[0] eq -1 then $
+                if count eq 0 then $
                     continue
                 nbinned[i] = n_elements(indx)
             endfor
@@ -289,7 +291,9 @@ PRO MDAP_SPATIAL_BINNING, $
         ; TODO: Should this be input/output from the voronoi routine in the 'STON' case?
         MDAP_GENERATE_BINNING_WEIGHTS, signal, noise, bin_weights, $
                                        optimal_weighting=optimal_weighting
-        bin_weights[where(binned_indx lt 0)] = 0.0d
+        indx = where(binned_indx lt 0, count)
+        if count ne 0 then $
+            bin_weights[indx] = 0.0d
 
         ; Combine the spectra
         MDAP_COMBINE_SPECTRA, flux, ivar, mask, binned_indx, bin_weights, nbinned, binned_flux, $

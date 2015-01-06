@@ -97,8 +97,8 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
         min_sig = MDAP_MIN_SIG_GAU_APPROX_DELTA(dx)     ; Minimum sigma allowed before using
                                                         ;     Kronecker delta approximation
 
-        divbyreal=reform(where (ivar gt 0, complement=divbyzero))
-        ndr = n_elements(divbyreal)
+        divbyreal=reform(where(ivar gt 0, ndr, complement=divbyzero, ncomplement=ndz))
+;       ndr = n_elements(divbyreal)
 
         ; Convolution is:
         ;       f*g(x) = integral_-inf^inf f(X) g(x-X) dX
@@ -134,8 +134,9 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
         endfor
         ; Force regions where the convolution sigma is too close to the minimum
         ; sigma to have exactly the input value
-        ind = where(sigma_new le 1.05*min_sig)
-        if ind[0] ne -1 then begin
+        ind = where(sigma_new le 1.05*min_sig, count)
+;       if ind[0] ne -1 then begin
+        if count ne 0 then begin
             conv[ind]=vector[ind]
             conv_ivar[ind]=1.0/ivar[ind]
         endif
@@ -146,7 +147,8 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
 ;       stop
 
         conv_ivar[divbyreal] = 1.0/conv_ivar[divbyreal]
-        if divbyzero[0] ne -1 then $
+;       if divbyzero[0] ne -1 then $
+        if ndz ne 0 then $
             conv_ivar[divbyzero] = 0.
 ;       stop
 

@@ -224,6 +224,46 @@ END
 ;-------------------------------------------------------------------------------
 
 
+;-------------------------------------------------------------------------------
+; Set the guess kinematics
+PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
+                nb, analysis_prior, star_kin_interp, gas_kin_interp, bin_indx, $
+                velocity_initial_guess, velocity_dispersion_initial_guess, star_kin_guesses, $
+                gas_kin_guesses
+
+        star_kin_guesses = dblarr(nb, 4)
+        gas_kin_guesses = dblarr(nb, 2)
+        if strlen(analysis_prior) ne 0 then begin
+
+            ; TODO: Add some limits for the guess kinematics to make
+            ; sure they're not too crazy
+
+            for j=0,nb-1 do begin
+                indx = where(bin_indx eq j, count)
+;               if indx[0] ne -1 then begin
+                if count ne 0 then begin
+                    star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
+                    star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
+                    gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
+                    gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
+                endif else begin
+                    star_kin_guesses[j,0] = velocity_initial_guess
+                    star_kin_guesses[j,1] = velocity_dispersion_initial_guess
+                    gas_kin_guesses[j,0] = velocity_initial_guess
+                    gas_kin_guesses[j,1] = 50.0
+                endelse
+            endfor
+        endif else begin
+            ; Set the starting guesses for the kinematics to a
+            ; single value
+            star_kin_guesses[*,0] = velocity_initial_guess              ; stellar velocity
+            star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
+            gas_kin_guesses[*,0] = velocity_initial_guess               ; gas velocity
+            gas_kin_guesses[*,1] = 50.                                  ; gas sigma
+        endelse
+END
+;-------------------------------------------------------------------------------
+
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
@@ -523,8 +563,9 @@ PRO MANGA_DAP, $
 
         ; Cycle through all the libraries, generating the template libraries to
         ; use for the analysis, if they don't already exist!
-        indx=where(use_tpl_lib eq 1)
-        if indx[0] ne -1 then begin
+        indx=where(use_tpl_lib eq 1, count)
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
 
             for i=0,n_tpl_lib-1 do begin
                 if use_tpl_lib[i] ne 1 then $
@@ -654,6 +695,9 @@ PRO MANGA_DAP, $
             endif else $
                 MDAP_ERASEVAR, eml_par  ; Make sure it doesn't exist if no ems_par is defined
 
+;           print, n_elements(eml_par)
+;           stop
+
             ;-------------------------------------------------------------------
             ; Read the spectral-index parameters; this is done at every
             ; iteration because it's fairly quick.  TODO: Check that this I/O
@@ -703,6 +747,10 @@ PRO MANGA_DAP, $
                     print, '        PPXF ONLY: NO'
             endif else $
                 print, '    Spectral fitting: NO'
+            if perform_block.eml_only eq 1 then begin
+                print, '    Emission-line-only fit: YES'
+            endif else $
+                print, '    Emission-line-only fit: NO'
             if perform_block.spec_indx eq 1 then begin
                 print, '    Spectral indices: YES'
             endif else $
@@ -722,7 +770,7 @@ PRO MANGA_DAP, $
                 ; TODO: Currently gindx is not used.  gflag is used by
                 ;       MDAP_CALCULATE_SN and MDAP_SPATIAL_BINNING
 
-                MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx
+                MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, count=gcount
 
                 ; Select the pixels to use in the S/N calculation
                 MDAP_SELECT_WAVE, wave, execution_plan[i].wave_range_sn, lam_sn
@@ -750,6 +798,8 @@ PRO MANGA_DAP, $
             endif else begin
                 ; TODO: spaxel_dx, spaxel_dy, bskyx, and bskyy are always
                 ;       calculated!  Should they be reread here?
+
+                ; Always need the S/N data
 
                 print, 'READING EXISTING S/N DATA'
 
@@ -851,6 +901,8 @@ PRO MANGA_DAP, $
                                    bin_n=nbin, /read_header, quiet=quiet
             endif else begin
 
+                ; Always need the binned data
+
                 print, 'READING EXISTING BIN DATA'
 
                 ; Read the binning results
@@ -889,8 +941,9 @@ PRO MANGA_DAP, $
             ; PREP FOR BLOCK 5 -------------------------------------------------
             ;-------------------------------------------------------------------
             ; Check if any analysis was requested, if not continue with the loop
-            indx = where(execution_plan[i].analysis eq 1)
-            if indx[0] eq -1 then $             ; No analysis to perform
+            indx = where(execution_plan[i].analysis eq 1, count)
+;           if indx[0] eq -1 then $             ; No analysis to perform
+            if count eq 0 then $             ; No analysis to perform
                 continue
 
             ;-------------------------------------------------------------------
@@ -922,34 +975,12 @@ PRO MANGA_DAP, $
                 ; required by MDAP_SPECTRAL_FITTING) as opposed to be
                 ; set by execution_plan.analysis_par.moments.
 
-                nb = n_elements(nbin)
-                star_kin_guesses = dblarr(nb, 4)
-                gas_kin_guesses = dblarr(nb, 2)
-                if strlen(execution_plan[i].analysis_prior) ne 0 then begin
-                    ; TODO: Add some limits for the guess kinematics to
-                    ; make sure they're not too crazy
-                    for j=0,nb-1 do begin
-                        indx = where(bin_indx eq j)
-                        if indx[0] ne -1 then begin
-                            star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
-                            star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
-                            gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
-                            gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
-                        endif else begin
-                            star_kin_guesses[j,0] = velocity_initial_guess
-                            star_kin_guesses[j,1] = velocity_dispersion_initial_guess
-                            gas_kin_guesses[j,0] = velocity_initial_guess
-                            gas_kin_guesses[j,1] = 50.0
-                        endelse
-                    endfor
-                endif else begin
-                    ; Set the starting guesses for the kinematics to a
-                    ; single value
-                    star_kin_guesses[*,0] = velocity_initial_guess              ; stellar velocity
-                    star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
-                    gas_kin_guesses[*,0] = velocity_initial_guess               ; gas velocity
-                    gas_kin_guesses[*,1] = 50.                                  ; gas sigma
-                endelse
+                MDAP_INITIALIZE_GUESS_KINEMATICS, n_elements(nbin), $
+                                                  execution_plan[i].analysis_prior, $
+                                                  star_kin_interp, gas_kin_interp, bin_indx, $
+                                                  velocity_initial_guess, $
+                                                  velocity_dispersion_initial_guess, $
+                                                  star_kin_guesses, gas_kin_guesses
 
                 ; Perform the spectral fit
                 MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, $
@@ -1031,6 +1062,9 @@ PRO MANGA_DAP, $
 ;                                  losvd_optimal_template=best_template_losvd_conv, quiet=quiet
             endif else begin
 
+                ; TODO: This only needs to be read if the spectral index
+                ; measurements will be measured
+
                 print, 'reading spec_fit data'
 
                 ; TODO: Here, I attempt to read the emission-line fitting
@@ -1092,13 +1126,118 @@ PRO MANGA_DAP, $
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ... DONE.'
 
-            ; END BLOCK 5 ------------------------------------------------------
-            ;-------------------------------------------------------------------
+            ; END BLOCK 5 ----------------------------------------------
+            ;-----------------------------------------------------------
 
             if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /spec_fit) eq 0 then $
                 continue
 
-            ; BLOCK 6 ----------------------------------------------------------
+            ; BLOCK 6 --------------------------------------------------
+            ;   Fit the emission-line only spectrum
+            ;-----------------------------------------------------------
+            ; Check if the emission-line-only spectra should be fit
+            if perform_block.eml_only eq 1 then begin
+
+                if ~keyword_set(quiet) then $
+                    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ...'
+
+                ;-------------------------------------------------------
+                ; Get the bestfit continuum spectrum and the kinematics
+                ; to use
+                nb = n_elements(nbin)
+                ; Default is to use the PPXF result
+                if (size(bestfit_ppxf))[1] eq (size(bin_flux))[1] $
+                   and (size(bestfit_ppxf))[2] eq (size(bin_flux))[2] then $
+                    bestfit_continuum = bestfit_ppxf
+
+                ; Change to the GANDALF result if it exists
+                if (size(bestfit_gndf))[1] eq (size(bin_flux))[1] $
+                   and (size(bestfit_gndf))[2] eq (size(bin_flux))[2] then $
+                    bestfit_continuum = bestfit_gndf - eml_model
+
+                ; Get the input stellar kinematics
+                if (size(stellar_kinematics))[1] eq (size(tpl_flux))[1] then begin
+                    inp_kin = stellar_kinematics[*,0:1]
+                endif else begin
+                    MDAP_INITIALIZE_GUESS_KINEMATICS, n_elements(nbin), $
+                                                      execution_plan[i].analysis_prior, $
+                                                      star_kin_interp, gas_kin_interp, bin_indx, $
+                                                      velocity_initial_guess, $
+                                                      velocity_dispersion_initial_guess, $
+                                                      star_kin_guesses, gas_kin_guesses
+
+                    inp_kin = star_kin_guesses[*,0:1]
+                endelse
+
+                ; Perform the fit using Enci's code
+                MDAP_EMISSION_LINE_ONLY_FIT, wave, bin_flux, bin_ivar, bin_mask, $
+                                             bestfit_continuum, inp_kin, elo_ew_eml_model, $
+                                             elo_ew_kinematics, elo_ew_kinematics_err, $
+                                             elo_ew_omitted, elo_ew_kinematics_ind, $
+                                             elo_ew_kinematics_ier, elo_ew_intens, elo_ew_interr, $
+                                             elo_ew_fluxes, elo_ew_flxerr, elo_ew_EWidth, $
+                                             elo_ew_EW_err, eml_par=emlo_par, quiet=quiet, $
+                                             dbg=dbg, /enci
+
+                ; Get the instrumental dispersion at the fitted line center
+                MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, emlo_par, elo_ew_omitted, $
+                                                        elo_ew_kinematics_ind, elo_ew_sinst
+                
+                ; Perform the fit using Francesco's code
+                MDAP_EMISSION_LINE_ONLY_FIT, wave, bin_flux, bin_ivar, bin_mask, $
+                                             bestfit_continuum, inp_kin, elo_fb_eml_model, $
+                                             elo_fb_kinematics, elo_fb_kinematics_err, $
+                                             elo_fb_omitted, elo_fb_kinematics_ind, $
+                                             elo_fb_kinematics_ier, elo_fb_intens, elo_fb_interr, $
+                                             elo_fb_fluxes, elo_fb_flxerr, elo_fb_EWidth, $
+                                             elo_fb_EW_err, quiet=quiet, dbg=dbg, /belfiore
+
+                ; Get the instrumental dispersion at the fitted line center
+                MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, emlo_par, elo_fb_omitted, $
+                                                        elo_fb_kinematics_ind, elo_fb_sinst
+                
+                ; Write the data
+                MDAP_WRITE_OUTPUT, execution_plan[i].ofile, emlo_par=emlo_par, $
+                                   elo_ew_kinematics_avg=elo_ew_kinematics, $
+                                   elo_ew_kinematics_aer=elo_ew_kinematics_err, $
+                                   elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
+                                   elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
+                                   elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
+                                   elo_ew_intens=elo_ew_intens, elo_ew_interr=elo_ew_interr, $
+                                   elo_ew_fluxes=elo_ew_fluxes, elo_ew_flxerr=elo_ew_flxerr, $
+                                   elo_ew_EWidth=elo_ew_EWidth, elo_ew_EW_err=elo_ew_EW_err, $
+                                   elo_ew_eml_model=elo_ew_eml_model, $
+                                   elo_fb_kinematics_avg=elo_fb_kinematics, $
+                                   elo_fb_kinematics_aer=elo_fb_kinematics_err, $
+                                   elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
+                                   elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
+                                   elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
+                                   elo_fb_intens=elo_fb_intens, elo_fb_interr=elo_fb_interr, $
+                                   elo_fb_fluxes=elo_fb_fluxes, elo_fb_flxerr=elo_fb_flxerr, $
+                                   elo_fb_EWidth=elo_fb_EWidth, elo_fb_EW_err=elo_fb_EW_err, $
+                                   elo_fb_eml_model=elo_fb_eml_model
+
+            endif else begin
+
+                ; If the data is already available, the only thing that
+                ; needs to be read is the fitted model.  For now, the
+                ; preference is for Enci's results.
+
+                MDAP_DEFINE_OUTPUT, elo_ew_eml_model=elo_ew_eml_model
+                MDAP_READ_OUTPUT, execution_plan[i].ofile, elo_ew_eml_model=elo_ew_eml_model
+
+            endelse
+
+            if ~keyword_set(quiet) then $
+                print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
+
+            ; END BLOCK 6 ------------------------------------------------------
+            ;-------------------------------------------------------------------
+
+            if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /eml_only) eq 0 then $
+                continue
+
+            ; BLOCK 7 ----------------------------------------------------------
             ; Perform the spectral-index measurements
             ;-------------------------------------------------------------------
 
@@ -1106,7 +1245,7 @@ PRO MANGA_DAP, $
             if perform_block.spec_indx eq 1 then begin
 
                 if ~keyword_set(quiet) then $
-                    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ...'
+                    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 7 ...'
 
                 ;---------------------------------------------------------------
                 ; Get the weights to use to combine the templates, the bestfit
@@ -1118,7 +1257,10 @@ PRO MANGA_DAP, $
                     weights = weights_ppxf
                     bestfit = bestfit_ppxf
                     sz = size(bin_flux)
-                    eml_model = dblarr(sz[1], sz[2])    ; No emission-line model
+                    if n_elements(elo_ew_eml_model) ne 0 then begin
+                        eml_model = elo_ew_eml_model        ; Use Enci's model
+                    endif else $
+                        eml_model = dblarr(sz[1], sz[2])    ; No emission-line model
                     fit_mask = obj_fit_mask_ppxf
                 endif else begin
                     print, 'using gndf results'
@@ -1131,7 +1273,7 @@ PRO MANGA_DAP, $
                 ; Get the resolution-matched, emission-free spectra to use for
                 ; the spectral index measurements, both template and object.
                 ; TODO: Have a version for this function?
-                ; BLOCK 6a; should this become it's own block?
+                ; BLOCK 7a; should this become it's own block?
 
                 ; TODO: is si_bin_wave ever different from wave?
 
@@ -1187,7 +1329,7 @@ PRO MANGA_DAP, $
                                    /read_header
 
                 if ~keyword_set(quiet) then $
-                    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
+                    print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 7 ... DONE.'
 
             endif
 

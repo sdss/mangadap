@@ -109,13 +109,15 @@ PRO MDAP_IMPOSE_LIMITS, $
             message, 'Input range must have two elements.'
 
         ; Impose lower limit
-        indx = where(vec lt range[0])
-        if indx[0] ne -1 then $
+        indx = where(vec lt range[0], count)
+;       if indx[0] ne -1 then $
+        if count ne 0 then $
             range[indx] = range[0]
        
         ; Impose upper limit
-        indx = where(vec gt range[1])
-        if indx[0] ne -1 then $
+        indx = where(vec gt range[1], count)
+;       if indx[0] ne -1 then $
+        if count ne 0 then $
             range[indx] = range[1]
 END
        

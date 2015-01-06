@@ -63,10 +63,11 @@ PRO MDAP_CHECK_EMISSION_LINES, $
 
         ; Find where line centroids are outside of the input wavelength range
         indx=where( eml_par.lambda lt wave[0]/(1.0d + velocity/c) or $
-                    eml_par.lambda gt wave[n_elements(wave)-1]/(1.0d + velocity/c) )
+                    eml_par.lambda gt wave[n_elements(wave)-1]/(1.0d + velocity/c), count )
 
         ; TODO: Report when a line is ignored?
-        if indx[0] ne -1 then begin
+;       if indx[0] ne -1 then begin
+        if count ne 0 then begin
             if ~keyword_set(quiet) then $
                 print, 'These lines fall outside the spectral range:', eml_par[indx].i
             eml_par[indx].action='i'            ; Ignore the line

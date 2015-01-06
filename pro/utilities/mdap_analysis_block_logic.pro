@@ -7,11 +7,13 @@
 ;
 ;       MDAP_CAN_USE_STFIT_DATA()
 ;       MDAP_CAN_USE_SGFIT_DATA()
+;       MDAP_CAN_USE_ELOFIT_DATA()
 ;       MDAP_CAN_USE_SINDX_DATA()
 ;       MDAP_CAN_USE_SINDX_IMAGES()
 ;
 ;       MDAP_ADD_STFIT
 ;       MDAP_ADD_SGFIT
+;       MDAP_ADD_ELOFIT
 ;       MDAP_ADD_SINDX
 ;
 ;       MDAP_PERFORM_STON_BLOCK()
@@ -33,7 +35,7 @@
 ;-
 ;------------------------------------------------------------------------------
 
-
+@mdap_set_output_file_cols
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
@@ -90,20 +92,22 @@ FUNCTION MDAP_CAN_USE_STFIT_DATA, $
         if MDAP_OUTPUT_TABLE_ROWS(file, 'STFIT') ne bin_dim[0] then $
             return, 0
 
+        cols = MDAP_SET_STFIT_COLS()
+
         ; The columns of the STFIT table must have the correct size
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'TPLW') ne ntpl then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', cols[0]) ne ntpl then $
             return, 0
         if analysis_par.degree gt 0 then begin
-            if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'ADDPOLY') ne analysis_par.degree then $
+            if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', cols[1]) ne analysis_par.degree then $
                 return, 0
         endif
         if analysis_par.mdegree gt 0 then begin
-            if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'MULTPOLY') ne analysis_par.mdegree then $
+            if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', cols[2]) ne analysis_par.mdegree then $
                 return, 0
         endif
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'KIN') ne analysis_par.moments then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', cols[3]) ne analysis_par.moments then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', 'KINERR') ne analysis_par.moments then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'STFIT', cols[4]) ne analysis_par.moments then $
             return, 0
 
         ; The SMSK and SMOD images must be the same size as the binned spectra
@@ -134,7 +138,7 @@ END
 FUNCTION MDAP_CAN_USE_SGFIT_DATA, $
                 file, tpl_fits, eml_par, analysis_par
 
-        bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')  ; Dimensions of the binned spectra
+        bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')          ; Dimensions of the binned spectra
         ntpl = (MDAP_OUTPUT_IMAGE_SIZE(tpl_fits, 'FLUX'))[0]    ; Number of templates
         neml = n_elements(eml_par)                              ; Number of emission lines
 
@@ -142,41 +146,43 @@ FUNCTION MDAP_CAN_USE_SGFIT_DATA, $
         if MDAP_OUTPUT_TABLE_ROWS(file, 'SGFIT') ne bin_dim[0] then $
             return, 0
 
+        cols = MDAP_SET_SGFIT_COLS()
+
         ; The columns of the SGFIT table must have the correct size
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'TPLW') ne ntpl then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[0]) ne ntpl then $
             return, 0
         if analysis_par.mdegree gt 0 then begin
-            if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'MULTPOLY') ne analysis_par.mdegree then $
+            if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[1]) ne analysis_par.mdegree then $
                 return, 0
         endif
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'KIN') ne 2 then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[2]) ne 2 then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'KINERR') ne 2 then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[3]) ne 2 then $
             return, 0
         if analysis_par.reddening_order gt 0 then begin
-            if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT','RED') ne analysis_par.reddening_order then $
+            if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT', cols[4]) ne analysis_par.reddening_order then $
                 return, 0
-            if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT','REDERR') ne analysis_par.reddening_order then $
+            if MDAP_OUTPUT_COLUMN_SIZE(file,'SGFIT', cols[6]) ne analysis_par.reddening_order then $
                 return, 0
         endif
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'ELOMIT') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[7]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'AMPL') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[8]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'AMPLERR') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[9]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'FLUX') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[12]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'FLUXERR') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[13]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'EW') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[14]) ne neml then $
             return, 0
-        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'EWERR') ne neml then $
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[15]) ne neml then $
             return, 0
-        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'IKIN')
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[10])
         if dim[0] ne neml or dim[1] ne 2 then $
             return, 0
-        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', 'IKINERR')
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[11])
         if dim[0] ne neml or dim[1] ne 2 then $
             return, 0
 
@@ -207,6 +213,103 @@ PRO MDAP_ADD_SGFIT, $
                 perform_block.spec_fit = 1      ; Must perform the spectral fitting
         endif
         perform_block.ppxf_only = 0             ; Perform both PPXF and GANDALF
+END
+
+
+; TODO: Add a check for the size of the images (SIWAVE, SIFLUX, etc)?
+FUNCTION MDAP_CAN_USE_ELOFIT_DATA, $
+                file
+
+        emlo_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
+
+        bin_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'FLUX')  ; Dimensions of the binned spectra
+        neml = n_elements(emlo_par)                     ; Number of emission-lines to fit
+
+        ; The ELOFIT table must have the correct number of rows (one per binned spectrum)
+        if MDAP_OUTPUT_TABLE_ROWS(file, 'ELOFIT') ne bin_dim[0] then $
+            return, 0
+
+        cols = MDAP_SET_ELOFIT_COLS()
+
+        ; The columns of the ELOFIT table must have the correct size
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[0]) ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[1]) ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[2]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[3]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[4]) ne neml then $
+            return, 0
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[5])
+        if dim[0] ne neml or dim[1] ne 2 then $
+            return, 0
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[6])
+        if dim[0] ne neml or dim[1] ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[7]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[8]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[9]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[10]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[11]) ne neml then $
+            return, 0
+        
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[12]) ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[13]) ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[14]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[15]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[16]) ne neml then $
+            return, 0
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[17])
+        if dim[0] ne neml or dim[1] ne 2 then $
+            return, 0
+        dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[18])
+        if dim[0] ne neml or dim[1] ne 2 then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[19]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[20]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[21]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[22]) ne neml then $
+            return, 0
+        if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[23]) ne neml then $
+            return, 0
+        
+        ; The ELOMEW and ELOMFB images must be the same size as the binned spectra
+        msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELOMEW')
+        if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+            return, 0
+        mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELOMFB')
+        if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+            return, 0
+
+        return, 1
+END
+
+
+; If adding the spectral index measurements, the file must have:
+;       - the template weights (need the same # of templates based on the provided template file)
+;       - the stellar kinematics (need the same number of binned spectra as in the file)
+;               THIS TEST CURRENTLY ONLY RUNS IF THE BINNED SPECTRA IN THE FILE ARE TO BE USED!
+;       - the best fitting spectra (must be same size as binned spectra)
+PRO MDAP_ADD_ELOFIT, $
+                file, perform_block
+
+        if MDAP_CAN_USE_ELOFIT_DATA(file) eq 1 then begin
+            perform_block.eml_only = 0         ; Do not perform the emission-line-only fits
+        endif else $
+            perform_block.eml_only = 1
 END
 
 
@@ -298,14 +401,21 @@ PRO MDAP_NEW_FILE_BLOCKS, $
             perform_block.ppxf_only = 1         ; Only ppxf
         endif
 
-        ; For a new file, the emission-line fits, REQUIRES the stellar continuum fit
-        if analysis[1] eq 1 then begin  ; Wants the emission-line fitting
+        ; For a new file, the star+gas fits, REQUIRES the stellar continuum fit
+        if analysis[1] eq 1 then begin  ; Wants the star+gas fitting
             perform_block.spec_fit = 1          ; Perform the spectral fit
             perform_block.ppxf_only = 0         ; Not only ppxf
         endif
 
-        ; For a new file, the spectral index fits, REQUIRES the spectral fitting
-        if analysis[2] eq 1 then begin  ; Wants the spectral indices
+        ; The emission-line only fitting can effectively be done
+        ; independent of all the others (even if this isn't the best
+        ; thing to do)
+        if analysis[2] eq 1 then begin  ; Wants the emission-line-only fitting
+            perform_block.eml_only = 1
+        endif
+
+        ; For a new file, the spectral index fits, REQUIRES the spectral (continuum) fitting
+        if analysis[3] eq 1 then begin  ; Wants the spectral indices
             perform_block.spec_fit = 1                          ; Perform the spectral fit
             perform_block.ppxf_only = analysis[1] eq 0 ? 1 : 0  ; Check if ppxf only
             perform_block.spec_indx = 1                         ; Do the spectral index measurements
@@ -381,7 +491,7 @@ FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
                 execution_plan, ndrp, tpl_fits, eml_par, abs_par
 
         perform_block = { RequiredAnalysisBlock, ston:0, bin:0, spec_fit:0, ppxf_only:0, $
-                                                 spec_indx:0 }
+                                                 eml_only:0, spec_indx:0 }
 
         ; Determine if the output file already exists
         file_exists = file_test(execution_plan.ofile)
@@ -441,7 +551,11 @@ FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
                             perform_block
         endif
 
-        if execution_plan.analysis[2] eq 1 then begin   ; Wants the spectral indices
+        if execution_plan.analysis[2] eq 1 then begin   ; Wants the emission-line-only fits
+            MDAP_ADD_ELOFIT, execution_plan.ofile, perform_block
+        endif
+
+        if execution_plan.analysis[3] eq 1 then begin   ; Wants the spectral indices
             ; First check that at least the STFIT results are available
             if execution_plan.analysis[0] eq 0 and execution_plan.analysis[1] eq 0 then begin
                 MDAP_ADD_STFIT, execution_plan.ofile, tpl_fits, execution_plan.analysis_par, $
@@ -459,6 +573,7 @@ FUNCTION MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED, $
         if perform_block.ston eq 0 and $
            perform_block.bin eq 0 and $
            perform_block.spec_fit eq 0 and $
+           perform_block.eml_only eq 0 and $
            perform_block.spec_indx eq 0 then begin
             return, 1                                   ; All the blocks have been completed
         endif
@@ -467,10 +582,12 @@ FUNCTION MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED, $
 END
 
 FUNCTION MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH, $
-                perform_block, ston=ston, bin=bin, spec_fit=spec_fit, spec_indx=spec_indx
+                perform_block, ston=ston, bin=bin, spec_fit=spec_fit, eml_only=eml_only, $
+                spec_indx=spec_indx
         if keyword_set(ston) then begin
             if perform_block.bin eq 0 and $
                perform_block.spec_fit eq 0 and $
+               perform_block.eml_only eq 0 and $
                perform_block.spec_indx eq 0 then begin
                 return, 0
             endif
@@ -478,12 +595,20 @@ FUNCTION MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH, $
 
         if keyword_set(bin) then begin
             if perform_block.spec_fit eq 0 and $
+               perform_block.eml_only eq 0 and $
                perform_block.spec_indx eq 0 then begin
                 return, 0
             endif
         endif
 
         if keyword_set(spec_fit) then begin
+            if perform_block.eml_only eq 0 and $
+               perform_block.spec_indx eq 0 then begin
+                return, 0
+            endif
+        endif
+
+        if keyword_set(eml_only) then begin
             if perform_block.spec_indx eq 0 then begin
                 return, 0
             endif

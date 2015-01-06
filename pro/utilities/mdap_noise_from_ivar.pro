@@ -48,11 +48,11 @@ PRO MDAP_NOISE_FROM_IVAR, $
                 ivar, mask, sige
 
         nc = n_elements(ivar)                                   ; Number of spectral channels
-        indx = where(ivar eq 0 or finite(ivar) eq 0, complement=nindx)  ; Invalid variances
-        if n_elements(indx) eq nc then begin                    ; No pixels are valid
+        indx = where(ivar eq 0 or finite(ivar) eq 0, count, complement=nindx)  ; Invalid variances
+        if count eq nc then begin                    ; No pixels are valid
             print, 'All errors are invalid!  Ignoring errors (by setting them to unity).'
             sige = make_array(nc, /double, value=1.0d)
-        endif else if indx[0] eq -1 then begin                  ; All pixels are valid
+        endif else if count eq 0 then begin                  ; All pixels are valid
             sige = sqrt(1.0d/ivar)                              ; Errors
         endif else begin
             ; TODO: Mask doesn't need to be double

@@ -101,8 +101,9 @@ PRO MDAP_INTERPOLATE_2DMAPS, $
         z_out = dblarr(nout, /nozero)           ; Allocate the output array, but do not initialize
 
         ; Do not consider input data that is not finite
-        indx = where( finite(z_in) eq 1 )
-        if indx[0] eq -1 or n_elements(indx) lt 7 then $        ; Limit of 7 is for use of GRID_TPS
+        indx = where( finite(z_in) eq 1, count )
+;       if indx[0] eq -1 or n_elements(indx) lt 7 then $        ; Limit of 7 is for use of GRID_TPS
+        if count lt 7 then $        ; Limit of 7 is for use of GRID_TPS
             if ~keyword_set(quiet) then $
                 print, 'ERROR: Insufficient number of valid measurements!'
             if n_elements(default) then begin

@@ -76,6 +76,7 @@
 ; REVISION HISTORY:
 ;       18 Sep 2014: (KBW) Original implementation
 ;       19 Sep 2014: (KBW) Allow to only mask the data
+;       05 Jan 2015: (KBW) Allow for zero-element where statements
 ;-
 ;------------------------------------------------------------------------------
 
@@ -122,18 +123,24 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         if ndw eq 1 then begin
 
             ; Wave vector is 1D so this only has to be done once
-            MDAP_SELECT_WAVE, wave, waverange, indx, complement=comp
+            MDAP_SELECT_WAVE, wave, waverange, indx, complement=comp, count=count
+            ccount=n_elements(wave)-count
 
             ; Only applying the mask, so only need to change the mask vector
             if keyword_set(mask_only) then begin
 
-                if nd eq 1 then begin
-                    mask[comp] = 1.                     ; Mask pixels not within the spectral range
-                endif else $
-                    mask[*,comp] = 1.
+                if ccount ne 0 then begin
+                    if nd eq 1 then begin
+                        mask[comp] = 1.           ; Mask pixels not within the spectral range
+                    endif else $
+                        mask[*,comp] = 1.
+                endif
 
                 return                                  ; Done
             endif
+
+            if count eq 0 then $
+                return
 
             ; Truncate the arrays
             if nd eq 1 then begin
@@ -162,11 +169,13 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         ns = sz[1]                              ; Number of spectra, if nd=2
         nu = 0                                  ; Maximum number of unmasked pixels
         for i=0,ns-1 do begin
-            MDAP_SELECT_WAVE, wave[i,*], waverange, indx, complement=comp
-            if keyword_set(mask_only) then $
+            MDAP_SELECT_WAVE, wave[i,*], waverange, indx, complement=comp, count=count
+            ccount=n_elements(wave)-count
+            if keyword_set(mask_only) and ccount ne 0 then $
                 mask[i,comp] = 1.               ; Only masking pixels
 
-            ng = n_elements(indx)
+;           ng = n_elements(indx)
+            ng = count
             if nu lt ng then $
                 nu = ng                         ; New one is larger, so save it
         endfor
@@ -187,8 +196,12 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         sres = dblarr(ns, nu)
 
         for i=0,ns-1 do begin
-            MDAP_SELECT_WAVE, wave_[i,*], waverange, indx       ; Select the appropriate wavelengths
-            ng=n_elements(indx)                                 ; Length of the saved data
+            ; Select the appropriate wavelengths
+            MDAP_SELECT_WAVE, wave_[i,*], waverange, indx, count=ng 
+;           ng=n_elements(indx)                                 ; Length of the saved data
+
+            if ng eq 0 then $
+                continue
 
             wave[i,0L:ng-1] = wave_[i,indx]                     ; Copy the data
             flux[i,0L:ng-1] = flux_[i,indx]

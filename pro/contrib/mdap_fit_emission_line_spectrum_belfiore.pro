@@ -97,7 +97,7 @@ PRO MDAP_DEFINE_EMISSION_LINES_BELFIORE, $
 
         ; Force the rest wavelengths to be the same between Enci and Belfiore fits
         eml_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
-        w_l = eml_par.lamba
+        w_l = eml_par.lambda
 
 END
 ;----------------------------------------------------------------------------
@@ -156,7 +156,13 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
                                                       ;guess for the line velocity using the max of the flux within the mask
   
   for i=0, nlines2-1 do begin
-      wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i])   ;subscripts of the wav range withing the mask
+      ;subscripts of the wav range within the mask
+      wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
+      if count eq 0 then begin
+        amp = 0.0
+        vguess = redshift*c
+        continue
+      endif
       amp=max(resid[wrange], w_max)                                                       ;max of the flux within the mask, and its subscripts (w_max)
       x_max=x[wrange[w_max]]                                                                      ;wavelength of max subscript
       vguess=(x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
@@ -171,6 +177,11 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
   p_start=fltarr(3*nlines2)
   for i=0, nlines2-1 do begin
     wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i])   ;subscripts of the wav range withing the mask
+    if count eq 0 then begin
+      amp = 0.0
+      vguess = redshift*c
+      continue
+    endif
     amp=max(resid[wrange], w_max)                                                       ;max of the flux within the mask, and its subscripts (w_max)
     p_start[3*i]   =  v2[i]
     p_start[1+3*i] =  sigma2[i]
@@ -197,15 +208,16 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     
     
     ;Tie the relative amplitude and sigmas and velocities of multiplet lines (here only [OIII] and [NII])
-    wOIII_4959=where( l.n eq 'OIII_4959')
-    wOIII_5007=where(l.n eq 'OIII_5007')
+    wOIII_4959=where( l.n eq 'OIII_4959', count_4959)
+    wOIII_5007=where(l.n eq 'OIII_5007', count_5007)
     
     
-    WNII_6548=where(l.n eq 'NII_6548')
-    wNII_6583=where(l.n eq 'NII_6583')
+    WNII_6548=where(l.n eq 'NII_6548', count_6548)
+    wNII_6583=where(l.n eq 'NII_6583', count_6583)
     ;print, 'OIII 4959', WOIII_4959, 'OIII 5007', WOIII_5007
 
-    if wOIII_4959[0] ne -1 and wOIII_5007[0] ne -1 then begin
+;   if wOIII_4959[0] ne -1 and wOIII_5007[0] ne -1 then begin
+    if count_4959 ne 0 and count_5007 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*wOIII_4959+2].tied='0.330*p['+string(3*wOIII_5007+2)+']'
       ;fix to have same velocities
@@ -214,7 +226,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       parinfo[3*wOIII_4959+1].tied='p['+string(3*wOIII_5007+1)+']'
     endif
     
-    if WNII_6548[0] ne -1 and wNII_6583[0] ne -1 then begin
+;   if WNII_6548[0] ne -1 and wNII_6583[0] ne -1 then begin
+    if count_6548 ne 0 and count_6583 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*WNII_6548+2].tied='0.340*p['+string(3*wNII_6583+2)+']'
       ;fix to have same velocities
@@ -287,7 +300,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
                 quiet=quiet
 
     ; Define the lines to fit; !! HARD-CODED !!
-    MDAP_DEFINE_EMISSION_LINES_BELFIORE, n_l, w_l, fit_l, con_l, eml_par
+    MDAP_DEFINE_EMISSION_LINES_BELFIORE, n_l, w_l, fit_l, con_l
     nlines2 = n_elements(n_l)                       ; Number of lines
   
     ; Output structure
@@ -295,28 +308,31 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
            Vel:fltarr(nlines2), Sigma:fltarr(nlines2), eAmpl:fltarr(nlines2), $
            eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
 
-    indx = where(mask lt 0.)
-    if indx[0] eq -1 then $
+    indx = where(mask lt 1., count)
+;   if indx[0] eq -1 then $
+    if count eq 0 then $
         message, 'Entire spectrum masked!'
 
     ;---------------------------------------------------------------
     ; Fit emission lines
 
     ; TODO: Unecessary with current HARD-CODED lines
-    wnofit=where(fit_l gt 0)
+    wnofit=where(fit_l gt 0, count)
+    if count eq 0 then $
+        message, 'No lines to fit!'
     w_l=w_l[wnofit]
     n_l=n_l[wnofit]
     con_l=con_l[wnofit]
     fit_l=fit_l[wnofit]
     
     ; Select untied lines
-    untied=where(con_l eq 0)
+    untied=where(con_l eq 0, count)
     n_tied=max(con_l)
    
     ; *** Call the emission line fitting prcedure ***
     
     ;*** Fit the untied lines
-    if untied[0] ne -1 then begin
+    if count ne 0 then begin
       
     for kl=0, n_elements(untied)-1 do begin
       s_l=untied[kl]
@@ -336,7 +352,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
         El.evel[s_l]=l[0].ev
         El.esigma[s_l]=l[0].es
         if ~keyword_set(quiet) then $
-            print, 'Succesfully fitted', nl_m, 'untied lines'
+            print, 'Succesfully fitted ', nl_m, ' untied lines'
      
     endfor
     
@@ -347,12 +363,13 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
     ;*** Fitting of the kinematically tied lines (only the velocity is tied!)***
     print, n_tied
     for kl=1, n_tied do begin
-      wgroup=where(con_l eq kl)
-      while wgroup[0] eq -1 do begin
+      wgroup=where(con_l eq kl, count)
+;     while wgroup[0] eq -1 do begin
+      while count eq 0 do begin
         if ~keyword_set(quiet) then $
             print, 'Error in your input emission line file!'
         kl=kl+1
-        wgroup=where(con_l eq kl)
+        wgroup=where(con_l eq kl, count)
       endwhile
       
       wl_m=w_l[wgroup]
@@ -362,29 +379,30 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
                       wl_m, nl_m, n_m, l, quiet=quiet
         
-        El[num].name[wgroup]=l.n
-        El[num].lambda[wgroup]=l.wl
-        El[num].ampl[wgroup]=l.a
-        El[num].vel[wgroup]=l.v
-        El[num].sigma[wgroup]=l.s
-        El[num].eampl[wgroup]=l.ea
-        El[num].evel[wgroup]=l.ev
-        El[num].esigma[wgroup]=l.es
+        El.name[wgroup]=l.n
+        El.lambda[wgroup]=l.wl
+        El.ampl[wgroup]=l.a
+        El.vel[wgroup]=l.v
+        El.sigma[wgroup]=l.s
+        El.eampl[wgroup]=l.ea
+        El.evel[wgroup]=l.ev
+        El.esigma[wgroup]=l.es
         if ~keyword_set(quiet) then $
-            print, 'I fitted the', nl_m, 'lines'
+            print, 'I fitted the ', nl_m, ' lines'
  
     endfor
    
    ; Get the full model of the emission-line spectrum (ignoring masks)
+   c=299792.458d  ; speed of light in KM/s
     eml_model=wave*0.0
    for kk=0, nlines2-1 do begin
-     a1=el[num].ampl[kk]
+     a1=El.ampl[kk]
      a1=a1[0]
-     l1=el[num].lambda[kk]
+     l1=El.lambda[kk]
      l1=l1[0]
-     v1=el[num].vel[kk]
+     v1=El.vel[kk]
      v1=v1[0]
-     s1=el[num].sigma[kk]
+     s1=El.sigma[kk]
      s1=s1[0]*l1/c
 
      g_p= a1*exp( -( (  wave - l1*(1+v1/c+redshift) )^2 )/ (2.*s1^2)  )

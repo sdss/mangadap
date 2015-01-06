@@ -100,7 +100,9 @@ PRO MDAP_COMBINE_SPECTRA, $
                 continue
             endif
 
-            spec_indx=where(bin_id eq i)                ; Indices of spectra in this bin
+            spec_indx=where(bin_id eq i, count)         ; Indices of spectra in this bin
+            if count eq 0 then $
+                message, 'No spectra with index '+string(i)
             sumwgt=dblarr(nc)                           ; Re-initialize the weights
 
             ; TODO: Need to optimize this
@@ -108,8 +110,9 @@ PRO MDAP_COMBINE_SPECTRA, $
                 ii = spec_indx[j]                       ; Spectrum to add
 
                 ; Unmasked pixels with defined errors
-                gindx = where(ivar[ii,*] gt 0. and mask[ii,*] lt 1.)
-                if gindx[0] eq -1 then $                ; No valid pixels!
+                gindx = where(ivar[ii,*] gt 0. and mask[ii,*] lt 1., count)
+;               if gindx[0] eq -1 then $                ; No valid pixels!
+                if count eq 0 then $                    ; No valid pixels!
                     continue
 
                 ; Add the flux
@@ -121,9 +124,9 @@ PRO MDAP_COMBINE_SPECTRA, $
 
             endfor
 
-            gindx = where(sumwgt gt 0., complement=bindx)
+            gindx = where(sumwgt gt 0., gcount, complement=bindx, ncomplement=bcount)
 
-            if gindx[0] ne -1 then begin
+            if gcount ne 0 then begin
                 ; Get the weighted sum and its error for the pixels that were valid
                 combined_flux[i,gindx] = combined_flux[i,gindx] / sumwgt[gindx]     ; Normalize
                 combined_ivar[i,gindx] = sumwgt[gindx]^2 / combined_ivar[i,gindx]   ; Prop. err
@@ -131,7 +134,7 @@ PRO MDAP_COMBINE_SPECTRA, $
             endif
 
             ; Mask pixels without anything added to the sum
-            if bindx[0] ne -1 then begin
+            if bcount ne 0 then begin
                 combined_flux[i,bindx] = 0.             ; Set to zero flux
                 combined_ivar[i,bindx] = 1.             ;  ... with unity error
                 combined_mask[i,bindx] = 1.             ;  ... and mask'em

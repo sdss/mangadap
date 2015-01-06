@@ -169,10 +169,11 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
             ; Set the mask for otpl to be the DEREDSHIFTED version of the input
             ; mask
             otpl_mask = interpol(reform(mask[i,*]), wave, wave/(redshift[i]+1.0d))
-            indx = where(otpl_mask gt 0.5, complement=nindx)
-            if indx[0] ne -1 then $
+            indx = where(otpl_mask gt 0.5, count, complement=nindx, ncomplement=ncount)
+;           if indx[0] ne -1 then $
+            if count ne 0 then $
                 otpl_mask[indx] = 1.0d
-            if nindx[0] ne -1 then $
+            if ncount ne 0 then $
                 otpl_mask[nindx] = 0.0d
 
             ; Get the REDSHIFTED passbands for getting the index measurements of

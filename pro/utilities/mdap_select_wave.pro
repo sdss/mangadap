@@ -44,11 +44,12 @@
 ; REVISION HISTORY:
 ;       09 Sep 2014: (KBW) Original implementation
 ;       19 Sep 2014: (KBW) Allow for complement output
+;       05 Jan 2015: (KBW) Return count
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SELECT_WAVE, $
-                wave, wrange, selected, complement=complement
+                wave, wrange, selected, complement=complement, count=count
 
         if n_elements(wrange) ne 0 then begin                   ; Check if the range is defined
             if wrange[0] gt wrange[1] then begin                ; Check that the order makes sense
@@ -59,7 +60,9 @@ PRO MDAP_SELECT_WAVE, $
             endif
 
             ; Select valid pixels
-            selected=where(wave ge wrange[0] and wave le wrange[1], complement=comp)
+            selected=where(wave ge wrange[0] and wave le wrange[1], count, complement=comp)
+            if count eq 0 then $
+                selected = -1L
         endif else begin
             selected = indgen(n_elements(wave))                 ; All are valid
             comp=-1L

@@ -72,8 +72,9 @@
 ;-
 ;------------------------------------------------------------------------------
 
-PRO MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, eml_par, velocity, sigma, wave, galaxy_no_eml, flux, $
-                                            flux_err, equiv_width, equiv_width_err
+PRO MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, $
+                eml_par, velocity, sigma, wave, galaxy_no_eml, flux, flux_err, equiv_width, $
+                equiv_width_err
 
         ; TODO: Perform a more robust measurement of the EW!
         ; TODO: Only fit lines within 10 sigma of the edge (mask if part of it is there)
@@ -92,12 +93,16 @@ PRO MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, eml_par, velocity, sigma, wave, gala
 
             ; TODO: Do these tests outside of the loop?  Do something
             ; else so it doesn't break the DAP 
-            MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo
-            if indx_lo[0] eq -1 then $
-                message, 'Cannot get EW measurement!'
-            MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi
-            if indx_hi[0] eq -1 then $
-                message, 'Cannot get EW measurement!'
+            MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo, count=count_lo
+            MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi, count=count_hi
+;           if indx_lo[0] eq -1 or indx_hi[0] eq -1 then begin
+            if count_lo eq 0 or count_hi eq 0 then begin
+                ; Set dummy values
+                equiv_width[i] = 0.0d
+                equiv_width_err[i] = 99.0d
+                continue
+            endif
+
             indx = [ indx_lo, indx_hi ]
 
             cont = median(galaxy_no_eml[indx])                  ; Median continuum

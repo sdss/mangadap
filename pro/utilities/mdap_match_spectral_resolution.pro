@@ -146,11 +146,13 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         sz = size(positive_offset)
         np=sz[1]                                ; Number of unmasked pixels
 
-        indx=where(positive_offset lt zero_dispersion)
-        if indx[0] eq -1 then $
+        indx=where(positive_offset lt zero_dispersion, count)
+;       if indx[0] eq -1 then $
+        if count eq 0 then $
             message, 'Template spectrum is at lower resolution at all wavelengths!'
 
-        if n_elements(indx) eq np then begin
+;       if n_elements(indx) eq np then begin
+        if count eq np then begin
             if ~keyword_set(quiet) then begin
                 print, 'Entire spectrum is valid: ' + MDAP_STC(unm_wave[0]) + 'A - ' + $
                        MDAP_STC(unm_wave[np-1]) + 'A'
@@ -168,23 +170,25 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         ; Find the largest contiguous region of pixels that requires no offset
 
         ; Start counting from the first valid wavelength
-        indx=where(positive_offset gt zero_dispersion)  ; Pixels that require an offset
+        indx=where(positive_offset gt zero_dispersion, count)  ; Pixels that require an offset
         incw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=0                                             ; Start at low wavelength
-        while indx[0] ne -1 and j lt np-1 do begin
+;       while indx[0] ne -1 and j lt np-1 do begin
+        while count ne 0 and j lt np-1 do begin
             j++                                         ; Increment j
             incw[0] = unm_wave[j]                       ; Update wavelength range
-            indx=where(positive_offset[j:np-1] gt zero_dispersion)      ; Update indices
+            indx=where(positive_offset[j:np-1] gt zero_dispersion, count)      ; Update indices
         endwhile
 
         ; Start counting from the last valid wavelength
-        indx=where(positive_offset gt zero_dispersion)          ; Pixels that require an offset
+        indx=where(positive_offset gt zero_dispersion, count)    ; Pixels that require an offset
         decw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=np-1                                          ; Start at high wavelength
-        while indx[0] ne -1 and j gt 0 do begin
+;       while indx[0] ne -1 and j gt 0 do begin
+        while count ne 0 and j gt 0 do begin
             j--                                         ; Decrement j
             decw[1] = unm_wave[j]                       ; Update wavelength range
-            indx=where(positive_offset[0:j] gt zero_dispersion) ; Update indices
+            indx=where(positive_offset[0:j] gt zero_dispersion, count)  ; Update indices
         endwhile
 
         ; Select the largest region
@@ -213,11 +217,12 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_APPLY, $
 
         diff_sig = (c/wave[unmasked])^2*diff_var_w + soff^2     ; Convert to km/s and add offset
 
-        indx = where(diff_sig lt 0)                     ; Pixels where sigma is effectively 0
+        indx = where(diff_sig lt 0, count)              ; Pixels where sigma is effectively 0
         diff_sig = sqrt(diff_sig)                       ; Convert to sigma
         if ~keyword_set(log10) then $
             diff_sig = wave[unmasked]*diff_sig/c        ; Convolution sigma in angstroms
-        if indx[0] ne -1 then $
+;       if indx[0] ne -1 then $
+        if count ne 0 then $
             diff_sig[indx] = 0.0                        ; Set lt 0 to 0 (within range of delta func)
 
         ; TODO: This convolution is why there can't be intermittent masks in the
@@ -241,8 +246,9 @@ END
 
 FUNCTION MDAP_MATCH_SPECTRAL_RESOLUTION_UNMASKED_PIXELS, $
                 mask
-            unmasked=where(mask lt 1, complement=masked)        ; Select the valid pixels
-            if unmasked[0] eq -1 then $
+            unmasked=where(mask lt 1, count);, complement=masked)        ; Select the valid pixels
+;           if unmasked[0] eq -1 then $
+            if count eq 0 then $
                 message, 'ERROR: Entire spectrum masked!'
 
             ; Ignore masks littered through the full spectral range; just omit the edges
@@ -304,11 +310,12 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
             if ~keyword_set(quiet) then begin
                 print, 'Spectrum length: ', n_elements(reform(flux[i,*]))
                 print, 'Number of unmasked pixels: ', num
-                zero_vals = where(flux[i,unmasked] eq 0.)       ; Number of pixels with zero flux
-                if zero_vals[0] eq -1 then begin
-                    print, 'Number of zero valued fluxes: ', 0
-                endif else $
-                    print, 'Number of zero valued fluxes: ', n_elements(zero_vals)
+                zero_vals = where(flux[i,unmasked] eq 0., count)  ; Number of pixels with zero flux
+                print, 'Number of zero valued fluxes: ', count
+;               if zero_vals[0] eq -1 then begin
+;                   print, 'Number of zero valued fluxes: ', 0
+;               endif else $
+;                   print, 'Number of zero valued fluxes: ', n_elements(zero_vals)
             endif
 
             ; Object resolution interpolated to template wavelengths
@@ -358,8 +365,9 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
                                                                      zero_dispersion=zero_dispersion
 
                 ; Mask regions that require an offset
-                MDAP_SELECT_WAVE, wave_, waverange, indx, complement=comp
-                if comp[0] ne -1 then $
+                MDAP_SELECT_WAVE, wave_, waverange, indx, complement=comp, count=count
+;               if comp[0] ne -1 then $
+                if count ne n_elements(wave_) then $
                     mask[i,comp] = 1.0
 
             endelse

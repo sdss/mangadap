@@ -49,16 +49,21 @@
 ; REVISION HISTORY:
 ;       19 Sep 2014: (KBW) Original Implementation
 ;       22 Sep 2014: (KBW) Include inverse variances
+;       05 Jan 2015: (KBW) Allow for clean behavior when everything masked
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_NORMALIZE_TEMPLATES, $
                 tpl_flux, tpl_ivar, tpl_mask, tpl_flux_norm
 
-        indx = where(tpl_mask lt 1)
-        tpl_flux_norm = median(tpl_flux[indx], /even)
-        tpl_flux = tpl_flux / tpl_flux_norm
-        tpl_ivar = (tpl_flux_norm)^2*tpl_ivar
+        indx = where(tpl_mask lt 1, count)
+        if count eq 0 then begin
+            tpl_flux_norm = 1.
+        endif else begin
+            tpl_flux_norm = median(tpl_flux[indx], /even)
+            tpl_flux = tpl_flux / tpl_flux_norm
+            tpl_ivar = (tpl_flux_norm)^2*tpl_ivar
+        endelse
 
 END
 

@@ -69,14 +69,16 @@ PRO MDAP_DISTRIBUTE_BINNED_DATA, $
         endfor
 
         if n_elements(llim) ne 0 then begin
-            indx = where(distributed_data[i] lt llim)
-            if indx[0] ne -1 then
+            indx = where(distributed_data[i] lt llim, count)
+;           if indx[0] ne -1 then
+            if count ne 0 then
                 distributed_data[indx] = default
         endif
 
         if n_elements(ulim) ne 0 then begin
-            indx = where(distributed_data[i] gt ulim)
-            if indx[0] ne -1 then
+            indx = where(distributed_data[i] gt ulim, count)
+;           if indx[0] ne -1 then
+            if count ne 0 then
                 distributed_data[indx] = default
         endif
 END
