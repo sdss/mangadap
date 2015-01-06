@@ -298,6 +298,7 @@ pro/utilities/mdap_get_spaxel_size.pro -text
 pro/utilities/mdap_get_spectral_index.pro -text
 pro/utilities/mdap_index_is_bandhead.pro -text
 pro/utilities/mdap_insert_flagged.pro -text
+pro/utilities/mdap_instr_dispersion_at_emission_line.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_interpolate_kinematics.pro -text
 pro/utilities/mdap_lines_for_mean_gas_kinematics.pro -text
