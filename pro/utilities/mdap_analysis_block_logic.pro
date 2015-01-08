@@ -216,7 +216,6 @@ PRO MDAP_ADD_SGFIT, $
 END
 
 
-; TODO: Add a check for the size of the images (SIWAVE, SIFLUX, etc)?
 FUNCTION MDAP_CAN_USE_ELOFIT_DATA, $
                 file
 

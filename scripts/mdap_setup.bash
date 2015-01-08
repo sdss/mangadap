@@ -10,7 +10,7 @@ fi
 # File exists, but overwrite not allowed
 if [ -e $1 ] && [ $3 -eq 0 ]; then
 	echo "$1 already exists! Set overwrite flag or remove."
-	echo "USAGE: source setup.sh <output file> <type? (BOTH, CUBE, or RSS)> <overwrite? (1-yes;0-no)>"
+	echo "USAGE: source mdap_setup.bash <output file> <type? (BOTH, CUBE, or RSS)> <overwrite? (1-yes;0-no)>"
 	return 0
 fi
 
@@ -18,8 +18,8 @@ fi
 source $MDAP_DEV/scripts/mdap_environment.bash
 
 # Check for the existence of the analysis directories and create them if
-if [ ! -e $MANGA_SPECTRO/analysis/$VERSDAP ]; then
-	mkdir -p $MANGA_SPECTRO/analysis/$VERSDAP
+if [ ! -e $MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER ]; then
+	mkdir -p $MANGA_SPECTRO_ANALYSIS/$MANGADAP_VER
 fi
 
 # Find files in redux/*/stack

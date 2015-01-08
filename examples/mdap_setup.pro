@@ -638,7 +638,7 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
 
-        analysis_prior[*] = ''      ; No prior for the first plan
+        analysis_prior[*] = ''      ; No priors
 
         overwrite_flag[*] = 1
 
@@ -646,10 +646,7 @@ PRO MDAP_EXECUTION_SETUP, $
 ;-------------------------------------------------------------------------------
 
 
-
-
-
-
+; Another set of posibilites, with more comments as to what you're setting
 ;       bin_par[0].type = 'STON'
 ;       bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
 ;       bin_par[0].ston = 40.0d

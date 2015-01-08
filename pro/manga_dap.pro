@@ -1145,14 +1145,16 @@ PRO MANGA_DAP, $
                 ; Get the bestfit continuum spectrum and the kinematics
                 ; to use
                 nb = n_elements(nbin)
-                ; Default is to use the PPXF result
-                if (size(bestfit_ppxf))[1] eq (size(bin_flux))[1] $
-                   and (size(bestfit_ppxf))[2] eq (size(bin_flux))[2] then $
+                sz = size(bin_flux)
+                ; Default is to set the continuum to 0
+                bestfit_continuum = dblarr(sz[1], sz[2])
+
+                ; Use pPXF continuum if available
+                if (size(bestfit_ppxf))[1] eq sz[1] and (size(bestfit_ppxf))[2] eq sz[2] then $
                     bestfit_continuum = bestfit_ppxf
 
                 ; Change to the GANDALF result if it exists
-                if (size(bestfit_gndf))[1] eq (size(bin_flux))[1] $
-                   and (size(bestfit_gndf))[2] eq (size(bin_flux))[2] then $
+                if (size(bestfit_gndf))[1] eq sz[1] and (size(bestfit_gndf))[2] eq sz[2] then $
                     bestfit_continuum = bestfit_gndf - eml_model
 
                 ; Get the input stellar kinematics
@@ -1346,6 +1348,7 @@ PRO MANGA_DAP, $
         if ~keyword_set(nolog) then $
             MDAP_LOG_CLOSE, log_file_unit
 
+        print, 'DAP FINISHED SUCCESSFULLY'
 END
 
 ;-------------------------------------------------------------------------------

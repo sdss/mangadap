@@ -1,11 +1,17 @@
 #!/bin/bash
 
-export MANGA_SPECTRO=.
-export VERSDRP=v1_0_0
-export MANGA_SPECTRO_REDUX=$MANGA_SPECTRO/redux/$VERSDRP
-export VERSDAP=v0_9_0
-export MANGA_SPECTRO_ANALYSIS=$MANGA_SPECTRO/analysis/$VERSDAP
-export MANGA_DAP_DIR=$MDAP_DEV
+# This is the path to the equivalent of 
+#   $MANGAWORK_DIR/manga/spectro
+# at Utah, with your local copy of the DRP products
+export LOCAL_MANGA_PATH=/Users/westfall/Work/MaNGA/march_rdx
+
+export MANGA_SPECTRO_REDUX=$LOCAL_MANGA_PATH/redux
+export MANGA_SPECTRO_ANALYSIS=$LOCAL_MANGA_PATH/analysis
+
+export MANGADRP_VER=v1_0_0
+export MANGADAP_VER=v0_9_0
+
+export MANGADAP_DIR=$MDAP_DEV
 
 return 0
 

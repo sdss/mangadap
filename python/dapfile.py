@@ -87,6 +87,16 @@ class dapfile:
             self.hdulist.close()
 
     
+    def _twod_image_data(self, exten, indx):
+        try:
+            data = self.hdulist[exten].data[:,indx]
+        except IndexError, e:
+            print('{0}'.format(e))
+            return None
+        else:
+            return data
+    
+
 
 #    def _gather_data(self):
 #        """
@@ -202,27 +212,16 @@ class dapfile:
         return self.hdulist['WAVE'].data
 
 
-    def bin_spectrum(self, indx)
-        return _twod_image_data('FLUX', indx)
+    def bin_spectrum(self, indx):
+        return self._twod_image_data('FLUX', indx)
 
-    def _twod_image_data(self, exten, indx):
-        try:
-            data = self.hdulist['FLUX'].data[:,indx]
-        except IndexError, e:
-            print('{0}'.format(e))
-            return None
-        else:
-            return data
-    
 
-    def bin_inverse_variance(self, indx)
-        try:
-            data = self.hdulist['IVAR'].data[:,indx]
-        except IndexError, e:
-            print('{0}'.format(e))
-            return None
-        else:
-            return data
+    def bin_inverse_variance(self, indx):
+        return self._twod_image_data('IVAR', indx)
+            
+
+    def bin_mask(self, indx):
+        return self._twod_image_data('MASK', indx)
             
 
 

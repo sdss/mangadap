@@ -46,7 +46,7 @@
 ;                2 - star+gas fit
 ;               92 - star+gas fit failed
 ;                3 - emission-line only fit
-;               93 - emission-line only fit
+;               93 - emission-line only fit failed
 ;                4 - spectral index measurements
 ;               94 - spectral index measurements failed
 ;
