@@ -20,6 +20,7 @@
 ;       07 Nov 2014: (KBW) Original implementation
 ;       06 Dec 2014: (KBW) Changes to DRPS (includes BINVR)
 ;       12 Dec 2014: (KBW) Add columns for ELOPAR and ELOFIT tables
+;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;-
 ;------------------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ FUNCTION MDAP_SET_STFIT_COLS
 END
 FUNCTION MDAP_SET_SGFIT_COLS
         return, [ 'TPLW', 'MULTPOLY', 'KIN', 'KINERR', 'RCHI2', 'RED', 'REDERR', 'ELOMIT', 'AMPL', $
-                  'AMPLERR', 'IKIN', 'IKINERR', 'FLUX', 'FLUXERR', 'EW', 'EWERR' ]
+                  'AMPLERR', 'IKIN', 'IKINERR', 'SINST', 'FLUX', 'FLUXERR', 'EW', 'EWERR' ]
 END
 FUNCTION MDAP_SET_ELOPAR_COLS
         return, [ 'ELNAME', 'RESTWAVE' ]

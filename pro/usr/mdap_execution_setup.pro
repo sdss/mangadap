@@ -352,6 +352,11 @@
 ;               match the input reddening_order, but the array must
 ;               always contain two elements.
 ;
+;           AnalysisPar.zero_instr_disp
+;               A flag to force GANDALF to ignore the instrumental
+;               dispersion (set it to 0).  Flag is 0-false,1-true;
+;               default is false.
+;
 ;===============================================================================
 ;===============================================================================
 ;
@@ -605,10 +610,12 @@ PRO MDAP_EXECUTION_SETUP, $
 
 ;       overwrite_flag[*] = 0
 
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 
 ;-------------------------------------------------------------------------------
-; To fit just the high S/N case:
+; To fit just the high S/N case (with both MARCS and STELIB):
         bin_par[*].type = 'STON'
         bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
         bin_par[*].ston = 40.0d
@@ -635,17 +642,17 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
+        analysis_par[*].zero_instr_disp = 1
 
-        analysis_prior[*] = ''      ; No prior for the first plan
+        analysis_prior[*] = ''      ; No priors
 
         overwrite_flag[*] = 1
 
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 
-
-
-
-
+; Another set of posibilites, with more comments as to what you're setting
 ;       bin_par[0].type = 'STON'
 ;       bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
 ;       bin_par[0].ston = 40.0d

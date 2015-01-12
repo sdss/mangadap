@@ -352,6 +352,11 @@
 ;               match the input reddening_order, but the array must
 ;               always contain two elements.
 ;
+;           AnalysisPar.zero_instr_disp
+;               A flag to force GANDALF to ignore the instrumental
+;               dispersion (set it to 0).  Flag is 0-false,1-true;
+;               default is false.
+;
 ;===============================================================================
 ;===============================================================================
 ;
@@ -455,18 +460,22 @@ PRO MDAP_EXECUTION_SETUP, $
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
         ; files is described above.
-        ntpl_libraries = 2
+        ntpl_libraries = 3
         tpl_library_keys = strarr(ntpl_libraries)
         template_libraries = strarr(ntpl_libraries)
         tpl_vacuum_wave = intarr(ntpl_libraries)
 
         tpl_library_keys[0] = 'M11-MARCS'
-        template_libraries[0] = dapsrc+'/external/templates_m11_marcs/*_s.fits'
+        template_libraries[0] = dapsrc+'/external/templates/m11_marcs/*_s.fits'
         tpl_vacuum_wave[0] = 0
 
         tpl_library_keys[1] = 'M11-STELIB'
-        template_libraries[1] = dapsrc+'/external/templates_m11_stelib/*_s.fits'
+        template_libraries[1] = dapsrc+'/external/templates/m11_stelib/*_s.fits'
         tpl_vacuum_wave[1] = 0
+
+        tpl_library_keys[2] = 'M11-ELODIE'
+        template_libraries[2] = dapsrc+'/external/templates/m11_elodie/*.fits'
+        tpl_vacuum_wave[2] = 0
 
         ;-----------------------------------------------------------------------
         ; Define the set of emission-line parameter files.  The format expected
@@ -637,6 +646,7 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
+        analysis_par[*].zero_instr_disp = 1
 
         analysis_prior[*] = ''      ; No priors
 

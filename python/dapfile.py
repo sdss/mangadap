@@ -222,6 +222,22 @@ class dapfile:
 
     def bin_mask(self, indx):
         return self._twod_image_data('MASK', indx)
+
+
+    def fit_stars_minus_gas(self, indx):
+        return (self._twod_image_data('SGMOD', indx) - self._twod_image_data('ELMOD', indx))
+
+            
+    def fit_stars_and_gas(self, indx):
+        return self._twod_image_data('SGMOD', indx)
+
+    
+    def fit_eml_only_ew(self, indx):
+        return self._twod_image_data('ELOMEW', indx)
+            
+
+    def fit_eml_only_fb(self, indx):
+        return self._twod_image_data('ELOMFB', indx)
             
 
 

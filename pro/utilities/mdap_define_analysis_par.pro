@@ -36,6 +36,11 @@
 ;               match the input reddening_order, but the array must
 ;               always contain two elements.
 ;
+;           AnalysisPar.zero_instr_disp
+;               A flag to force GANDALF to ignore the instrumental
+;               dispersion (set it to 0).  Flag is 0-false,1-true;
+;               default is false.
+;
 ; CALLING SEQUENCE:
 ;       result = MDAP_DEFINE_ANALYSIS_PAR()
 ;
@@ -43,11 +48,12 @@
 ;       22 Oct 2014: (KBW) Original implementation
 ;       10 Nov 2014: (KBW) Add the default values
 ;       05 Dec 2014: (KBW) Add some more comments
+;       09 Jan 2014: (KBW) Add zero_instr_disp
 ;-
 ;------------------------------------------------------------------------------
 FUNCTION MDAP_DEFINE_ANALYSIS_PAR
 
         return, { AnalysisPar, moments:2, degree:-1, mdegree:-1, reddening:dblarr(2), $
-                               reddening_order:0 }
+                               reddening_order:0, zero_instr_disp:0 }
 END
 

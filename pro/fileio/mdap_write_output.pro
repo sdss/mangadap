@@ -98,7 +98,7 @@
 ;
 ;               - For star+gas analysis of each binned spectrum: SGFIT
 ;                 1 column, 1 [ntpl] column, 1 [nmult] column, 2 [moments] columns,
-;                 2 [nred] columns, 7 [neml] columns, 2 [neml][moments] columns, nbin rows
+;                 2 [nred] columns, 8 [neml] columns, 2 [neml][moments] columns, nbin rows
 ;                   - star+gas chi^2/DOF
 ;                       TODO: change to chi2 and DOF separately
 ;                   - star+gas template weights (vector)
@@ -109,6 +109,7 @@
 ;                   - For each emission line (only good fits):
 ;                       - gas line omission flag (vector)
 ;                       - gas kinematics and errors (vectors)
+;                       - instrumental dispersion at the fitted wavelengths (vector)
 ;                       - gas intensities and errors (vectors)
 ;                       - gas fluxes and errors (vectors)
 ;                       - gas equivalent widths and errors (vectors)
@@ -196,6 +197,7 @@
 ;                          chi2_gndf=chi2_gndf, $
 ;                          emission_line_kinematics_ind=emission_line_kinematics_ind, $
 ;                          emission_line_kinematics_ier=emission_line_kinematics_ier, $
+;                          emission_line_sinst=emission_line_sinst, $
 ;                          emission_line_omitted=emission_line_omitted, $
 ;                          emission_line_intens=emission_line_intens, $
 ;                          emission_line_interr=emission_line_interr, $
@@ -422,6 +424,10 @@
 ;       emission_line_kinematics_ind dblarr[B][E][2]
 ;       emission_line_kinematics_ier dblarr[B][E][2]
 ;               Kinematics and errors for each fitted emission line.
+;
+;       emission_line_sinst dblarr[B][E]
+;               Instrumental dispersion at the fitted line centers of
+;               the emission lines.
 ;
 ;       emission_line_omitted intarr[B][E]
 ;               Flag setting whether or not an emission-line was fit for all E
@@ -656,6 +662,7 @@
 ;                          and velocity registration.
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
+;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;-
 ;------------------------------------------------------------------------------
 
@@ -843,6 +850,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
                 str=str+']'
                 SXADDPAR, header, 'REDINP', str, 'Input reddening parameters'
             endif
+            SXADDPAR, header, 'ZSINST', analysis_par.zero_instr_disp, $
+                              'Force zero sigma_instr in gas fit (0-false)'
         endif
 
         ; Add the template, emission-line, and absorption-line keywords
@@ -1186,6 +1195,7 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -1229,6 +1239,8 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
             inp_size[4]=(size(emission_line_kinematics_ind))[2]
         endif else if n_elements(emission_line_kinematics_ier) ne 0 then begin
             inp_size[4]=(size(emission_line_kinematics_ier))[2]
+        endif else if n_elements(emission_line_sinst) ne 0 then begin
+            inp_size[4]=(size(emission_line_sinst))[2]
         endif else if n_elements(emission_line_omitted) ne 0 then begin
             inp_size[4]=(size(emission_line_omitted))[2]
         endif else if n_elements(emission_line_intens) ne 0 then begin
@@ -1304,11 +1316,13 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
                                ' Individual emission-line kinematics', /dbl
         MDAP_FXBADDCOL_MATRIX, 12, bth, cur_size[4], cur_size[2], cols[11], $
                                ' Individual emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[4], cols[12], ' Emission-line flux', /dbl
-        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[4], cols[13], ' Emission-line flux error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[4], cols[14], ' Emission-line equivalent width', $
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[4], cols[12], $
+                               ' Instrumental dispersion (sigma) at emission-line centroids', /dbl
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[4], cols[13], ' Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[4], cols[14], ' Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[4], cols[15], ' Emission-line equivalent width', $
                                /dbl
-        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[4], cols[15], $
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[4], cols[16], $
                                ' Emission-line equivalent width error', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
@@ -1897,6 +1911,7 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 chi2_gndf=chi2_gndf, emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -1908,7 +1923,7 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(16)
+        nel = intarr(17)
         nel[0] = n_elements(weights_gndf) eq 0 ? 0 : (size(weights_gndf))[1]
         nel[1] = n_elements(mult_poly_coeff_gndf) eq 0 ? 0 : (size(mult_poly_coeff_gndf))[1]
         nel[2] = n_elements(emission_line_kinematics_avg) eq 0 ? 0 : $
@@ -1920,18 +1935,19 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
                  (size(emission_line_kinematics_ind))[1]
         nel[6] = n_elements(emission_line_kinematics_ier) eq 0 ? 0 : $
                  (size(emission_line_kinematics_ier))[1]
-        nel[7] = n_elements(emission_line_omitted) eq 0 ? 0 : (size(emission_line_omitted))[1]
-        nel[8] = n_elements(emission_line_intens) eq 0 ? 0 : (size(emission_line_intens))[1]
-        nel[9] = n_elements(emission_line_interr) eq 0 ? 0 : (size(emission_line_interr))[1]
-        nel[10] = n_elements(emission_line_fluxes) eq 0 ? 0 : (size(emission_line_fluxes))[1]
-        nel[11] = n_elements(emission_line_flxerr) eq 0 ? 0 : (size(emission_line_flxerr))[1]
-        nel[12] = n_elements(emission_line_EWidth) eq 0 ? 0 : (size(emission_line_EWidth))[1]
-        nel[13] = n_elements(emission_line_EW_err) eq 0 ? 0 : (size(emission_line_EW_err))[1]
-        nel[14] = n_elements(reddening_val) eq 0 ? 0 : (size(reddening_val))[1]
-        nel[15] = n_elements(reddening_err) eq 0 ? 0 : (size(reddening_err))[1]
+        nel[7] = n_elements(emission_line_sinst) eq 0 ? 0 : (size(emission_line_sinst))[1]
+        nel[8] = n_elements(emission_line_omitted) eq 0 ? 0 : (size(emission_line_omitted))[1]
+        nel[9] = n_elements(emission_line_intens) eq 0 ? 0 : (size(emission_line_intens))[1]
+        nel[10] = n_elements(emission_line_interr) eq 0 ? 0 : (size(emission_line_interr))[1]
+        nel[11] = n_elements(emission_line_fluxes) eq 0 ? 0 : (size(emission_line_fluxes))[1]
+        nel[12] = n_elements(emission_line_flxerr) eq 0 ? 0 : (size(emission_line_flxerr))[1]
+        nel[13] = n_elements(emission_line_EWidth) eq 0 ? 0 : (size(emission_line_EWidth))[1]
+        nel[14] = n_elements(emission_line_EW_err) eq 0 ? 0 : (size(emission_line_EW_err))[1]
+        nel[15] = n_elements(reddening_val) eq 0 ? 0 : (size(reddening_val))[1]
+        nel[16] = n_elements(reddening_err) eq 0 ? 0 : (size(reddening_err))[1]
         ninp = max(nel)
 
-        for i=0,15 do begin
+        for i=0,16 do begin
             if nel[i] gt 0 and nel[i] ne ninp then $
                 message, 'Input vectors for SGFIT have different lengths!'
         endfor
@@ -2301,6 +2317,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 chi2_gndf=chi2_gndf, emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -2318,6 +2335,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
                                         emission_line_kinematics_aer=emission_line_kinematics_aer, $
                                         emission_line_kinematics_ind=emission_line_kinematics_ind, $
                                         emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                                        emission_line_sinst=emission_line_sinst, $
                                         emission_line_omitted=emission_line_omitted, $
                                         emission_line_intens=emission_line_intens, $
                                         emission_line_interr=emission_line_interr, $
@@ -2337,6 +2355,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
                                         chi2_gndf=chi2_gndf, $
                                         emission_line_kinematics_ind=emission_line_kinematics_ind, $
                                         emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                                        emission_line_sinst=emission_line_sinst, $
                                         emission_line_omitted=emission_line_omitted, $
                                         emission_line_intens=emission_line_intens, $
                                         emission_line_interr=emission_line_interr, $
@@ -2402,14 +2421,16 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
             FXBWRITM, tbl, [cols[10]], transpose(emission_line_kinematics_ind, [1, 2, 0])
         if n_elements(emission_line_kinematics_ier) ne 0 then $
             FXBWRITM, tbl, [cols[11]], transpose(emission_line_kinematics_ier, [1, 2, 0])
+        if n_elements(emission_line_sinst) ne 0 then $
+            FXBWRITM, tbl, [cols[12]], transpose(emission_line_sinst)
         if n_elements(emission_line_fluxes) ne 0 then $
-            FXBWRITM, tbl, [cols[12]], transpose(emission_line_fluxes)
+            FXBWRITM, tbl, [cols[13]], transpose(emission_line_fluxes)
         if n_elements(emission_line_flxerr) ne 0 then $
-            FXBWRITM, tbl, [cols[13]], transpose(emission_line_flxerr)
+            FXBWRITM, tbl, [cols[14]], transpose(emission_line_flxerr)
         if n_elements(emission_line_EWidth) ne 0 then $
-            FXBWRITM, tbl, [cols[14]], transpose(emission_line_EWidth)
+            FXBWRITM, tbl, [cols[15]], transpose(emission_line_EWidth)
         if n_elements(emission_line_EW_err) ne 0 then $
-            FXBWRITM, tbl, [cols[15]], transpose(emission_line_EW_err)
+            FXBWRITM, tbl, [cols[16]], transpose(emission_line_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -2775,6 +2796,7 @@ PRO MDAP_WRITE_OUTPUT, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 chi2_gndf=chi2_gndf, emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -2947,6 +2969,7 @@ PRO MDAP_WRITE_OUTPUT, $
                                                     chi2_gndf=chi2_gndf, $
                                     emission_line_kinematics_ind=emission_line_kinematics_ind, $
                                     emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                                                    emission_line_sinst=emission_line_sinst, $
                                                     emission_line_omitted=emission_line_omitted, $
                                                     emission_line_intens=emission_line_intens, $
                                                     emission_line_interr=emission_line_interr, $

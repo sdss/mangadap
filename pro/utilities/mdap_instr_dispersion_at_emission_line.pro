@@ -52,6 +52,7 @@
 ;
 ; REVISION HISTORY:
 ;       15 Dec 2014: (KBW) Original implementation
+;       09 Jan 2015: (KBW) Use new MDAP_INSTRUMENTAL_DISPERSION function
 ;-
 ;------------------------------------------------------------------------------
 
@@ -66,8 +67,8 @@ PRO MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, $
         if sz[2] ne neml then $
             message, 'Incorrect number of kinematic measurements entered!'
 
-        c=299792.458d                               ; Speed of light in km/s
-        sig2fwhm = 2.0d*sqrt(alog(4.0d))            ; Conversion from sigma to FWHM
+;       c=299792.458d                               ; Speed of light in km/s
+;       sig2fwhm = 2.0d*sqrt(alog(4.0d))            ; Conversion from sigma to FWHM
         
         sinst = dblarr(nbin, neml)                  ; Initialize the instrumental dispersion
         for i=0,nbin-1 do begin
@@ -75,8 +76,10 @@ PRO MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, $
 ;           if indx[0] eq -1 then $
             if count eq 0 then $
                 continue
-            sinst[i,indx] = interpol(c/sres, wave, $
-                            eml_par[indx].lambda*(1.0d + kinematics[i,*,0]/c)) / sig2fwhm
+;           sinst[i,indx] = interpol(c/sres, wave, $
+;                           eml_par[indx].lambda*(1.0d + kinematics[i,indx,0]/c)) / sig2fwhm
+            sinst[i,indx] = MDAP_INSTRUMENTAL_DISPERSION(wave, sres, eml_par[indx].lambda, $
+                                                         kinematics[i,indx,0])
         endfor
 END
 

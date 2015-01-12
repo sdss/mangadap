@@ -31,6 +31,7 @@
 ;                           chi2_gndf=chi2_gndf, $
 ;                           emission_line_kinematics_ind=emission_line_kinematics_ind, $
 ;                           emission_line_kinematics_ier=emission_line_kinematics_ier, $
+;                           emission_line_sinst=emission_line_sinst, $
 ;                           emission_line_omitted=emission_line_omitted, $
 ;                           emission_line_intens=emission_line_intens, $
 ;                           emission_line_interr=emission_line_interr, $
@@ -238,6 +239,10 @@
 ;       emission_line_kinematics_ind dblarr[B][E][2]
 ;       emission_line_kinematics_ier dblarr[B][E][2]
 ;               Kinematics and errors for each fitted emission line.
+;
+;       emission_line_sinst dblarr[B][E]
+;               Instrumental dispersion at the fitted line centers of
+;               the emission lines.
 ;
 ;       emission_line_omitted intarr[B][E]
 ;               Flag setting whether or not an emission-line was fit for all E
@@ -455,6 +460,7 @@
 ;                          registration
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
+;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;-
 ;------------------------------------------------------------------------------
 
@@ -480,6 +486,7 @@ PRO MDAP_DEFINE_OUTPUT, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 chi2_gndf=chi2_gndf, emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -557,6 +564,7 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(chi2_gndf) eq 0 then chi2_gndf = '0'
         if n_elements(emission_line_kinematics_ind) eq 0 then emission_line_kinematics_ind = '0'
         if n_elements(emission_line_kinematics_ier) eq 0 then emission_line_kinematics_ier = '0'
+        if n_elements(emission_line_sinst) eq 0 then emission_line_sinst = '0'
         if n_elements(emission_line_omitted) eq 0 then emission_line_omitted = '0'
         if n_elements(emission_line_intens) eq 0 then emission_line_intens = '0'
         if n_elements(emission_line_interr) eq 0 then emission_line_interr = '0'

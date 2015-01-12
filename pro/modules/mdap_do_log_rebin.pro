@@ -168,7 +168,7 @@ endif else $
 k = floor(newBorders-borders[0]) < (n-1) > 0
 
 if n_params() ge 4 then begin  ; Optional output log(wavelength): log of geometric mean!
-    if l10 ge 0 then begin
+    if l10 ne 0 then begin
         logLam = alog10(sqrt(newBorders[1:*]*newBorders)*dLam)
     endif else $
         logLam = alog(sqrt(newBorders[1:*]*newBorders)*dLam)

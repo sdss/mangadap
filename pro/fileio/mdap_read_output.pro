@@ -29,6 +29,7 @@
 ;                         chi2_gndf=chi2_gndf, $
 ;                         emission_line_kinematics_ind=emission_line_kinematics_ind, $
 ;                         emission_line_kinematics_ier=emission_line_kinematics_ier, $
+;                         emission_line_sinst=emission_line_sinst, $
 ;                         emission_line_omitted=emission_line_omitted, $
 ;                         emission_line_intens=emission_line_intens, $
 ;                         emission_line_interr=emission_line_interr, $
@@ -255,6 +256,10 @@
 ;       emission_line_kinematics_ind dblarr[B][E][2]
 ;       emission_line_kinematics_ier dblarr[B][E][2]
 ;               Kinematics and errors for each fitted emission line.
+;
+;       emission_line_sinst dblarr[B][E]
+;               Instrumental dispersion at the fitted line centers of
+;               the emission lines.
 ;
 ;       emission_line_omitted intarr[B][E]
 ;               Flag setting whether or not an emission-line was fit for all E
@@ -491,6 +496,7 @@
 ;                          velocity registration
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
+;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;-
 ;------------------------------------------------------------------------------
 
@@ -689,9 +695,10 @@ END
 FUNCTION MDAP_READ_WANT_SGFIT, $ 
                 weights_gndf, mult_poly_coeff_gndf, emission_line_kinematics_avg, $
                 emission_line_kinematics_aer, chi2_gndf, emission_line_kinematics_ind, $
-                emission_line_kinematics_ier, emission_line_omitted, emission_line_intens, $
-                emission_line_interr, emission_line_fluxes, emission_line_flxerr, $
-                emission_line_EWidth, emission_line_EW_err, reddening_val, reddening_err
+                emission_line_kinematics_ier, emission_line_sinst, emission_line_omitted, $
+                emission_line_intens, emission_line_interr, emission_line_fluxes, $
+                emission_line_flxerr, emission_line_EWidth, emission_line_EW_err, reddening_val, $
+                reddening_err
 
         if n_elements(weights_gndf)                 ne 0 then return, 1
         if n_elements(mult_poly_coeff_gndf)         ne 0 then return, 1
@@ -700,13 +707,14 @@ FUNCTION MDAP_READ_WANT_SGFIT, $
         if n_elements(chi2_gndf)                    ne 0 then return, 1
         if n_elements(emission_line_kinematics_ind) ne 0 then return, 1
         if n_elements(emission_line_kinematics_ier) ne 0 then return, 1
+        if n_elements(emission_line_sinst)          ne 0 then return, 1
         if n_elements(emission_line_omitted)        ne 0 then return, 1
-        if n_elements(emission_line_intens)    ne 0 then return, 1
-        if n_elements(emission_line_interr)    ne 0 then return, 1
-        if n_elements(emission_line_fluxes)    ne 0 then return, 1
-        if n_elements(emission_line_flxerr)    ne 0 then return, 1
-        if n_elements(emission_line_EWidth)    ne 0 then return, 1
-        if n_elements(emission_line_EW_err)    ne 0 then return, 1
+        if n_elements(emission_line_intens)         ne 0 then return, 1
+        if n_elements(emission_line_interr)         ne 0 then return, 1
+        if n_elements(emission_line_fluxes)         ne 0 then return, 1
+        if n_elements(emission_line_flxerr)         ne 0 then return, 1
+        if n_elements(emission_line_EWidth)         ne 0 then return, 1
+        if n_elements(emission_line_EW_err)         ne 0 then return, 1
         if n_elements(reddening_val)                ne 0 then return, 1
         if n_elements(reddening_err)                ne 0 then return, 1
 
@@ -719,19 +727,22 @@ END
 PRO MDAP_READ_SGFIT, $
                 file, weights_gndf, mult_poly_coeff_gndf, emission_line_kinematics_avg, $
                 emission_line_kinematics_aer, chi2_gndf, emission_line_kinematics_ind, $
-                emission_line_kinematics_ier, emission_line_omitted, emission_line_intens, $
-                emission_line_interr, emission_line_fluxes, emission_line_flxerr, $
-                emission_line_EWidth, emission_line_EW_err, reddening_val, reddening_err
+                emission_line_kinematics_ier, emission_line_sinst, emission_line_omitted, $
+                emission_line_intens, emission_line_interr, emission_line_fluxes, $
+                emission_line_flxerr, emission_line_EWidth, emission_line_EW_err, reddening_val, $
+                reddening_err
 
         cols = MDAP_SET_SGFIT_COLS()
 
+        ; !! ORDER IS IMPORTANT !!
         fxbopen, unit, file, 'SGFIT'
         fxbreadm, unit, cols, weights_gndf, mult_poly_coeff_gndf, emission_line_kinematics_avg, $
                               emission_line_kinematics_aer, chi2_gndf, reddening_val, $
                               reddening_err, emission_line_omitted, emission_line_intens, $
                               emission_line_interr, emission_line_kinematics_ind, $
-                              emission_line_kinematics_ier, emission_line_fluxes, $
-                              emission_line_flxerr, emission_line_EWidth, emission_line_EW_err
+                              emission_line_kinematics_ier, emission_line_sinst, $
+                              emission_line_fluxes, emission_line_flxerr, emission_line_EWidth, $
+                              emission_line_EW_err
 
         fxbclose, unit
         free_lun, unit
@@ -748,6 +759,7 @@ PRO MDAP_READ_SGFIT, $
         emission_line_interr = transpose(temporary(emission_line_interr))
         emission_line_kinematics_ind = transpose(temporary(emission_line_kinematics_ind), [2,0,1])
         emission_line_kinematics_ier = transpose(temporary(emission_line_kinematics_ier), [2,0,1])
+        emission_line_sinst = transpose(temporary(emission_line_sinst))
         emission_line_fluxes = transpose(temporary(emission_line_fluxes))
         emission_line_flxerr = transpose(temporary(emission_line_flxerr))
         emission_line_EWidth = transpose(temporary(emission_line_EWidth))
@@ -941,6 +953,7 @@ PRO MDAP_READ_OUTPUT, $
                 emission_line_kinematics_aer=emission_line_kinematics_aer, $
                 chi2_gndf=chi2_gndf, emission_line_kinematics_ind=emission_line_kinematics_ind, $
                 emission_line_kinematics_ier=emission_line_kinematics_ier, $
+                emission_line_sinst=emission_line_sinst, $
                 emission_line_omitted=emission_line_omitted, $
                 emission_line_intens=emission_line_intens, $
                 emission_line_interr=emission_line_interr, $
@@ -1048,17 +1061,18 @@ PRO MDAP_READ_OUTPUT, $
         if MDAP_READ_WANT_SGFIT(weights_gndf, mult_poly_coeff_gndf, emission_line_kinematics_avg, $
                                 emission_line_kinematics_aer, chi2_gndf, $
                                 emission_line_kinematics_ind, emission_line_kinematics_ier, $
-                                emission_line_omitted, emission_line_intens, emission_line_interr, $
-                                emission_line_fluxes, emission_line_flxerr, emission_line_EWidth, $
-                                emission_line_EW_err, reddening_val, reddening_err) eq 1 then begin
+                                emission_line_sinst, emission_line_omitted, emission_line_intens, $
+                                emission_line_interr, emission_line_fluxes, emission_line_flxerr, $
+                                emission_line_EWidth, emission_line_EW_err, reddening_val, $
+                                reddening_err) eq 1 then begin
 
             MDAP_READ_SGFIT, file, weights_gndf, mult_poly_coeff_gndf, $
                              emission_line_kinematics_avg, emission_line_kinematics_aer, $
                              chi2_gndf, emission_line_kinematics_ind, $
-                             emission_line_kinematics_ier, emission_line_omitted, $
-                             emission_line_intens, emission_line_interr, emission_line_fluxes, $
-                             emission_line_flxerr, emission_line_EWidth, emission_line_EW_err, $
-                             reddening_val, reddening_err
+                             emission_line_kinematics_ier, emission_line_sinst, $
+                             emission_line_omitted, emission_line_intens, emission_line_interr, $
+                             emission_line_fluxes, emission_line_flxerr, emission_line_EWidth, $
+                             emission_line_EW_err, reddening_val, reddening_err
 
         endif
 

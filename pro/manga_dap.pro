@@ -155,6 +155,8 @@
 ;                          ExecutionPlan structure.  Moved
 ;                          MDAP_GENERATE_OUTPUT_FILE_NAMES to be part of
 ;                          building the execution plans.
+;       09 Jan 2015: (KBW) Add instrumental dispersion calculation for
+;                          star+gas (GANDALF) results.
 ;-
 ;-------------------------------------------------------------------------------
 
@@ -1033,6 +1035,13 @@ PRO MANGA_DAP, $
 
                 ; Write the results of the emission-line fitting
                 if perform_block.ppxf_only eq 0 then begin
+                
+                    ; Get the instrumental dispersion at the fitted line centers
+                    MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, eml_par, $
+                                                            emission_line_omitted, $
+                                                            emission_line_kinematics_individual, $
+                                                            emission_line_sinst
+                
                     MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
                                        ems_line_key=ems_line_keys[execution_plan[i].ems_par], $
                                        eml_par=eml_par, obj_fit_mask_gndf=obj_fit_mask_gndf, $
@@ -1043,6 +1052,7 @@ PRO MANGA_DAP, $
                                        chi2_gndf=chi2_gndf, $
                                 emission_line_kinematics_ind=emission_line_kinematics_individual, $
                         emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+                                       emission_line_sinst=emission_line_sinst, $
                                        emission_line_omitted=emission_line_omitted, $
                                        emission_line_intens=emission_line_intens, $
                                        emission_line_interr=emission_line_intens_err, $
@@ -1087,6 +1097,7 @@ PRO MANGA_DAP, $
                                     chi2_gndf=chi2_gndf, $
                         emission_line_kinematics_ind=emission_line_kinematics_individual, $
                         emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+                                    emission_line_sinst=emission_line_sinst, $
                                     emission_line_omitted=emission_line_omitted, $
                                     emission_line_intens=emission_line_intens, $
                                     emission_line_interr=emission_line_intens_err, $
@@ -1112,6 +1123,7 @@ PRO MANGA_DAP, $
                                   chi2_gndf=chi2_gndf, $
                         emission_line_kinematics_ind=emission_line_kinematics_individual, $
                         emission_line_kinematics_ier=emission_line_kinematics_individual_err, $
+                                  emission_line_sinst=emission_line_sinst, $
                                   emission_line_omitted=emission_line_omitted, $
                                   emission_line_intens=emission_line_intens, $
                                   emission_line_interr=emission_line_intens_err, $

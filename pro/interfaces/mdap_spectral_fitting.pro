@@ -744,10 +744,9 @@ PRO MDAP_SPECTRAL_FITTING, $
 
         ; Initialize the instrumental dispersion by interpolating the value from
         ;   the spectral resolution at the guess redshifts of the emission lines
-        ; TODO: Make this a function?
-        sig2fwhm = 2.0d*sqrt(alog(4.0d))                ; Conversion from sigma to FWHM
-        instr_disp = interpol(c/obj_sres_lim, obj_wave_lim, $
-                              eml_par_lim.lambda * (1.0d + start[4]/c))/sig2fwhm
+        instr_disp = MDAP_INSTRUMENTAL_DISPERSION(obj_wave_lim, obj_sres_lim, eml_par_lim.lambda, $
+                                                  start[4], $
+                                                  zero_instr_disp=analysis_par.zero_instr_disp)
 
         ; Begin loop over all the object spectra
         if keyword_set(dbg) then $
@@ -768,8 +767,12 @@ PRO MDAP_SPECTRAL_FITTING, $
             ;   previous fit values, if requested
             if i gt 0 and keyword_set(use_previous_guesses) then begin
                 start = MDAP_SPECTRAL_FITTING_START_KIN(sol[0:3], sol[7:8])
-                instr_disp = interpol(c/obj_sres_lim, obj_wave_lim, $
-                                      eml_par_lim.lambda * (1.0d + start[4]/c))/sig2fwhm
+
+                instr_disp = MDAP_INSTRUMENTAL_DISPERSION(obj_wave_lim, obj_sres_lim, $
+                                                          eml_par_lim.lambda, start[4], $
+                                                    zero_instr_disp=analysis_par.zero_instr_disp)
+;               instr_disp = interpol(c/obj_sres_lim, obj_wave_lim, $
+;                                     eml_par_lim.lambda * (1.0d + start[4]/c))/sig2fwhm
             endif
 
 ;           indx = where(eml_par_lim.action eq 'f')
