@@ -67,8 +67,8 @@ class rundap:
                 # Run mode options
                 daily=None, all=None, clobber=None, redo=None, console=None, quiet=None,
                 # Override defaults
-                outver=None, mangaver=None, platelist=None, ifudesignlist=None, modelist=None,
-                combinatorics=False, nsa_cat=None,
+                outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
+                modelist=None, combinatorics=False, nsa_cat=None,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -84,14 +84,16 @@ class rundap:
             quiet - suppress output
 
             outver - output version
-            mangaver - manga module version to use
+            idlutilsver - idlutils module version to use
+            drpver - manga DRP module version to use
+
             platelist - specified list of plates to analyze
             ifudesignlist - specified list of ifudesign to analyze
             modelist - specified list of modes to analysze (CUBE or RSS)
             combinatorics - use all unique combinations of the entered
                             plate/ifudesign/mode lists
 
-            nsacat - specify the NSA catalog to use
+            nsa_cat - specify the NSA catalog to use
 
             label - label to use in cluster queue
             nodes - number of cluster nodes to use
@@ -100,6 +102,9 @@ class rundap:
             walltime - wall time for cluster job
             hard - turn OFF hard keyword for cluster submission
             submit - turn OFF submission of jobs to cluster
+
+            OBSOLETE:
+            mangaver - manga module version to use
         """
 
         # Save run-mode options
@@ -114,12 +119,17 @@ class rundap:
 #        self.corever = self.product_version(simple=True, product='mangacore')
 #        self.drpver = self.product_version(simple=True, product='mangadrp')
         # TODO: Place holder!!!
-        self.mangaver = self.product_version(simple=True, product='mangacore')
+#       self.mangaver = self.product_version(simple=True, product='mangacore')
+#       self.dapver = self.product_version(simple=True, product='mangadap')
+
+        self.idlutilsver = self.product_version(simple=True, product='idlutils')
+        self.drpver = self.product_version(simple=True, product='mangadrp')
         self.dapver = self.product_version(simple=True, product='mangadap')
 
         # Use them or use input versions
+#       self.mangaver = self.mangaver if mangaver is None else mangaver
         self.outver = self.dapver if outver is None else outver
-        self.mangaver = self.mangaver if mangaver is None else mangaver
+        self.idlutilsver = self.idlutilsver if outver is None else outver
 
         # List of files to analyze
         self.platelist = arginp_to_list(platelist, evaluate=True)
