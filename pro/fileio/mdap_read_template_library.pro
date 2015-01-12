@@ -129,6 +129,8 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
             return, 2.73
         endif else if library_key eq 'M11-STELIB' then begin
             return, 3.10
+        endif else if library_key eq 'M11-ELODIE' then begin
+            return, 0.55
         endif else begin
             message, 'Unknown library keyword!'
         endelse
