@@ -422,14 +422,14 @@ class drpcomplete:
     #  User functions
     # ******************************************************************
 
-    # TODO: Make the default plateTargets and NSA catalog files
-    # dependent on the DRP version
-
     def default_plate_targets_file(self):
         """
         Return the default plateTargets file used to get the NSA
         information
         """
+        if self.drpver == 'v1_0_0':
+            return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'plateTargets-12.par')
+
         return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'plateTargets-1.par')
 
 
@@ -437,7 +437,11 @@ class drpcomplete:
         """
         Return the default NSA catalog
         """
-        return os.path.join(environ['MANGA_TARGET'],'input','nsa_v1_0_0.fits')
+        if self.drpver == 'v1_0_0':
+            return os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
+                                '12-nsa_v1b_0_0_v2.fits.gz')
+
+        return os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits')
 
 
     def file_name(self):
