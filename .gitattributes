@@ -461,6 +461,7 @@ python/drpcomplete.py -text
 python/drpfile.py -text
 python/mangadap/__init__.py -text
 python/mangadap/rundap.py -text
+python/yanny.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_setup.bash -text
 scripts/mdap_setup_local.bash -text
