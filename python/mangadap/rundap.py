@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import time
 import os.path
-import pbs.queue
+#import pbs.queue
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -59,6 +59,8 @@ class rundap:
 
         01 Dec 2014: (KBW) Committed to SVN
         02 Dec 2014: (KBW) Changed drpver and idlutilsver to mangaver
+        13 Jan 2015: (KBW) Changed it back, added platetargets
+
     """
 
     # TODO: outver is actually just the directory for output to use in
@@ -68,7 +70,7 @@ class rundap:
                 daily=None, all=None, clobber=None, redo=None, console=None, quiet=None,
                 # Override defaults
                 outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
-                modelist=None, combinatorics=False, nsa_cat=None,
+                modelist=None, combinatorics=False, platetargets=None, nsa_cat=None,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -86,13 +88,13 @@ class rundap:
             outver - output version
             idlutilsver - idlutils module version to use
             drpver - manga DRP module version to use
-
             platelist - specified list of plates to analyze
             ifudesignlist - specified list of ifudesign to analyze
             modelist - specified list of modes to analysze (CUBE or RSS)
             combinatorics - use all unique combinations of the entered
                             plate/ifudesign/mode lists
 
+            platetargets - specify the plateTargets file to use
             nsa_cat - specify the NSA catalog to use
 
             label - label to use in cluster queue
@@ -115,21 +117,17 @@ class rundap:
         self.quiet = quiet
 
         # Determine current versions
-#        self.idlutilsver = self.product_version(simple=True, product='idlutils')
-#        self.corever = self.product_version(simple=True, product='mangacore')
-#        self.drpver = self.product_version(simple=True, product='mangadrp')
-        # TODO: Place holder!!!
-#       self.mangaver = self.product_version(simple=True, product='mangacore')
-#       self.dapver = self.product_version(simple=True, product='mangadap')
-
         self.idlutilsver = self.product_version(simple=True, product='idlutils')
+#        self.corever = self.product_version(simple=True, product='mangacore')
         self.drpver = self.product_version(simple=True, product='mangadrp')
+#        self.mangaver = self.product_version(simple=True, product='mangacore')
         self.dapver = self.product_version(simple=True, product='mangadap')
 
         # Use them or use input versions
-#       self.mangaver = self.mangaver if mangaver is None else mangaver
         self.outver = self.dapver if outver is None else outver
-        self.idlutilsver = self.idlutilsver if outver is None else outver
+        self.idlutilsver = self.idlutilsver if idlutilsver is None else idlutilsver
+        self.drpver = self.drpver if drpver is None else drpver
+#        self.mangaver = self.mangaver if mangaver is None else mangaver
 
         # List of files to analyze
         self.platelist = arginp_to_list(platelist, evaluate=True)
@@ -137,8 +135,9 @@ class rundap:
         self.modelist = arginp_to_list(modelist)
         self.combinatorics = combinatorics
 
-        # NSA catalog to use for drpcomplete file (drpcomplete can
-        # handle nsa_cat = None)
+        # plateTargets file or NSA catalog to use for drpcomplete file (drpcomplete can
+        # handle [platetargets = None, nsa_cat = None])
+        self.platetargets = platetargets
         self.nsa_cat = nsa_cat
 
         # Cluster queue keywords
@@ -195,8 +194,8 @@ class rundap:
 
         # Create and update the drpcomplete file if necessary
         # TODO: Currently does not allow for force=True
-        # TODO: Assumes mangaver = drpver!!
-        self.drpc = drpcomplete(self.outver, self.mangaver, nsa_cat=self.nsa_cat)
+        self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
+                                nsa_cat=self.nsa_cat)
         self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
                          combinatorics=self.combinatorics)
 
@@ -208,7 +207,7 @@ class rundap:
         # See, e.g., selected_drpfile_list().
 
         # TODO: Is this needed if submit=False?
-        self.queue = pbs.queue(verbose=not self.quiet)
+#        self.queue = pbs.queue(verbose=not self.quiet)
 
         # Run the selected mode
         # TODO: Redo should automatically clobber, right?
@@ -263,12 +262,12 @@ class rundap:
         parser.add_argument("-o", "--outver", type=str,
                             help="optional output version, different from product version",
                             default="trunk")
-#        parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use",
-#                            default=None)
-#        parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
-#                            "files to process", default=None)
-        parser.add_argument("-v", "--mangaver", type=str, help="version of manga module to use for"
-                            "processing (also sets mangadrp files to search for)", default=None)
+        parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use",
+                            default=None)
+        parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
+                            "files to process", default=None)
+#        parser.add_argument("-v", "--mangaver", type=str, help="version of manga module to use for"
+#                            "processing (also sets mangadrp files to search for)", default=None)
         parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce",
                             default=None)
         parser.add_argument("-b", "--ifudesignlist", type=str, help="set list of ifus to reduce",
@@ -277,6 +276,9 @@ class rundap:
                             "reduce (CUBE or RSS)", default=None)
         parser.add_argument("-x", "--combinatorics", help="force execution of all permutations of "
                             "the provided lists", action="store_true", default=False)
+
+        parser.add_argument("-g", "--plttargets", type=str, help="path to plateTargets?.par file",
+                            default=None)
         parser.add_argument("-k", "--nsacat", type=str, help="path to NSA catalog to use",
                             default=None)
 
@@ -327,17 +329,23 @@ class rundap:
             self.modelist = arginp_to_list(self.arg.modelist)
         self.combinatorics = self.arg.combinatorics
    
-        # Set the NSA catalog path
+        # Set the plateTargets and NSA catalog path
+        if self.arg.plttargets is not None:
+            self.platetargets = self.arg.plttargets
         if self.arg.nsacat is not None:
             self.nsa_cat = self.arg.nsacat
 
-        # Set the versions to use; self.outver and self.mangaver will
-        # never be none here because of procedures in __init__().
+        # Set the versions to use; versions will never be none because
+        # of procedures in __init__().
         # Will OVERWRITE existing input from __init__()
         if self.arg.outver is not None:
             self.outver = self.arg.outver
-        if self.arg.mangaver is not None:
-            self.mangaver = self.arg.mangaver
+        if self.arg.idlutilsver is not None:
+            self.idlutilsver = self.arg.idlutilsver
+        if self.arg.drpver is not None:
+            self.drpver = self.arg.drpver
+#       if self.arg.mangaver is not None:
+#           self.mangaver = self.arg.mangaver
 
         # Set queue keywords
         if self.arg.umask is not None:
@@ -406,16 +414,16 @@ class rundap:
             return
 
 #        self.queue.verbose = not self.quiet: done in __init__()
-        self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                          walltime=self.walltime)
+#        self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
+#                          walltime=self.walltime)
         
         for drpf in drpfiles:
             scriptfile, stdoutfile, stderrfile = self.prepare_for_analysis(drpf, clobber=clobber)
-            self.queue.append('source {0}'.format(scriptfile),outfile=stdoutfile,errfile=stderrfile)
+#            self.queue.append('source {0}'.format(scriptfile),outfile=stdoutfile,errfile=stderrfile)
         
         #submit to queue
         # hard = hard-coded script files that can be seen
-        self.queue.commit(hard=self.hard,submit=self.submit)
+#        self.queue.commit(hard=self.hard,submit=self.submit)
 
         # If submit is true and (*.done does not exist or clobber=True),
         # submit the scripts to the queue?  What is done otherwise?
@@ -612,13 +620,11 @@ class rundap:
         n_plates = len(self.drpc.data['PLATE'])
 
         # Create the list of CUBE DRP files
-        # TODO: Assumes mangaver = drpver!!
-        drplist = [ drpfile(self.mangaver, self.drpc.data['PLATE'][i],
+        drplist = [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
                             self.drpc.data['IFUDESIGN'][i], 'CUBE') for i in range(0,n_plates) ]
 
         # Add the list of RSS DRP files
-        # TODO: Assumes mangaver = drpver!!
-        drplist = drplist + [ drpfile(self.mangaver, self.drpc.data['PLATE'][i],
+        drplist = drplist + [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
                                       self.drpc.data['IFUDESIGN'][i], 'RSS')
                               for i in range(0,n_plates) if self.drpc.data['MODES'][i] == 2 ]
         return drplist
@@ -647,8 +653,7 @@ class rundap:
                 getcube = False
 
         if getcube:
-            # TODO: Assumes mangaver = drpver!!
-            drplist = [ drpfile(self.mangaver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
+            drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
                                 'CUBE') for i in range(0,n_plates) ]
         else:
             drplist = []
@@ -661,8 +666,7 @@ class rundap:
             except ValueError, e:
                 return drplist                  # List complete
 
-        # TODO: Assumes mangaver = drpver!!
-        drplist = drplist + [ drpfile(self.mangaver, self.drpc.platelist[i],
+        drplist = drplist + [ drpfile(self.drpver, self.drpc.platelist[i],
                                       self.drpc.ifudesignlist[i], 'RSS')
                 for i in range(0,n_plates)
                     if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
@@ -686,8 +690,8 @@ class rundap:
             
         # Get module name
         # TODO: Set outver?
-        module_version = self.module_version()
-#        module_version = self.outver
+#        module_version = self.module_version()
+        module_version = self.outver
 
         # Fault if no module version is available
         if module_version is None:
@@ -709,21 +713,19 @@ class rundap:
                             time.strftime("%a, %d %b %Y %H:%M:%S +0000",time.localtime())))
         file.write('\n')
 
-        # Load the specified manga version (may just reload already loaded
-        # version)
-        if self.mangaver:
-            file.write('module switch manga manga/{0}\n'.format(self.mangaver))
+        # Load the specified IDLUTILS and MANGADRP versions (may just
+        # reload already loaded version)
+        if self.idlutilsver:
+            file.write('module switch idlutils idlutils/{0}\n'.format(self.idlutilsver))
+        if self.drpver:
+            file.write('module switch mangadrp mangadrp/{0}\n'.format(self.drpver))
+#       if self.mangaver:
+#           file.write('module switch manga manga/{0}\n'.format(self.mangaver))
 
         # Load the version of the DAP that is current at the time when
         # rundap was called (may just reload already loaded version)
         # TODO: Load current version as opposed to outver?
         file.write('module switch mangadap mangadap/{0}\n'.format(module_version))
-
-#        # Load the specified DRP version (may just reload already loaded
-#        # version)
-#        if self.drpver:
-#            file.write('module unload mangadrp \n')
-#            file.write('module switch mangadrp/{0} '.format(self.drpver))
 
         # Create the started and running touch files
         # TODO: Is there ever a case when *.started exists, but

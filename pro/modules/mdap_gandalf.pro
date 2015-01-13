@@ -208,7 +208,10 @@
 ; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
 ; Feb 2014, L. Coccato.
 ; v0.5 28 Mar 2014
-
+;
+;   12 Jan 2015: (KBW) Resolve confict between IDL8
+;                      lib/graphics/legend.pro and IDLUTILS legend.pro,
+;                      now called al_legend.pro .
 ;------------------------------------------------------------------------------------
 FUNCTION BVLSN_Solve_pxf, A, b, degree, $
                           FOR_ERRORS=for_errors, NLINES=nlines,external_library=external_library
@@ -1045,9 +1048,14 @@ PRO SHOW_FIT,galaxy, bestfit, emission, best_pars, sol, GOODPIXELS=goodpixels, M
         endif else int_reddening_attenuation = 1.0 
         oplot,((bestfit-emission)/reddening_attenuation),col=140,linestyle=1
     endelse
-    legend,['data','fit','res.-noise'], $
+;   legend,['data','fit','res.-noise'], $
+;     color=[255,210,255],linestyle=[0,0,2],box=0,/bottom,/left
+;   legend,['residuals','emission-lines','unadjusted continuum'], $
+;     color=[128,80,140],linestyle=[1,0,1],box=0,/bottom,/right
+    ; IDL 8 conflict with IDLUTILS, IDLUTILS version changed
+    al_legend,['data','fit','res.-noise'], $
       color=[255,210,255],linestyle=[0,0,2],box=0,/bottom,/left
-    legend,['residuals','emission-lines','unadjusted continuum'], $
+    al_legend,['residuals','emission-lines','unadjusted continuum'], $
       color=[128,80,140],linestyle=[1,0,1],box=0,/bottom,/right
 
 END

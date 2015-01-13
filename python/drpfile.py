@@ -50,6 +50,9 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
 
     # If the input value is a string, convert it to a list of strings
     if type(out) == str:
+        out = out.replace("[", "")
+        out = out.replace("]", "")
+        out = out.replace(" ", "")
         out = out.split(',')
 
     # If the input is still not a list, make it one

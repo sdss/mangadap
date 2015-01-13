@@ -5,6 +5,7 @@ import os.path
 from os import environ, makedirs, walk
 import numpy
 
+from yanny import yanny
 from drpfile import drpfile, drpfile_list, parse_drp_file_name, arginp_to_list
 from astropy.io import fits
 from astropy import constants
@@ -20,14 +21,18 @@ class drpcomplete:
     drpcomplete object with creates, updates, and reads data from the
     drpcomplete file, uses as a reference file for the DAP.
 
+    Provided files have priority over default ones.
+    platetargets file has priority over NSA catalog.
+
     REVISION HISTORY:
         20 Nov 2014: (KBW) Started
         01 Dec 2014: (KBW) Committed to SVN
+        12 Jan 2015: (KBW) Allow for use of plateTargets file
     """
 
 
-    def __init__(self, dapver, drpver, platelist=None, ifudesignlist=None, nsa_cat=None,
-                 force=False):
+    def __init__(self, dapver, drpver, platelist=None, ifudesignlist=None, platetargets=None,
+                 nsa_cat=None, force=False):
         """
         Initializes the class and its members.
     
@@ -36,7 +41,10 @@ class drpcomplete:
             drpver - DRP version to use
             platelist - specified list of plates to analyze
             ifudesignlist - specified list of ifudesign to analyze
+
+            platetargets - plate targets file to use for data collection
             nsa_cat - NSA catalog to use for data collection
+
             force - Force updates, even if the data already exists
         """
 
@@ -52,7 +60,16 @@ class drpcomplete:
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
-        self.nsa_cat = self.default_nsa_catalog() if nsa_cat is None else nsa_cat
+        if platetargets is not None and os.path.exists(platetargets):
+            self.platetargets = platetargets
+            self.nsa_cat = None
+        elif nsa_cat is not None and os.path.exists(nsa_cat):
+            self.platetargets = None
+            self.nsa_cat = nsa_cat
+        else:
+            self.platetargets = self.default_plate_targets_file()
+            self.nsa_cat = self.default_nsa_catalog()
+
         self.force = force
 
         if os.path.exists(self.file_path()):
@@ -65,6 +82,19 @@ class drpcomplete:
     # ******************************************************************
     #  Utility functions
     # ******************************************************************
+
+
+    def _drp_mangaid(self, drplist):
+        """Grab the mangaids from the DRP fits files."""
+        nn = len(drplist)
+        mangaid = []
+        print("Gathering MANGA-IDs for DRP files...")
+        for i in range(0,nn):
+            mangaid_, ra, dec = drplist[i].object_data()
+            mangaid = mangaid + [mangaid_]
+        print("... done")
+        mangaid = numpy.array(mangaid)
+        return mangaid
 
 
     def _drp_info(self, drplist):
@@ -83,6 +113,58 @@ class drpcomplete:
         print("... done")
         mangaid = numpy.array(mangaid)
         return mangaid, objra, objdec
+
+
+    def _read_platetargets(self, verbose=False):
+        """Read the platetargets file and the number of entries."""
+        if not os.path.exists(self.platetargets):
+            raise Exception('Cannot open platetargets file: {0}'.format(self.platetargets))
+
+        par_data = yanny(self.platetargets, np=True)
+        n_par = numpy.shape(par_data['PLTTRGT']['mangaid'])[0]
+
+        return par_data, n_par
+
+
+    def _match_platetargets(self, mangaid, def_veldisp):
+        """
+        Read the platetargets file to find the observed DRP objects and
+        their ancillary information.
+        """
+
+        # Read the platetargets file
+        print('Reading platetargets...')
+        par_data, n_par = self._read_platetargets(verbose=True)
+        print('DONE')
+
+        # Initialize the output arrays (needed in case some DRP targets not found)
+        n_drp = len(mangaid)
+        nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
+        vel = numpy.zeros(n_drp, dtype=numpy.float64)
+        veldisp = numpy.full(n_drp, def_veldisp, dtype=numpy.float64)
+        ell = numpy.zeros(n_drp, dtype=numpy.float64)
+        pa = numpy.zeros(n_drp, dtype=numpy.float64)
+        Reff = numpy.zeros(n_drp, dtype=numpy.float64)
+
+        print('Searching platetargets file for observed galaxies...')
+        for i in range(0,n_drp):
+            indx = numpy.where(par_data['PLTTRGT']['mangaid'] == mangaid[i])
+            if par_data['PLTTRGT']['mangaid'][indx].shape[0] == 0:
+                raise Exception('Could not find MANGAID={0} in platetargets.'.format(mangaid[i]))
+
+            nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
+            
+            vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
+            ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
+            pa[i] = par_data['PLTTRGT']['nsa_sersic_phi'][indx][0]
+            Reff[i] = par_data['PLTTRGT']['nsa_sersic_th50'][indx][0]
+
+            if par_data['PLTTRGT']['nsa_vdisp'][indx][0] > 0.:
+                veldisp[i] = par_data['PLTTRGT']['nsa_vdisp'][indx][0]
+
+        print('DONE')
+
+        return nsaid, vel, veldisp, ell, pa, Reff
 
 
     def _read_nsa(self, verbose=False):
@@ -340,8 +422,21 @@ class drpcomplete:
     #  User functions
     # ******************************************************************
 
+    # TODO: Make the default plateTargets and NSA catalog files
+    # dependent on the DRP version
+
+    def default_plate_targets_file(self):
+        """
+        Return the default plateTargets file used to get the NSA
+        information
+        """
+        return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'plateTargets-1.par')
+
 
     def default_nsa_catalog(self):
+        """
+        Return the default NSA catalog
+        """
         return os.path.join(environ['MANGA_TARGET'],'input','nsa_v1_0_0.fits')
 
 
@@ -362,6 +457,7 @@ class drpcomplete:
 
     def update(self, platelist=None, ifudesignlist=None, combinatorics=False, force=False,
                alldrp=False, def_veldisp=100.0, match_r=10.0):
+#              , null_veldisp=-999.0):
         """
         Update the DRP complete file.
         
@@ -424,16 +520,36 @@ class drpcomplete:
         nn = len(drplist)
         print('Number of DRP files: {0}'.format(nn))
 
-        mangaid, objra, objdec = self._drp_info(drplist)
-        nsaid, vel, veldisp, ell, pa, Reff = self._match_nsa(objra, objdec, def_veldisp, match_r)
-        self.write(self.dapver, self.drpver, self.nsa_cat, [drplist[i].plate for i in range(0,nn)],
-                   [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, nsaid, objra,
-                   objdec, vel, veldisp, ell, pa, Reff)
-        self._read_data()
+        if self.platetargets is not None and os.path.exists(self.platetargets):
+
+            mangaid, objra, objdec = self._drp_info(drplist)
+            nsaid, vel, veldisp, ell, pa, Reff = self._match_platetargets(mangaid, def_veldisp)
+
+            self.write(self.dapver, self.drpver, self.platetargets, None,
+                       [drplist[i].plate for i in range(0,nn)],
+                       [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, nsaid, objra,
+                       objdec, vel, veldisp, ell, pa, Reff)
+
+            self._read_data()
+
+        elif self.nsa_cat is not None and os.path.exists(self.nsa_cat):
+
+            mangaid, objra, objdec = self._drp_info(drplist)
+            nsaid, vel, veldisp, ell, pa, Reff = self._match_nsa(objra, objdec, def_veldisp,
+                                                                 match_r)
+            self.write(self.dapver, self.drpver, None, self.nsa_cat,
+                       [drplist[i].plate for i in range(0,nn)],
+                       [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, nsaid, objra,
+                       objdec, vel, veldisp, ell, pa, Reff)
+                       
+            self._read_data()
+
+        else:
+            raise Exception('Cannot update because catalogs undefined or unavailable.');
 
 
-    def write(self, dapver, drpver, nsa_cat, platelist, ifudesignlist, modes, mangaid, nsaid, objra,
-              objdec, vel, veldisp, ell, pa, Reff, clobber=True):
+    def write(self, dapver, drpver, platetargets, nsa_cat, platelist, ifudesignlist, modes,
+              mangaid, nsaid, objra, objdec, vel, veldisp, ell, pa, Reff, clobber=True):
         """Write the drpcomplete file."""
 
         out=self.file_path()
@@ -458,7 +574,10 @@ class drpcomplete:
         hdr = fits.Header()
         hdr['VERSDAP'] = dapver
         hdr['VERSDRP'] = drpver
-        hdr['NSACAT'] = nsa_cat
+        if nsa_cat is not None:
+            hdr['NSACAT'] = nsa_cat
+        if platetargets is not None:
+            hdr['PLTARG'] = platetargets
         hdr['AUTHOR'] = 'K.B. Westfall <kbwestfall@gmail.com>'
 
         hdu0 = fits.PrimaryHDU(header=hdr)
@@ -505,6 +624,9 @@ class drpcomplete:
 
     def write_par(self, ofile, mode, plate=None, ifudesign=None, index=None, reread=False,
                   force=True):
+        """
+        Write the SDSS parameter (Yanny) file for use with the MaNGA DAP.
+        """
 
         if os.path.exists(ofile) and not force:
             raise IOError('Parameter file already exists.  Set force=True to overwrite.')
