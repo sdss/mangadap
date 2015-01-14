@@ -524,7 +524,7 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 2                                       ; Number of ExecutionPlans to produce
+        niter = 1                                       ; Number of ExecutionPlans to produce
 ;       niter = 4                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
@@ -625,11 +625,11 @@ PRO MDAP_EXECUTION_SETUP, $
         bin_par[*].ston = 40.0d
 
         w_range_sn[0,*] = [5560.00, 6942.00]
-        w_range_sn[1,*] = [5560.00, 6942.00]
+;       w_range_sn[1,*] = [5560.00, 6942.00]
         threshold_ston_bin[*] = -300.0d
 
         w_range_analysis[0,*] = [3650.,10300.] 
-        w_range_analysis[1,*] = [3650.,10300.] 
+;       w_range_analysis[1,*] = [3650.,10300.] 
         threshold_ston_analysis[*] = 0.0d
 
         analysis[*,0] = 'stellar-cont'
@@ -637,8 +637,9 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis[*,2] = 'emission-line'
         analysis[*,3] = 'abs-indices'
 
-        tpl_lib_analysis[0] = 0
-        tpl_lib_analysis[1] = 1
+        tpl_lib_analysis[0] = 1                 ; Use STELIB library
+;       tpl_lib_analysis[0] = 0
+;       tpl_lib_analysis[1] = 1
         ems_par_analysis[*] = 0
         abs_par_analysis[*] = 0
 
@@ -646,7 +647,7 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
-        analysis_par[*].zero_instr_disp = 1
+        analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
         analysis_prior[*] = ''      ; No priors
 

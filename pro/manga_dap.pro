@@ -342,13 +342,13 @@ PRO MANGA_DAP, $
         MDAP_SETUP_IO, root_name, output_root_dir, datacube_name, file_root, output_dir, $
                        output_file_root
 
-        ; TODO: These are not really used yet
+        ; TODO: save_intermediate_steps and remove_null_templates are not used
         ; Check if save_intermediate_steps exits, if not set to not save intermediate steps
         if n_elements(save_intermediate_steps) eq 0 then $
             save_intermediate_steps = 0
 
         ; Check if remove_null_elemens exits, if not set to remove null templates
-        ; TODO: Where are the removed from?
+        ; TODO: Where are they removed from?
         if n_elements(remove_null_templates) eq 0 then $
             remove_null_templates = 0
 
@@ -720,6 +720,12 @@ PRO MANGA_DAP, $
                 endif
             endif else $
                 MDAP_ERASEVAR, abs_par  ; Make sure it doesn't exist if no abs_par is defined
+
+            ; Delete the exiting file if overwrite=1
+            if execution_plan[i].overwrite eq 1 then begin
+                print, 'Removing existing file: '+execution_plan[i].ofile
+                FILE_DELETE, execution_plan[i].ofile
+            endif
 
             ; Setup which analysis blocks (3-6) to perform
             perform_block = MDAP_ANALYSIS_BLOCKS_TO_PERFORM(execution_plan[i], ndrp, tpl_out_fits, $
