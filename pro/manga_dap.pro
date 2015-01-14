@@ -722,7 +722,8 @@ PRO MANGA_DAP, $
                 MDAP_ERASEVAR, abs_par  ; Make sure it doesn't exist if no abs_par is defined
 
             ; Delete the exiting file if overwrite=1
-            if execution_plan[i].overwrite eq 1 then begin
+            if execution_plan[i].overwrite eq 1 and FILE_TEST(execution_plan[i].ofile) eq 1 then $
+            begin
                 print, 'Removing existing file: '+execution_plan[i].ofile
                 FILE_DELETE, execution_plan[i].ofile
             endif
