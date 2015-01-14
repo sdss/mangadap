@@ -326,8 +326,12 @@ PRO MANGA_DAP, $
             bvls_shared_lib=external_library+'bvls.so'
             if file_test(bvls_shared_lib) eq 0 then $
                 bvls_shared_lib=external_library+'bvls.dylib'
-            if file_test(bvls_shared_lib) eq 0 then $
-                message, 'Shared object library does not exist!'
+            if file_test(bvls_shared_lib) eq 0 then begin
+                print, 'Shared object library does not exist! Continuing with internal routines.'
+                ; Undefine the variables
+                tempvar = size(temporary(external_library))
+                tempvar = size(temporary(bvls_shared_lib))
+            endif
         endif
 
         ; Read the input parameters
