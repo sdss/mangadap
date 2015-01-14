@@ -57,8 +57,8 @@ PRO MDAP_CUBE_ONSKY_XY, $
         y = MAKE_ARRAY(nx*ny, /double)
         for i=0,nx-1 do begin
             for j=0,ny-1 do begin
-                x[i*ny+j,*] = i+1                       ; Set the pixel coordinates
-                y[i*ny+j,*] = j+1
+                x[i*ny+j] = i+1                         ; Set the pixel coordinates
+                y[i*ny+j] = j+1
             endfor
         endfor
 
