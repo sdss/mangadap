@@ -31,8 +31,8 @@ class drpcomplete:
     """
 
 
-    def __init__(self, dapver, drpver, platelist=None, ifudesignlist=None, platetargets=None,
-                 nsa_cat=None, force=False):
+    def __init__(self, dapver=None, drpver=None, platelist=None, ifudesignlist=None, 
+                 platetargets=None, nsa_cat=None, force=False):
         """
         Initializes the class and its members.
     
@@ -49,10 +49,14 @@ class drpcomplete:
         """
 
         # Input properties
+        if dapver is None:
+            dapver = environ['MANGADAP_VER']
         if (type(dapver) != str):
             raise Exception('DAP version must be a string')
         self.dapver = dapver
 
+        if drpver is None:
+            drpver = environ['MANGADRP_VER']
         if (type(drpver) != str):
             raise Exception('DRP version must be a string')
         self.drpver = drpver
@@ -126,7 +130,7 @@ class drpcomplete:
         return par_data, n_par
 
 
-    def _match_platetargets(self, mangaid, def_veldisp):
+    def _match_platetargets(self, def_veldisp):
         """
         Read the platetargets file to find the observed DRP objects and
         their ancillary information.
@@ -138,19 +142,29 @@ class drpcomplete:
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
-        n_drp = len(mangaid)
+        n_drp = len(self.platelist)
+        mangaid = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['mangaid'].dtype)
+        objra = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_ra'].dtype)
+        objdec = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
         nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
-        vel = numpy.zeros(n_drp, dtype=numpy.float64)
-        veldisp = numpy.full(n_drp, def_veldisp, dtype=numpy.float64)
-        ell = numpy.zeros(n_drp, dtype=numpy.float64)
-        pa = numpy.zeros(n_drp, dtype=numpy.float64)
-        Reff = numpy.zeros(n_drp, dtype=numpy.float64)
+        vel = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_redshift'].dtype)
+        veldisp = numpy.full(n_drp, def_veldisp, dtype=par_data['PLTTRGT']['nsa_vdisp'].dtype)
+        ell = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_ba'].dtype)
+        pa = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_phi'].dtype)
+        Reff = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_th50'].dtype)
 
         print('Searching platetargets file for observed galaxies...')
         for i in range(0,n_drp):
-            indx = numpy.where(par_data['PLTTRGT']['mangaid'] == mangaid[i])
-            if par_data['PLTTRGT']['mangaid'][indx].shape[0] == 0:
-                raise Exception('Could not find MANGAID={0} in platetargets.'.format(mangaid[i]))
+            indx = numpy.where((par_data['PLTTRGT']['plateid'] == self.platelist[i]) &
+                               (par_data['PLTTRGT']['ifudesign'] == self.ifudesignlist[i]))
+
+            if len(indx[0]) == 0:
+                raise Exception('Could not find plate={0}, ifudesign={1} in {2}.'.format(
+                                self.platelist[i], self.ifudesignlist[i], self.platetargets))
+
+            mangaid[i] = numpy.string_(par_data['PLTTRGT']['mangaid'][indx][0])
+            objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
+            objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
 
             nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
             
@@ -164,7 +178,7 @@ class drpcomplete:
 
         print('DONE')
 
-        return nsaid, vel, veldisp, ell, pa, Reff
+        return mangaid, objra, objdec, nsaid, vel, veldisp, ell, pa, Reff
 
 
     def _read_nsa(self, verbose=False):
@@ -428,9 +442,11 @@ class drpcomplete:
         information
         """
         if self.drpver == 'v1_0_0':
-            return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'plateTargets-12.par')
+            return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                'plateTargets-12.par')
 
-        return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'plateTargets-1.par')
+        return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                            'plateTargets-1.par')
 
 
     def default_nsa_catalog(self):
@@ -526,8 +542,11 @@ class drpcomplete:
 
         if self.platetargets is not None and os.path.exists(self.platetargets):
 
-            mangaid, objra, objdec = self._drp_info(drplist)
-            nsaid, vel, veldisp, ell, pa, Reff = self._match_platetargets(mangaid, def_veldisp)
+#           mangaid, objra, objdec = self._drp_info(drplist)
+#           nsaid, vel, veldisp, ell, pa, Reff = self._match_platetargets(mangaid, def_veldisp)
+
+            mangaid, objra, objdec, nsaid, vel, veldisp, ell, pa, Reff \
+                    = self._match_platetargets(def_veldisp)
 
             self.write(self.dapver, self.drpver, self.platetargets, None,
                        [drplist[i].plate for i in range(0,nn)],

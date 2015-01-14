@@ -1,9 +1,10 @@
 from __future__ import division
 from __future__ import print_function
 
+import subprocess
 import time
 import os.path
-#import pbs.queue
+import pbs.queue
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -127,6 +128,8 @@ class rundap:
         self.outver = self.dapver if outver is None else outver
         self.idlutilsver = self.idlutilsver if idlutilsver is None else idlutilsver
         self.drpver = self.drpver if drpver is None else drpver
+
+#        print(self.outver, self.idlutilsver, self.drpver)
 #        self.mangaver = self.mangaver if mangaver is None else mangaver
 
         # List of files to analyze
@@ -167,11 +170,10 @@ class rundap:
         if self.all: nrun += 1
         if self.redo: nrun += 1
         if nrun == 0 or nrun > 1:
-            raise Exception("Must request one (and only one) run mode!")
+            raise Exception('Must request one (and only one) run mode!')
 
         # Check argument combination makes sense
         # TODO: Does an error need to be thrown here, or just warn user
-        # that --clobber will be ignored?
         if self.clobber and not self.all:
             parser.error('Clobber keyword can only be set if all specified (-a,--all)!')
 
@@ -206,11 +208,11 @@ class rundap:
         # combined with self.modelist to get the DRP files to analyze.
         # See, e.g., selected_drpfile_list().
 
-        # TODO: Is this needed if submit=False?
-#        self.queue = pbs.queue(verbose=not self.quiet)
+        # Prep the verbosity of the queue if submitting
+        if self.submit:
+            self.queue = pbs.queue(verbose=not self.quiet)
 
         # Run the selected mode
-        # TODO: Redo should automatically clobber, right?
         if self.daily:
             self.run_daily()
         if self.all:
@@ -362,7 +364,29 @@ class rundap:
             self.hard = self.arg.hard
         if self.arg.submit is not None:
             self.submit = self.arg.submit
+
+#       print(self.submit)
+#       self.submit = False
     
+
+    def _fill_queue(self, drpfiles, clobber=False):
+
+        if self.submit:
+            self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
+                              walltime=self.walltime)
+        
+        for drpf in drpfiles:
+            scriptfile, stdoutfile, stderrfile = self.prepare_for_analysis(drpf, clobber=clobber)
+            if self.submit:
+                self.queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
+                                  errfile=stderrfile)
+        
+        #submit to queue
+        # hard = hard-coded script files that can be seen
+        if self.submit:
+            self.queue.commit(hard=self.hard,submit=self.submit)
+
+
 
     # ******************************************************************
     #  MaNGA DAP RUN-MODE ROUTINES
@@ -384,10 +408,10 @@ class rundap:
         # Select the daily DRP files and write the script files (do not
         # clobber)
         drpfiles = self.select_daily()
-        scriptfiles, stdoutfiles, stderrfiles = self.prepare_for_analysis(drpfiles)
+        if len(drpfiles) == 0:
+            return
 
-        # If submit is true, submit the scripts to the queue?  What is
-        # done otherwise?
+        self._fill_queue(drpfiles)
 
 
     def run_all(self, clobber=False):
@@ -401,9 +425,6 @@ class rundap:
         This mode is manually called by humans.
         """
 
-        # raise Exception('All mode (-a,--all) not yet implemented.')
-
-        # TODO: Should clobber override self.clobber?
         self.label = '{0}_clobber'.format(self.label) if clobber else '{0}_all'.format(self.label)
         # In here, qos should never be anything but None; always set in daily
         if self.qos is not None:
@@ -413,21 +434,7 @@ class rundap:
         if len(drpfiles) == 0:
             return
 
-#        self.queue.verbose = not self.quiet: done in __init__()
-#        self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-#                          walltime=self.walltime)
-        
-        for drpf in drpfiles:
-            scriptfile, stdoutfile, stderrfile = self.prepare_for_analysis(drpf, clobber=clobber)
-#            self.queue.append('source {0}'.format(scriptfile),outfile=stdoutfile,errfile=stderrfile)
-        
-        #submit to queue
-        # hard = hard-coded script files that can be seen
-#        self.queue.commit(hard=self.hard,submit=self.submit)
-
-        # If submit is true and (*.done does not exist or clobber=True),
-        # submit the scripts to the queue?  What is done otherwise?
-
+        self._fill_queue(drpfiles, clobber=clobber)
 
     def run_redo(self, clobber=True):
         """
@@ -436,17 +443,20 @@ class rundap:
         Manually called by humans.
         """
 
-        #raise Exception('Redo mode (-r,--redo) not yet implemented.')
-
         self.label = '{0}_redo'.format(self.label)
+        # In here, qos should never be anything but None; always set in daily
+        if self.qos is not None:
+            raise Exception('This qos is reserved for single-node usage.')
 
-        drpfiles = self.select_redo()
-        scriptfiles, stdoutfiles, stderrfiles = self.prepare_for_analysis(drpfiles, clobber=clobber)
+        drpfiles = self.select_redo(clobber=clobber)
+        print(len(drpfiles))
+        if len(drpfiles) == 0:
+            return
 
-        # If submit is true, submit the scripts to the queue?  What is
-        # done otherwise?
-    
- 
+        self._fill_queue(drpfiles, clobber=clobber)
+
+
+
     # ******************************************************************
     #  Reduction Management
     # ******************************************************************
@@ -460,8 +470,6 @@ class rundap:
         default product is mangadap.
         """
 
-        # TODO: Where does subprocess get imported?  Always imported?
-
         # Expects to find an executable called {$product}_version that
         # reports the SDSS-III/SDSS-IV product version.  If simple=True,
         # only the first element of the reported version is set to
@@ -469,7 +477,8 @@ class rundap:
         try:
             version = subprocess.check_output('%s_version' % product, shell=True)
             version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
-        except:
+        except Exception, e:
+            print(e)
             version = None
 
         return version
@@ -587,6 +596,8 @@ class rundap:
         drplist = self.full_drpfile_list()
         n_drp = len(drplist)
         print(n_drp)
+        for i in range(0,n_drp):
+            print(drplist[i].file_path())
 #        for i in range(0,n_drp):
 #            print(drplist[i].file_name())
 #            print(self.dap_complete(drplist[i]))
@@ -597,7 +608,7 @@ class rundap:
         return [ drplist[i] for i in range(0,n_drp) if not self.dap_complete(drplist[i]) ]
 
 
-    def select_redo(self, clobber=True):
+    def select_redo(self, clobber=False):
 
         drplist = self.selected_drpfile_list()
 
