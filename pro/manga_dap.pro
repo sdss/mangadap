@@ -291,7 +291,9 @@ PRO MANGA_DAP, $
         inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, dapsrc=dapsrc, $
         nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
 
-        manga_dap_version = '0.92'      ; set the version number
+        print, 'entered manga_dap'
+
+        manga_dap_version = '0.93'      ; set the version number
         t0=systime(/seconds)/60./60.    ; start time
 
         ; BLOCK 0 --------------------------------------------------------------
