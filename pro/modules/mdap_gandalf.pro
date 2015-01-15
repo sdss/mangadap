@@ -522,6 +522,7 @@ if not keyword_set(for_errors) then begin
         parinfo[i].limits   = start_pars[i] + [-1d3,1d3]/velscale ; Limits for Vgas (from km/s to pixels)
         ;parinfo[i+1].limits = [-1d4,1d4]/velscale                ; Limits for Sgas (from km/s to pixels)
         ;parinfo[i+1].limits = [0.2d,1d4/velscale]                ; Limits for Sgas (from km/s to pixels)
+        ; TODO: (KBW) why not set the lower limit to 0.0?
         parinfo[i+1].limits = [0.2d,3d2/velscale]                ; Limits for Sgas (from km/s to pixels)
         if n_elements(range_v_gas) ne 0 then parinfo[i].limits   = start_pars[i] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+1].limits   =  [max([0.2d,start_pars[i+1]+range_s_gas[0]/velscale ]),start_pars[i+1]+range_s_gas[1]/velscale ]
@@ -1191,7 +1192,16 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
 ; considered as lower estimates for the real uncertainties.
 ;print, 'entering mpfit'
 best_pars = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
-             FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
+             FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, $
+             NITER=niter, /QUIET)
+
+if status le 0 then $
+    print, 'WARNING: MPFIT ENDED IN ERROR! status=', status
+if status eq 5 then $
+    print, 'WARNING: MPFIT MAY NOT HAVE CONVERGED! status=5'
+
+print, 'Number of MPFIT iterations: ', niter
+
 ;
 ;if errmsg ne '' then begin
 ;    print, errmsg
@@ -1311,7 +1321,15 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; the amplitudes, and not only for the line position and width.
     best_pars_2 = mpfit('FITFUNC_GAS', start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
                         FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, $
-                        /QUIET)
+                        NITER=niter, /QUIET)
+
+    if status le 0 then $
+        print, 'WARNING: MPFIT ENDED IN ERROR! status=', status
+    if status eq 5 then $
+        print, 'WARNING: MPFIT MAY NOT HAVE CONVERGED! status=5'
+
+    print, 'Number of MPFIT iterations: ', niter
+
 ;stop
     ; -----------------
     ; Re-evaluate the fit residuals to re-assess the fit quality and
