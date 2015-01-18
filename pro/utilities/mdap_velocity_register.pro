@@ -99,6 +99,7 @@ PRO MDAP_VELOCITY_REGISTER, $
         ; Convert velocity to redshift
         c=299792.458d                           ; Speed of light in km/s
         redshift = velocity/c
+        print, 'redshift[0]:', redshift[0]
 
         ; Get the dimensions of the input data
         ; TODO: Provide some checks?
@@ -117,11 +118,13 @@ PRO MDAP_VELOCITY_REGISTER, $
         if n_elements(gflag) eq ns then $
             reg = gflag
 
+;       print, ' non-zero pixels: ', n_elements(where(flux gt 0.))
         for i=0,ns-1 do begin
             if reg[i] eq 0 then $               ; Flag to not register spectrum
                 continue
             print, 'Velocity registering spectrum: ' + MDAP_STC(i+1, /integer) + '/' $
                    + MDAP_STC(ns, /integer) + ', velocity=' + MDAP_STC(velocity[i])
+;           print, '    Input unmasked: ', n_elements(where(mask[i,*] lt 1.))
 
             ; Interpolate the spectrum at its deredshifted wavelengths
             ; to the input wavelength vector such that the wavelength
@@ -131,7 +134,7 @@ PRO MDAP_VELOCITY_REGISTER, $
             mask[i,*] = interpol(mask_[i,*], wave/(1.0d + redshift[i]), wave)
 
             ; Fix the mask to be either 1 (masked) or 0 (unmasked)
-            indx = where(mask lt 0.5, count, complement=nindx, ncomplement=ncount)
+            indx = where(mask[i,*] lt 0.5, count, complement=nindx, ncomplement=ncount)
 ;           if indx[0] ne -1 then $
             if count ne 0 then $
                 mask[i,indx] = 0.0
@@ -141,7 +144,7 @@ PRO MDAP_VELOCITY_REGISTER, $
 
             ; Mask bad ivar interpolations
             if keyword_set(bad_ivar) then begin
-                indx = where(ivar le 0., count)
+                indx = where(ivar[i,*] le 0., count)
 ;               if indx[0] ne -1 then $
                 if count ne 0 then $
                     mask[i,indx] = 1.0
@@ -156,7 +159,13 @@ PRO MDAP_VELOCITY_REGISTER, $
                 ivar[i,indx] = 1.0d
                 mask[i,indx] = 1.0d
             endif
+;           print, '    Output unmasked: ', n_elements(where(mask[i,*] lt 1.))
+;           plot, wave, flux[i,*]
+;           indx = where(mask[i,*] gt 0., count)
+;           if count ne 0 then $
+;               oplot, wave, flux[i,indx], color=200
         endfor
+;       print, ' non-zero VR pixels: ', n_elements(where(flux gt 0.))
 
 END
 

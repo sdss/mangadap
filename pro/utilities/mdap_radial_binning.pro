@@ -165,6 +165,7 @@ PRO MDAP_RADIAL_BINNING, $
                                bin_par.ell, R, theta
 
         ; Scale R if requested
+        print, 'RSCALE: ', bin_par.rscale
         if bin_par.rscale gt 0.0 then $
             R = R / bin_par.rscale
 
@@ -179,11 +180,18 @@ PRO MDAP_RADIAL_BINNING, $
         if bin_par.re lt 0.0 then $
             bin_par.re = max(R)+0.1d
 
+;       print, 'RS: ', bin_par.rs
+;       print, 'minR', R[r_sort_indx[0]], R[r_sort_indx[1]], R[r_sort_indx[2]], R[r_sort_indx[3]] 
+;       print, 'RE: ', bin_par.re
+;       print, 'maxR', max(R)
+
         ; Get the lower and upper edges of the radial bins
         if bin_par.rlog eq 1 then begin
             ; Minimum r must be positive for logarithmic binning
-            if bin_par.rs lt 0.001 then $
-                bin_par.rs = min(R)-0.1d
+            if bin_par.rs lt 0.001 then begin
+                indx = where(R gt 0.001)
+                bin_par.rs = min(R[indx]);-0.1d
+            endif
             bin_edges = MDAP_RANGE(bin_par.rs, bin_par.re, bin_par.nr+1, /log)
         endif else $
             bin_edges = MDAP_RANGE(bin_par.rs, bin_par.re, bin_par.nr+1)
@@ -191,10 +199,10 @@ PRO MDAP_RADIAL_BINNING, $
         binned_rupp = bin_edges[1:bin_par.nr]
 
 ;        print, bin_par.rs, bin_par.re, bin_par.rlog
-;        for i=0,bin_par.nr-1 do $
-;            print, binned_rlow[i], binned_rupp[i]
-;
-;        stop
+        for i=0,bin_par.nr-1 do $
+            print, binned_rlow[i], binned_rupp[i]
+
+;       stop
 
         binned_wrad = dblarr(bin_par.nr,/nozero)        ; Allocate array with the weighted radius
         binned_ston = dblarr(bin_par.nr)                ; ... the S/N per bin

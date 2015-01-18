@@ -4,7 +4,7 @@ from __future__ import print_function
 import subprocess
 import time
 import os.path
-import pbs.queue
+#import pbs.queue
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -118,11 +118,11 @@ class rundap:
         self.quiet = quiet
 
         # Determine current versions
-        self.idlutilsver = self.product_version(simple=True, product='idlutils')
+#        self.idlutilsver = self.product_version(simple=True, product='idlutils')
 #        self.corever = self.product_version(simple=True, product='mangacore')
-        self.drpver = self.product_version(simple=True, product='mangadrp')
+#        self.drpver = self.product_version(simple=True, product='mangadrp')
 #        self.mangaver = self.product_version(simple=True, product='mangacore')
-        self.dapver = self.product_version(simple=True, product='mangadap')
+#        self.dapver = self.product_version(simple=True, product='mangadap')
 
         # Use them or use input versions
         self.outver = self.dapver if outver is None else outver
@@ -209,8 +209,8 @@ class rundap:
         # See, e.g., selected_drpfile_list().
 
         # Prep the verbosity of the queue if submitting
-        if self.submit:
-            self.queue = pbs.queue(verbose=not self.quiet)
+#       if self.submit:
+#           self.queue = pbs.queue(verbose=not self.quiet)
 
         # Run the selected mode
         if self.daily:

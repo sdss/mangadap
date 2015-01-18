@@ -228,14 +228,46 @@ END
 
 ;-------------------------------------------------------------------------------
 ; Set the guess kinematics
+
+; TODO: Need to set stars and gas separately!
+
 PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
                 nb, analysis_prior, star_kin_interp, gas_kin_interp, bin_indx, $
                 velocity_initial_guess, velocity_dispersion_initial_guess, star_kin_guesses, $
                 gas_kin_guesses
 
+;       star_kin_guesses = dblarr(nb, 4)
+;       gas_kin_guesses = dblarr(nb, 2)
+;       if strlen(analysis_prior) ne 0 then begin
+
+;           ; TODO: Add some limits for the guess kinematics to make
+;           ; sure they're not too crazy
+
+;           for j=0,nb-1 do begin
+;               indx = where(bin_indx eq j, count)
+;               if count ne 0 then begin
+;                   star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
+;                   star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
+;                   gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
+;                   gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
+;               endif else begin
+;                   star_kin_guesses[j,0] = velocity_initial_guess
+;                   star_kin_guesses[j,1] = velocity_dispersion_initial_guess
+;                   gas_kin_guesses[j,0] = velocity_initial_guess
+;                   gas_kin_guesses[j,1] = 50.0
+;               endelse
+;           endfor
+;       endif else begin
+;           ; Set the starting guesses for the kinematics to a
+;           ; single value
+;           star_kin_guesses[*,0] = velocity_initial_guess              ; stellar velocity
+;           star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
+;           gas_kin_guesses[*,0] = velocity_initial_guess               ; gas velocity
+;           gas_kin_guesses[*,1] = 50.                                  ; gas sigma
+;       endelse
+
         star_kin_guesses = dblarr(nb, 4)
-        gas_kin_guesses = dblarr(nb, 2)
-        if strlen(analysis_prior) ne 0 then begin
+        if strlen(analysis_prior) ne 0 and n_elements(star_kin_interp) ne 0 then begin
 
             ; TODO: Add some limits for the guess kinematics to make
             ; sure they're not too crazy
@@ -244,15 +276,11 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
                 indx = where(bin_indx eq j, count)
 ;               if indx[0] ne -1 then begin
                 if count ne 0 then begin
-                    star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
+                    star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])   ; interpolated kin
                     star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
-                    gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
-                    gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
                 endif else begin
                     star_kin_guesses[j,0] = velocity_initial_guess
                     star_kin_guesses[j,1] = velocity_dispersion_initial_guess
-                    gas_kin_guesses[j,0] = velocity_initial_guess
-                    gas_kin_guesses[j,1] = 50.0
                 endelse
             endfor
         endif else begin
@@ -260,9 +288,32 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
             ; single value
             star_kin_guesses[*,0] = velocity_initial_guess              ; stellar velocity
             star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
-            gas_kin_guesses[*,0] = velocity_initial_guess               ; gas velocity
-            gas_kin_guesses[*,1] = 50.                                  ; gas sigma
         endelse
+
+        gas_kin_guesses = dblarr(nb, 4)
+        if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
+
+            ; TODO: Add some limits for the guess kinematics to make
+            ; sure they're not too crazy
+
+            for j=0,nb-1 do begin
+                indx = where(bin_indx eq j, count)
+;               if indx[0] ne -1 then begin
+                if count ne 0 then begin
+                    gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])   ; interpolated kin
+                    gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
+                endif else begin
+                    gas_kin_guesses[j,0] = velocity_initial_guess  ; gas velocity
+                    gas_kin_guesses[j,1] = 50.                     ; gas sigma
+                endelse
+            endfor
+        endif else begin
+            ; Set the starting guesses for the kinematics to a
+            ; single value
+            gas_kin_guesses[*,0] = velocity_initial_guess      ; gas velocity
+            gas_kin_guesses[*,1] = 50.                         ; gas sigma
+        endelse
+
 END
 ;-------------------------------------------------------------------------------
 
@@ -843,7 +894,6 @@ PRO MANGA_DAP, $
                                             gas_kin_interp, /velocity, /sigma
             endif
 
-
             ; BLOCK 4 ----------------------------------------------------------
             ; Spatial binning
             ;-------------------------------------------------------------------
@@ -856,9 +906,14 @@ PRO MANGA_DAP, $
                 reg_ivar = ivar
                 reg_mask = mask
 
+;           print, 'unmasked DRP pixels:', n_elements(where(reg_mask lt 1.))
+;           print, 'non-zero DRP pixels:', n_elements(where(reg_flux gt 0.))
+;           stop
+
                 ; De-redshift the spectra before binning the spectra.
                 if strlen(execution_plan[i].analysis_prior) ne 0 $
-                   and execution_plan[i].bin_par.v_register eq 1 then begin
+                   and execution_plan[i].bin_par.v_register eq 1 $
+                   and n_elements(star_kin_interp) ne 0 then begin
 
                     ; Kinematics interpolated above
                     bin_vreg = star_kin_interp[*,0]             ; Register to stellar velocities
@@ -869,12 +924,27 @@ PRO MANGA_DAP, $
 
                     ; Offset interpolations for later use
                     star_kin_interp[*,0] = star_kin_interp[*,0] - bin_vreg
-                    gas_kin_interp[*,0] = gas_kin_interp[*,0] - bin_vreg
+                    if n_elements(gas_kin_interp) ne 0 then $
+                        gas_kin_interp[*,0] = gas_kin_interp[*,0] - bin_vreg
+
+                    ; Reset the velocity guess to the median of star_kin_interp
+                    velocity_initial_guess = median(star_kin_interp[*,0])
 
 ;                   for j=0,9 do $
 ;                       print, bin_vreg[i]
                 endif else $
                     bin_vreg = dblarr(ndrp)             ; Set to 0.0
+
+            print, 'unmasked REG pixels:', n_elements(where(reg_mask lt 1.))
+            print, 'non-zero REG pixels:', n_elements(where(reg_flux gt 0.))
+;           ns = (size(reg_flux))[1]
+;           for i=0,ns-1 do begin
+;               if gflag[i] eq 1 then begin
+;                   plot, wave, reg_flux[i,*]
+;                   stop
+;               endif
+;           endfor
+;           stop
 
                 MDAP_SPATIAL_BINNING, reg_flux, reg_ivar, reg_mask, signal, noise, gflag, bskyx, $
                                       bskyy, spaxel_dx, spaxel_dy, execution_plan[i].bin_par, $
@@ -944,6 +1014,7 @@ PRO MANGA_DAP, $
             ; END BLOCK 4 ------------------------------------------------------
             ;-------------------------------------------------------------------
 
+            print, 'unmasked pixels:', n_elements(where(bin_mask lt 1.))
 
             if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /bin) eq 0 then $
                 continue

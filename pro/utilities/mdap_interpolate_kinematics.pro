@@ -77,12 +77,40 @@ PRO MDAP_INTERPOLATE_KINEMATICS, $
                                 stellar_kinematics_fit=kin
             MDAP_READ_OUTPUT, dap_file, xbin_rlow=xbin, dx=dx, ybin_rupp=ybin, dy=dy, $
                               stellar_kinematics_fit=kin
+
+            ; TODO: Probably need a more robust test here:
+            ; Stellar kinematics aren't available!
+            if (size(kin))[0] ne 2 then begin
+                print, 'Stellar kinematics not available in prior DAP file!  Ignoring.'
+                tempvar = temporary(kin)
+            endif
+
         endif else begin
+
+            ; Try to use the GANDALF results
             MDAP_DEFINE_OUTPUT, xbin_rlow=xbin, dx=dx, ybin_rupp=ybin, dy=dy, $
                                 emission_line_kinematics_avg=kin
             MDAP_READ_OUTPUT, dap_file, xbin_rlow=xbin, dx=dx, ybin_rupp=ybin, dy=dy, $
                               emission_line_kinematics_avg=kin
+
+            ; TODO: Probably need a more robust test here:
+            ; If these aren't available, try to get Enci's
+            if (size(kin))[0] ne 2 then begin
+                MDAP_DEFINE_OUTPUT, elo_ew_kinematics_avg=kin
+                MDAP_READ_OUTPUT, dap_file, elo_ew_kinematics_avg=kin
+            endif
+
+            ; TODO: Probably need a more robust test here:
+            ; Gas kinematics aren't available!
+            if (size(kin))[0] ne 2 then begin
+                print, 'Gas kinematics not available in prior DAP file!  Ignoring.'
+                tempvar = temporary(kin)
+            endif
+
         endelse
+
+        if n_elements(kin) eq 0 then $
+            return
 
 ;       for i=0,9 do $
 ;           print, xbin[i], ybin[i], kin[i,0], kin[i,1]

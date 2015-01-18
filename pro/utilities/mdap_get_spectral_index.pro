@@ -233,8 +233,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
         ; Unmasked pixels in the blue band
         bindx = where(wave ge blueband[0] and wave le blueband[1] and mask lt 0.5, count)
 ;       if bindx[0] eq -1 then $
-        if count eq 0 then $
-            message, 'Blue wavelengths unavailable!'
+        if count eq 0 then begin
+            print, 'Blue wavelengths unavailable!'
+            err = 1
+            return
+        endif
         sn_blue = total(flux[bindx]*sqrt(ivar[bindx]))  ; Approximate S/N in the blue region
         nblue = n_elements(bindx)
 
@@ -255,8 +258,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
         ; Unmasked pixels in the red band
         rindx = where(wave ge  redband[0] and wave le  redband[1] and mask lt 0.5, count)
 ;       if rindx[0] eq -1 then $
-        if count eq 0 then $
-            message, 'Red wavelengths unavailable!'
+        if count eq 0 then begin
+            print, 'Red wavelengths unavailable!'
+            err = 1
+            return
+        endif
         sn_red = total(flux[rindx]*sqrt(ivar[rindx]))   ; Approximate S/N in the red region
         nred = n_elements(rindx)
 
@@ -278,8 +284,11 @@ PRO MDAP_GET_ABSORPTION_LINE_INDEX, $
         ; Unmasked pixels in the main passband
         pindx = where(wave ge passband[0] and wave le passband[1] and mask lt 0.5, count)
 ;       if pindx[0] eq -1 then $
-        if count eq 0 then $
-            message, 'Passband wavelengths unavailable!'
+        if count eq 0 then begin
+            print, 'Passband wavelengths unavailable!'
+            err = 1
+            return
+        endif
         sn_pass = total(flux[pindx]*sqrt(ivar[pindx]))  ; Approximate S/N in the red region
         npass = n_elements(pindx)
 

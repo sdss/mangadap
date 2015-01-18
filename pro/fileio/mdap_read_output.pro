@@ -682,12 +682,16 @@ PRO MDAP_READ_STFIT, $
 
         ; TODO: 2D data needs to be transposed!
 
-        weights_ppxf = transpose(temporary(weights_ppxf))
-        add_poly_coeff_ppxf = transpose(temporary(add_poly_coeff_ppxf))
-        mult_poly_coeff_ppxf = transpose(temporary(mult_poly_coeff_ppxf))
-        stellar_kinematics_fit = transpose(temporary(stellar_kinematics_fit))
-        stellar_kinematics_err = transpose(temporary(stellar_kinematics_err))
-
+        if (size(weights_ppxf))[0] eq 2 then $
+            weights_ppxf = transpose(temporary(weights_ppxf))
+        if (size(add_poly_coeff_ppxf))[0] eq 2 then $
+            add_poly_coeff_ppxf = transpose(temporary(add_poly_coeff_ppxf))
+        if (size(mult_poly_coeff_ppxf))[0] eq 2 then $
+            mult_poly_coeff_ppxf = transpose(temporary(mult_poly_coeff_ppxf))
+        if (size(stellar_kinematics_fit))[0] eq 2 then $
+            stellar_kinematics_fit = transpose(temporary(stellar_kinematics_fit))
+        if (size(stellar_kinematics_err))[0] eq 2 then $
+            stellar_kinematics_err = transpose(temporary(stellar_kinematics_err))
 END
 
 ;-------------------------------------------------------------------------------
@@ -749,21 +753,36 @@ PRO MDAP_READ_SGFIT, $
 
         ; TODO: 2D data needs to be transposed!
 
-        weights_gndf = transpose(temporary(weights_gndf))
-        mult_poly_coeff_gndf = transpose(temporary(mult_poly_coeff_gndf))
-        emission_line_kinematics_avg = transpose(temporary(emission_line_kinematics_avg))
-        emission_line_kinematics_aer = transpose(temporary(emission_line_kinematics_aer))
-        reddening_val = transpose(temporary(reddening_val))
-        reddening_err = transpose(temporary(reddening_err))
-        emission_line_intens = transpose(temporary(emission_line_intens))
-        emission_line_interr = transpose(temporary(emission_line_interr))
-        emission_line_kinematics_ind = transpose(temporary(emission_line_kinematics_ind), [2,0,1])
-        emission_line_kinematics_ier = transpose(temporary(emission_line_kinematics_ier), [2,0,1])
-        emission_line_sinst = transpose(temporary(emission_line_sinst))
-        emission_line_fluxes = transpose(temporary(emission_line_fluxes))
-        emission_line_flxerr = transpose(temporary(emission_line_flxerr))
-        emission_line_EWidth = transpose(temporary(emission_line_EWidth))
-        emission_line_EW_err = transpose(temporary(emission_line_EW_err))
+        if (size(weights_gndf))[0] eq 2 then $
+            weights_gndf = transpose(temporary(weights_gndf))
+        if (size(mult_poly_coeff_gndf))[0] eq 2 then $
+            mult_poly_coeff_gndf = transpose(temporary(mult_poly_coeff_gndf))
+        if (size(emission_line_kinematics_avg))[0] eq 2 then $
+            emission_line_kinematics_avg = transpose(temporary(emission_line_kinematics_avg))
+        if (size(emission_line_kinematics_aer))[0] eq 2 then $
+            emission_line_kinematics_aer = transpose(temporary(emission_line_kinematics_aer))
+        if (size(reddening_val))[0] eq 2 then $
+            reddening_val = transpose(temporary(reddening_val))
+        if (size(reddening_err))[0] eq 2 then $
+            reddening_err = transpose(temporary(reddening_err))
+        if (size(emission_line_intens))[0] eq 2 then $
+            emission_line_intens = transpose(temporary(emission_line_intens))
+        if (size(emission_line_interr))[0] eq 2 then $
+            emission_line_interr = transpose(temporary(emission_line_interr))
+        if (size(emission_line_kinematics_ind))[0] eq 3 then $
+            emission_line_kinematics_ind=transpose(temporary(emission_line_kinematics_ind), [2,0,1])
+        if (size(emission_line_kinematics_ier))[0] eq 3 then $
+            emission_line_kinematics_ier=transpose(temporary(emission_line_kinematics_ier), [2,0,1])
+        if (size(emission_line_sinst))[0] eq 2 then $
+            emission_line_sinst = transpose(temporary(emission_line_sinst))
+        if (size(emission_line_fluxes))[0] eq 2 then $
+            emission_line_fluxes = transpose(temporary(emission_line_fluxes))
+        if (size(emission_line_flxerr))[0] eq 2 then $
+            emission_line_flxerr = transpose(temporary(emission_line_flxerr))
+        if (size(emission_line_EWidth))[0] eq 2 then $
+            emission_line_EWidth = transpose(temporary(emission_line_EWidth))
+        if (size(emission_line_EW_err))[0] eq 2 then $
+            emission_line_EW_err = transpose(temporary(emission_line_EW_err))
 
 END
 
@@ -831,28 +850,50 @@ PRO MDAP_READ_ELOFIT, $
 
         ; TODO: 2D data needs to be transposed!
 
-        elo_ew_kinematics_avg = transpose(temporary(elo_ew_kinematics_avg))
-        elo_ew_kinematics_aer = transpose(temporary(elo_ew_kinematics_aer))
-        elo_ew_intens = transpose(temporary(elo_ew_intens))
-        elo_ew_interr = transpose(temporary(elo_ew_interr))
-        elo_ew_kinematics_ind = transpose(temporary(elo_ew_kinematics_ind), [2,0,1])
-        elo_ew_kinematics_ier = transpose(temporary(elo_ew_kinematics_ier), [2,0,1])
-        elo_ew_sinst = transpose(temporary(elo_ew_sinst))
-        elo_ew_fluxes = transpose(temporary(elo_ew_fluxes))
-        elo_ew_flxerr = transpose(temporary(elo_ew_flxerr))
-        elo_ew_EWidth = transpose(temporary(elo_ew_EWidth))
-        elo_ew_EW_err = transpose(temporary(elo_ew_EW_err))
-        elo_fb_kinematics_avg = transpose(temporary(elo_fb_kinematics_avg))
-        elo_fb_kinematics_aer = transpose(temporary(elo_fb_kinematics_aer))
-        elo_fb_intens = transpose(temporary(elo_fb_intens))
-        elo_fb_interr = transpose(temporary(elo_fb_interr))
-        elo_fb_kinematics_ind = transpose(temporary(elo_fb_kinematics_ind), [2,0,1])
-        elo_fb_kinematics_ier = transpose(temporary(elo_fb_kinematics_ier), [2,0,1])
-        elo_fb_sinst = transpose(temporary(elo_fb_sinst))
-        elo_fb_fluxes = transpose(temporary(elo_fb_fluxes))
-        elo_fb_flxerr = transpose(temporary(elo_fb_flxerr))
-        elo_fb_EWidth = transpose(temporary(elo_fb_EWidth))
-        elo_fb_EW_err = transpose(temporary(elo_fb_EW_err))
+        if (size(elo_ew_kinematics_avg))[0] eq 2 then $
+            elo_ew_kinematics_avg = transpose(temporary(elo_ew_kinematics_avg))
+        if (size(elo_ew_kinematics_aer))[0] eq 2 then $
+            elo_ew_kinematics_aer = transpose(temporary(elo_ew_kinematics_aer))
+        if (size(elo_ew_intens))[0] eq 2 then $
+            elo_ew_intens = transpose(temporary(elo_ew_intens))
+        if (size(elo_ew_interr))[0] eq 2 then $
+            elo_ew_interr = transpose(temporary(elo_ew_interr))
+        if (size(elo_ew_kinematics_ind))[0] eq 3 then $
+            elo_ew_kinematics_ind = transpose(temporary(elo_ew_kinematics_ind), [2,0,1])
+        if (size(elo_ew_kinematics_ier))[0] eq 3 then $
+            elo_ew_kinematics_ier = transpose(temporary(elo_ew_kinematics_ier), [2,0,1])
+        if (size(elo_ew_sinst))[0] eq 2 then $
+            elo_ew_sinst = transpose(temporary(elo_ew_sinst))
+        if (size(elo_ew_fluxes))[0] eq 2 then $
+            elo_ew_fluxes = transpose(temporary(elo_ew_fluxes))
+        if (size(elo_ew_flxerr))[0] eq 2 then $
+            elo_ew_flxerr = transpose(temporary(elo_ew_flxerr))
+        if (size(elo_ew_EWidth))[0] eq 2 then $
+            elo_ew_EWidth = transpose(temporary(elo_ew_EWidth))
+        if (size(elo_ew_EW_err))[0] eq 2 then $
+            elo_ew_EW_err = transpose(temporary(elo_ew_EW_err))
+        if (size(elo_fb_kinematics_avg))[0] eq 2 then $
+            elo_fb_kinematics_avg = transpose(temporary(elo_fb_kinematics_avg))
+        if (size(elo_fb_kinematics_aer))[0] eq 2 then $
+            elo_fb_kinematics_aer = transpose(temporary(elo_fb_kinematics_aer))
+        if (size(elo_fb_intens))[0] eq 2 then $
+            elo_fb_intens = transpose(temporary(elo_fb_intens))
+        if (size(elo_fb_interr))[0] eq 2 then $
+            elo_fb_interr = transpose(temporary(elo_fb_interr))
+        if (size(elo_fb_kinematics_ind))[0] eq 3 then $
+            elo_fb_kinematics_ind = transpose(temporary(elo_fb_kinematics_ind), [2,0,1])
+        if (size(elo_fb_kinematics_ier))[0] eq 3 then $
+            elo_fb_kinematics_ier = transpose(temporary(elo_fb_kinematics_ier), [2,0,1])
+        if (size(elo_fb_sinst))[0] eq 2 then $
+            elo_fb_sinst = transpose(temporary(elo_fb_sinst))
+        if (size(elo_fb_fluxes))[0] eq 2 then $
+            elo_fb_fluxes = transpose(temporary(elo_fb_fluxes))
+        if (size(elo_fb_flxerr))[0] eq 2 then $
+            elo_fb_flxerr = transpose(temporary(elo_fb_flxerr))
+        if (size(elo_fb_EWidth))[0] eq 2 then $
+            elo_fb_EWidth = transpose(temporary(elo_fb_EWidth))
+        if (size(elo_fb_EW_err))[0] eq 2 then $
+            elo_fb_EW_err = transpose(temporary(elo_fb_EW_err))
 
 END
 
@@ -921,11 +962,16 @@ PRO MDAP_READ_SINDX, $
 
         ; TODO: 2D data needs to be transposed!
 
-        abs_line_indx_omitted = transpose(temporary(abs_line_indx_omitted))
-        abs_line_indx_val = transpose(temporary(abs_line_indx_val))
-        abs_line_indx_err = transpose(temporary(abs_line_indx_err))
-        abs_line_indx_otpl = transpose(temporary(abs_line_indx_otpl))
-        abs_line_indx_botpl = transpose(temporary(abs_line_indx_botpl))
+        if (size(abs_line_indx_omitted))[0] eq 2 then $
+            abs_line_indx_omitted = transpose(temporary(abs_line_indx_omitted))
+        if (size(abs_line_indx_val))[0] eq 2 then $
+            abs_line_indx_val = transpose(temporary(abs_line_indx_val))
+        if (size(abs_line_indx_err))[0] eq 2 then $
+            abs_line_indx_err = transpose(temporary(abs_line_indx_err))
+        if (size(abs_line_indx_otpl))[0] eq 2 then $
+            abs_line_indx_otpl = transpose(temporary(abs_line_indx_otpl))
+        if (size(abs_line_indx_botpl))[0] eq 2 then $
+            abs_line_indx_botpl = transpose(temporary(abs_line_indx_botpl))
 
 END
 

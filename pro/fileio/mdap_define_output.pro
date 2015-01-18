@@ -41,8 +41,8 @@
 ;                           emission_line_EW_err=emission_line_EW_err, $
 ;                           reddening_val=reddening_val, reddening_err=reddening_err, $
 ;                           obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;                           eml_model=eml_model, elo_ew_kinematics_fit=elo_ew_kinematics_fit, $
-;                           elo_ew_kinematics_err=elo_ew_kinematics_err, $
+;                           eml_model=eml_model, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+;                           elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
 ;                           elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
 ;                           elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
 ;                           elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $

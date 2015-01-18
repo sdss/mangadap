@@ -121,7 +121,8 @@ end
 
 ;----------------------------------------------------------------------------
 ; procedure performing the actual line fitting using MPFIT
-PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, quiet=quiet
+PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, eflg=eflg, $
+                  quiet=quiet
   c=299792.458d
   
   ; **** Set Parameters for MPFIT
@@ -259,7 +260,12 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     p = mpfit('gausfit',p_start, functargs={x:x,y:y,err:err, nlines2:nlines2, wl:l.wl, redshift:redshift}, bestnorm=chi2, parinfo=parinfo, perror=perror, status=status, errmsg=errmsg, quiet=1)
 
     ;g_tot=0.0
-    if status LE 0 then message, errmsg
+    eflg = 0
+    if status LE 0 then begin
+        print, errmsg
+        eflg = 1
+        return
+    endif
     ;;print, p
     ;print, 'fitting lines', l.n
     ;for kk=0, nlines2-1 do begin
@@ -342,18 +348,28 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
       ; *** if the line is strong (fit_l = 1) then always fit it ***
     
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
-                      wl_m, nl_m, 1, l, quiet=quiet
-        El.name[s_l]=l[0].n
-        El.lambda[s_l]=l[0].wl
-        El.ampl[s_l]=l[0].a
-        El.vel[s_l]=l[0].v
-        El.sigma[s_l]=l[0].s
-        El.eampl[s_l]=l[0].ea
-        El.evel[s_l]=l[0].ev
-        El.esigma[s_l]=l[0].es
-        if ~keyword_set(quiet) then $
-            print, 'Succesfully fitted ', nl_m, ' untied lines'
-     
+                      wl_m, nl_m, 1, l, eflg=eflg, quiet=quiet
+        if eflg eq 1 then begin
+            El.name[s_l]=l[0].n
+            El.lambda[s_l]=l[0].wl
+            El.ampl[s_l]=0.
+            El.vel[s_l]=0.
+            El.sigma[s_l]=0.
+            El.eampl[s_l]=1.
+            El.evel[s_l]=1.
+            El.esigma[s_l]=1.
+        endif else begin
+            El.name[s_l]=l[0].n
+            El.lambda[s_l]=l[0].wl
+            El.ampl[s_l]=l[0].a
+            El.vel[s_l]=l[0].v
+            El.sigma[s_l]=l[0].s
+            El.eampl[s_l]=l[0].ea
+            El.evel[s_l]=l[0].ev
+            El.esigma[s_l]=l[0].es
+            if ~keyword_set(quiet) then $
+                print, 'Succesfully fitted ', nl_m, ' untied lines'
+        endelse
     endfor
     
     endif
@@ -377,19 +393,29 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
       n_m=N_elements(wgroup)
       
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
-                      wl_m, nl_m, n_m, l, quiet=quiet
+                      wl_m, nl_m, n_m, l, eflg=eflg, quiet=quiet
         
-        El.name[wgroup]=l.n
-        El.lambda[wgroup]=l.wl
-        El.ampl[wgroup]=l.a
-        El.vel[wgroup]=l.v
-        El.sigma[wgroup]=l.s
-        El.eampl[wgroup]=l.ea
-        El.evel[wgroup]=l.ev
-        El.esigma[wgroup]=l.es
-        if ~keyword_set(quiet) then $
-            print, 'I fitted the ', nl_m, ' lines'
- 
+        if eflg eq 1 then begin
+            El.name[wgroup]=l.n
+            El.lambda[wgroup]=l.wl
+            El.ampl[wgroup]=0.
+            El.vel[wgroup]=0.
+            El.sigma[wgroup]=0.
+            El.eampl[wgroup]=1.
+            El.evel[wgroup]=1.
+            El.esigma[wgroup]=1.
+        endif else begin
+            El.name[wgroup]=l.n
+            El.lambda[wgroup]=l.wl
+            El.ampl[wgroup]=l.a
+            El.vel[wgroup]=l.v
+            El.sigma[wgroup]=l.s
+            El.eampl[wgroup]=l.ea
+            El.evel[wgroup]=l.ev
+            El.esigma[wgroup]=l.es
+            if ~keyword_set(quiet) then $
+                print, 'I fitted the ', nl_m, ' lines'
+        endelse
     endfor
    
    ; Get the full model of the emission-line spectrum (ignoring masks)

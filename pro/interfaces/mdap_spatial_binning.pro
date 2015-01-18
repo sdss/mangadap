@@ -188,6 +188,9 @@ PRO MDAP_SPATIAL_BINNING, $
         if count eq 0 then $                        ; No good spectra so return and fail
             message, 'No good spectra!'
 
+        print, ' unmasked pixels: ', n_elements(where(mask lt 1.))
+        print, ' non-zero pixels: ', n_elements(where(flux gt 0.))
+
         ngood = n_elements(gindx)
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
@@ -274,6 +277,17 @@ PRO MDAP_SPATIAL_BINNING, $
                                  binned_indx, binned_x_rl, binned_y_ru, binned_wrad, binned_ston, $
                                  nbinned, sn_calibration=sn_calibration, $
                                  optimal_weighting=optimal_weighting 
+        endif
+
+        print, 'N per bin:'
+        for i=0,n_elements(nbinned)-1 do $
+            print, i+1, ':', nbinned[i]
+
+        ; Remove any bins with zero spectra
+        indx = where(nbinned eq 0, count)
+        if count ne 0 then begin
+            print, 'Some bins had zero spectra!'
+            nbinned = nbinned[indx]
         endif
 
 ;       TODO: NOT DEFINED YET -----------------------------------
