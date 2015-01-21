@@ -520,13 +520,17 @@ PRO MDAP_EXECUTION_SETUP, $
 ;       signifier = directory+'/mdap_setup.pro'
         signifier = dapsrc+'/pro/usr/mdap_execution_setup.pro'
 
+;-----------------------------------------------------------------------
+;-----------------------------------------------------------------------
+; Just perform high S/N binning with both MARCS and STELIB templates:
+;-----------------------------------------------------------------------
+;-----------------------------------------------------------------------
+
         ;-----------------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-;       niter = 1                                       ; Number of ExecutionPlans to produce
         niter = 2                                       ; Number of ExecutionPlans to produce
-;       niter = 4                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -551,183 +555,42 @@ PRO MDAP_EXECUTION_SETUP, $
 
         overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
 
-        ;-----------------------------------------------------------------------
-        ; For each iteration:
-        
-        ; Define the necessary elements of the BinPar structure.  The
-        ; available binning types and their required parameters are
-        ; provided above.
+;-----------------------------------------------------------------------
 
+        bin_par[*].type = 'STON'
+        bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
+        bin_par[*].ston = 40.0d
 
-;-------------------------------------------------------------------------------
-; To fit things similarly to the PDAP:
-;       bin_par[0:2].type = 'STON'
-;       bin_par[0].ston = 40.0d
-;       bin_par[1].ston = 25.0d
-;       bin_par[2].ston = 15.0d
-
-;       bin_par[3].type = 'RADIAL'
-;       bin_par[3].v_register = 1
-;       bin_par[3].nr = 6
-;       bin_par[3].rs = 1.0
-;       bin_par[3].rlog = 1
-
-;       bin_par[*].optimal_weighting = 1
-
-;       w_range_sn[0,*] = [5560.00, 6942.00]
-;       w_range_sn[1,*] = [5560.00, 6942.00]
-;       w_range_sn[2,*] = [5560.00, 6942.00]
-;       w_range_sn[3,*] = [5560.00, 6942.00]
-
-;       threshold_ston_bin[*] = -300.0d
-
-;       w_range_analysis[0,*] = [3650.,10300.]
-;       w_range_analysis[1,*] = [3650.,7500.] 
-;       w_range_analysis[2,*] = [3600.,10220.]
-;       w_range_analysis[3,*] = [3700.,9980.]
-
-;       threshold_ston_analysis[*] = 0.0d
-
-;       analysis[*,0] = 'stellar-cont'
-;       analysis[*,1] = 'star+gas'
-;       analysis[*,2] = 'emission-line'
-;       analysis[*,3] = 'abs-indices'
-
-;       tpl_lib_analysis[*] = 0
-;       ems_par_analysis[*] = 0
-;       abs_par_analysis[*] = 0
-
-;       analysis_par[0:2].moments = 4
-;       analysis_par[3].moments = 2
-;       analysis_par[0].degree = -1
-;       analysis_par[1:2].degree = 3
-;       analysis_Par[3].degree = -1
-;       analysis_par[*].mdegree = 6
-;       analysis_par[0:1].reddening_order = 0
-;       analysis_par[3].reddening_order = 0
-;       analysis_par[2].reddening_order = 2
-;       analysis_par[2].reddening[*] = [0.01,0.01]
-
-;       analysis_prior[0] = ''
-;       analysis_prior[1] = '0'
-;       analysis_prior[2] = '1'
-;       analysis_prior[3] = '2'
-
-;       overwrite_flag[*] = 0
-
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
-
-
-;-------------------------------------------------------------------------------
-; To fit just the high S/N case (with both MARCS and STELIB):
-;       bin_par[*].type = 'STON'
-;       bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
-;       bin_par[*].ston = 40.0d
-
-;       w_range_sn[0,*] = [5560.00, 6942.00]
-;       w_range_sn[1,*] = [5560.00, 6942.00]
-;       threshold_ston_bin[*] = -300.0d
-
-;       w_range_analysis[0,*] = [3650.,10300.] 
-;       w_range_analysis[1,*] = [3650.,10300.] 
-;       threshold_ston_analysis[*] = 0.0d
-
-;       analysis[*,0] = 'stellar-cont'
-;       analysis[*,1] = 'star+gas'
-;       analysis[*,2] = 'emission-line'
-;       analysis[*,3] = 'abs-indices'
-
-;       tpl_lib_analysis[0] = 1                 ; Use STELIB library
-;       tpl_lib_analysis[0] = 0
-;       tpl_lib_analysis[1] = 1
-;       ems_par_analysis[*] = 0
-;       abs_par_analysis[*] = 0
-
-;       analysis_par[*].moments = 4
-;       analysis_par[*].degree = -1
-;       analysis_par[*].mdegree = 6
-;       analysis_par[*].reddening_order = 0
-;       analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
-
-;       analysis_prior[*] = ''      ; No priors
-
-;       overwrite_flag[*] = 1
-
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
-
-
-; Another set of posibilites, with more comments as to what you're setting
-        bin_par[0].type = 'STON'
-        bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
-        bin_par[0].ston = 40.0d
-        ;   leave everything else as default (no velocity registration)
-
-        ; Try RADIAL using the results from the first ExecutionPlan to
-        ; velocity register the data -> set v_register to true here and
-        ; add the prior below.
-        bin_par[1].type = 'RADIAL'
-        bin_par[1].v_register = 1
-        bin_par[1].optimal_weighting = 1
-        bin_par[1].nr = 10
-        bin_par[1].rlog = 1
-        ;   leave everything else as default
-
-        ; Define the wavelength range over which to calculate the mean S/N per pixel
         w_range_sn[0,*] = [5560.00, 6942.00]
         w_range_sn[1,*] = [5560.00, 6942.00]
-
-        ; Define the S/N threshold to include spectrum in any bin
         threshold_ston_bin[*] = -300.0d
 
-        ; Define the wavelength range over which to perform ALL analyses
         w_range_analysis[0,*] = [3650.,10300.] 
         w_range_analysis[1,*] = [3650.,10300.] 
-
-        ; Define the S/N threshold to perform analysis
         threshold_ston_analysis[*] = 0.0d
 
-        ; Set the list of analyses to perform.  The available analysis steps are
-        ; listed above.
-
         analysis[*,0] = 'stellar-cont'
-;       analysis[*,1] = 'star+gas'
-        analysis[*,1] = 'emission-line'
-        analysis[*,2] = 'abs-indices'
+        analysis[*,1] = 'star+gas'
+        analysis[*,2] = 'emission-line'
+        analysis[*,3] = 'abs-indices'
 
-        ; Set the index of the template library to use for the analysis
-        ; TODO: Change this to use the library key?
-        tpl_lib_analysis[*] = 1         ; Use STELIB
-
-        ; Set the index of the emission-line parameter set to use
+        tpl_lib_analysis[0] = 0                 ; Use MARCS
+        tpl_lib_analysis[1] = 1                 ; Use STELIB
         ems_par_analysis[*] = 0
-
-        ; Set the index of the absorption-line parameter set to use
         abs_par_analysis[*] = 0
 
-        ; Set additional parameters needed by the analysis modules
-        ; The reddening order can be 0, 1, or 2
-        ; TODO: Allow for oversample?
-        ; IF NOT SET HERE, the default values are:
-        ;       moments=2, degree=-1, mdegree=-1, reddening_order=0
         analysis_par[*].moments = 4
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
-        ; analysis_par[0].reddening[*] = [0.01,0.01]
+        analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
-        ; Analysis priors, see description above.
-        analysis_prior[0] = ''      ; No prior for the first plan
-        analysis_prior[1] = '0'     ; Use the results from the first plan as a prior on the second
+        analysis_prior[*] = ''                  ; No priors
 
-        ; Set a flag to overwrite existing output: 1-yes, 0-no
-;       overwrite_flag[0] = 1
-        overwrite_flag[0] = 0
-        overwrite_flag[1] = 1
+        overwrite_flag[*] = 1
 
-        ;=======================================================================
-        ;=======================================================================
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 END
 

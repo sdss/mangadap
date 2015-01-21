@@ -24,10 +24,10 @@ def parse_dap_file_name(name):
 
     plate_start = str.find(name, '-')+1
     plate_end = str.find(name,'-',plate_start)
-    plate = long(name[plate_start:plate_end])
+    plate = int(name[plate_start:plate_end])
 
     ifudesign_end = str.find(name,'-',plate_end+1)
-    ifudesign = long(name[plate_end+1:ifudesign_end])
+    ifudesign = int(name[plate_end+1:ifudesign_end])
 
     mode_start = str.find(name,'LOG')+3
     mode_end = str.find(name,'_BIN-')
@@ -66,8 +66,8 @@ class dapfile:
 
         # Set the attributes, forcing a known type
         self.dapver = str(dapver)
-        self.plate = long(plate)
-        self.ifudesign = long(ifudesign)
+        self.plate = int(plate)
+        self.ifudesign = int(ifudesign)
         self.mode = str(mode)
         self.bintype = str(bintype)
         self.niter = int(niter)
@@ -90,7 +90,7 @@ class dapfile:
     def _twod_image_data(self, exten, indx):
         try:
             data = self.hdulist[exten].data[:,indx]
-        except IndexError, e:
+        except IndexError as e:
             print('{0}'.format(e))
             return None
         else:
@@ -201,7 +201,7 @@ class dapfile:
             self.read()
         try:
             data = self.hdulist[exten].data[col]
-        except KeyError, e:
+        except KeyError as e:
             print('Could not find extension ({0}) and/or column ({1})!'.format(exten, col))
             return None
         else:
@@ -225,7 +225,12 @@ class dapfile:
 
 
     def fit_stars_minus_gas(self, indx):
-        return (self._twod_image_data('SGMOD', indx) - self._twod_image_data('ELMOD', indx))
+        bestfit = self._twod_image_data('SGMOD', indx)
+        emlmodel = self._twod_image_data('ELMOD', indx)
+        if bestfit is not None and emlmodel is not None:
+            return (bestfit - emlmodel)
+        else:
+            return None
 
             
     def fit_stars_and_gas(self, indx):

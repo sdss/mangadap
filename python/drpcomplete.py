@@ -191,7 +191,7 @@ class drpcomplete:
 
         try:
             i = hdulist[1].columns.names.index('VELDISP')
-        except ValueError, e:
+        except ValueError:
             has_veldisp = False
         else:
             has_veldisp = True
@@ -288,7 +288,7 @@ class drpcomplete:
         for i in range(0,nn):
             try:
                 index = self.entry_index(self.platelist[i], self.ifudesignlist[i])
-            except Exception, e:
+            except Exception as e:
                 if not quiet:
                     print(e)
                 return False
@@ -378,12 +378,12 @@ class drpcomplete:
                     if self.platelist is not None:
                         try:
                             ip = self.platelist.index(p)
-                        except ValueError, e:
+                        except ValueError:
                             ip = -1
                     if self.ifudesignlist is not None:
                         try:
                             ib = self.ifudesignlist.index(b)
-                        except ValueError, e:
+                        except ValueError:
                             ib = -1
 
                     if ip != -1 and ib != -1:
