@@ -284,10 +284,14 @@ PRO MDAP_SPATIAL_BINNING, $
             print, i+1, ':', nbinned[i]
 
         ; Remove any bins with zero spectra
-        indx = where(nbinned eq 0, count)
+        indx = where(nbinned eq 0, count, complement=nindx)
         if count ne 0 then begin
             print, 'Some bins had zero spectra!'
-            nbinned = nbinned[indx]
+            nbinned = nbinned[nindx]
+            binned_x_rl = binned_x_rl[nindx]
+            binned_y_ru = binned_x_ru[nindx]
+            binned_wrad = binned_wrad[nindx]
+            binned_ston = binned_ston[nindx]
         endif
 
 ;       TODO: NOT DEFINED YET -----------------------------------
