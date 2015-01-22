@@ -28,6 +28,7 @@
 ;                              emission_line_intens_err, emission_line_fluxes, $
 ;                              emission_line_fluxes_err, emission_line_EW, emission_line_EW_err, $
 ;                              reddening_output, reddening_output_err, analysis_par=analysis_par, $
+;                              default_velocity=defaul_velocity, $
 ;                              star_kin_starting_guesses=star_kin_starting_guesses, $
 ;                              gas_kin_starting_guesses=gas_kin_starting_guesses, eml_par=eml_par, $
 ;                              range_v_star=range_v_star, range_s_star=range_s_star, $
@@ -110,6 +111,10 @@
 ;               A structure that defines parameters used by PPXF and GANDALF in
 ;               the fitting procedure.  See its definition in
 ;               MDAP_DEFINE_ANALYSIS_PAR.pro
+;
+;       default_velocity double
+;               Default velocity to use if *_kin_starting_guesses are
+;               not supplied or they have the wrong size.
 ; 
 ;       star_kin_starting_guesses dblarr[N][4]
 ;               The stellar kinematics starting guesses for V, sigma, H3, and H4
@@ -388,6 +393,8 @@
 ;                          measurements are then based on the optimal templates
 ;                          created by combining these templates with the weights
 ;                          determined here.
+;       22 Jan 2014: (KBW) Better handling if default guesses are used.
+;                          Added default_velocity keyword.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -436,8 +443,10 @@ PRO MDAP_SPECTRAL_FITTING_CHECK_DIMENSIONS, $
 ;       print, 'Dimensions are fine.'
 END
 
+; WARNING: Default velocity is 0!
+; Will flag if use_defaults is used (use_defaults=1)
 PRO MDAP_SPECTRAL_FITTING_INIT_GUESSES, $
-                guesses, ns, h3h4=h3h4
+                guesses, ns, h3h4=h3h4, use_defaults=use_defaults
 
         use_defaults = 1
         if n_elements(guesses) ne 0 then begin
@@ -450,6 +459,10 @@ PRO MDAP_SPECTRAL_FITTING_INIT_GUESSES, $
             endif else $
                 use_defaults=0
         endif
+
+;       print, use_defaults
+;       print, size(guesses)
+;       stop
 
         if use_defaults eq 1 then begin
             if keyword_set(h3h4) then begin
@@ -504,7 +517,8 @@ PRO MDAP_SPECTRAL_FITTING, $
                 emission_line_kinematics_individual_err, emission_line_intens, $
                 emission_line_intens_err, emission_line_fluxes, emission_line_fluxes_err, $
                 emission_line_EW, emission_line_EW_err, reddening_output, reddening_output_err, $
-                analysis_par=analysis_par, star_kin_starting_guesses=star_kin_starting_guesses, $
+                analysis_par=analysis_par, default_velocity=default_velocity, $
+                star_kin_starting_guesses=star_kin_starting_guesses, $
                 gas_kin_starting_guesses=gas_kin_starting_guesses, eml_par=eml_par, $
                 range_v_star=range_v_star, range_s_star=range_s_star, range_v_gas=range_v_gas, $
                 range_s_gas=range_s_gas, wavelength_input=wavelength_input, $
@@ -636,11 +650,14 @@ PRO MDAP_SPECTRAL_FITTING, $
         endif
 
         ; Initialize the starting guesses
-        MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4
-        MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj
-
-;       print, star_kin_starting_guesses
-;       print, gas_kin_starting_guesses
+        MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4, $
+                                            use_defaults=use_defaults
+        if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+            star_kin_starting_guesses[*,0] = default_velocity
+        MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, $
+                                            use_defaults=use_defaults
+        if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+            gas_kin_starting_guesses[*,0] = default_velocity
 
         ;-----------------------------------------------------------------------
         ; Limited the fitted pixels
@@ -712,7 +729,7 @@ PRO MDAP_SPECTRAL_FITTING, $
                                        velocity=gas_kin_starting_guesses[0]
         endif
 
-        print, n_elements(eml_par_lim)
+        print, 'Number of emission lines to fit: ', n_elements(eml_par_lim)
 
 ;       stop
 

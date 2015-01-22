@@ -275,7 +275,7 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
 
         ; Set the guess values for the gas kinematics
         ; TODO: Allow for gas dispersion limits to be different than stellar dispersion limits?
-        gas_kin_guesses = dblarr(nb, 4)
+        gas_kin_guesses = dblarr(nb, 2)
         if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
 
             for j=0,nb-1 do begin
@@ -725,7 +725,6 @@ PRO MANGA_DAP, $
             ;-------------------------------------------------------------------
             ; Read the emission line file; this is done at every iteration
             ; because it's fairly quick.
-            ; TODO: Check that this I/O doesn't slow things down too much!
             if execution_plan[i].ems_par ne -1 then begin
                 eml_par = MDAP_READ_EMISSION_LINE_PARAMETERS(emission_line_parameters[ $
                                                              execution_plan[i].ems_par ])
@@ -744,8 +743,7 @@ PRO MANGA_DAP, $
 
             ;-------------------------------------------------------------------
             ; Read the spectral-index parameters; this is done at every
-            ; iteration because it's fairly quick.  TODO: Check that this I/O
-            ; doesn't slow things down too much!
+            ; iteration because it's fairly quick.
             if execution_plan[i].abs_par ne -1 then begin
                 abs_par = MDAP_READ_ABSORPTION_LINE_PARAMETERS( absorption_line_parameters[ $
                                                                  execution_plan[i].abs_par ])
@@ -818,8 +816,10 @@ PRO MANGA_DAP, $
                 ; Determine the 'good' spectra based on a set of criteria
                 ; defined by this procedure
 
-                ; TODO: Currently gindx is not used.  gflag is used by
-                ;       MDAP_CALCULATE_SN and MDAP_SPATIAL_BINNING
+                ; TODO: Currently gindx is not used.
+                ;
+                ; gflag is used by MDAP_CALCULATE_SN,
+                ; MDAP_VELOCITY_REGISTER, and MDAP_SPATIAL_BINNING
 
                 MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, count=gcount
 
@@ -851,7 +851,6 @@ PRO MANGA_DAP, $
                 ;       calculated!  Should they be reread here?
 
                 ; Always need the S/N data
-
                 print, 'READING EXISTING S/N DATA'
 
                 MDAP_DEFINE_OUTPUT, header=header, dx=spaxel_dx, dy=spaxel_dy, xpos=bskyx, $
@@ -877,7 +876,12 @@ PRO MANGA_DAP, $
                                             star_kin_interp, /velocity, /sigma, /stellar
                MDAP_INTERPOLATE_KINEMATICS, execution_plan[i].analysis_prior, bskyx, bskyy, $
                                             gas_kin_interp, /velocity, /sigma
-            endif
+            endif else begin
+                ; Erase any existing interpolations
+                MDAP_ERASEVAR, star_kin_interp
+                MDAP_ERASEVAR, gas_kin_interp
+            endelse
+
 
             ; BLOCK 4 ----------------------------------------------------------
             ; Spatial binning
@@ -886,50 +890,52 @@ PRO MANGA_DAP, $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ...'
 
             if perform_block.bin eq 1 then begin
-           
+
+                ; Do not overwrite original arrays, allowing loop over nplans
                 reg_flux = flux
                 reg_ivar = ivar
                 reg_mask = mask
 
-;           print, 'unmasked DRP pixels:', n_elements(where(reg_mask lt 1.))
-;           print, 'non-zero DRP pixels:', n_elements(where(reg_flux gt 0.))
-;           stop
+                reg_velocity_initial_guess = velocity_initial_guess
 
                 ; De-redshift the spectra before binning the spectra.
                 if strlen(execution_plan[i].analysis_prior) ne 0 $
                    and execution_plan[i].bin_par.v_register eq 1 $
                    and n_elements(star_kin_interp) ne 0 then begin
 
-                    ; Kinematics interpolated above
+                    ; Velocity register the spectra to the median of the
+                    ; input stellar velocity.  Only de-redshift the
+                    ; "good" spectra defined by
+                    ; MDAP_SELECT_GOOD_SPECTRA.
                     bin_vreg = star_kin_interp[*,0]             ; Register to stellar velocities
-
-                    ; Velocity register the spectra to the median of the input velocity
                     MDAP_VELOCITY_REGISTER, wave, reg_flux, reg_ivar, reg_mask, bin_vreg, $
                                             gflag=gflag, /register_to_median
 
-                    ; Offset interpolations for later use
+                    ; Offset interpolations for later use; these are
+                    ; okay to overwrite because they are re-interpolated
+                    ; (or erased) for each plan
                     star_kin_interp[*,0] = star_kin_interp[*,0] - bin_vreg
                     if n_elements(gas_kin_interp) ne 0 then $
                         gas_kin_interp[*,0] = gas_kin_interp[*,0] - bin_vreg
 
                     ; Reset the velocity guess to the median of star_kin_interp
-                    velocity_initial_guess = median(star_kin_interp[*,0])
+                    reg_velocity_initial_guess = median(star_kin_interp[*,0])
 
 ;                   for j=0,9 do $
 ;                       print, bin_vreg[i]
                 endif else $
                     bin_vreg = dblarr(ndrp)             ; Set to 0.0
 
-            print, 'unmasked REG pixels:', n_elements(where(reg_mask lt 1.))
-            print, 'non-zero REG pixels:', n_elements(where(reg_flux gt 0.))
-;           ns = (size(reg_flux))[1]
-;           for i=0,ns-1 do begin
-;               if gflag[i] eq 1 then begin
-;                   plot, wave, reg_flux[i,*]
-;                   stop
-;               endif
-;           endfor
-;           stop
+;               print, 'unmasked REG pixels:', n_elements(where(reg_mask lt 1.))
+;               print, 'non-zero REG pixels:', n_elements(where(reg_flux gt 0.))
+;               ns = (size(reg_flux))[1]
+;               for i=0,ns-1 do begin
+;                   if gflag[i] eq 1 then begin
+;                       plot, wave, reg_flux[i,*]
+;                       stop
+;                   endif
+;               endfor
+;               stop
 
                 MDAP_SPATIAL_BINNING, reg_flux, reg_ivar, reg_mask, signal, noise, gflag, bskyx, $
                                       bskyy, spaxel_dx, spaxel_dy, execution_plan[i].bin_par, $
@@ -972,7 +978,6 @@ PRO MANGA_DAP, $
             endif else begin
 
                 ; Always need the binned data
-
                 print, 'READING EXISTING BIN DATA'
 
                 ; Read the binning results
@@ -999,41 +1004,50 @@ PRO MANGA_DAP, $
             ; END BLOCK 4 ------------------------------------------------------
             ;-------------------------------------------------------------------
 
-            print, 'unmasked pixels:', n_elements(where(bin_mask lt 1.))
+;           print, 'unmasked pixels:', n_elements(where(bin_mask lt 1.))
 
+            ; Finish if the user only wants the binned spectra
             if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /bin) eq 0 then $
                 continue
 
 
-            ; ##################################################################
-            ; BEGIN computation of "model-independent" data products ###########
+            ;***********************************************************
+            ;***********************************************************
+            ;***********************************************************
+            ; BEGIN computation of "model-independent" data products 
+
 
 
             ; PREP FOR BLOCK 5 -------------------------------------------------
             ;-------------------------------------------------------------------
             ; Check if any analysis was requested, if not continue with the loop
+            ; TODO: Redundant with MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH()?
             indx = where(execution_plan[i].analysis eq 1, count)
-;           if indx[0] eq -1 then $             ; No analysis to perform
             if count eq 0 then $             ; No analysis to perform
                 continue
 
             ;-------------------------------------------------------------------
-            ; Read the pre-existing template library
-            ;   The template library is required for ANY analysis
-            ; TODO: Should not be able to reach here without first creating tpl_out_fits!
+            ; Read the pre-existing template library.  The template
+            ; library is requiredd for all analysis except for the
+            ; emission-line-only fits, if the user doesn't care about
+            ; the background.  WARNING: Should not be able to reach here
+            ; without first creating tpl_out_fits!
+
+            ; TODO: What happens if only the emission-line-only analysis
+            ; is selected?
             tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
                                                         tpl_library_keys[execution_plan[i].tpl_lib])
            
             MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
                                            tpl_sres, tpl_soff
 
-            ; TODO: Need to account for tpl_soff further down the line
+            ; TODO: Need to account for tpl_soff further down the line?
+            ; Or not because HARD-WIRED default is tpl_soff=0
 
             ; BLOCK 5 ----------------------------------------------------------
             ; Run a full spectral fit including stellar population, gas and
             ; stellar kinematics
             ;-------------------------------------------------------------------
-
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ...'
 
@@ -1046,15 +1060,20 @@ PRO MANGA_DAP, $
                 ; required by MDAP_SPECTRAL_FITTING) as opposed to be
                 ; set by execution_plan.analysis_par.moments.
 
+                ; TODO: This function has to match the expectations in
+                ; MDAP_SPECTRAL_FITTING_INIT_GUESSES, or things may go
+                ; ape
                 MDAP_INITIALIZE_GUESS_KINEMATICS, n_elements(nbin), $
                                                   execution_plan[i].analysis_prior, $
                                                   star_kin_interp, gas_kin_interp, bin_indx, $
-                                                  velocity_initial_guess, $
+                                                  reg_velocity_initial_guess, $
                                                   velocity_dispersion_initial_guess, $
                                                   star_kin_guesses, gas_kin_guesses
 
-;       print, star_kin_starting_guesses                ; h3 and h4 initialized to 0
-;       print, gas_kin_starting_guesses
+;               print, mean(star_kin_guesses[*,0])
+;               print, mean(star_kin_guesses[*,1])
+;               print, mean(gas_kin_guesses[*,0])
+;               print, mean(gas_kin_guesses[*,1])
 
                 ; Perform the spectral fit
                 MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, $
@@ -1072,12 +1091,17 @@ PRO MANGA_DAP, $
                                        emission_line_EW, emission_line_EW_err, reddening_output, $
                                        reddening_output_err, $
                                        analysis_par=execution_plan[i].analysis_par, $
+                                       default_velocity=reg_velocity_initial_guess, $
                                        star_kin_starting_guesses=star_kin_guesses, $
                                        gas_kin_starting_guesses=gas_kin_guesses, eml_par=eml_par, $
                                        external_library=bvls_shared_lib, $
                                        wave_range_analysis=execution_plan[i].wave_range_analysis, $
                                        ppxf_only=perform_block.ppxf_only, quiet=quiet, plot=plot, $
                                        dbg=dbg
+
+;               print, stellar_kinematics[0,0]
+;               print, emission_line_kinematics[0,0]
+;               stop
 
                 ; TODO: Add the spectral fitting version to the header of the
                 ; output file, and add information to the log file
@@ -1248,7 +1272,7 @@ PRO MANGA_DAP, $
                     MDAP_INITIALIZE_GUESS_KINEMATICS, n_elements(nbin), $
                                                       execution_plan[i].analysis_prior, $
                                                       star_kin_interp, gas_kin_interp, bin_indx, $
-                                                      velocity_initial_guess, $
+                                                      reg_velocity_initial_guess, $
                                                       velocity_dispersion_initial_guess, $
                                                       star_kin_guesses, gas_kin_guesses
 
@@ -1281,7 +1305,7 @@ PRO MANGA_DAP, $
                 ; Get the instrumental dispersion at the fitted line center
                 MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, emlo_par, elo_fb_omitted, $
                                                         elo_fb_kinematics_ind, elo_fb_sinst
-                
+
                 ; Write the data
                 MDAP_WRITE_OUTPUT, execution_plan[i].ofile, emlo_par=emlo_par, $
                                    elo_ew_kinematics_avg=elo_ew_kinematics, $
@@ -1320,6 +1344,13 @@ PRO MANGA_DAP, $
             ; END BLOCK 6 ------------------------------------------------------
             ;-------------------------------------------------------------------
 
+;           for i=0,n_elements(nbin)-1 do begin
+;               print, 'GANDALF', emission_line_kinematics[i,0], emission_line_kinematics_err[i,0]
+;               print, 'ENCI:', elo_ew_kinematics[i,0], elo_ew_kinematics_err[i,0]
+;               print, 'FRANCESCO:', elo_fb_kinematics[i,0], elo_fb_kinematics_err[i,0]
+;               stop
+;           endfor
+                
             if MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH(perform_block, /eml_only) eq 0 then $
                 continue
 

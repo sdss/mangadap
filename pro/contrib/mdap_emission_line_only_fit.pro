@@ -103,134 +103,141 @@
 ;
 ; REVISION HISTORY:
 ;       10 Dec 2014: (KBW) Original implementation based on code
-;                          provided by Enci and Lin.
+;                          provided by Enci, Lin, and Francesco.
+;       22 Jan 2014: (KBW) Fixed bug in how I saved Francesco's
+;                          velocities.
 ;-
 ;------------------------------------------------------------------------------
+
+PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, lambda, voff, result, kinematics, kinematics_err, $
+                                             intens, intens_err, fluxes, fluxes_err, i, j
+
+        c=299792.458d                           ; Speed of light in km/s
+        kinematics[i,j,0] = (result/lambda - 1.0d)*c + voff
+        kinematics_err[i,j,0] = result[3]*c/lambda
+        kinematics[i,j,1] = result[1]*c/result[0]
+        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( (result[3]/result[0])^2 + $
+                                                        (result[4]/result[1])^2 )
+        intens[i,j] = result[2]/sqrt(2.0*!pi)/result[1]
+        intens_err[i,j] = intens[i,j]*sqrt( (result[5]/result[2])^2 + (result[4]/result[1])^2 )
+        fluxes[i,j] = result[2]
+        fluxes_err[i,j] = result[5]
+END
 
 PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, voff, result, omitted, kinematics, kinematics_err, $
                                       intens, intens_err, fluxes, fluxes_err, i
 
-        c=299792.458d                           ; Speed of light in km/s
-
         j = 0
 
         omitted[i,j] = result.OII3727[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OII3727[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.OII3727[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.OII3727[1]*c/result.OII3727[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.OII3727[3]/result.OII3727[0])^2 + (result.OII3727[4]/result.OII3727[1])^2 )
-        intens[i,j] = result.OII3727[2]/sqrt(2.0*!pi)/result.OII3727[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.OII3727[5]/result.OII3727[2])^2 + (result.OII3727[4]/result.OII3727[1])^2 )
-        fluxes[i,j] = result.OII3727[2]
-        fluxes_err[i,j] = result.OII3727[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OII3727, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.Hb4861[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.Hb4861[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.Hb4861[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.Hb4861[1]*c/result.Hb4861[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.Hb4861[3]/result.Hb4861[0])^2 + (result.Hb4861[4]/result.Hb4861[1])^2 )
-        intens[i,j] = result.Hb4861[2]/sqrt(2.0*!pi)/result.Hb4861[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.Hb4861[5]/result.Hb4861[2])^2 + (result.Hb4861[4]/result.Hb4861[1])^2 )
-        fluxes[i,j] = result.Hb4861[2]
-        fluxes_err[i,j] = result.Hb4861[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.Hb4861, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.OIII4959[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OIII4959[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.OIII4959[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.OIII4959[1]*c/result.OIII4959[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.OIII4959[3]/result.OIII4959[0])^2+(result.OIII4959[4]/result.OIII4959[1])^2)
-        intens[i,j] = result.OIII4959[2]/sqrt(2.0*!pi)/result.OIII4959[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.OIII4959[5]/result.OIII4959[2])^2+(result.OIII4959[4]/result.OIII4959[1])^2)
-        fluxes[i,j] = result.OIII4959[2]
-        fluxes_err[i,j] = result.OIII4959[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OIII4959, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.OIII5007[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.OIII5007[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.OIII5007[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.OIII5007[1]*c/result.OIII5007[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.OIII5007[3]/result.OIII5007[0])^2+(result.OIII5007[4]/result.OIII5007[1])^2)
-        intens[i,j] = result.OIII5007[2]/sqrt(2.0*!pi)/result.OIII5007[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.OIII5007[5]/result.OIII5007[2])^2+(result.OIII5007[4]/result.OIII5007[1])^2)
-        fluxes[i,j] = result.OIII5007[2]
-        fluxes_err[i,j] = result.OIII5007[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OIII5007, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.NII6548[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.NII6548[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.NII6548[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.NII6548[1]*c/result.NII6548[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.NII6548[3]/result.NII6548[0])^2 + (result.NII6548[4]/result.NII6548[1])^2 )
-        intens[i,j] = result.NII6548[2]/sqrt(2.0*!pi)/result.NII6548[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.NII6548[5]/result.NII6548[2])^2 + (result.NII6548[4]/result.NII6548[1])^2 )
-        fluxes[i,j] = result.NII6548[2]
-        fluxes_err[i,j] = result.NII6548[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.NII6548, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.Ha6563[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.Ha6563[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.Ha6563[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.Ha6563[1]*c/result.Ha6563[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.Ha6563[3]/result.Ha6563[0])^2 + (result.Ha6563[4]/result.Ha6563[1])^2 )
-        intens[i,j] = result.Ha6563[2]/sqrt(2.0*!pi)/result.Ha6563[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.Ha6563[5]/result.Ha6563[2])^2 + (result.Ha6563[4]/result.Ha6563[1])^2 )
-        fluxes[i,j] = result.Ha6563[2]
-        fluxes_err[i,j] = result.Ha6563[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.Ha6563, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.NII6583[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.NII6583[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.NII6583[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.NII6583[1]*c/result.NII6583[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.NII6583[3]/result.NII6583[0])^2 + (result.NII6583[4]/result.NII6583[1])^2 )
-        intens[i,j] = result.NII6583[2]/sqrt(2.0*!pi)/result.NII6583[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.NII6583[5]/result.NII6583[2])^2 + (result.NII6583[4]/result.NII6583[1])^2 )
-        fluxes[i,j] = result.NII6583[2]
-        fluxes_err[i,j] = result.NII6583[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.NII6583, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.SII6717[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.SII6717[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.SII6717[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.SII6717[1]*c/result.SII6717[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.SII6717[3]/result.SII6717[0])^2 + (result.SII6717[4]/result.SII6717[1])^2 )
-        intens[i,j] = result.SII6717[2]/sqrt(2.0*!pi)/result.SII6717[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.SII6717[5]/result.SII6717[2])^2 + (result.SII6717[4]/result.SII6717[1])^2 )
-        fluxes[i,j] = result.SII6717[2]
-        fluxes_err[i,j] = result.SII6717[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.SII6717, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
         omitted[i,j] = result.SII6731[2] gt 0.0 ? 0 : 1
-        kinematics[i,j,0] = (result.SII6731[0]/eml_par[j].lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result.SII6731[3]*c/eml_par[j].lambda
-        kinematics[i,j,1] = result.SII6731[1]*c/result.SII6731[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( $
-            (result.SII6731[3]/result.SII6731[0])^2 + (result.SII6731[4]/result.SII6731[1])^2 )
-        intens[i,j] = result.SII6731[2]/sqrt(2.0*!pi)/result.SII6731[1]
-        intens_err[i,j] = intens[i,j]*sqrt( $
-            (result.SII6731[5]/result.SII6731[2])^2 + (result.SII6731[4]/result.SII6731[1])^2 )
-        fluxes[i,j] = result.SII6731[2]
-        fluxes_err[i,j] = result.SII6731[5]
+        if omitted[i,j] eq 1 then begin
+            MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+                                                 fluxes, fluxes_err, i, j
+        endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.SII6731, $
+                                                     kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+        endelse
         j = j+1
 
+END
+
+PRO MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, fluxes, $
+                                         fluxes_err, i, j
+        kinematics[i,j,0:1] = 0.0d
+        kinematics_err[i,j,0:1] = 1.0d
+        intens[i,j] = 0.0d
+        intens_err[i,j] = 1.0d
+        fluxes[i,j] = 0.0d
+        fluxes_err[i,j] = 1.0d
 END
 
 ; CERTAIN ORDER EXPECTED FOR BELFIORE RESULT
@@ -242,7 +249,14 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, omitted, kinema
 
         for j=0,neml-1 do begin
             omitted[i,j] = result.Ampl[j] gt 0.0 ? 0 : 1
-            kinematics[i,j,0] = result.Vel[j]
+
+            if omitted[i,j] eq 1 then begin
+                MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, $
+                                                     intens_err, fluxes, fluxes_err, i, j
+                continue
+            endif
+
+            kinematics[i,j,0] = result.Vel[j]+voff
             kinematics_err[i,j,0] = result.eVel[j]
             kinematics[i,j,1] = result.Sigma[j]
             kinematics_err[i,j,1] = result.eSigma[j]
@@ -348,6 +362,7 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                                                       emission_line_intens_err, $
                                                       emission_line_fluxes, $
                                                       emission_line_fluxes_err, i
+
             endif else begin
                 ; Fit the emission lines
                 MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, 0.0d, rest_wave, galaxy_eml_only, $

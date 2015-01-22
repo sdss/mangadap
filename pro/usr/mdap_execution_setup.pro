@@ -572,7 +572,7 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis[*,0] = 'stellar-cont'
         analysis[*,1] = 'star+gas'
         analysis[*,2] = 'emission-line'
-        analysis[*,3] = 'abs-indices'
+;       analysis[*,3] = 'abs-indices'
 
         tpl_lib_analysis[0] = 0                 ; Use MARCS
         tpl_lib_analysis[1] = 1                 ; Use STELIB
