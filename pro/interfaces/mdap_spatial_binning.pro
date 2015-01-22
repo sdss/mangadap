@@ -287,11 +287,19 @@ PRO MDAP_SPATIAL_BINNING, $
         indx = where(nbinned eq 0, count, complement=nindx)
         if count ne 0 then begin
             print, 'Some bins had zero spectra!'
+
+            ; Update the binned arrays
             nbinned = nbinned[nindx]
             binned_x_rl = binned_x_rl[nindx]
             binned_y_ru = binned_x_ru[nindx]
             binned_wrad = binned_wrad[nindx]
             binned_ston = binned_ston[nindx]
+
+            ; Update the index designations for each of the DRP spectra
+            for i=0,n_elements(nindx)-1 do begin
+                bnindx = where(binned_indx eq nindx[i])
+                binned_indx[bnindx] = i
+            endfor
         endif
 
 ;       TODO: NOT DEFINED YET -----------------------------------

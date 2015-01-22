@@ -74,8 +74,6 @@
 ;       - Include MW extinction curve
 ;       - Somehow allow to check for overlapping objects (multiple redshifts in
 ;         a single IFU)
-;       - If the execution_plan is supposed to overwrite old data,
-;         actually start by removing the old file
 ;
 ; COMMENTS:
 ;       At some point I (KBW) switched from using 'absorption-line indices' to
@@ -157,6 +155,7 @@
 ;                          building the execution plans.
 ;       09 Jan 2015: (KBW) Add instrumental dispersion calculation for
 ;                          star+gas (GANDALF) results.
+;       22 Jan 2015: (KBW) Add limits for the guess kinematics
 ;-
 ;-------------------------------------------------------------------------------
 
@@ -228,53 +227,25 @@ END
 
 ;-------------------------------------------------------------------------------
 ; Set the guess kinematics
-
-; TODO: Need to set stars and gas separately!
-
 PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
                 nb, analysis_prior, star_kin_interp, gas_kin_interp, bin_indx, $
                 velocity_initial_guess, velocity_dispersion_initial_guess, star_kin_guesses, $
-                gas_kin_guesses
+                gas_kin_guesses, vrange=vrange, srange=srange
 
-;       star_kin_guesses = dblarr(nb, 4)
-;       gas_kin_guesses = dblarr(nb, 2)
-;       if strlen(analysis_prior) ne 0 then begin
+        ; Set automatic vrange to +/- 500 km/s around the input guess velocity
+        if n_elements(vrange) ne 2 then $
+            vrange = [-500.0d, 500.0d]
 
-;           ; TODO: Add some limits for the guess kinematics to make
-;           ; sure they're not too crazy
+        ; Set automatic srange to 0-500 km/s
+        if n_elements(srange) ne 2 then $
+            srange = [0.0d, 500.0d]
 
-;           for j=0,nb-1 do begin
-;               indx = where(bin_indx eq j, count)
-;               if count ne 0 then begin
-;                   star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])
-;                   star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
-;                   gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])
-;                   gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
-;               endif else begin
-;                   star_kin_guesses[j,0] = velocity_initial_guess
-;                   star_kin_guesses[j,1] = velocity_dispersion_initial_guess
-;                   gas_kin_guesses[j,0] = velocity_initial_guess
-;                   gas_kin_guesses[j,1] = 50.0
-;               endelse
-;           endfor
-;       endif else begin
-;           ; Set the starting guesses for the kinematics to a
-;           ; single value
-;           star_kin_guesses[*,0] = velocity_initial_guess              ; stellar velocity
-;           star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
-;           gas_kin_guesses[*,0] = velocity_initial_guess               ; gas velocity
-;           gas_kin_guesses[*,1] = 50.                                  ; gas sigma
-;       endelse
-
+        ; Set the guess values for the stellar kinematics
         star_kin_guesses = dblarr(nb, 4)
         if strlen(analysis_prior) ne 0 and n_elements(star_kin_interp) ne 0 then begin
 
-            ; TODO: Add some limits for the guess kinematics to make
-            ; sure they're not too crazy
-
             for j=0,nb-1 do begin
                 indx = where(bin_indx eq j, count)
-;               if indx[0] ne -1 then begin
                 if count ne 0 then begin
                     star_kin_guesses[j,0] = mean(star_kin_interp[indx,0])   ; interpolated kin
                     star_kin_guesses[j,1] = mean(star_kin_interp[indx,1])
@@ -283,6 +254,17 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
                     star_kin_guesses[j,1] = velocity_dispersion_initial_guess
                 endelse
             endfor
+
+            indx = where(star_kin_guesses[*,0] lt velocity_initial_guess+vrange[0] or $
+                         star_kin_guesses[*,0] gt velocity_initial_guess+vrange[1], count)
+            if count ne 0 then $
+                star_kin_guesses[indx,0] = velocity_initial_guess
+
+            indx = where(star_kin_guesses[*,1] lt srange[0] or $
+                         star_kin_guesses[*,1] gt srange[1], count)
+            if count ne 0 then $
+                star_kin_guesses[indx,1] = velocity_dispersion_initial_guess
+
         endif else begin
             ; Set the starting guesses for the kinematics to a
             ; single value
@@ -290,15 +272,14 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
             star_kin_guesses[*,1] = velocity_dispersion_initial_guess   ; stellar sigma
         endelse
 
+
+        ; Set the guess values for the gas kinematics
+        ; TODO: Allow for gas dispersion limits to be different than stellar dispersion limits?
         gas_kin_guesses = dblarr(nb, 4)
         if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
 
-            ; TODO: Add some limits for the guess kinematics to make
-            ; sure they're not too crazy
-
             for j=0,nb-1 do begin
                 indx = where(bin_indx eq j, count)
-;               if indx[0] ne -1 then begin
                 if count ne 0 then begin
                     gas_kin_guesses[j,0] = mean(gas_kin_interp[indx,0])   ; interpolated kin
                     gas_kin_guesses[j,1] = mean(gas_kin_interp[indx,1])
@@ -307,6 +288,17 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
                     gas_kin_guesses[j,1] = 50.                     ; gas sigma
                 endelse
             endfor
+
+            indx = where(gas_kin_guesses[*,0] lt velocity_initial_guess+vrange[0] or $
+                         gas_kin_guesses[*,0] gt velocity_initial_guess+vrange[1], count)
+            if count ne 0 then $
+                gas_kin_guesses[indx,0] = velocity_initial_guess
+
+            indx = where(gas_kin_guesses[*,1] lt srange[0] or $
+                         gas_kin_guesses[*,1] gt srange[1], count)
+            if count ne 0 then $
+                gas_kin_guesses[indx,1] = velocity_dispersion_initial_guess
+
         endif else begin
             ; Set the starting guesses for the kinematics to a
             ; single value
@@ -332,17 +324,20 @@ END
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
+; This is the file (mdap_analysis_block_logic.pro) that has all the
+; functions that decide which analysis blocks should be performed
 @mdap_analysis_block_logic
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 ; This is the main wrapper procedure for the DAP.
-
 PRO MANGA_DAP, $
         inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, dapsrc=dapsrc, $
         nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
-
-        print, 'entered manga_dap'
 
         manga_dap_version = '0.93'      ; set the version number
         t0=systime(/seconds)/60./60.    ; start time
@@ -355,8 +350,6 @@ PRO MANGA_DAP, $
         ;-----------------------------------------------------------------------
         if ~keyword_set(quiet) then $
             print, 'BLOCK 0 ... '
-        ; TODO: Put all this initialization stuff in a wrapper?
-
 
         ; Execute the script the sets the user-level execution parameters
         ; total_filelist, output_root_dir, 
@@ -370,9 +363,6 @@ PRO MANGA_DAP, $
                               save_intermediate_steps=save_intermediate_steps, $
                               remove_null_templates=remove_null_templates, $
                               external_library=external_library
-
-;        if file_test(total_filelist) eq 0 then $
-;            message, total_filelist+' does not exist!'
 
         ; Check the mdap_execution_setup results
         if n_elements(external_library) then begin
@@ -405,7 +395,6 @@ PRO MANGA_DAP, $
             save_intermediate_steps = 0
 
         ; Check if remove_null_elemens exits, if not set to remove null templates
-        ; TODO: Where are they removed from?
         if n_elements(remove_null_templates) eq 0 then $
             remove_null_templates = 0
 
@@ -422,9 +411,7 @@ PRO MANGA_DAP, $
         MDAP_DRP_CHECK_FILETYPE, datacube_name, mode
 
         ;-----------------------------------------------------------------------
-        ; TODO: Version control will eventually happen in
-        ; MDAP_GENERATE_OUTPUT_FILE_NAMES, or preferrably in a more well-named
-        ; procedure
+        ; TODO: Version control will eventually happen in another file?
        
         mdap_execute_plan_version = '0'
         mdap_read_drp_fits_version = '0'
@@ -443,18 +430,18 @@ PRO MANGA_DAP, $
         MDAP_SPATIAL_BINNING, version=mdap_spatial_binning_version
         MDAP_SPECTRAL_FITTING, version=mdap_spectral_fitting_version
         MDAP_SPECTRAL_INDEX_MEASUREMENTS, version=mdap_spectral_index_version
-
         ;-----------------------------------------------------------------------
 
 
         ;-----------------------------------------------------------------------
         ; TODO: Same as ntpl_libraries, neml_files, and nabs_files in mdap_execution_setup
 
+        ; Check data read from user-level MDAP_EXECUTION_SETUP procedure
         n_tpl_lib = n_elements(template_libraries)      ; Number of template libraries to use
         n_ems_par = n_elements(emission_line_parameters); Number of emission line parameter files
         n_abs_par = n_elements(absorption_line_parameters);Number of absorption line parameter files
 
-        success = MDAP_CHECK_FILE_EXISTS(template_libraries, /search)   ; Aborts of fails
+        success = MDAP_CHECK_FILE_EXISTS(template_libraries, /search)   ; Aborts if fails
         if success ne 0 then $
             message, 'Template libraries not correctly defined.'
                 
@@ -466,6 +453,7 @@ PRO MANGA_DAP, $
         if success ne 0 then $
             message, 'Absorption-line parameter files not correctly defined.'
 
+        ; Build the ExecutionPlan structures based on the user input
         MDAP_BUILD_EXECUTION_PLANS, n_tpl_lib, n_ems_par, n_abs_par, bin_par, ell, pa, Reff, $
                                     w_range_sn, threshold_ston_bin, w_range_analysis, $
                                     threshold_ston_analysis, analysis, analysis_par, $
@@ -473,11 +461,7 @@ PRO MANGA_DAP, $
                                     abs_par_analysis, overwrite_flag, output_file_root, $
                                     execution_plan
 
-        ; TODO: If any of the execution_plans are supposed to overwrite
-        ; existing data, check if the files exist and remove them?
-
-        ;MDAP_GENERATE_OUTPUT_FILE_NAMES, output_file_root, execution_plan
-
+        ; Report the ExecutionPlans to the user for review
         n_plans = n_elements(execution_plan)
         if ~keyword_set(quiet) then begin
             for i=0,n_plans-1 do begin
@@ -487,9 +471,11 @@ PRO MANGA_DAP, $
             endfor
         endif
 
+        ; Add the version to the header
         SXADDPAR, header, 'VDAPPLAN', mdap_execute_plan_version, $
                           'mdap_build_execution_plans version'
 
+        ; Print some details to the log file
         if ~keyword_set(nolog) then begin
             printf, log_file_unit, '[INFO] Execution plans built using version: ', $
                     mdap_execute_plan_version
@@ -510,9 +496,6 @@ PRO MANGA_DAP, $
         if ~keyword_set(quiet) then $
             print, 'BLOCK 1 ... '
 
-;       if mdap_read_datacube_version gt mdap_read_datacube_version_previous $
-;          or execute_all_modules eq 1 then begin
-
         ; TODO: Version required for this should depend on the version of DRP
         ; output being read
 
@@ -522,6 +505,9 @@ PRO MANGA_DAP, $
         ;         file with the binned spectra
 
         ; TODO: These operations are independent of the plan -------------------
+;       if mdap_read_datacube_version gt mdap_read_datacube_version_previous $
+;          or execute_all_modules eq 1 then begin
+
             ; TODO: Allow to read a single spectrum and skip binning step
             MDAP_READ_DRP_FITS, datacube_name, header, flux, ivar, mask, wave, sres, skyx, skyy, $
                                 type=mode, unit=unit
@@ -552,10 +538,10 @@ PRO MANGA_DAP, $
                         mdap_fiducial_bin_xy_version
             endif
 
-            ;-------------------------------------------------------------------
-            ; TODO: This block of code is essentially obsolete.  We expect to
-            ; always read the spectral resolution from the header of the
-            ; DRP-produced fits file.
+            ;###########################################################
+            ; TODO: This block of code is essentially obsolete.  We
+            ; expect to always read the spectral resolution from the
+            ; header of the DRP-produced fits file.
 
             ; Change the spectral resolution according to an input file
             ; Columns must be:
@@ -585,11 +571,13 @@ PRO MANGA_DAP, $
                 endif
                 sres = make_array(n_elements(wave), /double, value=2000.0d)     ; Set R=2000.
             endif
-            ;-------------------------------------------------------------------
+            ;###########################################################
 
 ;           sz=size(mask)
 ;           print, sz
 ;           print, mask[0,0:100]
+
+;       endif
 
         ;-----------------------------------------------------------------------
         if ~keyword_set(quiet) then $
@@ -597,7 +585,7 @@ PRO MANGA_DAP, $
         ; END BLOCK 1 ----------------------------------------------------------
 
         ; Once the DRP fits file has been read, the required input to
-        ; appropriatly manipulate ALL the template libraries is
+        ; appropriately manipulate ALL the template libraries is
         ; available
 
         ; BLOCK 2 --------------------------------------------------------------
@@ -623,7 +611,6 @@ PRO MANGA_DAP, $
         ; Cycle through all the libraries, generating the template libraries to
         ; use for the analysis, if they don't already exist!
         indx=where(use_tpl_lib eq 1, count)
-;       if indx[0] ne -1 then begin
         if count ne 0 then begin
 
             for i=0,n_tpl_lib-1 do begin
@@ -631,9 +618,6 @@ PRO MANGA_DAP, $
                     continue
 
                 ; TODO: Need to rethink usage of setup procedure to define library keyword?
-
-                ; TODO: What are the flux units for the templates?  Does it
-                ; matter because I'm renormalizing them?
 
                 ; TODO: Should the convolution conserve the integral of the template spectra?
 
@@ -658,6 +642,9 @@ PRO MANGA_DAP, $
 
                 endif
 
+                ; Have to generate a spectral-index template set for
+                ; each template library / index system combination
+                ; (requested by the plans)
                 for j=0,n_plans-1 do begin
 
                     ; Spectral-index analysis not performed so continue
@@ -714,9 +701,6 @@ PRO MANGA_DAP, $
         ;mw_ebmv = DUST_GETVAL(gl,gb,/interp)           ; Grabs E(B-V) from Schlegel dust maps
         ;FM_UNRED, lambda_obs, spectrumdata, mw_ebmv    ; De-reddens using ?? extinction curve
 
-;       print, star_kin_starting_guesses                ; h3 and h4 initialized to 0
-;       print, gas_kin_starting_guesses
-
         ;-----------------------------------------------------------------------
         ; Now can begin cycling through execution plans
         if keyword_set(dbg) then $
@@ -727,11 +711,12 @@ PRO MANGA_DAP, $
                 print, 'Beginning ExecutionPlans: ', i+1
 
             ;-------------------------------------------------------------------
-            ; Get the nominal name for the template library.  This is used to
-            ; determine which blocks to execute (via perform_block).  This file
-            ; is only used if checking to add the SINDX results.  I.e., this
-            ; needs to be here to pass to MDAP_ANALYSIS_BLOCKS_TO_PERFORM, but
-            ; it is not used unless execution_plan[i].analysis[2] eq 1.
+            ; Get the nominal name for the template library.  This is
+            ; used to determine which blocks to execute (via
+            ; perform_block).  This file is only used if checking to add
+            ; the SINDX results.  I.e., this needs to be here so that
+            ; tpl_out_fits can be passed to
+            ; MDAP_ANALYSIS_BLOCKS_TO_PERFORM, but it may not be used.
             if execution_plan[i].tpl_lib ne -1 then begin
                 tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
                                                         tpl_library_keys[execution_plan[i].tpl_lib])
@@ -1067,6 +1052,9 @@ PRO MANGA_DAP, $
                                                   velocity_initial_guess, $
                                                   velocity_dispersion_initial_guess, $
                                                   star_kin_guesses, gas_kin_guesses
+
+;       print, star_kin_starting_guesses                ; h3 and h4 initialized to 0
+;       print, gas_kin_starting_guesses
 
                 ; Perform the spectral fit
                 MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, $
