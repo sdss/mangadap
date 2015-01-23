@@ -464,10 +464,12 @@ python/mangadap/__init__.py -text
 python/mangadap/rundap.py -text
 python/yanny.py -text
 scripts/mdap_environment.bash -text
+scripts/mdap_minimal_bashrc.bash -text
 scripts/mdap_setup.bash -text
 scripts/mdap_setup_local.bash -text
 scripts/old/mdap_environment.bash -text
 scripts/old/mdap_environment.csh -text
 scripts/old/mdap_setup.csh -text
 scripts/old/run_dap.sh -text
+scripts/tcshrc_environment.txt -text
 ups/mangadap.table -text

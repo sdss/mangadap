@@ -1,0 +1,12 @@
+# .tcshrc
+
+setenv LOCAL_MANGA_PATH /Users/andrewsb/manga/spectro
+
+setenv MANGADRP_VER v1_1_2
+setenv MANGADAP_VER v0_9_0
+
+setenv MDAP_DEV /Users/andrewsb/manga/mangadap/brett_v0.93
+setenv MANGADAP_DIR $MDAP_DEV
+setenv MANGA_SPECTRO_REDUX $LOCAL_MANGA_PATH/redux
+setenv MANGA_SPECTRO_ANALYSIS $LOCAL_MANGA_PATH/analysis
+
