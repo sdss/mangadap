@@ -66,6 +66,8 @@
 ; REVISION HISTORY:
 ;       17 Sep 2014: (KBW) Original implementation
 ;       10 Oct 2014: (KBW) Changed keyword from 'MARCS' TO 'M11-MARCS'
+;       27 Jan 2015: (KBW) Changed STELIB resolution to match Maraston &
+;                          Strombach (2011) Table 1
 ;-
 ;------------------------------------------------------------------------------
 
@@ -128,7 +130,8 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
         if library_key eq 'M11-MARCS' then begin
             return, 2.73
         endif else if library_key eq 'M11-STELIB' then begin
-            return, 3.10
+            return, 3.40
+;           return, 3.10        ; Changed 27 Jan 2015 to match Maraston & Strombach (2011) Table 1
         endif else if library_key eq 'M11-ELODIE' then begin
             return, 0.55
         endif else begin
