@@ -291,7 +291,7 @@ PRO MDAP_SPATIAL_BINNING, $
             ; Update the binned arrays
             nbinned = nbinned[nindx]
             binned_x_rl = binned_x_rl[nindx]
-            binned_y_ru = binned_x_ru[nindx]
+            binned_y_ru = binned_y_ru[nindx]
             binned_wrad = binned_wrad[nindx]
             binned_ston = binned_ston[nindx]
 
