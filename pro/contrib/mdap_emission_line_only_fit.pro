@@ -113,7 +113,7 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, lambda, voff, result, kinematics, k
                                              intens, intens_err, fluxes, fluxes_err, i, j
 
         c=299792.458d                           ; Speed of light in km/s
-        kinematics[i,j,0] = (result/lambda - 1.0d)*c + voff
+        kinematics[i,j,0] = (result[0]/lambda - 1.0d)*c + voff
         kinematics_err[i,j,0] = result[3]*c/lambda
         kinematics[i,j,1] = result[1]*c/result[0]
         kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( (result[3]/result[0])^2 + $
