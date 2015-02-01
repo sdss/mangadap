@@ -112,7 +112,6 @@
 ;               the error (based on either the RMS difference with respect to
 ;               the best-fit model or directly from the inverse variance value)
 ;               with the best-fitting model value.  REQUIRES the bestfit array.
-
 ;
 ;       moments integer
 ;               Number of kinematic moments.  By default this is determined

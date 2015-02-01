@@ -41,14 +41,16 @@
 ;
 ; REVISION HISTORY:
 ;       09 Sep 2014: (KBW) Original Implementation
+;       01 Feb 2015: (KBW) Switch to reading the file using the name of
+;                          the extension instead of its number
 ;-
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------
 
 PRO MDAP_RSS_ONSKY_XY, $
         file, skyx, skyy
 
-        skyx=double(READFITS(file, exten_no=7))         ; X-coordinates in extension 7
-        skyy=double(READFITS(file, exten_no=8))         ; Y-coordinates in extension 8
+        MDAP_READ_FITS_EXTENSION, file, 'XPOS', skyx, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'YPOS', skyy, /to_double
 
         skyx=transpose(temporary(skyx))                 ; Transpose the matrices to match spectra
         skyy=transpose(temporary(skyy))

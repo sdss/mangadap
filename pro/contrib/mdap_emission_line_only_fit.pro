@@ -13,7 +13,7 @@
 ;                                    emission_line_intens, emission_line_intens_err, $
 ;                                    emission_line_fluxes, emission_line_fluxes_err, $
 ;                                    emission_line_EW, emission_line_EW_err, $
-;                                    eml_par=eml_par
+;                                    eml_par=eml_par, version=version
 ;
 ; INPUTS:
 ;       wave dblarr[C]
@@ -90,6 +90,10 @@
 ;               Emission-line parameter structure, of the same form used
 ;               by GANDALF, but with the prameters of the 9 lines fitted
 ;               by Enci's code.
+;
+;       version string
+;               Module version.  If requested, the module is not executed and
+;               only version flag is returned.
 ;
 ; COMMENTS:
 ;
@@ -281,7 +285,13 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 emission_line_kinematics_individual, emission_line_kinematics_individual_err, $
                 emission_line_intens, emission_line_intens_err, emission_line_fluxes, $
                 emission_line_fluxes_err, emission_line_EW, emission_line_EW_err, $
-                eml_par=eml_par, enci=enci, belfiore=belfiore, quiet=quiet, dbg=dbg
+                eml_par=eml_par, version=version, enci=enci, belfiore=belfiore, quiet=quiet, dbg=dbg
+
+        version_module = '1.0'                  ; Version number
+        if n_elements(version) ne 0 then begin  ; If version is defined
+            version = version_module            ; ... set it to the module version
+            return                              ; ... and return without doing anything
+        endif
 
         if keyword_set(enci) and keyword_set(belfiore) then begin
             message, 'Cannot run both Enci and Belfiore fits simultaneously.  Make separate ' $

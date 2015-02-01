@@ -53,6 +53,7 @@
 ;
 ; REVISION HISTORY:
 ;       04 Dec 2014: (KBW) Original implementation
+;       01 Feb 2014: (KBW) Bug fix: bskyx and bskyy not correct size on input
 ;-
 ;------------------------------------------------------------------------------
 
@@ -64,7 +65,9 @@ PRO MDAP_SELECT_COO_RSS, $
             wcoo = make_array(nx, /double, value=targwave)  ; Use the same targwave for all spectra
         endif else $
             wcoo = targwave 
-   
+  
+        bskyx = dblarr(nx, /nozero)                         ; Initialize bsky
+        bskyy = dblarr(nx, /nozero)
         for i=0,nx-1 do begin
             bskyx[i] = interpol(skyx[i,*], wave, wcoo[i])   ; Sample the vectors
             bskyy[i] = interpol(skyy[i,*], wave, wcoo[i])

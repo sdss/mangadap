@@ -4,14 +4,29 @@ from __future__ import print_function
 import os.path
 from os import environ, makedirs, walk
 import numpy
+import sys
+if sys.version > '3':
+    long = int
 
-from yanny import yanny
+from yanny import yanny, read_yanny
 from drpfile import drpfile, drpfile_list, parse_drp_file_name, arginp_to_list
 from astropy.io import fits
 from astropy import constants
 from scipy.spatial import KDTree
 
 __author__ = 'Kyle Westfall'
+
+
+def list_to_csl_string(flist):
+    """
+    Convert a list to a comma-separated string.
+    """
+    n = len(flist)
+    out=str(flist[0])
+    for i in range(1,n):
+        out += ', '+str(flist[i])
+    return out
+
 
 
 # TODO: Let the paths be defined, using default otherwise
@@ -27,7 +42,7 @@ class drpcomplete:
     REVISION HISTORY:
         20 Nov 2014: (KBW) Started
         01 Dec 2014: (KBW) Committed to SVN
-        12 Jan 2015: (KBW) Allow for use of plateTargets file
+        12 Jan 2015: (KBW) Allow for use of plateTargets file using yanny.py
     """
 
 
@@ -64,7 +79,9 @@ class drpcomplete:
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
-        if platetargets is not None and os.path.exists(platetargets):
+        platetargets = arginp_to_list(platetargets)
+
+        if platetargets is not None and all( os.path.exists(p) for p in platetargets ):
             self.platetargets = platetargets
             self.nsa_cat = None
         elif nsa_cat is not None and os.path.exists(nsa_cat):
@@ -121,11 +138,20 @@ class drpcomplete:
 
     def _read_platetargets(self, verbose=False):
         """Read the platetargets file and the number of entries."""
-        if not os.path.exists(self.platetargets):
-            raise Exception('Cannot open platetargets file: {0}'.format(self.platetargets))
+        for p in self.platetargets:
+            if not os.path.exists(p):
+                raise Exception('Cannot open platetargets file: {0}'.format(p))
 
-        par_data = yanny(self.platetargets, np=True)
-        n_par = numpy.shape(par_data['PLTTRGT']['mangaid'])[0]
+        nn = len(self.platetargets)
+        par_data = yanny(self.platetargets[0])
+
+        for i in range(1,nn):
+            tmp_par = read_yanny(self.platetargets[1])
+            par_data.append(tmp_par, add_to_file=False)
+
+#       n_par = numpy.shape(par_data['PLTTRGT']['mangaid'])[0]
+        par_data.convert_to_numpy_array()
+        n_par = par_data.size('PLTTRGT')
 
         return par_data, n_par
 
@@ -137,7 +163,7 @@ class drpcomplete:
         """
 
         # Read the platetargets file
-        print('Reading platetargets...')
+        print('Reading platetarget file(s)...')
         par_data, n_par = self._read_platetargets(verbose=True)
         print('DONE')
 
@@ -161,12 +187,11 @@ class drpcomplete:
             if len(indx[0]) == 0:
                 raise Exception('Could not find plate={0}, ifudesign={1} in {2}.'.format(
                                 self.platelist[i], self.ifudesignlist[i], self.platetargets))
-
-            mangaid[i] = numpy.string_(par_data['PLTTRGT']['mangaid'][indx][0])
+            mangaid[i] = par_data['PLTTRGT']['mangaid'][indx][0]
             objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
             objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
 
-            nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
+            nsaid[i] = numpy.int32(mangaid[i].decode("utf-8").split('-')[1])
             
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
@@ -215,8 +240,17 @@ class drpcomplete:
         nsa_data, n_nsa, nsa_has_veldisp = self._read_nsa(verbose=True)
         print('DONE')
 
+        n = len((nsa_data['RA']).ravel())
+
         # Set the coordinates to a KDTree
-        kdcoo = KDTree(zip( (nsa_data['RA']).ravel(), (nsa_data['DEC']).ravel() ))
+        data = numpy.zeros((n, 2), dtype=numpy.float64)
+        data[:,0] = (nsa_data['RA']).ravel()
+        data[:,1] = (nsa_data['DEC']).ravel()
+        print(numpy.shape(data))
+        print(len(data))
+
+        kdcoo = KDTree(data)
+        #zip( (nsa_data['RA']).ravel(), (nsa_data['DEC']).ravel() ))
         #print(kdcoo.data.shape)
 
         # Initialize the output arrays (needed in case some DRP targets not found)
@@ -441,12 +475,17 @@ class drpcomplete:
         Return the default plateTargets file used to get the NSA
         information
         """
-        if self.drpver == 'v1_0_0':
-            return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                                'plateTargets-12.par')
+#       if self.drpver == 'v1_0_0':
+#           return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+#                               'plateTargets-12.par')
+#
+#       return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+#                           'plateTargets-1.par')
 
-        return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                            'plateTargets-1.par')
+        return [os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                'plateTargets-12.par'),
+                os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                            'plateTargets-1.par') ]
 
 
     def default_nsa_catalog(self):
@@ -540,7 +579,7 @@ class drpcomplete:
         nn = len(drplist)
         print('Number of DRP files: {0}'.format(nn))
 
-        if self.platetargets is not None and os.path.exists(self.platetargets):
+        if self.platetargets is not None and all(os.path.exists(p) for p in self.platetargets):
 
 #           mangaid, objra, objdec = self._drp_info(drplist)
 #           nsaid, vel, veldisp, ell, pa, Reff = self._match_platetargets(mangaid, def_veldisp)
@@ -600,7 +639,7 @@ class drpcomplete:
         if nsa_cat is not None:
             hdr['NSACAT'] = nsa_cat
         if platetargets is not None:
-            hdr['PLTARG'] = platetargets
+            hdr['PLTARG'] = list_to_csl_string(platetargets)
         hdr['AUTHOR'] = 'K.B. Westfall <kbwestfall@gmail.com>'
 
         hdu0 = fits.PrimaryHDU(header=hdr)

@@ -522,7 +522,7 @@ PRO MDAP_EXECUTION_SETUP, $
 
 ;-----------------------------------------------------------------------
 ;-----------------------------------------------------------------------
-; Just perform high S/N binning with STELIB templates:
+; Just perform high S/N binning with both MARCS and STELIB templates:
 ;-----------------------------------------------------------------------
 ;-----------------------------------------------------------------------
 
@@ -530,7 +530,7 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 1                                       ; Number of ExecutionPlans to produce
+        niter = 2                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -562,9 +562,11 @@ PRO MDAP_EXECUTION_SETUP, $
         bin_par[*].ston = 40.0d
 
         w_range_sn[0,*] = [5560.00, 6942.00]
+        w_range_sn[1,*] = [5560.00, 6942.00]
         threshold_ston_bin[*] = -300.0d
 
         w_range_analysis[0,*] = [3650.,10300.] 
+        w_range_analysis[1,*] = [3650.,10300.] 
         threshold_ston_analysis[*] = 0.0d
 
         analysis[*,0] = 'stellar-cont'
@@ -572,7 +574,8 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis[*,2] = 'emission-line'
         analysis[*,3] = 'abs-indices'
 
-        tpl_lib_analysis[*] = 1                 ; Use STELIB
+        tpl_lib_analysis[0] = 0                 ; Use MARCS
+        tpl_lib_analysis[1] = 1                 ; Use STELIB
         ems_par_analysis[*] = 0
         abs_par_analysis[*] = 0
 

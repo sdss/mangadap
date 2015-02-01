@@ -39,6 +39,13 @@ import os.path
 import datetime
 import numpy
 #
+# 28 Jan 2015: K. Westfall: Python 3 edit
+# Convert long to int for Python 3
+#
+import sys
+if sys.version > '3':
+    long = int
+#
 # Classes
 #
 class yanny(dict):
@@ -328,10 +335,18 @@ class yanny(dict):
             return None
         if variable not in self.columns(structure):
             return None
-        defl = filter(lambda x: x.find(structure.lower()) > 0,
-            self['symbols']['struct'])
-        defu = filter(lambda x: x.find(structure.upper()) > 0,
-            self['symbols']['struct'])
+
+        # 28 Jan 2015: K. Westfall: Python 3 edit
+        # defl = filter(lambda x: x.find(structure.lower()) > 0,
+        #     self['symbols']['struct'])
+        # defu = filter(lambda x: x.find(structure.upper()) > 0,
+        #     self['symbols']['struct'])
+
+        defl = list(filter(lambda x: x.find(structure.lower()) > 0,
+            self['symbols']['struct']))
+        defu = list(filter(lambda x: x.find(structure.upper()) > 0,
+            self['symbols']['struct']))
+
         if len(defl) != 1 and len(defu) != 1:
             return None
         elif len(defl) == 1:
@@ -383,6 +398,7 @@ class yanny(dict):
         For character types, this means a two-dimensional array,
         *e.g.*: ``char[5][20]``.
         """
+
         try:
             cache = self._struct_isarray_caches[structure]
         except KeyError:
@@ -495,17 +511,23 @@ class yanny(dict):
         typ = self.basetype(structure,variable)
         if (typ == 'short' or typ == 'int'):
             if self.isarray(structure,variable):
-                return map(int, value)
+                # 28 Jan 2015: K. Westfall: Python 3 edit
+                # return map(int, value)
+                return list(map(int, value))
             else:
                 return int(value)
         if typ == 'long':
             if self.isarray(structure,variable):
-                return map(long, value)
+                # 28 Jan 2015: K. Westfall: Python 3 edit
+                # return map(long, value)
+                return list(map(long, value))
             else:
                 return long(value)
         if (typ == 'float' or typ == 'double'):
             if self.isarray(structure,variable):
-                return map(float, value)
+                # 28 Jan 2015: K. Westfall: Python 3 edit
+                # return map(float, value)
+                return list(map(float, value))
             else:
                 return float(value)
         return value
@@ -518,7 +540,9 @@ class yanny(dict):
         This is just the list of keys of the object with the 'internal'
         keys removed.
         """
-        foo = self['symbols'].keys()
+        # 28 Jan 2015: K. Westfall: Python 3 edit
+        # foo = self['symbols'].keys()
+        foo = list(self['symbols'].keys())
         foo.remove('struct')
         foo.remove('enum')
         return foo
@@ -711,7 +735,7 @@ class yanny(dict):
     #
     #
     #
-    def append(self,datatable):
+    def append(self,datatable,add_to_file=True):
         """Appends data to an existing FTCL/yanny file.
 
         Tries as much as possible to preserve the ordering & format of the
@@ -719,6 +743,9 @@ class yanny(dict):
         yanny object, but it is not necessary to reproduce the 'symbols'
         dictionary.  It will not try to append data to a file that does not
         exist.  If the append is successful, the data in the object will be updated.
+
+        30 Jan 2015: K. Westfall, added add_to_file flag allowing for
+        only the data to be appended without altering the original file.
         """
         if len(self._filename) == 0:
             raise ValueError("No filename is set for this object. Use the set_filename method to set the filename!")
@@ -758,15 +785,19 @@ class yanny(dict):
         #
         if len(contents) > 0:
             contents = ("# Appended by yanny.py at {0}.\n".format(timestamp)) + contents
-            if os.access(self._filename,os.W_OK):
-                with open(self._filename,'a') as f:
-                    f.write(contents)
+            if add_to_file:
+                if os.access(self._filename,os.W_OK):
+                    with open(self._filename,'a') as f:
+                        f.write(contents)
+                    self._contents += contents
+                    self._parse()
+                else:
+                    print("{0} does not exist, aborting append!".format(self._filename))
+                    print("For reference, here's what would have been written:")
+                    print(contents)
+            else:
                 self._contents += contents
                 self._parse()
-            else:
-                print("{0} does not exist, aborting append!".format(self._filename))
-                print("For reference, here's what would have been written:")
-                print(contents)
         else:
             print("Nothing to be appended!")
         return
@@ -913,12 +944,28 @@ class yanny(dict):
         # If self.np is True, convert tables into NumPy record arrays
         #
         if self.np:
-            for t in self.tables():
-                record = numpy.zeros((self.size(t),),dtype=self.dtype(t))
-                for c in self.columns(t):
-                    record[c] = self[t][c]
-                self[t] = record
+            self.convert_to_numpy_array()
+
         return
+
+
+    def convert_to_numpy_array(self):
+        """
+        Convert the tables to NumPy ndarrays.
+
+        30 Jan 2015: K. Westfall.  Separated from main _parse() utility.
+        """
+        for t in self.tables():
+            if type(self[t]) == numpy.ndarray:
+                print('{0} table is already a numpy.ndarray!'.format(t))
+                continue
+            record = numpy.zeros((self.size(t),),dtype=self.dtype(t))
+            for c in self.columns(t):
+                record[c] = self[t][c]
+            self[t] = record
+        if not self.np:
+            self.np = True
+
 #
 # Functions
 #

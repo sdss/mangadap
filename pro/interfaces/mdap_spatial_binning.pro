@@ -191,14 +191,14 @@ PRO MDAP_SPATIAL_BINNING, $
         print, ' unmasked pixels: ', n_elements(where(mask lt 1.))
         print, ' non-zero pixels: ', n_elements(where(flux gt 0.))
 
-        ngood = n_elements(gindx)
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
 
         if bin_par.type eq 'NONE' then begin                ; No binning
+            ngood = n_elements(gindx)
             bin_weights = dblarr(ns)                    ; Initialize weights to 0
             bin_weights[gindx] = 1.0d                   ; Set weights to unity
-            binned_indx = make_array(ns, /long, value=-1)
+            binned_indx = make_array(ns, /int, value=-1)
             binned_indx[gindx] = indgen(ngood)
             binned_flux = flux[gindx,*]
             binned_ivar = ivar[gindx,*]

@@ -110,14 +110,18 @@
 ;       15 Sep 2014: (KBW) Added unit as an optional output
 ;       10 Oct 2014: (KBW) Automatically set unit, does not need to check that
 ;                          it exists
+;       01 Feb 2014: (KBW) Changed reading of extensions to be based on
+;                          extension name, not extension number.  Less
+;                          efficient, but more robust against DRP
+;                          version changes.
 ;-
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------
 
 PRO MDAP_READ_DRP_FITS,$
                 file, header, flux, ivar, mask, wave, sres, skyx, skyy, type=type, unit=unit, $
                 version=version
 
-        version_module = '0.1'                          ; Version
+        version_module = '0.2'                          ; Version
 
         ; If the version is requested, print it then quit
         if n_elements(version) ne 0 then begin
@@ -125,16 +129,21 @@ PRO MDAP_READ_DRP_FITS,$
             return
         endif
 
-        header=HEADFITS(file, exten=1)                  ; Read the header (EXTENSION IS IMPORTANT!)
-        flux=double(READFITS(file, exten_no=1))         ; Flux is in extension 1
-        ivar=double(READFITS(file, exten_no=2))         ; Inverse variance is in extension 2
-        mask=double(READFITS(file, exten_no=3))         ; Pixel mask is in extension 3
-        wave=double(READFITS(file, exten_no=4))         ; Wavelength solution is in extension 4
-        sres=double(READFITS(file, exten_no=5))         ; Spectral resolution is in extension 5
+        ;---------------------------------------------------------------
+        ; Read the data from the DRP file used for both RSS and CUBE
+        ; files.  This is inefficient, but allows for reading the data
+        ; based on the name of the fits extension, not its number.
+        header=''   ; Define header so it will be read from the 'FLUX' extension
+        MDAP_READ_FITS_EXTENSION, file, 'FLUX', flux, header=header, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'IVAR', ivar, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'MASK', mask, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'WAVE', wave, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'SPECRES', sres, /to_double
 
         MDAP_DRP_FILETYPE, header, type                 ; Determine/Confirm the file type
 
         if type eq 'CUBE' then begin
+
             MDAP_CUBE_ONSKY_XY, header, skyx, skyy      ; Calculate on-sky spaxel coordinates
             MDAP_RESTRUCTURE_CUBE, flux, ivar, mask     ; Restructure the CUBE
 
@@ -142,7 +151,6 @@ PRO MDAP_READ_DRP_FITS,$
             MDAP_WCS_UNITS, header, wcsunit             ; Get WCS units
             MDAP_WCSUNIT2ARCSEC, wcsunit, skyx, skyy    ; Convert distance to arcseconds
 
-            ; TODO: Remove spectra with all zeros from list?
             unit=wcsunit                                ; Set unit value, if requested
 
         endif else begin

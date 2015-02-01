@@ -8,6 +8,10 @@ import time
 import numpy
 from drpfile import arginp_to_list
 
+import sys
+if sys.version > '3':
+    long = int
+
 __author__ = 'Kyle Westfall'
 
 def parse_dap_file_name(name):

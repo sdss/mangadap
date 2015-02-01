@@ -6,6 +6,9 @@ from os import environ
 from astropy.io import fits
 import time
 import numpy
+import sys
+if sys.version > '3':
+    long = int
 
 __author__ = 'Kyle Westfall'
 
