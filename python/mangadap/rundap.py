@@ -738,6 +738,14 @@ class rundap:
         # TODO: Load current version as opposed to outver?
         file.write('module switch mangadap mangadap/{0}\n'.format(module_version))
 
+
+# module purge
+# module load manga/trunk
+# module unload mangadrp
+# module load mangadrp/v1_0_0
+# module load idlutils/v5_5_16
+# module load mangadap/westfall
+
         # Create the started and running touch files
         # TODO: Is there ever a case when *.started exists, but
         # *.running does not?  Why are they both necessary?
