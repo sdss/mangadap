@@ -1,14 +1,15 @@
-from __future__ import division
-from __future__ import print_function
+import sys
+if sys.version > '3':
+    long = int
+else:
+    from __future__ import division
+    from __future__ import print_function
 
 import os.path
 from os import environ
 from astropy.io import fits
 import time
 import numpy
-import sys
-if sys.version > '3':
-    long = int
 
 __author__ = 'Kyle Westfall'
 

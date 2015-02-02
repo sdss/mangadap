@@ -1,12 +1,13 @@
-from __future__ import division
-from __future__ import print_function
+import sys
+if sys.version > '3':
+    long = int
+else:
+    from __future__ import division
+    from __future__ import print_function
 
 import os.path
 from os import environ, makedirs, walk
 import numpy
-import sys
-if sys.version > '3':
-    long = int
 
 from yanny import yanny, read_yanny
 from drpfile import drpfile, drpfile_list, parse_drp_file_name, arginp_to_list

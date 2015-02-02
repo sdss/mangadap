@@ -1,5 +1,9 @@
-from __future__ import division
-from __future__ import print_function
+import sys
+if sys.version > '3':
+    long = int
+else:
+    from __future__ import print_function
+    from __future__ import division
 
 import os.path
 from os import environ
@@ -7,10 +11,6 @@ from astropy.io import fits
 import time
 import numpy
 from drpfile import arginp_to_list
-
-import sys
-if sys.version > '3':
-    long = int
 
 __author__ = 'Kyle Westfall'
 
