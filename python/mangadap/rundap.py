@@ -4,7 +4,7 @@ from __future__ import print_function
 import subprocess
 import time
 import os.path
-#import pbs.queue
+import pbs.queue
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -68,7 +68,7 @@ class rundap:
     # place of the current product version 
     def __init__(self,
                 # Run mode options
-                daily=None, all=None, clobber=None, redo=None, console=None, quiet=None,
+                daily=None, all=None, redo=None, clobber=None, console=None, quiet=None,
                 # Override defaults
                 outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
                 modelist=None, combinatorics=False, platetargets=None, nsa_cat=None,
@@ -79,35 +79,44 @@ class rundap:
         Interprets the run-mode and cluster options.
     
         ARGUMENTS:
-            daily - run daily analyses
-            all - run all analyses
-            clobber - when running all analyses, clobber existing output
-            redo - redo existing analyses
-            console - executed from console, with command-line arguments
-            quiet - suppress output
 
-            outver - output version
-            idlutilsver - idlutils module version to use
-            drpver - manga DRP module version to use
-            platelist - specified list of plates to analyze
-            ifudesignlist - specified list of ifudesign to analyze
-            modelist - specified list of modes to analysze (CUBE or RSS)
-            combinatorics - use all unique combinations of the entered
-                            plate/ifudesign/mode lists
+            -         daily: run daily analyses
+            -           all: run all analyses
+            -          redo: redo existing analyses, clobber is
+                             implicitly true
 
-            platetargets - specify the plateTargets file to use
-            nsa_cat - specify the NSA catalog to use
+            -       clobber: when running all analyses, clobber existing
+                             output
+            -       console: executed from console, with command-line
+                             arguments
+            -         quiet: suppress output
 
-            label - label to use in cluster queue
-            nodes - number of cluster nodes to use
-            qos - processor to use (?)
-            umask - umask to set for output
-            walltime - wall time for cluster job
-            hard - turn OFF hard keyword for cluster submission
-            submit - turn OFF submission of jobs to cluster
+            -        outver: output DAP version
+            -   idlutilsver: idlutils module version to use
+            -        drpver: MaNGA DRP module version to use
+
+            -     platelist: specified list of plates to analyze
+            - ifudesignlist: specified list of ifudesigns to analyze
+            -      modelist: specified list of modes to analysze (CUBE
+                             or RSS)
+            - combinatorics: use all unique combinations of the entered
+                             plate/ifudesign/mode lists
+
+            -  platetargets: specify the plateTargets file(s) to use
+                             (can be a list as allowed by drpcomplete.py)
+            -       nsa_cat: specify the NSA catalog to use
+
+            -         label: label to use in cluster queue
+            -         nodes: number of cluster nodes to use
+            -           qos: select processor (only None for daily run)
+            -         umask: umask to set for output
+            -      walltime: wall time for cluster job
+            -          hard: turn OFF hard keyword for cluster
+                             submission
+            -        submit: turn OFF submission of jobs to cluster
 
             OBSOLETE:
-            mangaver - manga module version to use
+            -      mangaver: manga module version to use
         """
 
         # Save run-mode options
@@ -118,11 +127,12 @@ class rundap:
         self.quiet = quiet
 
         # Determine current versions
-#        self.idlutilsver = self.product_version(simple=True, product='idlutils')
+        self.idlutilsver = self.product_version(simple=True, product='idlutils')
+        self.drpver = self.product_version(simple=True, product='mangadrp')
+        self.dapver = self.product_version(simple=True, product='mangadap')
+
 #        self.corever = self.product_version(simple=True, product='mangacore')
-#        self.drpver = self.product_version(simple=True, product='mangadrp')
 #        self.mangaver = self.product_version(simple=True, product='mangacore')
-#        self.dapver = self.product_version(simple=True, product='mangadap')
 
         # Use them or use input versions
         self.outver = self.dapver if outver is None else outver
@@ -138,8 +148,8 @@ class rundap:
         self.modelist = arginp_to_list(modelist)
         self.combinatorics = combinatorics
 
-        # plateTargets file or NSA catalog to use for drpcomplete file (drpcomplete can
-        # handle [platetargets = None, nsa_cat = None])
+        # plateTargets file(s) or NSA catalog to use for drpcomplete file
+        # (drpcomplete can handle [platetargets = None, nsa_cat = None])
         self.platetargets = platetargets
         self.nsa_cat = nsa_cat
 
@@ -152,13 +162,12 @@ class rundap:
         self.hard = hard
         self.submit = submit
 
-        # Read the analysis path
+        # Read the analysis path, if it does not exist, exception is
+        # raised.
         try:
             self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
         except:
             raise Exception('Environmental variable MANGA_SPECTRO_ANALYSIS is undefined!')
-#            print('MANGA_SPECTRO_ANALYSIS undefined!')
-#            exit()
        
         # Read and parse command-line arguments
         if console:
@@ -173,18 +182,22 @@ class rundap:
             raise Exception('Must request one (and only one) run mode!')
 
         # Check argument combination makes sense
-        # TODO: Does an error need to be thrown here, or just warn user
+        # TODO: Does an error need to be thrown here, or just warn user.
+        # Use warnings class?
         if self.clobber and not self.all:
-            parser.error('Clobber keyword can only be set if all specified (-a,--all)!')
+            print('Clobber keyword can only be set if all specified (-a,--all)!')
+            self.clobber = None
 
         # If redo, platelist and ifudesignlist MUST be provided
-        # TODO: Is this right?
-        if self.redo and (not self.platelist or not self.ifudesignlist or not self.modelist):
-            parser.error('Must provide platelist, ifudesignlist, and modelist for redo!')
+        if self.redo and not self.platelist and not self.ifudesignlist and not self.modelist:
+            raise Exception('Must provide platelist, ifudesignlist, and modelist for redo!')
 
-        # If not redo, platelist, ifudesignlist, and modelist should be ignored
+        # If not redo, platelist, ifudesignlist, and modelist should be
+        # ignored
+        # TODO: Does an error need to be thrown here, or just warn user.
+        # Use warnings class?
         if not self.redo and (self.platelist or self.ifudesignlist or self.modelist):
-            parser.error('platelist/ifudesignlist/modelist can only be set if redo specified!')
+            raise Exception('platelist/ifudesignlist/modelist only allowed for redo!')
 
         # If running all or daily, make sure lists are set to None such
         # that drpcomplete will search for all available DRP files and
@@ -195,11 +208,17 @@ class rundap:
             self.modelist = None
 
         # Create and update the drpcomplete file if necessary
-        # TODO: Currently does not allow for force=True
         self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
                                 nsa_cat=self.nsa_cat)
-        self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
-                         combinatorics=self.combinatorics)
+
+        # Update the drpcomplete list; force an update if the
+        # platetarget files or an NSA catalog file are provided
+        if self.platetargets is not None or self.nsa_cat is not None:
+            self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
+                             combinatorics=self.combinatorics, force=True)
+        else:
+            self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
+                             combinatorics=self.combinatorics)
 
         # Hereafter, self.platelist and self.ifuplatelist are the INPUT
         # values, whereas self.drpc.platelist and self.drpc.ifuplatelist
@@ -209,8 +228,8 @@ class rundap:
         # See, e.g., selected_drpfile_list().
 
         # Prep the verbosity of the queue if submitting
-#       if self.submit:
-#           self.queue = pbs.queue(verbose=not self.quiet)
+        if self.submit:
+            self.queue = pbs.queue(verbose=not self.quiet)
 
         # Run the selected mode
         if self.daily:
@@ -230,7 +249,7 @@ class rundap:
         """
         Check if the output path exists, creating it if it doesn't.
         """
-        path = self.file_path(plate, ifudesign)
+        path = self.output_path(plate, ifudesign)
         if not os.path.isdir(path):
             makedirs(path)
 
@@ -248,18 +267,17 @@ class rundap:
                           help="runs dap for next mjd (as an after burner to drp)",
                           action="store_true")
         mode.add_argument("-a", "--all",
-                          help="runs dap for all plates/ifudesigns not currently running or done",
-                          action="store_true")
+                          help="runs dap for all plates/ifudesigns/modes not currently running "
+                          "or done", action="store_true")
         mode.add_argument("-r", "--redo",
-                          help="runs dap for all plates/ifudesigns in platelist/ifudesignlist "
+                          help="runs dap for specified platelist/ifudesignlist/modelist "
                           "regardless of state", action="store_true")
 
         # Run-mode optional arguments
         parser.add_argument("-c", "--clobber",
-                            help="if all selected, will run dap for all plates/ifudesigns in "
-                            "platelist/ifudesignlist regardless of state", action="store_true",
-                            default=False)
-        parser.add_argument("-q", "--quiet", help="turn off verbosity", action="store_true",
+                            help="if all selected, will run dap for all plates/ifudesigns/modes "
+                            " regardless of state", action="store_true", default=False)
+        parser.add_argument("-q", "--quiet", help="suppress screen output", action="store_true",
                             default=False)
         parser.add_argument("-o", "--outver", type=str,
                             help="optional output version, different from product version",
@@ -268,8 +286,7 @@ class rundap:
                             default=None)
         parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
                             "files to process", default=None)
-#        parser.add_argument("-v", "--mangaver", type=str, help="version of manga module to use for"
-#                            "processing (also sets mangadrp files to search for)", default=None)
+
         parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce",
                             default=None)
         parser.add_argument("-b", "--ifudesignlist", type=str, help="set list of ifus to reduce",
@@ -279,10 +296,10 @@ class rundap:
         parser.add_argument("-x", "--combinatorics", help="force execution of all permutations of "
                             "the provided lists", action="store_true", default=False)
 
-        parser.add_argument("-g", "--plttargets", type=str, help="path to plateTargets?.par file",
-                            default=None)
-        parser.add_argument("-k", "--nsacat", type=str, help="path to NSA catalog to use",
-                            default=None)
+        parser.add_argument("-g", "--plttargets", type=str, help="path to plateTargets file(s); "
+                            "if provided will force update to drpcomplete file", default=None)
+        parser.add_argument("-k", "--nsacat", type=str, help="path to NSA catalog to use; if "
+                            "provided will force update to drpcomplete file", default=None)
 
         # Cluster arguments
         parser.add_argument('-l', '--label', type=str, help='label for cluster job',
@@ -305,7 +322,8 @@ class rundap:
       
         ################################################################
         # Assign properties based on arguments, if properties not set
-        # previously
+        # previously; the suitability of these arguments is checked in
+        # __init__()
 
         # Run-mode
         if self.daily is None:
@@ -346,8 +364,6 @@ class rundap:
             self.idlutilsver = self.arg.idlutilsver
         if self.arg.drpver is not None:
             self.drpver = self.arg.drpver
-#       if self.arg.mangaver is not None:
-#           self.mangaver = self.arg.mangaver
 
         # Set queue keywords
         if self.arg.umask is not None:
@@ -369,23 +385,66 @@ class rundap:
 #       self.submit = False
     
 
+    # TODO: Files:
+    #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
+    #       - *.ready = script/directory is ready for queue submission
+    #       - *.queued = script submitted to queue
+    #       - *.started = script assigned a node/processor and has started running
+    #       - *.done = completed execution of the full script
+    # TODO: Other:
+    #       - *.par = parameter file
+    #       - *.out, *.err = stdout and stderr output from the script
     def _fill_queue(self, drpfiles, clobber=False):
 
+        # If submitting to the queue, create the queue object
         if self.submit:
             self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
                               walltime=self.walltime)
-        
+       
+        # Create the script files, regardless of whether or not they are
+        # submitted to the queue, appending the scripts to the queue if
+        # they are to be submitted
         for drpf in drpfiles:
             scriptfile, stdoutfile, stderrfile = self.prepare_for_analysis(drpf, clobber=clobber)
             if self.submit:
                 self.queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
                                   errfile=stderrfile)
+                self.set_status(drpf.plate, drpf.ifudesign, drpf.mode, stage='dap', status='queued')
         
-        #submit to queue
+        # Submit to queue to the cluster
         # hard = hard-coded script files that can be seen
         if self.submit:
-            self.queue.commit(hard=self.hard,submit=self.submit)
+            self.queue.commit(hard=self.hard, submit=self.submit)
 
+
+    def _write_module_commands(self, file):
+        """
+        Write the module commands to the script file.  The file must
+        already be open.
+
+        """
+
+        # TODO: This is a hack for now, until things settle down with my
+        # understanding of how to do this.
+
+        # TODO: Always force usage of python 3?
+
+        file.write('module purge\n')
+        file.write('module load manga/trunk\n')
+        file.write('module unload python\n')
+        file.write('module load python/3.3.6\n')
+        file.write('module unload mangadrp\n')
+        file.write('module load mangadrp/{0}\n'.format(self.drpver))
+        file.write('module unload idlutils\n')
+        file.write('module load idlutils/{1}\n'.format(self.idlutils))
+        file.write('module load mangadap/westfall\n')
+
+        # TODO: Is there a way to have the script catch errors in these
+        # module calls (without proceeding to the remaining calls)?
+
+        # TODO: Can I check that all the modules have been properly
+        # loaded and then quit otherwise? (like the module_version
+        # script above?)
 
 
     # ******************************************************************
@@ -395,12 +454,17 @@ class rundap:
 
     def run_daily(self):
         """
-        Run daily reductions for next mjd completed by the DAP.
+        Run daily reductions for next mjd completed by the DRP.
         
         Automatically run by crontab.
         """
 
-        # raise Exception('Daily mode (-d,--daily) not yet implemented.')
+        # Until correctly implemented, raise an exception if this mode
+        # is called.
+        raise Exception('Daily mode (-d,--daily) not yet implemented.')
+
+        # Daily analyses forced to use the sdss-fast node and only that
+        # node
         self.nodes = 1
         self.qos='sdss-fast'
         self.label = '{0}_daily'.format(self.label)
@@ -411,6 +475,8 @@ class rundap:
         if len(drpfiles) == 0:
             return
 
+        # Create the script files for the set of drpfiles, and 
+        # submit the scripts to the queue if self.submit is true
         self._fill_queue(drpfiles)
 
 
@@ -426,6 +492,7 @@ class rundap:
         """
 
         self.label = '{0}_clobber'.format(self.label) if clobber else '{0}_all'.format(self.label)
+
         # In here, qos should never be anything but None; always set in daily
         if self.qos is not None:
             raise Exception('This qos is reserved for single-node usage.')
@@ -434,9 +501,11 @@ class rundap:
         if len(drpfiles) == 0:
             return
 
+        # Create the script files for the set of drpfiles, and 
+        # submit the scripts to the queue if self.submit is true
         self._fill_queue(drpfiles, clobber=clobber)
 
-    def run_redo(self, clobber=True):
+    def run_redo(self):
         """
         Run all reductions not currently running or done.
         
@@ -448,11 +517,15 @@ class rundap:
         if self.qos is not None:
             raise Exception('This qos is reserved for single-node usage.')
 
-        drpfiles = self.select_redo(clobber=clobber)
+        drpfiles = self.select_redo()
         print(len(drpfiles))
+
+        # If coded correctly, this function should never return here.
         if len(drpfiles) == 0:
             return
 
+        # Create the script files for the set of drpfiles, and 
+        # submit the scripts to the queue if self.submit is true
         self._fill_queue(drpfiles, clobber=clobber)
 
 
@@ -462,8 +535,8 @@ class rundap:
     # ******************************************************************
 
 
-    # TODO: What is the use case for simple=False?  This is not really a
-    # rundap-specific routine.  Should be in a lower-level class.
+    # TODO: This is not really a rundap-specific routine.  Should be in
+    # a lower-level class?
     def product_version(self, product='mangadap', simple=False):
         """
         Gets the version for the SDSS-III or SDSS-IV product.  The
@@ -485,7 +558,7 @@ class rundap:
 
 
     # TODO: This is not really a rundap-specific routine.  Should be in
-    # a lower-level class.
+    # a lower-level class?
     def module_version(self, product='mangadap'):
         """
         Return the module version for the specified product.  The
@@ -524,12 +597,13 @@ class rundap:
         return 'manga{0}-{1}-{2}-LOG{3}'.format(stage, plate, ifudesign, mode)
 
 
-    def file_path(self, plate, ifudesign):
+    def output_path(self, plate, ifudesign):
         """
         Set the path name for the ouptut of the MaNGA DAP for a given
         plate/ifudesign.
         """
 
+        # TODO: Separate paths for RSS and CUBE?
         return os.path.join(self.manga_spectro_analysis, self.outver, str(plate), str(ifudesign))
 
 
@@ -538,13 +612,10 @@ class rundap:
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.
         """
-        
-        # Check that the path exists, creating it if not
-        self._check_path(plate, ifudesign)
                 
         # Touch status file
         root = self.file_root(plate, ifudesign, mode, stage)
-        statfile = os.path.join(self.file_path(plate, ifudesign),'{0}.{1}'.format(root,status))
+        statfile = os.path.join(self.output_path(plate, ifudesign),'{0}.{1}'.format(root,status))
         file = open(statfile,'w')
         file.close()
 
@@ -554,11 +625,12 @@ class rundap:
         Determine if the DAP was successfully completed on a given DRP
         file.
 
-        Condition that DAP is complete is that the path exists and that
-        within the path, the *.done touch file exits.
+        Conditions that DAP is complete its processing of the given DRP file:
+                - the output path for the DAP file exists
+                - within the path, the *.done touch file exits
         """
 
-        path = self.file_path(drpf.plate, drpf.ifudesign)
+        path = self.output_path(drpf.plate, drpf.ifudesign)
 #        print(path)
         if not os.path.isdir(path):
             return False
@@ -575,6 +647,12 @@ class rundap:
 
     def select_daily(self):
         """Select the drp files created today."""
+
+        # TODO: This selection is incorrectly implemented!
+        # "created_today" is not the correct selection criterion
+
+        # raise an Exception until this method is correctly implemented
+        raise Exception('select_daily() routine not correctly implemented yet.')
 
         drplist = self.full_drpfile_list()
         n_drp = len(drplist)
@@ -593,30 +671,36 @@ class rundap:
         have been successfully analyzed.
         """
 
+        # Get the full list of available DRP files that can be processed
+        # by the DAP
         drplist = self.full_drpfile_list()
+
         n_drp = len(drplist)
         print(n_drp)
         for i in range(0,n_drp):
             print(drplist[i].file_path())
-#        for i in range(0,n_drp):
-#            print(drplist[i].file_name())
 #            print(self.dap_complete(drplist[i]))
 
+        # If clobbering, just return the full list
         if clobber:
             return drplist
 
+        # If clobbering is off, only return those that are not complete
         return [ drplist[i] for i in range(0,n_drp) if not self.dap_complete(drplist[i]) ]
 
 
-    def select_redo(self, clobber=False):
+    def select_redo(self):
 
-        drplist = self.selected_drpfile_list()
+        # Get the selected list of DRP files based on the provided
+        # plates/ifudesigns/and modes.  By selecting redo, clobber is
+        # implicitly selected!
+        return self.selected_drpfile_list()
 
-        if clobber:
-            return drplist
+#       if clobber:
+#           return drplist
 
-        n_drp = len(drplist)
-        return [ drplist[i] for i in range(0,n_drp) if not self.dap_complete(drplist[i]) ]
+#       n_drp = len(drplist)
+#       return [ drplist[i] for i in range(0,n_drp) if not self.dap_complete(drplist[i]) ]
 
 
     def full_drpfile_list(self):
@@ -667,7 +751,7 @@ class rundap:
             drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
                                 'CUBE') for i in range(0,n_plates) ]
         else:
-            drplist = []
+            drplist = list()
 
         # Add the list of RSS DRP files, if requested (implicitly or
         # otherwise)
@@ -695,8 +779,10 @@ class rundap:
         # Check the path exists, creating it if not
         self._check_path(plate, ifudesign)
 
-        # Generate the path and root name of the output files
-        path = self.file_path(plate, ifudesign)
+        # TODO: Check that *.ready file exists?
+
+        # Generate the path name and root name of the output files
+        path = self.output_path(plate, ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
             
         # Get module name
@@ -708,53 +794,32 @@ class rundap:
         if module_version is None:
             raise Exception('No DAP module version!')
         
-        # Open the script file        
+        # Set the names for the script, stdout, and stderr files
         scriptfile = os.path.join(path,root)
         stdoutfile = '{0}.out'.format(scriptfile)
         stderrfile = '{0}.err'.format(scriptfile)
 
+        ################################################################
         # Script file already exists, so just return
         if os.path.exists(scriptfile) and not clobber:
             return scriptfile, stdoutfile, stderrfile
 
-        file = open(scriptfile, 'w')
 
-        # Write the date as a commented header line
+        ################################################################
+        # Open the script file and write the date as a commented header
+        # line
+        file = open(scriptfile, 'w')
         file.write('# Auto-generated batch file {0}\n'.format(
                             time.strftime("%a, %d %b %Y %H:%M:%S +0000",time.localtime())))
         file.write('\n')
 
-        # Load the specified IDLUTILS and MANGADRP versions (may just
-        # reload already loaded version)
-        if self.idlutilsver:
-            file.write('module switch idlutils idlutils/{0}\n'.format(self.idlutilsver))
-        if self.drpver:
-            file.write('module switch mangadrp mangadrp/{0}\n'.format(self.drpver))
-#       if self.mangaver:
-#           file.write('module switch manga manga/{0}\n'.format(self.mangaver))
+        # Append the module commands to the script
+        self._write_module_commands(file)
+        file.write('\n')
 
-        # Load the version of the DAP that is current at the time when
-        # rundap was called (may just reload already loaded version)
-        # TODO: Load current version as opposed to outver?
-        file.write('module switch mangadap mangadap/{0}\n'.format(module_version))
-
-
-# module purge
-# module load manga/trunk
-# module unload mangadrp
-# module load mangadrp/v1_0_0
-# module load idlutils/v5_5_16
-# module load mangadap/westfall
-
-        # Create the started and running touch files
-        # TODO: Is there ever a case when *.started exists, but
-        # *.running does not?  Why are they both necessary?
+        # Create the started touch file
         startfile = '{0}.started'.format(scriptfile)
-        runfile = '{0}.running'.format(scriptfile)
-        file.write('\n')
-        file.write('touch {0}'.format(startfile))
-        file.write('\n')
-        file.write('touch {0}'.format(runfile))
+        file.write('touch {0}\n'.format(startfile))
         file.write('\n')
 
         # Command that runs the DAP
@@ -764,9 +829,11 @@ class rundap:
 
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
         donefile = '{0}.done'.format(scriptfile)
-        file.write('touch {0}'.format(donefile))
+        file.write('touch {0}\n'.format(donefile))
         file.write('\n')
+
         file.close()
+        ################################################################
 
         # Return the script file, file for stdout, and file for stderr
         return scriptfile, stdoutfile, stderrfile
@@ -774,30 +841,33 @@ class rundap:
 
     def parameter_file(self, plate, ifudesign, mode, stage='dap'):
         """Get the name of the parameter file."""
-        path = self.file_path(plate, ifudesign)
+        path = self.output_path(plate, ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
         parfile = '{0}.par'.format(os.path.join(path,root))
         return parfile
 
 
-    def prepare_for_analysis(self, drpfile, status=None, clobber=False):
+    def prepare_for_analysis(self, drpfile, clobber=False):
         """
-        Create a script for the DRP file object.
-        """
+        Create the parameter file used by the DAP to process the
+        provided DRP file, and create the script submitted to the queue
+        to process the file.
 
-        # Set the status, if provided; be sure to check the path otherwise
-        if status is None:
-            self._check_path(drpfile.plate, drpfile.ifudesign)
-        else:
-            self.set_status(drpfile.plate, drpfile.ifudesign, drpfile.mode, status)
+            - drpfile is the file to analyze
+            - clobber is used to overwrite any existing file(s)
+        """
+        
+        # Check that the path exists, creating it if not
+        self._check_path(drpfile.plate, drpfile.ifudesign)
 
         # Create the parameter file
         parfile = self.parameter_file(drpfile.plate, drpfile.ifudesign, drpfile.mode)
-        print(parfile)
+#       print(parfile)
         self.drpc.write_par(parfile, drpfile.mode, plate=drpfile.plate,
-                            ifudesign=drpfile.ifudesign)
+                            ifudesign=drpfile.ifudesign, clobber=clobber)
 
-        # Write the compute script
+        # Write the compute script (write_compute_script also checks the
+        # path exists!)
         try:
             sf, of, ef = self.write_compute_script(drpfile.plate, drpfile.ifudesign,
                                                    drpfile.mode, clobber=clobber)
@@ -805,6 +875,9 @@ class rundap:
             print("Exception: %s" % str(e))
             print("Skipping to next DRP file.")
             return None, None, None
+
+        # Set the status to ready
+        self.set_status(drpfile.plate, drpfile.ifudesign, drpfile.mode, stage='dap', status='ready')
 
         # Return the list of script, stdout, and stderr files
         return sf, of, ef

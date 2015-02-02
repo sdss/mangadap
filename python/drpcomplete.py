@@ -685,13 +685,13 @@ class drpcomplete:
 
 
     def write_par(self, ofile, mode, plate=None, ifudesign=None, index=None, reread=False,
-                  force=True):
+                  clobber=True):
         """
         Write the SDSS parameter (Yanny) file for use with the MaNGA DAP.
         """
 
-        if os.path.exists(ofile) and not force:
-            raise IOError('Parameter file already exists.  Set force=True to overwrite.')
+        if os.path.exists(ofile) and not clobber:
+            raise IOError('Parameter file already exists.  Set clobber=True to overwrite.')
 
         if (plate is None or ifudesign is None) and index is None:
             raise ValueError('Must provide plate and ifudesign or row index!')
