@@ -1,9 +1,9 @@
+from __future__ import print_function
+from __future__ import division
+
 import sys
 if sys.version > '3':
     long = int
-else:
-    from __future__ import print_function
-    from __future__ import division
 
 import os.path
 from os import environ

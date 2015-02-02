@@ -1,9 +1,9 @@
+from __future__ import division
+from __future__ import print_function
+
 import sys
 if sys.version > '3':
     long = int
-else:
-    from __future__ import division
-    from __future__ import print_function
 
 import subprocess
 import time
