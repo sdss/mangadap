@@ -328,8 +328,8 @@ class drpcomplete:
             try:
                 index = self.entry_index(self.platelist[i], self.ifudesignlist[i])
             except Exception as e:
-                print_frame('Exception')
                 if not quiet:
+                    print_frame('Exception')
                     print(e)
                 return False
         return True

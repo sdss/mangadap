@@ -437,17 +437,17 @@ class rundap:
         """
 
         # TODO: This is a hack for now, until things settle down with my
-        # understanding of how to do this.
+        # understanding of how to handle the modules.
 
         # TODO: Always force usage of python 3?
 
         file.write('module purge\n')
         file.write('module load manga/trunk\n')
         # TODO: Allow to set python version (e.g. like drpver)?
-#       file.write('module unload python\n')
-#       file.write('module load python/3.3.6\n')
         file.write('module unload python\n')
-        file.write('module load python/2.7.3_rhel6\n')
+        file.write('module load python/3.3.6\n')
+#        file.write('module unload python\n')
+#        file.write('module load python/2.7.3_rhel6\n')
         file.write('module unload mangadrp\n')
         file.write('module load mangadrp/{0}\n'.format(self.drpver))
         file.write('module unload idlutils\n')
@@ -564,6 +564,8 @@ class rundap:
         # 'version'
         try:
             version = subprocess.check_output('%s_version' % product, shell=True)
+            if type(version) is bytes:
+                version = version.decode('utf-8')
             version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
         except Exception as e:
             print_frame('Exception')
