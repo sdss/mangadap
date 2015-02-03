@@ -80,7 +80,7 @@ class rundap:
                 outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
                 modelist=None, combinatorics=False, platetargets=None, nsa_cat=None,
                 # Cluster options
-                label='mangadap', nodes=18, qos=None, umask='0022',walltime='240:00:00', hard=True,
+                label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
         """
         Interprets the run-mode and cluster options.
@@ -321,7 +321,7 @@ class rundap:
         parser.add_argument('-f', '--fast', dest='qos', type=str, help='qos state',
                             default=None)
         parser.add_argument('-u', '--umask', type=str, help='umask bit for cluster job',
-                            default='0022')
+                            default='0027')
         parser.add_argument('-w', '--walltime', type=str, help='walltime for cluster job',
                             default='240:00:00')
         parser.add_argument('-t', '--toughness', dest='hard', action='store_false', default=True,
