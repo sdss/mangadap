@@ -223,6 +223,9 @@
 ;                          to optimal_weighting, that is now passed to
 ;                          MDAP_CALCULATE_BIN_SN for calculation of the
 ;                          S/N.
+;       03 Feb 2015: (KBW) When S/N cannot be reached by all pixels, the
+;                          code now combines all pixels into a single
+;                          bin instead of throwing an error.
 ;-
 ;----------------------------------------------------------------------------
 
@@ -537,6 +540,29 @@ FOR j=0, N_ELEMENTS(counts)-1 DO POLYFILL, x[j]+x1, y[j]+y1, COLOR=color[j]
 
 END
 ;----------------------------------------------------------------------
+; Added by KBW (3 Feb 2015) to simply combined all pixels into a single bin
+PRO BIN2D_ONE_BIN, $
+                x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+        
+        nbins = 1                                   ; Number of bins
+        scale = 1.0                                 ; TODO: Is this right?
+
+        xnode = make_array(nbins, /double, mean(x)) ; Set to mean X position
+        ynode = make_array(nbins, /double, mean(y)) ; Set to mean Y position
+
+        bin2d_weighted_centroid, x, y, signal, xb, yb
+        xbar = make_array(nbins, /double, xb)       ; Luminosity-weighted center
+        ybar = make_array(nbins, /double, yb)
+
+        n = n_elements(x)                           ; Number of pixels
+        class = lonarr(n)                           ; All cells set to bin=0
+        area = make_array(nbins, /integer, n)       ; array with number of pixels in the bin
+        sn = dblarr(nbins)                          ; Signal-to-noise
+        sn[0] = MDAP_CALCULATE_BIN_SN(signal, noise, sn_calibration=sn_calibration, $
+                                      optimal_weighting=optimal_weighting)
+END
+;----------------------------------------------------------------------
 PRO mdap_voronoi_2d_binning, x, y, signal, noise, targetSN, $
     class, xNode, yNode, xBar, yBar, sn, area, scale, $
     NO_CVT=no_cvt, PLOT=plot, QUIET=quiet, WVT=wvt, $
@@ -595,7 +621,15 @@ if sn_total_eval lt targetSN then begin ;$
   ;      + 'They should not be included in the set to bin, ' $
   ;      + 'or the pixels should be optimally weighted.' $
   ;      + 'See Cappellari & Copin (2003, Sec.2.1) and README file.'
-  message, 'Target S/N too high.  All spectra only yield a S/N of ' + MDAP_STC(sn_total_eval)
+
+  ;message, 'Target S/N too high.  All spectra only yield a S/N of ' + MDAP_STC(sn_total_eval)
+
+    print, 'WARNING: Combination of all spectra does not reach the requested S/N level.' $
+           + '  Proceeding by combining all spectra.'
+
+    BIN2D_ONE_BIN, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                   sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+    return
 endif
 
 if min(signal/noise) gt targetSN then begin
