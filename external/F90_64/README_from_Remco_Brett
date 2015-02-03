@@ -1,0 +1,31 @@
+Put them on your IDL path, and edit accordingly bvls_external.pro to point to the right path. In your IDL routines replace bvls by bvls_external. That should do it.
+
+Compilation instruction 
+=======================
+
+Linux/ifort
+
+ifort -c bvls.f90
+icc -c bvls_wrapper.c
+ld -fPIC -shared -o bvls.so bvls.o bvls_wrapper.o
+
+MAC:
+gfortran -framework Accelerate -dynamiclib -O3 -o bvls.dylib  bvls_wrapper.c bvls.f90 
+
+
+
+Update 9/17/14 by Brett Andrews
+
+For Mac installation:
+1. removed -fexternal-blas and -march=native keywords from gfortran command
+2. need to change bvls.so to bvls.dylib in <your path here>/pro/modules/mdap_bvls_external.pro
+tmp = CALL_EXTERNAL(external_library+'bvls.so', 'bvls', $ --> 
+tmp = CALL_EXTERNAL(external_library+'bvls.dylib', 'bvls', $
+
+Additional notes:
+1. in configuration file, make sure to specificy the FULL path to the directory containing the
+library (e.g., /Users/andrews/manga/mangadap/brett_testing/external/F90_64/ and not just 
+~/manga/mangadap/brett_testing/external/F90_64/)
+3. Figure out whether your machine is 32- or 64-bit, and set the external library to 
+<your path here>/external/F90_32/ or <your path here>/external/F90_64/
+

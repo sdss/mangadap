@@ -26,7 +26,7 @@ ierr = long(0)
 ; WARNING: Use the full path when calling the external library
 ;so_file=file_search('./','bvls.so',/FULLY_QUALIFY_PATH)
 
-tmp = CALL_EXTERNAL(external_library+'bvls.so', 'bvls', $
-    	A, M, N, B, BND, X, RNORM, NSETP, W, INDEX, IERR)
+tmp = CALL_EXTERNAL(external_library, 'bvls', $
+        A, M, N, B, BND, X, RNORM, NSETP, W, INDEX, IERR)
 
 END

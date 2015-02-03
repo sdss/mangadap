@@ -1,3 +1,4 @@
+;
 ;######################################################################
 ;
 ; Copyright (C) 2006, M. Sarzi, J. Falcon-Barroso & R.F. Peletier
@@ -207,7 +208,10 @@
 ; ADAPTED FOR THE MaNGA DATA REDUCTION PIPELINE
 ; Feb 2014, L. Coccato.
 ; v0.5 28 Mar 2014
-
+;
+;   12 Jan 2015: (KBW) Resolve confict between IDL8
+;                      lib/graphics/legend.pro and IDLUTILS legend.pro,
+;                      now called al_legend.pro .
 ;------------------------------------------------------------------------------------
 FUNCTION BVLSN_Solve_pxf, A, b, degree, $
                           FOR_ERRORS=for_errors, NLINES=nlines,external_library=external_library
@@ -225,7 +229,7 @@ ENDIF ELSE BEGIN               ; Fitting multiple templates
     BND = DBLARR(2,s[2],/NOZERO)
     mx = (MACHAR()).XMAX
     IF (degree GE 0) THEN BND[0,0:degree] = -mx   ; No constraints on the Legendre polynomials
-    BND[0,degree+1:*] = 0d  	    	    	  ; Positivity constraints on the templates
+    BND[0,degree+1:*] = 0d                        ; Positivity constraints on the templates
     BND[1,*] = mx
     ; If we are fitting with MPFIT also the amplitudes of the emission lines, 
     ; then fix the weights for these components, by setting them to 1.0
@@ -235,8 +239,12 @@ ENDIF ELSE BEGIN               ; Fitting multiple templates
             BND[1,s[2]-1-i] = 1.0d
         endfor
     endif
-    if external_library[0] eq 'none' then mdap_BVLS, A, B, BND, soluz
-    if external_library[0] ne 'none' then mdap_bvls_external, A, B, BND, soluz,external_library
+
+    if external_library[0] eq 'none' then begin
+        mdap_BVLS, A, B, BND, soluz
+    endif else $
+        mdap_bvls_external, A, B, BND, soluz, external_library
+
 ENDELSE
 
 return, soluz
@@ -281,13 +289,16 @@ FUNCTION CREATE_TEMPLATES, EMISSION_SETUP=emission_setup, PARS=pars, NPIX=npix  
 ; This happens when we are evaluating the errors in the Gaussian
 ; parameters around the best solution.
 
-i_lines   = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+i_lines   = where(emission_setup.kind eq 'l', nlines)
+
+; KBW: No errors caught here.  Assume input to CREATE_TEMPLATES has at least one kind='l'
+
+;nlines   = n_elements(i_lines)
+;print, 'create tpl nlines: ', nlines
 if not keyword_set(for_errors) then n_pars = nlines*2 else n_pars = nlines*3
 if (n_pars ne n_elements(pars)) then message,'Hey, this is not the right emission-line parameter array'
 ; array that will contain the emission-line templates, including multiplets
 gaus = dblarr(npix,nlines)
-
 ; a) First create the emission-line templates corresponding to each
 ; single line (like Hb) or to each main line of a multiplet (like
 ; [OIII]5007)
@@ -310,10 +321,11 @@ endfor
 ; b) Then find all the satellite lines belonging to multiplets
 ; (like [OIII]4959), and add them the main emission-line template 
 ; we just created in a)
-i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
-n_slines = n_elements(i_slines)
-;int_disp_pix2_=int_disp_pix2[i_slines]
-if i_slines[0] ne -1 then begin
+;i_slines = where(strmid(emission_setup.kind,0,1) eq 'd')
+;n_slines = n_elements(i_slines)
+;if i_slines[0] ne -1 then begin
+i_slines = where(strmid(emission_setup.kind,0,1) eq 'd', n_slines)
+if n_slines ne 0 then begin
 int_disp_pix2_=int_disp_pix2[i_slines]
     ; loop over the satellite lines
     for i = 0,n_slines-1 do begin
@@ -328,7 +340,12 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; structure that was passed to this function (e.g. still 2, if
         ; the indices of the lines in the emission setup start at 0 and
         ; increase by 1)
-        j_mline = where(emission_setup.i eq k_mline)
+        j_mline = where(emission_setup.i eq k_mline, count)
+        ; KBW edits.  TODO: Perform these checks elsewhere?
+        if count eq 0 then $
+            message, 'No line '+string(k_mline)
+        if j eq j_mline then $
+            message, 'Line tied to itself!'
         ; Get the wavelengths of both satellite and main lines
         ; and compute the offset (in pix) that we need to apply in order
         ; to correctly place the satellite line.     
@@ -341,7 +358,12 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; to the main line of the present multiplet, so that we can add the 
         ; satellite emission-line template in the right place in the
         ; gaussian templates array
-        i_mline = where(emission_setup.i[i_lines] eq k_mline)
+;       i_mline = where(emission_setup.i[i_lines] eq k_mline)
+        i_mline = where(emission_setup.i[i_lines] eq k_mline, count)
+        if count eq 0 then $
+            message, 'Line '+string(k_mline)+' is not a fitted line!'
+;       if i_mline[0] eq -1 then $
+;           message, 'Problem with input emission-line parameters!'
         ; Finally, create the satellite template, and add it to that of
         ; the corresponding main line of this multiplet.
         ; Use the amplitude given in the emission setup structure as the
@@ -349,7 +371,7 @@ int_disp_pix2_=int_disp_pix2[i_slines]
         ; of the main lines. 
         ; In turn these are as specified either by the emission-lines
         ; setup or by the input pars array.
-   
+
        if not keyword_set(for_errors) then begin
             a_sline = emission_setup.a[j]*emission_setup.a[j_mline]
             
@@ -379,7 +401,7 @@ FUNCTION CONVOLVE_TEMPLATES, templates,kinstars,velscale
 vel   = kinstars[0]/velscale   ; in pixels
 sigma = kinstars[1]/velscale   ; in pixels
 dx = ceil(abs(vel)+4*sigma)    ; Sample the Gaussian and GH at least to vel+4*sigma
-x  = range(dx,-dx)             ; Evaluate the Gaussian using steps of 1 pixel.
+x  = mdap_range(dx,-dx)             ; Evaluate the Gaussian using steps of 1 pixel.
 w  = (x - vel)/sigma
 w2 = w^2
 losvd = exp(-0.5d*w2)/(sqrt(2d*!dpi)*sigma) ; Normalized total(Gaussian)=1
@@ -469,8 +491,12 @@ PRO SET_CONSTRAINTS, GALAXY=galaxy, NOISE=noise, CSTAR=cstar,                   
 ; them), plus the order of the multiplicative polynomials and if
 ; needed the reddening parameters
 ; 
-i_lines   = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+;i_lines   = where(emission_setup.kind eq 'l')
+;nlines   = n_elements(i_lines)
+i_lines   = where(emission_setup.kind eq 'l', nlines)
+
+; KBW: No errors caught here.  Assume input to SET_CONSTRAINTS provided at least one kind='l'
+
 if not keyword_set(for_errors) then n_pars = nlines*2 + mdegree else n_pars = nlines*3 + mdegree
 if n_elements(reddening) ne 0 then n_pars = n_pars + n_elements(reddening)
 ;stop
@@ -495,7 +521,9 @@ if not keyword_set(for_errors) then begin
     for i=0,nlines*2 -1, 2 do begin
         parinfo[i].limits   = start_pars[i] + [-1d3,1d3]/velscale ; Limits for Vgas (from km/s to pixels)
         ;parinfo[i+1].limits = [-1d4,1d4]/velscale                ; Limits for Sgas (from km/s to pixels)
-        parinfo[i+1].limits = [0.2d,1d4/velscale]                ; Limits for Sgas (from km/s to pixels)
+        ;parinfo[i+1].limits = [0.2d,1d4/velscale]                ; Limits for Sgas (from km/s to pixels)
+        ; TODO: (KBW) why not set the lower limit to 0.0?
+        parinfo[i+1].limits = [0.2d,3d2/velscale]                ; Limits for Sgas (from km/s to pixels)
         if n_elements(range_v_gas) ne 0 then parinfo[i].limits   = start_pars[i] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+1].limits   =  [max([0.2d,start_pars[i+1]+range_s_gas[0]/velscale ]),start_pars[i+1]+range_s_gas[1]/velscale ]
         ; to avoid problems near the previous boundaries
@@ -512,7 +540,8 @@ endif else begin
     for i=0,nlines*3 -1, 3 do begin
         parinfo[i+1].limits = start_pars[i+1] + [-1d3,1d3]/velscale ; Limits for Vgas (from km/s to pixels)
         ;parinfo[i+2].limits = [-1d4,1d4]/velscale                  ; Limits for Sgas (from km/s to pixels)
-        parinfo[i+2].limits = [0.2d,1d4/velscale]                  ; Limits for Sgas (from km/s to pixels)
+        ;parinfo[i+2].limits = [0.2d,1d4/velscale]                  ; Limits for Sgas (from km/s to pixels)
+        parinfo[i+2].limits = [0.2d,3d2/velscale]                ; Limits for Sgas (from km/s to pixels)
         if n_elements(range_v_gas) ne 0 then parinfo[i+1].limits   = start_pars[i+1] + [range_v_gas[0],range_v_gas[1]]/velscale 
         if n_elements(range_s_gas) ne 0 then parinfo[i+2].limits   = [max([0.2d,start_pars[i+2]+range_s_gas[0]/velscale ]),start_pars[i+2]+range_s_gas[1]/velscale ]
         ; to avoid problems near the previous boundaries
@@ -590,17 +619,30 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline[0] eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
         ;
-        if not keyword_set(for_errors) then begin
+        if ~keyword_set(for_errors) then begin
+;           print, 'Keyword /for_errors not set!'
+;           print, size(i)
+;           print, i
+;           print, parinfo[2*i].tied
+;           print, string(2*i_refline)
+;           print, str_l_refline
+;           print, str_l_line
+;           print, lstep_gal
+;           stop
             parinfo[2*i].tied = $ 
               strcompress('P['+string(2*i_refline)+']-alog('+str_l_refline+'/'+str_l_line+')/')+ $
               strtrim(string(lstep_gal),2)
@@ -627,12 +669,16 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
@@ -662,12 +708,16 @@ for i = 0,nlines-1 do begin
         k_refline = fix(strmid(emission_setup.fit[j],1)) 
         ; which correspond to the following position in emission setup
         ; structure that was passed to this function
-        j_refline = where(emission_setup.i eq k_refline)
-        if (j_refline eq -1) then $
+;       j_refline = where(emission_setup.i eq k_refline)
+;       if (j_refline eq -1) then $
+        j_refline = where(emission_setup.i eq k_refline, count)
+        if count eq 0 then $
           message,'Hey, you tied '+emission_setup.name[j]+' to a line you are not even fitting...'
         ; and to the following position in the list of the emission
         ; lines to fit
-        i_refline = where(emission_setup.i[i_lines] eq k_refline)
+        i_refline = where(emission_setup.i[i_lines] eq k_refline, count)
+        if count eq 0 then $
+          message, string(k_refline)+ ' not among fitted l lines.'
         ; 
         l_line    = emission_setup.lambda[j]         & str_l_line    = string(l_line)
         l_refline = emission_setup.lambda[j_refline] & str_l_refline = string(l_refline)
@@ -682,6 +732,7 @@ endfor
 ; Gathering all the information and setting the FUNCTARGS structure
 ; for MPFIT
 if n_elements(external_library) eq 0 then external_library='none'
+
 if not keyword_set(for_errors) then for_errors =0 else for_errors =1
 if not keyword_set(log10) then begin
     if n_elements(reddening) eq 0 then begin
@@ -726,9 +777,12 @@ compile_opt idl2, hidden
 
 
 npix = n_elements(galaxy)
-x = range(-1d,1d,npix)             ; X needs to be within [-1,1] for Legendre Polynomials
+x = mdap_range(-1d,1d,npix)             ; X needs to be within [-1,1] for Legendre Polynomials
 
 nlines = n_elements(where(emission_setup.kind eq 'l'))
+
+; KBW: No errors caught here.  Assume input to FITFUNC_GAS has at least one kind='l'
+
 IF NOT KEYWORD_SET(for_errors) THEN npars = nlines*2 ELSE npars = nlines*3
 ;print,npars
 ; append the reddening parameters if needed
@@ -757,7 +811,7 @@ gaus = create_templates(EMISSION_SETUP=emission_setup,LSTEP_GAL=lstep_gal, NPIX=
 ;   3.- Emission Lines, also reddened
 IF s[0] EQ 2 THEN ntemp = s[2] ELSE ntemp = 1   ; Number of template spectra
 c = dblarr(npix,degree+nlines+ntemp+1,/NOZERO)  ; This array is used for estimating predictions
-a = c               	    	    	    	; This array is used for the actual solution of the system
+a = c                                           ; This array is used for the actual solution of the system
 FOR j=0,degree   DO c[*,j] = legendre(x,j)      ; Legendre polinomials (additive)
 IF n_elements(reddening) eq 0 THEN BEGIN
     FOR j=0,ntemp-1  DO c[*,degree+1+j] = mpoly*cstar[0:npix-1,j] ; Convolved templates x mult. polinomials
@@ -812,7 +866,8 @@ END
 PRO REARRANGE_RESULTS, res, weights, chi2, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal,    $
                        VELSCALE=velscale, EMISSION_SETUP=emission_setup, SOL=sol, $
                        INT_DISP=int_disp, LOG10=log10, REDDENING=reddening,       $
-                       ERR=err, ESOL=esol, FOR_ERRORS=for_errors
+                       ERR=err, ESOL=esol, FOR_ERRORS=for_errors, mdegree=mdegree,$
+                       mult_poly_coeff=mult_poly_coeff
 ; Given the input res array from the MPFIT fit (with V_gas and S_gas
 ; best-fitting values - in pixels) and the weight from the BVLS fit
 ; (which with the emission-line basic amplitudes to get A_gas),
@@ -832,8 +887,10 @@ PRO REARRANGE_RESULTS, res, weights, chi2, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal,  
 ; the res and err input arrays
 
 c = 299792.458d ; Speed of light in km/s
-i_lines = where(emission_setup.kind eq 'l')
-nlines = n_elements(where(emission_setup.kind eq 'l'))
+i_lines = where(emission_setup.kind eq 'l', nlines)
+;nlines = n_elements(where(emission_setup.kind eq 'l'))
+; KBW: No errors caught here.  Assume input to REARRANGE_RESULTS has at least one kind='l'
+
 lambda0 = emission_setup.lambda[i_lines]
 offset  = (alog(lambda0)-l0_gal)/lstep_gal
 ; to deal with log10-lambda rebinned data, instead of ln-lambda
@@ -863,7 +920,7 @@ for i=0,nlines-1 do begin
     ; Sigma (as observed!)
     sigma          = sqrt(sol_final[k+3]^2. + int_disp2_[i])
     ; Flux of the Emission lines
-    sol_final[k]   = sol_final[k+1]* sqrt(2*!pi) * sigma * lambda0[i] * exp(sol_final[k+2]/c)/c ;;CHECK!!!
+    sol_final[k]   = sol_final[k+1]* sqrt(2*!pi) * sigma * lambda0[i] * exp(sol_final[k+2]/c)/c
     k=k+4
     if not keyword_set(for_errors) then h=h+2 else h=h+3
 endfor
@@ -932,6 +989,13 @@ endif
 
 sol=sol_final
 if keyword_set(err) then esol=esol_final
+
+; ADDED BY KBW TO RETURN MULTIPLICATIVE POLYNOMIAL COEFFICIENTS
+if n_elements(reddening) eq 0 and n_elements(mdegree) ne 0 then begin
+    np = keyword_set(for_errors) ? 3 : 2                        ; Number of parameters per line
+    mult_poly_coeff = res[nlines*np:nlines*np+mdegree-1]        ; Set the polynomial coefficients
+endif
+
 ;stop
 END
 
@@ -944,7 +1008,7 @@ PRO SHOW_FIT,galaxy, bestfit, emission, best_pars, sol, GOODPIXELS=goodpixels, M
 ; plot final data-model comparison if required.
 ; the colors below were chosen for the sauron colormap.
     s2 = size(galaxy)
-    sauron_colormap & device,decompose=0
+    mdap_sauron_colormap & device,decompose=0
     mn = min(galaxy, max=mx) & mn = mn -0.01*(mx-mn)
     resid = mn + galaxy - bestfit
    y1 = min(resid[goodpixels]) & y2 = mx & diff = y2-y1
@@ -967,7 +1031,7 @@ PRO SHOW_FIT,galaxy, bestfit, emission, best_pars, sol, GOODPIXELS=goodpixels, M
     oplot, emission*0 + resid_noise +mn,linestyle=2
 
     ; plots the polinomial correction and the unadjusted templates
-    x = range(-1d,1d,n_elements(galaxy)) ; x needs to be within [-1,1] for legendre polynomials
+    x = mdap_range(-1d,1d,n_elements(galaxy)) ; x needs to be within [-1,1] for legendre polynomials
     mpoly= 1d                            ; the loop below can be null if mdegree < 1
     npars=n_elements(best_pars) - mdegree
     if n_elements(reddening) eq 0  then begin
@@ -985,22 +1049,28 @@ PRO SHOW_FIT,galaxy, bestfit, emission, best_pars, sol, GOODPIXELS=goodpixels, M
         endif else int_reddening_attenuation = 1.0 
         oplot,((bestfit-emission)/reddening_attenuation),col=140,linestyle=1
     endelse
-    legend,['data','fit','res.-noise'], $
+;   legend,['data','fit','res.-noise'], $
+;     color=[255,210,255],linestyle=[0,0,2],box=0,/bottom,/left
+;   legend,['residuals','emission-lines','unadjusted continuum'], $
+;     color=[128,80,140],linestyle=[1,0,1],box=0,/bottom,/right
+    ; IDL 8 conflict with IDLUTILS, IDLUTILS version changed
+    al_legend,['data','fit','res.-noise'], $
       color=[255,210,255],linestyle=[0,0,2],box=0,/bottom,/left
-    legend,['residuals','emission-lines','unadjusted continuum'], $
+    al_legend,['residuals','emission-lines','unadjusted continuum'], $
       color=[128,80,140],linestyle=[1,0,1],box=0,/bottom,/right
 
 END
 
 
 ;------------------------------------------------------------------------------------
-PRO MDAP_GANDALF, templates, galaxy, noise, velScale, sol, emission_setup, l0_gal, lstep_gal,       $
-              GOODPIXELS=goodPixels, DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp,            $
-              BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, ERROR=esol, $
-              PLOT=plot, QUIET=quiet, LOG10=log10, REDDENING=reddening, L0_TEMPL=l0_templ,         $
-              FOR_ERRORS=for_errors,$
-  fix_gas_kin=fix_gas_kin,$
-  range_v_gas=range_v_gas,range_s_gas=range_s_gas,external_library=external_library
+PRO MDAP_GANDALF, $
+                templates, galaxy, noise, velScale, sol, emission_setup, l0_gal, lstep_gal, $
+                GOODPIXELS=goodPixels, DEGREE=degree, MDEGREE=mdegree, INT_DISP=int_disp, $
+                BESTFIT=bestFit, EMISSION_TEMPLATES=emission_templates, WEIGHTS=weights, $
+                ERROR=esol, PLOT=plot, QUIET=quiet, LOG10=log10, REDDENING=reddening, $
+                L0_TEMPL=l0_templ, FOR_ERRORS=for_errors, fix_gas_kin=fix_gas_kin, $
+                range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
+                external_library=external_library, mult_poly_coeff=mult_poly_coeff
 
 compile_opt idl2
 on_error, 0
@@ -1028,16 +1098,29 @@ IF n_elements(reddening) GT 2 THEN message, 'Sorry, can only deal with two dust 
 ; First of all find the emission-lines which we are effectively going
 ; to fit.  That is, exclude from the input structure the lines that
 ; are either being masked or not fitted.
-i_f = where(emission_setup.action eq 'f') 
+i_f = where(emission_setup.action eq 'f', count)
+if count eq 0 then $
+    message, 'No lines to fit!'
+
+;print, n_elements(i_f)
+;print, emission_setup
 dummy = emission_setup ; This will help us restoring later the input emission_setup structure
+;di_lines  = where(dummy.kind eq 'l')
+;dnlines   = n_elements(di_lines)
+;print, 'dnlines, kind=l: ', dnlines
+
 emission_setup = create_struct('i',dummy.i[i_f],'name',dummy.name[i_f],$
                                'lambda',dummy.lambda[i_f],'action',dummy.action[i_f],$
                                'kind',dummy.kind[i_f],'a',dummy.a[i_f],$
                                'v',dummy.v[i_f],'s',dummy.s[i_f],$
                                'fit',dummy.fit[i_f])
 ; Count the number of single lines or the number of multiplets
-i_lines  = where(emission_setup.kind eq 'l')
-nlines   = n_elements(i_lines)
+;i_lines  = where(emission_setup.kind eq 'l')
+;nlines   = n_elements(i_lines)
+i_lines  = where(emission_setup.kind eq 'l', nlines)
+if nlines eq 0 then $
+    message, 'No lines, only doublets!'
+;print, 'nlines, kind=l: ', nlines
 
 ; ------------------------------------
 ; Make sure that the input amplitudes of each single line or of the
@@ -1063,7 +1146,7 @@ if n_elements(reddening) eq 0 then $
 ; and width in pixel units.
 h = 0
 for i = 0,nlines-1 do begin 
-    ; current emission-line index in the input setup structure	
+    ; current emission-line index in the input setup structure  
     j = i_lines[i]
     ; to deal with log10-lambda rebinned data, instead of ln-lambda
     if not keyword_set(log10) then $
@@ -1107,9 +1190,23 @@ set_constraints, GALAXY=galaxy, NOISE=noise, CSTAR=cstar, KINSTARS=kinstars, $
 ; Note that we evalutate also the errors on the best parameters, but
 ; as regards the position and width of the lines these should only be
 ; considered as lower estimates for the real uncertainties.
+;print, 'entering mpfit'
 best_pars = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
-             FTOL=1d-2, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, /QUIET)
+             FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors, STATUS=status, $
+             NITER=niter, /QUIET)
+
+if status le 0 then $
+    print, 'WARNING: MPFIT ENDED IN ERROR! status=', status
+if status eq 5 then $
+    print, 'WARNING: MPFIT MAY NOT HAVE CONVERGED! status=5'
+
+print, 'Number of MPFIT iterations: ', niter
+
 ;
+;if errmsg ne '' then begin
+;    print, errmsg
+;    stop
+;endif
 
 if errmsg ne '' then begin
     print, errmsg
@@ -1150,7 +1247,7 @@ if ((size(emission_templates))[0] eq 2) then emission = total(emission_templates
 rearrange_results, best_pars, weights, chi2, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
               VELSCALE=velscale, EMISSION_SETUP=emission_setup, SOL=sol, $
               ERR=errors, ESOL=esol, INT_DISP=int_disp, $
-              LOG10=log10,REDDENING=reddening
+              LOG10=log10,REDDENING=reddening, mdegree=mdegree, mult_poly_coeff=mult_poly_coeff
 ; Appends to the best-fitting gas results also the mdegree polynomial
 ; coefficients.
 if mdegree ne 0 then sol = [sol,best_pars[n_elements(best_pars)-mdegree:n_elements(best_pars)-1]]
@@ -1222,8 +1319,17 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; Re-run MPFIT starting from previous solution and using now the
     ; FOR_ERRORS keyword to specify that we solve non-linearly also for
     ; the amplitudes, and not only for the line position and width.
-    best_pars_2 = mpfit('FITFUNC_GAS',start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
-                        FTOL=1d-1, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, /QUIET)
+    best_pars_2 = mpfit('FITFUNC_GAS', start_pars, FUNCTARGS=functargs, PARINFO=parinfo, $
+                        FTOL=1d-3, NFEV=ncalls, ERRMSG=errmsg, PERROR=errors_2, STATUS=status, $
+                        NITER=niter, /QUIET)
+
+    if status le 0 then $
+        print, 'WARNING: MPFIT ENDED IN ERROR! status=', status
+    if status eq 5 then $
+        print, 'WARNING: MPFIT MAY NOT HAVE CONVERGED! status=5'
+
+    print, 'Number of MPFIT iterations: ', niter
+
 ;stop
     ; -----------------
     ; Re-evaluate the fit residuals to re-assess the fit quality and
@@ -1231,7 +1337,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
     ; converged to the input best solution Also, the weights here are
     ; set to unity for the emission-line templates, as their amplitude
     ; is determined by MPFIT.
-    resid_2 = fitfunc_gas(best_pars_2,CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
+    resid_2 = fitfunc_gas(best_pars_2, CSTAR=cstar, GALAXY=galaxy, NOISE=noise, $
                           KINSTARS=solori[0:5], VELSCALE=velscale, DEGREE=degree, MDEGREE=mdegree, $
                           GOODPIXELS=goodpixels, BESTFIT=bestfit_2, WEIGHTS=weights_2, $
                           EMISSION_SETUP=emission_setup, L0_GAL=l0_gal, LSTEP_GAL=lstep_gal, $
@@ -1264,7 +1370,7 @@ IF KEYWORD_SET(FOR_ERRORS) THEN BEGIN
       VELSCALE=velscale, EMISSION_SETUP=emission_setup, SOL=sol_2, $
       ERR=errors_2, ESOL=esol_2, INT_DISP=int_disp, $
       LOG10=log10,REDDENING=reddening, $
-      FOR_ERRORS=for_errors
+      FOR_ERRORS=for_errors, mdegree=mdegree, mult_poly_coeff=mult_poly_coeff
 
     ; Appends to the best-fitting gas results also the mdegree polynomial
     ; coefficients.

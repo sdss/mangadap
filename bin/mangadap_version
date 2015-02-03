@@ -39,7 +39,7 @@ if test "${svnTag}" = "trunk"; then
     if test "$1" = "-t"; then 
 	echo "trunk"
     else
-    	echo "trunk_${svnVersion}"
+    	echo "trunk ${svnVersion}"
     fi	
     exit 0
 fi
