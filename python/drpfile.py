@@ -12,6 +12,8 @@ from astropy.io import fits
 import time
 import numpy
 
+from exception_util import print_frame
+
 __author__ = 'Kyle Westfall'
 
 def parse_drp_file_name(name):
@@ -72,6 +74,7 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
                 tmp = eval(out[i])
             except (NameError, TypeError):
                 if not quiet:
+                    print_frame('NameError/TypeError')
                     print('Could not evaluate value {0}. Skipping.'.format(out[i]))
             else:
                 out[i] = tmp

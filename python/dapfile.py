@@ -13,6 +13,8 @@ import time
 import numpy
 from drpfile import arginp_to_list
 
+from exception_util import print_frame
+
 __author__ = 'Kyle Westfall'
 
 def parse_dap_file_name(name):
@@ -96,6 +98,7 @@ class dapfile:
         try:
             data = self.hdulist[exten].data[:,indx]
         except IndexError as e:
+            print_frame('IndexError')
             print('{0}'.format(e))
             return None
         else:
@@ -207,6 +210,7 @@ class dapfile:
         try:
             data = self.hdulist[exten].data[col]
         except KeyError as e:
+            print_frame('KeyError')
             print('Could not find extension ({0}) and/or column ({1})!'.format(exten, col))
             return None
         else:

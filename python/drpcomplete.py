@@ -16,6 +16,8 @@ from astropy.io import fits
 from astropy import constants
 from scipy.spatial import KDTree
 
+from exception_util import print_frame
+
 __author__ = 'Kyle Westfall'
 
 
@@ -219,6 +221,7 @@ class drpcomplete:
         try:
             i = hdulist[1].columns.names.index('VELDISP')
         except ValueError:
+            #print_frame('ValueError')
             has_veldisp = False
         else:
             has_veldisp = True
@@ -325,6 +328,7 @@ class drpcomplete:
             try:
                 index = self.entry_index(self.platelist[i], self.ifudesignlist[i])
             except Exception as e:
+                print_frame('Exception')
                 if not quiet:
                     print(e)
                 return False
@@ -415,11 +419,13 @@ class drpcomplete:
                         try:
                             ip = self.platelist.index(p)
                         except ValueError:
+                            print_frame('ValueError')
                             ip = -1
                     if self.ifudesignlist is not None:
                         try:
                             ib = self.ifudesignlist.index(b)
                         except ValueError:
+                            print_frame('ValueError')
                             ib = -1
 
                     if ip != -1 and ib != -1:

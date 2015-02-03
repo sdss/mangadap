@@ -16,6 +16,8 @@ from argparse import ArgumentParser
 from drpcomplete import drpcomplete
 from drpfile import drpfile, arginp_to_list
 
+from exception_util import print_frame
+
 __author__ = 'Kyle Westfall'
 
 class rundap:
@@ -176,6 +178,7 @@ class rundap:
         try:
             self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
         except:
+            print_frame('Exception')
             raise Exception('Environmental variable MANGA_SPECTRO_ANALYSIS is undefined!')
        
         # Read and parse command-line arguments
@@ -563,6 +566,7 @@ class rundap:
             version = subprocess.check_output('%s_version' % product, shell=True)
             version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
         except Exception as e:
+            print_frame('Exception')
             print(e)
             version = None
 
@@ -580,6 +584,7 @@ class rundap:
         try:
             modules = environ['LOADEDMODULES']
         except:
+            print_frame('Exception')
             modules = None
             return None
         # TODO: Re-raise the exception?
@@ -884,6 +889,7 @@ class rundap:
             sf, of, ef = self.write_compute_script(drpfile.plate, drpfile.ifudesign,
                                                    drpfile.mode, clobber=clobber)
         except Exception as e:
+            print_frame('Exception')
             print("Exception: %s" % str(e))
             print("Skipping to next DRP file.")
             return None, None, None

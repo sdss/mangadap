@@ -480,6 +480,7 @@ pro/utilities/mdap_wcsunit2arcsec.pro -text
 python/dapfile.py -text
 python/drpcomplete.py -text
 python/drpfile.py -text
+python/exception_util.py -text
 python/mangadap/__init__.py -text
 python/mangadap/rundap.py -text
 python/yanny.py -text
