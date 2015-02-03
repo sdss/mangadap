@@ -442,16 +442,18 @@ class rundap:
         # TODO: Always force usage of python 3?
 
         file.write('module purge\n')
-        file.write('module load manga/trunk\n')
+#        file.write('module load manga/trunk\n')
+        file.write('module load manga/westfall3\n')
         # TODO: Allow to set python version (e.g. like drpver)?
-        file.write('module unload python\n')
-        file.write('module load python/3.3.6\n')
+#        file.write('module unload python\n')
+#        file.write('module load python/3.3.6\n')
 #        file.write('module unload python\n')
 #        file.write('module load python/2.7.3_rhel6\n')
         file.write('module unload mangadrp\n')
         file.write('module load mangadrp/{0}\n'.format(self.drpver))
         file.write('module unload idlutils\n')
         file.write('module load idlutils/{0}\n'.format(self.idlutilsver))
+        file.write('module unload mangadap\n')
         file.write('module load mangadap/westfall\n')
 
         # TODO: Is there a way to have the script catch errors in these
