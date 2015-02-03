@@ -158,6 +158,8 @@ PRO MANGA_DAP, $
         manga_dap_version = MDAP_DEFINE_MANGA_DAP_VERSION()
         manga_dap_version.main = '0.94'     ; set the version number
         t0=systime(/seconds)/60./60.        ; start time
+        thismem = memory()                  ; start memory
+        maxmem = 0                          ; maximum memory
 
         ; BLOCK 0 ------------------------------------------------------
         ; Initialization
@@ -445,6 +447,14 @@ PRO MANGA_DAP, $
         endfor
         ; END loop over plans --------------------------------------------------
         ;-----------------------------------------------------------------------
+
+        ; As in DRP...
+        ; Track memory usage
+        thismem = memory()
+        maxmem = maxmem > thismem[3]
+        print, 'Max memory usage = '+string(maxmem/1e6,format='(f7.1)')+' MB'
+        ; ... and execution time
+        print, 'Total execution time = '+string(systime(/seconds)/3600.-t0,format='(f7.3)')+' hr'
 
         ; close up
         if ~keyword_set(nolog) then $

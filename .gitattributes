@@ -60,6 +60,7 @@ examples/mdap_setup_highsn_stelib.pro -text
 examples/mdap_setup_highsn_twotpl.pro -text
 examples/mdap_setup_old.pro -text
 examples/mdap_setup_radial.pro -text
+examples/mdap_setup_utah_pipeline.pro -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
 external/F90_32/bvls_wrapper.c -text
