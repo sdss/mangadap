@@ -544,20 +544,20 @@ END
 PRO BIN2D_ONE_BIN, $
                 x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
                 sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
-        
+
         nbins = 1                                   ; Number of bins
         scale = 1.0                                 ; TODO: Is this right?
 
-        xnode = make_array(nbins, /double, mean(x)) ; Set to mean X position
-        ynode = make_array(nbins, /double, mean(y)) ; Set to mean Y position
+        xnode = make_array(nbins, /double, value=mean(x))   ; Set to mean X position
+        ynode = make_array(nbins, /double, value=mean(y))   ; Set to mean Y position
 
         bin2d_weighted_centroid, x, y, signal, xb, yb
-        xbar = make_array(nbins, /double, xb)       ; Luminosity-weighted center
-        ybar = make_array(nbins, /double, yb)
+        xbar = make_array(nbins, /double, value=xb) ; Luminosity-weighted center
+        ybar = make_array(nbins, /double, value=yb)
 
         n = n_elements(x)                           ; Number of pixels
         class = lonarr(n)                           ; All cells set to bin=0
-        area = make_array(nbins, /integer, n)       ; array with number of pixels in the bin
+        area = make_array(nbins, /integer, value=n) ; array with number of pixels in the bin
         sn = dblarr(nbins)                          ; Signal-to-noise
         sn[0] = MDAP_CALCULATE_BIN_SN(signal, noise, sn_calibration=sn_calibration, $
                                       optimal_weighting=optimal_weighting)
