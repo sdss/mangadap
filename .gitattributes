@@ -2,6 +2,7 @@
 /RELEASE_NOTES -text
 bin/mangadap_version -text
 bin/rundap -text
+bin/rundap3 -text
 doc/configuration_file.tex -text
 doc/dap.bbl -text
 doc/dap.pdf -text
