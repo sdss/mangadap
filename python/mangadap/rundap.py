@@ -10,6 +10,7 @@ import subprocess
 import time
 import os.path
 import pbs.queue
+import numpy
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -144,6 +145,7 @@ class rundap:
 #       self.idlutilsver = self.product_version(simple=True, product='idlutils')
 #       self.drpver = self.product_version(simple=True, product='mangadrp')
         self.dapver = self.product_version(simple=True, product='mangadap')
+        self.mplver = mplver
 
         # Use them or use input versions
         self.outver = self.dapver if outver is None else outver
@@ -185,6 +187,7 @@ class rundap:
             self._read_arg()
 
         # Make sure the selected MPL version is available
+        self.drpver = None
         self._select_mpl()
 
         # Alert the user of the versions to be used
@@ -408,34 +411,44 @@ class rundap:
 #       self.submit = False
 
 
-    def _select_mpl(self):
-        """
-        Return the name of the MPL to analyze.
-        """
-        if self.mplver is None:
-            return 'MPL-2'
-
-        mpls = self._available_mpls()
-        mpli = numpy.where(mpls == self.mplver)
-        if len(mpls[mpli]) == 0:
-            mpls = self._available_mpls(write=True)
-            raise Exception('{0} is not an available MPL!'.format(self.mplver))
-
-        return mpls[mpli][0]
-
-
     def _available_mpls(self, write=False):
         """
         Return a list of the available MPLs to analyze, providing a list
         if requested.
         """
+
+        nmpl = 2
+        mpl_def = numpy.array([ ['MPL-1', 'v5_5_16', 'v1_0_0'],
+                                ['MPL-2', 'v5_5_17', 'v1_1_2'] ])
+    
         if write:
-            print('{0}: IDLUTILS:{1}; DRPVER:{2}\n'.format('MPL-1', 'v5_5_16', 'v1_0_0'))
-            print('{0}: IDLUTILS:{1}; DRPVER:{2}\n'.format('MPL-2', 'v5_5_17', 'v1_1_2'))
-        return numpy.array(['MPL-1', 'MPL-2'])
+            for x in mpl_def[0:nmpl,:]:
+                print('{0}: IDLUTILS:{1}; DRPVER:{2}'.format(x[0], x[1], x[2]))
+
+        return mpl_def
 
 
-    def _mpl_module(self)
+    def _select_mpl(self):
+        """
+        Return the name of the MPL to analyze.
+        """
+        if self.mplver is None:
+            self.mplver = 'MPL-2'
+            self.drpver = 'v1_1_2'
+#           self.mplver = 'MPL-2'
+            return
+
+        mpls = self._available_mpls()
+        mpli = numpy.where(mpls[:,0] == self.mplver)
+        if len(mpli[0]) == 0:
+            mpls = self._available_mpls(write=True)
+            raise Exception('{0} is not an available MPL!'.format(self.mplver))
+
+        self.mplver = str(mpls[mpli].reshape(3)[0])
+        self.drpver = str(mpls[mpli].reshape(3)[2])
+
+
+    def _mpl_module(self):
         """
         Return the name of the module file specific to the MPL to analyze.
 
