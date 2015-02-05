@@ -68,6 +68,7 @@ class rundap:
         01 Dec 2014: (KBW) Committed to SVN
         02 Dec 2014: (KBW) Changed drpver and idlutilsver to mangaver
         13 Jan 2015: (KBW) Changed it back, added platetargets
+        05 Feb 2015: (KBW) Change to load module based on MPL
 
     """
 
@@ -77,8 +78,9 @@ class rundap:
                 # Run mode options
                 daily=None, all=None, redo=None, clobber=None, console=None, quiet=None, version=None,
                 # Override defaults
-                outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
-                modelist=None, combinatorics=False, platetargets=None, nsa_cat=None,
+#               outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
+                outver=None, mplver=None, platelist=None, ifudesignlist=None, modelist=None,
+                combinatorics=False, platetargets=None, nsa_cat=None,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -99,8 +101,9 @@ class rundap:
             -         quiet: suppress output
 
             -        outver: output DAP version
-            -   idlutilsver: idlutils module version to use
-            -        drpver: MaNGA DRP module version to use
+            -        mplver: MPL version to analyze
+#           -   idlutilsver: idlutils module version to use
+#           -        drpver: MaNGA DRP module version to use
 
             -     platelist: specified list of plates to analyze
             - ifudesignlist: specified list of ifudesigns to analyze
@@ -138,19 +141,15 @@ class rundap:
         self.quiet = quiet
 
         # Determine current versions
-        self.idlutilsver = self.product_version(simple=True, product='idlutils')
-        self.drpver = self.product_version(simple=True, product='mangadrp')
+#       self.idlutilsver = self.product_version(simple=True, product='idlutils')
+#       self.drpver = self.product_version(simple=True, product='mangadrp')
         self.dapver = self.product_version(simple=True, product='mangadap')
-
-#        self.corever = self.product_version(simple=True, product='mangacore')
-#        self.mangaver = self.product_version(simple=True, product='mangacore')
 
         # Use them or use input versions
         self.outver = self.dapver if outver is None else outver
-        self.idlutilsver = self.idlutilsver if idlutilsver is None else idlutilsver
-        self.drpver = self.drpver if drpver is None else drpver
+#       self.idlutilsver = self.idlutilsver if idlutilsver is None else idlutilsver
+#       self.drpver = self.drpver if drpver is None else drpver
 
-        print('Versions: DAP:{0}, IDLUTILS:{1}, DRP:{2}'.format(self.outver, self.idlutilsver, self.drpver))
 #        self.mangaver = self.mangaver if mangaver is None else mangaver
 
         # List of files to analyze
@@ -184,6 +183,13 @@ class rundap:
         # Read and parse command-line arguments
         if console:
             self._read_arg()
+
+        # Make sure the selected MPL version is available
+        self._select_mpl()
+
+        # Alert the user of the versions to be used
+#       print('Versions: DAP:{0}, IDLUTILS:{1}, DRP:{2}'.format(self.outver, self.idlutilsver, self.drpver))
+        print('Versions: DAP:{0}, {1}'.format(self.outver, self.mplver))
 
         # Check that something is to be done
         nrun = 0
@@ -294,10 +300,13 @@ class rundap:
         parser.add_argument("-o", "--outver", type=str,
                             help="optional output version, different from product version",
                             default="trunk")
-        parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use",
-                            default=None)
-        parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
-                            "files to process", default=None)
+
+#       parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use",
+#                           default=None)
+#       parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
+#                           "files to process", default=None)
+
+        parser.add_argument("-v", "--mplver", type=str, help="MPL version to analyze", default=None)
 
         parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce",
                             default=None)
@@ -372,10 +381,12 @@ class rundap:
         # Will OVERWRITE existing input from __init__()
         if self.arg.outver is not None:
             self.outver = self.arg.outver
-        if self.arg.idlutilsver is not None:
-            self.idlutilsver = self.arg.idlutilsver
-        if self.arg.drpver is not None:
-            self.drpver = self.arg.drpver
+#       if self.arg.idlutilsver is not None:
+#           self.idlutilsver = self.arg.idlutilsver
+#       if self.arg.drpver is not None:
+#           self.drpver = self.arg.drpver
+        if self.arg.mplver is not None:
+            self.mplver = self.arg.mplver
 
         # Set queue keywords
         if self.arg.umask is not None:
@@ -395,6 +406,45 @@ class rundap:
 
 #       print(self.submit)
 #       self.submit = False
+
+
+    def _select_mpl(self):
+        """
+        Return the name of the MPL to analyze.
+        """
+        if self.mplver is None:
+            return 'MPL-2'
+
+        mpls = self._available_mpls()
+        mpli = numpy.where(mpls == self.mplver)
+        if len(mpls[mpli]) == 0:
+            mpls = self._available_mpls(write=True)
+            raise Exception('{0} is not an available MPL!'.format(self.mplver))
+
+        return mpls[mpli][0]
+
+
+    def _available_mpls(self, write=False):
+        """
+        Return a list of the available MPLs to analyze, providing a list
+        if requested.
+        """
+        if write:
+            print('{0}: IDLUTILS:{1}; DRPVER:{2}\n'.format('MPL-1', 'v5_5_16', 'v1_0_0'))
+            print('{0}: IDLUTILS:{1}; DRPVER:{2}\n'.format('MPL-2', 'v5_5_17', 'v1_1_2'))
+        return numpy.array(['MPL-1', 'MPL-2'])
+
+
+    def _mpl_module(self)
+        """
+        Return the name of the module file specific to the MPL to analyze.
+
+        TODO: For now this ALWAYS uses the python3 versions.
+        """
+        if self.mplver == 'MPL-1':
+            return 'manga/westfall3_mpl1'
+        if self.mplver == 'MPL-2':
+            return 'manga/westfall3_mpl2'
     
 
     # TODO: Files:
@@ -436,25 +486,9 @@ class rundap:
 
         """
 
-        # TODO: This is a hack for now, until things settle down with my
-        # understanding of how to handle the modules.
-
-        # TODO: Always force usage of python 3?
-
-        file.write('module purge\n')
-#        file.write('module load manga/trunk\n')
-        file.write('module load manga/westfall3\n')
-        # TODO: Allow to set python version (e.g. like drpver)?
-#        file.write('module unload python\n')
-#        file.write('module load python/3.3.6\n')
-#        file.write('module unload python\n')
-#        file.write('module load python/2.7.3_rhel6\n')
-        file.write('module unload mangadrp\n')
-        file.write('module load mangadrp/{0}\n'.format(self.drpver))
-        file.write('module unload idlutils\n')
-        file.write('module load idlutils/{0}\n'.format(self.idlutilsver))
-        file.write('module unload mangadap\n')
-        file.write('module load mangadap/westfall\n')
+        module = self._mpl_module()
+        file.write('module unload manga\n')
+        file.write('module load {0}\n'.format(module))
 
         # TODO: Is there a way to have the script catch errors in these
         # module calls (without proceeding to the remaining calls)?

@@ -71,8 +71,9 @@ PRO MDAP_SETUP_IO, $
         if FILE_TEST(datacube_name) eq 0 then $
             datacube_name=root_name+'.fits.gz'          ; Try a compressed file
         if FILE_TEST(datacube_name) eq 0 then begin
-            print, 'Fits file not found!'
-            return
+            print, 'Tried: '+root_name+'.fits'
+            print, 'Tried: '+root_name+'.fits.gz'
+            message, 'Fits file not found!'
         endif
         print, datacube_name+' found'
 
