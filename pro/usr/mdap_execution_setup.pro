@@ -530,7 +530,7 @@ PRO MDAP_EXECUTION_SETUP, $
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 4                                       ; Number of ExecutionPlans to produce
+        niter = 1                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -556,59 +556,32 @@ PRO MDAP_EXECUTION_SETUP, $
         overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
 
 ;-----------------------------------------------------------------------
-; Nominal pipeline run at Utah
 
-        ; Always optimally weight the data
-        bin_par[*].optimal_weighting = 1
+        bin_par[*].type = 'STON'
+        bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
+        bin_par[*].ston = 40.0d
 
-        ; Run the pipeline
-        bin_par[0].type = 'NONE'        ; ... without binning
-
-        bin_par[1].type = 'ALL'         ; ... by binning all spectra
-
-        bin_par[2].type = 'STON'        ; ... using a S/N=40 Voronoi binning
-        bin_par[2].ston = 40.0d
-
-        bin_par[3].type = 'RADIAL'      ; ... and with radial binning
-        bin_par[3].v_register = 1
-        bin_par[3].nr = 10
-        bin_par[3].rlog = 1
-
-        ; Calculate the S/N in the same region for all binning types
         w_range_sn[0,*] = [5560.00, 6942.00]
-        w_range_sn[1,*] = [5560.00, 6942.00]
-        w_range_sn[2,*] = [5560.00, 6942.00]
-        w_range_sn[3,*] = [5560.00, 6942.00]
-        threshold_ston_bin[*] = -300.0d             ; Include all data in S/N calculation
+        threshold_ston_bin[*] = -300.0d
 
-        ; Analyze the same wavelength region for all binning types
         w_range_analysis[0,*] = [3650.,10300.] 
-        w_range_analysis[1,*] = [3650.,10300.] 
-        w_range_analysis[2,*] = [3650.,10300.] 
-        w_range_analysis[3,*] = [3650.,10300.] 
-        threshold_ston_analysis[*] = 0.0d           ; Include only positive S/N in analysis
+        threshold_ston_analysis[*] = 0.0d
 
-        ; Perform all 4 main analysis steps
         analysis[*,0] = 'stellar-cont'
-        analysis[*,1] = 'star+gas'
-        analysis[*,2] = 'emission-line'
-        analysis[*,3] = 'abs-indices'
 
-        tpl_lib_analysis[*] = 1                 ; Always use the STELIB library
+        tpl_lib_analysis[*] = 1                 ; Use STELIB
         ems_par_analysis[*] = 0
         abs_par_analysis[*] = 0
 
-        ; Always use the same analysis parameters
         analysis_par[*].moments = 4
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
         analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
-        analysis_prior[0:2] = ''                ; No priors
-        analysis_prior[3] = '2'                 ; ... for all but the RADIAL binning type
+        analysis_prior[*] = ''                  ; No priors
 
-        overwrite_flag[*] = 1                   ; Always overwrite the existing data
+        overwrite_flag[*] = 1
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
