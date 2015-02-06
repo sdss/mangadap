@@ -57,6 +57,7 @@ examples/mdap_config_example.inp -text
 examples/mdap_inp_nsa_v1b_0_0_v2.par -text
 examples/mdap_setup.pro -text
 examples/mdap_setup_highsn_stelib.pro -text
+examples/mdap_setup_highsn_stelib_sconly.pro -text
 examples/mdap_setup_highsn_twotpl.pro -text
 examples/mdap_setup_old.pro -text
 examples/mdap_setup_radial.pro -text
