@@ -602,7 +602,7 @@ PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
             return                              ; No lines to mask
 
         nm = n_elements(indx)                   ; Number of lines to mask
-;       print, 'Number of lines to mask: ', nm
+        print, 'Number of lines to mask: ', nm
         
         ; TODO: Do NOT include sky lines in list of 'emission lines.' Create a
         ; separate structure that contains the observed wavelengths of sky lines
@@ -611,7 +611,11 @@ PRO MDAP_GANDALFW_MASK_EMISSION_LINES, $
         for i=0,nm-1 do begin
 
             ; TODO: Number of sigma currently hard-wired to be 3.  Allow this to change?
-            el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, sigma=sigma)
+            if eml_par[indx[i]].action eq 's' then begin
+                el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[indx[i]], sigma=sigma)
+            endif else $
+                el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[indx[i]], velocity=velocity, $
+                                                     sigma=sigma)
 
             MDAP_SELECT_WAVE, obj_wave, el_range, wave_indx, count=count    ; Get the indices
 ;           if wave_indx[0] ne -1 then $
