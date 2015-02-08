@@ -207,9 +207,12 @@ PRO MDAP_BINNING_BLOCK, $
 
             ;-----------------------------------------------------------
             ; De-redshift the spectra before binning the spectra.
+;           if strlen(execution_plan.analysis_prior) ne 0 $
+;              and execution_plan.bin_par.v_register eq 1 $
+;              and n_elements(star_kin_interp) ne 0 then begin
             if strlen(execution_plan.analysis_prior) ne 0 $
-               and execution_plan.bin_par.v_register eq 1 $
-               and n_elements(star_kin_interp) ne 0 then begin
+               && execution_plan.bin_par.v_register eq 1 $
+               && n_elements(star_kin_interp) ne 0 then begin
 
                 ; Velocity register the spectra to the median of the
                 ; input stellar velocity.  Code is HARD-WIRED to

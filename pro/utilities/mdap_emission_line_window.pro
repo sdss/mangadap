@@ -71,7 +71,8 @@ FUNCTION MDAP_EMISSION_LINE_WINDOW, $
         el_range = (1 + sign*el_half_width/c)*eml_par.lambda    ; Lower and upper edge (angstroms)
 
         ; Redshift the edges to match the object wavelengths, unless it's a sky line!
-        if n_elements(velocity) ne 0 and eml_par.action ne 's' then $
+;       if n_elements(velocity) ne 0 and eml_par.action ne 's' then $
+        if n_elements(velocity) ne 0 && eml_par.action ne 's' then $
                 el_range = el_range * (1+velocity/c)            ; Redshifted wavelengths
 
         return, el_range                                ; Return the window range

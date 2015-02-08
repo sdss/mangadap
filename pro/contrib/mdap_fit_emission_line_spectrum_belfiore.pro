@@ -144,7 +144,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
   v2=fltarr(nlines2)
   ;NOTE sometimes the stars are badly fitted, especially when the continuum is very low. In this case the velocity/sigma for the stars can  be nonsense.
   for i=0, nlines2-1 do begin
-    if star_sigma le 200 and star_sigma ge 70 then begin
+;   if star_sigma le 200 and star_sigma ge 70 then begin
+    if star_sigma le 200 && star_sigma ge 70 then begin
       sigma2[i]=l[i].wl*star_sigma/c
     endif else begin
       sigma2[i]=l[i].wl*80/c
@@ -167,7 +168,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       amp=max(resid[wrange], w_max)                                                       ;max of the flux within the mask, and its subscripts (w_max)
       x_max=x[wrange[w_max]]                                                                      ;wavelength of max subscript
       vguess=(x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
-       if vguess gt -400 and vguess lt 400 then begin
+;      if vguess gt -400 and vguess lt 400 then begin
+       if vguess gt -400 && vguess lt 400 then begin
           v2[i]=vguess
        endif else begin
           v2[i]=0
@@ -218,7 +220,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     ;print, 'OIII 4959', WOIII_4959, 'OIII 5007', WOIII_5007
 
 ;   if wOIII_4959[0] ne -1 and wOIII_5007[0] ne -1 then begin
-    if count_4959 ne 0 and count_5007 ne 0 then begin
+;   if count_4959 ne 0 and count_5007 ne 0 then begin
+    if count_4959 ne 0 && count_5007 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*wOIII_4959+2].tied='0.330*p['+string(3*wOIII_5007+2)+']'
       ;fix to have same velocities
@@ -228,7 +231,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     endif
     
 ;   if WNII_6548[0] ne -1 and wNII_6583[0] ne -1 then begin
-    if count_6548 ne 0 and count_6583 ne 0 then begin
+;   if count_6548 ne 0 and count_6583 ne 0 then begin
+    if count_6548 ne 0 && count_6583 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*WNII_6548+2].tied='0.340*p['+string(3*wNII_6583+2)+']'
       ;fix to have same velocities

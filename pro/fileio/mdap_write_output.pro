@@ -935,7 +935,8 @@ END
 PRO MDAP_FXBADDCOL_MATRIX, $
                 indx, hdr, nn, mm, colname, comment, dbl=dbl, int=int, str=str, dummystr=dummystr
         
-        if nn gt 0 and mm gt 0 then begin
+;       if nn gt 0 and mm gt 0 then begin
+        if nn gt 0 && mm gt 0 then begin
             if keyword_set(dbl) then begin
                 FXBADDCOL, indx, hdr, dblarr(nn, mm), colname, comment
             endif else if keyword_set(int) then begin
@@ -1082,7 +1083,8 @@ PRO MDAP_WRITE_OUTPUT_COMPARE_TABLE_SIZE, $
         for i=0,nn-1 do begin
             ; If the new size is defined (!= -1) and different from the existing
             ; size, select to modify the existing table to the new size
-            if (inp_size[i] ne -1 and cur_size[i] ne inp_size[i]) then begin
+;           if (inp_size[i] ne -1 and cur_size[i] ne inp_size[i]) then begin
+            if (inp_size[i] ne -1 && cur_size[i] ne inp_size[i]) then begin
                 cur_size[i] = inp_size[i]
                 modify = 1
             endif
@@ -1257,7 +1259,8 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
             inp_size[4]=(size(emission_line_EW_err))[2]
 
         ; TODO: Check the number of emission lines against the ELPAR extension?
-        if n_elements(eml_par) ne 0 and inp_size[4] gt 0 then $
+;       if n_elements(eml_par) ne 0 and inp_size[4] gt 0 then $
+        if n_elements(eml_par) ne 0 && inp_size[4] gt 0 then $
             if n_elements(eml_par) ne inp_size[4] then $
                 message, 'Number of line structures does not match the number of line results!'
 
@@ -1463,7 +1466,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             inp_size[1]=(size(elo_fb_EW_err))[2]
 
         ; TODO: Check the number of emission lines against the ELOPAR extension?
-        if n_elements(emlo_par) ne 0 and inp_size[1] gt 0 then $
+;       if n_elements(emlo_par) ne 0 and inp_size[1] gt 0 then $
+        if n_elements(emlo_par) ne 0 && inp_size[1] gt 0 then $
             if n_elements(emlo_par) ne inp_size[1] then $
                 message, 'Number of line structures does not match the number of line results!'
 
@@ -1651,7 +1655,8 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             inp_size[0]=(size(abs_line_indx_botpl))[2]
 
         ; TODO: Check the number of spectral indices against the SIPAR extension?
-        if n_elements(abs_par) ne 0 and inp_size[0] gt 0 then $
+;       if n_elements(abs_par) ne 0 and inp_size[0] gt 0 then $
+        if n_elements(abs_par) ne 0 && inp_size[0] gt 0 then $
             if n_elements(abs_par) ne inp_size[0] then $
                 message, 'Number of index structures does not match the number of index results!'
 
@@ -1835,7 +1840,8 @@ PRO MDAP_WRITE_OUTPUT_DRPS_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,6 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for DRPS have different lengths!'
         endfor
 
@@ -1863,7 +1869,8 @@ PRO MDAP_WRITE_OUTPUT_BINS_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,5 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for BINS have different lengths!'
         endfor
 
@@ -1893,7 +1900,8 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,5 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors or STFIT have different lengths!'
         endfor
 
@@ -1948,7 +1956,8 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,16 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for SGFIT have different lengths!'
         endfor
 
@@ -2006,7 +2015,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,23 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for ELOFIT have different lengths!'
         endfor
 
@@ -2033,7 +2043,8 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_CHECK_INPUTS, $
         ninp = max(nel)
 
         for i=0,4 do begin
-            if nel[i] gt 0 and nel[i] ne ninp then $
+;           if nel[i] gt 0 and nel[i] ne ninp then $
+            if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for SINDX have different lengths!'
         endfor
 
@@ -2191,7 +2202,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
 
             ; Check if any of the kinematics are tied
             tt=strmid(eml_par[i].fit,0,1)
-            if tt eq 't' or tt eq 'v' or tt eq 's' then begin
+;           if tt eq 't' or tt eq 'v' or tt eq 's' then begin
+            if tt eq 't' || tt eq 'v' || tt eq 's' then begin
 ;               j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)))
 ;               eltied[i] = j_refline[0]                ; Set to -1 if not found!
                 j_refline = where(eml_par[*].i eq fix(strmid(eml_par[i].fit,1)), count)

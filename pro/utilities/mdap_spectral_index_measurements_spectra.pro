@@ -194,13 +194,16 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
                 oversample=oversample, rms=rms
 
         ; Cannot get error from RMS if bestfit is not provided
-        if keyword_set(rms) and n_elements(bestfit) eq 0 then $
+;       if keyword_set(rms) and n_elements(bestfit) eq 0 then $
+        if keyword_set(rms) && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to calculate error using RMS.'
         ; Cannot replace outliers if bestfit is not provided
-        if n_elements(remove_outliers) ne 0 and n_elements(bestfit) eq 0 then $
+;       if n_elements(remove_outliers) ne 0 and n_elements(bestfit) eq 0 then $
+        if n_elements(remove_outliers) ne 0 && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to replace outliers.'
         ; Cannot replace the masked pixels with the model if the model is not provided
-        if keyword_set(replace_masked) and n_elements(bestfit) eq 0 then $
+;       if keyword_set(replace_masked) and n_elements(bestfit) eq 0 then $
+        if keyword_set(replace_masked) && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to replace masked pixels.'
 
         ;-----------------------------------------------------------------------
@@ -214,7 +217,8 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 
         sz = size(flux)
         nspec = sz[1]                                   ; Number of spectra
-        if keyword_set(rms) or n_elements(remove_outliers) ne 0 then begin
+;       if keyword_set(rms) or n_elements(remove_outliers) ne 0 then begin
+        if keyword_set(rms) || n_elements(remove_outliers) ne 0 then begin
             for i=0,nspec-1 do begin
                 ;  1. Determine the error spectrum
                 mask_ = reform(mask[i,*])

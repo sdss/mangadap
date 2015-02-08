@@ -27,7 +27,8 @@
 FUNCTION MDAP_INDEX_IS_BANDHEAD, $
                 abs_par
 
-        if abs_par.passband[0] lt 1. and abs_par.passband[1] lt 1. then $
+;       if abs_par.passband[0] lt 1. and abs_par.passband[1] lt 1. then $
+        if abs_par.passband[0] lt 1. && abs_par.passband[1] lt 1. then $
             return, 1                   ; Index is a bandhead
 
         return, 0                       ; Otherwise, it's not

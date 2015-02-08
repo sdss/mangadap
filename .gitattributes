@@ -53,7 +53,6 @@ doc/mdap_spatial_radial_binning.tex -text
 doc/mdap_spectral_fitting.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
 etc/mangadap.module -text
-examples/mdap_config_example.inp -text
 examples/mdap_inp_nsa_v1b_0_0_v2.par -text
 examples/mdap_setup.pro -text
 examples/mdap_setup_highsn_stelib.pro -text
@@ -310,6 +309,7 @@ legacy_pro/manga_dap_0.pro -text
 legacy_pro/manga_dap_1.pro -text
 legacy_pro/mdap_add_fits_layer.pro -text
 legacy_pro/mdap_array_string.pro -text
+legacy_pro/mdap_config_example.inp -text
 legacy_pro/mdap_create_starting_guesses.pro -text
 legacy_pro/mdap_display_2dmap.pro -text
 legacy_pro/mdap_display_2dmap_ps.pro -text
@@ -349,6 +349,7 @@ pro/fileio/mdap_check_bintable_columns.pro -text
 pro/fileio/mdap_check_extension_exists.pro -text
 pro/fileio/mdap_check_file_exists.pro -text
 pro/fileio/mdap_check_output_file.pro -text
+pro/fileio/mdap_convert_drp_mask.pro -text
 pro/fileio/mdap_create_dap_template_library.pro -text
 pro/fileio/mdap_create_input_table.pro -text
 pro/fileio/mdap_define_output.pro -text

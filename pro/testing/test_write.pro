@@ -255,7 +255,8 @@ pro test_write
         MDAP_RANDOMIZE, chi2_ppxf, seed=seed
         MDAP_RANDOMIZE, obj_fit_mask_gndf, seed=seed
         MDAP_RANDOMIZE, weights_gndf, seed=seed
-        if n_elements(reddening) eq 0 and n_elements(mdegree) ne 0 then begin
+;       if n_elements(reddening) eq 0 and n_elements(mdegree) ne 0 then begin
+        if n_elements(reddening) eq 0 && n_elements(mdegree) ne 0 then begin
             if mdegree gt 0 then $
                 MDAP_RANDOMIZE, mult_poly_coeff_gndf, seed=seed
         endif
@@ -284,7 +285,8 @@ pro test_write
         MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, $
                            w_range_analysis=execution_plan[i].wave_range_analysis, /read_header
 
-        if (ppxf_only eq 1 and n_elements(eml_par) ne 0 ) or ppxf_only eq 0 then begin
+;       if (ppxf_only eq 1 and n_elements(eml_par) ne 0 ) or ppxf_only eq 0 then begin
+        if (ppxf_only eq 1 && n_elements(eml_par) ne 0 ) || ppxf_only eq 0 then begin
             print, 'EMISSION LINE PARAMETERS'
             MDAP_WRITE_OUTPUT, execution_plan[i].ofile, eml_par=eml_par
             ;stop

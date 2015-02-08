@@ -174,7 +174,8 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         incw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=0                                             ; Start at low wavelength
 ;       while indx[0] ne -1 and j lt np-1 do begin
-        while count ne 0 and j lt np-1 do begin
+;       while count ne 0 and j lt np-1 do begin
+        while count ne 0 && j lt np-1 do begin
             j++                                         ; Increment j
             incw[0] = unm_wave[j]                       ; Update wavelength range
             indx=where(positive_offset[j:np-1] gt zero_dispersion, count)      ; Update indices
@@ -185,7 +186,8 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         decw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=np-1                                          ; Start at high wavelength
 ;       while indx[0] ne -1 and j gt 0 do begin
-        while count ne 0 and j gt 0 do begin
+;       while count ne 0 and j gt 0 do begin
+        while count ne 0 && j gt 0 do begin
             j--                                         ; Decrement j
             decw[1] = unm_wave[j]                       ; Update wavelength range
             indx=where(positive_offset[0:j] gt zero_dispersion, count)  ; Update indices
@@ -271,7 +273,8 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
         if sz[0] eq 1 then $
             sres_matrix = 0                     ; sres is a vector
 
-        if wave_matrix eq 1 and sres_matrix eq 0 then $
+;       if wave_matrix eq 1 and sres_matrix eq 0 then $
+        if wave_matrix eq 1 && sres_matrix eq 0 then $
             message, 'Cannot handle wavelength matrix combined with resolution vector.'
 
         sz=size(flux)

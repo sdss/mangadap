@@ -72,7 +72,8 @@ PRO MDAP_READ_1DSPEC_FITS, $
         crpix=SXPAR(header, 'CRPIX1', count=ncrpix)             ; ... CRPIX1
         cdelt=SXPAR(header, 'CDELT1', count=ncdelt)             ; ... and CDELT1
 
-        if ncrval eq 0 or ncrpix eq 0 or ncdelt eq 0 then begin ; Is there a known wavelength sol.?
+;       if ncrval eq 0 or ncrpix eq 0 or ncdelt eq 0 then begin ; Is there a known wavelength sol.?
+        if ncrval eq 0 || ncrpix eq 0 || ncdelt eq 0 then begin ; Is there a known wavelength sol.?
             print, 'WARNING: Could not determine wavelength solution.  Returning pixel coordinates.'
             return
         endif

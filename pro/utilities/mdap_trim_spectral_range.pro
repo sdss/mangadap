@@ -86,17 +86,20 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
 
         sz = size(flux)
         nd = sz[0]                              ; Number of dimensions
-        if nd ne 1 and nd ne 2 then $
+;       if nd ne 1 and nd ne 2 then $
+        if nd ne 1 && nd ne 2 then $
             message, 'Array must be either 1 or 2 dimensions.'
 
         nc = sz[nd]                             ; Number of spectral channels (works for 1D and 2D)
 
         szi=size(ivar)
-        if sz[0] ne szi[0] or sz[1] ne szi[1] or sz[2] ne szi[2] then $
+;       if sz[0] ne szi[0] or sz[1] ne szi[1] or sz[2] ne szi[2] then $
+        if sz[0] ne szi[0] || sz[1] ne szi[1] || sz[2] ne szi[2] then $
             message, 'Size of ivar must match the size of flux'
 
         szm=size(mask)
-        if sz[0] ne szm[0] or sz[1] ne szm[1] or sz[2] ne szm[2] then $
+;       if sz[0] ne szm[0] or sz[1] ne szm[1] or sz[2] ne szm[2] then $
+        if sz[0] ne szm[0] || sz[1] ne szm[1] || sz[2] ne szm[2] then $
             message, 'Size of mask must match the size of flux'
 
         szw = size(wave)
@@ -104,8 +107,10 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         if nd lt ndw then $
             message, 'wave vector has higher dimensionality than flux array!'
 
-        if (ndw eq 1 and nc ne szw[1]) or $
-           (ndw eq 2 and (sz[1] ne szw[1] or nc ne szw[2])) then $
+;       if (ndw eq 1 and nc ne szw[1]) or $
+;          (ndw eq 2 and (sz[1] ne szw[1] or nc ne szw[2])) then $
+        if (ndw eq 1 && nc ne szw[1]) || $
+           (ndw eq 2 && (sz[1] ne szw[1] || nc ne szw[2])) then $
             message, 'Size of wave does not match size of flux'
 
         szs=size(sres)
@@ -116,8 +121,10 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         if nds lt ndw then $
             message, 'sres has lower dimensionality than the wave array!'
 
-        if (nds eq 1 and nc ne szs[1]) or $
-           (nds eq 2 and (sz[1] ne szs[1] or nc ne szs[2])) then $
+;       if (nds eq 1 and nc ne szs[1]) or $
+;          (nds eq 2 and (sz[1] ne szs[1] or nc ne szs[2])) then $
+        if (nds eq 1 && nc ne szs[1]) || $
+           (nds eq 2 && (sz[1] ne szs[1] || nc ne szs[2])) then $
             message, 'Size of sres does not match size of flux'
 
         if ndw eq 1 then begin
@@ -160,7 +167,8 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
                 sres = sres[*,indx]
 
             ; Truncate the wavelength array
-            if ~keyword_set(keep_original_wave) and ~keyword_set(mask_only) then $
+;           if ~keyword_set(keep_original_wave) and ~keyword_set(mask_only) then $
+            if ~keyword_set(keep_original_wave) && ~keyword_set(mask_only) then $
                 wave = wave[indx]
 
             return                                      ; Done
@@ -171,7 +179,8 @@ PRO MDAP_TRIM_SPECTRAL_RANGE, $
         for i=0,ns-1 do begin
             MDAP_SELECT_WAVE, wave[i,*], waverange, indx, complement=comp, count=count
             ccount=n_elements(wave)-count
-            if keyword_set(mask_only) and ccount ne 0 then $
+;           if keyword_set(mask_only) and ccount ne 0 then $
+            if keyword_set(mask_only) && ccount ne 0 then $
                 mask[i,comp] = 1.               ; Only masking pixels
 
 ;           ng = n_elements(indx)

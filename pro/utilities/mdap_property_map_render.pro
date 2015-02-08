@@ -65,11 +65,13 @@ PRO MDAP_PROPERTY_MAP_ADD_APERTURE, $
         ey = ceil(ap_y+ap_ry+1)
 
         for i=sx,ex do begin
-            if sx lt 0 or ex ge nx then $
+;           if sx lt 0 or ex ge nx then $
+            if sx lt 0 || ex ge nx then $
                 continue
             ir = ((i - ap_x)/ap_rx)^2
             for j=sy,ey do begin
-                if sy lt 0 or ey ge ny then $
+;               if sy lt 0 or ey ge ny then $
+                if sy lt 0 || ey ge ny then $
                     continue
 
                 if ir + ((j-ap_y)/ap_ry)^2 le 1.0d then begin
@@ -101,7 +103,8 @@ PRO MDAP_PROPERTY_MAP_RENDER_APERTURE, $
             z_map[indx] = z_map[indx]/nap[indx]     ; Average the values
 
 ;       if n_elements(default) ne 0 and nindx[0] ne -1 then $
-        if n_elements(default) ne 0 and ncount ne 0 then $
+;       if n_elements(default) ne 0 and ncount ne 0 then $
+        if n_elements(default) ne 0 && ncount ne 0 then $
             z_map[nindx] = default                  ; Set default values for pixels with no data
 
 END

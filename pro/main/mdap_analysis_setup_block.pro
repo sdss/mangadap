@@ -161,7 +161,8 @@ PRO MDAP_ANALYSIS_SETUP_BLOCK, $
 
         ;---------------------------------------------------------------
         ; Delete the exiting file if overwrite=1
-        if execution_plan.overwrite eq 1 and FILE_TEST(execution_plan.ofile) eq 1 then begin
+;       if execution_plan.overwrite eq 1 and FILE_TEST(execution_plan.ofile) eq 1 then begin
+        if execution_plan.overwrite eq 1 && FILE_TEST(execution_plan.ofile) eq 1 then begin
             print, 'Removing existing file: '+execution_plan.ofile
             FILE_DELETE, execution_plan.ofile
         endif
@@ -201,8 +202,10 @@ PRO MDAP_ANALYSIS_SETUP_BLOCK, $
 
         ;---------------------------------------------------------------
         ; Interpolate data from the prior if necessary
-        if (perform_block.bin eq 1 or perform_block.spec_fit eq 1) and $
-            strlen(execution_plan.analysis_prior) ne 0 then begin
+;       if (perform_block.bin eq 1 or perform_block.spec_fit eq 1) and $
+;           strlen(execution_plan.analysis_prior) ne 0 then begin
+        if (perform_block.bin eq 1 || perform_block.spec_fit eq 1) $
+            && strlen(execution_plan.analysis_prior) ne 0 then begin
            print, 'Interpolating kinematics based on provided prior'
            MDAP_INTERPOLATE_KINEMATICS, execution_plan.analysis_prior, bskyx, bskyy, $
                                         star_kin_interp, /velocity, /sigma, /stellar

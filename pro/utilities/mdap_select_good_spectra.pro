@@ -6,6 +6,7 @@
 ;       Create a list of indices with spectra that satisfy the following
 ;       criteria for at least 20% of the length of the spectrum:
 ;
+;               - pixel is unmasked from DRP file
 ;               - ivar is larger than 0
 ;               - ivar is not inf or NaN
 ;               - flux is not inf or NaN
@@ -25,7 +26,7 @@
 ;               Inverse variance of spectra.
 ;
 ;       mask dblarr[N][T]
-;               Pixel mask.
+;               Bad pixel mask (0-unmasked; 1-masked)
 ;
 ; OPTIONAL INPUTS:
 ;
@@ -35,7 +36,7 @@
 ;       gflag intarr[N]
 ;               Flag that spectrum is good (0=false; 1=true)
 ;
-;       goods intarr[]
+;       gindx intarr[]
 ;               Indices of good spectra.
 ;
 ; OPTIONAL OUTPUT:
@@ -47,7 +48,6 @@
 ; EXAMPLES:
 ;
 ; TODO:
-;       - Need to incorporate pixel mask
 ;       - Allow the criteria (particularly the 20% one) to change?
 ;
 ; BUGS:
@@ -57,13 +57,15 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       09 Sep 2014: (KBW) Original implementation
+;       09 Sep 2014: Original implementation by K. Westfall (KBW)
 ;       05 Jan 2015: (KBW) Bug in size of indx check; return count
+;       06 Feb 2015: (KBW) Incorporate pixel mask (based on DRP MASK
+;                          extension, see MDAP_CONVERT_DRP_MASK)
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SELECT_GOOD_SPECTRA, $
-                flux, ivar, mask, gflag, goods, count=count
+                flux, ivar, mask, gflag, gindx, count=count
 
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
@@ -77,7 +79,8 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
 
             ; Spectrum is either made up of 20% or more bad pixels, or it is constant (not real)
 ;           if n_elements(indici) ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
-            if count ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
+;           if count ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
+            if count ge 0.2*nc || min(flux[i,*]) eq max(flux[i,*]) then begin
                 gflag[i] = 0                            ; Flag spectrum as bad
             endif else $
                 gflag[i] = 1                            ; Flag spectrum as good

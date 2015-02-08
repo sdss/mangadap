@@ -114,7 +114,8 @@ PRO MDAP_LOG_INSTANTIATE, $
         printf, file_unit, 'DAP Version: ', manga_dap_version
         printf, file_unit, ''
         printf, file_unit, 'MDAP_EXECUTION_SETUP signifier: ', signifier
-        if n_elements(inptbl) ne 0 and n_elements(index) ne 0 then begin
+;       if n_elements(inptbl) ne 0 and n_elements(index) ne 0 then begin
+        if n_elements(inptbl) ne 0 && n_elements(index) ne 0 then begin
             printf, file_unit, 'Input table: ', inptbl
             printf, file_unit, 'Line to process: ', (index+1)
         endif else if n_elements(par) ne 0 then $

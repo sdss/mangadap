@@ -78,7 +78,8 @@
 PRO mdap_calculate_spectrum_sn, flux, ivar, mask, wave, sn_per_angstorm, signal=signal, $
                                 noise=noise, rms=rms, sum=sum
 
-        if keyword_set(rms) and keyword_set(sum) then $
+;       if keyword_set(rms) and keyword_set(sum) then $
+        if keyword_set(rms) && keyword_set(sum) then $
             print, 'WARNING: Cannot calculate S/N using both /rms and /sum.  Ignoring /sum.'
 
         if keyword_set(rms) then begin

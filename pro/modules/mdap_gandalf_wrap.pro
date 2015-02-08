@@ -1018,7 +1018,8 @@ PRO MDAP_GANDALF_WRAP, $
 ;       stop
 
         ; No emission lines, or do not want to fit them, so return with just the result of pPXF
-        if n_elements(eml_par) eq 0 or ppxf_only eq 1 then begin
+;       if n_elements(eml_par) eq 0 or ppxf_only eq 1 then begin
+        if n_elements(eml_par) eq 0 || ppxf_only eq 1 then begin
             if n_elements(eml_par) ne 0 then begin
                 i_f = where(eml_par.action eq 'f', neml_f)
 ;               neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)

@@ -143,12 +143,14 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
             bestfit_continuum = dblarr(sz[1], sz[2])
 
             ; Use pPXF continuum if available
-            if (size(bestfit_ppxf))[1] eq sz[1] and (size(bestfit_ppxf))[2] eq sz[2] then $
+;           if (size(bestfit_ppxf))[1] eq sz[1] and (size(bestfit_ppxf))[2] eq sz[2] then $
+            if (size(bestfit_ppxf))[1] eq sz[1] && (size(bestfit_ppxf))[2] eq sz[2] then $
                 bestfit_continuum = bestfit_ppxf
 
             ; Change to the GANDALF result if it exists
             ; TODO: Check the size of the eml_model as well?
-            if (size(bestfit_gndf))[1] eq sz[1] and (size(bestfit_gndf))[2] eq sz[2] then $
+;           if (size(bestfit_gndf))[1] eq sz[1] and (size(bestfit_gndf))[2] eq sz[2] then $
+            if (size(bestfit_gndf))[1] eq sz[1] && (size(bestfit_gndf))[2] eq sz[2] then $
                 bestfit_continuum = bestfit_gndf - eml_model
 
             ; Get the input stellar kinematics

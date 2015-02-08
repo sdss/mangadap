@@ -293,11 +293,11 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
             return                              ; ... and return without doing anything
         endif
 
-        if keyword_set(enci) and keyword_set(belfiore) then begin
+        if keyword_set(enci) && keyword_set(belfiore) then begin
             message, 'Cannot run both Enci and Belfiore fits simultaneously.  Make separate ' $
                      + 'calls to MDAP_EMISSION_LINE_ONLY_FIT'
         endif
-        if ~keyword_set(enci) and ~keyword_set(belfiore) and ~keyword_set(quiet) then $
+        if ~keyword_set(enci) && ~keyword_set(belfiore) && ~keyword_set(quiet) then $
             print, 'No mode selected for MDAP_EMISSION_LINE_ONLY_FIT.  Default is /enci.'
 
         ; Get the emission line parameters for the lines fit by Enci's

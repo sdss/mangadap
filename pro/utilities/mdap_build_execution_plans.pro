@@ -291,15 +291,19 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
                 n_tpl, n_ems, n_abs, execution_plan
 
         ; Check bin type
-        if execution_plan.bin_par.type ne 'NONE' and execution_plan.bin_par.type ne 'ALL' and $
-           execution_plan.bin_par.type ne 'STON' and execution_plan.bin_par.type ne 'RADIAL' $
+;       if execution_plan.bin_par.type ne 'NONE' and execution_plan.bin_par.type ne 'ALL' and $
+;          execution_plan.bin_par.type ne 'STON' and execution_plan.bin_par.type ne 'RADIAL' $
+        if execution_plan.bin_par.type ne 'NONE' && execution_plan.bin_par.type ne 'ALL' && $
+           execution_plan.bin_par.type ne 'STON' && execution_plan.bin_par.type ne 'RADIAL' $
            then begin 
             message, 'Unknown binning type:' + execution_plan.bin_par.type
         endif
 
         ; If there is no prior, cannot velocity register the spectra
+;       if execution_plan.bin_par.v_register eq 1 $
+;          and strlen(execution_plan.analysis_prior) eq 0 then begin
         if execution_plan.bin_par.v_register eq 1 $
-           and strlen(execution_plan.analysis_prior) eq 0 then begin
+           && strlen(execution_plan.analysis_prior) eq 0 then begin
             message, 'Cannot velocity register spectra for binning without an analysis prior!'
         endif
 
@@ -314,15 +318,18 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         ; Analysis steps are check using MDAP_SET_EXECUTION_PLAN_ANALYSIS
 
         ; Check that the selected template library exists
-        if execution_plan.tpl_lib ne -1 and execution_plan.tpl_lib ge n_tpl then $
+;       if execution_plan.tpl_lib ne -1 and execution_plan.tpl_lib ge n_tpl then $
+        if execution_plan.tpl_lib ne -1 && execution_plan.tpl_lib ge n_tpl then $
             message, 'No template library index: ', execution_plan.tpl_lib
             
         ; Check that the selected emission-line parameter set exists
-        if execution_plan.ems_par ne -1 and execution_plan.ems_par ge n_ems then $
+;       if execution_plan.ems_par ne -1 and execution_plan.ems_par ge n_ems then $
+        if execution_plan.ems_par ne -1 && execution_plan.ems_par ge n_ems then $
             message, 'No emission-line parameter set: ', execution_plan.ems_par
             
         ; Check that the selected absorption-line parameter set exists
-        if execution_plan.abs_par ne -1 and execution_plan.abs_par ge n_abs then $
+;       if execution_plan.abs_par ne -1 and execution_plan.abs_par ge n_abs then $
+        if execution_plan.abs_par ne -1 && execution_plan.abs_par ge n_abs then $
             message, 'No absorption-line parameter set: ', execution_plan.abs_par
 
 
@@ -332,11 +339,14 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         if execution_plan.analysis[3] eq 0 then $
             execution_plan.abs_par = -1
         ; Emission-line parameters used for both stellar-continuum and star+gas analysis
-        if execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then $
+;       if execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then $
+        if execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then $
             execution_plan.ems_par = -1
         ; Template spectra can be used for all analyses (what to do with [2]?)
-        if execution_plan.analysis[3] eq 0 and execution_plan.analysis[2] eq 0 and $
-           execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then begin
+;       if execution_plan.analysis[3] eq 0 and execution_plan.analysis[2] eq 0 and $
+;          execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then begin
+        if execution_plan.analysis[3] eq 0 && execution_plan.analysis[2] eq 0 && $
+           execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then begin
             execution_plan.tpl_lib = -1
         endif
 
@@ -419,7 +429,8 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
                                  execution_plan[i].analysis_prior
                     endif
 
-                    if indx lt 0 or indx ge i then begin
+;                   if indx lt 0 or indx ge i then begin
+                    if indx lt 0 || indx ge i then begin
                         message, 'Plan ' + MDAP_STC(i,/integer) + ' cannot use prior from a plan ' $
                                  + MDAP_STC(indx, /integer) + ' either because there is no such ' $
                                  + 'plan or the ordering is wrong!'

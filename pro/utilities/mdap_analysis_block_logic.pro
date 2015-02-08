@@ -112,10 +112,12 @@ FUNCTION MDAP_CAN_USE_STFIT_DATA, $
 
         ; The SMSK and SMOD images must be the same size as the binned spectra
         msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SMSK')
-        if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+;       if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+        if msk_dim[0] ne bin_dim[0] || msk_dim[1] ne bin_dim[1] then $
             return, 0
         mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SMOD')
-        if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+;       if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+        if mod_dim[0] ne bin_dim[0] || mod_dim[1] ne bin_dim[1] then $
             return, 0
 
         return, 1
@@ -180,21 +182,26 @@ FUNCTION MDAP_CAN_USE_SGFIT_DATA, $
         if MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[15]) ne neml then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[10])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'SGFIT', cols[11])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
 
         ; The SGMSK, SGMOD, and ELMOD images must be the same size as the binned spectra
         msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SGMSK')
-        if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+;       if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+        if msk_dim[0] ne bin_dim[0] || msk_dim[1] ne bin_dim[1] then $
             return, 0
         mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SGMOD')
-        if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+;       if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+        if mod_dim[0] ne bin_dim[0] || mod_dim[1] ne bin_dim[1] then $
             return, 0
         elm_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELMOD')
-        if elm_dim[0] ne bin_dim[0] or elm_dim[1] ne bin_dim[1] then $
+;       if elm_dim[0] ne bin_dim[0] or elm_dim[1] ne bin_dim[1] then $
+        if elm_dim[0] ne bin_dim[0] || elm_dim[1] ne bin_dim[1] then $
             return, 0
 
         return, 1
@@ -242,10 +249,12 @@ FUNCTION MDAP_CAN_USE_ELOFIT_DATA, $
         if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[4]) ne neml then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[5])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[6])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
         if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[7]) ne neml then $
             return, 0
@@ -269,10 +278,12 @@ FUNCTION MDAP_CAN_USE_ELOFIT_DATA, $
         if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[16]) ne neml then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[17])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
         dim = MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[18])
-        if dim[0] ne neml or dim[1] ne 2 then $
+;       if dim[0] ne neml or dim[1] ne 2 then $
+        if dim[0] ne neml || dim[1] ne 2 then $
             return, 0
         if MDAP_OUTPUT_COLUMN_SIZE(file, 'ELOFIT', cols[19]) ne neml then $
             return, 0
@@ -287,10 +298,12 @@ FUNCTION MDAP_CAN_USE_ELOFIT_DATA, $
         
         ; The ELOMEW and ELOMFB images must be the same size as the binned spectra
         msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELOMEW')
-        if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+;       if msk_dim[0] ne bin_dim[0] or msk_dim[1] ne bin_dim[1] then $
+        if msk_dim[0] ne bin_dim[0] || msk_dim[1] ne bin_dim[1] then $
             return, 0
         mod_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'ELOMFB')
-        if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+;       if mod_dim[0] ne bin_dim[0] or mod_dim[1] ne bin_dim[1] then $
+        if mod_dim[0] ne bin_dim[0] || mod_dim[1] ne bin_dim[1] then $
             return, 0
 
         return, 1
@@ -352,19 +365,24 @@ FUNCTION MDAP_CAN_USE_SINDX_IMAGES, $
         ; The SIFLUX, SIIVAR, SIMASK, SIOTPL, and SIBOTPL images must have the
         ; same and correct dimensions.
         flx_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIFLUX')
-        if flx_dim[0] ne si_dim[0] or flx_dim[1] ne si_dim[1] then $
+;       if flx_dim[0] ne si_dim[0] or flx_dim[1] ne si_dim[1] then $
+        if flx_dim[0] ne si_dim[0] || flx_dim[1] ne si_dim[1] then $
             return, 0
         ivr_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIIVAR')
-        if ivr_dim[0] ne si_dim[0] or ivr_dim[1] ne si_dim[1] then $
+;       if ivr_dim[0] ne si_dim[0] or ivr_dim[1] ne si_dim[1] then $
+        if ivr_dim[0] ne si_dim[0] || ivr_dim[1] ne si_dim[1] then $
             return, 0
         msk_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIMASK')
-        if msk_dim[0] ne si_dim[0] or msk_dim[1] ne si_dim[1] then $
+;       if msk_dim[0] ne si_dim[0] or msk_dim[1] ne si_dim[1] then $
+        if msk_dim[0] ne si_dim[0] || msk_dim[1] ne si_dim[1] then $
             return, 0
         otp_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIOTPL')
-        if otp_dim[0] ne si_dim[0] or otp_dim[1] ne si_dim[1] then $
+;       if otp_dim[0] ne si_dim[0] or otp_dim[1] ne si_dim[1] then $
+        if otp_dim[0] ne si_dim[0] || otp_dim[1] ne si_dim[1] then $
             return, 0
         btp_dim = MDAP_OUTPUT_IMAGE_SIZE(file, 'SIBOTPL')
-        if btp_dim[0] ne si_dim[0] or btp_dim[1] ne si_dim[1] then $
+;       if btp_dim[0] ne si_dim[0] or btp_dim[1] ne si_dim[1] then $
+        if btp_dim[0] ne si_dim[0] || btp_dim[1] ne si_dim[1] then $
             return, 0
 
         return, 1
@@ -497,7 +515,8 @@ FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
 
         ; - If the file exists but does not look like a DAP file and the
         ;   overwrite flag has been set to false, throw an error
-        if file_exists eq 1 and execution_plan.overwrite eq 0 then begin
+;       if file_exists eq 1 and execution_plan.overwrite eq 0 then begin
+        if file_exists eq 1 && execution_plan.overwrite eq 0 then begin
             if MDAP_CHECK_OUTPUT_FILE(execution_plan.ofile) eq 0 then $
                 message, execution_plan.ofile+' does not look like a DAP file.  To continue, ' + $
                          'set overwrite flag to true (1).'
@@ -556,7 +575,8 @@ FUNCTION MDAP_ANALYSIS_BLOCKS_TO_PERFORM, $
 
         if execution_plan.analysis[3] eq 1 then begin   ; Wants the spectral indices
             ; First check that at least the STFIT results are available
-            if execution_plan.analysis[0] eq 0 and execution_plan.analysis[1] eq 0 then begin
+;           if execution_plan.analysis[0] eq 0 and execution_plan.analysis[1] eq 0 then begin
+            if execution_plan.analysis[0] eq 0 && execution_plan.analysis[1] eq 0 then begin
                 MDAP_ADD_STFIT, execution_plan.ofile, tpl_fits, execution_plan.analysis_par, $
                                 perform_block
             endif
@@ -569,10 +589,15 @@ END
 FUNCTION MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED, $
                 perform_block
 
-        if perform_block.ston eq 0 and $
-           perform_block.bin eq 0 and $
-           perform_block.spec_fit eq 0 and $
-           perform_block.eml_only eq 0 and $
+;       if perform_block.ston eq 0 and $
+;          perform_block.bin eq 0 and $
+;          perform_block.spec_fit eq 0 and $
+;          perform_block.eml_only eq 0 and $
+;          perform_block.spec_indx eq 0 then begin
+        if perform_block.ston eq 0 && $
+           perform_block.bin eq 0 && $
+           perform_block.spec_fit eq 0 && $
+           perform_block.eml_only eq 0 && $
            perform_block.spec_indx eq 0 then begin
             return, 1                                   ; All the blocks have been completed
         endif
@@ -584,24 +609,33 @@ FUNCTION MDAP_MORE_ANALYSIS_BLOCKS_TO_FINISH, $
                 perform_block, ston=ston, bin=bin, spec_fit=spec_fit, eml_only=eml_only, $
                 spec_indx=spec_indx
         if keyword_set(ston) then begin
-            if perform_block.bin eq 0 and $
-               perform_block.spec_fit eq 0 and $
-               perform_block.eml_only eq 0 and $
+;           if perform_block.bin eq 0 and $
+;              perform_block.spec_fit eq 0 and $
+;              perform_block.eml_only eq 0 and $
+;              perform_block.spec_indx eq 0 then begin
+            if perform_block.bin eq 0 && $
+               perform_block.spec_fit eq 0 && $
+               perform_block.eml_only eq 0 && $
                perform_block.spec_indx eq 0 then begin
                 return, 0
             endif
         endif
 
         if keyword_set(bin) then begin
-            if perform_block.spec_fit eq 0 and $
-               perform_block.eml_only eq 0 and $
+;           if perform_block.spec_fit eq 0 and $
+;              perform_block.eml_only eq 0 and $
+;              perform_block.spec_indx eq 0 then begin
+            if perform_block.spec_fit eq 0 && $
+               perform_block.eml_only eq 0 && $
                perform_block.spec_indx eq 0 then begin
                 return, 0
             endif
         endif
 
         if keyword_set(spec_fit) then begin
-            if perform_block.eml_only eq 0 and $
+;           if perform_block.eml_only eq 0 and $
+;              perform_block.spec_indx eq 0 then begin
+            if perform_block.eml_only eq 0 && $
                perform_block.spec_indx eq 0 then begin
                 return, 0
             endif

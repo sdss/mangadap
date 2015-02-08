@@ -402,7 +402,8 @@ PRO MDAP_SPECTRAL_FITTING_CHECK_DIMENSIONS, $
                 flux, ivar, mask, wave, sres
 
         ; The only things that have to be provided are the flux and the wavelength
-        if n_elements(flux) eq 0 or n_elements(wave) eq 0 then $
+;       if n_elements(flux) eq 0 or n_elements(wave) eq 0 then $
+        if n_elements(flux) eq 0 || n_elements(wave) eq 0 then $
             message, 'Flux and/or wavelength arrays not defined!'
 
         sz=size(flux)                           ; All array must match the size of flux
@@ -410,26 +411,30 @@ PRO MDAP_SPECTRAL_FITTING_CHECK_DIMENSIONS, $
         sz_ = size(wave)
         if sz_[0] ne 1 then $
             message, 'wave must be one dimensional!'
-        if (sz_[0] eq 1 and sz[2] ne sz_[1]) or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+;       if (sz_[0] eq 1 and sz[2] ne sz_[1]) or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+        if (sz_[0] eq 1 && sz[2] ne sz_[1]) || (sz_[0] eq 2 && sz[2] ne sz_[2]) then $
             message, 'flux and wave must have the same number of spectral channels.'
 
         if n_elements(sres) ne 0 then begin 
             sz_ = size(sres)
             if sz_[0] ne 1 then $
                 message, 'sres must be one dimensional!'
-            if (sz_[0] eq 1 and sz[2] ne sz_[1]) or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+;           if (sz_[0] eq 1 and sz[2] ne sz_[1]) or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+            if (sz_[0] eq 1 && sz[2] ne sz_[1]) || (sz_[0] eq 2 && sz[2] ne sz_[2]) then $
                 message, 'flux and sres must have the same number of spectral channels.'
         endif
 
         if n_elements(ivar) eq 0 then begin
             sz_ = size(ivar)
-            if sz[0] ne sz_[0] or sz[1] ne sz_[1] or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+;           if sz[0] ne sz_[0] or sz[1] ne sz_[1] or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+            if sz[0] ne sz_[0] || sz[1] ne sz_[1] || (sz_[0] eq 2 && sz[2] ne sz_[2]) then $
                 message, 'flux and ivar sizes must match!'
         endif
 
         if n_elements(mask) eq 0 then begin
             sz_ = size(mask)
-            if sz[0] ne sz_[0] or sz[1] ne sz_[1] or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+;           if sz[0] ne sz_[0] or sz[1] ne sz_[1] or (sz_[0] eq 2 and sz[2] ne sz_[2]) then $
+            if sz[0] ne sz_[0] || sz[1] ne sz_[1] || (sz_[0] eq 2 && sz[2] ne sz_[2]) then $
                 message, 'flux and mask sizes must match!'
         endif
 
@@ -453,8 +458,10 @@ PRO MDAP_SPECTRAL_FITTING_INIT_GUESSES, $
             sz=size(guesses)
             if sz[0] ne 2 then begin
                 print, 'Kinematic guess arrays must be two-dimensional!  Using default.'
-            endif else if (keyword_set(h3h4) and sz[2] ne 4) $
-                           or (~keyword_set(h3h4) and sz[2] ne 2) then begin
+;           endif else if (keyword_set(h3h4) and sz[2] ne 4) $
+;                          or (~keyword_set(h3h4) and sz[2] ne 2) then begin
+            endif else if (keyword_set(h3h4) && sz[2] ne 4) $
+                           || (~keyword_set(h3h4) && sz[2] ne 2) then begin
                 print, 'Incorrect number of kinematic parameters!  Using default.'
             endif else $
                 use_defaults=0
@@ -616,7 +623,8 @@ PRO MDAP_SPECTRAL_FITTING, $
         if ppxf_only eq 0 then begin
             obj_fit_mask_gndf = make_array(nobj, nw, /double, value=1.0d)
             weights_gndf = dblarr(nobj, ntpl)
-            if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+;           if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+            if analysis_par.reddening_order eq 0 && n_elements(mdegree) ne 0 then begin
                 if mdegree gt 0 then $
                     mult_poly_coeff_gndf = dblarr(nobj, mdegree)
             endif
@@ -652,11 +660,13 @@ PRO MDAP_SPECTRAL_FITTING, $
         ; Initialize the starting guesses
         MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4, $
                                             use_defaults=use_defaults
-        if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+;       if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+        if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
             star_kin_starting_guesses[*,0] = default_velocity
         MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, $
                                             use_defaults=use_defaults
-        if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+;       if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
+        if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
             gas_kin_starting_guesses[*,0] = default_velocity
 
         ;-----------------------------------------------------------------------
@@ -724,7 +734,8 @@ PRO MDAP_SPECTRAL_FITTING, $
 
         ; Set to ignore emission lines that are not within the fitted wavelength range
         eml_par_lim = eml_par
-        if n_elements(eml_par) ne 0 and ppxf_only eq 0 then begin
+;       if n_elements(eml_par) ne 0 and ppxf_only eq 0 then begin
+        if n_elements(eml_par) ne 0 && ppxf_only eq 0 then begin
             MDAP_CHECK_EMISSION_LINES, eml_par_lim, obj_wave_lim, $
                                        velocity=gas_kin_starting_guesses[0]
         endif
@@ -782,7 +793,8 @@ PRO MDAP_SPECTRAL_FITTING, $
 
             ; Update the starting guesses and instrumental dispersion with the
             ;   previous fit values, if requested
-            if i gt 0 and keyword_set(use_previous_guesses) then begin
+;           if i gt 0 and keyword_set(use_previous_guesses) then begin
+            if i gt 0 && keyword_set(use_previous_guesses) then begin
                 start = MDAP_SPECTRAL_FITTING_START_KIN(sol[0:3], sol[7:8])
 
                 instr_disp = MDAP_INSTRUMENTAL_DISPERSION(obj_wave_lim, obj_sres_lim, $
@@ -978,7 +990,8 @@ PRO MDAP_SPECTRAL_FITTING, $
             if ppxf_only eq 0 then begin
                 weights_gndf[i,*] = weights_gndf_i[0:ntpl-1]
                 chi2_gndf[i] = chi2_gndf_i
-                if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+;               if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+                if analysis_par.reddening_order eq 0 && n_elements(mdegree) ne 0 then begin
                     if mdegree gt 0 then $
                         mult_poly_coeff_gndf[i,*] = mult_poly_coeff_gndf_i
                 endif

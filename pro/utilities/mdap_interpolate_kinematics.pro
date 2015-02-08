@@ -68,7 +68,8 @@ PRO MDAP_INTERPOLATE_KINEMATICS, $
                 stellar=stellar
 
         ; Check that there's something to return!
-        if ~keyword_set(velocity) and ~keyword_set(sigma) then $
+;       if ~keyword_set(velocity) and ~keyword_set(sigma) then $
+        if ~keyword_set(velocity) && ~keyword_set(sigma) then $
             message, 'No property to interplate!'
 
         ; Read the bin positions and the requested kinematics
@@ -153,13 +154,15 @@ PRO MDAP_INTERPOLATE_KINEMATICS, $
         endif
        
         ; Copy them to the returned array
-        if keyword_set(velocity) and ~keyword_set(sigma) then $
+;       if keyword_set(velocity) and ~keyword_set(sigma) then $
+        if keyword_set(velocity) && ~keyword_set(sigma) then $
             interpolated_kin = interpolated_velocity
-        if ~keyword_set(velocity) and keyword_set(sigma) then $
+;       if ~keyword_set(velocity) and keyword_set(sigma) then $
+        if ~keyword_set(velocity) && keyword_set(sigma) then $
             interpolated_kin = interpolated_sigma
-        if keyword_set(velocity) and keyword_set(sigma) then $
+;       if keyword_set(velocity) and keyword_set(sigma) then $
+        if keyword_set(velocity) && keyword_set(sigma) then $
             interpolated_kin = [ [interpolated_velocity], [interpolated_sigma] ]
-
 
 END
 

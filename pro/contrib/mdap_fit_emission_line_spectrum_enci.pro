@@ -206,7 +206,8 @@ endif
 
 
 ;---------------------------------OIII5007----------------------
-if (keyword_set(OIII5007) or keyword_set(OIII4959)) then begin
+;if (keyword_set(OIII5007) or keyword_set(OIII4959)) then begin
+if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
    indx=where(lambda gt 4959-bin and lambda lt 5007+bin and mask lt 0.5)
    if n_elements(indx) gt 5 then begin
    lam1=lambda[indx]
@@ -261,7 +262,8 @@ endif
 endif
 
 ;----------------------------------------------------------Halpha + NII
-if keyword_set(Ha6563) or keyword_set(NII6583) then begin
+;if keyword_set(Ha6563) or keyword_set(NII6583) then begin
+if keyword_set(Ha6563) || keyword_set(NII6583) then begin
    indx=where(lambda gt 6548-bin and lambda lt 6583+bin and mask lt 0.5)
    if n_elements(indx) gt 5 then begin
    lam1=lambda[indx]
@@ -328,7 +330,8 @@ endif
 endif
 
 ;---------------------------------SII_6717+6731----------------------
-if (keyword_set(SII6717) or keyword_set(SII6731)) then begin
+;if (keyword_set(SII6717) or keyword_set(SII6731)) then begin
+if (keyword_set(SII6717) || keyword_set(SII6731)) then begin
    indx=where(lambda gt 6717-bin and lambda lt 6731+bin and mask lt 0.5)
    if n_elements(indx) gt 5 then begin
    lam1=lambda[indx]

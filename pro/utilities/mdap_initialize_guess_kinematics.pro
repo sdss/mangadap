@@ -99,7 +99,8 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
 
         ; Set the guess values for the stellar kinematics
         star_kin_guesses = dblarr(nb, 4)
-        if strlen(analysis_prior) ne 0 and n_elements(star_kin_interp) ne 0 then begin
+;       if strlen(analysis_prior) ne 0 and n_elements(star_kin_interp) ne 0 then begin
+        if strlen(analysis_prior) ne 0 && n_elements(star_kin_interp) ne 0 then begin
 
             for j=0,nb-1 do begin
                 indx = where(bin_indx eq j, count)
@@ -133,7 +134,8 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
         ; Set the guess values for the gas kinematics
         ; TODO: Allow for gas dispersion limits to be different than stellar dispersion limits?
         gas_kin_guesses = dblarr(nb, 2)
-        if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
+;       if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
+        if strlen(analysis_prior) ne 0 && n_elements(gas_kin_interp) ne 0 then begin
 
             for j=0,nb-1 do begin
                 indx = where(bin_indx eq j, count)

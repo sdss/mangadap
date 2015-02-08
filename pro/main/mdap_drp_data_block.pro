@@ -120,8 +120,6 @@ PRO MDAP_DRP_DATA_BLOCK, $
         MDAP_READ_DRP_FITS, datacube_name, header, flux, ivar, mask, wave, sres, skyx, skyy, $
                             type=type, unit=unit
 
-        mask[*,*] = 0.                      ; TODO: Unmask everything for now
-
         ; Get the spaxel size
         MDAP_GET_SPAXEL_SIZE, header, spaxel_dx, spaxel_dy, type=type, unit=unit
 

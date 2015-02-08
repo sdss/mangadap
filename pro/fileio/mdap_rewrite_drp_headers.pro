@@ -41,7 +41,8 @@ PRO MDAP_REWRITE_DRP_HEADERS, $
         endif
 
         gzi = STRPOS(ifile, '.gz')
-        if gzi ge 0 and STRPOS(ofile, '.gz') lt 0 then $
+;       if gzi ge 0 and STRPOS(ofile, '.gz') lt 0 then $
+        if gzi ge 0 && STRPOS(ofile, '.gz') lt 0 then $
             ofile += '.gz'
 
         FILE_COPY, ifile, ofile

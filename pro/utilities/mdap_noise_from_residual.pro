@@ -76,7 +76,8 @@ PRO MDAP_NOISE_FROM_RESIDUAL, $
 
         ; There is only one bin (one calculation of sigma) if ...
         one_bin = n_elements(bin_width) gt 0 ? 0 : 1    ; bin_width is not provided
-        if one_bin eq 0 and bin_width gt ndata then $   ; or it's larger than # of data points
+;       if one_bin eq 0 and bin_width gt ndata then $   ; or it's larger than # of data points
+        if one_bin eq 0 && bin_width gt ndata then $   ; or it's larger than # of data points
             one_bin = 1
 
         if one_bin eq 1 then begin                      ; Only one sigma for all data values

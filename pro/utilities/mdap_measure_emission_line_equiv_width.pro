@@ -96,7 +96,8 @@ PRO MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, $
             MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo, count=count_lo
             MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi, count=count_hi
 ;           if indx_lo[0] eq -1 or indx_hi[0] eq -1 then begin
-            if count_lo eq 0 or count_hi eq 0 then begin
+;           if count_lo eq 0 or count_hi eq 0 then begin
+            if count_lo eq 0 || count_hi eq 0 then begin
                 ; Set dummy values
                 equiv_width[i] = 0.0d
                 equiv_width_err[i] = 99.0d

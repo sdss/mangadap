@@ -94,7 +94,8 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
         common_wave=dblarr(2)           ; Wavelength range common to ALL template spectra
         i = 0
         gtpl = where(tpl_mask[i,*] lt 1, count)
-        while count eq 0 and i lt nt do begin
+;       while count eq 0 and i lt nt do begin
+        while count eq 0 && i lt nt do begin
             i = i+1
             gtpl = where(tpl_mask[i,*] lt 1, count)
         endwhile

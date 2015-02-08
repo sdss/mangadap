@@ -114,13 +114,16 @@ PRO MDAP_READ_INPUT_SETUP, $
         root_name, output_root_dir
 
         ; Check the argument input
-        if n_elements(inptbl) eq 0 and n_elements(par) eq 0 then $
+;       if n_elements(inptbl) eq 0 and n_elements(par) eq 0 then $
+        if n_elements(inptbl) eq 0 && n_elements(par) eq 0 then $
             message, 'Must provide either inptbl or par!'
 
-        if n_elements(inptbl) ne 0 and n_elements(index) eq 0 then $
+;       if n_elements(inptbl) ne 0 and n_elements(index) eq 0 then $
+        if n_elements(inptbl) ne 0 && n_elements(index) eq 0 then $
             message, 'Must provide index of line number to use in '+inptbl+'!'
 
-        if n_elements(inptbl) ne 0 and n_elements(par) ne 0 then $
+;       if n_elements(inptbl) ne 0 and n_elements(par) ne 0 then $
+        if n_elements(inptbl) ne 0 && n_elements(par) ne 0 then $
             message, 'Cannot provide both an input table and a parameter file.  Pick one!'
 
         ; Get the parameter data

@@ -122,7 +122,8 @@ PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
         err=0                                                   ; Initialize error
         n = n_elements(x)                                       ; Number of pixels
         bin_edges = MDAP_BIN_EDGES(x, geometric=geometric)      ; The n+1 edges of the n pixels
-        if xrange[1] lt bin_edges[0] or xrange[0] gt bin_edges[n] then begin    ; No overlap
+;       if xrange[1] lt bin_edges[0] or xrange[0] gt bin_edges[n] then begin    ; No overlap
+        if xrange[1] lt bin_edges[0] || xrange[0] gt bin_edges[n] then begin    ; No overlap
 ;           print, xrange[0], xrange[1], bin_edges[0], bin_edges[n]
             integral = 0.0d
             integral_err = 1.0d
@@ -399,7 +400,8 @@ PRO MDAP_GET_SPECTRAL_INDEX, $
                 index_mag_err, err=err, geometric=geometric
 
         is_bandhead = MDAP_INDEX_IS_BANDHEAD(abs_par)
-        if is_bandhead eq 1 and abs_par.units eq 'mag' then $
+;       if is_bandhead eq 1 and abs_par.units eq 'mag' then $
+        if is_bandhead eq 1 && abs_par.units eq 'mag' then $
             message, 'Unable to use mag units to determine index for '+abs_par.name+'!'
 
         if is_bandhead eq 1 then begin

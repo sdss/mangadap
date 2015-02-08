@@ -129,12 +129,15 @@ PRO MDAP_UPDATE_STARTING_GUESSES, $
         sz=size(input_map)
         if sz[0] ne 2 then $
             message, 'Input value array must have two dimensions!'
-        if sz[2] ne 2 and sz[2] ne 4 then $
+;       if sz[2] ne 2 and sz[2] ne 4 then $
+        if sz[2] ne 2 && sz[2] ne 4 then $
             message, 'Input value array must have 2 or 4 columns!'
-        if keyword_set(h3h4) and sz[2] ne 4 then $
+;       if keyword_set(h3h4) and sz[2] ne 4 then $
+        if keyword_set(h3h4) && sz[2] ne 4 then $
             message, 'Input value array must have 4 columns in order to create h3/h4 guesses.'
 
-        if keyword_set(h3h4) and (n_elements(def_h3) eq 0 or n_elements(def_h4) eq 0) then $
+;       if keyword_set(h3h4) and (n_elements(def_h3) eq 0 or n_elements(def_h4) eq 0) then $
+        if keyword_set(h3h4) && (n_elements(def_h3) eq 0 || n_elements(def_h4) eq 0) then $
             message, 'Must provided default h3 and h4 values if interpolating these properties.'
 
         ns = sz[1]                                      ; Number of spectra

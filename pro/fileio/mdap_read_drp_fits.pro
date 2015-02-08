@@ -136,11 +136,25 @@ PRO MDAP_READ_DRP_FITS,$
         header=''   ; Define header so it will be read from the 'FLUX' extension
         MDAP_READ_FITS_EXTENSION, file, 'FLUX', flux, header=header, /to_double
         MDAP_READ_FITS_EXTENSION, file, 'IVAR', ivar, /to_double
-        MDAP_READ_FITS_EXTENSION, file, 'MASK', mask, /to_double
+        MDAP_READ_FITS_EXTENSION, file, 'MASK', mask                ; Mask has type long
         MDAP_READ_FITS_EXTENSION, file, 'WAVE', wave, /to_double
         MDAP_READ_FITS_EXTENSION, file, 'SPECRES', sres, /to_double
 
         MDAP_DRP_FILETYPE, header, type                 ; Determine/Confirm the file type
+
+;        print, size(mask)
+;        sz = size(mask)
+;        for i=0,sz[1]-1 do begin
+;            print, sdss_flagname('MANGA_DRPPIXFLAG', long(mask[i,0]))
+;            print, long(mask[i,0]), sdss_flagval('MANGA_DRPPIXFLAG', 'LOWCOV')
+;            print, long(mask[i,0]), sdss_flagval('MANGA_DRPPIXFLAG', 'NOCOV')
+;        endfor
+
+;        return
+
+;        mask = mask*0.                      ; TODO: Unmask everything
+
+        MDAP_CONVERT_DRP_MASK, mask
 
         if type eq 'CUBE' then begin
 

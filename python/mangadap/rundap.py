@@ -500,8 +500,8 @@ class rundap:
         """
 
         module = self._mpl_module()
-        file.write('module unload manga\n')
-        file.write('module load {0}\n'.format(module))
+#        file.write('module unload manga\n')
+#        file.write('module load {0}\n'.format(module))
 
         # TODO: Is there a way to have the script catch errors in these
         # module calls (without proceeding to the remaining calls)?
