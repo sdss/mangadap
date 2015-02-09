@@ -74,8 +74,10 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
         gflag=intarr(ns)                                ; Initialize all flags as false (gflag=0)
         for i=0,ns-1 do begin
 
-            ; Which pixels satisfy the criteria listed above
-            indx=where(ivar[i,*] le 0 or finite(ivar[i,*]) eq 0 or finite(flux[i,*]) eq 0, count)
+            ; Select bad pixels according to the criteria listed above
+            
+            indx=where(mask[i,*] gt 0.5 or ivar[i,*] le 0 $
+                       or finite(ivar[i,*]) eq 0 or finite(flux[i,*]) eq 0, count)
 
             ; Spectrum is either made up of 20% or more bad pixels, or it is constant (not real)
 ;           if n_elements(indici) ge 0.2*nc or min(flux[i,*]) eq max(flux[i,*]) then begin
@@ -87,6 +89,7 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
         endfor
 
         gindx=where(gflag eq 1, count)                  ; List the indices of good spectra
+        print, 'Number of good DRP spectra: '+MDAP_STC(count, /integer)+'/'+MDAP_STC(ns, /integer)
 END
                 
 
