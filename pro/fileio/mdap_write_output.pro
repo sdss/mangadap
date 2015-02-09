@@ -70,8 +70,11 @@
 ;
 ;           Binary tables:
 ;               - For each DRP spectrum: DRPS
-;                 7 columns, ndrp rows
-;                   - Fiducial X, Y, signal and noise
+;                 9 columns, ndrp rows
+;                   - Fiducial X, Y
+;                   - Fraction of good pixels in the spectrum
+;                   - min(flux) == max(flux) flag
+;                   - signal and noise
 ;                   - Registered velocity (taken out)
 ;                   - Index of bin to which DRP spectrum is assigned
 ;                   - Weight in binned spectrum
@@ -176,7 +179,8 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_WRITE_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
-;                          ypos=ypos, signal=signal, noise=noise, bin_par=bin_par, $
+;                          ypos=ypos, fraction_good=fraction_good, min_eq_max=min_eq_max, $
+;                          signal=signal, noise=noise, bin_par=bin_par, $
 ;                          threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
 ;                          bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
 ;                          bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
@@ -262,6 +266,15 @@
 ;       ypos dblarr[ndrp]
 ;               Fiducial Y position of every DRP spectrum.  Written to 'DRPS'
 ;               extension.
+;
+;       fraction_good dblarr[ndrp]
+;               Fraction of good pixels in each of the DRP spectra.
+;               Written to 'DRPS' extension.
+;
+;       min_eq_max intarr[ndrp]
+;               Flag (0-false; 1-true) that the minimum and maximum flux
+;               values are the same, presumably meaning that the
+;               spectrum has no data.  Written to 'DRPS' extension.
 ;
 ;       signal dblarr[ndrp]
 ;               Mean signal per pixel in every DRP spectrum.  Written to 'DRPS'
@@ -657,12 +670,14 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       15 Oct 2014: (KBW) Original Implementation
+;       15 Oct 2014: Original Implementation K. Westfall (KBW)
 ;       08 Dec 2014: (KBW) Write data associated with the radial binning
 ;                          and velocity registration.
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
+;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
+;                          == max(flux) flag in DRPS extension.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -673,17 +688,20 @@
 ; Determine the number of rows needed for the DRPS extention by getting the
 ; maximum length of the input vectors
 FUNCTION MDAP_WRITE_OUTPUT_NUMBER_OF_DRPS, $
-                xpos=xpos, ypos=ypos, signal=signal, noise=noise, bin_vreg=bin_vreg, $
-                bin_indx=bin_indx, bin_weights=bin_weights
+                xpos=xpos, ypos=ypos, fraction_good=fraction_good, min_eq_max=min_eq_max, $
+                signal=signal, noise=noise, bin_vreg=bin_vreg, bin_indx=bin_indx, $
+                bin_weights=bin_weights
 
-        length = intarr(7)
-        if n_elements(xpos) ne 0 then        length[0] = n_elements(xpos)
-        if n_elements(ypos) ne 0 then        length[1] = n_elements(ypos)
-        if n_elements(signal) ne 0 then      length[2] = n_elements(signal)
-        if n_elements(noise) ne 0 then       length[3] = n_elements(noise)
-        if n_elements(bin_vreg) ne 0 then    length[4] = n_elements(bin_vreg)
-        if n_elements(bin_indx) ne 0 then    length[5] = n_elements(bin_indx)
-        if n_elements(bin_weights) ne 0 then length[6] = n_elements(bin_weights)
+        length = intarr(9)
+        if n_elements(xpos) ne 0 then           length[0] = n_elements(xpos)
+        if n_elements(ypos) ne 0 then           length[1] = n_elements(ypos)
+        if n_elements(fraction_good) ne 0 then  length[2] = n_elements(fraction_good)
+        if n_elements(min_eq_max) ne 0 then     length[3] = n_elements(min_eq_max)
+        if n_elements(signal) ne 0 then         length[4] = n_elements(signal)
+        if n_elements(noise) ne 0 then          length[5] = n_elements(noise)
+        if n_elements(bin_vreg) ne 0 then       length[6] = n_elements(bin_vreg)
+        if n_elements(bin_indx) ne 0 then       length[7] = n_elements(bin_indx)
+        if n_elements(bin_weights) ne 0 then    length[8] = n_elements(bin_weights)
         return, max(length)
 END
         
@@ -978,11 +996,13 @@ PRO MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, $
             ; Create the table columns using placeholders to define the column data type
             MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Fiducial X position of spaxel (arcsec)', /dbl
             MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], ' Fiducial Y position of spaxel (arcsec)', /dbl
-            MDAP_FXBADDCOL_VALUE, 3, bth, cols[2], ' Mean flux/pixel from SNWAVE1->SNWAVE2', /dbl
-            MDAP_FXBADDCOL_VALUE, 4, bth, cols[3], ' Mean noise/pixel from SNWAVE1->SNWAVE2', /dbl
-            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Velocity used for deredshifting', /dbl
-            MDAP_FXBADDCOL_VALUE, 6, bth, cols[5], ' Index of bin for spectrum (-1 for no bin)',/int
-            MDAP_FXBADDCOL_VALUE, 7, bth, cols[6], ' Weight of spectrum in bin', /dbl
+            MDAP_FXBADDCOL_VALUE, 3, bth, cols[2], ' Fraction of good pixels in spectrum', /dbl
+            MDAP_FXBADDCOL_VALUE, 4, bth, cols[3], ' min(flux)=max(flux) in spectrum', /int
+            MDAP_FXBADDCOL_VALUE, 5, bth, cols[4], ' Mean flux/pixel from SNWAVE1->SNWAVE2', /dbl
+            MDAP_FXBADDCOL_VALUE, 6, bth, cols[5], ' Mean noise/pixel from SNWAVE1->SNWAVE2', /dbl
+            MDAP_FXBADDCOL_VALUE, 7, bth, cols[6], ' Velocity used for deredshifting', /dbl
+            MDAP_FXBADDCOL_VALUE, 8, bth, cols[7], ' Index of bin for spectrum (-1 for no bin)',/int
+            MDAP_FXBADDCOL_VALUE, 9, bth, cols[8], ' Weight of spectrum in bin', /dbl
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
@@ -1824,22 +1844,25 @@ END
 ; there is something to write, and the size of the vectors to write.  Will throw
 ; an error if the input vectors are not the same size
 PRO MDAP_WRITE_OUTPUT_DRPS_CHECK_INPUTS, $
-                something_to_write, ninp, xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
-                bin_vreg=bin_vreg, bin_indx=bin_indx, bin_weights=bin_weights
+                something_to_write, ninp, xpos=xpos, ypos=ypos, fraction_good=fraction_good, $
+                min_eq_max=min_eq_max, signal=signal, noise=noise, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(7)
+        nel = intarr(9)
         nel[0] = n_elements(xpos)
         nel[1] = n_elements(ypos)
-        nel[2] = n_elements(signal)
-        nel[3] = n_elements(noise)
-        nel[4] = n_elements(bin_vreg)
-        nel[5] = n_elements(bin_indx)
-        nel[6] = n_elements(bin_weights)
+        nel[2] = n_elements(fraction_good)
+        nel[3] = n_elements(min_eq_max)
+        nel[4] = n_elements(signal)
+        nel[5] = n_elements(noise)
+        nel[6] = n_elements(bin_vreg)
+        nel[7] = n_elements(bin_indx)
+        nel[8] = n_elements(bin_weights)
         ninp = max(nel)
 
-        for i=0,6 do begin
+        for i=0,8 do begin
 ;           if nel[i] gt 0 and nel[i] ne ninp then $
             if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for DRPS have different lengths!'
@@ -2059,13 +2082,15 @@ END
 ;       - Resize (number of rows) the extension, if necessary
 ;       - Write/update the data
 PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
-                file, ndrp=ndrp, xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
-                bin_vreg=bin_vreg, bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
+                file, ndrp=ndrp, xpos=xpos, ypos=ypos, fraction_good=fraction_good, $
+                min_eq_max=min_eq_max, signal=signal, noise=noise, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
 
         MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, file         ; Initialize the extension
 
         ; Check that one of the vectors are input
         MDAP_WRITE_OUTPUT_DRPS_CHECK_INPUTS, something_to_write, ninp, xpos=xpos, ypos=ypos, $
+                                             fraction_good=fraction_good, min_eq_max=min_eq_max, $
                                              signal=signal, noise=noise, bin_vreg=bin_vreg, $
                                              bin_indx=bin_indx, bin_weights=bin_weights
 
@@ -2096,13 +2121,15 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
 
         ; Write columns if they were provided
         ; TODO: Is this too inefficient?
-        if n_elements(xpos) ne 0 then        FXBWRITM, tbl, [cols[0]], xpos
-        if n_elements(ypos) ne 0 then        FXBWRITM, tbl, [cols[1]], ypos
-        if n_elements(signal) ne 0 then      FXBWRITM, tbl, [cols[2]], signal
-        if n_elements(noise) ne 0 then       FXBWRITM, tbl, [cols[3]], noise
-        if n_elements(bin_vreg) ne 0 then    FXBWRITM, tbl, [cols[4]], bin_vreg
-        if n_elements(bin_indx) ne 0 then    FXBWRITM, tbl, [cols[5]], bin_indx
-        if n_elements(bin_weights) ne 0 then FXBWRITM, tbl, [cols[6]], bin_weights
+        if n_elements(xpos) ne 0 then           FXBWRITM, tbl, [cols[0]], xpos
+        if n_elements(ypos) ne 0 then           FXBWRITM, tbl, [cols[1]], ypos
+        if n_elements(fraction_good) ne 0 then  FXBWRITM, tbl, [cols[2]], fraction_good
+        if n_elements(min_eq_max) ne 0 then     FXBWRITM, tbl, [cols[3]], min_eq_max
+        if n_elements(signal) ne 0 then         FXBWRITM, tbl, [cols[4]], signal
+        if n_elements(noise) ne 0 then          FXBWRITM, tbl, [cols[5]], noise
+        if n_elements(bin_vreg) ne 0 then       FXBWRITM, tbl, [cols[6]], bin_vreg
+        if n_elements(bin_indx) ne 0 then       FXBWRITM, tbl, [cols[7]], bin_indx
+        if n_elements(bin_weights) ne 0 then    FXBWRITM, tbl, [cols[8]], bin_weights
 
         FXBFINISH, tbl                                  ; Close the file
         free_lun, tbl
@@ -2790,12 +2817,12 @@ END
 ; ORDER OF THE OPERATIONS IS IMPORTANT
 PRO MDAP_WRITE_OUTPUT, $
                 file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
-                signal=signal, noise=noise, bin_par=bin_par, $
-                threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, bin_indx=bin_indx, $
-                bin_weights=bin_weights, wave=wave, sres=sres, bin_flux=bin_flux, $
-                bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
-                rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
-                w_range_analysis=w_range_analysis, $
+                fraction_good=fraction_good, min_eq_max=min_eq_max, signal=signal, noise=noise, $
+                bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
+                bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, $
+                ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
+                bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
                 ems_line_key=ems_line_key, eml_par=eml_par, analysis_par=analysis_par, $
                 weights_ppxf=weights_ppxf, add_poly_coeff_ppxf=add_poly_coeff_ppxf, $
@@ -2847,7 +2874,8 @@ PRO MDAP_WRITE_OUTPUT, $
 ;           fits_info, file
 
         ; Check the number of DRP spectra
-        ndrp = MDAP_WRITE_OUTPUT_NUMBER_OF_DRPS(xpos=xpos, ypos=ypos, signal=signal, noise=noise, $
+        ndrp = MDAP_WRITE_OUTPUT_NUMBER_OF_DRPS(xpos=xpos, ypos=ypos, fraction_good=fraction_good, $
+                                                min_eq_max=min_eq_max, signal=signal, noise=noise, $
                                                 bin_vreg=bin_vreg, bin_indx=bin_indx, $
                                                 bin_weights=bin_weights)
         if ndrp eq 0 then begin
@@ -2892,9 +2920,10 @@ PRO MDAP_WRITE_OUTPUT, $
         endif
 
         ; Update properties of DRP spectra
-        MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, signal=signal, $
-                                             noise=noise, bin_vreg=bin_vreg, bin_indx=bin_indx, $
-                                             bin_weights=bin_weights, quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, $
+                                       fraction_good=fraction_good, min_eq_max=min_eq_max, $
+                                       signal=signal, noise=noise, bin_vreg=bin_vreg, $
+                                       bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
 
         ; Update properties of binned spectra
         MDAP_WRITE_OUTPUT_UPDATE_BINS, file, nbin=nbin, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $

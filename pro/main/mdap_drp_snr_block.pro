@@ -87,7 +87,12 @@
 ;       MDAP_READ_OUTPUT
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015 (KBW): Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
+;                          == max(flux) from MDAP_SELECT_GOOD_SPECTRA in
+;                          output file.  Not returned to main.  Theshold
+;                          fraction of good pixels required for a "good"
+;                          spectrum !! HARD-WIRED !! to 0.8.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -104,7 +109,9 @@ PRO MDAP_DRP_SNR_BLOCK, $
             ; defined by this procedure; gflag is returned for later use
             ; (in MDAP_CALCULATE_SN, MDAP_VELOCITY_REGISTER, and
             ; MDAP_SPATIAL_BINNING)
-            MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx ;, count=gcount
+            MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, good_fraction_threshold=0.8, $
+                                      fraction_good=fraction_good, min_eq_max=min_eq_max, $
+                                      quiet=quiet
 
             ; Select the pixels to use in the S/N calculation
             MDAP_SELECT_WAVE, wave, execution_plan.wave_range_sn, lam_sn
@@ -127,7 +134,8 @@ PRO MDAP_DRP_SNR_BLOCK, $
             ; Add the signal and noise to the DRPS extension
             MDAP_WRITE_OUTPUT, execution_plan.ofile, header=header, $
                                w_range_sn=execution_plan.wave_range_sn, signal=signal, $
-                               noise=noise, quiet=quiet
+                               noise=noise, fraction_good=fraction_good, min_eq_max=min_eq_max, $
+                               quiet=quiet
 
         endif else begin                    ; Otherwise read the data from the existing DRP file
 
@@ -138,6 +146,7 @@ PRO MDAP_DRP_SNR_BLOCK, $
             MDAP_READ_OUTPUT, execution_plan.ofile, header=header, signal=signal, noise=noise
 
             ; Set gflag based on the values of the signal
+            ; TODO: Could now set this using fraction_good and min_eq_max flag instead
             ndrp = n_elements(signal)
             gflag = intarr(ndrp)
             indx = where(signal gt 0, count)

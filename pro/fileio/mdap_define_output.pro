@@ -10,7 +10,8 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_DEFINE_OUTPUT, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
-;                           ypos=ypos, signal=signal, noise=noise, bin_par=bin_par, $
+;                           ypos=ypos, fraction_good=fraction_good, min_eq_max=min_eq_max, $
+;                           signal=signal, noise=noise, bin_par=bin_par, $
 ;                           threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
 ;                           bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
 ;                           bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
@@ -93,6 +94,15 @@
 ;       ypos dblarr[ndrp]
 ;               Fiducial Y position of every DRP spectrum.  Written to 'DRPS'
 ;               extension.
+;
+;       fraction_good dblarr[ndrp]
+;               Fraction of good pixels in each of the DRP spectra.
+;               Written to 'DRPS' extension.
+;
+;       min_eq_max intarr[ndrp]
+;               Flag (0-false; 1-true) that the minimum and maximum flux
+;               values are the same, presumably meaning that the
+;               spectrum has no data.  Written to 'DRPS' extension.
 ;
 ;       signal dblarr[ndrp]
 ;               Mean signal per pixel in every DRP spectrum.  Written to 'DRPS'
@@ -455,12 +465,14 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       28 Oct 2014: (KBW) Original Implementation
+;       28 Oct 2014: Original implementation by K. Westfall (KBW)
 ;       08 Dec 2014: (KBW) Accommodate radial binning and velocity
 ;                          registration
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
+;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
+;                          == max(flux) flag in DRPS extension.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -469,12 +481,12 @@
 ; Define all the supplied variables
 PRO MDAP_DEFINE_OUTPUT, $
                 header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
-                signal=signal, noise=noise, bin_par=bin_par, $
-                threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, bin_indx=bin_indx, $
-                bin_weights=bin_weights, wave=wave, sres=sres, bin_flux=bin_flux, $
-                bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
-                rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
-                w_range_analysis=w_range_analysis, $
+                fraction_good=fraction_good, min_eq_max=min_eq_max, signal=signal, noise=noise, $
+                bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
+                bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, $
+                ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
+                bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
                 ems_line_key=ems_line_key, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
                 add_poly_coeff_ppxf=add_pol_coeff_ppxf, mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
@@ -525,6 +537,8 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(w_range_sn) eq 0 then w_range_sn = '0'
         if n_elements(xpos) eq 0 then xpos = '0'
         if n_elements(ypos) eq 0 then ypos = '0'
+        if n_elements(fraction_good) eq 0 then fraction_good = '0'
+        if n_elements(min_eq_max) eq 0 then min_eq_max = '0'
         if n_elements(signal) eq 0 then signal = '0'
         if n_elements(noise) eq 0 then noise = '0'
         if n_elements(bin_par) eq 0 then bin_par = '0'

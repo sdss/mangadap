@@ -8,7 +8,8 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_READ_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
-;                         ypos=ypos, signal=signal, noise=noise, bin_par=bin_par, $
+;                         ypos=ypos, fraction_good=fraction_good, min_eq_max=min_eq_max, $
+;                         signal=signal, noise=noise, bin_par=bin_par, $
 ;                         threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
 ;                         bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
 ;                         bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, $
@@ -95,6 +96,15 @@
 ;       ypos dblarr[ndrp]
 ;               Fiducial Y position of every DRP spectrum.  Written to 'DRPS'
 ;               extension.
+;
+;       fraction_good dblarr[ndrp]
+;               Fraction of good pixels in each of the DRP spectra.
+;               Written to 'DRPS' extension.
+;
+;       min_eq_max intarr[ndrp]
+;               Flag (0-false; 1-true) that the minimum and maximum flux
+;               values are the same, presumably meaning that the
+;               spectrum has no data.  Written to 'DRPS' extension.
 ;
 ;       signal dblarr[ndrp]
 ;               Mean signal per pixel in every DRP spectrum.  Written to 'DRPS'
@@ -491,12 +501,14 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       28 Oct 2014: (KBW) Original Implementation
+;       28 Oct 2014: Original Implementation by K. Westfall (KBW)
 ;       06 Dec 2014: (KBW) Accommodate changes for radial binning and
 ;                          velocity registration
 ;       12 Dec 2014: (KBW) New format incorporating emission-line only
 ;                          results
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
+;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
+;                          == max(flux) flag in DRPS extension.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -581,15 +593,18 @@ END
 ;-------------------------------------------------------------------------------
 ; Check if data from the DRPS extension is desired
 FUNCTION MDAP_READ_WANT_DRPS, $
-                xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
+                xpos, ypos, fraction_good, min_eq_max, signal, noise, bin_vreg, bin_indx, $
+                bin_weights
 
-        if n_elements(xpos)        ne 0 then return, 1
-        if n_elements(ypos)        ne 0 then return, 1
-        if n_elements(signal)      ne 0 then return, 1
-        if n_elements(noise)       ne 0 then return, 1
-        if n_elements(bin_vreg)    ne 0 then return, 1
-        if n_elements(bin_indx)    ne 0 then return, 1
-        if n_elements(bin_weights) ne 0 then return, 1
+        if n_elements(xpos) ne 0 then           return, 1
+        if n_elements(ypos) ne 0 then           return, 1
+        if n_elements(fraction_good)ne 0 then   return, 1
+        if n_elements(min_eq_max) ne 0 then     return, 1
+        if n_elements(signal) ne 0 then         return, 1
+        if n_elements(noise) ne 0 then          return, 1
+        if n_elements(bin_vreg) ne 0 then       return, 1
+        if n_elements(bin_indx) ne 0 then       return, 1
+        if n_elements(bin_weights) ne 0 then    return, 1
 
         return, 0
 END
@@ -597,12 +612,15 @@ END
 ; Read the full DRPS binary table (more efficient than reading one column at a
 ; time?)
 PRO MDAP_READ_DRPS, $
-                file, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
+                file, xpos, ypos, fraction_good, min_eq_max, signal, noise, bin_vreg, bin_indx, $
+                bin_weights
 
         cols = MDAP_SET_DRPS_COLS()
 
+        ; !! ORDER IS IMPORTANT !!
         fxbopen, unit, file, 'DRPS'
-        fxbreadm, unit, cols, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
+        fxbreadm, unit, cols, xpos, ypos, fraction_good, min_eq_max, signal, noise, bin_vreg, $
+                  bin_indx, bin_weights
         fxbclose, unit
         free_lun, unit
 END
@@ -982,12 +1000,12 @@ END
 ; TODO: Add information such that eml_par can be read?
 PRO MDAP_READ_OUTPUT, $
                 file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, ypos=ypos, $
-                signal=signal, noise=noise, bin_par=bin_par, $
-                threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, bin_indx=bin_indx, $
-                bin_weights=bin_weights, wave=wave, sres=sres, bin_flux=bin_flux, $
-                bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
-                rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, bin_flag=bin_flag, $
-                w_range_analysis=w_range_analysis, $
+                fraction_good=fraction_good, min_eq_max=min_eq_max, signal=signal, noise=noise, $
+                bin_par=bin_par, threshold_ston_bin=threshold_ston_bin, bin_vreg=bin_vreg, $
+                bin_indx=bin_indx, bin_weights=bin_weights, wave=wave, sres=sres, $
+                bin_flux=bin_flux, bin_ivar=bin_ivar, bin_mask=bin_mask, xbin_rlow=xbin_rlow, $
+                ybin_rupp=ybin_rupp, rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, bin_n=bin_n, $
+                bin_flag=bin_flag, w_range_analysis=w_range_analysis, $
                 threshold_ston_analysis=threshold_ston_analysis, tpl_library_key=tpl_library_key, $
                 ems_line_key=ems_line_key, analysis_par=analysis_par, weights_ppxf=weights_ppxf, $
                 add_poly_coeff_ppxf=add_pol_coeff_ppxf, mult_poly_coeff_ppxf=mult_pol_coeff_ppxf, $
@@ -1052,8 +1070,11 @@ PRO MDAP_READ_OUTPUT, $
         endif
 
         ; Read the DRPS extension if any of its vectors are requested
-        if MDAP_READ_WANT_DRPS(xpos,ypos,signal,noise,bin_vreg,bin_indx,bin_weights) eq 1 then $
-            MDAP_READ_DRPS, file, xpos, ypos, signal, noise, bin_vreg, bin_indx, bin_weights
+        if MDAP_READ_WANT_DRPS(xpos, ypos, fraction_good, min_eq_max, signal, noise, bin_vreg, $
+                               bin_indx, bin_weights) eq 1 then begin
+            MDAP_READ_DRPS, file, xpos, ypos, fraction_good, min_eq_max, signal, noise, bin_vreg, $
+                            bin_indx, bin_weights
+        endif
 
         ; Read the BINS extension if any of its vectors are requested
         if MDAP_READ_WANT_BINS(xbin_rlow, ybin_rupp, rbin, bin_area, bin_ston, bin_n, $

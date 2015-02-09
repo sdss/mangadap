@@ -17,17 +17,20 @@
 ;       @mdap_set_output_file_cols
 ;
 ; REVISION HISTORY:
-;       07 Nov 2014: (KBW) Original implementation
+;       07 Nov 2014: Original implementation by K. Westfall (KBW)
 ;       06 Dec 2014: (KBW) Changes to DRPS (includes BINVR)
 ;       12 Dec 2014: (KBW) Add columns for ELOPAR and ELOFIT tables
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
+;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
+;                          == max(flux) flag in DRPS extension.
 ;-
 ;------------------------------------------------------------------------------
 
 ;-------------------------------------------------------------------------------
 ; Functions that declare the name of the column names of the binary tables
 FUNCTION MDAP_SET_DRPS_COLS
-        return, [ 'XPOS', 'YPOS', 'SIGNAL', 'NOISE', 'BINVR', 'BINID', 'BINW' ]
+        return, [ 'XPOS', 'YPOS', 'FGOODPIX', 'MINEQMAX', 'SIGNAL', 'NOISE', 'BINVR', 'BINID', $
+                  'BINW' ]
 END
 FUNCTION MDAP_SET_BINS_COLS
         return, [ 'BINXRL', 'BINYRU', 'BINR', 'BINA', 'BINSN', 'NBIN', 'BINF' ]
