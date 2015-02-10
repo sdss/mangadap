@@ -182,7 +182,16 @@
 ;       MDAP_PRINT_EXECUTION_PLAN
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       10 Feb 2015: (KBW) Moved definition of template libraries,
+;                          emission-line parameter files, and
+;                          spectral-index parameter files to their own
+;                          procedures, allowing for global effective
+;                          edits.  MDAP_EXECUTION_SETUP should now
+;                          return KEYWORDS for the selected files, NOT
+;                          INDICES.  The MDAP_SELECTED_KEYWORD_INDEX
+;                          function then converts those keywords into
+;                          the appropriate index.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -197,12 +206,20 @@ PRO MDAP_INITIALIZATION_BLOCK, $
         log_file_unit=log_file_unit, quiet=quiet
 
         ;-----------------------------------------------------------------------
+        ; Define the available template library and parameter files
+        MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, tpl_library_keys, template_libraries, $
+                                                  tpl_vacuum_wave, dapsrc=dapsrc
+        MDAP_DEFINE_AVAILABLE_EMISSION_LINE_PARAMETERS, ems_line_keys, emission_line_parameters, $
+                                                        ems_vacuum_wave, dapsrc=dapsrc
+        MDAP_DEFINE_AVAILABLE_SPECTRAL_INDEX_PARAMETERS, abs_line_keys, $
+                                                         absorption_line_parameters, $
+                                                         abs_vacuum_wave, dapsrc=dapsrc
+
+        ;-----------------------------------------------------------------------
         ; Execute the script the sets the user-level execution parameters
-        ; total_filelist, output_root_dir, 
-        MDAP_EXECUTION_SETUP, tpl_library_keys, template_libraries, tpl_vacuum_wave, $
-                              ems_line_keys, emission_line_parameters, ems_vacuum_wave, $
-                              abs_line_keys, absorption_line_parameters, abs_vacuum_wave, $
-                              signifier, bin_par, w_range_sn, threshold_ston_bin, $
+        ; tpl_lib_analysis, ems_par_analysis, and abs_par_analysis are
+        ; string-based keywords that select the libraries above.
+        MDAP_EXECUTION_SETUP, signifier, bin_par, w_range_sn, threshold_ston_bin, $
                               w_range_analysis, threshold_ston_analysis, analysis, $
                               tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
                               analysis_par, analysis_prior, overwrite_flag, dapsrc=dapsrc, $
@@ -222,6 +239,14 @@ PRO MDAP_INITIALIZATION_BLOCK, $
                 tempvar = size(temporary(bvls_shared_lib))
             endif
         endif
+
+        ;-----------------------------------------------------------------------
+        ; These calls use a function that converts the selected keywords
+        ; to the index in the available list; the input keywords are
+        ; overwritten!
+        tpl_lib_analysis = MDAP_SELECTED_KEYWORD_INDEX(tpl_library_keys, tpl_lib_analysis)
+        ems_par_analysis = MDAP_SELECTED_KEYWORD_INDEX(ems_line_keys, ems_par_analysis)
+        abs_par_analysis = MDAP_SELECTED_KEYWORD_INDEX(abs_line_keys, abs_par_analysis)
 
         ;-----------------------------------------------------------------------
         ; Read the input parameters
@@ -263,11 +288,12 @@ PRO MDAP_INITIALIZATION_BLOCK, $
         ;-----------------------------------------------------------------------
         ; TODO: Same as ntpl_libraries, neml_files, and nabs_files in mdap_execution_setup
 
-        ; Check data read from user-level MDAP_EXECUTION_SETUP procedure
-        n_tpl_lib = n_elements(template_libraries)      ; Number of template libraries to use
-        n_ems_par = n_elements(emission_line_parameters); Number of emission line parameter files
-        n_abs_par = n_elements(absorption_line_parameters);Number of absorption line parameter files
+        ; Check data read from the library and parameter file definitions
+        n_tpl_lib = n_elements(template_libraries)          ; Number of template libraries
+        n_ems_par = n_elements(emission_line_parameters)    ; Number of emission-line files
+        n_abs_par = n_elements(absorption_line_parameters)  ; Number of spectral-index files
 
+        ; Need /search tag, because 'template_libraries' are search based strings
         success = MDAP_CHECK_FILE_EXISTS(template_libraries, /search)   ; Aborts if fails
         if success ne 0 then $
             message, 'Template libraries not correctly defined.'

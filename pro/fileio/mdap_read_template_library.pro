@@ -64,10 +64,11 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       17 Sep 2014: (KBW) Original implementation
+;       17 Sep 2014: Original implementation by K. Westfall (KBW)
 ;       10 Oct 2014: (KBW) Changed keyword from 'MARCS' TO 'M11-MARCS'
 ;       27 Jan 2015: (KBW) Changed STELIB resolution to match Maraston &
 ;                          Strombach (2011) Table 1
+;       10 Feb 2015: (KBW) Added M11-MILES, MILES, and STELIB
 ;-
 ;------------------------------------------------------------------------------
 
@@ -128,12 +129,29 @@ END
 FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
                 library_key
         if library_key eq 'M11-MARCS' then begin
+            ; TODO: This is the resolution in the header of the files,
+            ; is it right?
             return, 2.73
         endif else if library_key eq 'M11-STELIB' then begin
+            ; Changed 27 Jan 2015 to match Maraston & Strombach (2011)
+            ; Table 1
             return, 3.40
-;           return, 3.10        ; Changed 27 Jan 2015 to match Maraston & Strombach (2011) Table 1
+;           return, 3.10
         endif else if library_key eq 'M11-ELODIE' then begin
+            ; Resolution taken from Maraston & Strombach (2011, MNRAS,
+            ; 418, 2785)
             return, 0.55
+        endif else if library_key eq 'M11-MILES' then begin
+            ; TODO: Should this be the same as MILES?
+            return, 2.54
+        endif else if library_key eq 'MILES' then begin
+            ; Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+            return, 2.50
+        endif else if library_key eq 'STELIB' then begin
+            ; Only given as approximate in Le Borgne et al. (2003, A&A,
+            ; 402, 433); assume value from Maraston & Strombach (2011,
+            ; MNRAS, 418, 2785)
+            return, 3.40
         endif else begin
             message, 'Unknown library keyword!'
         endelse
