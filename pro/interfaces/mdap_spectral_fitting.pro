@@ -685,7 +685,7 @@ PRO MDAP_SPECTRAL_FITTING, $
         c=299792.458d                                   ; Speed of light in km/s
         maxvel = 400.                                   ; Maximum expected motions (km/s)
         z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c  ; Minimum redshift
-        z_max = (min(star_kin_starting_guesses[*,0])+maxvel)/c  ; Maximum redshift
+        z_max = (max(star_kin_starting_guesses[*,0])+maxvel)/c  ; Maximum redshift
 
         ; 2. If the number of template pixels is not >= number of fitted galaxy pixels,
         ;    further limit the blue and red edges of the galaxy spectra

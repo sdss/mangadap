@@ -1795,6 +1795,7 @@ pro/utilities/mdap_instrumental_dispersion.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_interpolate_kinematics.pro -text
 pro/utilities/mdap_lines_for_mean_gas_kinematics.pro -text
+pro/utilities/mdap_log_wavelength_scale.pro -text
 pro/utilities/mdap_match_spectral_resolution.pro -text
 pro/utilities/mdap_mean_gas_kinematics.pro -text
 pro/utilities/mdap_measure_emission_line_equiv_width.pro -text

@@ -71,7 +71,7 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       17 Sep 2014: (KBW) Original implementation
+;       17 Sep 2014: Original implementation by K. Westfall (KBW)
 ;       18 Sep 2014: (KBW) Input velocity scale instead of object wavelength
 ;                          vector
 ;       22 Sep 2014: (KBW) Include the inverse variances
@@ -80,41 +80,48 @@
 ;       13 Oct 2014: (KBW) Reform the tpl_sres vector to a single vector
 ;                          applicable to all template spectra
 ;       05 Jan 2015: (KBW) Allow for some templates to be fully masked
+;       10 Feb 2015: (KBW) Fixed bug when resampled templates were
+;                          longer than originals.  Done by using the
+;                          velscale and MDAP_LOG_WAVELENGTH_SCALE() to
+;                          get the number of pixels needed to cover the
+;                          provided range.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_RESAMPLE_TEMPLATES, $
-                tpl_flux, tpl_ivar, tpl_mask, tpl_wave, tpl_sres, velScale, reform_sres=reform_sres
+                tpl_flux, tpl_ivar, tpl_mask, tpl_wave, tpl_sres, velScale, log10=log10, $
+                reform_sres=reform_sres
 
         sz=size(tpl_flux)
         nt = sz[1]                      ; Number of template spectra
 
-        ns = 0                          ; New maximum size of template spectra
+        dlogl = MDAP_LOG_WAVELENGTH_SCALE(velScale, log10=log10)
 
         common_wave=dblarr(2)           ; Wavelength range common to ALL template spectra
+
+        ; Find the first spectrum that is not fully masked
         i = 0
         gtpl = where(tpl_mask[i,*] lt 1, count)
-;       while count eq 0 and i lt nt do begin
         while count eq 0 && i lt nt do begin
             i = i+1
             gtpl = where(tpl_mask[i,*] lt 1, count)
         endwhile
 
+        ; Could not find one!
         if count eq 0 then $
             message, 'ALL templates fully masked!'
 
+        ; Initialize the common wavelength range to the limits of the
+        ; good pixels from the first good template spectrum.
         common_wave[0] = min(tpl_wave[i,gtpl])
         common_wave[1] = max(tpl_wave[i,gtpl])
 
+        ; Determine the wavelength range common to ALL templates
         lamRange=dblarr(nt,2)           ; Wavelength range of each template spectrum
         for i=0,nt-1 do begin
             gtpl = where(tpl_mask[i,*] lt 1, ng)
             if ng eq 0 then $
                 continue
-;           ng = n_elements(gtpl)       ; Number of unmasked pixels
-            if ns lt ng then $          ; If larger than current maximum, save it
-                ns = ng
-
             minw = min(tpl_wave[i,gtpl])
             maxw = max(tpl_wave[i,gtpl])
 
@@ -130,6 +137,11 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 ;       print, lamRange
 ;       print, common_wave
 
+        ; Roughly the number of pixels required to cover this spectral range logarithmically
+        if keyword_set(log10) then begin
+            ns = ceil((alog10(maxw)-alog10(minw))/dlogl)
+        endif else $
+            ns = ceil((alog(maxw)-alog(minw))/dlogl)
         print, 'Estimate ns: ', ns
 
         tpl_flux_ = tpl_flux            ; Save original spectra, masks, and wavelengths
@@ -171,6 +183,8 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 ;           print, ng
 
             ng=n_elements(tpl_rebin)                    ; Number of rebinned pixels
+            if ng gt ns then $
+                message, 'tpl_flux not big enough'
             print, 'Rebinned length: ', ng
             tpl_flux[i,0:ng-1] = tpl_rebin[0:ng-1]              ; Save the spectrum
             tpl_ivar[i,0:ng-1] = 1.0/tpl_ivr_rebin[0:ng-1]      ; Save the variances
