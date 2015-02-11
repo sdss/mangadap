@@ -62,7 +62,7 @@ FUNCTION MDAP_SELECTED_KEYWORD_INDEX, $
 
             ; If the keyword is not set (has no length) just use the
             ; default index (0)
-            if strlen(selected_key) eq 0 then $
+            if strlen(selected_key[i]) eq 0 then $
                 continue
 
             ; Try to find the key 
