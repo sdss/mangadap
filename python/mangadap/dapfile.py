@@ -11,9 +11,8 @@ from os import environ
 from astropy.io import fits
 import time
 import numpy
-from drpfile import arginp_to_list
 
-from exception_util import print_frame
+from mangadap.util.exception_tools import print_frame
 
 __author__ = 'Kyle Westfall'
 

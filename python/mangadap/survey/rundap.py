@@ -14,10 +14,15 @@ import numpy
 
 from os import environ, makedirs
 from argparse import ArgumentParser
-from drpcomplete import drpcomplete
-from drpfile import drpfile, arginp_to_list
 
-from exception_util import print_frame
+# DAP imports
+from mangadap.drpcomplete import drpcomplete
+from mangadap.drpfile import drpfile
+from mangadap.util.exception_tools import print_frame
+from mangadap.util.parser import arginp_to_list
+from mangadap.mangampl import mangampl
+from mangadap.survey import util
+
 
 __author__ = 'Kyle Westfall'
 
@@ -144,8 +149,10 @@ class rundap:
         # Determine current versions
 #       self.idlutilsver = self.product_version(simple=True, product='idlutils')
 #       self.drpver = self.product_version(simple=True, product='mangadrp')
-        self.dapver = self.product_version(simple=True, product='mangadap')
-        self.mplver = mplver
+        self.dapver = util.product_version(simple=True, product='mangadap')
+        self.mpl = mplver
+
+#       self.mplver = mplver
 
         # Use them or use input versions
         self.outver = self.dapver if outver is None else outver
@@ -186,13 +193,19 @@ class rundap:
         if console:
             self._read_arg()
 
-        # Make sure the selected MPL version is available
-        self.drpver = None
-        self._select_mpl()
+#       # Make sure the selected MPL version is available
+#       self.drpver = None
+#       self._select_mpl()
+        try:
+            self.mpl = mangampl(self.mpl)
+        except Exception as e:
+            print_frame('Exception')
+            raise Exception('Undefined MPL:'+e)
 
         # Alert the user of the versions to be used
 #       print('Versions: DAP:{0}, IDLUTILS:{1}, DRP:{2}'.format(self.outver, self.idlutilsver, self.drpver))
-        print('Versions: DAP:{0}, {1}'.format(self.outver, self.mplver))
+#       print('Versions: DAP:{0}, {1}'.format(self.outver, self.mplver))
+        print('Versions: DAP:{0}, {1}'.format(self.outver, self.mpl.mplver))
 
         # Check that something is to be done
         nrun = 0
@@ -229,7 +242,8 @@ class rundap:
             self.modelist = None
 
         # Create and update the drpcomplete file if necessary
-        self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
+#       self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
+        self.drpc = drpcomplete(self.outver, self.mpl.drpver, platetargets=self.platetargets,
                                 nsa_cat=self.nsa_cat)
 
         # Update the drpcomplete list; force an update if the
@@ -389,7 +403,7 @@ class rundap:
 #       if self.arg.drpver is not None:
 #           self.drpver = self.arg.drpver
         if self.arg.mplver is not None:
-            self.mplver = self.arg.mplver
+            self.mpl = self.arg.mplver
 
         # Set queue keywords
         if self.arg.umask is not None:
@@ -411,54 +425,58 @@ class rundap:
 #       self.submit = False
 
 
-    def _available_mpls(self, write=False):
-        """
-        Return a list of the available MPLs to analyze, providing a list
-        if requested.
-        """
-
-        nmpl = 2
-        mpl_def = numpy.array([ ['MPL-1', 'v5_5_16', 'v1_0_0'],
-                                ['MPL-2', 'v5_5_17', 'v1_1_2'] ])
-    
-        if write:
-            for x in mpl_def[0:nmpl,:]:
-                print('{0}: IDLUTILS:{1}; DRPVER:{2}'.format(x[0], x[1], x[2]))
-
-        return mpl_def
-
-
-    def _select_mpl(self):
-        """
-        Return the name of the MPL to analyze.
-        """
-        if self.mplver is None:
-            self.mplver = 'MPL-2'
-            self.drpver = 'v1_1_2'
+########################################################################
+#   Moved to managmpl.py
+#
+#   def _available_mpls(self, write=False):
+#       """
+#       Return a list of the available MPLs to analyze, providing a list
+#       if requested.
+#       """
+#
+#       nmpl = 2
+#       mpl_def = numpy.array([ ['MPL-1', 'v5_5_16', 'v1_0_0'],
+#                               ['MPL-2', 'v5_5_17', 'v1_1_2'] ])
+#   
+#       if write:
+#           for x in mpl_def[0:nmpl,:]:
+#               print('{0}: IDLUTILS:{1}; DRPVER:{2}'.format(x[0], x[1], x[2]))
+#
+#       return mpl_def
+#
+#
+#   def _select_mpl(self):
+#       """
+#       Return the name of the MPL to analyze.
+#       """
+#       if self.mplver is None:
 #           self.mplver = 'MPL-2'
-            return
-
-        mpls = self._available_mpls()
-        mpli = numpy.where(mpls[:,0] == self.mplver)
-        if len(mpli[0]) == 0:
-            mpls = self._available_mpls(write=True)
-            raise Exception('{0} is not an available MPL!'.format(self.mplver))
-
-        self.mplver = str(mpls[mpli].reshape(3)[0])
-        self.drpver = str(mpls[mpli].reshape(3)[2])
-
-
-    def _mpl_module(self):
-        """
-        Return the name of the module file specific to the MPL to analyze.
-
-        TODO: For now this ALWAYS uses the python3 versions.
-        """
-        if self.mplver == 'MPL-1':
-            return 'manga/westfall3_mpl1'
-        if self.mplver == 'MPL-2':
-            return 'manga/westfall3_mpl2'
-    
+#           self.drpver = 'v1_1_2'
+#           self.mplver = 'MPL-2'
+#           return
+#
+#       mpls = self._available_mpls()
+#       mpli = numpy.where(mpls[:,0] == self.mplver)
+#       if len(mpli[0]) == 0:
+#           mpls = self._available_mpls(write=True)
+#           raise Exception('{0} is not an available MPL!'.format(self.mplver))
+#
+#       self.mplver = str(mpls[mpli].reshape(3)[0])
+#       self.drpver = str(mpls[mpli].reshape(3)[2])
+#
+#
+#   def _mpl_module(self):
+#       """
+#       Return the name of the module file specific to the MPL to analyze.
+#
+#       TODO: For now this ALWAYS uses the python3 versions.
+#       """
+#       if self.mplver == 'MPL-1':
+#           return 'manga/westfall3_mpl1'
+#       if self.mplver == 'MPL-2':
+#           return 'manga/westfall3_mpl2'
+#   
+########################################################################
 
     # TODO: Files:
     #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
@@ -499,7 +517,8 @@ class rundap:
 
         """
 
-        module = self._mpl_module()
+#       module = self._mpl_module()
+        module = self.mpl.module_file()
 #        file.write('module unload manga\n')
 #        file.write('module load {0}\n'.format(module))
 
@@ -598,62 +617,64 @@ class rundap:
     #  Reduction Management
     # ******************************************************************
 
-
-    # TODO: This is not really a rundap-specific routine.  Should be in
-    # a lower-level class?
-    def product_version(self, product='mangadap', simple=False):
-        """
-        Gets the version for the SDSS-III or SDSS-IV product.  The
-        default product is mangadap.
-        """
-
-        # Expects to find an executable called {$product}_version that
-        # reports the SDSS-III/SDSS-IV product version.  If simple=True,
-        # only the first element of the reported version is set to
-        # 'version'
-        try:
-            version = subprocess.check_output('%s_version' % product, shell=True)
-            if type(version) is bytes:
-                version = version.decode('utf-8')
-            version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
-        except Exception as e:
-            print_frame('Exception')
-            print(e)
-            version = None
-
-        return version
-
-
-    # TODO: This is not really a rundap-specific routine.  Should be in
-    # a lower-level class?
-    def module_version(self, product='mangadap'):
-        """
-        Return the module version for the specified product.  The
-        default product is mangadap.
-        """
-        
-        try:
-            modules = environ['LOADEDMODULES']
-        except:
-            print_frame('Exception')
-            modules = None
-            return None
-        # TODO: Re-raise the exception?
-      
-        # Parse the loaded version(s) of product
-        versions = [module.split('/')[1] for module in modules.split(':')
-                        if module.split('/')[0]==product]
-
-        # If there is more than one version or no versions return None
-        if len(versions) != 1:
-            if len(versions) > 1:
-                print('Multiple versions found for module {0}'.format(product))
-            else:
-                print('Module {0} is not loaded'.format(product))
-            return None
-
-        # Return the version
-        return versions[0]
+########################################################################
+# Moved to mangadap/util.py
+#   # TODO: This is not really a rundap-specific routine.  Should be in
+#   # a lower-level class?
+#   def product_version(self, product='mangadap', simple=False):
+#       """
+#       Gets the version for the SDSS-III or SDSS-IV product.  The
+#       default product is mangadap.
+#       """
+#
+#       # Expects to find an executable called {$product}_version that
+#       # reports the SDSS-III/SDSS-IV product version.  If simple=True,
+#       # only the first element of the reported version is set to
+#       # 'version'
+#       try:
+#           version = subprocess.check_output('%s_version' % product, shell=True)
+#           if type(version) is bytes:
+#               version = version.decode('utf-8')
+#           version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
+#       except Exception as e:
+#           print_frame('Exception')
+#           print(e)
+#           version = None
+#
+#       return version
+#
+#
+#   # TODO: This is not really a rundap-specific routine.  Should be in
+#   # a lower-level class?
+#   def module_version(self, product='mangadap'):
+#       """
+#       Return the module version for the specified product.  The
+#       default product is mangadap.
+#       """
+#       
+#       try:
+#           modules = environ['LOADEDMODULES']
+#       except:
+#           print_frame('Exception')
+#           modules = None
+#           return None
+#       # TODO: Re-raise the exception?
+#     
+#       # Parse the loaded version(s) of product
+#       versions = [module.split('/')[1] for module in modules.split(':')
+#                       if module.split('/')[0]==product]
+#
+#       # If there is more than one version or no versions return None
+#       if len(versions) != 1:
+#           if len(versions) > 1:
+#               print('Multiple versions found for module {0}'.format(product))
+#           else:
+#               print('Module {0} is not loaded'.format(product))
+#           return None
+#
+#       # Return the version
+#       return versions[0]
+########################################################################
 
 
     def file_root(self, plate, ifudesign, mode, stage='dap'):
@@ -783,11 +804,13 @@ class rundap:
         n_plates = len(self.drpc.data['PLATE'])
 
         # Create the list of CUBE DRP files
-        drplist = [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
+#       drplist = [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
+        drplist = [ drpfile(self.mpl.drpver, self.drpc.data['PLATE'][i],
                             self.drpc.data['IFUDESIGN'][i], 'CUBE') for i in range(0,n_plates) ]
 
         # Add the list of RSS DRP files
-        drplist = drplist + [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
+#       drplist = drplist + [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
+        drplist = drplist + [ drpfile(self.mpl.drpver, self.drpc.data['PLATE'][i],
                                       self.drpc.data['IFUDESIGN'][i], 'RSS')
                               for i in range(0,n_plates) if self.drpc.data['MODES'][i] == 2 ]
         return drplist
@@ -816,7 +839,8 @@ class rundap:
                 getcube = False
 
         if getcube:
-            drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
+#           drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
+            drplist = [ drpfile(self.mpl.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
                                 'CUBE') for i in range(0,n_plates) ]
         else:
             drplist = list()
@@ -829,7 +853,8 @@ class rundap:
             except ValueError: #as e:
                 return drplist                  # List complete
 
-        drplist = drplist + [ drpfile(self.drpver, self.drpc.platelist[i],
+#       drplist = drplist + [ drpfile(self.drpver, self.drpc.platelist[i],
+        drplist = drplist + [ drpfile(self.mpl.drpver, self.drpc.platelist[i],
                                       self.drpc.ifudesignlist[i], 'RSS')
                 for i in range(0,n_plates)
                     if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
