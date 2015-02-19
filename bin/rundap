@@ -4,7 +4,7 @@ from __future__ import print_function
 
 validation=True
 try: 
-    from mangadap import rundap
+    from mangadap.survey import rundap
 except ImportError as e: 
     validation = False
     print('ImportError: {0}'.format(str(e)))

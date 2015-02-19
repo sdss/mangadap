@@ -80,6 +80,7 @@
 ;   --
 ;   11 Dec 2014: (KBW) Edited down to basic emission-line-only fitting
 ;                      aspects for inclusion in the DAP.
+;   19 Feb 2015: (KBW) Fixed an error in where counting (line 184)
 ;-
 ;------------------------------------------------------------------------------
 
@@ -179,7 +180,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
 
   p_start=fltarr(3*nlines2)
   for i=0, nlines2-1 do begin
-    wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i])   ;subscripts of the wav range withing the mask
+    ;subscripts of the wav range withing the mask
+    wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
     if count eq 0 then begin
       amp = 0.0
       vguess = redshift*c
