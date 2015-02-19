@@ -1,5 +1,6 @@
 * text=auto !eol
 /RELEASE_NOTES -text
+bin/dap_unsuccessful.bash -text
 bin/mangadap_version -text
 bin/rundap -text
 bin/rundap3 -text
