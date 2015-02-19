@@ -3,6 +3,8 @@
 ;       MDAP_DISTRIBUTE_BINNED_DATA
 ;
 ; PURPOSE:
+;       Distribute properties determined for the binned spectra into an
+;       array associated with the input, pre-binned spectra.
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_DISTRIBUTE_BINNED_DATA, binned_data, binned_index, distributed_data, llim=llim, $
@@ -47,19 +49,19 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       04 Dec 2014: (KBW) Original implementation
+;       04 Dec 2014: Original implementation by K. Westfall
+;       19 Feb 2015: (KBW) Minor edits
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_DISTRIBUTE_BINNED_DATA, $
                 binned_data, binned_index, distributed_data, llim=llim, ulim=ulim, default=default
 
-        ns = n_elements(binned_index)       ; Number of spectra
-        nb = n_elements(binned_data)        ; Number of bins
-
+        ; Set the default value if not provided
         if n_elements(default) eq 0 then $
             default = 0.0d
 
+        ns = n_elements(binned_index)       ; Number of spectra
         distributed_data = make_array(ns, /double, value=default)
 
         for i=0,ns-1 do begin
