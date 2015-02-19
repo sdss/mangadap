@@ -1836,7 +1836,6 @@ pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
 python/README -text
-python/mangadap/__init__.py -text
 python/mangadap/dapfile.py -text
 python/mangadap/drpcomplete.py -text
 python/mangadap/drpfile.py -text
