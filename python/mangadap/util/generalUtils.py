@@ -20,7 +20,9 @@
 from __future__ import division
 from __future__ import print_function
 import numpy as np, os
-import subprocess,glob,yanny
+import subprocess,glob
+
+from mangadap.util.yanny import yanny, read_yanny
 
 # 13 Feb 2015: K. Westfall, python3 compatibilty
 import sys
@@ -49,7 +51,7 @@ def getSlitmap(filename=None, plate=None, mjd=None, specid=None):
     
     # Read slitmap
     if filename != None:
-        fullslitmap = yanny.read_yanny(filename)
+        fullslitmap = read_yanny(filename)
     else:
         if plate == None:
             print('Must provide the Plate')
@@ -60,7 +62,7 @@ def getSlitmap(filename=None, plate=None, mjd=None, specid=None):
         if long(plate) <= 9999: pltgroup = '00'+plate[:-2]+'XX'
         slitpath = os.path.join(os.getenv('MANGACORE_DIR'),'slitmaps',pltgroup,str(plate))
         filename = max(glob.glob(os.path.join(slitpath,name)))
-        fullslitmap = yanny.read_yanny(filename)
+        fullslitmap = read_yanny(filename)
         
     # Grab slitmap structure    
     slitmap = fullslitmap['SLITMAP']
@@ -145,8 +147,10 @@ def readSDSSMaskBits(name=None):
     ''' Read the SDSS Mask Bits from the yanny file and return a dictionary'''
     
     path = os.path.join(os.getenv('IDLUTILS_DIR'),'data','sdss','sdssMaskbits.par')
+
+    print(path)
     
-    data = yanny.read_yanny(path)['MASKBITS']
+    data = read_yanny(path)['MASKBITS']
     flags = data['flag']
     
     # Select out named subset
