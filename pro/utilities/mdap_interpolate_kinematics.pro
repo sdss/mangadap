@@ -133,8 +133,10 @@ PRO MDAP_INTERPOLATE_KINEMATICS, $
 
         endelse
 
+        ; If not available, return without setting the interpolated kinematics
         if n_elements(kin) eq 0 then $
-            message, 'No kinematics available to interpolate!'
+            return
+;           message, 'No kinematics available to interpolate!'
 
         ; Select the appropriate kinematic property
         if keyword_set(velocity) then $
