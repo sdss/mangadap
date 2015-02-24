@@ -65,7 +65,6 @@ PRO REBIN_STELIB
             new_crpix = 1
             new_crval = (l0+l1)/2.
             new_cdelt = 2.0*cdelt
-
             new_npix = npix/2
 
             new_wave = new_crval + (dindgen(new_npix)+1-new_crpix)*new_cdelt
@@ -75,6 +74,11 @@ PRO REBIN_STELIB
             FXADDPAR, hdr, 'CRPIX1', new_crpix
             FXADDPAR, hdr, 'CRVAL1', new_crval
             FXADDPAR, hdr, 'CDELT1', new_cdelt
+
+            if fxpar(hdr, 'Z') lt 0.02 then begin
+                indx=where(new_wave lt 7900)
+                new_data = new_data[indx]
+            endif
 
             WRITEFITS, ofile, new_data, hdr
         endfor

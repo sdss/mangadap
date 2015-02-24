@@ -57,4 +57,8 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
     return out
 
 
+def funcarg_to_list(*arg):
+    print(len(arg))
+    return arg[1:]
+
 
