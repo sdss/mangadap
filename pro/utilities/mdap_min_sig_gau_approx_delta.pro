@@ -25,6 +25,6 @@
 
 FUNCTION MDAP_MIN_SIG_GAU_APPROX_DELTA, $
                 dx
-        return, (1.0d*dx)
+        return, (0.85d*dx)
 END
 

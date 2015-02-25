@@ -64,6 +64,8 @@
 ; v3.0   17 Sep 2014: (KBW) Formatting, editing, comments
 ; v3.1   22 Sep 2014: (KBW) Include rough (probably incorrect) approximation of
 ;                           errors
+;        25 Sep 2015: (KBW) Checks if input x vector is on a regular
+;                           grid.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -93,11 +95,24 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
         gau_denom = 2.*sigma_new^2                      ; Denominator in exp() of Gaussian
         gau_norm = sigma_new*sqrt(2.*!pi)               ; Normalization of Gaussian
 
-        dx = (x[nx-1]-x[0])/double(nx-1)                ; Sampling step
+        dx = x[1]-x[0]
+        indx = where( abs(x[1:nx-1]-x[0:nx-2] - dx) gt 0.001, count)
+        if count gt 0 then $
+            message, 'Trying to perform convolution on an uneven grid.'
         min_sig = MDAP_MIN_SIG_GAU_APPROX_DELTA(dx)     ; Minimum sigma allowed before using
                                                         ;     Kronecker delta approximation
 
+;        print, max(sigma), dx, min_sig
+        if max(sigma) lt min_sig then begin
+            print, 'Dispersion always less then minimum required for convolution.'
+            conv = vector
+            conv_ivar = ivar
+            return
+        endif
+
         divbyreal=reform(where(ivar gt 0, ndr, complement=divbyzero, ncomplement=ndz))
+;        print, 'N: ', n_elements(x)
+;        print, 'NDR: ', ndr
 ;       ndr = n_elements(divbyreal)
 
         ; Convolution is:
@@ -135,19 +150,18 @@ PRO MDAP_CONVOL_SIGMA_WITH_IVAR, $
         ; Force regions where the convolution sigma is too close to the minimum
         ; sigma to have exactly the input value
         ind = where(sigma_new le 1.05*min_sig, count)
-;       if ind[0] ne -1 then begin
         if count ne 0 then begin
             conv[ind]=vector[ind]
             conv_ivar[ind]=1.0/ivar[ind]
         endif
 
+;       plot, x, vector
 ;       oplot, x, conv, color=200
 ;       stop
 ;       plot, x, conv-vector
 ;       stop
 
         conv_ivar[divbyreal] = 1.0/conv_ivar[divbyreal]
-;       if divbyzero[0] ne -1 then $
         if ndz ne 0 then $
             conv_ivar[divbyzero] = 0.
 ;       stop

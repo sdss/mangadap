@@ -134,6 +134,9 @@
 ;                          be in the same reference frame.
 ;       03 Nov 2014: (KBW) Copied from MDAP_MATCH_RESOLUTION_TPL2OBJ and
 ;                          generalized
+;       25 Feb 2015: (KBW) Corrected error when spectrum is binned in
+;                          log10.  Convolution now always done in pixel
+;                          coordinates
 ;-
 ;------------------------------------------------------------------------------
 
@@ -147,11 +150,9 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         np=sz[1]                                ; Number of unmasked pixels
 
         indx=where(positive_offset lt zero_dispersion, count)
-;       if indx[0] eq -1 then $
         if count eq 0 then $
             message, 'Template spectrum is at lower resolution at all wavelengths!'
 
-;       if n_elements(indx) eq np then begin
         if count eq np then begin
             if ~keyword_set(quiet) then begin
                 print, 'Entire spectrum is valid: ' + MDAP_STC(unm_wave[0]) + 'A - ' + $
@@ -173,8 +174,6 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         indx=where(positive_offset gt zero_dispersion, count)  ; Pixels that require an offset
         incw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=0                                             ; Start at low wavelength
-;       while indx[0] ne -1 and j lt np-1 do begin
-;       while count ne 0 and j lt np-1 do begin
         while count ne 0 && j lt np-1 do begin
             j++                                         ; Increment j
             incw[0] = unm_wave[j]                       ; Update wavelength range
@@ -185,8 +184,6 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, $
         indx=where(positive_offset gt zero_dispersion, count)    ; Pixels that require an offset
         decw=[ unm_wave[0], unm_wave[np-1] ]            ; Initialize to full range
         j=np-1                                          ; Start at high wavelength
-;       while indx[0] ne -1 and j gt 0 do begin
-;       while count ne 0 and j gt 0 do begin
         while count ne 0 && j gt 0 do begin
             j--                                         ; Decrement j
             decw[1] = unm_wave[j]                       ; Update wavelength range
@@ -221,9 +218,20 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_APPLY, $
 
         indx = where(diff_sig lt 0, count)              ; Pixels where sigma is effectively 0
         diff_sig = sqrt(diff_sig)                       ; Convert to sigma
-        if ~keyword_set(log10) then $
-            diff_sig = wave[unmasked]*diff_sig/c        ; Convolution sigma in angstroms
-;       if indx[0] ne -1 then $
+
+        ; Convert the dispersion and x-axis to pixels
+        x = dindgen(n_elements(wave))                   ; Get pixel coordinates
+        if keyword_set(log10) then begin
+            dp = MDAP_VELOCITY_SCALE(wave, /log10)      ; Linear step in log10(wavelength)
+            print, 'dp:', dp
+            diff_sig = diff_sig/dp                      ; Convert to pixels
+        endif else begin
+            dp = wave[1] - wave[0]                      ; Linear step in wavelength
+            diff_sig = wave[unmasked]*diff_sig/c/dp     ; First convert to wavelength, then pixels
+        endelse
+
+;       print, diff_sig
+
         if count ne 0 then $
             diff_sig[indx] = 0.0                        ; Set lt 0 to 0 (within range of delta func)
 
@@ -232,18 +240,12 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_APPLY, $
         ;       is done.
 
         ; Perform the convolution, including the variances
-        MDAP_CONVOL_SIGMA_WITH_IVAR, wave[unmasked], flux[unmasked], ivar[unmasked], $
-                                     wave[unmasked], diff_sig, conv, conv_ivar
-
-        ; Get the size of the pixel in either wavelength or km/s
-        if keyword_set(log10) then begin
-            dp = mdap_velocity_scale(wave, /log10)      ; Linear step in log10(wavelength)
-        endif else $
-            dp = wave[1] - wave[0]                      ; Linear step in wavelength
+        MDAP_CONVOL_SIGMA_WITH_IVAR, x[unmasked], flux[unmasked], ivar[unmasked], x[unmasked], $
+                                     diff_sig, conv, conv_ivar
 
         ; TODO: Do something within mdap_convol_sigma_with_ivar?
-        ; Mask the first and last few pixels due to errors in the convolution
-        sigma_mask = ceil(sig2fwhm*max(diff_sig)/dp)
+        ; Mask the first and last FWHM of the kernel to avoid errors in the convolution
+        sigma_mask = ceil(sig2fwhm*max(diff_sig))
 END
 
 FUNCTION MDAP_MATCH_SPECTRAL_RESOLUTION_UNMASKED_PIXELS, $
@@ -342,7 +344,7 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
             ; Determine a constant offset (in km/s) required to ensure that the
             ; Gaussian convolution kernel is always above the minimum width
             if keyword_set(log10) then begin
-                dp = mdap_velocity_scale(wave_, /log10)         ; Linear step in velocity
+                dp = MDAP_VELOCITY_SCALE(wave_, /log10)         ; Linear step in velocity
 
                 positive_offset = reform((MDAP_MINIMUM_CNVLV_SIGMA(dp))^2 - diff_var_v)
                 zero_dispersion = (MDAP_MIN_SIG_GAU_APPROX_DELTA(dp))^2
@@ -404,6 +406,12 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
             MDAP_MATCH_SPECTRAL_RESOLUTION_APPLY, unmasked, wave_, reform(flux[i,*]), $
                                                   reform(ivar[i,*]), sres_, interp_sres, soff[i], $
                                                   conv, conv_ivar, sigma_mask, log10=log10
+
+;           print, n_elements(unmasked), n_elements(conv)
+;           plot, wave_, reform(flux[i,unmasked])
+;           oplot, wave_, conv, color=200
+;           wait, 10
+;           stop
 
             ; Save the data
             mask[i,unmasked[0:sigma_mask-1]] = 1.               ; Mask the edges

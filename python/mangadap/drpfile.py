@@ -514,7 +514,8 @@ class drpfile:
         return X, Y, Z
 
 
-    def regrid_transfer_matrix(self, channel, pixelscale=None, rlim=None, sigma=None, quiet=False):
+    def regrid_transfer_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None,
+                               rlim=None, sigma=None, quiet=False):
         """
         Calculate the sparse matrix used to regrid the RSS data into a
         data cube.  This can only be done using RSS files.
@@ -539,6 +540,10 @@ class drpfile:
         # Set the default values for the input
         if pixelscale is None:
             pixelscale = self._default_pixelscale()
+        if recenter is None:
+            recenter = self._default_recenter()
+        if width_buffer is None:
+            width_buffer = self._default_width_buffer()
         if rlim is None:
             rlim = self._default_regrid_rlim()
         if sigma is None:
@@ -546,6 +551,7 @@ class drpfile:
 
         # Check if the calculation is necessary
         if not self._regrid_transfer_undefined() \
+           and self._cube_dimensions_correct(pixelscale, recenter, width_buffer) \
            and self._regrid_transfer_correct(channel, pixelscale, rlim, sigma):
             return self.regrid_T
 
@@ -556,6 +562,10 @@ class drpfile:
             # the default used by the DRP to create the CUBE file.
             use_RSS = True
             if pixelscale != self._default_pixelscale():
+                use_RSS = False
+            if recenter != self._default_recenter():
+                use_RSS = False
+            if width_buffer != self._default_width_buffer():
                 use_RSS = False
             if rlim != self._default_regrid_rlim():
                 use_RSS = False
@@ -584,7 +594,7 @@ class drpfile:
         # Get the cube dimensions; making sure they match the
         # calculation used by the DRP; will open the hdu if it isn't
         # already
-        self._cube_dimensions()
+        self._cube_dimensions(pixelscale, recenter, width_buffer)
 
         # Dimensions of the sparse matrix are
         nim = self.nx*self.ny                   # The number of image pixels
@@ -642,7 +652,8 @@ class drpfile:
         return self.regrid_T
 
 
-    def regrid_wavelength_plane(self, channel, pixelscale=None, rlim=None, sigma=None, quiet=False):
+    def regrid_wavelength_plane(self, channel, pixelscale=None, recenter=None, width_buffer=None,
+                                rlim=None, sigma=None, quiet=False):
         """
         Return the regridded wavelength plane.  If this is a CUBE file,
         it first checks that the requested rlim and sigma are the same
@@ -655,6 +666,10 @@ class drpfile:
         # Set the default values for the input
         if pixelscale is None:
             pixelscale = self._default_pixelscale()
+        if recenter is None:
+            recenter = self._default_recenter()
+        if width_buffer is None:
+            width_buffer = self._default_width_buffer()
         if rlim is None:
             rlim = self._default_regrid_rlim()
         if sigma is None:
@@ -664,6 +679,10 @@ class drpfile:
         if self.mode is 'CUBE':
             select_plane = True
             if pixelscale != self._default_pixelscale():
+                select_plane = False
+            if recenter != self._default_recenter():
+                select_plane = False
+            if width_buffer != self._default_width_buffer():
                 select_plane = False
             if rlim != self._default_regrid_rlim():
                 select_plane = False
@@ -679,14 +698,14 @@ class drpfile:
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
         # keep the returned matrix)
-        self.regrid_transfer_matrix(channel, pixelscale, rlim, sigma, quiet)
+        self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
         # Return the regridded data with the proper shape (nx by ny)
         return self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)
 
 
-    def covariance_matrix(self, channel, pixelscale=None, rlim=None, sigma=None, csr=False, \
-                          quiet=False):
+    def covariance_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None, 
+                          rlim=None, sigma=None, csr=False, quiet=False):
         """
         Return the covariance matrix for a specified wavelength channel.
         If this is a CUBE file, it tries to use the RSS counterpart to
@@ -698,6 +717,10 @@ class drpfile:
         # Set the default values for the input
         if pixelscale is None:
             pixelscale = self._default_pixelscale()
+        if recenter is None:
+            recenter = self._default_recenter()
+        if width_buffer is None:
+            width_buffer = self._default_width_buffer()
         if rlim is None:
             rlim = self._default_regrid_rlim()
         if sigma is None:
@@ -707,6 +730,10 @@ class drpfile:
         if self.mode is 'CUBE':
             use_RSS = True
             if pixelscale != self._default_pixelscale():
+                use_RSS = False
+            if recenter != self._default_recenter():
+                use_RSS = False
+            if width_buffer != self._default_width_buffer():
                 use_RSS = False
             if rlim != self._default_regrid_rlim():
                 use_RSS = False
@@ -719,11 +746,12 @@ class drpfile:
 
             print('Attempting to use RSS counter-part for calculation.')
             drpf = drpfile(self.plate, self.ifudesign, 'RSS', self.drpver, self.directory_path)
-            return drpf.covariance_matrix(channel, pixelscale, rlim, sigma, csr, quiet)
+            return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma,
+                                          csr, quiet)
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
         # keep the returned matrix)
-        self.regrid_transfer_matrix(channel, pixelscale, rlim, sigma, quiet)
+        self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
         ns = self.hdu['FLUX'].data.shape[0]             # The number of spectra
 
@@ -742,7 +770,8 @@ class drpfile:
         return covariance(C) if not csr else C
 
 
-    def covariance_cube(self, pixelscale=None, rlim=None, sigma=None, csr=False, quiet=False):
+    def covariance_cube(self, channels=None, pixelscale=None, recenter=None, width_buffer=None, 
+                        rlim=None, sigma=None, csr=False, quiet=False):
         """
         Return the covariance matrices for all wavelength channels.  The
         returned object is an ndarray of sparse.csr_matrix types.
@@ -751,6 +780,10 @@ class drpfile:
         # Set the default values for the input
         if pixelscale is None:
             pixelscale = self._default_pixelscale()
+        if recenter is None:
+            recenter = self._default_recenter()
+        if width_buffer is None:
+            width_buffer = self._default_width_buffer()
         if rlim is None:
             rlim = self._default_regrid_rlim()
         if sigma is None:
@@ -760,6 +793,10 @@ class drpfile:
         if self.mode is 'CUBE':
             use_RSS = True
             if pixelscale != self._default_pixelscale():
+                use_RSS = False
+            if recenter != self._default_recenter():
+                use_RSS = False
+            if width_buffer != self._default_width_buffer():
                 use_RSS = False
             if rlim != self._default_regrid_rlim():
                 use_RSS = False
@@ -772,22 +809,34 @@ class drpfile:
 
             print('Attempting to use RSS counter-part for calculation.')
             drpf = drpfile(self.plate, self.ifudesign, 'RSS', self.drpver, self.directory_path)
-            return drpf.covariance_cube(pixelscale, rlim, sigma, quiet)
+            return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
         self._open_hdu()
-        nc = self.hdu['FLUX'].data.shape[1]     # The number of wavelength channels
-        nc = 10
+
+        if channels is None:
+            nc = self.hdu['FLUX'].data.shape[1]     # The number of wavelength channels
+            channels = numpy.arange(0,nc)
+        else:
+            if type(channels) != list:
+                channels = [channels]
+            channels = numpy.array(channels)
+            nc = len(channels)
+
         CovCube = numpy.empty(nc, dtype=sparse.csr.csr_matrix)   # Empty ndarray
 
         for i in range(0,nc):
-            CovCube[i] = self.covariance_matrix(i, pixelscale, rlim, sigma, csr=True, quiet=True)
+            CovCube[i] = self.covariance_matrix(channels[i], pixelscale, recenter, width_buffer,
+                                                rlim, sigma, csr=True, quiet=True)
             if not quiet:
                 print('Covariance Cube {0}/{1}'.format(i+1,nc), end="\r")
 
         if not quiet:
             print('Covariance Cube Done                     ')
 
-        return covariance(CovCube) if not csr else CovCube
+        # Don't provide input indices if the full cube is calculated
+        if nc == self.hdu['FLUX'].data.shape[1]:
+            channels = None
+        return covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
 
 
 #   def white_light(self, mask_list=None):
