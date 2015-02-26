@@ -1954,6 +1954,7 @@ python/mangadap/drpcomplete.py -text
 python/mangadap/drpfile.py -text
 python/mangadap/mangampl.py -text
 python/mangadap/proc/__init__.py -text
+python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
 python/mangadap/survey/__init__.py -text
 python/mangadap/survey/rundap.py -text

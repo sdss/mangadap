@@ -593,9 +593,7 @@ class drpfile:
         
             return self.regrid_T
 
-        # Get the cube dimensions; making sure they match the
-        # calculation used by the DRP; will open the hdu if it isn't
-        # already
+        # Get the cube dimensions; may not necessarily match DRP calculation
         self._cube_dimensions(pixelscale, recenter, width_buffer)
 
         # Dimensions of the sparse matrix are
@@ -606,36 +604,60 @@ class drpfile:
         # Get the list of non-zero pixel values in the transfer matrix
         i = numpy.arange(0,self.nx)
         j = numpy.arange(0,self.ny)
-        ii,jj = numpy.meshgrid(i,j)                         # Mesh of i,j pixel indices
+        ii,jj = numpy.meshgrid(i, j, indexing='ij')         # Mesh of i,j pixel indices
 
-        sp = numpy.ndarray(nim)                             # Holds spectrum index
-        ij = (ii*self.ny+jj).reshape(nim)                   # Holds image pixel index
-        r2 = numpy.ndarray(nim)                             # Holds radii
+        sp = numpy.empty((self.nx,self.ny), dtype=numpy.float64)    # Holds spectrum index
+        ij = (ii*self.ny+jj)                                        # Holds image pixel index
+        r2 = numpy.empty((self.nx,self.ny), dtype=numpy.float64)    # Holds radii
+        tot = numpy.zeros((self.nx,self.ny), dtype=numpy.float64)   # Holds the sum of the weights
 
         s2 = numpy.square(sigma/pixelscale)                 # sigma^2 of Gaussian
         rl2 = numpy.square(rlim/pixelscale)                 # radius^2 of Gaussian limit
 
-        non_zero_spc = numpy.ndarray(0, dtype=numpy.int64)  # Holds triplet spectrum index
-        non_zero_pix = numpy.ndarray(0, dtype=numpy.int64)  # Holds triplet image index
-        non_zero_wgt = numpy.ndarray(0, dtype=numpy.float64)# Holds triplet weight
+        non_zero_spc = numpy.empty(0, dtype=numpy.int64)  # Holds triplet spectrum index
+        non_zero_pix = numpy.empty(0, dtype=numpy.int64)  # Holds triplet image index
+        non_zero_wgt = numpy.empty(0, dtype=numpy.float64)# Holds triplet weight
 
-        # TODO: Can optimize this further?
+        # TODO: Can optimize this further
         for k in range(0,ns):
+
+            if self.hdu['IVAR'].data[k,channel] <= 0.0:
+                continue
 
             # Fill spectrum index
             sp.fill(k)
 
+
+            # NOTE: Calculating full matrix is actually faster than
+            # determining submatrix for calculation
+
+#           r2[:,:] = rl2+10
+
+#           si = int(numpy.floor((self.hdu['XPOS'].data[k,channel]-rlim - self.xs)/pixelscale)) - 1
+#           si = si if si >= 0 else 0
+#           ei = int(numpy.ceil((self.hdu['XPOS'].data[k,channel]+rlim - self.xs)/pixelscale)) + 1
+#           ei = ei if ei <= self.nx else self.nx
+
+#           sj = int(numpy.floor((self.hdu['YPOS'].data[k,channel]-rlim - self.ys)/pixelscale)) - 1
+#           sj = sj if sj >= 0 else 0
+#           ej = int(numpy.ceil((self.hdu['YPOS'].data[k,channel]+rlim - self.ys)/pixelscale)) + 1
+#           ej = ej if ej <= self.nx else self.nx
+
             # Calculate radii
-            r2[:] = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale \
-                                  - ii.reshape(nim)) \
-                    + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale \
-                                  - jj.reshape(nim))
-           
+#           r2[si:ei,sj:ej] = \
+#                   numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale \
+#                                 - ii[si:ei,sj:ej]) \
+#                   + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale \
+#                                 - jj[si:ei,sj:ej])
+
+            r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale - ii) \
+                 + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale - jj)
+
             # Append new indices and weights within rlim
             non_zero_spc = numpy.append(non_zero_spc, sp[r2 < rl2])
             non_zero_pix = numpy.append(non_zero_pix, ij[r2 < rl2])
             wgt = numpy.exp(-r2[r2 < rl2]/s2/2.0)
-            wgt /= numpy.sum(wgt)
+            tot[r2<rl2] += wgt
             non_zero_wgt = numpy.append(non_zero_wgt, wgt)
 
             if not quiet:
@@ -643,14 +665,23 @@ class drpfile:
 
         if not quiet:
             print('Transfer Matrix Done                     ')
-        # Save the regridding input and result
+
+        # Save the regridding input
         self.regrid_rlim = rlim
         self.regrid_sigma = sigma
         self.regrid_channel = channel
         self.pixelscale = pixelscale
-        self.regrid_T = sparse.coo_matrix( (non_zero_wgt, (non_zero_pix, non_zero_spc)), \
-                                           shape=(nim,ns) ).tocsr()
 
+        # Normalize the result and scale by the pixel size to ensure the
+        # output cube is in units of calibrated flux density per pixel
+        scale = pixelscale*pixelscale/numpy.pi
+        non_zero_wgt *= scale/tot[numpy.unravel_index(non_zero_pix.astype(int), (self.nx,self.ny))]
+
+        # Set the transfer matrix to a sparse object
+        self.regrid_T = sparse.coo_matrix( (non_zero_wgt, (non_zero_pix, non_zero_spc)), \
+                                                   shape=(nim,ns) ).tocsr()
+
+        # Return the transfer matrix
         return self.regrid_T
 
 
@@ -696,7 +727,7 @@ class drpfile:
                                 + 'wavelength-channel image for DRP-produced CUBE files.')
 
             self._open_hdu()
-            return self.hdu['FLUX'].data[channel,:,:]
+            return numpy.transpose(self.hdu['FLUX'].data[channel,:,:])
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
         # keep the returned matrix)

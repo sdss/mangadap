@@ -153,7 +153,7 @@ class covariance:
             self.inv = None
 
 
-    def show(self, plane=None, zoom=None):
+    def show(self, plane=None, zoom=None, ofile=None):
 
         a = self.toarray(plane)
 
@@ -164,7 +164,16 @@ class covariance:
             ye = ys + self.shape[self.dim-1]/zoom + 1
             a = a[xs:xe,ys:ye]
 
-        im = pyplot.imshow(a)
+        if ofile is None:
+            im = pyplot.imshow(a, interpolation='nearest', origin='lower')
+            pyplot.colorbar()
+            pyplot.show()
+            return
+
+        fig = pyplot.figure(1)
+        im = pyplot.imshow(a, interpolation='nearest', origin='lower')
+        pyplot.colorbar()
+        fig.canvas.print_figure(ofile)
         pyplot.show()
         
 
