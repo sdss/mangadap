@@ -253,8 +253,11 @@ class drpcomplete:
                                (par_data['PLTTRGT']['ifudesign'] == self.ifudesignlist[i]))
 
             if len(indx[0]) == 0:
-                raise Exception('Could not find plate={0}, ifudesign={1} in {2}.'.format(
+                print('WARNING: Could not find plate={0}, ifudesign={1} in {2}.'.format(
                                 self.platelist[i], self.ifudesignlist[i], self.platetargets))
+                continue
+#               raise Exception('Could not find plate={0}, ifudesign={1} in {2}.'.format(
+#                               self.platelist[i], self.ifudesignlist[i], self.platetargets))
             mangaid[i] = par_data['PLTTRGT']['mangaid'][indx][0]
             objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
             objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
