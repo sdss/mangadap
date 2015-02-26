@@ -238,9 +238,10 @@ class drpcomplete:
         # Initialize the output arrays (needed in case some DRP targets not found)
         n_drp = len(self.platelist)
         print(par_data['PLTTRGT']['mangaid'].dtype)
-        mangaid = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['mangaid'].dtype)
-        objra = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_ra'].dtype)
-        objdec = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
+        mangaid = []
+#       mangaid = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['mangaid'].dtype)
+        objra = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['target_ra'].dtype)
+        objdec = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
         nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
         vel = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_redshift'].dtype)
         veldisp = numpy.full(n_drp, def_veldisp, dtype=par_data['PLTTRGT']['nsa_vdisp'].dtype)
@@ -248,7 +249,9 @@ class drpcomplete:
         pa = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_phi'].dtype)
         Reff = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_th50'].dtype)
 
-        for t in par_data['PLTTRGT']['plateid']: print(type(t))
+#       for t in par_data['PLTTRGT']['plateid']:
+#           if type(t) != numpy.int64:
+#               print(type(t))
 
         print('Searching platetargets file for observed galaxies...')
         for i in range(0,n_drp):
@@ -256,21 +259,20 @@ class drpcomplete:
                                (par_data['PLTTRGT']['ifudesign'] == self.ifudesignlist[i]))
 
             if len(indx[0]) == 0:
-                print(type(par_data['PLTTRGT']['plateid'][0]))
-                print(type(self.platelist[i]))
-                print(type(par_data['PLTTRGT']['ifudesign'][0]))
-                print(type(self.ifudesignlist[i]))
+#               print(type(par_data['PLTTRGT']['plateid'][0]))
+#               print(type(self.platelist[i]))
+#               print(type(par_data['PLTTRGT']['ifudesign'][0]))
+#               print(type(self.ifudesignlist[i]))
                 print('WARNING: Could not find plate={0}, ifudesign={1} in {2}.'.format(
                                 self.platelist[i], self.ifudesignlist[i], self.platetargets))
+                mangaid = mangaid + ['NULL']
                 continue
 #               raise Exception('Could not find plate={0}, ifudesign={1} in {2}.'.format(
 #                               self.platelist[i], self.ifudesignlist[i], self.platetargets))
-            mangaid[i] = par_data['PLTTRGT']['mangaid'][indx][0]
+            mangaid = mangaid + [par_data['PLTTRGT']['mangaid'][indx][0].decode("ascii")]
             objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
             objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
-
-            nsaid[i] = numpy.int32(mangaid[i].decode("utf-8").split('-')[1])
-            
+            nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
             pa[i] = par_data['PLTTRGT']['nsa_sersic_phi'][indx][0]
@@ -281,7 +283,7 @@ class drpcomplete:
 
         print('DONE')
 
-        return mangaid, objra, objdec, nsaid, vel, veldisp, ell, pa, Reff
+        return numpy.array(mangaid), objra, objdec, nsaid, vel, veldisp, ell, pa, Reff
 
 
     def _read_nsa(self, verbose=False):
