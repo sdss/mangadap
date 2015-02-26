@@ -246,7 +246,7 @@ class covariance:
             coo[0:self.nnz,0] = ii
             coo[0:self.nnz,1] = jj
             val[0:self.nnz] = vv
-            col1 = fits.Column(name='INDX', format=coo_form, array=coo_sparse) 
+            col1 = fits.Column(name='INDX', format=coo_form, array=coo) 
         else:
             i = 0
             j = 0

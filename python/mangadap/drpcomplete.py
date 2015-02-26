@@ -51,8 +51,8 @@ class drpcomplete:
     """
 
 
-    def __init__(self, dapver=None, drpver=None, platelist=None, ifudesignlist=None, 
-                 platetargets=None, nsa_cat=None, force=False):
+    def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, nsa_cat=None,
+                 drpver=None, drppath=None, dapver=None, dappath=None, readonly=False):
         """
         Initializes the class and its members.
     
@@ -69,17 +69,25 @@ class drpcomplete:
         """
 
         # Input properties
-        if dapver is None:
-            dapver = environ['MANGADAP_VER']
-        if (type(dapver) != str):
-            raise Exception('DAP version must be a string')
-        self.dapver = dapver
+        self.drpver = self._default_drp_version() if drpver is None else str(drpver)
+        self.redux_path = self._default_redux_path() if drppath is None else str(drppath)
 
-        if drpver is None:
-            drpver = environ['MANGADRP_VER']
-        if (type(drpver) != str):
-            raise Exception('DRP version must be a string')
-        self.drpver = drpver
+        self.dapver = self._default_dap_version() if dapver is None else str(dapver)
+        self.analysis_path = self._default_analysis_path() if dappath is None else str(dappath)
+        
+        if os.path.exists(self.file_path()):
+            self._read_data()
+        else:
+            self.data = None
+            self.nrows = None
+
+        if readonly:
+            self.readonly=True
+            self.platelist = None
+            self.ifudesignlist = None
+            self.platetargets = None
+            self.nsa_cat=None
+            return
 
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
@@ -93,16 +101,69 @@ class drpcomplete:
             self.platetargets = None
             self.nsa_cat = nsa_cat
         else:
-            self.platetargets = self.default_plate_targets_file()
-            self.nsa_cat = self.default_nsa_catalog()
+            self.platetargets = self._default_plate_targets_file()
+            self.nsa_cat = self._default_nsa_catalog()
 
-        self.force = force
 
-        if os.path.exists(self.file_path()):
-            self._read_data()
-        else:
-            self.data = None
-            self.nrows = None
+    # ******************************************************************
+    #  Default values
+    # ******************************************************************
+
+
+    def _default_drp_version(self):
+        """
+        Return the DRP version defined by the environmental variable.
+        """
+        return environ['MANGADRP_VER']
+
+
+    def _default_redux_path(self):
+        """Return the directory path used by the DRP."""
+
+        # Make sure the DRP version is set
+        if self.drpver is None:
+            self.drpver = self._default_drp_version()
+
+        return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
+
+
+    def _default_dap_version(self):
+        """
+        Return the DRP version defined by the environmental variable.
+        """
+        return environ['MANGADAP_VER']
+
+
+    def _default_analysis_path(self):
+        """Return the directory path used by the DAP."""
+
+        # Make sure the DAP version is set
+        if self.dapver is None:
+            self.dapver = self._default_dap_version()
+
+        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
+
+
+    def _default_plate_targets_file(self):
+        """
+        Return the default plateTargets file used to get the NSA
+        information
+        """
+        return [os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                'plateTargets-12.par'),
+                os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                            'plateTargets-1.par') ]
+
+
+    def _default_nsa_catalog(self):
+        """
+        Return the default NSA catalog
+        """
+        if self.drpver == 'v1_0_0':
+            return os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
+                                '12-nsa_v1b_0_0_v2.fits.gz')
+
+        return os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits')
 
 
     # ******************************************************************
@@ -319,10 +380,11 @@ class drpcomplete:
 
         return nsaid, vel, veldisp, ell, pa, Reff
 
+
     def _all_data_exists(self, quiet=True):
         """
         Determine if the data for all the plates/ifudesigns is already
-        present in in the current drpcomplete file.
+        present in the current drpcomplete file.
         """
         nn = len(self.platelist)
         for i in range(0,nn):
@@ -388,7 +450,7 @@ class drpcomplete:
                 ifudesignlist=[12703,12703], the CUBE files with
                 (plate,ifudesign)=[(7443,12704),(7459,12704) are chosen
         """
-        path = self.redux_path()
+        path = self.redux_path
         matchedlist = (self.platelist is not None and self.ifudesignlist is not None and
                        (len(self.platelist) == len(self.ifudesignlist) and not combinatorics))
 
@@ -479,48 +541,14 @@ class drpcomplete:
     #  User functions
     # ******************************************************************
 
-    def default_plate_targets_file(self):
-        """
-        Return the default plateTargets file used to get the NSA
-        information
-        """
-#       if self.drpver == 'v1_0_0':
-#           return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-#                               'plateTargets-12.par')
-#
-#       return os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-#                           'plateTargets-1.par')
-
-        return [os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                                'plateTargets-12.par'),
-                os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                            'plateTargets-1.par') ]
-
-
-    def default_nsa_catalog(self):
-        """
-        Return the default NSA catalog
-        """
-        if self.drpver == 'v1_0_0':
-            return os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
-                                '12-nsa_v1b_0_0_v2.fits.gz')
-
-        return os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits')
-
-
     def file_name(self):
         """Return the name of the DRP complete database."""
         return ('drpcomplete_{0}.fits'.format(self.drpver))
 
 
-    def redux_path(self):
-        """Return the path to search for completed DRP reductions."""
-        return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
-
-
     def file_path(self):
         """Return the full pat to the DRP complete database."""
-        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver, self.file_name())
+        return os.path.join(self.analysis_path, self.file_name())
 
 
     def update(self, platelist=None, ifudesignlist=None, combinatorics=False, force=False,
@@ -548,6 +576,9 @@ class drpcomplete:
         is re-created from scratch.  If all the plates and ifudesigns
         are available, nothing is done, unless force=True.
         """
+
+        if self.readonly:
+            raise Exception('drpcomplete file was opened as read-only!')
 
         if platelist is not None:
             self.platelist = arginp_to_list(platelist, evaluate=True)
@@ -589,10 +620,6 @@ class drpcomplete:
         print('Number of DRP files: {0}'.format(nn))
 
         if self.platetargets is not None and all(os.path.exists(p) for p in self.platetargets):
-
-#           mangaid, objra, objdec = self._drp_info(drplist)
-#           nsaid, vel, veldisp, ell, pa, Reff = self._match_platetargets(mangaid, def_veldisp)
-
             mangaid, objra, objdec, nsaid, vel, veldisp, ell, pa, Reff \
                     = self._match_platetargets(def_veldisp)
 
@@ -623,23 +650,12 @@ class drpcomplete:
               mangaid, nsaid, objra, objdec, vel, veldisp, ell, pa, Reff, clobber=True):
         """Write the drpcomplete file."""
 
+        if self.readonly:
+            raise Exception('drpcomplete file was opened as read-only!')
+
         out=self.file_path()
         if os.path.exists(out) and not clobber:
             raise Exception('DRP complete file already exists: {0}'.format(out))
-
-        # TODO: Check array types
-        # platelist = list
-        # ifudesignlist = list
-        # modes = numpy.ndarray
-        # mangaid = numpy.ndarray
-        # nsaid = numpy.ndarray
-        # objra = numpy.ndarray
-        # objdec = numpy.ndarray
-        # vel = numpy.ndarray
-        # veldisp = numpy.ndarray
-        # ell = numpy.ndarray
-        # pa = numpy.ndarray
-        # Reff = numpy.ndarray
 
         # Create the primary header
         hdr = fits.Header()

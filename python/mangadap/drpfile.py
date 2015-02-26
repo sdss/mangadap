@@ -173,9 +173,6 @@ class drpfile:
         else:
             self.directory_path = str(directory_path)
 
-        if read:
-            self._open_hdu()
-        
         # Initialize the image dimensions and their parameters
         self.pixelscale = None
         self.recenter = None
@@ -198,15 +195,19 @@ class drpfile:
         self.hdu = None                 # Do not automatically read the data
         self.w = None                   # WCS structure
 
+        if read:
+            self._open_hdu()
+        
 
     def __del__(self):
         """
         Destroy the drpfile object by ensuring that the fits file is
         properly closed.
         """
-        if self.hdu is not None:
-            self.hdu.close()
-            self.hdu = None
+        if self.hdu is None:
+            return
+        self.hdu.close()
+        self.hdu = None
 
 
     def _open_hdu(self):
@@ -345,11 +346,11 @@ class drpfile:
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
             self.xs = self.hdu['FLUX'].header['CRVAL1'] \
-                      - self.hdu['FLUX'].header['CDELT1']*(self.hdu['FLUX'].header['CRPIX1']-1)
+                      - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1)
             self.nx = self.hdu['FLUX'].header['NAXIS1']
 
             self.ys = self.hdu['FLUX'].header['CRVAL2'] \
-                      - self.hdu['FLUX'].header['CDELT2']*(self.hdu['FLUX'].header['CRPIX2']-1)
+                      - self.hdu['FLUX'].header['CD2_2']*(self.hdu['FLUX'].header['CRPIX2']-1)
             self.ny = self.hdu['FLUX'].header['NAXIS2']
             return
 
@@ -375,15 +376,15 @@ class drpfile:
         # Get the size in each dimension
         minx = numpy.amin(self.hdu['XPOS'].data)
         maxx = numpy.amax(self.hdu['XPOS'].data)
-        Dx = maxx-minx
+        Dx = numpy.floor(maxx-minx)
 
         miny = numpy.amin(self.hdu['YPOS'].data)
         maxy = numpy.amax(self.hdu['YPOS'].data)
-        Dy = maxy-miny
+        Dy = numpy.floor(maxy-miny)
 
         # Force the size to be even and the same in both dimensions
         Dx = Dx if Dx > Dy else Dy
-        self.nx = int(Dx/self.pixelscale)+width_buffer
+        self.nx = numpy.floor(Dx/self.pixelscale)+width_buffer
         if self.nx % 2 != 0:
             self.nx += 1
         self.ny = self.nx
@@ -507,6 +508,7 @@ class drpfile:
             return None, None, None
 
         X, Y = self.world_mesh() 
+        #X,Y = self.pix_mesh()
 
         Z = numpy.transpose(numpy.array([ self.hdu['GIMG'].data, self.hdu['RIMG'].data, \
                             self.hdu['IIMG'].data ] ), axes=(1,2,0))
@@ -817,7 +819,7 @@ class drpfile:
             nc = self.hdu['FLUX'].data.shape[1]     # The number of wavelength channels
             channels = numpy.arange(0,nc)
         else:
-            if type(channels) != list:
+            if type(channels) != list and type(channels) != numpy.ndarray:
                 channels = [channels]
             channels = numpy.array(channels)
             nc = len(channels)
@@ -834,8 +836,6 @@ class drpfile:
             print('Covariance Cube Done                     ')
 
         # Don't provide input indices if the full cube is calculated
-        if nc == self.hdu['FLUX'].data.shape[1]:
-            channels = None
         return covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
 
 

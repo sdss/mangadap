@@ -59,43 +59,90 @@ class dapfile:
     # TODO: Allow default of niter=None, then search for the first file
     # with the appropriate name and set niter
 
-    def __init__(self, dapver, plate, ifudesign, mode, bintype, niter, read=True):
+    def __init__(self, plate, ifudesign, mode, bintype, niter, dapver=None, directory_path=None,
+                 read=True):
         """
         ARGUMENTS:
-            dapver - DAP version to use
             plate - plate designation
             ifudesign - ifu design on the plate
             mode - mode of the produced file (CUBE or RSS)
             bintype - binning type used
             niter - iteration number
+            dapver - DAP version to use. Defaults to $MANGADAP_VER.
+            directory_path - Path to DAP file.  Default is
+                    os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
+                                 self.dapver, str(self.plate), str(self.ifudesign))
+
         """
 
         # Set the attributes, forcing a known type
-        self.dapver = str(dapver)
         self.plate = int(plate)
         self.ifudesign = int(ifudesign)
         self.mode = str(mode)
         self.bintype = str(bintype)
         self.niter = int(niter)
 
-        self.hdulist = None
+        self.dapver = self._default_dap_version() if dapver is None else str(dapver)
+        if directory_path is None:
+            self.directory_path = self._default_directory_path()
+        else:
+            self.directory_path = str(directory_path)
+
+        self.hdu = None
 
         if read:
-            self.read()
+            self._open_hdu()
+
 
     def __del__(self):
         """
         Destroy the dapfile object, ensuring that the fits file is
         properly closed.
         """
+        if self.hdu is None:
+            return
+        self.hdu.close()
+        self.hdu = None
 
-        if self.hdulist is not None:
-            self.hdulist.close()
+
+    def _open_hdu(self, permissions='readonly'):
+        """
+        Internal support routine used to gather header information from
+        the file.
+        """
+        if self.hdu is not None:
+            return
+
+        inp = self.file_path()
+        if (not os.path.exists(inp)):
+            raise Exception('Cannot open file: {0}'.format(inp))
+
+        # Open the fits file with the requested read/write permission
+        self.hdu = fits.open(inp, mode=permissions)
+
+
+    def _default_dap_version(self):
+        """
+        Return the DAP version defined by the environmental variable.
+        """
+        return environ['MANGADAP_VER']
+
+
+    def _default_directory_path(self):
+        """Return the directory path used by the DAP."""
+
+        # Make sure the DRP version is set
+        if self.dapver is None:
+            self.dapver = self._default_dap_version()
+
+        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver, str(self.plate), 
+                            str(self.ifudesign))
 
     
     def _twod_image_data(self, exten, indx):
+        self._open_hdu()
         try:
-            data = self.hdulist[exten].data[:,indx]
+            data = self.hdu[exten].data[:,indx]
         except IndexError as e:
             print_frame('IndexError')
             print('{0}'.format(e))
@@ -103,36 +150,7 @@ class dapfile:
         else:
             return data
     
-
-
-#    def _gather_data(self):
-#        """
-#        Internal support routine used to gather header information from
-#        the file.
-#        """
-#        if (self.manga_id is not None and self.object_ra is not None and
-#            self.object_dec is not None):
-#            return
-#
-#        inp = self.file_path()
-#        if (not os.path.exists(inp)):
-#            raise Exception('Cannot open file: {0}'.format(inp))
-#
-#        # TODO: This is very slow!  memmap in fits.open() does not help.
-#        # A way to read header without setting up the whole hdulist
-#        # object?  hdulist = fits.open(inp,memmap=True)
-#        hdr = fits.getheader(inp,0)
-#        self.manga_id = hdr['MANGAID']
-#        self.object_ra = hdr['OBJRA']
-#        self.object_dec = hdr['OBJDEC']
-#
-##        hdulist = fits.open(inp)
-##        self.manga_id = hdulist[0].header['MANGAID']
-##        self.object_ra = hdulist[0].header['OBJRA']
-##        self.object_dec = hdulist[0].header['OBJDEC']
-##        hdulist.close()
-
-
+    
     def file_name(self):
         """Return the name of the DAP file"""
 
@@ -144,70 +162,43 @@ class dapfile:
 
     def file_path(self):
         """Return the full path to the DAP file"""
-        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver, str(self.plate),
-                            str(self.ifudesign), self.file_name())
-
-
-    def read(self):
-        """
-        Read all the fits file data and keep it in memory
-        """
-
-        inp = self.file_path()
-        if (not os.path.exists(inp)):
-            raise Exception('Cannot open file: {0}'.format(inp))
-
-        if self.hdulist is not None:
-            self.hdulist.close()
-
-        self.hdulist = fits.open(inp)
-
-    def close(self):
-        self.hdulist.close()
-        self.hdulist = None
+        return os.path.join(self.directory_path, self.file_name())
 
 
     def header(self):
         """Return the primary header"""
-        if self.hdulist is None:
-            self.read()
-
-        return self.hdulist[0].header
+        self._open_hdu()
+        return self.hdu[0].header
 
 
     def sn_stats(self):
-        if self.hdulist is None:
-            self.read()
-        return self.hdulist[0].header['SNWAVE1'], self.hdulist[0].header['SNWAVE2'], \
-               self.hdulist[0].header['MINSNBIN']
+        self._open_hdu()
+        return self.hdu[0].header['SNWAVE1'], self.hdu[0].header['SNWAVE2'], \
+               self.hdu[0].header['MINSNBIN']
 
 
     def spaxel_size(self):
-        if self.hdulist is None:
-            self.read()
-        return self.hdulist[0].header['SPAXDX'], self.hdulist[0].header['SPAXDY']
+        self._open_hdu()
+        return self.hdu[0].header['SPAXDX'], self.hdu[0].header['SPAXDY']
 
 
     def bin_ston(self):
-        if self.hdulist is None:
-            self.read()
         if self.bintype is not 'STON':
             raise Exception('Binning type was not STON!')
-        return self.hdulist[0].header['BINSN']
+        self._open_hdu()
+        return self.hdu[0].header['BINSN']
 
 
     def analysis_stats(self):
-        if self.hdulist is None:
-            self.read()
-        return self.hdulist[0].header['FITWAVE1'], self.hdulist[0].header['FITWAVE2'], \
-               self.hdulist[0].header['MINSNFIT']
+        self._open_hdu()
+        return self.hdu[0].header['FITWAVE1'], self.hdu[0].header['FITWAVE2'], \
+               self.hdu[0].header['MINSNFIT']
 
 
     def table_column(self, exten, col):
-        if self.hdulist is None:
-            self.read()
+        self._open_hdu()
         try:
-            data = self.hdulist[exten].data[col]
+            data = self.hdu[exten].data[col]
         except KeyError as e:
             print_frame('KeyError')
             print('Could not find extension ({0}) and/or column ({1})!'.format(exten, col))
@@ -217,7 +208,8 @@ class dapfile:
 
     
     def bin_wavelength(self):
-        return self.hdulist['WAVE'].data
+        self._open_hdu()
+        return self.hdu['WAVE'].data
 
 
     def bin_spectrum(self, indx):
