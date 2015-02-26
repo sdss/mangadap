@@ -89,6 +89,8 @@ class drpcomplete:
             self.nsa_cat=None
             return
 
+        self.readonly = False
+
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
