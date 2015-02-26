@@ -461,7 +461,7 @@ class drpcomplete:
         if matchedlist:
             n_plates=len(self.platelist)
             for i in range(0,n_plates):
-                drpf = drpfile(self.drpver, self.platelist[i], self.ifudesignlist[i], 'CUBE')
+                drpf = drpfile(self.platelist[i], self.ifudesignlist[i], 'CUBE', drpver=self.drpver)
                 if os.path.exists(drpf.file_path()):
                     plates = plates + [self.platelist[i]]
                     ifudesigns = ifudesigns + [self.ifudesignlist[i]]
@@ -512,7 +512,7 @@ class drpcomplete:
         n_drp = len(drplist)
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
         for i in range(0,n_drp):
-            drpf = drpfile(drplist[i].drpver, drplist[i].plate, drplist[i].ifudesign, 'RSS')
+            drpf = drpfile(drplist[i].plate, drplist[i].ifudesign, 'RSS', drpver=drplist[i].drpver)
             modes[i] = 2 if os.path.exists(drpf.file_path()) else 1
         return modes
 

@@ -120,7 +120,8 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
         nn = n_plates
 
     # Create and return the list of DRP files
-    return [drpfile(drpver, platelist_[i], ifudesignlist_[i], modelist_[i]) for i in range(0,nn)]
+    return [drpfile(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver) \
+            for i in range(0,nn)]
 
 
 
@@ -580,7 +581,8 @@ class drpfile:
 
             print('Attempting to use RSS counter-part for calculation.')
             # Get the RSS counterpart
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', self.drpver, self.directory_path)
+            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                           directory_path=self.directory_path)
             # Get the transfer matrix
             self.regrid_T = drpf.regrid_transfer_matrix(channel, pixelscale, rlim, sigma)
             self.regrid_channel = drpf.regrid_channel
@@ -778,7 +780,8 @@ class drpfile:
                                 + 'covariance matrices for DRP-produced CUBE files.')
 
             print('Attempting to use RSS counter-part for calculation.')
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', self.drpver, self.directory_path)
+            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                           directory_path=self.directory_path)
             return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma,
                                           csr, quiet)
 
@@ -841,7 +844,8 @@ class drpfile:
                                 + 'covariance matrices for DRP-produced CUBE files.')
 
             print('Attempting to use RSS counter-part for calculation.')
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', self.drpver, self.directory_path)
+            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                           directory_path=self.directory_path)
             return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
         self._open_hdu()
