@@ -237,6 +237,7 @@ class drpcomplete:
 
         # Initialize the output arrays (needed in case some DRP targets not found)
         n_drp = len(self.platelist)
+        print(par_data['PLTTRGT']['mangaid'].dtype)
         mangaid = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['mangaid'].dtype)
         objra = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_ra'].dtype)
         objdec = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
@@ -247,12 +248,18 @@ class drpcomplete:
         pa = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_phi'].dtype)
         Reff = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_th50'].dtype)
 
+        for t in par_data['PLTTRGT']['plateid']: print(type(i))
+
         print('Searching platetargets file for observed galaxies...')
         for i in range(0,n_drp):
             indx = numpy.where((par_data['PLTTRGT']['plateid'] == self.platelist[i]) &
                                (par_data['PLTTRGT']['ifudesign'] == self.ifudesignlist[i]))
 
             if len(indx[0]) == 0:
+                print(type(par_data['PLTTRGT']['plateid'][0]))
+                print(type(self.platelist[i]))
+                print(type(par_data['PLTTRGT']['ifudesign'][0]))
+                print(type(self.ifudesignlist[i]))
                 print('WARNING: Could not find plate={0}, ifudesign={1} in {2}.'.format(
                                 self.platelist[i], self.ifudesignlist[i], self.platetargets))
                 continue
