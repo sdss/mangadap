@@ -248,7 +248,7 @@ class drpcomplete:
         pa = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_phi'].dtype)
         Reff = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_th50'].dtype)
 
-        for t in par_data['PLTTRGT']['plateid']: print(type(i))
+        for t in par_data['PLTTRGT']['plateid']: print(type(t))
 
         print('Searching platetargets file for observed galaxies...')
         for i in range(0,n_drp):
