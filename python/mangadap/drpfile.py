@@ -346,12 +346,16 @@ class drpfile:
 
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
+            self.pixelscale = self._default_pixelscale()
             self.xs = self.hdu['FLUX'].header['CRVAL1'] \
                       - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1)
+            self.xs = (self.xs - self.hdu['FLUX'].header['OBJRA']) \
+                      * numpy.cos(numpy.radians(self.hdu['FLUX'].header['OBJDEC'])) * 3600.
             self.nx = self.hdu['FLUX'].header['NAXIS1']
 
             self.ys = self.hdu['FLUX'].header['CRVAL2'] \
                       - self.hdu['FLUX'].header['CD2_2']*(self.hdu['FLUX'].header['CRPIX2']-1)
+            self.ys = (self.ys - self.hdu['FLUX'].header['OBJDEC']) * 3600.
             self.ny = self.hdu['FLUX'].header['NAXIS2']
             return
 
