@@ -115,6 +115,8 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
         ; good pixels from the first good template spectrum.
         common_wave[0] = min(tpl_wave[i,gtpl])
         common_wave[1] = max(tpl_wave[i,gtpl])
+;       print, common_wave
+;       stop
 
         ; Determine the wavelength range common to ALL templates
         lamRange=dblarr(nt,2)           ; Wavelength range of each template spectrum
@@ -136,6 +138,7 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 
 ;       print, lamRange
 ;       print, common_wave
+;       stop
 
         ; Roughly the number of pixels required to cover this spectral range logarithmically
         if keyword_set(log10) then begin

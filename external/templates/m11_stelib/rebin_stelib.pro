@@ -75,8 +75,14 @@ PRO REBIN_STELIB
             FXADDPAR, hdr, 'CRVAL1', new_crval
             FXADDPAR, hdr, 'CDELT1', new_cdelt
 
-            if fxpar(hdr, 'Z') lt 0.02 or fxpar(hdr, 'Z') gt 0.02 then begin
+            metallicity = fxpar(hdr, 'Z')
+;           print, metallicity
+;           print, n_elements(new_wave)
+
+            if metallicity lt 0.019 or metallicity gt 0.021 then begin
+;               print, metallicity
                 indx=where(new_wave lt 7900)
+;               print, n_elements(new_wave[indx])
                 new_data = new_data[indx]
             endif
 

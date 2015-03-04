@@ -1964,6 +1964,7 @@ python/mangadap/util/covariance.py -text
 python/mangadap/util/exception_tools.py -text
 python/mangadap/util/generalUtils.py -text
 python/mangadap/util/parser.py -text
+python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_minimal_bashrc.bash -text

@@ -99,7 +99,7 @@
 PRO MDAP_DRP_SNR_BLOCK, $
         manga_dap_version, execution_plan, perform_block, header, wave, flux, ivar, mask, $
         gflag, signal, noise, nolog=nolog, log_file_unit=log_file_unit, quiet=quiet
-            
+
         if perform_block.ston eq 1 then begin       ; Perform the S/N calculation if necessary
 
             ; Get the version

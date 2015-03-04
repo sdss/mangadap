@@ -137,6 +137,8 @@
 ;       25 Feb 2015: (KBW) Corrected error when spectrum is binned in
 ;                          log10.  Convolution now always done in pixel
 ;                          coordinates
+;       04 Mar 2015: (KBW) Impose a minimum edge mask due to errors in
+;                          the convolution of 5 pixels.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -300,7 +302,7 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
         ; that is lower than the target resolution
         for i=0,nt-1 do begin
             if ~keyword_set(quiet) then $
-                print, '    Assessing template: ', i+1
+                print, '    Assessing spectrum: ', i+1
 
             ; Allow wave and sres to be either a vector or matrix
             if wave_matrix eq 1 then $
@@ -391,7 +393,7 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
         ; with a common offset
         for i=0,nt-1 do begin
             if ~keyword_set(quiet) then begin
-                print, '    Matching resolution of template: ' + MDAP_STC(i+1,/integer) + '/' + $
+                print, '    Matching resolution of spectrum: ' + MDAP_STC(i+1,/integer) + '/' + $
                        MDAP_STC(nt,/integer)
             endif
 
@@ -412,6 +414,10 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
 ;           oplot, wave_, conv, color=200
 ;           wait, 10
 ;           stop
+
+            ; Force a minimum anti-aliasing mask of 5 pixels
+            if sigma_mask lt 5 then $
+                sigma_mask = 5
 
             ; Save the data
             mask[i,unmasked[0:sigma_mask-1]] = 1.               ; Mask the edges

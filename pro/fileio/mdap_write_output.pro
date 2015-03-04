@@ -1006,6 +1006,7 @@ PRO MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, $
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif
 END
@@ -1047,6 +1048,7 @@ PRO MDAP_WRITE_OUTPUT_BINS_INITIALIZE, $
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif
 END
@@ -1085,6 +1087,7 @@ PRO MDAP_WRITE_OUTPUT_ELPAR_INITIALIZE, $
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif
 END
@@ -1163,6 +1166,7 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_INITIALIZE, $
             cur_size[2] = fxbdimen(unit, cols[2])       ; Number of MULTPOLY elements
             cur_size[3] = fxbdimen(unit, cols[3])       ; Number of KIN elements, same as KINERR
             fxbclose, unit                              ; Close the file
+;           print, unit
             free_lun, unit                              ; Free the LUN
 
             ; Compare the current size to the existing size and decide if the
@@ -1195,6 +1199,7 @@ PRO MDAP_WRITE_OUTPUT_STELLAR_KIN_INITIALIZE, $
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
                                                         ; TODO: Write fake data to it?
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))  ; Allocate data
@@ -1302,6 +1307,7 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
             cur_size[3] = fxbdimen(unit, cols[5])       ; Number of reddening elements
             cur_size[4] = fxbdimen(unit, cols[7])       ; Number of EML elements
             fxbclose, unit                              ; Close the file
+;           print, unit
             free_lun, unit                              ; Free the LUN
 
             ; Compare the current size to the existing size and decide if the
@@ -1352,6 +1358,7 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
                                                         ; TODO: Write fake data to it?
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
@@ -1388,6 +1395,7 @@ PRO MDAP_WRITE_OUTPUT_ELOPAR_INITIALIZE, $
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif
 END
@@ -1506,6 +1514,7 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             cur_size[0] = fxbdimen(unit, cols[0])       ; Number of EW_KIN elements (num of moments)
             cur_size[1] = fxbdimen(unit, cols[2])       ; Number of emission lines
             fxbclose, unit                              ; Close the file
+;           print, unit
             free_lun, unit                              ; Free the LUN
 
             ; Compare the current size to the existing size and decide if the
@@ -1578,6 +1587,7 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
                                                         ; TODO: Write fake data to it?
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
@@ -1637,6 +1647,7 @@ PRO MDAP_WRITE_OUTPUT_SIPAR_INITIALIZE, $
 
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif
 END
@@ -1694,6 +1705,7 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             cur_size = intarr(1)
             cur_size[0] = fxbdimen(unit, cols[0])       ; Number of spectral index elements
             fxbclose, unit                              ; Close the file
+;           print, unit
             free_lun, unit                              ; Free the LUN
 
             ; Compare the current size to the existing size and decide if the
@@ -1725,6 +1737,7 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
                                                         ; TODO: Write fake data to it?
             FXBFINISH, tbl                              ; Close up
+;           print, tbl
             free_lun, tbl
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
@@ -1745,8 +1758,11 @@ PRO MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, $
         if nrows eq 0 then $
             message, 'NAXIS2 not available in header of '+file
 
-        if length eq nrows then $                               ; Length and nrows are the same
+        if length eq nrows then begin                           ; Length and nrows are the same
+            FXBFINISH, unit                                         ; Close up
+            free_lun, unit
             return
+        endif
 
         if length lt nrows then $                               ; Currently cannot shrink tables
             message, 'Cannot shrink table.  Must overwrite table.'
@@ -1755,6 +1771,7 @@ PRO MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, $
             FXBGROW, unit, hdr, length                          ; Grow the table
 
         FXBFINISH, unit                                         ; Close up
+;       print, unit
         free_lun, unit
 END
 
@@ -2086,6 +2103,12 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
                 min_eq_max=min_eq_max, signal=signal, noise=noise, bin_vreg=bin_vreg, $
                 bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
 
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+                
+
         MDAP_WRITE_OUTPUT_DRPS_INITIALIZE, file         ; Initialize the extension
 
         ; Check that one of the vectors are input
@@ -2132,6 +2155,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_DRPS, $
         if n_elements(bin_weights) ne 0 then    FXBWRITM, tbl, [cols[8]], bin_weights
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 END
 
@@ -2189,6 +2213,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_BINS, $
         if n_elements(bin_flag) ne 0 then  FXBWRITM, tbl, [cols[6]], bin_flag
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 END
 
@@ -2264,6 +2289,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELPAR, $
                   elttyp, eldoub
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 END
 
@@ -2335,6 +2361,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STELLAR_KIN, $
             FXBWRITM, tbl, [cols[5]], chi2_ppxf
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 
 ;       FXBOPEN, tbl, file, 'STFIT'
@@ -2472,6 +2499,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
             FXBWRITM, tbl, [cols[16]], transpose(emission_line_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 
 ;       FXBOPEN, tbl, file, 'SGFIT'
@@ -2518,6 +2546,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, $
         FXBWRITM, tbl, [ cols[0], cols[1] ], elname, elwave
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 END
 
@@ -2660,6 +2689,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
             FXBWRITM, tbl, [cols[23]], transpose(elo_fb_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 
 END
@@ -2711,6 +2741,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SIPAR, $
                   blueband, redband, siunit
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 END
 
@@ -2781,6 +2812,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
             FXBWRITM, tbl, [cols[4]], transpose(abs_line_indx_botpl)
 
         FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
         free_lun, tbl
 
 END
@@ -2870,6 +2902,13 @@ PRO MDAP_WRITE_OUTPUT, $
                 si_broad_optimal_template=si_broad_optimal_template, read_header=read_header, $
                 quiet=quiet
 
+;           uu = 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
 ;       if file_test(file) eq 1 then $
 ;           fits_info, file
 
@@ -2919,16 +2958,37 @@ PRO MDAP_WRITE_OUTPUT, $
                                              ems_line_key=ems_line_key, abs_line_key=abs_line_key
         endif
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Update properties of DRP spectra
         MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, $
                                        fraction_good=fraction_good, min_eq_max=min_eq_max, $
                                        signal=signal, noise=noise, bin_vreg=bin_vreg, $
                                        bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Update properties of binned spectra
         MDAP_WRITE_OUTPUT_UPDATE_BINS, file, nbin=nbin, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
                                        rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, $
                                        bin_n=bin_n, bin_flag=bin_flag, quiet=quiet
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Update the images for the binned spectra
         if n_elements(wave) ne 0 then begin
@@ -2936,11 +2996,25 @@ PRO MDAP_WRITE_OUTPUT, $
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'WAVE', 'Wavelength (angstroms)'
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Update the spectral resolution vector
         if n_elements(sres) ne 0 then begin
             MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SRES', sres, 'Spectral resolution (R, FWHM)'
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SRES', 'Spectral resolution (R, FWHM)'
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
 ;       fits_info, file
 ;       stop
@@ -2951,6 +3025,13 @@ PRO MDAP_WRITE_OUTPUT, $
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'FLUX', 'Binned flux (DRP units)'
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
 ;       fits_info, file
 ;       stop
 
@@ -2959,6 +3040,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'IVAR', bin_ivar, 'Inverse variance'
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'IVAR', 'Inverse variance'
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
 ;       fits_info, file
 ;       stop
@@ -2969,11 +3057,25 @@ PRO MDAP_WRITE_OUTPUT, $
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'MASK', 'Bad pixel mask (0/1=good/bad)'
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
 ;       fits_info, file
 ;       stop
 
         ; Update the emission-line parameters
         MDAP_WRITE_OUTPUT_UPDATE_ELPAR, file, eml_par=eml_par, quiet=quiet
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Update the stellar kinematics
         MDAP_WRITE_OUTPUT_UPDATE_STELLAR_KIN, file, nbin=nbin, weights_ppxf=weights_ppxf, $
@@ -2982,6 +3084,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                               stellar_kinematics_fit=stellar_kinematics_fit, $
                                               stellar_kinematics_err=stellar_kinematics_err, $
                                               chi2_ppxf=chi2_ppxf, quiet=quiet
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; PPXF-only mask
         if n_elements(obj_fit_mask_ppxf) ne 0 then begin
@@ -2992,6 +3101,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                'Pixel mask for PPXF fit (0/1=fit/omitted)'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; PPXF-only best fit
         if n_elements(bestfit_ppxf) ne 0 then begin
             MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SMOD', bestfit_ppxf, $
@@ -3000,6 +3116,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SMOD', $
                                                'Best-fit model for the stellar continuum'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Update the emission-line fitting results
         MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, file, nbin=nbin, eml_par=eml_par, $
@@ -3021,6 +3144,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                     reddening_val=reddening_val, $
                                                     reddening_err=reddening_err, quiet=quiet
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; GANDALF mask
         if n_elements(obj_fit_mask_gndf) ne 0 then begin
             MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SGMSK', obj_fit_mask_gndf, $
@@ -3029,6 +3159,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SGMSK', $
                                                'Pixel mask for GANDALF fit (0/1=fit/omitted)'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; GANDALF best-fit model
         if n_elements(bestfit_gndf) ne 0 then begin
@@ -3039,6 +3176,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                      'Best-fit model of stellar+gas spectrum'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; GANDALF best-fit emission-only model
         if n_elements(eml_model) ne 0 then begin
             MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'ELMOD', eml_model, $
@@ -3048,8 +3192,22 @@ PRO MDAP_WRITE_OUTPUT, $
                                                      'Best-fit emission-line-only model'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Update the emission-line parameters
         MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, file, emlo_par=emlo_par, quiet=quiet
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Update the emission-line fitting results
         MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, file, nbin=nbin, emlo_par=emlo_par, $
@@ -3069,6 +3227,13 @@ PRO MDAP_WRITE_OUTPUT, $
                         elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
                         elo_fb_EW_err=elo_fb_EW_err
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; The best-fitting emission-line model from the
         ; emission-line-only analysis provided by Enci Wang
         if n_elements(elo_ew_eml_model) ne 0 then begin
@@ -3078,6 +3243,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'ELOMEW', $
                                                 'Emission-line-only model (Enci Wang)'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; The best-fitting emission-line model from the
         ; emission-line-only analysis provided by Francesco Belfiore
@@ -3089,6 +3261,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                 'Emission-line-only model (Francesco Belfiore)'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Wavelength vector of the binned spectra that have been resolution
         ; matched to the spectral index system.
         if n_elements(si_bin_wave) ne 0 then begin
@@ -3098,6 +3277,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIWAVE', $
                                                 'Spectral-index resolution matched: wavelength'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Binned spectra that have been resolution matched to the spectral index
         ; system.
@@ -3109,6 +3295,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                 'Spectral-index resolution matched: binned flux'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Inverse variance of the binned spectra that have been resolution
         ; matched to the spectral index system.
         if n_elements(si_bin_ivar) ne 0 then begin
@@ -3118,6 +3311,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIIVAR', $
                                         'Spectral-index resolution matched: inverse variance'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Bad pixel mask of the binned spectra that have been resolution matched
         ; to the spectral index system.
@@ -3129,6 +3329,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                             'Spectral-index resolution matched: bad pixel mask'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Optimal template fit to each binned spectrum and resolution matched to
         ; the spectral index system.
         if n_elements(si_optimal_template) ne 0 then begin
@@ -3138,6 +3345,13 @@ PRO MDAP_WRITE_OUTPUT, $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIOTPL', $
                                         'Spectral-index resolution matched: optimal template'
         endelse
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Broadened optimal template fit to each binned spectrum and resolution
         ; matched to the spectral index system.
@@ -3149,8 +3363,22 @@ PRO MDAP_WRITE_OUTPUT, $
                                 'Spectral-index resolution matched: broadened optimal template'
         endelse
 
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
+
         ; Update the spectral index parameters
         MDAP_WRITE_OUTPUT_UPDATE_SIPAR, file, abs_par=abs_par, quiet=quiet
+
+;           uu += 1
+;           print, uu
+;           get_lun, unit
+;           print, unit
+;           if unit ne 100 then stop
+;           free_lun, unit
 
         ; Update the spectral index measurements
         MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, file, nbin=nbin, abs_par=abs_par, $
@@ -3159,6 +3387,13 @@ PRO MDAP_WRITE_OUTPUT, $
                                                    abs_line_indx_err=abs_line_indx_err, $
                                                    abs_line_indx_otpl=abs_line_indx_otpl, $
                                                    abs_line_indx_botpl=abs_line_indx_botpl
+
+;           uu += 1
+;           print, uu
+            get_lun, unit
+            print, unit
+;           if unit ne 100 then stop
+            free_lun, unit
 
 ;       fits_info, file
 ;       stop

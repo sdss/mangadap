@@ -13,6 +13,9 @@ import time
 import numpy
 
 from mangadap.util.exception_tools import print_frame
+from mangadap.util.yanny import yanny
+from mangadap.util.projected_disk_plane import projected_disk_plane
+
 
 __author__ = 'Kyle Westfall'
 
@@ -59,8 +62,8 @@ class dapfile:
     # TODO: Allow default of niter=None, then search for the first file
     # with the appropriate name and set niter
 
-    def __init__(self, plate, ifudesign, mode, bintype, niter, dapver=None, directory_path=None,
-                 read=True):
+    def __init__(self, plate, ifudesign, mode, bintype, niter, dapver=None, directory_path=None, 
+                 par_file=None, read=True):
         """
         ARGUMENTS:
             plate - plate designation
@@ -72,6 +75,7 @@ class dapfile:
             directory_path - Path to DAP file.  Default is
                     os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
                                  self.dapver, str(self.plate), str(self.ifudesign))
+            par_file - SDSS parameter file used when runnning the DAP
 
         """
 
@@ -88,7 +92,10 @@ class dapfile:
         else:
             self.directory_path = str(directory_path)
 
+        self.par_file = self._default_par_file() if par_file is None else str(par_file)
+
         self.hdu = None
+        self.par = None
 
         if read:
             self._open_hdu()
@@ -114,11 +121,21 @@ class dapfile:
             return
 
         inp = self.file_path()
-        if (not os.path.exists(inp)):
+        if not os.path.exists(inp):
             raise Exception('Cannot open file: {0}'.format(inp))
 
         # Open the fits file with the requested read/write permission
         self.hdu = fits.open(inp, mode=permissions)
+
+    
+    def _read_par(self):
+        if self.par is not None:
+            return
+
+        if not os.path.exists(self.par_file):
+            raise Exception('Cannot open file: {0}'.format(inp))
+            
+        self.par = yanny(filename=self.par_file, np=True)
 
 
     def _default_dap_version(self):
@@ -137,6 +154,13 @@ class dapfile:
 
         return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver, str(self.plate), 
                             str(self.ifudesign))
+
+
+    def _default_par_file(self):
+        if self.directory_path is None:
+            self.directory_path = self._default_directory_path()
+        par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(self.plate, self.ifudesign, self.mode)
+        return os.path.join(self.directory_path, par_file)
 
     
     def _twod_image_data(self, exten, indx):
@@ -243,6 +267,52 @@ class dapfile:
 
     def fit_eml_only_fb(self, indx):
         return self._twod_image_data('ELOMFB', indx)
+
+
+    def bin_disk_polar_coo(self, xc=None, yc=None, rot=None, pa=None, inc=None):
+
+        # Position angle and inclination
+        if pa is None or inc is None:
+            try:
+                self._read_par()                # Try to read the parameter file
+            except:
+                print('WARNING: Using default pa and/or inclination.')
+
+            if self.par is not None:
+                if pa is None:
+                    pa = self.guess_position_angle()
+                if inc is None:
+                    inc = self.guess_inclination()
+
+        # Declare the galaxy coo object
+        disk_plane = projected_disk_plane(xc, yc, rot, pa, inc)
+
+        # Calculate the in-plane radius and azimuth for each bin
+        self._open_hdu()
+        nbin = self.hdu['BINS'].data['BINXRL'].size
+        radius = numpy.zeros(nbin, dtype=numpy.float64)
+        azimuth = numpy.zeros(nbin, dtype=numpy.float64)
+        for i in range(0,nbin):
+            radius[i], azimuth[i] = disk_plane.polar(self.hdu['BINS'].data['BINXRL'][i], \
+                                                     self.hdu['BINS'].data['BINYRU'][i])
             
+        return radius, azimuth
+
+    
+    def guess_cz(self):
+        self._read_par()
+        return self.par['DAPPAR']['vel'][0]
+
+
+    def guess_inclination(self):
+        self._read_par()
+        return numpy.degrees( numpy.arccos(1.0 - self.par['DAPPAR']['ell'][0]) )
+
+
+    def guess_position_angle(self):
+        self._read_par()
+        return self.par['DAPPAR']['pa'][0]
+        
+
 
 

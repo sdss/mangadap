@@ -182,6 +182,9 @@ PRO MANGA_DAP, $
                                    remove_null_templates=remove_null_templates, $
                                    bvls_shared_lib=bvls_shared_lib, nolog=nolog, $
                                    log_file_unit=log_file_unit, quiet=quiet
+;       get_lun, unit
+;       print, unit
+;       free_lun, unit
 
         n_plans = n_elements(execution_plan)
 
@@ -202,6 +205,10 @@ PRO MANGA_DAP, $
                              nolog=nolog, log_file_unit=log_file_unit
 ;                            instrumental_fwhm_file=instrumental_fwhm_file, $
         
+;       get_lun, unit
+;       print, unit
+;       free_lun, unit
+
         ndrp = (size(flux))[1]              ; Number of DRP spectra
 
         if ~keyword_set(quiet) then $
@@ -274,6 +281,11 @@ PRO MANGA_DAP, $
                                        execution_plan[i], bskyy, bskyx, eml_par, abs_par, $
                                        perform_block, star_kin_interp, gas_kin_interp
 
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
+
             ;-----------------------------------------------------------
             ; Check there are blocks to be perform
             if MDAP_ALL_ANALYSIS_BLOCKS_COMPLETED(perform_block) eq 1 then begin
@@ -303,6 +315,10 @@ PRO MANGA_DAP, $
             MDAP_DRP_SNR_BLOCK, manga_dap_version, execution_plan[i], perform_block, header, wave, $
                                 flux, ivar, mask, gflag, signal, noise, nolog=nolog, $
                                 log_file_unit=log_file_unit, quiet=quiet
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
 
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ... DONE.'
@@ -325,6 +341,11 @@ PRO MANGA_DAP, $
                                 bin_indx, bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_rad, $
                                 bin_area, bin_ston, nbin, sn_calibration=sn_calibration, $
                                 plot=plot, nolog=nolog, log_file_unit=log_file_unit, quiet=quiet
+
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
 
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ... DONE.'
@@ -360,6 +381,11 @@ PRO MANGA_DAP, $
             MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
                                            tpl_sres, tpl_soff
 
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
+
             ; TODO: Need to account for tpl_soff further down the line?
             ; Or not because HARD-WIRED default is tpl_soff=0
 
@@ -381,6 +407,11 @@ PRO MANGA_DAP, $
                                           eml_model, stellar_kinematics, eml_par=eml_par, $
                                           bvls_shared_lib=bvls_shared_lib, quiet=quiet, plot=plot, $
                                           dbg=dbg
+
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
 
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ... DONE.'
@@ -405,6 +436,11 @@ PRO MANGA_DAP, $
                                           bin_indx, bin_flux, bin_ivar, bin_mask, bestfit_ppxf, $
                                           bestfit_gndf, eml_model, stellar_kinematics, $
                                           elo_ew_eml_model, quiet=quiet, dbg=dbg
+
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
 
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
@@ -436,6 +472,11 @@ PRO MANGA_DAP, $
                                        eml_model, stellar_kinematics, elo_ew_eml_model, wave, $
                                        sres, bin_flux, bin_ivar, bin_mask, $
                                        remove_outliers=remove_outliers, quiet=quiet, dbg=dbg
+
+            get_lun, unit
+            print, unit
+            free_lun, unit
+            ;stop
 
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 7 ... DONE.'
