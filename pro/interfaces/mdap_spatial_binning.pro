@@ -169,6 +169,37 @@
 ;-
 ;------------------------------------------------------------------------------
 
+PRO MDAP_SPATIAL_BINNING_SETUP_NONE, $
+                gindx, dx, dy, xcoo, ycoo, signal, noise, flux, ivar, mask, bin_weights, $
+                binned_indx, binned_flux, binned_ivar, binned_mask, binned_x_rl, binned_y_ru, $
+                binned_wrad, binned_area, binned_ston, nbinned, sn_calibration=sn_calibration, $
+                optimal_weighting=optimal_weighting
+
+        sz=size(flux)
+        ns=sz[1]                                        ; Number of spectra
+        ngood = n_elements(gindx)                       ; Number of good spectra
+
+        bin_weights = dblarr(ns)                        ; Initialize weights to 0
+        bin_weights[gindx] = 1.0d                       ; Set weights of good spectra to unity
+        binned_indx = make_array(ns, /int, value=-1)    ; Initialize bin index to -1
+        binned_indx[gindx] = indgen(ngood)              ; Set bin index of good spectra
+        binned_flux = flux[gindx,*]                     ; Save the input
+        binned_ivar = ivar[gindx,*]
+        binned_mask = mask[gindx,*]
+        binned_x_rl = xcoo[gindx,*]
+        binned_y_ru = ycoo[gindx,*]
+        binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )     ; Calculate the radius
+        binned_area = make_array(ngood, /double, value=dx*dy)   ; Set the area to a single spaxel
+;       binned_ston = signal[gindx]/noise[gindx]
+        binned_ston = dblarr(ngood)                             ; Calculate the S/N
+        for i=0,ngood-1 do $
+            binned_ston[i] = MDAP_CALCULATE_BIN_SN(signal[gindx[i]], noise[gindx[i]], $
+                                                   sn_calibration=sn_calibration, $
+                                                   optimal_weighting=optimal_weighting)
+        nbinned = make_array(ngood, /long, value=1)     ; Set number in each bin
+END
+
+
 PRO MDAP_SPATIAL_BINNING, $
                 flux, ivar, mask, signal, noise, gflag, xcoo, ycoo, dx, dy, bin_par, $
                 threshold_ston_bin, bin_weights, binned_indx, binned_flux, binned_ivar, $
@@ -194,29 +225,13 @@ PRO MDAP_SPATIAL_BINNING, $
         print, ' unmasked pixels: ', n_elements(where(mask lt 1.))
         print, ' non-zero pixels: ', n_elements(where(flux gt 0.))
 
-        sz=size(flux)
-        ns=sz[1]                                        ; Number of spectra
-
         if bin_par.type eq 'NONE' then begin                ; No binning
-            ngood = n_elements(gindx)
-            bin_weights = dblarr(ns)                    ; Initialize weights to 0
-            bin_weights[gindx] = 1.0d                   ; Set weights to unity
-            binned_indx = make_array(ns, /int, value=-1)
-            binned_indx[gindx] = indgen(ngood)
-            binned_flux = flux[gindx,*]
-            binned_ivar = ivar[gindx,*]
-            binned_mask = mask[gindx,*]
-            binned_x_rl = xcoo[gindx,*]
-            binned_y_ru = ycoo[gindx,*]
-            binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
-            binned_area = make_array(ngood, /double, value=dx*dy)
-;           binned_ston = signal[gindx]/noise[gindx]
-            binned_ston = dblarr(ngood)
-            for i=0,ngood-1 do $
-                binned_ston[i] = MDAP_CALCULATE_BIN_SN(signal[gindx[i]], noise[gindx[i]], $
-                                                       sn_calibration=sn_calibration, $
-                                                       optimal_weighting=optimal_weighting)
-            nbinned = make_array(ngood, /long, value=1)
+            MDAP_SPATIAL_BINNING_SETUP_NONE, gindx, dx, dy, xcoo, ycoo, signal, noise, flux, ivar, $
+                                             mask, bin_weights, binned_indx, binned_flux, $
+                                             binned_ivar, binned_mask, binned_x_rl, binned_y_ru, $
+                                             binned_wrad, binned_area, binned_ston, nbinned, $
+                                             sn_calibration=sn_calibration, $
+                                             optimal_weighting=optimal_weighting
             return
         endif
 
@@ -247,6 +262,27 @@ PRO MDAP_SPATIAL_BINNING, $
                 
 ;               loadct, 32
             endif
+
+            ; Get the S/N of all spaxels
+            ngood = n_elements(gindx)
+            ston = dblarr(ngood)
+            for i=0,ngood-1 do $
+                ston[i] = MDAP_CALCULATE_BIN_SN(signal[gindx[i]], noise[gindx[i]], $
+                                                sn_calibration=sn_calibration, $
+                                                optimal_weighting=optimal_weighting)
+
+            if min(ston) gt bin_par.ston then begin
+                print, 'WARNING: All pixels have enough S/N, nothing to bin!'
+                MDAP_SPATIAL_BINNING_SETUP_NONE, gindx, dx, dy, xcoo, ycoo, signal, noise, flux, $
+                                                 ivar, mask, bin_weights, binned_indx, $
+                                                 binned_flux, binned_ivar, binned_mask, $
+                                                 binned_x_rl, binned_y_ru, binned_wrad, $
+                                                 binned_area, binned_ston, nbinned, $
+                                                 sn_calibration=sn_calibration, $
+                                                 optimal_weighting=optimal_weighting
+                return
+            endif
+                
 
             ; TODO: **** For now do NOT use weight_by_sn2.  Something
             ; seems inconsistent when using this option in the voronoi
@@ -318,6 +354,7 @@ PRO MDAP_SPATIAL_BINNING, $
 ;       NOT DEFINED YET ----------------------------------------
 
         ; Set binned_indx to same length as flux
+        ns=(size(flux))[1]                                  ; Number of spectra
         MDAP_INSERT_FLAGGED, gindx, binned_indx, ns
         print, 'Number of spatial bins: ', MDAP_STC(n_elements(nbinned),/integer)
 

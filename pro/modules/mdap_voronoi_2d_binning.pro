@@ -632,7 +632,10 @@ if not array_equal(noise ge 0, 1) then message, 'NOISE cannot be negative'
 if targetSN le 1 then $
     message, 'Target S/N must be larger than 1.'
 
-ston = signal/noise
+ston = dblarr(npix)
+for i=0,npix-1 do $
+    ston[i] = MDAP_CALCULATE_BIN_SN(signal[i], noise[i], sn_calibration=sn_calibration, $
+                                    optimal_weighting=optimal_weighting)
 indx = where(ston gt 0. and finite(ston), count)
 if count eq 0 then $
     message, 'No bins with finite S/N and S/N > 0!'
@@ -657,7 +660,7 @@ if sn_total_eval lt targetSN then begin ;$
     return
 endif
 
-if min(signal/noise) gt targetSN then begin
+if min(ston) gt targetSN then begin
     print, 'WARNING: All pixels have enough S/N, nothing to bin!'
     BIN2D_NO_BINS, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
                    sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
