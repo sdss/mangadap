@@ -246,7 +246,8 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
 
                 if abs_par[j].units eq 'ang' then begin
                     losvd_correction = otpl_equiv_width / botpl_equiv_width
-                    abs_line_indx[i,j] = obj_equiv_width / losvd_correction
+;                   abs_line_indx[i,j] = obj_equiv_width / losvd_correction
+                    abs_line_indx[i,j] = obj_equiv_width * losvd_correction
                     abs_line_indx_otpl[i,j] = otpl_equiv_width
                     abs_line_indx_botpl[i,j] = botpl_equiv_width
                     abs_line_indx_err[i,j] = obj_equiv_width_err / abs(losvd_correction)
