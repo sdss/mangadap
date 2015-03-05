@@ -156,13 +156,16 @@
 ;
 ; REVISION HISTORY:
 ;       01 Sep 2014: Copied from v0_8 by L. Coccato
-;       08 Sep 2014: (KBW) Formatting and comments (incomplete)
+;       08 Sep 2014: Formatting and comments by K. Westfall (KBW) (incomplete)
 ;       15 Sep 2014: (KBW) Formatting and edits due to accommodate other changes
 ;       16 Sep 2014: (KBW) gflag changed from optional to required parameter
 ;       22 Sep 2014: (KBW) Output mask for combined spectra (TODO: This is just a place-holder)
 ;       13 Oct 2014: (KBW) Changed input/output format
 ;       04 Dec 2014: (KBW) Allow for radial binning; binned_indx changed
 ;                          to long; change to weight_by_sn2
+;       05 Mar 2014: (KBW) Calculate S/N in 'NONE' binning case using
+;                          MDAP_CALCULATE_BIN_SN for each good spaxel,
+;                          to include sn_calibration if provided.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -207,7 +210,12 @@ PRO MDAP_SPATIAL_BINNING, $
             binned_y_ru = ycoo[gindx,*]
             binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
             binned_area = make_array(ngood, /double, value=dx*dy)
-            binned_ston = signal[gindx]/noise[gindx]
+;           binned_ston = signal[gindx]/noise[gindx]
+            binned_ston = dblarr(ngood)
+            for i=0,ngood-1 do $
+                binned_ston[i] = MDAP_CALCULATE_BIN_SN(signal[gindx[i]], noise[gindx[i]], $
+                                                       sn_calibration=sn_calibration, $
+                                                       optimal_weighting=optimal_weighting)
             nbinned = make_array(ngood, /long, value=1)
             return
         endif

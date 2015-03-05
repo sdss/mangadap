@@ -226,6 +226,9 @@
 ;       03 Feb 2015: (KBW) When S/N cannot be reached by all pixels, the
 ;                          code now combines all pixels into a single
 ;                          bin instead of throwing an error.
+;       05 Mar 2015: (KBW) When S/N limit is reached by all input
+;                          spaxels, assign each spaxel to its own bin
+;                          (same as 'NONE' type binning).
 ;-
 ;----------------------------------------------------------------------------
 
@@ -540,7 +543,7 @@ FOR j=0, N_ELEMENTS(counts)-1 DO POLYFILL, x[j]+x1, y[j]+y1, COLOR=color[j]
 
 END
 ;----------------------------------------------------------------------
-; Added by KBW (3 Feb 2015) to simply combined all pixels into a single bin
+; Added by KBW (3 Feb 2015); combines all pixels into a single bin
 PRO BIN2D_ONE_BIN, $
                 x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
                 sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
@@ -561,6 +564,28 @@ PRO BIN2D_ONE_BIN, $
         sn = dblarr(nbins)                          ; Signal-to-noise
         sn[0] = MDAP_CALCULATE_BIN_SN(signal, noise, sn_calibration=sn_calibration, $
                                       optimal_weighting=optimal_weighting)
+END
+;----------------------------------------------------------------------
+; Added by KBW (5 Mar 2015); produces bins with only individual spaxels
+PRO BIN2D_NO_BINS, $
+                x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+
+        nbins=n_elements(x)                         ; number of bins
+        scale = 1.0                                 ; TODO: Is this right?
+
+        xnode = x                                   ; Set to input X and Y positions
+        ynode = y
+
+        xbar = x                                    ; Set to input X and Y positions
+        ybar = y
+
+        class = indgen(nbins)                       ; All cells set to input bin index
+        area = make_array(nbins, /integer, value=1) ; array with number of pixels in the bin
+        sn = dblarr(nbins)                          ; Signal-to-noise
+        for i=0,nbins-1 do $
+            sn[i] = MDAP_CALCULATE_BIN_SN(signal[i], noise[i], sn_calibration=sn_calibration, $
+                                          optimal_weighting=optimal_weighting)
 END
 ;----------------------------------------------------------------------
 PRO mdap_voronoi_2d_binning, x, y, signal, noise, targetSN, $
@@ -634,6 +659,8 @@ endif
 
 if min(signal/noise) gt targetSN then begin
     print, 'WARNING: All pixels have enough S/N, nothing to bin!'
+    BIN2D_NO_BINS, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                   sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
     return
 endif
 
