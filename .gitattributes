@@ -1,10 +1,30 @@
 * text=auto !eol
+/Desktop.ini -text
+/README.txt -text
 /RELEASE_NOTES -text
 bin/dap_unsuccessful.bash -text
 bin/mangadap_version -text
 bin/rundap -text
 bin/rundap3 -text
 bin/write_dap_par.py -text
+conf/authz -text
+conf/hooks-env.tmpl -text
+conf/passwd -text
+conf/svnserve.conf -text
+db/current -text
+db/format -text
+db/fs-type -text
+db/fsfs.conf -text
+db/min-unpacked-rev -text
+db/rep-cache.db -text
+db/revprops/0/0 -text
+db/revprops/0/1 -text
+db/revs/0/0 -text
+db/revs/0/1 -text
+db/txn-current -text
+db/txn-current-lock -text
+db/uuid -text
+db/write-lock -text
 doc/configuration_file.tex -text
 doc/dap.bbl -text
 doc/dap.pdf -text
@@ -1767,6 +1787,16 @@ external/templates/stelib/STELIB_v3.2_HD271163.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_HD271182.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_HD338529.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_LTT4364.fits -text svneol=unset#unset
+/format -text
+hooks/post-commit.tmpl -text
+hooks/post-lock.tmpl -text
+hooks/post-revprop-change.tmpl -text
+hooks/post-unlock.tmpl -text
+hooks/pre-commit.tmpl -text
+hooks/pre-lock.tmpl -text
+hooks/pre-revprop-change.tmpl -text
+hooks/pre-unlock.tmpl -text
+hooks/start-commit.tmpl -text
 legacy_pro/manga_dap_0.pro -text
 legacy_pro/manga_dap_1.pro -text
 legacy_pro/mdap_add_fits_layer.pro -text
@@ -1801,6 +1831,8 @@ legacy_pro/range.pro -text
 legacy_pro/read_header.pro -text
 legacy_pro/test_sn_definition.pro -text
 legacy_pro/usersymbol.pro -text
+locks/db-logs.lock -text
+locks/db.lock -text
 pro/contrib/Belfiore_ELfit.zip -text
 pro/contrib/Enci_ELfit.tar.gz -text
 pro/contrib/mdap_define_emission_lines_enci_belfiore.pro -text
@@ -1975,4 +2007,5 @@ scripts/old/mdap_environment.csh -text
 scripts/old/mdap_setup.csh -text
 scripts/old/run_dap.sh -text
 scripts/tcshrc_environment.txt -text
+/svn.ico -text
 ups/mangadap.table -text
