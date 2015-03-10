@@ -339,6 +339,10 @@ class drpfile:
 
         width_buffer is the number of pixels to add to the width of the
         cube in addition to the range needed to cover XPOS and YPOS.
+
+        self.xs and self.ys are defined at the bottom corner of the
+        first pixel, not its center!
+
         """
 
         # Make sure that the fits file is ready for reading
@@ -347,14 +351,18 @@ class drpfile:
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
             self.pixelscale = self._default_pixelscale()
+            # RA of first pixel edge
             self.xs = self.hdu['FLUX'].header['CRVAL1'] \
-                      - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1)
+                      - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1.5)
+            # Offset of first pixel edge
             self.xs = (self.xs - self.hdu['FLUX'].header['OBJRA']) \
                       * numpy.cos(numpy.radians(self.hdu['FLUX'].header['OBJDEC'])) * 3600.
             self.nx = self.hdu['FLUX'].header['NAXIS1']
 
+            # DEC of first pixel edge
             self.ys = self.hdu['FLUX'].header['CRVAL2'] \
-                      - self.hdu['FLUX'].header['CD2_2']*(self.hdu['FLUX'].header['CRPIX2']-1)
+                      - self.hdu['FLUX'].header['CD2_2']*(self.hdu['FLUX'].header['CRPIX2']-1.5)
+            # Offset of first pixel edge
             self.ys = (self.ys - self.hdu['FLUX'].header['OBJDEC']) * 3600.
             self.ny = self.hdu['FLUX'].header['NAXIS2']
             return
@@ -468,7 +476,7 @@ class drpfile:
                 current_time.tm_mday == created_time.tm_mday)
 
 
-    def pix_mesh(self, pixelscale=None, recenter=None, width_buffer=None):
+    def pix_mesh(self, pixelscale=None, recenter=None, width_buffer=None, extent=False):
         """
         Return the I and J pixel coordinates for an nx*ny mesh.  For the
         'RSS' files, this is determined following the same procedure as
@@ -476,17 +484,38 @@ class drpfile:
         header of the 'FLUX' extension.
         """
         self._cube_dimensions(pixelscale, recenter, width_buffer)
-        return numpy.meshgrid(numpy.arange(0.0,self.nx)+1, numpy.arange(0.0,self.ny)+1)
+        if extent:
+            return numpy.meshgrid(numpy.arange(0.0,self.nx+1)+0.5, \
+                                  numpy.arange(0.0,self.ny+1)+0.5, indexing='ij')
+        return numpy.meshgrid(numpy.arange(0.0,self.nx)+1, numpy.arange(0.0,self.ny)+1, \
+                              indexing='ij')
 
 
-    def world_mesh(self):
+    def pix_mesh_range(self, pixelscale=None, recenter=None, width_buffer=None):
+        """
+        Return the range in x and y of the pixel mesh, including the
+        size of the pixel.  Coordinate (1,1) is the center of the first
+        pixel, so its bottom corner is at (0.5,0.5).
+        """
+        self._cube_dimensions(pixelscale, recenter, width_buffer)
+        return numpy.array([0.5, self.nx+0.5]), numpy.array([0.5, self.ny+0.5])
+
+
+    def world_mesh(self, skyright=True):
         """
         Return the world X and Y coordinate for the self.nx*self.ny
-        mesh.  This can only be done for the 'CUBE' files because it
-        requires WCS parameters in the header of the 'FLUX' extension.
+        mesh.  For an 'RSS' file, the returned mesh is the offset from
+        the center.  self.xs, self.ys is the BOTTOM CORNER of the first
+        pixel, not its center.
         """
         if self.mode is 'RSS':
-            raise Exception('Cannot determine world coordinates for RSS files.')
+            # x and y are at the center of the pixel
+            x, y = self.pix_mesh()
+            # x0 is the front edge of the first pixel if not skyright an
+            # the back edge of the last pixel if skyright
+            x0 = self.xs+self.nx*self.pixelscale if skyright else self.xs
+            dx = -self.pixelscale if skyright else self.pixelscale
+            return (x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys
 
         if self.w is None:
             self._fix_header()
@@ -496,6 +525,35 @@ class drpfile:
         xy = numpy.array([x.reshape(self.nx*self.ny),y.reshape(self.nx*self.ny)]).transpose()
         XY = self.w.all_pix2world(xy, 1)
         return XY[:,0].reshape(self.nx, self.ny), XY[:,1].reshape(self.nx, self.ny)
+
+
+    def world_mesh_range(self, skyright=True):
+        """
+        Return the range in the world X and Y coordinates, including the
+        size of the pixel.  **Will not be exact for a rotated frame!**
+        """
+        if self.mode is 'RSS':
+            # x and y are at the edges of the pixel
+            x, y = self.pix_mesh_range()
+            # x0 is the front edge of the first pixel if not skyright an
+            # the back edge of the last pixel if skyright
+            x0 = self.xs+self.nx*self.pixelscale if skyright else self.xs
+            dx = -self.pixelscale if skyright else self.pixelscale
+            return (x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys
+
+        if self.w is None:
+            self._fix_header()
+            self.w = WCS(header=self.hdu['FLUX'].header,fix=False,naxis=(1,2))
+
+        x,y = self.pix_mesh(extent=True)
+        ncoo = (self.nx+1)*(self.ny+1)
+        xy = numpy.array([x.reshape(ncoo),y.reshape(ncoo)]).transpose()
+        XY = self.w.all_pix2world(xy, 1)
+        if skyright:
+            return [numpy.amax(XY[:,0]),numpy.amin(XY[:,0])], \
+                   [numpy.amin(XY[:,1]),numpy.amax(XY[:,1])] 
+
+        return [numpy.amin(XY[:,0]),numpy.amax(XY[:,0])], [numpy.amin(XY[:,1]),numpy.amax(XY[:,1])] 
 
 
     def gri_composite(self):
@@ -624,6 +682,8 @@ class drpfile:
         non_zero_pix = numpy.empty(0, dtype=numpy.int64)  # Holds triplet image index
         non_zero_wgt = numpy.empty(0, dtype=numpy.float64)# Holds triplet weight
 
+#       print(self.xs, self.nx, self.ys, self.ny)
+
         # TODO: Can optimize this further
         for k in range(0,ns):
 
@@ -656,8 +716,13 @@ class drpfile:
 #                   + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale \
 #                                 - jj[si:ei,sj:ej])
 
-            r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale - ii) \
-                 + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale - jj)
+            # Calcuate the distance
+            # ---- WITH RESPECT TO THE EDGE OF THE FIRST PIXEL ----
+#           r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale - ii) \
+#                + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale - jj)
+            # ---- WITH RESPECT TO THE CENTER OF THE FIRST PIXEL ----
+            r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale-0.5 - ii) \
+                 + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale-0.5 - jj)
 
             # Append new indices and weights within rlim
             non_zero_spc = numpy.append(non_zero_spc, sp[r2 < rl2])

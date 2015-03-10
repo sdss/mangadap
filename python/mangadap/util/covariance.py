@@ -135,6 +135,16 @@ class covariance:
             self.cov[i] = sparse.triu(self.cov[i]).tocsr()
             self.nnz += self.cov[i].nnz
 
+    def _with_lower_triangle(self, plane=None):
+        if self.dim == 2:
+            a = self.cov
+        else:
+            if plane is None:
+                raise ValueError('Must define plane!  Use plane=...')
+            a = self.cov[self._grab_true_index(plane)]
+
+        return (sparse.triu(a) + sparse.triu(a,1).T)
+
 
     def _free(self):
         self.dim=0
@@ -178,23 +188,19 @@ class covariance:
         
 
     def toarray(self, plane=None):
-        if self.dim == 2:
-            a = self.cov
-        else:
-            if plane is None:
-                raise ValueError('Must define plane!  Use plane=...')
-            a = self.cov[self._grab_true_index(plane)]
-
-        return (sparse.triu(a) + sparse.triu(a,1).T).toarray()
+        return (self._with_lower_triangle(plane)).toarray()
         
 
     def find(self, plane=None):
-        if self.dim == 2:
-            return sparse.find(self.cov)
-        else:
-            if plane is None:
-                raise ValueError('Must define plane!  Use plane=...')
-            return sparse.find(self.cov[self._grab_true_index(plane)])
+        return sparse.find(self._with_lower_triangle(plane))
+
+#       if self.dim == 2:
+#           return sparse.find(self.cov)
+#       else:
+#           if plane is None:
+#               raise ValueError('Must define plane!  Use plane=...')
+#           return sparse.find(self.cov[self._grab_true_index(plane)])
+
         
 
 #    def issingular(self):

@@ -145,6 +145,8 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
             ns = ceil((alog10(maxw)-alog10(minw))/dlogl)
         endif else $
             ns = ceil((alog(maxw)-alog(minw))/dlogl)
+
+        ns = ns+100
         print, 'Estimate ns: ', ns
 
         tpl_flux_ = tpl_flux            ; Save original spectra, masks, and wavelengths
@@ -186,8 +188,10 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 ;           print, ng
 
             ng=n_elements(tpl_rebin)                    ; Number of rebinned pixels
-            if ng gt ns then $
+            if ng gt ns then begin
+                print, ng, ns
                 message, 'tpl_flux not big enough'
+            endif
             print, 'Rebinned length: ', ng
             tpl_flux[i,0:ng-1] = tpl_rebin[0:ng-1]              ; Save the spectrum
             tpl_ivar[i,0:ng-1] = 1.0/tpl_ivr_rebin[0:ng-1]      ; Save the variances

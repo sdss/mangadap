@@ -79,12 +79,12 @@ PRO REBIN_STELIB
 ;           print, metallicity
 ;           print, n_elements(new_wave)
 
-            if metallicity lt 0.019 or metallicity gt 0.021 then begin
+;           if metallicity lt 0.019 or metallicity gt 0.021 then begin
 ;               print, metallicity
                 indx=where(new_wave lt 7900)
 ;               print, n_elements(new_wave[indx])
                 new_data = new_data[indx]
-            endif
+;           endif
 
             WRITEFITS, ofile, new_data, hdr
         endfor
