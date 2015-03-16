@@ -61,7 +61,7 @@ PRO MDAP_DEFINE_BAD_PIXEL_FLAGS, $
         for i=0,nn-1 do begin
             exists[i] = SDSS_FLAGEXIST(maskbit_type, flag_name[i])
             if exists[i] ne 1 then $
-                print, 'WARNING: No '+maskbit_type+' maskbit='+flagname[i]+' has been defined!'
+                print, 'WARNING: No '+maskbit_type+' maskbit='+flag_name[i]+' has been defined!'
         endfor
 END
 

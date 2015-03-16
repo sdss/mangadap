@@ -7,7 +7,7 @@
 ; CALLING SEQUENCE:
 ;       MDAP_ALL_SPECTRA_BINNING, xcoo, ycoo, signal, noise, binned_indx, binned_xcoo, $
 ;                                 binned_ycoo, binned_ston, nbinned, $
-;                                 sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+;                                 noise_calib=noise_calib, optimal_weighting=optimal_weighting
 ;
 ; INPUTS:
 ;       xcoo dblarr[N]
@@ -23,9 +23,9 @@
 ;               Estimate of the spectrum noise.
 ;
 ; OPTIONAL INPUTS:
-;       sn_calibration dblarr[C]
-;               Set of C coefficents used for the calibration of the S/N
-;               measurement.  See MDAP_CALIBRATE_SN().
+;       noise_calib int
+;               Flag to calibrate the noise vector to nominally account
+;               for covariance.
 ;
 ;       optimal_weighting
 ;               Flag used to set optimal weighting.  If it exists, the
@@ -64,12 +64,14 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       08 Dec 2014: (KBW) Original implementation
+;       08 Dec 2014: Original implementation by K. Westfall (KBW)
+;       16 Mar 2015: (KBW) Remove sn_calibration vector in favor of
+;                          noise_calib.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_ALL_SPECTRA_BINNING, xcoo, ycoo, signal, noise, binned_indx, binned_xcoo, binned_ycoo, $
-                              binned_ston, nbinned, sn_calibration=sn_calibration, $
+                              binned_ston, nbinned, noise_calib=noise_calib, $
                               optimal_weighting=optimal_weighting
 
         ; Set all spectra to be in the same bin
@@ -81,7 +83,7 @@ PRO MDAP_ALL_SPECTRA_BINNING, xcoo, ycoo, signal, noise, binned_indx, binned_xco
         binned_ycoo = [ total(signal*ycoo)/wsum ]
        
         ; Calculate the S/N
-        binned_ston = [ MDAP_CALCULATE_BIN_SN(signal, noise, sn_calibration=sn_calibration, $
+        binned_ston = [ MDAP_CALCULATE_BIN_SN(signal, noise, noise_calib=noise_calib, $
                                               optimal_weighting=optimal_weighting) ]
 
         nbinned = [ns]              ; Save the number of binned spectra

@@ -41,12 +41,13 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       10 Oct 2014: (KBW) Original implementation
+;       10 Oct 2014: Original implementation by K. Westfall
 ;       13 Oct 2014: (KBW) Include flag for weighting by S/N^2
 ;       04 Dec 2014: (KBW) Edits to print the now structure
 ;                          execution_plan.bin_par.
 ;       05 Dec 2014: (KBW) Print the prior
 ;       11 Dec 2014: (KBW) Change to allow for emission-line-only fits
+;       16 Mar 2015: (KBW) Print value of bin_par.noise_calib
 ;-
 ;------------------------------------------------------------------------------
 
@@ -59,6 +60,8 @@ PRO MDAP_PRINT_EXECUTION_PLAN, $
                    execution_plan.bin_par.v_register
             print, '    Use S/(N)^2 weighting when combining spectra: ', $
                    execution_plan.bin_par.optimal_weighting
+            print, '    Change nominal noise based on S/N calibration: ', $
+                   execution_plan.bin_par.noise_calib
         endif
         if execution_plan.bin_par.type eq 'STON' then $
             print, '    Minimum S/N per bin: ', execution_plan.bin_par.ston

@@ -8,8 +8,7 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_RADIAL_BINNING, fibx, fiby, signal, noise, bin_par, binned_indx, binned_rlow, $
-;                            binned_rupp, binned_wrad, binned_ston, nbinned, $
-;                            sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+;                            binned_rupp, binned_wrad, binned_ston, nbinned
 ;
 ; INPUTS:
 ;       fibx dblarr[N]
@@ -31,14 +30,6 @@
 ;               radial binning.  See MDAP_DEFINE_BIN_PAR().
 ;
 ; OPTIONAL INPUTS:
-;       sn_calibration dblarr[C]
-;               Set of C coefficents used for the calibration of the S/N
-;               measurement.  See MDAP_CALIBRATE_SN().
-;
-;       optimal_weighting
-;               Flag used to set optimal weighting.  If it exists, the
-;               spectra are expected to be combined using S/(N)^2
-;               weighting.
 ;
 ; OPTIONAL KEYWORDS:
 ;
@@ -78,9 +69,10 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       03 Dec 2014: (KBW) Adapted from some of my C++ code
+;       03 Dec 2014: Adapted from some C++ code by K. Westfall
+;       16 Mar 2015: (KBW) Change to calibrated S/N calculation
 ;-
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------
 ; Calculate the radius assuming a planar geometry, projected into the
@@ -157,8 +149,7 @@ END
 
 PRO MDAP_RADIAL_BINNING, $
                 fibx, fiby, signal, noise, bin_par, binned_indx, binned_rlow, binned_rupp, $
-                binned_wrad, binned_ston, nbinned, sn_calibration=sn_calibration, $
-                optimal_weighting=optimal_weighting
+                binned_wrad, binned_ston, nbinned
 
         ; Compute the "major-axis" coordinates of each fiber
         MDAP_MAJOR_AXIS_POLAR_COO, fibx, fiby, bin_par.cx, bin_par.cy, 0.0d, bin_par.pa, $
@@ -211,6 +202,9 @@ PRO MDAP_RADIAL_BINNING, $
         n = n_elements(fibx)                            ; Number of spectra
         binned_indx = make_array(n, /long, value=-1)    ; Allocate binned index array
 
+        if bin_par.optimal_weighting eq 1 then $        ; Flag to use S/(N)^2 weighting
+            optimal_weighting = 1
+
         ; Get the binned indices
         for i=0,bin_par.nr-1 do begin
             indx = where(R gt binned_rlow[i] and R lt binned_rupp[i], count)   ; Spectra in the bin
@@ -227,7 +221,7 @@ PRO MDAP_RADIAL_BINNING, $
 
             ; Calculate the S/N
             binned_ston[i] = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], $
-                                                   sn_calibration=sn_calibration, $
+                                                   noise_calib=bin_par.noise_calib, $
                                                    optimal_weighting=optimal_weighting)
 
             nbinned[i] = n_elements(indx)               ; Add the number of spectra in the bin

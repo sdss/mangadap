@@ -509,6 +509,8 @@
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
 ;                          == max(flux) flag in DRPS extension.
+;       16 Mar 2015: (KBW) Read header keyword noting if noise vector
+;                          calibration is applied.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -556,6 +558,8 @@ PRO MDAP_READ_SET_HEADER_DATA, $
                 bin_par.v_register = 1
             if SXPAR(header, 'BINWGT', /silent) eq 'Optimal' then $
                 bin_par.optimal_weighting = 1
+            if SXPAR(header, 'BINNCAL', /silent) eq 'Yes' then $
+                bin_par.noise_calib = 1
             if bin_par.type eq 'STON' then $
                 bin_par.ston = SXPAR(header, 'BINSN', /silent)
             if bin_par.type eq 'RADIAL' then begin

@@ -140,6 +140,9 @@
 ;       30 Jan 2015: (KBW) Pulled all the internal support routines, and
 ;                          pulled out blocks into their own routines as
 ;                          suggested by M. Cappellari.
+;       16 Mar 2015: (KBW) Remove sn_calibration flag for
+;                          MDAP_BINNING_BLOCK; noise_calib now included
+;                          in bin_par
 ;-
 ;-----------------------------------------------------------------------
 
@@ -156,7 +159,7 @@ PRO MANGA_DAP, $
         nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
 
         manga_dap_version = MDAP_DEFINE_MANGA_DAP_VERSION()
-        manga_dap_version.main = '0.94'     ; set the version number
+        manga_dap_version.main = '0.95'     ; set the version number
         t0=systime(/seconds)/60./60.        ; start time
         thismem = memory()                  ; start memory
         maxmem = 0                          ; maximum memory
@@ -339,8 +342,8 @@ PRO MANGA_DAP, $
                                 gflag, signal, noise, velocity_initial_guess, star_kin_interp, $
                                 gas_kin_interp, bin_vreg, reg_velocity_initial_guess, bin_wgts, $
                                 bin_indx, bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_rad, $
-                                bin_area, bin_ston, nbin, sn_calibration=sn_calibration, $
-                                plot=plot, nolog=nolog, log_file_unit=log_file_unit, quiet=quiet
+                                bin_area, bin_ston, nbin, plot=plot, nolog=nolog, $
+                                log_file_unit=log_file_unit, quiet=quiet
 
             get_lun, unit
             print, unit

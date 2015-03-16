@@ -187,7 +187,7 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       10 Oct 2014: (KBW) Original implementation
+;       10 Oct 2014: Original implementation by K. Westfall
 ;       13 Oct 2014: (KBW) Include bin_weight_by_sn2
 ;       15 Oct 2014: (KBW) Added analysis_extra
 ;       07 Nov 2014: (KBW) Checks that analysis steps are performed in
@@ -202,6 +202,9 @@
 ;                          function, added file_root to input, added
 ;                          versioning.
 ;       11 Dec 2014: (KBW) Allow for the emission-line only fitting.
+;       16 Mar 2015: (KBW) Allow noise_calib in bin_par.  Force
+;                          optimal_weighting = 0 if applying the
+;                          calibration.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -314,6 +317,14 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
 ;                  ' respectively)'
 ;           
 ;       endif
+
+        ; Check the noise_calib and optimal_weighting parameters are compatible
+        if execution_plan.bin_par.optimal_weighting eq 1 $
+           && execution_plan.bin_par.noise_calib ne 0 then begin
+            print, 'WARNING: Cannot optimally weight spectra and apply the noise calibration.  '+$
+                   'Ignoring optimal weighting.'
+            execution_plan.bin_par.optimal_weighting = 0
+        endif
 
         ; Analysis steps are check using MDAP_SET_EXECUTION_PLAN_ANALYSIS
 

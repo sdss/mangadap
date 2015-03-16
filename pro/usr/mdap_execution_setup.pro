@@ -29,11 +29,23 @@
 ;                       Weight spectra by S/N^2 during their combination
 ;                       (1-yes,0-no)
 ;
+;                   bin_par.noise_calib
+;                       Apply a calibration of the noise vector in the
+;                       binned spectrum.  Options are currently:
+;                           
+;                           0 - (default) Do not apply
+;                           1 - N_calib = N_nominal * (1 + 1.6*log10(N_bin))
+;
+;                       where N_bin is the number of binned spectra.
+;                       NOTE: Option 1 cannot be combined with optimal
+;                       weighting!
+;
 ;           bin_par.type = 'STON'
 ;               Spectra are binned, using the Voronoi binning scheme, to
 ;               a minimum S/N level. In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above), this bin type also requires:
+;               bin_par.v_register, bin_par.optimal_weighting, and
+;               bin_par.noise_calib (see above), this bin type also
+;               requires:
 ;
 ;                   bin_par.ston
 ;                       Minimum S/N level.
@@ -41,9 +53,9 @@
 ;           bin_par.type = 'RADIAL'
 ;               Spectra are binned radially according to a provided
 ;               planar projection.  In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above under bin_par.type='ALL'), this bin type also
-;               requires:
+;               bin_par.v_register, bin_par.optimal_weighting,
+;               bin_par.noise_calib (see above under
+;               bin_par.type='ALL'), this bin type also requires:
 ;
 ;                   bin_par.cx, bin_par.cy:
 ;                       On-sky X,Y position to use for R=0.  (0,0 by
@@ -321,11 +333,17 @@ PRO MDAP_EXECUTION_SETUP, $
 ;       signifier = directory+'/mdap_setup.pro'
         signifier = dapsrc+'/pro/usr/mdap_execution_setup.pro'
 
+;-----------------------------------------------------------------------
+;-----------------------------------------------------------------------
+; Just perform high S/N binning with STELIB templates:
+;-----------------------------------------------------------------------
+;-----------------------------------------------------------------------
+
         ;-----------------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 2                                       ; Number of ExecutionPlans to produce
+        niter = 1                                       ; Number of ExecutionPlans to produce
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -350,77 +368,37 @@ PRO MDAP_EXECUTION_SETUP, $
 
         overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
 
-        ;-----------------------------------------------------------------------
-        ; For each iteration:
-        bin_par[0].type = 'STON'
-        bin_par[0].optimal_weighting = 1        ; Otherwise uniform weighting
-        bin_par[0].ston = 80.0d
-        ;   leave everything else as default (no velocity registration)
+;-----------------------------------------------------------------------
 
-        ; Try RADIAL using the results from the first ExecutionPlan to
-        ; velocity register the data -> set v_register to true here and
-        ; add the prior below.
-        bin_par[1].type = 'RADIAL'
-        bin_par[1].v_register = 1
-        bin_par[1].optimal_weighting = 1
-        bin_par[1].nr = 10
-        bin_par[1].rlog = 1
-        ;   leave everything else as default
+        bin_par[*].type = 'STON'
+;       bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
+        bin_par[*].noise_calib = 1              ; Use the calibrated noise
+        bin_par[*].ston = 30.0d
 
-        ; Define the wavelength range over which to calculate the mean S/N per pixel
         w_range_sn[0,*] = [5560.00, 6942.00]
-        w_range_sn[1,*] = [5560.00, 6942.00]
-
-        ; Define the S/N threshold to include spectrum in any bin
         threshold_ston_bin[*] = -300.0d
 
-        ; Define the wavelength range over which to perform ALL analyses
         w_range_analysis[0,*] = [3650.,10300.] 
-        w_range_analysis[1,*] = [3650.,10300.] 
-
-        ; Define the S/N threshold to perform analysis
         threshold_ston_analysis[*] = 0.0d
 
-        ; Set the list of analyses to perform.  The available analysis steps are
-        ; listed above.
+;       analysis[*,0] = 'stellar-cont'
 
-        analysis[*,0] = 'stellar-cont'
-        analysis[*,1] = 'star+gas'
-        analysis[*,2] = 'emission-line'
-        analysis[*,3] = 'abs-indices'
-
-        ; Set the template library to use for the analysis
-        ; TODO: Change this to use the library key?
         tpl_lib_analysis[*] = 'M11-STELIB'
-
-        ; Set the emission-line parameter set to use
         ems_par_analysis[*] = 'STANDARD'
-
-        ; Set the absorption-line parameter set to use
         abs_par_analysis[*] = 'LICK'
 
-        ; Set additional parameters needed by the analysis modules
-        ; The reddening order can be 0, 1, or 2
-        ; TODO: Allow for oversample?
-        ; IF NOT SET HERE, the default values are:
-        ;       moments=2, degree=-1, mdegree=-1, reddening_order=0
         analysis_par[*].moments = 4
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
-        ; analysis_par[0].reddening[*] = [0.01,0.01]
+        analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
-        ; Analysis priors, see description above.
-        analysis_prior[0] = ''      ; No prior for the first plan
-        analysis_prior[1] = '0'     ; Use the results from the first plan as a prior on the second
+        analysis_prior[*] = ''                  ; No priors
 
-        ; Set a flag to overwrite existing output: 1-yes, 0-no
-        overwrite_flag[0] = 1
-;       overwrite_flag[0] = 0
-        overwrite_flag[1] = 1
+        overwrite_flag[*] = 1
 
-        ;=======================================================================
-        ;=======================================================================
+;-------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 
 END
 

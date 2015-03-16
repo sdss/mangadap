@@ -1827,6 +1827,7 @@ legacy_pro/mdap_sgandalf.pro -text
 legacy_pro/mdap_sgn.pro -text
 legacy_pro/mdap_spatial_radial_binning.pro -text
 legacy_pro/mdap_spectral_fitting_with_sgandalf.pro -text
+legacy_pro/mdap_voronoi_2d_binning.pro -text
 legacy_pro/range.pro -text
 legacy_pro/read_header.pro -text
 legacy_pro/test_sn_definition.pro -text
@@ -1909,6 +1910,7 @@ pro/utilities/mdap_assign_emission_line_parameters.pro -text
 pro/utilities/mdap_basic_colors.pro -text
 pro/utilities/mdap_build_execution_plans.pro -text
 pro/utilities/mdap_calculate_bin_sn.pro -text
+pro/utilities/mdap_calibrate_noise.pro -text
 pro/utilities/mdap_calibrate_sn.pro -text
 pro/utilities/mdap_check_emission_lines.pro -text
 pro/utilities/mdap_combine_spectra.pro -text

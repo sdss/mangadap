@@ -29,11 +29,23 @@
 ;                       Weight spectra by S/N^2 during their combination
 ;                       (1-yes,0-no)
 ;
+;                   bin_par.noise_calib
+;                       Apply a calibration of the noise vector in the
+;                       binned spectrum.  Options are currently:
+;                           
+;                           0 - (default) Do not apply
+;                           1 - N_calib = N_nominal * (1 + 1.6*log10(N_bin))
+;
+;                       where N_bin is the number of binned spectra.
+;                       NOTE: Option 1 cannot be combined with optimal
+;                       weighting!
+;
 ;           bin_par.type = 'STON'
 ;               Spectra are binned, using the Voronoi binning scheme, to
 ;               a minimum S/N level. In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above), this bin type also requires:
+;               bin_par.v_register, bin_par.optimal_weighting, and
+;               bin_par.noise_calib (see above), this bin type also
+;               requires:
 ;
 ;                   bin_par.ston
 ;                       Minimum S/N level.
@@ -41,9 +53,9 @@
 ;           bin_par.type = 'RADIAL'
 ;               Spectra are binned radially according to a provided
 ;               planar projection.  In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above under bin_par.type='ALL'), this bin type also
-;               requires:
+;               bin_par.v_register, bin_par.optimal_weighting,
+;               bin_par.noise_calib (see above under
+;               bin_par.type='ALL'), this bin type also requires:
 ;
 ;                   bin_par.cx, bin_par.cy:
 ;                       On-sky X,Y position to use for R=0.  (0,0 by

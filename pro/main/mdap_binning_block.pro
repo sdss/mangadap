@@ -18,8 +18,7 @@
 ;                           noise, velocity_initial_guess, star_kin_interp, gas_kin_interp, $
 ;                           bin_vreg, reg_velocity_initial_guess, bin_wgts, bin_indx, bin_flux, $
 ;                           bin_ivar, bin_mask, xbin, ybin, bin_rad, bin_area, bin_ston, nbin, $
-;                           sn_calibration=sn_calibration, /plot, /nolog, $
-;                           log_file_unit=log_file_unit, /quiet
+;                           /plot, /nolog, log_file_unit=log_file_unit, /quiet
 ;
 ; INPUTS:
 ;       manga_dap_version MaNGADAPVersion
@@ -88,10 +87,6 @@
 ;               analysis prior.
 ;
 ; OPTIONAL INPUTS:
-;       sn_calibration fltarr[]
-;               List of coefficients to use for S/N calculation, instead
-;               of the nominal calculation.  See MDAP_CALIBRATE_SN.
-;
 ;       log_file_unit LUN
 ;               File unit pointing to the log file
 ;
@@ -179,7 +174,8 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       16 Mar 2015: (KBW) Include adjustments for bin_par.noise_calib
 ;-
 ;------------------------------------------------------------------------------
 
@@ -188,8 +184,8 @@ PRO MDAP_BINNING_BLOCK, $
                 wave, sres, flux, ivar, mask, bskyx, bskyy, gflag, signal, noise, $
                 velocity_initial_guess, star_kin_interp, gas_kin_interp, bin_vreg, $
                 reg_velocity_initial_guess, bin_wgts, bin_indx, bin_flux, bin_ivar, bin_mask, $
-                xbin, ybin, bin_rad, bin_area, bin_ston, nbin, sn_calibration=sn_calibration, $
-                plot=plot, nolog=nolog, log_file_unit=log_file_unit, quiet=quiet
+                xbin, ybin, bin_rad, bin_area, bin_ston, nbin, plot=plot, nolog=nolog, $
+                log_file_unit=log_file_unit, quiet=quiet
 
         if perform_block.bin eq 1 then begin
 
@@ -253,7 +249,7 @@ PRO MDAP_BINNING_BLOCK, $
                                   bskyy, spaxel_dx, spaxel_dy, execution_plan.bin_par, $
                                   execution_plan.threshold_ston_bin, bin_wgts, bin_indx, bin_flux, $
                                   bin_ivar, bin_mask, xbin, ybin, bin_rad, bin_area, bin_ston, $
-                                  nbin, sn_calibration=sn_calibration, plot=plot
+                                  nbin, plot=plot, quiet=quiet
 
             ; Write the version of the spatial binning to the header
             SXADDPAR, header, 'VDAPBIN', manga_dap_version.spatial_binning, $
@@ -272,6 +268,8 @@ PRO MDAP_BINNING_BLOCK, $
                             execution_plan.threshold_ston_bin
                     printf, log_file_unit, '[INFO] Optimal weighting by S/(N)^2: ', $
                             execution_plan.optimal_weighting
+                    printf, log_file_unit, '[INFO] Calibrated noise vector: ', $
+                            execution_plan.noise_calib
                 endif
                 printf, log_file_unit, '[INFO] Number of bins: ', n_elements(nbin)
             endif

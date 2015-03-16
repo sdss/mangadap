@@ -16,6 +16,7 @@ import numpy
 
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.covariance import covariance
+from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 
@@ -193,6 +194,10 @@ class drpfile:
         self.regrid_rlim = None
         self.regrid_sigma = None
 
+        # Provide internal variables to keep the rho matrix
+        self.sigma_rho = None
+        self.cov_rho = None
+
         self.hdu = None                 # Do not automatically read the data
         self.w = None                   # WCS structure
 
@@ -314,9 +319,7 @@ class drpfile:
         return False
 
 
-    def _regrid_transfer_correct(self, channel, pixelscale, rlim, sigma):
-        if self.regrid_channel != channel:
-            return False
+    def _regrid_kernel_correct(self, pixelscale, rlim, sigma):
         if self.pixelscale != pixelscale:
             return False
         if self.regrid_rlim != rlim:
@@ -324,6 +327,24 @@ class drpfile:
         if self.regrid_sigma != sigma:
             return False
         return True
+
+
+    def _regrid_transfer_correct(self, channel, pixelscale, rlim, sigma):
+        if self.regrid_channel != channel:
+            return False
+        return self._regrid_kernel_correct(pixelscale, rlim, sigma)
+
+
+    def _variance_correlation_undefined(self):
+        if self.cov_rho is None:
+            return True
+        return False
+
+
+    def _variance_correlation_correct(self, sigma_rho, pixelscale, rlim, sigma):
+        if self.sigma_rho != sigma_rho:
+            return False
+        return self._regrid_kernel_correct(pixelscale, rlim, sigma)
 
 
     def _cube_dimensions(self, pixelscale=None, recenter=None, width_buffer=None, redo=False):
@@ -351,6 +372,8 @@ class drpfile:
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
             self.pixelscale = self._default_pixelscale()
+            self.recenter = self._default_recenter()
+            self.width_buffer = self._default_width_buffer()
             # RA of first pixel edge
             self.xs = self.hdu['FLUX'].header['CRVAL1'] \
                       - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1.5)
@@ -397,7 +420,7 @@ class drpfile:
 
         # Force the size to be even and the same in both dimensions
         Dx = Dx if Dx > Dy else Dy
-        self.nx = numpy.floor(Dx/self.pixelscale)+width_buffer
+        self.nx = int(numpy.floor(Dx/self.pixelscale)+width_buffer)
         if self.nx % 2 != 0:
             self.nx += 1
         self.ny = self.nx
@@ -410,6 +433,68 @@ class drpfile:
         if recenter:
             self.xs = self.xs + (minx+maxx)/2.0
             self.ys = self.ys + (miny+maxy)/2.0
+
+
+    def _get_variance_correlation(self, sigma_rho, pixelscale=None, recenter=None, 
+                                  width_buffer=None, rlim=None, sigma=None, redo=False):
+
+        # Set the default values for the input
+        if pixelscale is None:
+            pixelscale = self._default_pixelscale()
+        if recenter is None:
+            recenter = self._default_recenter()
+        if width_buffer is None:
+            width_buffer = self._default_width_buffer()
+        if rlim is None:
+            rlim = self._default_regrid_rlim()
+        if sigma is None:
+            sigma = self._default_regrid_sigma()
+
+        # Check if the variance correlation coefficients already exist
+        # and were determined using the correct parameters
+        if not redo and not self._cube_dimensions_undefined() \
+           and self._cube_dimensions_correct(pixelscale, recenter, width_buffer) \
+           and not self._variance_correlation_undefined() \
+           and self._variance_correlation_correct(sigma_rho, pixelscale, rlim, sigma):
+            return self.cov_rho
+
+        # Get the cube dimensions; may not necessarily match DRP calculation
+        self._cube_dimensions(pixelscale, recenter, width_buffer)
+
+        # Get the full covariance grid
+        nim = self.nx*self.ny
+        ii, jj = numpy.meshgrid(numpy.arange(0,nim), numpy.arange(0,nim), indexing='ij')
+
+        # Convert covariance pixel to two image pixels for the upper
+        # triangle (including the diagonal):
+        i_i = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        i_i[jj>=ii] = ii[jj >= ii]//self.ny
+
+        i_j = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        i_j[jj>=ii] = ii[jj >= ii]-i_i[jj >= ii]*self.ny
+
+        j_i = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        j_i[jj>=ii] = jj[jj >= ii]//self.ny
+
+        j_j = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        j_j[jj>=ii] = jj[jj >= ii]-j_i[jj >= ii]*self.ny
+
+        #Get the distances
+        dij = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        dij[jj>=ii] = numpy.sqrt( (j_i[jj>=ii]-i_i[jj>=ii])**2 + (j_j[jj>=ii]-i_j[jj>=ii])**2 )
+        dij[dij > 2*rlim/pixelscale] = 0.0
+
+        #Set rho_ij
+        rho_ij = numpy.zeros( (nim,nim), dtype=numpy.float64)
+        rho_ij[dij > 0] = numpy.exp(-0.5*(dij[dij > 0]/sigma_rho)**2)
+        rho_ij[ii==jj] = 1.0
+
+        # Set the sparse rho matrix and save the parameters used to
+        # generate it
+        self.cov_rho = sparse.csr_matrix(rho_ij)
+        self.sigma_rho = sigma_rho
+        self.regrid_rlim = rlim
+        self.regrid_sigma = sigma
 
 
     def _fix_header(self):
@@ -809,7 +894,7 @@ class drpfile:
 
 
     def covariance_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None, 
-                          rlim=None, sigma=None, csr=False, quiet=False):
+                          rlim=None, sigma=None, sigma_rho=None, csr=False, quiet=False):
         """
         Return the covariance matrix for a specified wavelength channel.
         If this is a CUBE file, it tries to use the RSS counterpart to
@@ -830,53 +915,94 @@ class drpfile:
         if sigma is None:
             sigma = self._default_regrid_sigma()
 
-        # Allow CUBE output under certain conditions
-        if self.mode is 'CUBE':
-            use_RSS = True
-            if pixelscale != self._default_pixelscale():
-                use_RSS = False
-            if recenter != self._default_recenter():
-                use_RSS = False
-            if width_buffer != self._default_width_buffer():
-                use_RSS = False
-            if rlim != self._default_regrid_rlim():
-                use_RSS = False
-            if sigma != self._default_regrid_sigma():
-                use_RSS = False
 
-            if not use_RSS:
-                raise Exception('Must use default pixel scale, rlim, and sigma to get '
-                                + 'covariance matrices for DRP-produced CUBE files.')
+        # If sigma_rho is not provided, do the exact calculation
+        if sigma_rho is None:
 
-            print('Attempting to use RSS counter-part for calculation.')
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
-                           directory_path=self.directory_path)
-            return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma,
-                                          csr, quiet)
+            # Allow CUBE output under certain conditions
+            if self.mode is 'CUBE':
+                use_RSS = True
+                if pixelscale != self._default_pixelscale():
+                    use_RSS = False
+                if recenter != self._default_recenter():
+                    use_RSS = False
+                if width_buffer != self._default_width_buffer():
+                    use_RSS = False
+                if rlim != self._default_regrid_rlim():
+                    use_RSS = False
+                if sigma != self._default_regrid_sigma():
+                    use_RSS = False
 
-        # Set the transfer matrix (set to self.regrid_T; don't need to
-        # keep the returned matrix)
-        self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
+                if not use_RSS:
+                    raise Exception('Must use default pixel scale, rlim, and sigma to get '
+                                     + 'covariance matrices for DRP-produced CUBE files.')
 
-        ns = self.hdu['FLUX'].data.shape[0]             # The number of spectra
+                print('Attempting to use RSS counter-part for calculation.')
+                drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                               directory_path=self.directory_path)
+                return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
+                                              sigma, csr, quiet)
 
-        # Get the variance values, ignoring those that are <= 0
-        var = numpy.zeros(ns, dtype=numpy.float64)
-        indx = numpy.where(self.hdu['IVAR'].data[:,channel] > 0.)
-        var[indx] = 1.0/self.hdu['IVAR'].data[indx,channel]
+            # Set the transfer matrix (set to self.regrid_T; don't need
+            # to keep the returned matrix)
+            self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma,
+                                        quiet)
 
-        # Set the covariance matrix of the spectra to be a diagonal
-        # matrix with the provided variances
-        Sigma = sparse.coo_matrix( (var, (numpy.arange(0,ns),numpy.arange(0,ns))), \
-                                   shape=(ns,ns)).tocsr()
+            ns = self.hdu['FLUX'].data.shape[0]             # The number of spectra
 
-        # Return the covariance matrix from the spatial rebinning
-        C = sparse.triu(self.regrid_T.dot(Sigma.dot(self.regrid_T.transpose()))).tocsr()
+            # Get the variance values, ignoring those that are <= 0
+            var = numpy.zeros(ns, dtype=numpy.float64)
+            indx = numpy.where(self.hdu['IVAR'].data[:,channel] > 0.)
+            var[indx] = 1.0/self.hdu['IVAR'].data[indx,channel]
+
+            # Set the covariance matrix of the spectra to be a diagonal
+            # matrix with the provided variances
+            Sigma = sparse.coo_matrix( (var, (numpy.arange(0,ns),numpy.arange(0,ns))), \
+                                      shape=(ns,ns)).tocsr()
+
+            # Return the covariance matrix from the spatial rebinning
+            C = sparse.triu(self.regrid_T.dot(Sigma.dot(self.regrid_T.transpose()))).tocsr()
+
+        # Approximate the calculation assuming that C_ij =
+        # rho_ij/sqrt(IVAR_ii IVAR_jj) where rho_ij is approximated by a
+        # Gaussian with the provided sigma_rho
+        else: 
+            # Allow to process RSS if necessary, but warn user
+            if self.mode is 'RSS':
+                print('Attempting to use CUBE counter-part for calculation.')
+                drpf = drpfile(self.plate, self.ifudesign, 'CUBE', drpver=self.drpver, \
+                               directory_path=self.directory_path)
+                return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
+                                              sigma, sigma_rho, csr, quiet)
+
+            # Get the variance correlation (rho) matrix (returns
+            # existing matrix if available for same parameters)
+            self._get_variance_correlation(sigma_rho, pixelscale, recenter, width_buffer, rlim,
+                                           sigma)
+
+            # Get the non-zero elements
+            ci, cj, rho = sparse.find(self.cov_rho)
+
+            # Get the cube pixels
+            i_i = ci//self.ny
+            i_j = ci-i_i*self.ny
+            j_i = cj//self.ny
+            j_j = cj-j_i*self.ny
+
+            # Use the available inverse variance cube to approximately
+            # calculate the full covariance matrix
+            cov = numpy.sqrt(self.hdu['IVAR'].data[channel,i_j,i_i]
+                             * self.hdu['IVAR'].data[channel,j_j,j_i])
+            cov[cov>0] = rho[cov>0]/cov[cov>0]
+
+            C = sparse.coo_matrix((cov[cov>0], (ci[cov>0], cj[cov>0])), 
+                                  shape=(self.nx*self.ny,self.nx*self.ny)).tocsr()
+
         return covariance(C) if not csr else C
 
 
     def covariance_cube(self, channels=None, pixelscale=None, recenter=None, width_buffer=None, 
-                        rlim=None, sigma=None, csr=False, quiet=False):
+                        rlim=None, sigma=None, sigma_rho=None, csr=False, quiet=False):
         """
         Return the covariance matrices for all wavelength channels.  The
         returned object is an ndarray of sparse.csr_matrix types.
@@ -915,7 +1041,8 @@ class drpfile:
             print('Attempting to use RSS counter-part for calculation.')
             drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
                            directory_path=self.directory_path)
-            return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, quiet)
+            return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, \
+                                        sigma_rho, csr, quiet)
 
         self._open_hdu()
 
@@ -932,7 +1059,7 @@ class drpfile:
 
         for i in range(0,nc):
             CovCube[i] = self.covariance_matrix(channels[i], pixelscale, recenter, width_buffer,
-                                                rlim, sigma, csr=True, quiet=True)
+                                                rlim, sigma, sigma_rho, csr=True, quiet=True)
             if not quiet:
                 print('Covariance Cube {0}/{1}'.format(i+1,nc), end="\r")
 

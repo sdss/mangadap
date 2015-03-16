@@ -34,11 +34,23 @@
 ;                       Weight spectra by S/N^2 during their combination
 ;                       (1-yes,0-no)
 ;
+;                   bin_par.noise_calib
+;                       Apply a calibration of the noise vector in the
+;                       binned spectrum.  Options are currently:
+;                           
+;                           0 - (default) Do not apply
+;                           1 - N_calib = N_nominal * (1 + 1.6*log10(N_bin))
+;
+;                       where N_bin is the number of binned spectra.
+;                       NOTE: Option 1 cannot be combined with optimal
+;                       weighting!
+;
 ;           bin_par.type = 'STON'
 ;               Spectra are binned, using the Voronoi binning scheme, to
 ;               a minimum S/N level. In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above), this bin type also requires:
+;               bin_par.v_register, bin_par.optimal_weighting, and
+;               bin_par.noise_calib (see above), this bin type also
+;               requires:
 ;
 ;                   bin_par.ston
 ;                       Minimum S/N level.
@@ -46,9 +58,9 @@
 ;           bin_par.type = 'RADIAL'
 ;               Spectra are binned radially according to a provided
 ;               planar projection.  In addition to setting
-;               bin_par.v_register and bin_par.optimal_weighting (see
-;               above under bin_par.type='ALL'), this bin type also
-;               requires:
+;               bin_par.v_register, bin_par.optimal_weighting,
+;               bin_par.noise_calib (see above under
+;               bin_par.type='ALL'), this bin type also requires:
 ;
 ;                   bin_par.cx, bin_par.cy:
 ;                       On-sky X,Y position to use for R=0.  (0,0 by
@@ -99,16 +111,19 @@
 ;       result = MDAP_DEFINE_BIN_PAR()
 ;
 ; REVISION HISTORY:
-;       04 Dec 2014: (KBW) Original implementation.  bin_type and
-;                          bin_weight_by_sn2 are no longer parameters in
-;                          the ExecutionPlan structure.  Instead they're
-;                          held here.
+;       04 Dec 2014: Original implementation by K. Westfall.  bin_type
+;                    and bin_weight_by_sn2 are no longer parameters in
+;                    the ExecutionPlan structure.  Instead they're held
+;                    here.
+;       16 Mar 2015: (KBW) Added sn_calib keyword for the S/N
+;                          calibration of binned spectra that accounts
+;                          for covariance.
 ;-
 ;-----------------------------------------------------------------------
 
 FUNCTION MDAP_DEFINE_BIN_PAR
-        bin_par = { BinPar, type:'', v_register:0, optimal_weighting:0, ston:0.0d, cx:0.0d, $
-                            cy:0.0d, pa:0.0d, ell:0.0d, rs:0.0d, re:-1.0d, nr:5, rlog:0, $
+        bin_par = { BinPar, type:'', v_register:0, optimal_weighting:0, noise_calib:0, ston:0.0d, $
+                            cx:0.0d, cy:0.0d, pa:0.0d, ell:0.0d, rs:0.0d, re:-1.0d, nr:5, rlog:0, $
                             rscale:1.0d }
 
         return, bin_par

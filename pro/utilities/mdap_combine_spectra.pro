@@ -63,16 +63,18 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       15 Sep 2014: (KBW) Original implementation
+;       15 Sep 2014: Original implementation by K. Westfall (KBW)
 ;       22 Sep 2014: (KBW) Output mask (just a place-holder for now)
 ;       04 Dec 2014: (KBW) Account for mask of input spectra, mostly
 ;                          just confirmed what was in place was already
 ;                          doing this!
+;       16 Mar 2014: (KBW) Allow for noise calibration.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_COMBINE_SPECTRA, $
-                flux, ivar, mask, bin_id, wgt, nbinned, combined_flux, combined_ivar, combined_mask
+                flux, ivar, mask, bin_id, wgt, nbinned, combined_flux, combined_ivar, $
+                combined_mask, noise_calib=noise_calib
 
         sz=size(nbinned)
         nb = sz[0]                                      ; If bins are defined, will be non-zero
@@ -90,6 +92,7 @@ PRO MDAP_COMBINE_SPECTRA, $
 
         combined_flux = dblarr(nb, nc)                  ; Initialize the combined spectra
         combined_ivar = dblarr(nb, nc)                  ; All pixel values initialized to 0.0
+        combined_nois = dblarr(nb, nc)                  ; Noise vectors, initialized to 0s
         combined_mask = dblarr(nb, nc)                  ; All pixels unmasked (mask=0)
 
         for i=0,nb-1 do begin
@@ -118,7 +121,7 @@ PRO MDAP_COMBINE_SPECTRA, $
                 ; Add the flux
                 combined_flux[i,gindx] = combined_flux[i,gindx] + wgt[ii]*flux[ii,gindx]
                 ; Propagate the error
-                combined_ivar[i,gindx] = combined_ivar[i,gindx] + wgt[ii]^2/ivar[ii,gindx]
+                combined_nois[i,gindx] = combined_nois[i,gindx] + wgt[ii]^2/ivar[ii,gindx]
                 ; Add the weights to the sum
                 sumwgt[gindx] = sumwgt[gindx] + wgt[ii]
 
@@ -129,7 +132,12 @@ PRO MDAP_COMBINE_SPECTRA, $
             if gcount ne 0 then begin
                 ; Get the weighted sum and its error for the pixels that were valid
                 combined_flux[i,gindx] = combined_flux[i,gindx] / sumwgt[gindx]     ; Normalize
-                combined_ivar[i,gindx] = sumwgt[gindx]^2 / combined_ivar[i,gindx]   ; Prop. err
+                if n_elements(noise_calib) ne 0 then begin
+                    combined_nois[i,gindx] = (MDAP_CALIBRATE_NOISE(sqrt(combined_nois[i,gindx]), $
+                                                                   sumwgt[gindx], noise_calib))^2
+                endif else $
+                    combined_nois[i,gindx] = combined_nois[i,gindx]/sumwgt[gindx]^2
+                combined_ivar[i,gindx] = sqrt(1.0/combined_nois[i,gindx])
                 combined_mask[i,gindx] = 0.                                     ;  ... and unmask'em
             endif
 

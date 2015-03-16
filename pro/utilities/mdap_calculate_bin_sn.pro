@@ -4,9 +4,7 @@
 ;
 ; PURPOSE:
 ;       Calculate the signal-to-noise of spectra in a bin.  All signal
-;       and noise values are used for the calculation.  If a set of
-;       calibration coefficients are provided, they are used to alter
-;       the S/N from the nominal value.
+;       and noise values are used for the calculation.
 ;
 ;       For uniform weighting, the nominal signal-to-noise is:
 ;
@@ -16,9 +14,14 @@
 ;
 ;           S/N = sqrt(Sum((s/n)^2))
 ;
+;       When noise_calib is set the code calls MDAP_CALIBRATE_NOISE to
+;       apply (or not apply depending on the value of noise_calib) a
+;       calibration of the noise vector to account for covariance among
+;       the spaxels.
 ;
 ; CALLING SEQUENCE:
-;       result = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], sn_calibration=sn_calibration)
+;       result = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], noise_calib=noise_calib, $
+;                                      /optimal_weighting)
 ;
 ; INPUTS:
 ;       signal dblarr[N]
@@ -28,10 +31,16 @@
 ;               Noise in each of N spectra.
 ;
 ; OPTIONAL INPUTS:
-;       sn_calibration dblarr[C]
-;               Set of C coefficents used for the calibration of the S/N
-;               measurement.  See MDAP_CALIBRATE_SN().
+;       noise_calib int
+;               Apply a calibration of the signal-to-noise that accounts
+;               approximately accounts for the covariance between
+;               values.  See the equation above determined for MaNGA.
 ;
+; OPTIONAL KEYWORDS:
+;       /optimal_weighting
+;               Calculate the S/N assuming the values are weighted
+;               optimally.
+; 
 ; OUTPUT:
 ;       Returns the nominal or calibrated average S/N per pixel.
 ;
@@ -39,22 +48,27 @@
 ;       MDAP_CALIBRATE_SN
 ;
 ; REVISION HISTORY:
-;       04 Dec 2014: (KBW) Pulled from MDAP_VORONOI_2D_BINNING, include
-;                          tag for optimal weighting
+;       04 Dec 2014: Pulled from MDAP_VORONOI_2D_BINNING by K. Westfall
+;                    (KBW), include tag for optimal weighting
+;       16 Mar 2015: (KBW) Changed to allow for noise_calib instead of
+;                          PDAP-based S/N calibration.
 ;-
 ;------------------------------------------------------------------------------
 
 FUNCTION MDAP_CALCULATE_BIN_SN, $
-                signal, noise, sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
+                signal, noise, noise_calib=noise_calib, optimal_weighting=optimal_weighting
 
         if keyword_set(optimal_weighting) then begin
-            sn_est = sqrt(total((signal/noise)^2))          ; eqn (3) Cappellari & Copin (2003)
-        endif else $
-            sn_est = total(signal)/sqrt(total(noise^2))     ; eqn (2) Cappellari & Copin (2003)
+            if n_elements(noise_calib) ne 0 && noise_calib ne 0 then $
+                message, 'Cannot optimally weight S/N and calculate noise calibration.'
+            return, sqrt(total((signal/noise)^2))       ; eqn (3) Cappellari & Copin (2003)
+        endif
 
-        if n_elements(sn_calibration) eq 0 then $
-            return, sn_est
+        sum_noise = sqrt(total(noise^2))
+        if n_elements(noise_calib) ne 0 then $
+            sum_noise = mdap_calibrate_noise(sum_noise, n_elements(noise), noise_calib)
 
-        return, mdap_calibrate_sn(sn_est, n_elements(signal), sn_calibration)
+        return, total(signal)/sum_noise                 ; eqn (2) Cappellari & Copin (2003)
+
 END
 

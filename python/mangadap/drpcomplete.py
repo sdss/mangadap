@@ -272,7 +272,17 @@ class drpcomplete:
             mangaid = mangaid + [par_data['PLTTRGT']['mangaid'][indx][0].decode("ascii")]
             objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
             objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
+
+            # TODO: THIS IS INCORRECT!!  From David Wake:
+            #
+            # "MANGAID consists of CATID-CATIND, where CATID identifies
+            # a parent catalog, in the case of the main manga samples
+            # CATID = 1 which refers to nsa_v1_0_0.fits, and CATIND is
+            # the position within that catalog (zero indexed). So if you
+            # strip out CATIND from MANGAID you have the position within
+            # nsa_v1_0_0.fits without any matching required."
             nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
+
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
             pa[i] = par_data['PLTTRGT']['nsa_sersic_phi'][indx][0]

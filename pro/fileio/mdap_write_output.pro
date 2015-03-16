@@ -678,6 +678,8 @@
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
 ;                          == max(flux) flag in DRPS extension.
+;       16 Mar 2015: (KBW) Include header keyword noting if noise vector
+;                          calibration is applied.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -751,6 +753,11 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER_BIN, $
             SXADDPAR, header, 'BINWGT', 'Optimal', 'Weighting when combining spectra'
         endif else $
             SXADDPAR, header, 'BINWGT', 'Uniform', 'Weighting when combining spectra'
+
+        if bin_par.noise_calib eq 1 then begin
+            SXADDPAR, header, 'BINNCAL', 'Yes', 'Noise vector calibrated for covariance effect'
+        endif else $
+            SXADDPAR, header, 'BINNCAL', 'No', 'Noise vector calibrated for covariance effect'
 
         if bin_par.type eq 'ALL' then $             ; Nothing left to print
             return

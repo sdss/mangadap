@@ -1,20 +1,25 @@
+;
 ;######################################################################
 ;
-; Copyright (C) 2001-2014, Michele Cappellari
+; Copyright (C) 2001-2006, Michele Cappellari
 ; E-mail: cappellari_at_astro.ox.ac.uk
 ;
+; For details on the Voronoi binning method see:
+;   Cappellari M., Copin Y., 2003, MNRAS, 342, 345
+;
 ; Updated versions of the software are available from my web page
-; http://purl.org/cappellari/software
+; http://www-astro.physics.ox.ac.uk/~mxc/idl/
 ;
 ; If you have found this software useful for your
 ; research, we would appreciate an acknowledgment to use of
-; `the Voronoi binning method by Cappellari & Copin (2003)'.
+; `the Voronoi 2D-binning method by Cappellari & Copin (2003)'.
 ;
 ; This software is provided as is without any warranty whatsoever.
-; Permission to use, for non-commercial purposes is granted.
-; Permission to modify for personal or internal use is granted,
-; provided this copyright and disclaimer are included unchanged
-; at the beginning of the file. All other rights are reserved.
+; Permission to use, copy and distribute unmodified copies for
+; non-commercial purposes is granted. Permission to modify for
+; personal or internal use is granted, provided this copyright
+; and disclaimer are included unchanged at the beginning of
+; the file. All other rights are reserved.
 ;
 ;######################################################################
 ;+
@@ -37,15 +42,11 @@
 ; EXPLANATION:
 ;       Further information on VORONOI_2D_BINNING algorithm can be found in
 ;       Cappellari M., Copin Y., 2003, MNRAS, 342, 345
-;	http://adsabs.harvard.edu/abs/2003MNRAS.342..345C
 ;
 ; CALLING SEQUENCE:
 ;       VORONOI_2D_BINNING, X, Y, Signal, Noise, targetSN, $
 ;               BinNumber, xBin, yBin, xBar, yBar, SN, NPixels, scale, $
-;               /NO_CVT, /PLOT, /QUIET, /WVT, PIXSIZE=pixSize
-;
-;       The function BIN2D_SN_FUNC below returns the S/N of a bin and it can be
-;       changed by the user if needed.
+;               /NO_CVT, /PLOT, /QUIET, /WVT
 ;
 ; INPUTS:
 ;            X: Vector containing the X coordinate of the pixels to bin.
@@ -78,6 +79,15 @@
 ;               reasonable value to extract stellar kinematics
 ;               information from galaxy spectra.
 ;
+; OPTIONAL INPUTS:
+;
+; SN_CALIBRATION   If provided, the estimated signal-to-noise (SN_est)
+;                  is converted into the real signal-to-noise using the empirical
+;                  calibration function defined in mdap_calibrate_sn.pro:
+;
+;                    tmp = SN_EST^SN_CALIBRATION[0]/sqrt(n_elements(n_elements_within_bin)
+;                    SN_REAL = poly(SN_EST,SN_CALIBRATION[1:*])
+;
 ; KEYWORDS:
 ;      /NO_CVT: Set this keyword to skip the Centroidal Voronoi Tessellation
 ;               (CVT) step (vii) of the algorithm in Section 5.1 of
@@ -89,12 +99,6 @@
 ;        /PLOT: Set this keyword to produce a plot of the two-dimensional
 ;               bins and of the corresponding S/N at the end of the
 ;               computation.
-;      PIXSIZE: Optional pixel scale of the input data. 
-;               This can be the size of a pixel of an image or the size 
-;               of a spaxel or lenslet in an integral-field spectrograph.
-;             - The value is computed automatically by the program, but 
-;               this can take a long times when (X,Y) have many elements. 
-;               In those cases the PIXSIZE keyword should be given.
 ;       /QUIET: by default the program shows the progress while accreting
 ;               pixels and then while iterating the CVT. Set this keyword
 ;               to avoid printing progess results.
@@ -109,9 +113,17 @@
 ;               A similar alternative consists of using the /NO_CVT keyword above.
 ;               If you use the /WVT keyword you should also include a reference to
 ;               `the WVT modification proposed by Diehl & Statler (2006).'
+; /weight_for_sn (description edited by KBW):
+;               If set, the bins are weighted by their S/N^2, i.e. the
+;               following modifications are applied:
+;
+;                  SIGNAL_NEW = (SIGNAL_OLD/NOISE_OLD)^2
+;                  NOISE_NEW = SIGNAL_OLD/NOISE_OLD
+;
+;               in the calculation of the S/N
 ;
 ; OUTPUTS:
-;    BINNUMBER: Vector (same size as X) containing the bin number assigned
+;       BINNUMBER: Vector (same size as X) containing the bin number assigned
 ;               to each input pixel. The index goes from zero to Nbins-1.
 ;               This vector alone is enough to make *any* subsequent
 ;               computation on the binned data. Everything else is optional!
@@ -132,7 +144,6 @@
 ;
 ; PROCEDURES USED:
 ;       The following procedures are contained in the main VORONOI_2D_BINNING program.
-;           SN_FUNCTION       -- Example function to calculate S/N of a bin
 ;           WEIGHTED_CENTROID -- computes weighted centroid of one bin
 ;           BIN_ROUNDNESS     -- equation (5) of Cappellari & Copin (2003)
 ;           BIN_ACCRETION     -- steps (i)-(v) in section 5.1
@@ -142,101 +153,91 @@
 ;           DISPLAY_PIXELS    -- plotting of colored pixels
 ;
 ; NOTE:
-;       This program uses some features of IDL 6.1.
-;       Please ask if you need to run it with IDL < 6.1.
+;       This program uses some features of IDL 5.4.
+;       Please ask if you think support for IDL < 5.4 is useful.
 ;
 ; MODIFICATION HISTORY:
-;       V1.0.0: First implementation. Michele Cappellari, Leiden, June 2001
-;       V2.0.0: Major revisions. Stable version. MC, Leiden, 11 September 2001
-;       V2.1.0: First released version. Written documentation.
+;       V1.0: First implementation. Michele Cappellari, Leiden, June 2001
+;       V2.0: Major revisions. Stable version. MC, Leiden, 11 September 2001
+;       V2.1: First released version. Written documentation.
 ;           MC, Vicenza, 13 February 2003
-;       V2.2.0: Added computation of useful bin quantities in output. Deleted some
+;       V2.2: Added computation of useful bin quantities in output. Deleted some
 ;           safety checks for zero size bins in CVT. Minor polishing of the code.
 ;           MC, Leiden, 11 March 2003
-;       V2.3.0: Unified the three tests to stop the accretion of one bin.
+;       V2.3: Unified the three tests to stop the accretion of one bin.
 ;           This can improve some bins at the border. MC, Leiden, 9 April 2003
-;       V2.3.1: Do *not* assume the first bin is made of one single pixel.
+;       V2.31: Do *not* assume the first bin is made of one single pixel.
 ;           Added computation of S/N scatter and plotting of 1-pixel bins.
 ;           MC, Leiden, 13 April 2003
-;       V2.4.0: Addedd basic error checking of input S/N. Reintroduced the
-;           treatment for zero-size bins in CVT, which was deleted in V2.2.0.
+;       V2.4: Addedd basic error checking of input S/N. Reintroduced the
+;           treatment for zero-size bins in CVT, which was deleted in V2.2.
 ;           Thanks to Robert Sharp and Kambiz Fathi for reporting problems.
 ;           MC, Leiden, 10 December 2003.
-;       V2.4.1: Added /QUIET keyword and verbose output during the computation.
+;       V2.41: Added /QUIET keyword and verbose output during the computation.
 ;           After suggestion by Richard McDermid. MC, Leiden, 14 December 2003
-;       V2.4.2: Use LONARR instead of INTARR to define the CLASS vector,
+;       V2.42: Use LONARR instead of INTARR to define the CLASS vector,
 ;           to be able to deal with big images. Thanks to Tom Statler.
 ;           MC, Leiden, 4 August 2004
-;       V2.4.3: Corrected bug introduced in V2.3.1. It went undetected for
-;           a long time because it could only happen in special conditions.
+;       V2.43: Corrected bug introduced in version 2.31. It went undetected
+;           for a long time because it could only happen in special conditions.
 ;           Now we recompute the index of the good bins after computing all
 ;           centroids of the reassigned bins in reassign_bad_bins. Many thanks
 ;           to Simona Ghizzardi for her clear analysis of the problem and
 ;           the solution. MC, Leiden, 29 November 2004
-;       V2.4.4: Prevent division by zero for pixels with signal=0
+;       V2.44: Prevent division by zero for pixels with signal=0
 ;           and noise=sqrt(signal)=0, as can happen from X-ray data.
 ;           MC, Leiden, 30 November 2004
-;       V2.4.5: Added BIN2D prefix to internal routines to avoid possible
+;       V2.45: Added BIN2D prefix to internal routines to avoid possible
 ;           naming conflicts. MC, Leiden, 3 December 2004
-;       V2.4.6: Added /NO_CVT keyword to optionally skip the CVT step of
+;       V2.46: Added /NO_CVT keyword to optionally skip the CVT step of
 ;           the algorithm. MC, Leiden, 27 August 2005
-;       V2.4.7: Verify that SIGNAL and NOISE are non negative vectors.
+;       V2.47: Verify that SIGNAL and NOISE are non negative vectors.
 ;           MC, Leiden, 27 September 2005
-;       V2.4.8: Use geometric centroid of a bin during the bin-accretion stage,
+;       V2.48: Use geometric centroid of a bin during the bin-accretion stage,
 ;           to allow the routine to deal with negative signal (e.g. in
 ;           background-subtracted X-ray images). Thanks to Steven Diehl for
 ;           pointing out the usefulness of dealing with negative signal.
 ;           MC, Leiden, 23 December 2005
-;       V2.5.0: Added two new lines of code and the corresponding /WVT keyword
+;       V2.5: Added two new lines of code and the corresponding /WVT keyword
 ;           to implement the nice modification to the algorithm proposed by
 ;           Diehl & Statler (2006). MC, Leiden, 9 March 2006
-;       V2.5.1: Updated documentation. MC, Oxford, 3 November 2006
-;       V2.5.2: Print number of unbinned pixels. MC, Oxford, 28 March 2007
-;       V2.5.3: Fixed program stop, introduced in V2.5.0, with /NO_CVT keyword.
+;       V2.51: Updated documentation. MC, Oxford, 3 November 2006
+;       V2.52: Print number of unbinned pixels. MC, Oxford, 28 March 2007
+;       V2.53: Fixed program stop, introduced in V2.5, with /NO_CVT keyword.
 ;           MC, Oxford, 3 December 2007
-;       V2.5.4: Improved color shuffling for final plot. 
-;           MC, Oxford, 30 November 2009
-;       V2.5.5: Added PIXSIZE keyword. MC, Oxford, 28 April 2010
-;       V2.5.6: Use IDL intrinsic function DISTANCE_MEASURE for 
-;           automatic pixelSize, when PIXSIZE keyword is not given. 
-;           MC, Oxford, 11 November 2011
-;       V2.5.7: Included safety termination criterion of Lloyd algorithm
-;           to prevent loops using /WVT. MC, Oxford, 24 March 2012
-;       V2.5.8: Update Voronoi tessellation at the exit of bin2d_cvt_equal_mass.
-;           This is only done when using /WVT, as DIFF may not be zero at the 
-;           last iteration. MC, La Palma, 15 May 2012
-;       V2.6.0: Included new SN_FUNCTION to illustrate the fact that the user can
-;           define his own function to estimate the S/N of a bin if needed.
-;           MC, London, 19 March 2014 
-;-----
-;       V3.0.0: Edited for MaNGA K. Westfall, 16 Mar 2015
+; =================================================================================
+;       Nov 2013: ADAPTED FOR MANGA Data Analysis Pipeline by L. Coccato
+;            - Recalculate targetSN to have at least 1 bin. L.Coccato Oct 2013
+;            - Usage of empirical calibraion between estimated S/N
+;              and real S/N (mdap_calibrate_sn.pro)
+;            - weight_for_sn keyword added (for weighting for S/N^2),
+;              following Michele's prescription Section 4.1
+;
+;       04 Dec 2014: (KBW) Pulled out usage of sn_calibration to a
+;                          single function MDAP_CALCULATE_BIN_SN so that
+;                          it can be used elsewhere and changes would
+;                          only need to be made once.
+;
+;                          Found previous implementation of
+;                          weight_for_sn confusing.  Change the keyword
+;                          to optimal_weighting, that is now passed to
+;                          MDAP_CALCULATE_BIN_SN for calculation of the
+;                          S/N.
+;       03 Feb 2015: (KBW) When S/N cannot be reached by all pixels, the
+;                          code now combines all pixels into a single
+;                          bin instead of throwing an error.
+;       05 Mar 2015: (KBW) When S/N limit is reached by all input
+;                          spaxels, assign each spaxel to its own bin
+;                          (same as 'NONE' type binning).
 ;-
 ;----------------------------------------------------------------------------
-;function bin2d_sn_function, signal, noise, index
-;COMPILE_OPT IDL2, HIDDEN
 
-; Generic function to calculate the S/N of a bin with spaxels "index".
-; The Voronoi binning algorithm does not require this function to have a
-; specific form and this generic one can be changed by the user if needed.
-;
-; The S/N returned by this function does not need to be an analytic function 
-; of S and N. There is no need for this function to return the actual S/N. 
-; Instead this function could return any quantity the user needs to optimize. 
-;
-; For example bin2d_sn_function could be a procedure which uses PPXF to 
-; measure the velocity dispersion from the coadded spectrum of spaxels 
-; "index" and returns the relative error in the dispersion. 
-; Of course an analytic approximation of S/N speeds up the calculation.
-;
-;return, total(signal[index])/sqrt(total(noise[index]^2))
-;end
-;----------------------------------------------------------------------
 pro bin2d_weighted_centroid, x, y, density, xBar, yBar
 COMPILE_OPT IDL2, HIDDEN
 
 ; Computes weighted centroid of one bin.
 ; Equation (4) of Cappellari & Copin (2003)
-
+;indici = where(density gt 0)
 mass = total(density)
 xBar = total(x*density)/mass
 yBar = total(y*density)/mass
@@ -258,8 +259,8 @@ roundness = maxDistance/equivalentRadius - 1.0
 return, roundness
 end
 ;----------------------------------------------------------------------
-PRO bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, noise_calib=noise_calib, $
-                     optimal_weighting=optimal_weighting, QUIET=quiet
+PRO bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, QUIET=quiet, $
+                     SN_CALIBRATION=SN_CALIBRATION, OPTIMAL_WEIGHTING=optimal_weighting
 COMPILE_OPT IDL2, HIDDEN
 
 ; Implements steps (i)-(v) in section 5.1 of Cappellari & Copin (2003)
@@ -271,17 +272,19 @@ good = bytarr(n)  ; will contain 1 if the bin has been accepted as good
 ; For each point, find the distance to all other points and select the minimum.
 ; This is a robust but slow way of determining the pixel size of unbinned data.
 ;
-if n_elements(pixelSize) eq 0 then $
-    pixelSize = min(distance_measure( transpose([[x],[y]]) ))
+dx = 1e30
+for j=0,n-2 do dx = min((x[j]-x[j+1:*])^2 + (y[j]-y[j+1:*])^2) < dx
+pixelSize = sqrt(dx)
 
 SN = max(signal/noise, currentBin) ; Start from the pixel with highest S/N
 
 ; Rough estimate of the expected final bin number.
-; This value is only used to give an idea of the expected
+; This value is only used to have a feeling of the expected
 ; remaining computation time when binning very big dataset.
 ;
 w = where(signal/noise lt targetSN, COMPLEMENT=w1, NCOMPLEMENT=nc)
 maxnum = round(total((signal[w]/noise[w])^2)/targetSN^2) + nc
+
 
 ; The first bin will be assigned CLASS = 1
 ; With N pixels there will be at most N bins
@@ -316,20 +319,25 @@ for ind=1,n do begin
         ; the CANDIDATE pixel to the current bin
         ;
         SNOld = SN
-;       SN = bin2d_sn_function(signal, noise, nextBin)
-        SN = MDAP_CALCULATE_BIN_SN(signal[nextBin], noise[nextBin], noise_calib=noise_calib, $
+        ;--start original 
+        ;SN = total(signal[nextBin])/sqrt(total(noise[nextBin]^2))
+        ;--end original
+
+        ;-- manga calculation of S/N
+        SN = MDAP_CALCULATE_BIN_SN(signal[nextBin], noise[nextBin], sn_calibration=sn_calibration, $
                                    optimal_weighting=optimal_weighting)
+        ;-- end manga
 
         ; Test whether the CANDIDATE pixel is connected to the
         ; current bin, whether the POSSIBLE new bin is round enough
         ; and whether the resulting S/N would get closer to targetSN
         ;
+       
         if ((sqrt(minDist) gt 1.2*pixelsize) or (roundness gt 0.3) $
              or (abs(SN-targetSN) gt abs(SNOld-targetSN))) then begin
-                if (SNOld gt 0.9*targetSN) then good[currentBin] = 1
-;               if (SNOld gt 0.8*targetSN) then good[currentBin] = 1
+                if (SNOld gt 0.8*targetSN) then good[currentBin] = 1
                 break
-             endif 
+        endif
 
         ; If all the above tests are negative then accept the CANDIDATE pixel,
         ; add it to the current bin, and continue accreting pixels
@@ -346,7 +354,7 @@ for ind=1,n do begin
 
     ; Get the centroid of all the binned pixels
     ;
-    unBinned = where(class eq 0, COMPLEMENT=binned, m)
+    unBinned = where(class eq 0, m, COMPLEMENT=binned)
     if (m eq 0) then break ; Stop if all pixels are binned
     xBar = mean(x[binned])
     yBar = mean(y[binned])
@@ -356,15 +364,17 @@ for ind=1,n do begin
     ;
     minDist = min((x[unBinned]-xBar)^2 + (y[unBinned]-yBar)^2, k)
     currentBin = unBinned[k]    ; The bin is initially made of one pixel
-    SN = signal[currentBin]/noise[currentBin]
-
+    ;-- manga calculation of S/N
+    SN = MDAP_CALCULATE_BIN_SN(signal[currentBin], noise[currentBin], $
+                               sn_calibration=sn_calibration, optimal_weighting=optimal_weighting)
+    ;-- end manga
 endfor
 
 class = class * good ; Set to zero all bins that did not reach the target S/N
 
 END
 ;----------------------------------------------------------------------------
-pro bin2d_reassign_bad_bins, x, y, class, xnode, ynode
+pro bin2d_reassign_bad_bins, x, y, signal, noise, targetSN, class, xnode, ynode
 COMPILE_OPT IDL2, HIDDEN
 
 ; Implements steps (vi)-(vii) in section 5.1 of Cappellari & Copin (2003)
@@ -407,8 +417,7 @@ endfor
 END
 ;----------------------------------------------------------------------------
 PRO bin2d_cvt_equal_mass, x, y, signal, noise, xnode, ynode, scale, iter, $
-                          noise_calib=noise_calib, optimal_weighting=optimal_weighting, $
-                          QUIET=quiet, WVT=wvt
+    QUIET=quiet, WVT=wvt, sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
 COMPILE_OPT IDL2, HIDDEN
 
 ; Implements the modified Lloyd algorithm
@@ -419,11 +428,12 @@ COMPILE_OPT IDL2, HIDDEN
 
 npixels = N_ELEMENTS(signal)
 class = lonarr(npixels)  ; See beginning of section 4.1 of CC03
-if keyword_set(wvt) then dens = signal*0+1.0 else dens = (signal/noise)^2
-scale = xnode*0+1.0 ; Start with the same scale length for all bins
+if keyword_set(wvt) then dens = 1.0 else dens = (signal/noise)^2
+scale = 1.0 ; Start with the same scale length for all bins
 sn = xnode
 
-FOR iter=1,n_elements(xnode) DO BEGIN
+iter = 1
+REPEAT BEGIN
 
     xnodeOld = xnode
     ynodeOld = ynode
@@ -447,43 +457,37 @@ FOR iter=1,n_elements(xnode) DO BEGIN
         bin2d_weighted_centroid, x[index], y[index], dens[index]^2, xb, yb
         xnode[k] = xb
         ynode[k] = yb
-;       sn[k] = bin2d_sn_function(signal, noise, index)
-        sn[k] = MDAP_CALCULATE_BIN_SN(signal[index], noise[index], noise_calib=noise_calib, $
+        ;start original version
+        ;sn[k] = total(signal[index])/sqrt(total(noise[index]^2))
+        ;end original version
+        if finite(xb) ne 1 or finite(yb) ne 1 then stop
+
+        ;-- manga calculation of S/N
+        sn[k] = MDAP_CALCULATE_BIN_SN(signal[index], noise[index], sn_calibration=sn_calibration, $
                                       optimal_weighting=optimal_weighting)
+        ;-- end manga
+
     ENDFOR
 
     if keyword_set(wvt) then scale = sqrt(area/sn) ; Eq. (4) of Diehl & Statler (2006)
     diff = TOTAL((xnode-xnodeOld)^2+(ynode-ynodeOld)^2)
+    
+    iter = iter + 1
 
     if not keyword_set(quiet) then $
         print, iter, diff, FORMAT='(%"Iter:  %d,  Diff:  %f")'
-        
-    if diff eq 0 then break
 
-ENDFOR
+ENDREP UNTIL diff EQ 0
 
-; If coordinates have changed, re-compute (Weighted) Voronoi Tessellation of the pixels grid
-;
-if diff gt 0 then begin
-    FOR j=0,npixels-1 DO BEGIN
-        tmp = MIN(((x[j]-xnode)/scale)^2+((y[j]-ynode)/scale)^2, index)
-        class[j] = index
-    ENDFOR
-    area = HISTOGRAM(class, REVERSE_INDICES=r)
-    w = where(area gt 0, m) ; Check for zero-size Voronoi bins
-endif
-
-; Only return the generators and scales of the nonzero Voronoi bins
+; Only return the generators of the nonzero Voronoi bins
 ;
 xnode = xnode[w]
 ynode = ynode[w]
-scale = scale[w]
 
 END
 ;-----------------------------------------------------------------------
-pro bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, class, xbar, $
-                                         ybar, sn, area, noise_calib=noise_calib, $
-                                         optimal_weighting=optimal_weighting
+pro bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, $
+    class, xbar, ybar, sn, area, SN_CALIBRATION=SN_CALIBRATION, optimal_weighting=optimal_weighting
 COMPILE_OPT IDL2, HIDDEN
 
 ; Recomputes (Weighted) Voronoi Tessellation of the pixels grid to make sure
@@ -507,13 +511,19 @@ xbar = dblarr(nbins)
 ybar = xbar
 sn = xbar
 FOR j=0,nbins-1 DO BEGIN
+   ;if area[j] eq 0 then continue
     index = r[r[j]:r[j+1]-1] ; Find subscripts of pixels in bin j.
     bin2d_weighted_centroid, x[index], y[index], signal[index], xb, yb
     xbar[j] = xb
     ybar[j] = yb
-;   sn[j] = bin2d_sn_function(signal, noise, index)
-    sn[j] = MDAP_CALCULATE_BIN_SN(signal[index], noise[index], noise_calib=noise_calib, $
+    ;start original version
+    ;sn[j] = total(signal[index])/sqrt(total(noise[index]^2))
+    ;end original version
+
+    ;-- manga calculation of S/N
+    sn[j] = MDAP_CALCULATE_BIN_SN(signal[index], noise[index], sn_calibration=sn_calibration, $
                                   optimal_weighting=optimal_weighting)
+    ;-- end manga
 ENDFOR
 
 END
@@ -527,39 +537,40 @@ PLOT, [MIN(x)-pixelSize,MAX(x)+pixelSize], [MIN(y)-pixelSize,MAX(y)+pixelSize], 
     /NODATA, /XSTYLE, /YSTYLE, XTITLE='arcsec', YTITLE='arcsec', /ISO
 x1 = [-0.5, -0.5, +0.5, +0.5, -0.5] * pixelSize
 y1 = [+0.5, -0.5, -0.5, +0.5, +0.5] * pixelSize
-color = bytscl(counts)
+countMax = MAX(counts,MIN=countMin)
+color = 255.0/(countMax-countMin)*(counts-countMin)
 FOR j=0, N_ELEMENTS(counts)-1 DO POLYFILL, x[j]+x1, y[j]+y1, COLOR=color[j]
 
 END
 ;----------------------------------------------------------------------
 ; Added by KBW (3 Feb 2015); combines all pixels into a single bin
 PRO BIN2D_ONE_BIN, $
-                indx, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
-                noise_calib=noise_calib, optimal_weighting=optimal_weighting
+                x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
 COMPILE_OPT IDL2, HIDDEN
 
         nbins = 1                                   ; Number of bins
         scale = 1.0                                 ; TODO: Is this right?
 
-        xnode = make_array(nbins, /double, value=mean(x[indx]))   ; Set to mean X position
-        ynode = make_array(nbins, /double, value=mean(y[indx]))   ; Set to mean Y position
+        xnode = make_array(nbins, /double, value=mean(x))   ; Set to mean X position
+        ynode = make_array(nbins, /double, value=mean(y))   ; Set to mean Y position
 
-        bin2d_weighted_centroid, x[indx], y[indx], signal[indx], xb, yb
+        bin2d_weighted_centroid, x, y, signal, xb, yb
         xbar = make_array(nbins, /double, value=xb) ; Luminosity-weighted center
         ybar = make_array(nbins, /double, value=yb)
 
         n = n_elements(x)                           ; Number of pixels
-        class = make_array(n, /long, value=-1)      ; Initialize to not be in any bin
-        class[indx] = 0                             ; All good cells set to bin=0
-        area = make_array(nbins, /integer, value=n_elements(indx)) ; number of pixels in the bin
+        class = lonarr(n)                           ; All cells set to bin=0
+        area = make_array(nbins, /integer, value=n) ; array with number of pixels in the bin
         sn = dblarr(nbins)                          ; Signal-to-noise
-        sn[0] = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], noise_calib=noise_calib, $
+        sn[0] = MDAP_CALCULATE_BIN_SN(signal, noise, sn_calibration=sn_calibration, $
                                       optimal_weighting=optimal_weighting)
 END
 ;----------------------------------------------------------------------
 ; Added by KBW (5 Mar 2015); produces bins with only individual spaxels
 PRO BIN2D_NO_BINS, $
-                x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area
+                x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
 COMPILE_OPT IDL2, HIDDEN
 
         nbins=n_elements(x)                         ; number of bins
@@ -573,19 +584,44 @@ COMPILE_OPT IDL2, HIDDEN
 
         class = indgen(nbins)                       ; All cells set to input bin index
         area = make_array(nbins, /integer, value=1) ; array with number of pixels in the bin
-        sn = signal/noise                           ; Signal-to-noise
+        sn = dblarr(nbins)                          ; Signal-to-noise
+        for i=0,nbins-1 do $
+            sn[i] = MDAP_CALCULATE_BIN_SN(signal[i], noise[i], sn_calibration=sn_calibration, $
+                                          optimal_weighting=optimal_weighting)
 END
 ;----------------------------------------------------------------------
 PRO mdap_voronoi_2d_binning, x, y, signal, noise, targetSN, $
     class, xNode, yNode, xBar, yBar, sn, area, scale, $
-    noise_calib=noise_calib, optimal_weighting=optimal_weighting, $
-    NO_CVT=no_cvt, PIXSIZE=pixelSize, PLOT=plot, QUIET=quiet, WVT=wvt
+    NO_CVT=no_cvt, PLOT=plot, QUIET=quiet, WVT=wvt, $
+    SN_CALIBRATION=sn_calibration, OPTIMAL_WEIGHTING=optimal_weighting
 COMPILE_OPT IDL2
 ON_ERROR, 2
 ;
 ; This is the main program that has to be called from external programs.
 ; It simply calls in sequence the different steps of the algorithms
 ; and optionally plots the results at the end of the calculation.
+;
+; v0.1 adapted from original voronoi_2d_binning by Capellari & Copin
+; 2003 for MANGA data
+;
+
+;-----------------------------------------------------------------------
+; Edited by KBW 04 Dec 2014
+;if keyword_set(weight_for_sn) then begin
+;   signal = (signal_/noise_)^2
+;   noise = signal_/noise_
+;   indici = where(noise le 0)
+;   if indici[0] ne -1 then begin
+;      signal[indici] = min(abs(signal))/100.
+;      noise[indici] = 100.
+;   endif
+;
+;endif else begin
+;   signal = signal_
+;   noise = noise_
+;endelse
+
+redo_with_less_sn_min:
 
 npix = n_elements(x)
 if n_elements(y) ne npix or n_elements(signal) ne npix $
@@ -595,37 +631,43 @@ if n_elements(targetSN) ne 1 then message, 'targetSN must be a scalar'
 if not array_equal(noise ge 0, 1) then message, 'NOISE cannot be negative'
 
 ; Perform basic tests to catch common input errors
-;
-ston = signal/noise
+if targetSN le 1 then $
+    message, 'Target S/N must be larger than 1.'
 
+ston = dblarr(npix)
+for i=0,npix-1 do $
+    ston[i] = MDAP_CALCULATE_BIN_SN(signal[i], noise[i], sn_calibration=sn_calibration, $
+                                    optimal_weighting=optimal_weighting)
 indx = where(ston gt 0. and finite(ston), count)
 if count eq 0 then $
     message, 'No bins with finite S/N and S/N > 0!'
 
-sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], noise_calib=noise_calib, $
+sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], sn_calibration=sn_calibration, $
                                       optimal_weighting=optimal_weighting)
-if sn_total_eval lt targetSN then begin
-;   message, 'Not enough S/N in the whole set of pixels. ' $
-;       + 'Many pixels may have noise but virtually no signal. ' $
-;       + 'They should not be included in the set to bin, ' $
-;       + 'or the pixels should be optimally weighted.' $
-;       + 'See Cappellari & Copin (2003, Sec.2.1) and README file.'
+
+if sn_total_eval lt targetSN then begin ;$
+  ;  message, 'Not enough S/N in the whole set of pixels. ' $
+  ;      + 'Many pixels may have noise but virtually no signal. ' $
+  ;      + 'They should not be included in the set to bin, ' $
+  ;      + 'or the pixels should be optimally weighted.' $
+  ;      + 'See Cappellari & Copin (2003, Sec.2.1) and README file.'
+
+  ;message, 'Target S/N too high.  All spectra only yield a S/N of ' + MDAP_STC(sn_total_eval)
 
     print, 'WARNING: Combination of all spectra does not reach the requested S/N level.' $
            + '  Proceeding by combining all spectra.'
 
-    BIN2D_ONE_BIN, indx, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, $
-                   area, noise_calib=noise_calib, optimal_weighting=optimal_weighting
+    BIN2D_ONE_BIN, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                   sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
     return
 endif
 
 if min(ston) gt targetSN then begin
-;   message, 'All pixels have enough S/N and binning is not needed'
     print, 'WARNING: All pixels have enough S/N, nothing to bin!'
-    BIN2D_NO_BINS, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area
+    BIN2D_NO_BINS, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, area, $
+                   sn_calibration=sn_calibration, optimal_weighting=optimal_weighting
     return
 endif
-    
 
 ; Prevent division by zero for pixels with signal=0 and
 ; noise=sqrt(signal)=0 as can happen with X-ray data
@@ -637,39 +679,48 @@ if count ne 0 then begin
 endif else $
     noise = make_array(n_elements(noise), /double, value=1.)
 
-if not keyword_set(quiet) then $
-    print, 'Bin-accretion...'
-bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, noise_calib=noise_calib, $
-                 optimal_weighting=optimal_weighting, QUIET=quiet
-if not keyword_set(quiet) then begin
-    print, strtrim(max(class),2), ' initial bins.'
-    print, 'Reassign bad bins...'
+if not keyword_set(quiet) then print, 'Bin-accretion...'
+
+bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, SN_CALIBRATION=SN_CALIBRATION, $
+                 OPTIMAL_WEIGHTING=optimal_weighting, QUIET=quiet
+
+if min(class) eq 0 and max(class) eq 0  then begin
+   targetSN = targetSN*.9
+   goto,redo_with_less_sn_min
 endif
-bin2d_reassign_bad_bins, x, y, class, xnode, ynode
-if not keyword_set(quiet) then $
-    print, strtrim(n_elements(xnode),2), ' good bins.'
-if not keyword_set(no_cvt) then begin
-    if not keyword_set(quiet) then $
-        print, 'Modified Lloyd algorithm...'
-    bin2d_cvt_equal_mass, x, y, signal, noise, xnode, ynode, scale, iter, noise_calib=noise_calib, $
-                          optimal_weighting=optimal_weighting, QUIET=quiet, WVT=wvt
-    if not keyword_set(quiet) then $
-        print, STRTRIM(iter-1,2), ' iterations.'
+if not keyword_set(quiet) then print, strtrim(max(class),2), ' initial bins.'
+if not keyword_set(quiet) then print, 'Reassign bad bins...'
+
+bin2d_reassign_bad_bins, x, y, signal, noise, targetSN, class, xnode, ynode
+
+if not keyword_set(quiet) then print, strtrim(n_elements(xnode),2), ' good bins.'
+
+if ~keyword_set(no_cvt) then begin
+    if not keyword_set(quiet) then print, 'Modified Lloyd algorithm...'
+
+    bin2d_cvt_equal_mass, x, y, signal, noise, xnode, ynode, scale, iter, QUIET=quiet, WVT=wvt, $
+                          SN_CALIBRATION=SN_CALIBRATION, OPTIMAL_WEIGHTING=optimal_weighting
+
+   if not keyword_set(quiet) then  print, STRTRIM(iter-1,2), ' iterations.'
 endif else scale = 1.0
+
 bin2d_compute_useful_bin_quantities, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, $
-                                     sn, area, noise_calib=noise_calib, $
-                                     optimal_weighting=optimal_weighting
-if not keyword_set(quiet) then begin
-    w1 = where(area eq 1, COMPLEMENT=w2, m)
-    print, 'Unbinned pixels: ', m, ' / ', npix, FORMAT='(a,g0,a,g0)'
+                                     sn, area, SN_CALIBRATION=SN_CALIBRATION, $
+                                     OPTIMAL_WEIGHTING=optimal_weighting
+
+w1 = where(area eq 1, m, COMPLEMENT=w2)
+if not keyword_set(quiet) then print, 'Unbinned pixels: ', m, ' / ', npix, FORMAT='(a,g0,a,g0)'
+if not keyword_set(quiet) then $
     print, 'Fractional S/N scatter (%):', stddev(sn[w2]-targetSN)/targetSN*100
-endif
+
+; End edits by KBW
+;-----------------------------------------------------------------------
 
 if keyword_set(plot) then begin
     !p.multi=[0,1,2]
-    rnd = sort(randomu(seed,n_elements(xnode))) ; Randomize bin colors
+    rnd = randomu(seed,n_elements(xnode)) ; Randomize bin colors
     bin2d_display_pixels, x, y, rnd[class], pixelSize
-    plots, xnode, ynode, PSYM=1, SYMSIZE=0.5
+    oplot, xnode, ynode, PSYM=1, SYMSIZE=0.5
     rad = sqrt(xbar^2+ybar^2) ; Use centroids, NOT generators
     plot, rad[w2], sn[w2], PSYM=6, SYMSIZE=0.5, $
         XTITLE="R (arcsec)", YTITLE="Bin S/N", /XSTYLE, $
