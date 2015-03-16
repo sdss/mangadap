@@ -49,7 +49,7 @@ PRO MDAP_DEFINE_BAD_PIXEL_FLAGS, $
 
         ; Define the maskbit type
 ;       maskbit_type = 'MANGA_DRPPIXFLAG'
-        maskbit_type = 'MANGA_DRP3PIXFLAG'
+        maskbit_type = 'MANGA_DRP3PIXMASK'
 
         ; Define ALL the maskbits to set to a bad pixel
         flag_name = [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'DONOTUSE' ]
