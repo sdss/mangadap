@@ -48,10 +48,11 @@ PRO MDAP_DEFINE_BAD_PIXEL_FLAGS, $
                 maskbit_type, flag_name, exists
 
         ; Define the maskbit type
-        maskbit_type = 'MANGA_DRPPIXFLAG'
+;       maskbit_type = 'MANGA_DRPPIXFLAG'
+        maskbit_type = 'MANGA_DRP3PIXFLAG'
 
         ; Define ALL the maskbits to set to a bad pixel
-        flag_name = [ 'LOWCOV', 'NOCOV' ]
+        flag_name = [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'DONOTUSE' ]
 ;       flag_name = [ 'DEADFIBER', 'BADDATA', 'LOWCOV', 'NOCOV' ]
 
         ; Determine which maskbits are actually defined, and warn the
