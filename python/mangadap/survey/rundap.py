@@ -118,7 +118,7 @@ class rundap:
             - combinatorics: use all unique combinations of the entered
                              plate/ifudesign/mode lists
 
-            -  platetargets: specify the plateTargets file(s) to use
+
                              (can be a list as allowed by drpcomplete.py)
             -       nsa_cat: specify the NSA catalog to use
 
@@ -370,6 +370,10 @@ class rundap:
         
         # Parse the arguments and assign them to self
         self.arg = parser.parse_args()
+
+        print('PARSED')
+
+        exit()
       
         ################################################################
         # Assign properties based on arguments, if properties not set
