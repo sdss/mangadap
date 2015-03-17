@@ -86,7 +86,7 @@ class rundap:
                 # Override defaults
 #               outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
                 outver=None, mplver=None, platelist=None, ifudesignlist=None, modelist=None,
-                combinatorics=False, platetargets=None, nsa_cat=None,
+                combinatorics=False, platetargets=None, nsa_cat=None, plan_file=None,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -121,6 +121,9 @@ class rundap:
             -  platetargets: specify the plateTargets file(s) to use
                              (can be a list as allowed by drpcomplete.py)
             -       nsa_cat: specify the NSA catalog to use
+
+            -     plan_file: File name of an existing DAP plan parameter
+                             file to use for ALL runs of the DAP.
 
             -         label: label to use in cluster queue
             -         nodes: number of cluster nodes to use
@@ -171,6 +174,9 @@ class rundap:
         # (drpcomplete can handle [platetargets = None, nsa_cat = None])
         self.platetargets = platetargets
         self.nsa_cat = nsa_cat
+
+        # Input file with a non-standard execution plan
+        self.plan_file = plan_file
 
         # Cluster queue keywords
         self.label = label
@@ -232,6 +238,10 @@ class rundap:
         # Use warnings class?
         if not self.redo and (self.platelist or self.ifudesignlist or self.modelist):
             raise Exception('platelist/ifudesignlist/modelist only allowed for redo!')
+
+        # If a plan file is provided, make sure it exists
+        if self.plan_file is not None and not os.path.exists(self.plan_file):
+            raise Exception('Provided plan file does not exist.')
 
         # If running all or daily, make sure lists are set to None such
         # that drpcomplete will search for all available DRP files and
@@ -339,6 +349,9 @@ class rundap:
         parser.add_argument("-k", "--nsacat", type=str, help="path to NSA catalog to use; if "
                             "provided will force update to drpcomplete file", default=None)
 
+        parser.add_argument("-e", "--plan_file", type=str, help="parameter file with the MaNGA "
+                            "DAP execution plan to use instead of the default" , default=None)
+
         # Cluster arguments
         parser.add_argument('-l', '--label', type=str, help='label for cluster job',
                             default='mangadap')
@@ -392,6 +405,10 @@ class rundap:
             self.platetargets = self.arg.plttargets
         if self.arg.nsacat is not None:
             self.nsa_cat = self.arg.nsacat
+
+        # Save the plan file to use
+        if self.arg.plan_file is not None:
+            self.plan_file = self.arg.plan_file
 
         # Set the versions to use; versions will never be none because
         # of procedures in __init__().
@@ -917,7 +934,18 @@ class rundap:
 
         # Command that runs the DAP
         parfile = self.parameter_file(plate, ifudesign, mode, stage)
-        file.write('echo \" manga_dap, par=\'{0}\', /nolog \" | idl \n'.format(parfile))
+        if self.plan_file is None:
+            # Will create and use the default plan
+            file.write('echo \" manga_dap, par=\'{0}\', /nolog \" | idl \n'.format(parfile))
+        else:
+            # Will use the provided plan file, but first copy it for
+            # documentation purposes
+            default_plan_file = os.path.join(self.output_path(plate, ifudesign),
+                                             'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate,
+                                             ifudesign, mode))
+            file.write('cp {0} {1}\n'.format(self.plan_file, default_plan_file))
+            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', /nolog \"' \
+                       ' | idl \n'.format(parfile, default_plan_file))
         file.write('\n')
 
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
