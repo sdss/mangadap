@@ -106,7 +106,7 @@
 ;
 ; REVISION HISTORY:
 ;       01 Sep 2014: Copied from v0_8 version by L. Coccato.
-;       02 Sep 2014: (KBW) Formating and minor edits
+;       02 Sep 2014: Formating and minor edits by K. Westfall (KBW)
 ;       03 Sep 2014: (KBW) Basic compilation errors
 ;       26 Oct 2014: (KBW) v0.9 (see documentation linked to above)
 ;       11 Nov 2014: (KBW) Inclusion of spectral index measurements, addition of
@@ -143,6 +143,10 @@
 ;       16 Mar 2015: (KBW) Remove sn_calibration flag for
 ;                          MDAP_BINNING_BLOCK; noise_calib now included
 ;                          in bin_par
+;       17 Mar 2015: (KBW) Removed remove_null_templates and
+;                          save_intermediate_steps from initialization
+;                          block.  Allowed for plan parameter file
+;                          input.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -155,11 +159,11 @@
 ;-----------------------------------------------------------------------
 
 PRO MANGA_DAP, $
-        inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, dapsrc=dapsrc, $
-        nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
+        inptbl=inptbl, index=index, par=par, plan=plan, drppath=drppath, dappath=dappath, $
+        dapsrc=dapsrc, nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
 
         manga_dap_version = MDAP_DEFINE_MANGA_DAP_VERSION()
-        manga_dap_version.main = '0.95'     ; set the version number
+        manga_dap_version.main = '0.96'     ; set the version number
         t0=systime(/seconds)/60./60.        ; start time
         thismem = memory()                  ; start memory
         maxmem = 0                          ; maximum memory
@@ -180,11 +184,12 @@ PRO MANGA_DAP, $
                                    ifudesign, mode, velocity_initial_guess, $
                                    velocity_dispersion_initial_guess, ell, pa, Reff, $
                                    datacube_name, output_file_root, n_tpl_lib, inptbl=inptbl, $
-                                   index=index, par=par, drppath=drppath, dappath=dappath, $
-                                   dapsrc=dapsrc, save_intermediate_steps=save_intermediate_steps, $
-                                   remove_null_templates=remove_null_templates, $
+                                   index=index, par=par, plan=plan, drppath=drppath, $
+                                   dappath=dappath, dapsrc=dapsrc, $
                                    bvls_shared_lib=bvls_shared_lib, nolog=nolog, $
                                    log_file_unit=log_file_unit, quiet=quiet
+;                                  save_intermediate_steps=save_intermediate_steps, $
+;                                  remove_null_templates=remove_null_templates, $
 ;       get_lun, unit
 ;       print, unit
 ;       free_lun, unit

@@ -284,95 +284,26 @@
 ;
 ;===============================================================================
 ;===============================================================================
-;
-; Setup some necessary execution variables for the MANGA DAP
 
-; Signifier is what will be reported to the log file as the configuration file
-; for a run of MaNGA_DAP
+PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
+                ofile, overwrite=overwrite
 
-; dapsrc is an optional input to define the DAP source path instead of
-; using environmental varaibles.
-
-PRO MDAP_EXECUTION_SETUP, $
-        signifier, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
-        threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-        analysis_par, analysis_prior, overwrite_flag, dapsrc=dapsrc, $
-        save_intermediate_steps=save_intermediate_steps, $
-        remove_null_templates=remove_null_templates, external_library=external_library
-
-        ; Define the DAP source path
-        if n_elements(dapsrc) eq 0 then $
-            dapsrc = getenv('MANGADAP_DIR')
-
-        ;-----------------------------------------------------------------------
-        ; Flag to save intermediate steps.
-        ; TODO: This is no longer used!
-
-        ; save_intermediate_steps = 0 
-
-        ;-----------------------------------------------------------------------
-        ; Remove templates with zero weights in one fit from use in another fit.
-        ; TODO: Currently not implemented.  Will include this as an option when
-        ; applying priors.
-
-        ; remove_null_templates = 1
-
-        ;-----------------------------------------------------------------------
-        ; Path to a library of fortran or C codes to be used.  If commented,
-        ; internal IDL procedures are used.
-
-        ; external_library=getenv('MANGADAP_DIR')+'/external/F90_32/'
-        ; external_library=getenv('MANGADAP_DIR')+'/external/F90_64/'
-        external_library=dapsrc+'/external/F90_64/'
-
-        ;=======================================================================
-        ; DEFINITION OF EXECUTION PROCEDURES
-
-        ; Define a string used to signify this file in the header of the DAP output file(s)
-;       cd, current=directory
-;       signifier = directory+'/mdap_setup.pro'
-        signifier = dapsrc+'/pro/usr/mdap_execution_setup.pro'
-
-;-----------------------------------------------------------------------
-;-----------------------------------------------------------------------
-; Just perform high S/N binning with STELIB templates:
-;-----------------------------------------------------------------------
-;-----------------------------------------------------------------------
-
-        ;-----------------------------------------------------------------------
+        ;---------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
-
         niter = 1                                       ; Number of ExecutionPlans to produce
 
-        bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
-        bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
+        MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, niter, bin_par, w_range_sn, threshold_ston_bin, $
+                                                w_range_analysis, threshold_ston_analysis, $
+                                                analysis, tpl_lib_analysis, ems_par_analysis, $
+                                                abs_par_analysis, analysis_par, analysis_prior, $
+                                                overwrite_flag
 
-        w_range_sn = dblarr(niter, 2)                   ; Wavelength range for S/N calculation
-        threshold_ston_bin = dblarr(niter)              ; Threshold S/N to include spectrum in bin
-
-        w_range_analysis = dblarr(niter, 2)             ; Wavelength range for the analysis
-        threshold_ston_analysis = dblarr(niter)         ; Threshold S/N to analyze spectrum
-
-        max_analysis_blocks = 4                         ; Maximum number of analysis blocks
-        analysis = strarr(niter, max_analysis_blocks)   ; Analysis steps to apply
-
-        tpl_lib_analysis = strarr(niter)                ; INDEX of template library to use
-        ems_par_analysis = strarr(niter)                ; INDEX of emission-line parameter file
-        abs_par_analysis = strarr(niter)                ; INDEX of absorption-line parameter file
-
-        analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()   ; Define the AnalysisPar structure
-        analysis_par = replicate( analysis_par_def, niter)  ; Create array of AnalysisPar structs
-
-        analysis_prior = strarr(niter)                  ; Prior information used for analysis
-
-        overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
-
-;-----------------------------------------------------------------------
-
+        ;---------------------------------------------------------------
+        ;---------------------------------------------------------------
         bin_par[*].type = 'STON'
-        bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
-        bin_par[*].ston = 40.0d
+        bin_par[*].noise_calib = 1
+        bin_par[*].ston = 30.0d
 
         w_range_sn[0,*] = [5560.00, 6942.00]
         threshold_ston_bin[*] = -300.0d
@@ -381,6 +312,9 @@ PRO MDAP_EXECUTION_SETUP, $
         threshold_ston_analysis[*] = 0.0d
 
         analysis[*,0] = 'stellar-cont'
+        analysis[*,1] = 'star+gas'
+        analysis[*,2] = 'emission-line'
+        analysis[*,3] = 'abs-indices'
 
         tpl_lib_analysis[*] = 'M11-STELIB'
         ems_par_analysis[*] = 'STANDARD'
@@ -393,11 +327,15 @@ PRO MDAP_EXECUTION_SETUP, $
         analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
         analysis_prior[*] = ''                  ; No priors
-
         overwrite_flag[*] = 1
+        ;---------------------------------------------------------------
+        ;---------------------------------------------------------------
 
-;-------------------------------------------------------------------------------
-;-------------------------------------------------------------------------------
-
+        ; Write the parameter file
+        MDAP_WRITE_EXECUTION_PLANS, ofile, bin_par, w_range_sn, threshold_ston_bin, $
+                                    w_range_analysis, threshold_ston_analysis, analysis, $
+                                    tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+                                    analysis_par, analysis_prior, overwrite_flag, $
+                                    overwrite=overwrite
 END
 

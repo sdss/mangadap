@@ -543,7 +543,7 @@ class drpcomplete:
         ostream.write('typedef struct {\n')
         ostream.write('    long plate;\n')
         ostream.write('    long ifudesign;\n')
-        ostream.write('    char[4] mode;\n')
+        ostream.write('    char mode[4];\n')
         ostream.write('    double vel;\n')
         ostream.write('    double vdisp;\n')
         ostream.write('    double ell;\n')

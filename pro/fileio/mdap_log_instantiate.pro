@@ -6,7 +6,7 @@
 ;       Instantiate the main log file for the DAP.
 ;
 ; CALLING SEQUENCE:
-;       MDAP_LOG_INSTANTIATE, output_dir, manga_dap_version, signifier, datacube_name, mode, $
+;       MDAP_LOG_INSTANTIATE, output_dir, manga_dap_version, plan, datacube_name, mode, $
 ;                             file_root, guess_vel, guess_sig, ell, pa, Reff, file_unit, $
 ;                             inptbl=inptbl, index=index, par=par
 ;
@@ -17,9 +17,8 @@
 ;       manga_dap_version string
 ;               DAP version number.
 ;
-;       signifier string
-;               Unique signifier of the mdap_execution_setup procedure
-;               used.
+;       plan string
+;               Name of the plan file used to define the ExecutionPlan.
 ;
 ;       datacube_name string
 ;               Name of the datacube to analyze.
@@ -80,9 +79,12 @@
 ; PROCEDURES CALLED:
 ;
 ; INTERNAL SUPPORT ROUTINES:
+;       MDAP_FILE_EXTENSION_DATE
 ;
 ; REVISION HISTORY:
-;           30 Jan 2015: (KBW) Pulled from manga_dap.pro
+;           30 Jan 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;           17 Mar 2015: (KBW) Changed signifier to the name of the plan
+;                              file
 ;-
 ;------------------------------------------------------------------------------
 
@@ -101,8 +103,8 @@ FUNCTION MDAP_FILE_EXTENSION_DATE
 END
 
 PRO MDAP_LOG_INSTANTIATE, $
-                output_dir, manga_dap_version, signifier, datacube_name, mode, file_root, $
-                guess_vel, guess_sig, ell, pa, Reff, file_unit, inptbl=inptbl, index=index, par=par
+                output_dir, manga_dap_version, plan, datacube_name, mode, file_root, guess_vel, $
+                guess_sig, ell, pa, Reff, file_unit, inptbl=inptbl, index=index, par=par
 
         ofile = output_dir+'/mdap_'+MDAP_FILE_EXTENSION_DATE()+'.log'
         openw, file_unit, ofile, /get_lun
@@ -113,7 +115,8 @@ PRO MDAP_LOG_INSTANTIATE, $
         printf, file_unit, ''
         printf, file_unit, 'DAP Version: ', manga_dap_version
         printf, file_unit, ''
-        printf, file_unit, 'MDAP_EXECUTION_SETUP signifier: ', signifier
+        printf, file_unit, 'Plan file: ', plan
+;       printf, file_unit, 'MDAP_EXECUTION_SETUP signifier: ', signifier
 ;       if n_elements(inptbl) ne 0 and n_elements(index) ne 0 then begin
         if n_elements(inptbl) ne 0 && n_elements(index) ne 0 then begin
             printf, file_unit, 'Input table: ', inptbl

@@ -115,7 +115,7 @@
 ;                    and bin_weight_by_sn2 are no longer parameters in
 ;                    the ExecutionPlan structure.  Instead they're held
 ;                    here.
-;       16 Mar 2015: (KBW) Added sn_calib keyword for the S/N
+;       16 Mar 2015: (KBW) Added noise_calib keyword for the S/N
 ;                          calibration of binned spectra that accounts
 ;                          for covariance.
 ;-

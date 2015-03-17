@@ -1,3 +1,148 @@
+;+
+; NAME:
+;       MDAP_SURVEY_EXECUTION_SETUP
+;
+; PURPOSE:
+;       Create the execution plan elements used at the survey level.
+;
+; CALLING SEQUENCE:
+;       MDAP_SURVEY_EXECUTION_SETUP, mode, bin_par, w_range_sn, threshold_ston_bin, $
+;                                    w_range_analysis, threshold_ston_analysis, analysis, $
+;                                    tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+;                                    analysis_par, analysis_prior, overwrite_flag 
+;
+; INPUTS:
+;       mode string
+;               Output mode of the DRP.  Must be either 'CUBE' or 'RSS'.
+;
+;       bin_par BinPar[P]
+;               Structure containing the parameters used to perform the
+;               spatial binning.  See MDAP_DEFINE_BIN_PAR() for a
+;               description of the structure.
+;
+;       w_range_sn dblarr[P][2]
+;               Wavelength range used to calculate the S/N of each spectrum,
+;               performed using each individual spectrum.  This is always
+;               calculated, regardless of the binning type.
+;
+;       threshold_ston_bin dblarr[P]
+;               The S/N threshold for the inclusion of any DRP spectrum in the
+;               binning process.
+;
+;       w_range_analysis dblarr[P][2]
+;               The wavelength range to use during the analysis.
+;
+;       threshold_ston_analysis dblarr[P]
+;               The S/N threshold for the inclusion of a spectrum in the
+;               analysis.
+;
+;       analysis strarr[P][]
+;               List of analyses to perform.  Valid values are:
+;
+;           'stellar-cont'
+;               Fit the stellar continuum using pPXF.  Requires the
+;               template library.  Will mask emission lines, if a set of
+;               GANDALF-style emission-line parameters are provided.
+;               Determines the optimal template mix and the stellar
+;               kinematics.
+;
+;           'star+gas'
+;               This step uses GANDALF to fit the spectrum, which will
+;               re-optimize the template mix, but does not adjust
+;               the stellar kinematics.  Determines the emission-line
+;               kinematics, intensities, fluxes, and equivalent widths.
+;
+;           'emission-line'
+;               Fits an emission-line-only spectrum assuming a zero
+;               baseline.  If either 'stellar-cont' or 'star+gas' have
+;               been applied, the best-fitting stellar continuum (where
+;               the GANDALF results take preference) will be subtracted
+;               from the input spectra before fitting the
+;               emission-line-only model.  If this has not been
+;               performed, **no continuum is subtracted from the
+;               spectra!**  This fit, therefore, does not require a
+;               template library to be provided.  Currently, the lines
+;               fit are hard-coded to be:
+;
+;               #   Line    Rest Wave (air)
+;                   OII     3726.03
+;                   Hb      4861.32
+;                   OIII    4958.83
+;                   OIII    5006.77
+;                   NII     6547.96
+;                   Ha      6562.80
+;                   NII     6583.34
+;                   SII     6716.31
+;                   SII     6730.68
+;
+;               The fit is done twice using two different contributed
+;               codes, one from Enci Wang and another from Francesco
+;               Belfiore.  For these lines only, this step determines
+;               the emission-line kinematics, intensities, fluxes, and
+;               equivalent widths.
+;
+;           'abs-indices'
+;               Calculates the absorption-line indices.  Requires an
+;               absorption-line parameter set and a fit to the stellar
+;               continuum.  If an emission-line model has been fit (with
+;               the one from GANDALF taking precedence), it will be
+;               subtracted from the galaxy spectra before performing the
+;               measurements.  Other steps applied before performing the
+;               index measurements is to replace aberrant pixels and to
+;               match the spectral resolution to that of the index
+;               system.  Index measurements performed on the
+;               best-fitting template and its broadened version are used
+;               to correct the measurements made for the data in a
+;               differential way.  This step provides index measurements
+;               and their errors.
+;
+;       tpl_lib_analysis intarr[P]
+;               Index of template library to use for each of the P execution
+;               plans.  -1 if no template library is to be used during the
+;               analysis.
+;
+;       ems_par_analysis intarr[P]
+;               Index of emission-line parameter set to use for each of the P
+;               execution plans.  -1 if no emission-line parameter set is to be
+;               used during the analysis.
+;
+;       abs_par_analysis intarr[P]
+;               Index of absorption-line parameter set to use for each of the P
+;               execution plans.  -1 if no absorption-line parameter set is to
+;               be used during the analysis.
+;
+;       analysis_par AnalaysisPar[P]
+;               An array of structures that keeps the parameters used by
+;               the analysis steps.  See MDAP_DEFINE_ANALYSIS_PAR().
+;
+;       analysis_prior strarr[P]
+;               A string list of DAP files to use as a prior during each
+;               execution plan.  On input, these are expected to contain
+;               either the name of the DAP file directly (with either
+;               the full path or the path within the calling directory)
+;               or a string representation of an index of the plan to
+;               use for the prior.  (**THIS FUNCTION**) replaces the
+;               index numbered priors with the full file name, which is
+;               what is included in the ExecutionPlan structure.
+;
+;       overwrite_flag intarr[P]
+;               Flag to overwrite any existing output file with the exact same
+;               execution plan.  TODO: Should this actually just be a flag that
+;               forces analyses to be redone?
+;
+; OPTIONAL INPUTS:
+;
+; OPTIONAL KEYWORDS:
+;
+; OUTPUT:
+;
+; OPTIONAL OUTPUT:
+;       version string
+;               Module version. If requested, the module is not executed and only
+;               the version flag is returned
+;
+; COMMENTS:
+;
 ;===============================================================================
 ; SPATIAL BINNING
 ;===============================================================================
@@ -285,117 +430,103 @@
 ;===============================================================================
 ;===============================================================================
 ;
-; Setup some necessary execution variables for the MANGA DAP
-
-; Signifier is what will be reported to the log file as the configuration file
-; for a run of MaNGA_DAP
-
-; dapsrc is an optional input to define the DAP source path instead of
-; using environmental varaibles.
-
-PRO MDAP_EXECUTION_SETUP, $
-        signifier, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
-        threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-        analysis_par, analysis_prior, overwrite_flag, dapsrc=dapsrc, $
-        save_intermediate_steps=save_intermediate_steps, $
-        remove_null_templates=remove_null_templates, external_library=external_library
-
-        ; Define the DAP source path
-        if n_elements(dapsrc) eq 0 then $
-            dapsrc = getenv('MANGADAP_DIR')
-
-        ;-----------------------------------------------------------------------
-        ; Flag to save intermediate steps.
-        ; TODO: This is no longer used!
-
-        ; save_intermediate_steps = 0 
-
-        ;-----------------------------------------------------------------------
-        ; Remove templates with zero weights in one fit from use in another fit.
-        ; TODO: Currently not implemented.  Will include this as an option when
-        ; applying priors.
-
-        ; remove_null_templates = 1
-
-        ;-----------------------------------------------------------------------
-        ; Path to a library of fortran or C codes to be used.  If commented,
-        ; internal IDL procedures are used.
-
-        ; external_library=getenv('MANGADAP_DIR')+'/external/F90_32/'
-        ; external_library=getenv('MANGADAP_DIR')+'/external/F90_64/'
-        external_library=dapsrc+'/external/F90_64/'
-
-        ;=======================================================================
-        ; DEFINITION OF EXECUTION PROCEDURES
-
-        ; Define a string used to signify this file in the header of the DAP output file(s)
-;       cd, current=directory
-;       signifier = directory+'/mdap_setup.pro'
-        signifier = dapsrc+'/pro/usr/mdap_execution_setup.pro'
-
+; EXAMPLES:
+;
+; BUGS:
+;
+; PROCEDURES CALLED:
+;       MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES
+;
+; INTERNAL SUPPORT ROUTINES:
+;
+; REVISION HISTORY:
+;       17 Mar 2015: Original implementation by K. Westfall (KBW)
+;-
 ;-----------------------------------------------------------------------
-;-----------------------------------------------------------------------
-; Just perform high S/N binning with STELIB templates:
-;-----------------------------------------------------------------------
-;-----------------------------------------------------------------------
+
+
+PRO MDAP_SURVEY_EXECUTION_SETUP, $
+        mode, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
+        analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, analysis_par, $
+        analysis_prior, overwrite_flag, version=version
+
+        version_module = '0.1'                          ; Version number
+        if n_elements(version) ne 0 then begin          ; set version and return
+            version = version_module
+            return
+        endif
+
+        ; Check the mode
+        if mode ne 'RSS' && mode ne 'CUBE' then $
+            message, 'Unknown MODE type: '+mode
 
         ;-----------------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
 
-        niter = 1                                       ; Number of ExecutionPlans to produce
+        niter = 4                                       ; Number of ExecutionPlans to produce
 
-        bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
-        bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
+        MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, niter, bin_par, w_range_sn, threshold_ston_bin, $
+                                                w_range_analysis, threshold_ston_analysis, $
+                                                analysis, tpl_lib_analysis, ems_par_analysis, $
+                                                abs_par_analysis, analysis_par, analysis_prior, $
+                                                overwrite_flag
 
-        w_range_sn = dblarr(niter, 2)                   ; Wavelength range for S/N calculation
-        threshold_ston_bin = dblarr(niter)              ; Threshold S/N to include spectrum in bin
+        ;-----------------------------------------------------------------------
+        ; Nominal pipeline run at Utah
 
-        w_range_analysis = dblarr(niter, 2)             ; Wavelength range for the analysis
-        threshold_ston_analysis = dblarr(niter)         ; Threshold S/N to analyze spectrum
+        if mode eq 'CUBE' then $
+            bin_par[*].noise_calib = 1
 
-        max_analysis_blocks = 4                         ; Maximum number of analysis blocks
-        analysis = strarr(niter, max_analysis_blocks)   ; Analysis steps to apply
 
-        tpl_lib_analysis = strarr(niter)                ; INDEX of template library to use
-        ems_par_analysis = strarr(niter)                ; INDEX of emission-line parameter file
-        abs_par_analysis = strarr(niter)                ; INDEX of absorption-line parameter file
+        ; Run the pipeline
+        bin_par[0].type = 'NONE'        ; ... without binning
 
-        analysis_par_def = MDAP_DEFINE_ANALYSIS_PAR()   ; Define the AnalysisPar structure
-        analysis_par = replicate( analysis_par_def, niter)  ; Create array of AnalysisPar structs
+        bin_par[1].type = 'ALL'         ; ... by binning all spectra
 
-        analysis_prior = strarr(niter)                  ; Prior information used for analysis
+        bin_par[2].type = 'STON'        ; ... using a S/N=20 Voronoi binning
+        bin_par[2].ston = 20.0d
 
-        overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
+        bin_par[3].type = 'RADIAL'      ; ... and with radial binning
+        bin_par[3].v_register = 1
+        bin_par[3].nr = 10
+        bin_par[3].rlog = 1
 
-;-----------------------------------------------------------------------
-
-        bin_par[*].type = 'STON'
-;       bin_par[*].optimal_weighting = 1        ; Otherwise uniform weighting
-        bin_par[*].noise_calib = 1              ; Use the calibrated noise
-        bin_par[*].ston = 30.0d
-
+        ; Calculate the S/N in the same region for all binning types
         w_range_sn[0,*] = [5560.00, 6942.00]
-        threshold_ston_bin[*] = -300.0d
+        w_range_sn[1,*] = [5560.00, 6942.00]
+        w_range_sn[2,*] = [5560.00, 6942.00]
+        w_range_sn[3,*] = [5560.00, 6942.00]
+        threshold_ston_bin[*] = -300.0d             ; Include all data in S/N calculation
 
+        ; Analyze the same wavelength region for all binning types
         w_range_analysis[0,*] = [3650.,10300.] 
-        threshold_ston_analysis[*] = 0.0d
+        w_range_analysis[1,*] = [3650.,10300.] 
+        w_range_analysis[2,*] = [3650.,10300.] 
+        w_range_analysis[3,*] = [3650.,10300.] 
+        threshold_ston_analysis[*] = 0.0d           ; Include only positive S/N in analysis
 
-;       analysis[*,0] = 'stellar-cont'
+        ; Perform all 4 main analysis steps (GANDALF turned off)
+        analysis[*,0] = 'stellar-cont'
+;       analysis[*,1] = 'star+gas'
+        analysis[*,2] = 'emission-line'
+        analysis[*,3] = 'abs-indices'
 
-        tpl_lib_analysis[*] = 'M11-STELIB'
+        tpl_lib_analysis[*] = 'M11-STELIB'                 ; Always use the STELIB library
         ems_par_analysis[*] = 'STANDARD'
         abs_par_analysis[*] = 'LICK'
 
+        ; Always use the same analysis parameters
         analysis_par[*].moments = 4
         analysis_par[*].degree = -1
         analysis_par[*].mdegree = 6
         analysis_par[*].reddening_order = 0
         analysis_par[*].zero_instr_disp = 1     ; Do not use instr dispersion in GANDALF
 
-        analysis_prior[*] = ''                  ; No priors
+        analysis_prior[0:2] = ''                ; No priors
+        analysis_prior[3] = '2'                 ; ... for all but the RADIAL binning type
 
-        overwrite_flag[*] = 1
+        overwrite_flag[*] = 1                   ; Always overwrite the existing data
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------

@@ -192,20 +192,49 @@
 ;                          INDICES.  The MDAP_SELECTED_KEYWORD_INDEX
 ;                          function then converts those keywords into
 ;                          the appropriate index.
+;       17 Mar 2015: (KBW) Allow to read execution plan from parameter
+;                          file.  When not provided, default plan(s)
+;                          created (MDAP_SURVEY_EXECUTION_SETUP) and the
+;                          plan parameter file is written to disk.
+;                          Removed save_intermediate_steps and
+;                          remove_null_templates (not used anyway).
+;                          Moved external_library definition from
+;                          mdap_execution_setup to here, now hard-wired.
+;                          Moved definition of dapsrc to here from
+;                          MDAP_SURVEY_EXECUTION_SETUP.  signifier
+;                          removed from MDAP_SURVEY_EXECUTION_SETUP; now
+;                          hard-wired as the name of the written plan
+;                          file.
 ;-
-;------------------------------------------------------------------------------
+;------------------------------------------------------------------------
 
 PRO MDAP_INITIALIZATION_BLOCK, $
         manga_dap_version, tpl_library_keys, template_libraries, tpl_vacuum_wave, ems_line_keys, $
         emission_line_parameters, ems_vacuum_wave, abs_line_keys, absorption_line_parameters, $
         abs_vacuum_wave, execution_plan, plate, ifudesign, mode, velocity_initial_guess, $
         velocity_dispersion_initial_guess, ell, pa, Reff, datacube_name, output_file_root, $
-        n_tpl_lib, inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, $
-        dapsrc=dapsrc, save_intermediate_steps=save_intermediate_steps, $
-        remove_null_templates=remove_null_templates, bvls_shared_lib=bvls_shared_lib, nolog=nolog, $
+        n_tpl_lib, inptbl=inptbl, index=index, par=par, plan=plan, drppath=drppath, $
+        dappath=dappath, dapsrc=dapsrc, bvls_shared_lib=bvls_shared_lib, nolog=nolog, $
         log_file_unit=log_file_unit, quiet=quiet
 
-        ;-----------------------------------------------------------------------
+;       save_intermediate_steps=save_intermediate_steps, $
+;       remove_null_templates=remove_null_templates,
+
+        ;----------------------------------------------------------------
+        ; Read the input parameters
+        MDAP_READ_INPUT_SETUP, inptbl=inptbl, index=index, par=par, drppath=drppath, $
+                               dappath=dappath, plate, ifudesign, mode, velocity_initial_guess, $
+                               velocity_dispersion_initial_guess, ell, pa, Reff, root_name, $
+                               output_root_dir
+
+        ;----------------------------------------------------------------
+        ; Set input file names and output directory
+        ;     make the directory if it doesn't exist
+        ; TODO: Allow for a single spectrum mode
+        MDAP_SETUP_IO, root_name, output_root_dir, datacube_name, file_root, output_dir, $
+                       output_file_root
+
+        ;----------------------------------------------------------------
         ; Define the available template library and parameter files
         MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, tpl_library_keys, template_libraries, $
                                                   tpl_vacuum_wave, dapsrc=dapsrc
@@ -215,30 +244,56 @@ PRO MDAP_INITIALIZATION_BLOCK, $
                                                          absorption_line_parameters, $
                                                          abs_vacuum_wave, dapsrc=dapsrc
 
-        ;-----------------------------------------------------------------------
-        ; Execute the script the sets the user-level execution parameters
-        ; tpl_lib_analysis, ems_par_analysis, and abs_par_analysis are
-        ; string-based keywords that select the libraries above.
-        MDAP_EXECUTION_SETUP, signifier, bin_par, w_range_sn, threshold_ston_bin, $
-                              w_range_analysis, threshold_ston_analysis, analysis, $
-                              tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-                              analysis_par, analysis_prior, overwrite_flag, dapsrc=dapsrc, $
-                              save_intermediate_steps=save_intermediate_steps, $
-                              remove_null_templates=remove_null_templates, $
-                              external_library=external_library
+        ;----------------------------------------------------------------
+        ; Define the DAP source path
+        if n_elements(dapsrc) eq 0 then $
+            dapsrc = getenv('MANGADAP_DIR')
 
-        ; Check the mdap_execution_setup results
+        ;----------------------------------------------------------------
+        ; Define the external library.  This is currently HARD-WIRED!
+        external_library=dapsrc+'/external/F90_64/'
+
+        ; Check the external library has an appropriate shared-object
+        ; library
         if n_elements(external_library) then begin
             bvls_shared_lib=external_library+'bvls.so'
             if file_test(bvls_shared_lib) eq 0 then $
                 bvls_shared_lib=external_library+'bvls.dylib'
             if file_test(bvls_shared_lib) eq 0 then begin
-                print, 'Shared object library does not exist! Continuing with internal routines.'
+                print, 'WARNING: Shared object library does not exist! Continuing by using IDL' $
+                       + 'bvls routine.'
                 ; Undefine the variables
                 tempvar = size(temporary(external_library))
                 tempvar = size(temporary(bvls_shared_lib))
             endif
         endif
+
+        ;----------------------------------------------------------------
+        ; Get the details of the execution plan
+        if n_elements(plan) eq 0 then begin
+            ; Execute the script the sets the user-level execution
+            ; parameters tpl_lib_analysis, ems_par_analysis, and
+            ; abs_par_analysis are string-based keywords that select the
+            ; libraries above.
+            MDAP_SURVEY_EXECUTION_SETUP, mode, bin_par, w_range_sn, threshold_ston_bin, $
+                                         w_range_analysis, threshold_ston_analysis, analysis, $
+                                         tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+                                         analysis_par, analysis_prior, overwrite_flag
+
+            plan = output_dir + '/manga-' + MDAP_STC(plate, /integer) + '-' $
+                   + MDAP_STC(ifudesign, /integer) + '-LOG' + mode + '-dapplan.par'
+
+            MDAP_WRITE_EXECUTION_PLANS, plan, bin_par, w_range_sn, threshold_ston_bin, $
+                                        w_range_analysis, threshold_ston_analysis, analysis, $
+                                        tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+                                        analysis_par, analysis_prior, overwrite_flag, /overwrite
+        endif else begin
+            ; Read the execution plan from a file
+            MDAP_READ_EXECUTION_PLANS, plan, bin_par, w_range_sn, threshold_ston_bin, $
+                                       w_range_analysis, threshold_ston_analysis, analysis, $
+                                       tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
+                                       analysis_par, analysis_prior, overwrite_flag
+        endelse
 
         ;-----------------------------------------------------------------------
         ; These calls use a function that converts the selected keywords
@@ -248,35 +303,21 @@ PRO MDAP_INITIALIZATION_BLOCK, $
         ems_par_analysis = MDAP_SELECTED_KEYWORD_INDEX(ems_line_keys, ems_par_analysis)
         abs_par_analysis = MDAP_SELECTED_KEYWORD_INDEX(abs_line_keys, abs_par_analysis)
 
-        ;-----------------------------------------------------------------------
-        ; Read the input parameters
-        MDAP_READ_INPUT_SETUP, inptbl=inptbl, index=index, par=par, drppath=drppath, $
-                               dappath=dappath, plate, ifudesign, mode, velocity_initial_guess, $
-                               velocity_dispersion_initial_guess, ell, pa, Reff, root_name, $
-                               output_root_dir
+;       ; TODO: save_intermediate_steps and remove_null_templates are not used
+;       ; Check if save_intermediate_steps exits, if not set to not save intermediate steps
+;       if n_elements(save_intermediate_steps) eq 0 then $
+;           save_intermediate_steps = 0
 
-        ;-----------------------------------------------------------------------
-        ; Set input file names and output directory
-        ;     make the directory if it doesn't exist
-        ; TODO: Allow for a single spectrum mode
-        MDAP_SETUP_IO, root_name, output_root_dir, datacube_name, file_root, output_dir, $
-                       output_file_root
+;       ; Check if remove_null_elemens exits, if not set to remove null templates
+;       if n_elements(remove_null_templates) eq 0 then $
+;           remove_null_templates = 0
 
-        ; TODO: save_intermediate_steps and remove_null_templates are not used
-        ; Check if save_intermediate_steps exits, if not set to not save intermediate steps
-        if n_elements(save_intermediate_steps) eq 0 then $
-            save_intermediate_steps = 0
-
-        ; Check if remove_null_elemens exits, if not set to remove null templates
-        if n_elements(remove_null_templates) eq 0 then $
-            remove_null_templates = 0
-
-        ; TODO: Need to pass log_file_unit to other subroutines?
+;       ; TODO: Need to pass log_file_unit to other subroutines?
 
         ;-----------------------------------------------------------------------
         ; Instantiate the log file
         if ~keyword_set(nolog) then begin
-            MDAP_LOG_INSTANTIATE, output_dir, manga_dap_version.main, signifier, datacube_name, $
+            MDAP_LOG_INSTANTIATE, output_dir, manga_dap_version.main, plan, datacube_name, $
                                   mode, file_root, velocity_initial_guess, $
                                   velocity_dispersion_initial_guess, ell, pa, Reff, log_file_unit, $
                                   inptbl=inptbl, index=index, par=par
