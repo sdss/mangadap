@@ -302,7 +302,6 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
         ;---------------------------------------------------------------
         ;---------------------------------------------------------------
         bin_par[0].type = 'STON'
-        bin_par[0].noise_calib = 1
         bin_par[0].ston = 30.0d
 
         bin_par[1].type = 'RADIAL'
