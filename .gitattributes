@@ -80,6 +80,7 @@ examples/manga_dap_highsn_binonly_plan.pro -text
 examples/manga_dap_highsn_stelib_plan.pro -text
 examples/manga_dap_highsn_stelib_sconly_plan.pro -text
 examples/manga_dap_highsn_twotpl_plan.pro -text
+examples/manga_dap_radial_binonly_plan.pro -text
 examples/manga_dap_radial_plan.pro -text
 examples/mdap_velocity_field.pro -text
 external/F90_32/README_from_Remco -text

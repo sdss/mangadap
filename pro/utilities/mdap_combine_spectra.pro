@@ -134,10 +134,10 @@ PRO MDAP_COMBINE_SPECTRA, $
                 combined_flux[i,gindx] = combined_flux[i,gindx] / sumwgt[gindx]     ; Normalize
                 if n_elements(noise_calib) ne 0 then begin
                     combined_nois[i,gindx] = (MDAP_CALIBRATE_NOISE(sqrt(combined_nois[i,gindx]), $
-                                                                   sumwgt[gindx], noise_calib))^2
-                endif else $
-                    combined_nois[i,gindx] = combined_nois[i,gindx]/sumwgt[gindx]^2
-                combined_ivar[i,gindx] = sqrt(1.0/combined_nois[i,gindx])
+                                                                   sumwgt[gindx], $
+                                                                   noise_calib))^2
+                endif
+                combined_ivar[i,gindx] = sumwgt[gindx]^2/combined_nois[i,gindx]
                 combined_mask[i,gindx] = 0.                                     ;  ... and unmask'em
             endif
 

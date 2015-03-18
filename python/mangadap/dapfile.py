@@ -71,7 +71,10 @@ class dapfile:
             mode - mode of the produced file (CUBE or RSS)
             bintype - binning type used
             niter - iteration number
-            dapver - DAP version to use. Defaults to $MANGADAP_VER.
+
+            dapver - DAP version to use; ONLY USED TO DEFINE THE
+                     DIRECTORY PATH. Defaults to $MANGADAP_VER.
+
             directory_path - Path to DAP file.  Default is
                     os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
                                  self.dapver, str(self.plate), str(self.ifudesign))

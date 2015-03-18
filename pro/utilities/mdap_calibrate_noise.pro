@@ -45,7 +45,7 @@ FUNCTION MDAP_CALIBRATE_NOISE, $
         if noise_calib eq 0 then $
             return, noise_nocovar
 
-        return, noise_nocovar * (1.0 + 1.62 * alog10(nbin))
+        return, noise_nocovar * (1.0 + 1.62 * alog10(double(nbin)))
 END
 
 
