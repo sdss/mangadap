@@ -139,7 +139,7 @@ class rundap:
         """
         # Only print the version of the DAP
         if version:
-            print('This is version 0.94.')
+            print('This is version 0.96.')
             return
 
         # Save run-mode options
@@ -441,59 +441,6 @@ class rundap:
 #       self.submit = False
 
 
-########################################################################
-#   Moved to managmpl.py
-#
-#   def _available_mpls(self, write=False):
-#       """
-#       Return a list of the available MPLs to analyze, providing a list
-#       if requested.
-#       """
-#
-#       nmpl = 2
-#       mpl_def = numpy.array([ ['MPL-1', 'v5_5_16', 'v1_0_0'],
-#                               ['MPL-2', 'v5_5_17', 'v1_1_2'] ])
-#   
-#       if write:
-#           for x in mpl_def[0:nmpl,:]:
-#               print('{0}: IDLUTILS:{1}; DRPVER:{2}'.format(x[0], x[1], x[2]))
-#
-#       return mpl_def
-#
-#
-#   def _select_mpl(self):
-#       """
-#       Return the name of the MPL to analyze.
-#       """
-#       if self.mplver is None:
-#           self.mplver = 'MPL-2'
-#           self.drpver = 'v1_1_2'
-#           self.mplver = 'MPL-2'
-#           return
-#
-#       mpls = self._available_mpls()
-#       mpli = numpy.where(mpls[:,0] == self.mplver)
-#       if len(mpli[0]) == 0:
-#           mpls = self._available_mpls(write=True)
-#           raise Exception('{0} is not an available MPL!'.format(self.mplver))
-#
-#       self.mplver = str(mpls[mpli].reshape(3)[0])
-#       self.drpver = str(mpls[mpli].reshape(3)[2])
-#
-#
-#   def _mpl_module(self):
-#       """
-#       Return the name of the module file specific to the MPL to analyze.
-#
-#       TODO: For now this ALWAYS uses the python3 versions.
-#       """
-#       if self.mplver == 'MPL-1':
-#           return 'manga/westfall3_mpl1'
-#       if self.mplver == 'MPL-2':
-#           return 'manga/westfall3_mpl2'
-#   
-########################################################################
-
     # TODO: Files:
     #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
     #       - *.ready = script/directory is ready for queue submission
@@ -533,7 +480,6 @@ class rundap:
 
         """
 
-#       module = self._mpl_module()
         module = self.mpl.module_file()
 #        file.write('module unload manga\n')
 #        file.write('module load {0}\n'.format(module))
@@ -571,6 +517,7 @@ class rundap:
         # Select the daily DRP files and write the script files (do not
         # clobber)
         drpfiles = self.select_daily()
+        print('Number of DRP files to process: {0}'.format(len(drpfiles)))
         if len(drpfiles) == 0:
             return
 
@@ -597,6 +544,7 @@ class rundap:
             raise Exception('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_all(clobber=clobber)
+        print('Number of DRP files to process: {0}'.format(len(drpfiles)))
         if len(drpfiles) == 0:
             return
 
@@ -617,11 +565,9 @@ class rundap:
             raise Exception('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_redo()
-        print(len(drpfiles))
-
-        # If coded correctly, this function should never return here.
+        print('Number of DRP files to process: {0}'.format(len(drpfiles)))
         if len(drpfiles) == 0:
-            return
+            return       # If coded correctly, this function should never return here.
 
         # Create the script files for the set of drpfiles, and 
         # submit the scripts to the queue if self.submit is true
@@ -633,66 +579,7 @@ class rundap:
     #  Reduction Management
     # ******************************************************************
 
-########################################################################
-# Moved to mangadap/util.py
-#   # TODO: This is not really a rundap-specific routine.  Should be in
-#   # a lower-level class?
-#   def product_version(self, product='mangadap', simple=False):
-#       """
-#       Gets the version for the SDSS-III or SDSS-IV product.  The
-#       default product is mangadap.
-#       """
-#
-#       # Expects to find an executable called {$product}_version that
-#       # reports the SDSS-III/SDSS-IV product version.  If simple=True,
-#       # only the first element of the reported version is set to
-#       # 'version'
-#       try:
-#           version = subprocess.check_output('%s_version' % product, shell=True)
-#           if type(version) is bytes:
-#               version = version.decode('utf-8')
-#           version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
-#       except Exception as e:
-#           print_frame('Exception')
-#           print(e)
-#           version = None
-#
-#       return version
-#
-#
-#   # TODO: This is not really a rundap-specific routine.  Should be in
-#   # a lower-level class?
-#   def module_version(self, product='mangadap'):
-#       """
-#       Return the module version for the specified product.  The
-#       default product is mangadap.
-#       """
-#       
-#       try:
-#           modules = environ['LOADEDMODULES']
-#       except:
-#           print_frame('Exception')
-#           modules = None
-#           return None
-#       # TODO: Re-raise the exception?
-#     
-#       # Parse the loaded version(s) of product
-#       versions = [module.split('/')[1] for module in modules.split(':')
-#                       if module.split('/')[0]==product]
-#
-#       # If there is more than one version or no versions return None
-#       if len(versions) != 1:
-#           if len(versions) > 1:
-#               print('Multiple versions found for module {0}'.format(product))
-#           else:
-#               print('Module {0} is not loaded'.format(product))
-#           return None
-#
-#       # Return the version
-#       return versions[0]
-########################################################################
-
-
+    
     def file_root(self, plate, ifudesign, mode, stage='dap'):
         """
         Generate the root name of the MaNGA DAP file for a given
@@ -761,10 +648,10 @@ class rundap:
 
         drplist = self.full_drpfile_list()
         n_drp = len(drplist)
-        print(n_drp)
-#        for i in range(0,n_drp):
-#            print(drplist[i].file_name())
-#            print(drplist[i].created_today())
+#       print(n_drp)
+#       for i in range(0,n_drp):
+#           print(drplist[i].file_name())
+#           print(drplist[i].created_today())
 
         # Select the files created today
         return [ drplist[i] for i in range(0,n_drp) if drplist[i].created_today() ]
@@ -781,10 +668,10 @@ class rundap:
         drplist = self.full_drpfile_list()
 
         n_drp = len(drplist)
-        print(n_drp)
-        for i in range(0,n_drp):
-            print(drplist[i].file_path())
-#            print(self.dap_complete(drplist[i]))
+#       print(n_drp)
+#       for i in range(0,n_drp):
+#           print(drplist[i].file_path())
+#           print(self.dap_complete(drplist[i]))
 
         # If clobbering, just return the full list
         if clobber:
@@ -816,19 +703,33 @@ class rundap:
         expected to exist.
         """
 
+#       # Number of plates (CUBE only)
+#       n_plates = len(self.drpc.data['PLATE'])
+
+#       # Create the list of CUBE DRP files
+#       drplist = [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
+#                           drpver=self.mpl.drpver) for i in range(0,n_plates) ]
+
+        # Add the list of RSS DRP files
+#       drplist = drplist + [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
+#                                     'RSS', drpver=self.mpl.drpver)
+#                             for i in range(0,n_plates) if self.drpc.data['MODES'][i] == 2 ]
+
+        # Edited to ignore drpfiles that are found but do not have an
+        # entry in the platetargets files (mangaid = 'NULL')
         # Number of plates (CUBE only)
         n_plates = len(self.drpc.data['PLATE'])
 
         # Create the list of CUBE DRP files
-#       drplist = [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
         drplist = [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
-                            drpver=self.mpl.drpver) for i in range(0,n_plates) ]
+                            drpver=self.mpl.drpver) for i in range(0,n_plates) 
+                                                    if self.drpc.data['MANGAID'][i] != 'NULL' ]
 
         # Add the list of RSS DRP files
-#       drplist = drplist + [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
         drplist = drplist + [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
                                       'RSS', drpver=self.mpl.drpver)
-                              for i in range(0,n_plates) if self.drpc.data['MODES'][i] == 2 ]
+                  for i in range(0,n_plates)
+                  if self.drpc.data['MANGAID'][i] != 'NULL' and self.drpc.data['MODES'][i] == 2 ]
         return drplist
 
 
@@ -855,9 +756,13 @@ class rundap:
                 getcube = False
 
         if getcube:
-#           drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
+#           drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
+#                               drpver=self.mpl.drpver) for i in range(0,n_plates) ]
             drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
-                                drpver=self.mpl.drpver) for i in range(0,n_plates) ]
+                                drpver=self.mpl.drpver)
+                      for i in range(0,n_plates)
+                          if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
+                                                       self.drpc.ifudesignlist[i])] != 'NULL' ]
         else:
             drplist = list()
 
@@ -869,12 +774,18 @@ class rundap:
             except ValueError: #as e:
                 return drplist                  # List complete
 
-#       drplist = drplist + [ drpfile(self.drpver, self.drpc.platelist[i],
+#       drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
+#                                     drpver=self.mpl.drpver)
+#                 for i in range(0,n_plates)
+#                 if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
+#                                            self.drpc.ifudesignlist[i])] == 2 ]
         drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
                                       drpver=self.mpl.drpver)
-                for i in range(0,n_plates)
-                    if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
-                                               self.drpc.ifudesignlist[i])] == 2 ]
+                  for i in range(0,n_plates)
+                  if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
+                                               self.drpc.ifudesignlist[i])] != 'NULL' and
+                     self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
+                                             self.drpc.ifudesignlist[i])] == 2 ]
 
         return drplist
 
@@ -942,7 +853,7 @@ class rundap:
             default_plan_file = os.path.join(self.output_path(plate, ifudesign),
                                              'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate,
                                              ifudesign, mode))
-            file.write('cp {0} {1}\n'.format(self.plan_file, default_plan_file))
+            file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
             file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', /nolog \"' \
                        ' | idl \n'.format(parfile, default_plan_file))
         file.write('\n')

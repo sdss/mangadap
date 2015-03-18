@@ -39,7 +39,8 @@ class mangampl:
             #                        MPL      IDLUTILS   DRP
             mpl_def = numpy.array([
                                     ['MPL-1', 'v5_5_16', 'v1_0_0'],
-                                    ['MPL-2', 'v5_5_17', 'v1_1_2']
+                                    ['MPL-2', 'v5_5_17', 'v1_1_2'],
+                                    ['v1_2_0', 'v5_5_19', 'v1_2_0']
                                   ])
     
             if write:
@@ -60,6 +61,8 @@ class mangampl:
                 return 'manga/westfall3_mpl1'
             if self.mplver == 'MPL-2':
                 return 'manga/westfall3_mpl2'
+            else:
+                return 'manga/westfall3_mpl1'
 
 
         def show(self):
