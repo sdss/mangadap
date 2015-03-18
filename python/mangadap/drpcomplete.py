@@ -506,13 +506,13 @@ class drpcomplete:
                         try:
                             ip = self.platelist.index(p)
                         except ValueError:
-                            print_frame('ValueError')
+                            #print_frame('ValueError')
                             ip = -1
                     if self.ifudesignlist is not None:
                         try:
                             ib = self.ifudesignlist.index(b)
                         except ValueError:
-                            print_frame('ValueError')
+                            #print_frame('ValueError')
                             ib = -1
 
                     if ip != -1 and ib != -1:

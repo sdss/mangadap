@@ -253,9 +253,8 @@ class rundap:
 
         # Create and update the drpcomplete file if necessary
 #       self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
-        self.drpc = drpcomplete(self.outver, self.mpl.drpver, platetargets=self.platetargets,
-                                nsa_cat=self.nsa_cat)
-
+        self.drpc = drpcomplete(platetargets=self.platetargets, nsa_cat=self.nsa_cat,
+                                dapver=self.outver, drpver=self.mpl.drpver)
         # Update the drpcomplete list; force an update if the
         # platetarget files or an NSA catalog file are provided
         if self.platetargets is not None or self.nsa_cat is not None:
@@ -371,10 +370,6 @@ class rundap:
         # Parse the arguments and assign them to self
         self.arg = parser.parse_args()
 
-        print('PARSED')
-
-        exit()
-      
         ################################################################
         # Assign properties based on arguments, if properties not set
         # previously; the suitability of these arguments is checked in
@@ -630,7 +625,7 @@ class rundap:
 
         # Create the script files for the set of drpfiles, and 
         # submit the scripts to the queue if self.submit is true
-        self._fill_queue(drpfiles, clobber=clobber)
+        self._fill_queue(drpfiles, clobber=True)
 
 
 
@@ -826,13 +821,13 @@ class rundap:
 
         # Create the list of CUBE DRP files
 #       drplist = [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
-        drplist = [ drpfile(self.mpl.drpver, self.drpc.data['PLATE'][i],
-                            self.drpc.data['IFUDESIGN'][i], 'CUBE') for i in range(0,n_plates) ]
+        drplist = [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
+                            drpver=self.mpl.drpver) for i in range(0,n_plates) ]
 
         # Add the list of RSS DRP files
 #       drplist = drplist + [ drpfile(self.drpver, self.drpc.data['PLATE'][i],
-        drplist = drplist + [ drpfile(self.mpl.drpver, self.drpc.data['PLATE'][i],
-                                      self.drpc.data['IFUDESIGN'][i], 'RSS')
+        drplist = drplist + [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
+                                      'RSS', drpver=self.mpl.drpver)
                               for i in range(0,n_plates) if self.drpc.data['MODES'][i] == 2 ]
         return drplist
 
@@ -861,8 +856,8 @@ class rundap:
 
         if getcube:
 #           drplist = [ drpfile(self.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
-            drplist = [ drpfile(self.mpl.drpver, self.drpc.platelist[i], self.drpc.ifudesignlist[i],
-                                'CUBE') for i in range(0,n_plates) ]
+            drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
+                                drpver=self.mpl.drpver) for i in range(0,n_plates) ]
         else:
             drplist = list()
 
@@ -875,8 +870,8 @@ class rundap:
                 return drplist                  # List complete
 
 #       drplist = drplist + [ drpfile(self.drpver, self.drpc.platelist[i],
-        drplist = drplist + [ drpfile(self.mpl.drpver, self.drpc.platelist[i],
-                                      self.drpc.ifudesignlist[i], 'RSS')
+        drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
+                                      drpver=self.mpl.drpver)
                 for i in range(0,n_plates)
                     if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
                                                self.drpc.ifudesignlist[i])] == 2 ]
