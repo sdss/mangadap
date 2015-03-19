@@ -45,19 +45,28 @@ def parse_drp_file_name(name):
     return plate, ifudesign, mode
 
 
-def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False):
+def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
+                 redux_path=None):
     """
     Provided a list of plates, ifu designs, and modes, return a list of
     DRP files to be analyzed by the DAP.
 
     ARGUMENTS:
-        drpver              - The DRP version, which MUST be a single
-                              string value used for all DRP files.
         platelist           - List of plates to use.
         ifudesignlist       - List of IFU designs to use.
         modelist            - List of DRP output modes ('CUBE' or 'RSS')
         combinatorics       - Based on the input, create a list with all
                               possible combinations.
+        drpver              - The DRP version, which MUST be a single
+                              string value used for all DRP files.
+        redux_path          - The path to the top level directory
+                              containing the DRP output; this is
+                              DIFFERENT from the directory_path in the
+                              drpfile class.  If not provided, the
+                              default redux path is:
+                              
+                                os.path.join(environ['MANGA_SPECTRO_REDUX'],
+                                  self.drpver)
 
     If the number of elements in each list is the same, the matching is
     assumed to be finished unless combinatorics is True.  If the number
@@ -65,12 +74,15 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
     list is all the combinations of the provided elements.
 
     REVISION HISTORY:
-        20 Nov 2014: Original implementation by K. Westfall
-        12 Feb 2014: (KBW) Added directory_path()
+        20 Nov 2014: Original implementation by K. Westfall (KBW)
+        19 Mar 2014: (KBW) Re-arranged arguments, made drpver optional,
+                           and added redux_path
     """
 
-    if (type(drpver) != str):
-        raise Exception('DRP drpver must be a string')
+    if drpver is not None and type(drpver) != str:
+        raise Exception('drpver must be a string')
+    if redux_path is not None and type(redux_path) != str:
+        raise Exception('redux_path must be a string')
 
     if platelist is None or ifudesignlist is None or modelist is None:
         raise ValueError('Must provide platelist, ifudesignlist, and modelist!')
@@ -120,10 +132,37 @@ def drpfile_list(drpver, platelist, ifudesignlist, modelist, combinatorics=False
     else:
         nn = n_plates
 
-    # Create and return the list of DRP files
-    return [drpfile(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver) \
+    # Set the directory path based on the provided main path
+    return [drpfile(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver,
+                    redux_path=redux_path) \
             for i in range(0,nn)]
 
+
+def default_drp_version():
+    """
+    Return the DRP version defined by the environmental variable.
+    """
+    return environ['MANGADRP_VER']
+
+
+def default_redux_path(drpver):
+    """Return the main output path for the DRP products."""
+
+    # Make sure the DRP version is set
+    if drpver is None:
+        drpver = default_drp_version()
+
+    return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
+
+
+def default_drp_directory_path(redux_path, plate):
+    """Return the exact directory path with the file."""
+
+    # Make sure the DRP version is set
+    if redux_path is None:
+        redux_path = default_redux_path()
+
+    return os.path.join(redux_path, str(plate), 'stack')
 
 
 class drpfile:
@@ -131,12 +170,15 @@ class drpfile:
     Object to hold the properties of a DRP-produced file to be analyzed by the DAP.
 
     REVISION HISTORY:
-        20 Nov 2014: Original Implementation by K. Westfall
+        20 Nov 2014: Original Implementation by K. Westfall (KBW)
+        12 Feb 2014: (KBW) Added directory_path()
         20 Feb 2015: (KBW) Add covariance calculation
+        19 Mar 2015: (KBW) Added redux_path
     """
 
 
-    def __init__(self, plate, ifudesign, mode, drpver=None, directory_path=None, read=False):
+    def __init__(self, plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
+                 read=False):
         """
         ARGUMENTS:
             plate integer
@@ -151,14 +193,24 @@ class drpfile:
 
         OPTIONAL:
             drpver string
-                    DRP version to use.  Default is to use the
+                    DRP version to use. ONLY USED TO DEFINE DIRECTORY
+                    PATH (see below). Default is to use the
                     $MANGADAP_VER environmental variable
 
+            redux_path string
+                    The path to the top level directory containing the
+                    DRP output; this is DIFFERENT from the
+                    directory_path.  If not provided, the default redux
+                    path is:
+                    
+                        os.path.join(environ['MANGA_SPECTRO_REDUX'],
+                          self.drpver)
+                          
             directory_path string
                     Directory with the DRP file.  Default is to use:
                     
-                    os.path.join(environ['MANGA_SPECTRO_REDUX'],
-                                 self.drpver, str(self.plate), 'stack')
+                        os.path.join(self.redux_path, str(self.plate),
+                          'stack')
         """
 
         # Set the attributes, forcing a known type
@@ -166,14 +218,14 @@ class drpfile:
         self.ifudesign = long(ifudesign)
         self.mode = str(mode)
 
-        if (mode is not 'CUBE') & (mode is not 'RSS'):
+        if mode is not 'CUBE' and mode is not 'RSS':
             raise Exception('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
 
-        self.drpver = self._default_drp_version() if drpver is None else str(drpver)
-        if directory_path is None:
-            self.directory_path = self._default_directory_path()
-        else:
-            self.directory_path = str(directory_path)
+        self.drpver = default_drp_version() if drpver is None else str(drpver)
+        self.redux_path = default_redux_path(self.drpver) if redux_path is None else str(redux_path)
+        self.directory_path = default_drp_directory_path(self.redux_path, self.plate) \
+                              if directory_path is None \
+                              else self.directory_path = str(directory_path)
 
         # Initialize the image dimensions and their parameters
         self.pixelscale = None
@@ -207,7 +259,7 @@ class drpfile:
 
     def __del__(self):
         """
-        Destroy the drpfile object by ensuring that the fits file is
+        Deconstruct the drpfile object by ensuring that the fits file is
         properly closed.
         """
         if self.hdu is None:
@@ -232,22 +284,32 @@ class drpfile:
         # overwritten
         self.hdu = fits.open(inp, mode='readonly')
 
-
-    def _default_drp_version(self):
-        """
-        Return the DRP version defined by the environmental variable.
-        """
-        return environ['MANGADRP_VER']
-
-
-    def _default_directory_path(self):
-        """Return the directory path used by the DRP."""
-
-        # Make sure the DRP version is set
-        if self.drpver is None:
-            self.drpver = self._default_drp_version()
-
-        return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver, str(self.plate), 'stack')
+# MOVED outside class definition
+#   def _default_drp_version(self):
+#       """
+#       Return the DRP version defined by the environmental variable.
+#       """
+#       return environ['MANGADRP_VER']
+#
+#
+#   def _default_redux_path(self):
+#       """Return the main output path for the DRP products."""
+#
+#       # Make sure the DRP version is set
+#       if self.drpver is None:
+#           self.drpver = self._default_drp_version()
+#
+#       return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
+#
+#
+#   def _default_directory_path(self):
+#       """Return the exact path to the file."""
+#
+#       # Make sure the DRP version is set
+#       if self.redux_path is None:
+#           self.redux_path = self._default_redux_path()
+#
+#       return os.path.join(self.redux_path, str(self.plate), 'stack')
 
 
     def _default_pixelscale(self):
@@ -729,7 +791,7 @@ class drpfile:
             print('Attempting to use RSS counter-part for calculation.')
             # Get the RSS counterpart
             drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
-                           directory_path=self.directory_path)
+                           redux_path=self.redux_path, directory_path=self.directory_path)
             # Get the transfer matrix
             self.regrid_T = drpf.regrid_transfer_matrix(channel, pixelscale, rlim, sigma)
             self.regrid_channel = drpf.regrid_channel
@@ -939,7 +1001,7 @@ class drpfile:
 
                 print('Attempting to use RSS counter-part for calculation.')
                 drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
-                               directory_path=self.directory_path)
+                               redux_path=self.redux_path, directory_path=self.directory_path)
                 return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
                                               sigma, csr, quiet)
 
@@ -971,7 +1033,7 @@ class drpfile:
             if self.mode is 'RSS':
                 print('Attempting to use CUBE counter-part for calculation.')
                 drpf = drpfile(self.plate, self.ifudesign, 'CUBE', drpver=self.drpver, \
-                               directory_path=self.directory_path)
+                               redux_path=self.redux_path, directory_path=self.directory_path)
                 return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
                                               sigma, sigma_rho, csr, quiet)
 
@@ -1040,7 +1102,7 @@ class drpfile:
 
             print('Attempting to use RSS counter-part for calculation.')
             drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
-                           directory_path=self.directory_path)
+                           redux_path=self.redux_path, directory_path=self.directory_path)
             return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, \
                                         sigma_rho, csr, quiet)
 

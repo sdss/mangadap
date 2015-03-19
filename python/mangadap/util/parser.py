@@ -62,3 +62,17 @@ def funcarg_to_list(*arg):
     return arg[1:]
 
 
+def list_to_csl_string(flist):
+    """
+    Convert a list to a comma-separated string.
+    """
+    n = len(flist)
+    out=str(flist[0])
+    for i in range(1,n):
+        out += ', '+str(flist[i])
+    return out
+
+
+
+
+

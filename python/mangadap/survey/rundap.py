@@ -75,18 +75,27 @@ class rundap:
         02 Dec 2014: (KBW) Changed drpver and idlutilsver to mangaver
         13 Jan 2015: (KBW) Changed it back, added platetargets
         05 Feb 2015: (KBW) Change to load module based on MPL
-
+        19 Mar 2015: (KBW) Major changed to allow for more control over
+                           the directory structure containing the DRP
+                           data and for the DAP results; following
+                           changed in the drpfile and drpcomplete
+                           classes.
     """
 
     # TODO: outver is actually just the directory for output to use in
     # place of the current product version 
     def __init__(self,
                 # Run mode options
-                daily=None, all=None, redo=None, clobber=None, console=None, quiet=None, version=None,
-                # Override defaults
-#               outver=None, idlutilsver=None, drpver=None, platelist=None, ifudesignlist=None,
-                outver=None, mplver=None, platelist=None, ifudesignlist=None, modelist=None,
-                combinatorics=False, platetargets=None, nsa_cat=None, plan_file=None,
+                daily=None, all=None, clobber=None, redo=None,
+                # STDIO options
+                console=None, quiet=None, version=None,
+                # Override default environmental variables
+                mplver=None, redux_path=None, dapver=None, analysis_path=None, 
+                # Definitions used to set files to process
+                plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
+                combinatorics=False,
+                # Databases with input parameter information
+                platetargets=None, nsa_cat=None, nsa_catid=None,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -94,48 +103,87 @@ class rundap:
         Interprets the run-mode and cluster options.
     
         ARGUMENTS:
+                daily bool 
+                        run daily analyses
+                all bool 
+                        analyze all DRP data
+                clobber bool 
+                        when running all analyses, clobber existing
+                        output
+                redo bool 
+                        redo existing analyses, clobber is implicitly
+                        true
 
-            -         daily: run daily analyses
-            -           all: run all analyses
-            -          redo: redo existing analyses, clobber is
-                             implicitly true
+                console bool
+                        executed from console, with command-line
+                        arguments
+                quiet bool
+                        suppress output
+                version bool
+                        Only print version and return
 
-            -       clobber: when running all analyses, clobber existing
-                             output
-            -       console: executed from console, with command-line
-                             arguments
-            -         quiet: suppress output
+                mplver string
+                        MPL version to analyze.  Used with mangampl
+                        class to set the idlutils version and the DRP
+                        version.  THIS CONTROLS THE MODULES THAT ARE
+                        LOADED WRT THE DRP AND ITS DEPENDENCIES.  The
+                        default version (selected if mplver=None) is
+                        defined by the mangampl class.
+                redux_path string
+                        Main reduction path with the DRP files.  See
+                        drpfile class.
+                dapver string
+                        DAP version to use for analysis.  THIS CONTROLS
+                        THE MODULES THAT ARE LOADED WRT THE DAP AND ITS
+                        DEPENDENCIES (TBD if this can be fully
+                        independent of the DRP/idlutils).
+                analysis_path string
+                        Main path for the DAP output, used to set
+                        dappath in the call to manga_dap.  See dapfile
+                        class.
 
-            -        outver: output DAP version
-            -        mplver: MPL version to analyze
-#           -   idlutilsver: idlutils module version to use
-#           -        drpver: MaNGA DRP module version to use
+                plan_file string
+                        Name of the plan file to use for ALL DRP data in
+                        this run
+                platelist string
+                        specified list of plates to analyze
+                ifudesignlist string
+                        specified list of ifudesigns to analyze
+                modelist string
+                        specified list of modes to analyze (CUBE or
+                        RSS)
+                combinatorics bool
+                        use all unique combinations of the entered
+                        plate/ifudesign/mode lists
 
-            -     platelist: specified list of plates to analyze
-            - ifudesignlist: specified list of ifudesigns to analyze
-            -      modelist: specified list of modes to analysze (CUBE
-                             or RSS)
-            - combinatorics: use all unique combinations of the entered
-                             plate/ifudesign/mode lists
+                platetargets string
+                        list of platetargets files to use for creating
+                        the drpcomplete file. See drpcomplete.py.
+                nsa_cat string
+                        list of NSA catalogs to use for creating the
+                        drpcomplete file.  See drpcomplete.py
+                nsa_catid string
+                        list of NSA catalog IDs.  This is expected to be
+                        the first number in the MANGA ID, used to select
+                        the data in the NSA catalog as specified by the
+                        catalog index (the second number in the MANGA
+                        ID)
 
-
-                             (can be a list as allowed by drpcomplete.py)
-            -       nsa_cat: specify the NSA catalog to use
-
-            -     plan_file: File name of an existing DAP plan parameter
-                             file to use for ALL runs of the DAP.
-
-            -         label: label to use in cluster queue
-            -         nodes: number of cluster nodes to use
-            -           qos: select processor (only None for daily run)
-            -         umask: umask to set for output
-            -      walltime: wall time for cluster job
-            -          hard: turn OFF hard keyword for cluster
-                             submission
-            -        submit: turn OFF submission of jobs to cluster
-
-            OBSOLETE:
-            -      mangaver: manga module version to use
+                label string
+                        label to use in cluster queue. Default is
+                        mangadap and the run mode (daily, etc)
+                nodes int
+                        number of cluster nodes to use
+                qos string
+                        select processor (only None for daily run)
+                umask string
+                        umask to set for output
+                walltime string
+                        wall time for cluster job
+                hard bool
+                        turn OFF hard keyword for cluster submission
+                submit bool
+                        turn OFF submission of jobs to cluster
         """
         # Only print the version of the DAP
         if version:
@@ -149,22 +197,17 @@ class rundap:
         self.redo=redo
         self.quiet = quiet
 
-        # Determine current versions
-#       self.idlutilsver = self.product_version(simple=True, product='idlutils')
-#       self.drpver = self.product_version(simple=True, product='mangadrp')
-        self.dapver = util.product_version(simple=True, product='mangadap')
+        # Override environment
         self.mpl = mplver
+        self.redux_path = redux_path
 
-#       self.mplver = mplver
-
-        # Use them or use input versions
-        self.outver = self.dapver if outver is None else outver
-#       self.idlutilsver = self.idlutilsver if idlutilsver is None else idlutilsver
-#       self.drpver = self.drpver if drpver is None else drpver
-
-#        self.mangaver = self.mangaver if mangaver is None else mangaver
+        self.dapver = util.product_version(simple=True, product='mangadap') if dapver is None \
+                                                                            else dapver
+        self.analysis_path = dapfile._default_analysis_path() if analysis_path is None \
+                                                        
 
         # List of files to analyze
+        self.plan_file = plan_file
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
         self.modelist = arginp_to_list(modelist)
@@ -174,9 +217,7 @@ class rundap:
         # (drpcomplete can handle [platetargets = None, nsa_cat = None])
         self.platetargets = platetargets
         self.nsa_cat = nsa_cat
-
-        # Input file with a non-standard execution plan
-        self.plan_file = plan_file
+        self.nsa_catid = nsa_catid
 
         # Cluster queue keywords
         self.label = label
@@ -842,11 +883,14 @@ class rundap:
         file.write('touch {0}\n'.format(startfile))
         file.write('\n')
 
+        # Set the output path manually
+        dappath = os.path.join(self.manga_spectro_analysis, self.outver)
+
         # Command that runs the DAP
         parfile = self.parameter_file(plate, ifudesign, mode, stage)
         if self.plan_file is None:
             # Will create and use the default plan
-            file.write('echo \" manga_dap, par=\'{0}\', /nolog \" | idl \n'.format(parfile))
+            file.write('echo \" manga_dap, par=\'{0}\', dappath=\'{1}\', /nolog \" | idl \n'.format(parfile, dappath))
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
@@ -854,8 +898,8 @@ class rundap:
                                              'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate,
                                              ifudesign, mode))
             file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
-            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', /nolog \"' \
-                       ' | idl \n'.format(parfile, default_plan_file))
+            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', dappath=\'{2}\', /nolog \"' \
+                       ' | idl \n'.format(parfile, default_plan_file, dappath))
         file.write('\n')
 
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))

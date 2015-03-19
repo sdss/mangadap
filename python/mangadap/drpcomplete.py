@@ -9,32 +9,30 @@ if sys.version > '3':
 import os.path
 from os import environ, makedirs, walk
 import numpy
-from scipy.spatial import KDTree
 from astropy.io import fits
 from astropy import constants
 
 # DAP imports
 from mangadap.util.yanny import yanny, read_yanny
 from mangadap.drpfile import drpfile, drpfile_list, parse_drp_file_name
-from mangadap.util.parser import arginp_to_list
+from mangadap.util.parser import arginp_to_list, list_to_csl_string
 from mangadap.util.exception_tools import print_frame
 
 __author__ = 'Kyle Westfall'
 
 
-def list_to_csl_string(flist):
-    """
-    Convert a list to a comma-separated string.
-    """
-    n = len(flist)
-    out=str(flist[0])
-    for i in range(1,n):
-        out += ', '+str(flist[i])
-    return out
+# MOVED to util/parser.py
+#def list_to_csl_string(flist):
+#    """
+#    Convert a list to a comma-separated string.
+#    """
+#    n = len(flist)
+#    out=str(flist[0])
+#    for i in range(1,n):
+#        out += ', '+str(flist[i])
+#    return out
 
 
-
-# TODO: Let the paths be defined, using default otherwise
 
 class drpcomplete:
     """
@@ -45,35 +43,74 @@ class drpcomplete:
     platetargets file has priority over NSA catalog.
 
     REVISION HISTORY:
-        20 Nov 2014: (KBW) Started
+        20 Nov 2014: Started implementation by K. Westfall (KBW)
         01 Dec 2014: (KBW) Committed to SVN
         12 Jan 2015: (KBW) Allow for use of plateTargets file using yanny.py
+        19 Mar 2015: (KBW)
+        
+                           Adjustments for changes to drpfile and drpfile_list.  Now always sets the names of the NSA catalogs and the plateTargets files; added the nsa_catid.  Changed drppath to redux_path.  Added catid and catindx to output file.  Major change to matching when using NSA catalog(s).
+
+
     """
 
 
     def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, nsa_cat=None,
-                 drpver=None, drppath=None, dapver=None, dappath=None, readonly=False):
+                 nsa_catid=None, drpver=None, redux_path=None, dapver=None, analysis_path=None,
+                 readonly=False):
         """
         Initializes the class and its members.
     
-        ARGUMENTS:
+        ARGUMENTS (all optional):
             
-            drpver - DRP version to use
             platelist - specified list of plates to analyze
             ifudesignlist - specified list of ifudesign to analyze
 
             platetargets - plate targets file to use for data collection
             nsa_cat - NSA catalog to use for data collection
+            nsa_catid - The ID numbers of the NSA catalog used to match
+                        with the MaNGA ID
 
-            force - Force updates, even if the data already exists
+            drpver - DRP version:
+                        - used to define the default DRP redux path
+                        - used when declaring a drpfile instance
+                        - used in the name of the drpcomplete file
+                        - included as a header keyword in the output
+                          file
+                     If not provided, set to environ['MANGADRP_VER']
+
+            redux_path  - The path to the top level directory containing
+                          the DRP output; this is the same as the
+                          redux_path in the drpfile class.  If not
+                          provided, the default redux_path is:
+
+                              os.path.join(environ['MANGA_SPECTRO_REDUX'],
+                                self.drpver)
+
+            dapver - DAP version:
+                        - used to define the default DAP analysis path
+                        - included as a header keyword in the output
+                          drpcomplete file
+                     If not provided, set to environ['MANGADAP_VER']
+
+            analysis_path - The path to the top level directory for the
+                            DAP output; this is DIFFERENT from the
+                            directory_path in the dapfile class.  If not
+                            provided, the default analysis_path is:
+
+                              os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
+                                self.dapver)
+          
+            readonly - Flag that the drpcomplete file is only opened for
+                       reading, not for updating.
         """
 
         # Input properties
-        self.drpver = self._default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = self._default_redux_path() if drppath is None else str(drppath)
+        self.drpver = drpfile._default_drp_version() if drpver is None else str(drpver)
+        self.redux_path = drpfile._default_redux_path() if redux_path is None else str(redux_path)
 
-        self.dapver = self._default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = self._default_analysis_path() if dappath is None else str(dappath)
+        self.dapver = dapfile._default_dap_version() if dapver is None else str(dapver)
+        self.analysis_path = dapfile._default_analysis_path() if analysis_path is None \
+                                                              else str(analysis_path)
         
         if os.path.exists(self.file_path()):
             self._read_data()
@@ -86,86 +123,99 @@ class drpcomplete:
             self.platelist = None
             self.ifudesignlist = None
             self.platetargets = None
-            self.nsa_cat=None
+            self.nsa_cat = None
+            self.nsa_catid = None
             return
 
         self.readonly = False
 
-        self.platelist = arginp_to_list(platelist, evaluate=True)
-        self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
+        self.platelist = numpy.array( arginp_to_list(platelist, evaluate=True) )
+        self.ifudesignlist = numpy.array( arginp_to_list(ifudesignlist, evaluate=True) )
 
-        platetargets = arginp_to_list(platetargets)
+        platetargets = numpy.array( arginp_to_list(platetargets) )
+        nsa_cat = numpy.array( arginp_to_list(nsa_cat) )
+        nsa_catid = numpy.array( arginp_to_list(nsa_catid) )
 
-        if platetargets is not None and all( os.path.exists(p) for p in platetargets ):
-            self.platetargets = platetargets
-            self.nsa_cat = None
-        elif nsa_cat is not None and os.path.exists(nsa_cat):
-            self.platetargets = None
+        self.platetargets = platetargets if platetargets is not None and \
+                                         all([ os.path.exists(p) for p in platetargets ]) \
+                                         else self._default_plate_target_files()
+
+        if nsa_cat is not None and all([ os.path.exists(n) for n in nsa_cat ]) and \
+           nsa_cat.size == nsa_catid.size:
             self.nsa_cat = nsa_cat
+            self.nsa_catid = nsa_catid
         else:
-            self.platetargets = self._default_plate_targets_file()
-            self.nsa_cat = self._default_nsa_catalog()
+            self.nsa_cat, self.nsa_catid = self._default_nsa_catalogs()
 
 
     # ******************************************************************
     #  Default values
     # ******************************************************************
 
-
-    def _default_drp_version(self):
-        """
-        Return the DRP version defined by the environmental variable.
-        """
-        return environ['MANGADRP_VER']
-
-
-    def _default_redux_path(self):
-        """Return the directory path used by the DRP."""
-
-        # Make sure the DRP version is set
-        if self.drpver is None:
-            self.drpver = self._default_drp_version()
-
-        return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
-
-
-    def _default_dap_version(self):
-        """
-        Return the DRP version defined by the environmental variable.
-        """
-        return environ['MANGADAP_VER']
+# Use the drpfile versions
+#   def _default_drp_version(self):
+#       """
+#       Return the DRP version defined by the environmental variable.
+#       """
+#       return environ['MANGADRP_VER']
+#
+#
+#   def _default_redux_path(self):
+#       """Return the directory path used by the DRP."""
+#
+#       # Make sure the DRP version is set
+#       if self.drpver is None:
+#           self.drpver = self._default_drp_version()
+#
+#       return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
 
 
-    def _default_analysis_path(self):
-        """Return the directory path used by the DAP."""
+# Use the dapfile versions
+#   def _default_dap_version(self):
+#       """
+#       Return the DRP version defined by the environmental variable.
+#       """
+#       return environ['MANGADAP_VER']
+#
+#
+#   def _default_analysis_path(self):
+#       """Return the directory path used by the DAP."""
+#
+#       # Make sure the DAP version is set
+#       if self.dapver is None:
+#           self.dapver = self._default_dap_version()
+#
+#       return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
 
-        # Make sure the DAP version is set
-        if self.dapver is None:
-            self.dapver = self._default_dap_version()
 
-        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
-
-
-    def _default_plate_targets_file(self):
+    def _default_plate_target_files(self):
         """
         Return the default plateTargets file used to get the NSA
         information
         """
-        return [os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                                'plateTargets-12.par'),
-                os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                            'plateTargets-1.par') ]
+        return numpy.array([ os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                          'plateTargets-12.par'),
+                             os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                          'plateTargets-1.par') ])
 
 
-    def _default_nsa_catalog(self):
+    def _default_nsa_catalogs(self):
         """
-        Return the default NSA catalog
-        """
-        if self.drpver == 'v1_0_0':
-            return os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
-                                '12-nsa_v1b_0_0_v2.fits.gz')
+        Return the default NSA catalogs and their respective catalog id
+        numbers.
 
-        return os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits')
+        REVISION HISTORY:
+                19 Mar 2015: (KBW) Now returns two lists, one with the
+                                   catalog name and the other with the
+                                   catalog number.  Should match the
+                                   plateTarget files.
+        """
+
+        catalog = numpy.array([ os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
+                                             '12-nsa_v1b_0_0_v2.fits.gz'), 
+                                os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits') ])
+        catalogid = numpy.array([ 12, 1 ])
+        return catalog, catalogid
 
 
     # ******************************************************************
@@ -193,8 +243,8 @@ class drpcomplete:
         """
         nn = len(drplist)
         mangaid = []
-        objra = numpy.empty(nn)
-        objdec = numpy.empty(nn)
+        objra = numpy.empty(nn, dtype=numpy.float64)
+        objdec = numpy.empty(nn, dtype=numpy.float64)
         print("Gathering DRP header data...")
         for i in range(0,nn):
             mangaid_, objra[i], objdec[i] = drplist[i].object_data()
@@ -205,43 +255,84 @@ class drpcomplete:
 
 
     def _read_platetargets(self, verbose=False):
-        """Read the platetargets file and the number of entries."""
-        for p in self.platetargets:
-            if not os.path.exists(p):
-                raise Exception('Cannot open platetargets file: {0}'.format(p))
+        """
+        Read all platetargets files and return a single set of data.
+        """
 
-        nn = len(self.platetargets)
-        par_data = yanny(self.platetargets[0])
+        # Check the files exist
+        if not all([ os.path.exists(p) for p in self.platetargets ]):
+            raise Exception('Cannot open one or more plateTargets files!')
 
+        nn = len(self.platetargets)             # Number of files
+        par_data = yanny(self.platetargets[0])  # Read the first file
+
+        # Append the rest
         for i in range(1,nn):
             tmp_par = read_yanny(self.platetargets[1])
             par_data.append(tmp_par, add_to_file=False)
 
-#       n_par = numpy.shape(par_data['PLTTRGT']['mangaid'])[0]
-        par_data.convert_to_numpy_array()
-        n_par = par_data.size('PLTTRGT')
+        par_data.convert_to_numpy_array()       # Convert to a numpy array
+        return par_data
 
-        return par_data, n_par
+
+    def _read_nsa(self, verbose=False):
+        """Read the NSA catalogs."""
+        # Check the files exist
+        if not all([ os.path.exists(n) for n in self.nsa_cat ]):
+            raise Exception('Cannot open one or more NSA catalogs!')
+
+        nsa_data = []
+        nsa_ndata = []
+        nsa_has_veldisp = []
+        for n in self.nsa_cat:
+            hdu = fits.open(n)
+            nsa_data = nsa_data + [ hdu[1].data ]
+
+            nsa_ndata = nsa_ndata + [ hdu[1].header['NAXIS2'] ]
+
+            # Try to get the column number with the velocity dispersion
+            # to test if the NSA catalog has it.
+            try:
+                i = hdulist[1].columns.names.index('VELDISP')
+            except ValueError:
+                if verbose:
+                    print('WARNING: {0} does not have vel. dispersion.  Using default.'.format(n))
+                nsa_has_veldisp = nsa_has_veldisp + [ False ]
+            else:
+                nsa_has_veldisp = nsa_has_veldisp + [ True ]
+                
+            hdu.close()
+
+        return numpy.array(nsa_data), numpy.array(nsa_ndata), numpy.array(nsa_has_veldisp)
 
 
     def _match_platetargets(self, def_veldisp):
         """
-        Read the platetargets file to find the observed DRP objects and
-        their ancillary information.
+        Read the platetargets file, and match the completed DRP
+        reductions based on the plate and ifudesign numbers.  The NSA
+        catalogs are also read so that the ID can be pulled from the
+        appropriate catalog.
         """
 
         # Read the platetargets file
         print('Reading platetarget file(s)...')
-        par_data, n_par = self._read_platetargets(verbose=True)
+        par_data = self._read_platetargets(verbose=True)
+        print('DONE')
+
+        # Read the NSA catalogs
+        print('Reading NSA catalog(s)...')
+        nsa_data, nsa_ndata, nsa_has_veldisp = self._read_nsa(verbose=True)
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
         n_drp = len(self.platelist)
-        print(par_data['PLTTRGT']['mangaid'].dtype)
+#       print(par_data['PLTTRGT']['mangaid'].dtype)
         mangaid = []
 #       mangaid = numpy.empty(n_drp, dtype=par_data['PLTTRGT']['mangaid'].dtype)
         objra = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['target_ra'].dtype)
         objdec = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
+        catid = numpy.full(n_drp, -1, dtype=numpy.int32)
+        catindx = numpy.full(n_drp, -1, dtype=numpy.int32)
         nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
         vel = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_redshift'].dtype)
         veldisp = numpy.full(n_drp, def_veldisp, dtype=par_data['PLTTRGT']['nsa_vdisp'].dtype)
@@ -273,7 +364,7 @@ class drpcomplete:
             objra[i] = par_data['PLTTRGT']['target_ra'][indx][0]
             objdec[i] = par_data['PLTTRGT']['target_dec'][indx][0]
 
-            # TODO: THIS IS INCORRECT!!  From David Wake:
+            # From David Wake:
             #
             # "MANGAID consists of CATID-CATIND, where CATID identifies
             # a parent catalog, in the case of the main manga samples
@@ -281,7 +372,19 @@ class drpcomplete:
             # the position within that catalog (zero indexed). So if you
             # strip out CATIND from MANGAID you have the position within
             # nsa_v1_0_0.fits without any matching required."
-            nsaid[i] = numpy.int32(mangaid[i].split('-')[1])
+            catid[i] = numpy.int32(mangaid[i].split('-')[0])
+            catindx[i] = numpy.int32(mangaid[i].split('-')[1])
+
+            indx = numpy.where(nsa_catid == catid[i])
+            if len(indx[0]) == 0:
+                print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
+                nsaid[i] = -1
+            elif catindx[i] >= nsa_ndata[indx]:
+                print('WARNING: No index {0} in NSA catalog {1}.  Setting NSAID=-1.'.format(
+                        catindx[i], catid[i]))
+                nsaid[i] = -1
+            else:
+                nsaid[i] = numpy.int32(nsa_catdata[indx]['NSAID'][catindx[i]])
 
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
@@ -293,116 +396,62 @@ class drpcomplete:
 
         print('DONE')
 
-        return numpy.array(mangaid), objra, objdec, nsaid, vel, veldisp, ell, pa, Reff
+        return numpy.array(mangaid), objra, objdec, catid, catindx, nsaid, vel, veldisp, ell, \
+               pa, Reff
 
 
-    def _read_nsa(self, verbose=False):
-        """Read the NSA catalog and the number of rows."""
-        if not os.path.exists(self.nsa_cat):
-            raise Exception('Cannot open NSA catalog: {0}'.format(self.nsa_cat))
-        hdulist = fits.open(self.nsa_cat)
-        nsa_data = hdulist[1].data
-        n_nsa = hdulist[1].header['NAXIS2']
-
-        try:
-            i = hdulist[1].columns.names.index('VELDISP')
-        except ValueError:
-            #print_frame('ValueError')
-            has_veldisp = False
-        else:
-            has_veldisp = True
-
-        if verbose and not has_veldisp:
-            print("WARNING: NSA catalog does not have velocity dispersion.  Using default.")
-
-        hdulist.close()
-
-        return nsa_data, n_nsa, has_veldisp
-
-
-    def _match_nsa(self, objra, objdec, def_veldisp, match_r):
+    def _match_nsa(self, mangaid, def_veldisp):
         """
-        Read the NSA catalog to find the observed DRP objects and their
-        ancillary information.
+        Read the NSA catalogs and extract the necessary information for
+        the DRP files.
         """
 
-        # Read the NSA catalog
-        print('Reading NSA...')
-        nsa_data, n_nsa, nsa_has_veldisp = self._read_nsa(verbose=True)
+        # Check the number of MaNGA IDs provided.
+        n_drp = len(self.platelist)
+        if len(mangaid) != n_drp:
+            raise Exception('Incorrect number of MaNGA IDs')
+
+        # Read the NSA catalogs
+        print('Reading NSA catalog(s)...')
+        nsa_data, nsa_ndata, nsa_has_veldisp = self._read_nsa(verbose=True)
         print('DONE')
 
-        n = len((nsa_data['RA']).ravel())
-
-        # Set the coordinates to a KDTree
-        data = numpy.zeros((n, 2), dtype=numpy.float64)
-        data[:,0] = (nsa_data['RA']).ravel()
-        data[:,1] = (nsa_data['DEC']).ravel()
-        print(numpy.shape(data))
-        print(len(data))
-
-        kdcoo = KDTree(data)
-        #zip( (nsa_data['RA']).ravel(), (nsa_data['DEC']).ravel() ))
-        #print(kdcoo.data.shape)
-
         # Initialize the output arrays (needed in case some DRP targets not found)
-        n_drp = len(objra)
-        nsaid = numpy.zeros(n_drp, dtype=numpy.int32)
+        catid = numpy.full(n_drp, -1, dtype=numpy.int32)
+        catindx = numpy.full(n_drp, -1, dtype=numpy.int32)
+        nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
         vel = numpy.zeros(n_drp, dtype=numpy.float64)
         veldisp = numpy.full(n_drp, def_veldisp, dtype=numpy.float64)
         ell = numpy.zeros(n_drp, dtype=numpy.float64)
         pa = numpy.zeros(n_drp, dtype=numpy.float64)
         Reff = numpy.zeros(n_drp, dtype=numpy.float64)
 
-        # Match the DRP object coordinates to the NSA catalog
-        d2r = numpy.pi/180.
-        match_d = (match_r/3600.)**2.0
-
-        # Search for the observed galaxies in the NSA using the KD tree
-        print('Searching NSA for observed galaxies...')
-        nsa_index = numpy.empty(n_drp, dtype=numpy.int32)
+        print('Using MaNGA ID to get information from NSA catalog(s)...')
         for i in range(0,n_drp):
-            # Get the 10 nearest neighbors using the KDTree
-            if n_nsa > 10:
-                #print('Finding neighbors')
-                nneigh_d, nneigh_i = kdcoo.query( numpy.array([objra[i],objdec[i]]), k=10)
-            else:
-                nneigh_i = numpy.array([i for i in range(0,n_nsa)])
+           
+            catid[i] = numpy.int32(mangaid[i].split('-')[0])
+            catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            # For the nearest neighbors, find the ones that are within
-            # match_d (correcting for the cos(DEC) term)
-            #print('Calculating distances')
-            cosd=numpy.cos(objdec[i]*d2r)
-            dd = (((kdcoo.data[nneigh_i,0]-objra[i])*cosd)**2.0
-                   + (kdcoo.data[nneigh_i,1]-objdec[i])**2.0)
-            if len(numpy.where(dd < match_d)) > 1:
-                raise Exception('Multiple matches in the NSA catalog: ra={0},dec={1}'.format(
-                                                                              objra[i], objdec[i]))
+            indx = numpy.where(nsa_catid == catid[i])
+            if len(indx[0]) == 0:
+                print('WARNING: No NSA catalog {0} available!'.format(catid[i]))
+                nsaid[i] = -1
+                continue
+            elif catindx[i] >= nsa_ndata[indx]:
+                print('WARNING: No index {0} in NSA catalog {1}!'.format(catindx[i], catid[i]))
+                nsaid[i] = -1
+                continue
 
-            di = numpy.argsort(dd)
-            #print(dd, di)
-            if dd[di[0]] < match_d:
-                nsa_index[i] = nneigh_i[di[0]]
-            else:
-                print('Could not find match in NSA catalog for plate={0},ifudesign={1}!'.format(
-                                    self.platelist[i], self.ifudesignlist[i]))
-                nsa_index[i] = -1
+            # Pull out the NSA data
+            nsaid[i] = numpy.int32(nsa_catdata[indx]['NSAID'][catindx[i]])
+            vel[i] = nsa_catdata[indx]['Z'][catindx[i]]*constants.c.to('km/s').value
+            ell[i] = 1.0-nsa_data[indx]['SERSIC_BA'][catindx[i]]
+            pa[i] = nsa_data[indx]['SERSIC_PHI'][catindx[i]]
+            Reff[i] = nsa_data[indx]['SERSIC_TH50'][catindx[i]]
+            if nsa_has_veldisp:
+                veldisp[i] = nsa_data[indx]['VELDISP'][catindx[i]]
 
-        #print(nsa_index)
-        print('DONE')
-
-        noneg = numpy.where(nsa_index >= 0)
-        #print(noneg)
-
-        # Pull out the NSA data
-        nsaid[noneg] = nsa_data['NSAID'][nsa_index[noneg]]
-        vel[noneg] = nsa_data['Z'][nsa_index[noneg]]*constants.c.to('km/s').value
-        ell[noneg] = 1.0-nsa_data['SERSIC_BA'][nsa_index[noneg]]
-        pa[noneg] = nsa_data['SERSIC_PHI'][nsa_index[noneg]]
-        Reff[noneg] = nsa_data['SERSIC_TH50'][nsa_index[noneg]]
-        if nsa_has_veldisp:
-            veldisp[noneg] = nsa_data['VELDISP'][nsa_index[noneg]]
-
-        return nsaid, vel, veldisp, ell, pa, Reff
+        return catid, catindx, nsaid, vel, veldisp, ell, pa, Reff
 
 
     def _all_data_exists(self, quiet=True):
@@ -487,7 +536,7 @@ class drpcomplete:
                 if os.path.exists(drpf.file_path()):
                     plates = plates + [self.platelist[i]]
                     ifudesigns = ifudesigns + [self.ifudesignlist[i]]
-            return plates, ifudesigns
+            return numpy.array(plates), numpy.array(ifudesigns)
 
         for root, dir, files in walk(path):
             for file in files:
@@ -519,7 +568,7 @@ class drpcomplete:
                         plates = plates + [p]
                         ifudesigns = ifudesigns + [b]
 
-        return plates, ifudesigns
+        return numpy.array(plates), numpy.array(ifudesigns)
 
 
     def _find_modes(self, drplist):
@@ -576,8 +625,7 @@ class drpcomplete:
 
 
     def update(self, platelist=None, ifudesignlist=None, combinatorics=False, force=False,
-               alldrp=False, def_veldisp=100.0, match_r=10.0):
-#              , null_veldisp=-999.0):
+               alldrp=False, def_veldisp=100.0, use_nsa=False):
         """
         Update the DRP complete file.
         
@@ -599,6 +647,12 @@ class drpcomplete:
         or collected) to update.  If the lists differ, self.file_path()
         is re-created from scratch.  If all the plates and ifudesigns
         are available, nothing is done, unless force=True.
+
+        OPTIONAL:
+                use_nsa bool
+                        Force the matching to be done using the NSA
+                        catalog(s).  Default is to use the platetargets
+                        files.
         """
 
         if self.readonly:
@@ -622,8 +676,8 @@ class drpcomplete:
         # _find_completed_reductions(), the length of platelist and
         # ifudesignlist should be the same!
         n_plates = len(self.platelist)
-        modelist = ['CUBE' for i in range(0,n_plates)]
-        drplist = drpfile_list(self.drpver, self.platelist, self.ifudesignlist, modelist)
+        modelist = numpy.array(['CUBE' for i in range(0,n_plates)])
+        drplist = drpfile_list(self.platelist, self.ifudesignlist, modelist, drpver=self.drpver)
 
         # By running _all_data_exists() the self.data and self.nrows
         # attributes will be populated if they haven't been already!
@@ -643,36 +697,33 @@ class drpcomplete:
         nn = len(drplist)
         print('Number of DRP files: {0}'.format(nn))
 
-        if self.platetargets is not None and all(os.path.exists(p) for p in self.platetargets):
-            mangaid, objra, objdec, nsaid, vel, veldisp, ell, pa, Reff \
+        # Default to using the plateTargets files
+        if use_nsa:
+            mangaid, objra, objdec = self._drp_info(drplist)
+            catid, catindx, nsaid, vel, veldisp, ell, pa, Reff = self._match_nsa(mangaid,
+                                                                                 def_veldisp)
+        else:
+            mangaid, objra, objdec, catid, catindx, nsaid, vel, veldisp, ell, pa, Reff \
                     = self._match_platetargets(def_veldisp)
 
-            self.write(self.dapver, self.drpver, self.platetargets, None,
-                       [drplist[i].plate for i in range(0,nn)],
-                       [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, nsaid, objra,
-                       objdec, vel, veldisp, ell, pa, Reff)
+        self.write([drplist[i].plate for i in range(0,nn)],
+                   [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, objra, objdec,
+                   catid, catindx, nsaid, vel, veldisp, ell, pa, Reff)
 
-            self._read_data()
-
-        elif self.nsa_cat is not None and os.path.exists(self.nsa_cat):
-
-            mangaid, objra, objdec = self._drp_info(drplist)
-            nsaid, vel, veldisp, ell, pa, Reff = self._match_nsa(objra, objdec, def_veldisp,
-                                                                 match_r)
-            self.write(self.dapver, self.drpver, None, self.nsa_cat,
-                       [drplist[i].plate for i in range(0,nn)],
-                       [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, nsaid, objra,
-                       objdec, vel, veldisp, ell, pa, Reff)
-                       
-            self._read_data()
-
-        else:
-            raise Exception('Cannot update because catalogs undefined or unavailable.');
+        self._read_data()
 
 
-    def write(self, dapver, drpver, platetargets, nsa_cat, platelist, ifudesignlist, modes,
-              mangaid, nsaid, objra, objdec, vel, veldisp, ell, pa, Reff, clobber=True):
-        """Write the drpcomplete file."""
+    def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx, nsaid,
+              vel, veldisp, ell, pa, Reff, drpver=None, redux_path=None, dapver=None,
+              analysis_path=None, platetargets=None, nsa_cat=None, nsa_catid=None, clobber=True):
+        """
+        Write the drpcomplete file.
+        
+        REVISION HISTORY:
+                19 Mar 2015: (KBW) Changed order of input and allowed
+                                   for use of self components as
+                                   default.
+        """
 
         if self.readonly:
             raise Exception('drpcomplete file was opened as read-only!')
@@ -683,12 +734,21 @@ class drpcomplete:
 
         # Create the primary header
         hdr = fits.Header()
-        hdr['VERSDAP'] = dapver
-        hdr['VERSDRP'] = drpver
-        if nsa_cat is not None:
-            hdr['NSACAT'] = nsa_cat
-        if platetargets is not None:
-            hdr['PLTARG'] = list_to_csl_string(platetargets)
+        hdr['VERSDRP'] = self.drpver if drpver is None else drpver
+        hdr['RDXPTH'] = self.redux_path if redux_path is None else redux_path
+        hdr['VERSDAP'] = self.dapver if dapver is None else dapver
+        hdr['SISPTH'] = self.analysis_path if analysis_path is None else analysis_path
+        if nsa_cat is None:
+            nsa_cat = self.nsa_cat
+        if nsa_catid is None:
+            nsa_catid = self.nsa_catid
+        for i in range(0,nsa_cat.size):
+            hdr['NSACAT{0}'.format(i+1)] = nsa_cat[i]
+            hdr['NSACATID{0}'.format(i+1)] = nsa_catid[i]
+        if platetargets is None:
+            platetargets = self.platetargets
+        for i in range(0,platetargets.size):
+            hdr['PLTARG{0}'.format(i+1)] = platetargets[i]
         hdr['AUTHOR'] = 'K.B. Westfall <kbwestfall@gmail.com>'
 
         hdu0 = fits.PrimaryHDU(header=hdr)
@@ -699,17 +759,19 @@ class drpcomplete:
         col3 = fits.Column(name='MODES', format='1B', array=modes)
         col4 = fits.Column(name='MANGAID', format='{0}A'.format(mangaid.dtype.itemsize),
                            array=mangaid)
-        col5 = fits.Column(name='NSAID', format='1J', array=nsaid)
-        col6 = fits.Column(name='OBJRA', format='1D', array=objra)
-        col7 = fits.Column(name='OBJDEC', format='1D', array=objdec)
-        col8 = fits.Column(name='VEL', format='1D', array=vel)
-        col9 = fits.Column(name='VDISP', format='1D', array=veldisp)
-        col10 = fits.Column(name='ELL', format='1D', array=ell)
-        col11 = fits.Column(name='PA', format='1D', array=pa)
-        col12 = fits.Column(name='REFF', format='1D', array=Reff)
+        col5 = fits.Column(name='OBJRA', format='1D', array=objra)
+        col6 = fits.Column(name='OBJDEC', format='1D', array=objdec)
+        col7 = fits.Column(name='CATID', format='1J', array=catid)
+        col8 = fits.Column(name='CATINDX', format='1J', array=catindx)
+        col9 = fits.Column(name='NSAID', format='1J', array=nsaid)
+        col10 = fits.Column(name='VEL', format='1D', array=vel)
+        col11 = fits.Column(name='VDISP', format='1D', array=veldisp)
+        col12 = fits.Column(name='ELL', format='1D', array=ell)
+        col13 = fits.Column(name='PA', format='1D', array=pa)
+        col14 = fits.Column(name='REFF', format='1D', array=Reff)
 
         hdu1=fits.BinTableHDU.from_columns([col1, col2, col3, col4, col5, col6, col7, col8, col9,
-                                           col10, col11, col12])
+                                           col10, col11, col12, col13, col14])
         hdulist = fits.HDUList([hdu0, hdu1])
         hdulist.writeto(out, clobber=True)
 
@@ -727,10 +789,10 @@ class drpcomplete:
                 raise ValueError('Selected row index does not exist')
 
         return [ self.data['PLATE'][index], self.data['IFUDESIGN'][index],
-                 self.data['MODES'][index], self.data['MANGAID'][index], self.data['NSAID'][index],
-                 self.data['OBJRA'][index], self.data['OBJDEC'][index], self.data['VEL'][index],
-                 self.data['VDISP'][index], self.data['ELL'][index], self.data['PA'][index],
-                 self.data['REFF'][index] ]
+                 self.data['MODES'][index], self.data['MANGAID'][index], self.data['OBJRA'][index],
+                 self.data['OBJDEC'][index], self.data['CATID'][index], self.data['CATINDX'][index],
+                 self.data['NSAID'][index], self.data['VEL'][index], self.data['VDISP'][index],
+                 self.data['ELL'][index], self.data['PA'][index], self.data['REFF'][index] ]
 
 
     def write_par(self, ofile, mode, plate=None, ifudesign=None, index=None, reread=False,

@@ -33,6 +33,9 @@ class mangampl:
             """
             Return a list of the available MPLs to analyze, providing a
             list if requested.
+
+            REVISION HISTORY:
+                    19 Mar 2015: (KBW) Added v1_2_0 and v1_3_1 (INCOMPLETE)
             """
 
             nmpl = 2
@@ -40,7 +43,8 @@ class mangampl:
             mpl_def = numpy.array([
                                     ['MPL-1', 'v5_5_16', 'v1_0_0'],
                                     ['MPL-2', 'v5_5_17', 'v1_1_2'],
-                                    ['v1_2_0', 'v5_5_19', 'v1_2_0']
+                                    ['v1_2_0', 'v5_5_19', 'v1_2_0'],
+                                    ['v1_3_1', 'v5_5_20', 'v1_3_1']
                                   ])
     
             if write:
