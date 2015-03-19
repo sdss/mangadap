@@ -17,7 +17,9 @@ from argparse import ArgumentParser
 
 # DAP imports
 from mangadap.drpcomplete import drpcomplete
-from mangadap.drpfile import drpfile
+from mangadap.drpfile import drpfile, default_redux_path
+from mangadap.dapfile import default_analysis_path, default_dap_directory_path
+from mangadap.dapfile import default_dap_plan_file
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.mangampl import mangampl
@@ -185,17 +187,14 @@ class rundap:
                 submit bool
                         turn OFF submission of jobs to cluster
         """
-        # Only print the version of the DAP
-        if version:
-            print('This is version 0.96.')
-            return
 
         # Save run-mode options
         self.daily = daily
         self.all = all
-        self.clobber=clobber
-        self.redo=redo
+        self.clobber = clobber
+        self.redo = redo
         self.quiet = quiet
+        self.version = version
 
         # Override environment
         self.mpl = mplver
@@ -203,8 +202,7 @@ class rundap:
 
         self.dapver = util.product_version(simple=True, product='mangadap') if dapver is None \
                                                                             else dapver
-        self.analysis_path = dapfile._default_analysis_path() if analysis_path is None \
-                                                        
+        self.analysis_path = analysis_path
 
         # List of files to analyze
         self.plan_file = plan_file
@@ -215,9 +213,9 @@ class rundap:
 
         # plateTargets file(s) or NSA catalog to use for drpcomplete file
         # (drpcomplete can handle [platetargets = None, nsa_cat = None])
-        self.platetargets = platetargets
-        self.nsa_cat = nsa_cat
-        self.nsa_catid = nsa_catid
+        self.platetargets = arginp_to_list(platetargets)
+        self.nsa_cat = arginp_to_list(nsa_cat)
+        self.nsa_catid = arginp_to_list(nsa_catid)
 
         # Cluster queue keywords
         self.label = label
@@ -228,31 +226,41 @@ class rundap:
         self.hard = hard
         self.submit = submit
 
-        # Read the analysis path, if it does not exist, exception is
-        # raised.
-        try:
-            self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
-        except:
-            print_frame('Exception')
-            raise Exception('Environmental variable MANGA_SPECTRO_ANALYSIS is undefined!')
+#       # Read the analysis path, if it does not exist, exception is
+#       # raised.
+#       try:
+#           self.manga_spectro_analysis = environ['MANGA_SPECTRO_ANALYSIS']
+#       except:
+#           print_frame('Exception')
+#           raise Exception('Environmental variable MANGA_SPECTRO_ANALYSIS is undefined!')
        
         # Read and parse command-line arguments
         if console:
             self._read_arg()
 
-#       # Make sure the selected MPL version is available
-#       self.drpver = None
-#       self._select_mpl()
+        # Only print the version of the DAP
+        if self.version:
+            print('This is version 0.96.')
+            return
+
+        # Make sure the selected MPL version is available
         try:
             self.mpl = mangampl(self.mpl)
         except Exception as e:
             print_frame('Exception')
             raise Exception('Undefined MPL:'+e)
 
+        # Set the output paths
+        self.redux_path = default_redux_path(self.mpl.drpver) if redux_path is None \
+                                                              else str(redux_path)
+        self.analysis_path = default_analysis_path(self.dapver) if analysis_path is None \
+                                                                else str(analysis_path)
+
         # Alert the user of the versions to be used
-#       print('Versions: DAP:{0}, IDLUTILS:{1}, DRP:{2}'.format(self.outver, self.idlutilsver, self.drpver))
-#       print('Versions: DAP:{0}, {1}'.format(self.outver, self.mplver))
-        print('Versions: DAP:{0}, {1}'.format(self.outver, self.mpl.mplver))
+        print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
+        print('Paths:')
+        print('      REDUX: {0}'.format(self.redux_path))
+        print('   ANALYSIS: {0}'.format(self.analysis_path))
 
         # Check that something is to be done
         nrun = 0
@@ -293,11 +301,13 @@ class rundap:
             self.modelist = None
 
         # Create and update the drpcomplete file if necessary
-#       self.drpc = drpcomplete(self.outver, self.drpver, platetargets=self.platetargets,
         self.drpc = drpcomplete(platetargets=self.platetargets, nsa_cat=self.nsa_cat,
-                                dapver=self.outver, drpver=self.mpl.drpver)
-        # Update the drpcomplete list; force an update if the
-        # platetarget files or an NSA catalog file are provided
+                                nsa_catid=self.nsa_catid, drpver=self.mpl.drpver,
+                                redux_path=self.redux_path, dapver=self.dapver,
+                                analysis_path=self.analysis_path)
+
+        # Update the drpcomplete list; force an update if platetarget or
+        # NSA catalogs are provided
         if self.platetargets is not None or self.nsa_cat is not None:
             self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
                              combinatorics=self.combinatorics, force=True)
@@ -330,15 +340,6 @@ class rundap:
     # ******************************************************************
 
 
-    def _check_path(self, plate, ifudesign):
-        """
-        Check if the output path exists, creating it if it doesn't.
-        """
-        path = self.output_path(plate, ifudesign)
-        if not os.path.isdir(path):
-            makedirs(path)
-
-
     def _read_arg(self):
         """
         Interpret the command-line arguments to use during execution.
@@ -348,90 +349,102 @@ class rundap:
         mode = parser.add_mutually_exclusive_group(required=True)
 
         # Mode aruments
-        mode.add_argument("-d", "--daily",
-                          help="runs dap for next mjd (as an after burner to drp)",
+        mode.add_argument("--daily", help="runs dap for next mjd (as an after burner to drp)",
                           action="store_true")
-        mode.add_argument("-a", "--all",
+        mode.add_argument("--all",
                           help="runs dap for all plates/ifudesigns/modes not currently running "
                           "or done", action="store_true")
-        mode.add_argument("-r", "--redo",
+        mode.add_argument("--redo",
                           help="runs dap for specified platelist/ifudesignlist/modelist "
                           "regardless of state", action="store_true")
 
         # Run-mode optional arguments
-        parser.add_argument("-c", "--clobber",
+        parser.add_argument("--clobber",
                             help="if all selected, will run dap for all plates/ifudesigns/modes "
                             " regardless of state", action="store_true", default=False)
-        parser.add_argument("-q", "--quiet", help="suppress screen output", action="store_true",
+        parser.add_argument("--quiet", help="suppress screen output", action="store_true",
                             default=False)
-        parser.add_argument("-o", "--outver", type=str,
+        parser.add_argument("--version", type=str, help="rundap version", default=None)
+       
+        # Override default behavior
+        parser.add_argument("--mplver", type=str, help="select MPL version to analyze",
+                            default=None)
+        parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
+        parser.add_argument("--dapver", type=str,
                             help="optional output version, different from product version",
                             default="trunk")
+        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
-#       parser.add_argument("-i", "--idlutilsver", type=str, help="version of idlutils to use",
-#                           default=None)
-#       parser.add_argument("-v", "--drpver", type=str, help="version of mangadrp used to produce "
-#                           "files to process", default=None)
-
-        parser.add_argument("-v", "--mplver", type=str, help="MPL version to analyze", default=None)
-
-        parser.add_argument("-p", "--platelist", type=str, help="set list of plates to reduce",
+        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+                            "execution plan to use instead of the default" , default=None)
+        parser.add_argument("--platelist", type=str, help="set list of plates to reduce",
                             default=None)
-        parser.add_argument("-b", "--ifudesignlist", type=str, help="set list of ifus to reduce",
+        parser.add_argument("--ifudesignlist", type=str, help="set list of ifus to reduce",
                             default=None)
-        parser.add_argument("-m", "--modelist", type=str, help="set list of DRP output modes to "
-                            "reduce (CUBE or RSS)", default=None)
-        parser.add_argument("-x", "--combinatorics", help="force execution of all permutations of "
-                            "the provided lists", action="store_true", default=False)
+        parser.add_argument("--modelist", type=str, help="set list of DRP output modes to reduce"
+                            " (CUBE or RSS)", default=None)
+        parser.add_argument("--combinatorics", help="force execution of all permutations of the "
+                            "provided lists", action="store_true", default=False)
 
-        parser.add_argument("-g", "--plttargets", type=str, help="path to plateTargets file(s); "
+        parser.add_argument("--plttargets", type=str, help="path to plateTargets file(s); "
                             "if provided will force update to drpcomplete file", default=None)
-        parser.add_argument("-k", "--nsacat", type=str, help="path to NSA catalog to use; if "
+        parser.add_argument("--nsa_cat", type=str, help="path to NSA catalog(s) to use; if "
+                            "provided will force update to drpcomplete file", default=None)
+        parser.add_argument("--nsa_catid", type=str, help="path to NSA catalog ID(s); if "
                             "provided will force update to drpcomplete file", default=None)
 
-        parser.add_argument("-e", "--plan_file", type=str, help="parameter file with the MaNGA "
-                            "DAP execution plan to use instead of the default" , default=None)
-
         # Cluster arguments
-        parser.add_argument('-l', '--label', type=str, help='label for cluster job',
-                            default='mangadap')
-        parser.add_argument('-n', '--nodes', type=int, help='number of nodes to use in cluster',
+        parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
+        parser.add_argument("--nodes", type=int, help='number of nodes to use in cluster',
                             default=18)
-        parser.add_argument('-f', '--fast', dest='qos', type=str, help='qos state',
-                            default=None)
-        parser.add_argument('-u', '--umask', type=str, help='umask bit for cluster job',
-                            default='0027')
-        parser.add_argument('-w', '--walltime', type=str, help='walltime for cluster job',
+        parser.add_argument("--fast", dest='qos', type=str, help='qos state', default=None)
+        parser.add_argument("--umask", type=str, help='umask bit for cluster job', default='0027')
+        parser.add_argument("--walltime", type=str, help='walltime for cluster job',
                             default='240:00:00')
-        parser.add_argument('-t', '--toughness', dest='hard', action='store_false', default=True,
+        parser.add_argument("--toughness", dest='hard', action='store_false', default=True,
                             help='turn off hard keyword for cluster submission')
-        parser.add_argument('-s', '--submit', help='turn off cluster submission',
-                            action='store_false', default=True)
+        parser.add_argument("--submit", help='turn off cluster submission', action='store_false',
+                            default=True)
         
         # Parse the arguments and assign them to self
         self.arg = parser.parse_args()
 
         ################################################################
-        # Assign properties based on arguments, if properties not set
-        # previously; the suitability of these arguments is checked in
-        # __init__()
+        # Assign properties based on arguments; the suitability of these
+        # arguments is checked in __init__()
 
         # Run-mode
-        if self.daily is None:
+        # Will OVERWRITE existing input from __init__()
+        if self.arg.daily is not None:
             self.daily = self.arg.daily
-        if self.all is None:
+        if self.arg.all is not None:
             self.all = self.arg.all
-        if self.redo is None:
+        if self.arg.redo is not None:
             self.redo = self.arg.redo
 
         # Run-mode options
-        if self.clobber is None:
-            self.clobber = self.arg.clobber
-        if self.quiet is None:
-            self.quiet = self.arg.quiet
-
-        # Copy the platelist, ifudesignlist, and modelist, if provided.
         # Will OVERWRITE existing input from __init__()
+        if self.arg.clobber is not None:
+            self.clobber = self.arg.clobber
+        if self.arg.quiet is not None:
+            self.quiet = self.arg.quiet
+        if self.arg.version is not None:
+            self.version = self.arg.version
+
+        # Set the versions to use
+        # Will OVERWRITE existing input from __init__()
+        if self.arg.mplver is not None:
+            self.mpl = self.arg.mplver
+        if self.arg.redux_path is not None:
+            self.redux_path = self.arg.redux_path
+        if self.arg.dapver is not None:
+            self.dapver = self.arg.dapver
+        if self.arg.analysis_path is not None:
+            self.analysis_path = self.arg.analysis_path
+
+        if self.arg.plan_file is not None:
+            self.plan_file = self.arg.plan_file
+
         if self.arg.platelist is not None:
             self.platelist = arginp_to_list(self.arg.platelist, evaluate=True)
         if self.arg.ifudesignlist is not None:
@@ -442,25 +455,11 @@ class rundap:
    
         # Set the plateTargets and NSA catalog path
         if self.arg.plttargets is not None:
-            self.platetargets = self.arg.plttargets
-        if self.arg.nsacat is not None:
-            self.nsa_cat = self.arg.nsacat
-
-        # Save the plan file to use
-        if self.arg.plan_file is not None:
-            self.plan_file = self.arg.plan_file
-
-        # Set the versions to use; versions will never be none because
-        # of procedures in __init__().
-        # Will OVERWRITE existing input from __init__()
-        if self.arg.outver is not None:
-            self.outver = self.arg.outver
-#       if self.arg.idlutilsver is not None:
-#           self.idlutilsver = self.arg.idlutilsver
-#       if self.arg.drpver is not None:
-#           self.drpver = self.arg.drpver
-        if self.arg.mplver is not None:
-            self.mpl = self.arg.mplver
+            self.platetargets = arginp_to_list(self.arg.plttargets)
+        if self.arg.nsa_cat is not None:
+            self.nsa_cat = arginp_to_list(self.arg.nsa_cat)
+        if self.arg.nsa_catid is not None:
+            self.nsa_catid = arginp_to_list(self.arg.nsa_catid)
 
         # Set queue keywords
         if self.arg.umask is not None:
@@ -480,6 +479,15 @@ class rundap:
 
 #       print(self.submit)
 #       self.submit = False
+
+
+    def _check_path(self, plate, ifudesign):
+        """
+        Check if the output path exists, creating it if it doesn't.
+        """
+        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        if not os.path.isdir(path):
+            makedirs(path)
 
 
     # TODO: Files:
@@ -620,7 +628,8 @@ class rundap:
     #  Reduction Management
     # ******************************************************************
 
-    
+
+    # TODO: Move this somewhere central to the DAP like with the paths
     def file_root(self, plate, ifudesign, mode, stage='dap'):
         """
         Generate the root name of the MaNGA DAP file for a given
@@ -628,16 +637,6 @@ class rundap:
         """
 
         return 'manga{0}-{1}-{2}-LOG{3}'.format(stage, plate, ifudesign, mode)
-
-
-    def output_path(self, plate, ifudesign):
-        """
-        Set the path name for the ouptut of the MaNGA DAP for a given
-        plate/ifudesign.
-        """
-
-        # TODO: Separate paths for RSS and CUBE?
-        return os.path.join(self.manga_spectro_analysis, self.outver, str(plate), str(ifudesign))
 
 
     def set_status(self, plate, ifudesign, mode, stage='dap', status='queued'):
@@ -648,7 +647,8 @@ class rundap:
                 
         # Touch status file
         root = self.file_root(plate, ifudesign, mode, stage)
-        statfile = os.path.join(self.output_path(plate, ifudesign),'{0}.{1}'.format(root,status))
+        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        statfile = os.path.join(path, '{0}.{1}'.format(root,status))
         file = open(statfile,'w')
         file.close()
 
@@ -663,8 +663,8 @@ class rundap:
                 - within the path, the *.done touch file exits
         """
 
-        path = self.output_path(drpf.plate, drpf.ifudesign)
-#        print(path)
+        path = default_dap_directory_path(self.dapver, self.analysis_path, drpf.plate,
+                                          drpf.ifudesign)
         if not os.path.isdir(path):
             return False
 
@@ -763,12 +763,12 @@ class rundap:
 
         # Create the list of CUBE DRP files
         drplist = [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
-                            drpver=self.mpl.drpver) for i in range(0,n_plates) 
-                                                    if self.drpc.data['MANGAID'][i] != 'NULL' ]
+                            drpver=self.mpl.drpver, redux_path=self.redux_path) \
+                            for i in range(0,n_plates) if self.drpc.data['MANGAID'][i] != 'NULL' ]
 
         # Add the list of RSS DRP files
         drplist = drplist + [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
-                                      'RSS', drpver=self.mpl.drpver)
+                                      'RSS', drpver=self.mpl.drpver, redux_path=self.redux_path)
                   for i in range(0,n_plates)
                   if self.drpc.data['MANGAID'][i] != 'NULL' and self.drpc.data['MODES'][i] == 2 ]
         return drplist
@@ -800,7 +800,7 @@ class rundap:
 #           drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
 #                               drpver=self.mpl.drpver) for i in range(0,n_plates) ]
             drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
-                                drpver=self.mpl.drpver)
+                                drpver=self.mpl.drpver, redux_path=self.redux_path)
                       for i in range(0,n_plates)
                           if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
                                                        self.drpc.ifudesignlist[i])] != 'NULL' ]
@@ -821,7 +821,7 @@ class rundap:
 #                 if self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
 #                                            self.drpc.ifudesignlist[i])] == 2 ]
         drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
-                                      drpver=self.mpl.drpver)
+                                      drpver=self.mpl.drpver, redux_path=self.redux_path)
                   for i in range(0,n_plates)
                   if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
                                                self.drpc.ifudesignlist[i])] != 'NULL' and
@@ -843,7 +843,7 @@ class rundap:
         # TODO: Check that *.ready file exists?
 
         # Generate the path name and root name of the output files
-        path = self.output_path(plate, ifudesign)
+        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
             
         # Get module name
@@ -894,9 +894,8 @@ class rundap:
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
-            default_plan_file = os.path.join(self.output_path(plate, ifudesign),
-                                             'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate,
-                                             ifudesign, mode))
+            default_plan_file = default_dap_plan_file(self.dapver, self.analysis_path, None, plate,
+                                                      ifudesign, mode)
             file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
             file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', dappath=\'{2}\', /nolog \"' \
                        ' | idl \n'.format(parfile, default_plan_file, dappath))
@@ -916,7 +915,7 @@ class rundap:
 
     def parameter_file(self, plate, ifudesign, mode, stage='dap'):
         """Get the name of the parameter file."""
-        path = self.output_path(plate, ifudesign)
+        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
         parfile = '{0}.par'.format(os.path.join(path,root))
         return parfile

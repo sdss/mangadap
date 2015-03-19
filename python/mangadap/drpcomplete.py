@@ -14,7 +14,8 @@ from astropy import constants
 
 # DAP imports
 from mangadap.util.yanny import yanny, read_yanny
-from mangadap.drpfile import drpfile, drpfile_list, parse_drp_file_name
+from mangadap import drpfile
+from mangadap import dapfile
 from mangadap.util.parser import arginp_to_list, list_to_csl_string
 from mangadap.util.exception_tools import print_frame
 
@@ -46,11 +47,16 @@ class drpcomplete:
         20 Nov 2014: Started implementation by K. Westfall (KBW)
         01 Dec 2014: (KBW) Committed to SVN
         12 Jan 2015: (KBW) Allow for use of plateTargets file using yanny.py
-        19 Mar 2015: (KBW)
-        
-                           Adjustments for changes to drpfile and drpfile_list.  Now always sets the names of the NSA catalogs and the plateTargets files; added the nsa_catid.  Changed drppath to redux_path.  Added catid and catindx to output file.  Major change to matching when using NSA catalog(s).
-
-
+        19 Mar 2015: (KBW) Adjustments for changes to drpfile and
+                           drpfile_list.  Now always sets the names of
+                           the NSA catalogs and the plateTargets files;
+                           added the nsa_catid.  Changed drppath to
+                           redux_path.  Added catid and catindx to
+                           output file.  Major change to matching when
+                           using NSA catalog(s).  Imports full drpfile
+                           and dapfile, so now functions called as
+                           drpfile.*, dapfile.*; uses default paths,
+                           names, etc from there.
     """
 
 
@@ -105,12 +111,13 @@ class drpcomplete:
         """
 
         # Input properties
-        self.drpver = drpfile._default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = drpfile._default_redux_path() if redux_path is None else str(redux_path)
+        self.drpver = drpfile.default_drp_version() if drpver is None else str(drpver)
+        self.redux_path = drpfile.default_redux_path(self.drpver) if redux_path is None \
+                                                                  else str(redux_path)
 
-        self.dapver = dapfile._default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = dapfile._default_analysis_path() if analysis_path is None \
-                                                              else str(analysis_path)
+        self.dapver = dapfile.default_dap_version() if dapver is None else str(dapver)
+        self.analysis_path = dapfile.default_analysis_path(self.dapver) if analysis_path is None \
+                                                                        else str(analysis_path)
         
         if os.path.exists(self.file_path()):
             self._read_data()
@@ -135,6 +142,9 @@ class drpcomplete:
         platetargets = numpy.array( arginp_to_list(platetargets) )
         nsa_cat = numpy.array( arginp_to_list(nsa_cat) )
         nsa_catid = numpy.array( arginp_to_list(nsa_catid) )
+
+        if len(nsa_cat) != len(nsa_catid):
+            raise Exception("Must provide same number of NSA catalog and IDs.")
 
         self.platetargets = platetargets if platetargets is not None and \
                                          all([ os.path.exists(p) for p in platetargets ]) \
@@ -532,7 +542,8 @@ class drpcomplete:
         if matchedlist:
             n_plates=len(self.platelist)
             for i in range(0,n_plates):
-                drpf = drpfile(self.platelist[i], self.ifudesignlist[i], 'CUBE', drpver=self.drpver)
+                drpf = drpfile.drpfile(self.platelist[i], self.ifudesignlist[i], 'CUBE',
+                                       drpver=self.drpver)
                 if os.path.exists(drpf.file_path()):
                     plates = plates + [self.platelist[i]]
                     ifudesigns = ifudesigns + [self.ifudesignlist[i]]
@@ -541,7 +552,7 @@ class drpcomplete:
         for root, dir, files in walk(path):
             for file in files:
                 if file.endswith('-LOGCUBE.fits.gz'):
-                    p, b, m = parse_drp_file_name(file)
+                    p, b, m = drpfile.parse_drp_file_name(file)
 
                     ip = 0
                     ib = 0
@@ -583,7 +594,8 @@ class drpcomplete:
         n_drp = len(drplist)
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
         for i in range(0,n_drp):
-            drpf = drpfile(drplist[i].plate, drplist[i].ifudesign, 'RSS', drpver=drplist[i].drpver)
+            drpf = drpfile.drpfile(drplist[i].plate, drplist[i].ifudesign, 'RSS',
+                                   drpver=drplist[i].drpver)
             modes[i] = 2 if os.path.exists(drpf.file_path()) else 1
         return modes
 
@@ -677,7 +689,8 @@ class drpcomplete:
         # ifudesignlist should be the same!
         n_plates = len(self.platelist)
         modelist = numpy.array(['CUBE' for i in range(0,n_plates)])
-        drplist = drpfile_list(self.platelist, self.ifudesignlist, modelist, drpver=self.drpver)
+        drplist = drpfile.drpfile_list(self.platelist, self.ifudesignlist, modelist,
+                                       drpver=self.drpver)
 
         # By running _all_data_exists() the self.data and self.nrows
         # attributes will be populated if they haven't been already!

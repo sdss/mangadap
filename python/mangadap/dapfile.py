@@ -79,6 +79,13 @@ def default_dap_par_file(dapver, analysis_path, directory_path, plate, ifudesign
     return os.path.join(directory_path, par_file)
 
     
+def default_dap_plan_file(dapver, analysis_path, directory_path, plate, ifudesign, mode):
+    if directory_path is None:
+        directory_path = default_dap_directory_path(dapver, analysis_path, plate, ifudesign)
+    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
+    return os.path.join(directory_path, plan_file)
+
+    
 class dapfile:
     """
     Object used to hold properties of and read data from a DAP-produced file.
@@ -133,12 +140,16 @@ class dapfile:
         self.niter = int(niter)
 
         self.dapver = default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = default_analysis_path() if analysis_path is None \
-                                                           else str(analysis_path)
-        self.directory_path = self._default_directory_path() if directory_path is None \
-                                                             else str(directory_path)
+        self.analysis_path = default_analysis_path(self.dapver) if analysis_path is None \
+                                                                else str(analysis_path)
+        self.directory_path = default_dap_directory_path(self.dapver, self.analysis_path,
+                                                         self.plate, self.ifudesign) \
+                                                         if directory_path is None \
+                                                         else str(directory_path)
 
-        self.par_file = self._default_par_file() if par_file is None else str(par_file)
+        self.par_file = default_dap_par_file(self.dapver, self.analysis_path, self.directory_path,
+                                             self.plate, self.ifudesign, self.mode) \
+                                             if par_file is None else str(par_file)
 
         self.hdu = None
         self.par = None
@@ -183,39 +194,39 @@ class dapfile:
             
         self.par = yanny(filename=self.par_file, np=True)
 
-
-    def _default_dap_version(self):
-        """
-        Return the DAP version defined by the environmental variable.
-        """
-        return environ['MANGADAP_VER']
-
-
-    def _default_analysis_path(self):
-        """Return the directory path used by the DAP."""
-
-        # Make sure the DRP version is set
-        if self.dapver is None:
-            self.dapver = self._default_dap_version()
-
-        return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
-
-
-    def _default_directory_path(self):
-        """Return the directory path used by the DAP."""
-
-        # Make sure the DRP version is set
-        if self.analysis_path is None:
-            self.analysis_path = self._default_analysis_path()
-
-        return os.path.join(self.analysis_path, str(self.plate), str(self.ifudesign))
-
-
-    def _default_par_file(self):
-        if self.directory_path is None:
-            self.directory_path = self._default_directory_path()
-        par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(self.plate, self.ifudesign, self.mode)
-        return os.path.join(self.directory_path, par_file)
+# MOVED outside dap class
+#   def _default_dap_version(self):
+#       """
+#       Return the DAP version defined by the environmental variable.
+#       """
+#       return environ['MANGADAP_VER']
+#
+#
+#   def _default_analysis_path(self):
+#       """Return the directory path used by the DAP."""
+#
+#       # Make sure the DRP version is set
+#       if self.dapver is None:
+#           self.dapver = self._default_dap_version()
+#
+#       return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
+#
+#
+#   def _default_directory_path(self):
+#       """Return the directory path used by the DAP."""
+#
+#       # Make sure the DRP version is set
+#       if self.analysis_path is None:
+#           self.analysis_path = self._default_analysis_path()
+#
+#       return os.path.join(self.analysis_path, str(self.plate), str(self.ifudesign))
+#
+#
+#   def _default_par_file(self):
+#       if self.directory_path is None:
+#           self.directory_path = self._default_directory_path()
+#       par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(self.plate, self.ifudesign, self.mode)
+#       return os.path.join(self.directory_path, par_file)
 
     
     def _twod_image_data(self, exten, indx):
