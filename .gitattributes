@@ -2003,6 +2003,8 @@ python/mangadap/util/geometry.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
+python/plotting/plot_qa.py -text
+python/plotting/plot_qa_wrap.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_minimal_bashrc.bash -text
 scripts/mdap_setup.bash -text

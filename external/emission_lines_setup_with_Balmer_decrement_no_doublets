@@ -54,7 +54,8 @@
 #             subtraction of the sky emission. Sky lines may also be
 #             fitted instead of being subtracted.
 #
-#  90      sky     5577.00 m      l       1.000      0    10      f
+  90      sky     5577.00 m      l       1.000      0    10      f
+  91      sky     5895.00 m      l       1.000      0    20      f
 #  91      sky     6300.00 m      l       1.000      0    10      f
 #  92      sky     6363.00 m      l       1.000      0    10      f
 #
