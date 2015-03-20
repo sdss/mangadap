@@ -224,8 +224,7 @@ class drpfile:
         self.drpver = default_drp_version() if drpver is None else str(drpver)
         self.redux_path = default_redux_path(self.drpver) if redux_path is None else str(redux_path)
         self.directory_path = default_drp_directory_path(self.redux_path, self.plate) \
-                              if directory_path is None \
-                              else self.directory_path = str(directory_path)
+                              if directory_path is None else str(directory_path)
 
         # Initialize the image dimensions and their parameters
         self.pixelscale = None

@@ -136,24 +136,19 @@ class drpcomplete:
 
         self.readonly = False
 
-        self.platelist = numpy.array( arginp_to_list(platelist, evaluate=True) )
-        self.ifudesignlist = numpy.array( arginp_to_list(ifudesignlist, evaluate=True) )
+        self.platelist = arginp_to_list(platelist, evaluate=True)
+        self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
-        platetargets = numpy.array( arginp_to_list(platetargets) )
-        nsa_cat = numpy.array( arginp_to_list(nsa_cat) )
-        nsa_catid = numpy.array( arginp_to_list(nsa_catid) )
+        self.platetargets = numpy.array( arginp_to_list(platetargets) ) \
+                            if platetargets is not None else self._default_plate_target_files()
 
-        if len(nsa_cat) != len(nsa_catid):
-            raise Exception("Must provide same number of NSA catalog and IDs.")
+        if (nsa_cat is not None and nsa_catid is None) or \
+           (nsa_cat is None and nsa_catid is not None):
+            raise Exception('Must provide both nsa_cat and nsa_catid')
 
-        self.platetargets = platetargets if platetargets is not None and \
-                                         all([ os.path.exists(p) for p in platetargets ]) \
-                                         else self._default_plate_target_files()
-
-        if nsa_cat is not None and all([ os.path.exists(n) for n in nsa_cat ]) and \
-           nsa_cat.size == nsa_catid.size:
-            self.nsa_cat = nsa_cat
-            self.nsa_catid = nsa_catid
+        if nsa_cat is not None:
+            self.nsa_cat = numpy.array( arginp_to_list(nsa_cat) )
+            self.nsa_catid = numpy.array( arginp_to_list(nsa_catid) )
         else:
             self.nsa_cat, self.nsa_catid = self._default_nsa_catalogs()
 
@@ -275,45 +270,87 @@ class drpcomplete:
 
         nn = len(self.platetargets)             # Number of files
         par_data = yanny(self.platetargets[0])  # Read the first file
+        print(self.platetargets[0])
 
         # Append the rest
         for i in range(1,nn):
-            tmp_par = read_yanny(self.platetargets[1])
+            tmp_par = read_yanny(self.platetargets[i])
+            print(self.platetargets[i])
             par_data.append(tmp_par, add_to_file=False)
 
         par_data.convert_to_numpy_array()       # Convert to a numpy array
         return par_data
 
 
-    def _read_nsa(self, verbose=False):
-        """Read the NSA catalogs."""
+    def _read_nsa_idonly(self, verbose=False):
+        """
+        Read the NSA catalogs.
+
+        Returned quantites are:
+            nsa_id - a list of numpy.ndarrays with the NSA IDs
+            nsa_ndata - a numpy.array with the number of elements in
+                        each nsa_id element
+        
+        """
         # Check the files exist
         if not all([ os.path.exists(n) for n in self.nsa_cat ]):
             raise Exception('Cannot open one or more NSA catalogs!')
 
-        nsa_data = []
+        nsa_id = []
         nsa_ndata = []
-        nsa_has_veldisp = []
         for n in self.nsa_cat:
+            print(n)
             hdu = fits.open(n)
-            nsa_data = nsa_data + [ hdu[1].data ]
 
             nsa_ndata = nsa_ndata + [ hdu[1].header['NAXIS2'] ]
+            nsa_id = nsa_id + [ numpy.array(hdu[1].data['NSAID']) ]
+            hdu.close()
+
+        return nsa_id, numpy.array(nsa_ndata)
+
+
+    def _read_nsa(self, verbose=False):
+        """Read all the necessary data from the NSA catalogs."""
+        # Check the files exist
+        if not all([ os.path.exists(n) for n in self.nsa_cat ]):
+            raise Exception('Cannot open one or more NSA catalogs!')
+
+        nsa_id = []
+        nsa_vel = []
+        nsa_ell = []
+        nsa_pa = []
+        nsa_Reff = []
+        nsa_ndata = []
+        nsa_veldisp = []
+        nsa_has_veldisp = []
+        for n in self.nsa_cat:
+            print(n)
+            hdu = fits.open(n)
+
+            nsa_ndata = nsa_ndata + [ hdu[1].header['NAXIS2'] ]
+            nsa_id = nsa_id + [ numpy.array(hdu[1].data['NSAID']) ]
+            nsa_vel = nsa_vel + [ numpy.array(hdu[1].data['Z']*constants.c.to('km/s').value) ]
+            nsa_ell = nsa_ell + [ numpy.array(1.0-hdu[1].data['SERSIC_BA']) ]
+            nsa_pa = nsa_pa + [ numpy.array(hdu[1].data['SERSIC_PHI']) ]
+            nsa_Reff = nsa_Reff + [ numpy.array(hdu[1].data['SERSIC_TH50']) ]
 
             # Try to get the column number with the velocity dispersion
             # to test if the NSA catalog has it.
             try:
-                i = hdulist[1].columns.names.index('VELDISP')
+                i = hdu[1].columns.names.index('VELDISP')
             except ValueError:
                 if verbose:
                     print('WARNING: {0} does not have vel. dispersion.  Using default.'.format(n))
                 nsa_has_veldisp = nsa_has_veldisp + [ False ]
+                nsa_veldisp = nsa_veldisp + [ numpy.empty(0) ]
             else:
                 nsa_has_veldisp = nsa_has_veldisp + [ True ]
-                
+                nsa_veldisp = nsa_veldisp + [ numpy.array(hdu[1].data['VELDISP']) ]
+
             hdu.close()
 
-        return numpy.array(nsa_data), numpy.array(nsa_ndata), numpy.array(nsa_has_veldisp)
+        return nsa_id, nsa_vel, nsa_veldisp, nsa_ell, nsa_pa, nsa_Reff, numpy.array(nsa_ndata), \
+               numpy.array(nsa_has_veldisp)
 
 
     def _match_platetargets(self, def_veldisp):
@@ -331,7 +368,7 @@ class drpcomplete:
 
         # Read the NSA catalogs
         print('Reading NSA catalog(s)...')
-        nsa_data, nsa_ndata, nsa_has_veldisp = self._read_nsa(verbose=True)
+        nsa_id, nsa_ndata = self._read_nsa_idonly(verbose=True)
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
@@ -385,7 +422,7 @@ class drpcomplete:
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            indx = numpy.where(nsa_catid == catid[i])
+            indx = numpy.where(self.nsa_catid == catid[i])
             if len(indx[0]) == 0:
                 print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
                 nsaid[i] = -1
@@ -394,7 +431,7 @@ class drpcomplete:
                         catindx[i], catid[i]))
                 nsaid[i] = -1
             else:
-                nsaid[i] = numpy.int32(nsa_catdata[indx]['NSAID'][catindx[i]])
+                nsaid[i] = numpy.int32(nsa_id[indx[0]][catindx[i]])
 
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
@@ -423,7 +460,8 @@ class drpcomplete:
 
         # Read the NSA catalogs
         print('Reading NSA catalog(s)...')
-        nsa_data, nsa_ndata, nsa_has_veldisp = self._read_nsa(verbose=True)
+        nsa_id, nsa_vel, nsa_veldisp, nsa_ell, nsa_pa, nsa_Reff, nsa_ndata, nsa_has_veldisp = \
+                self._read_nsa(verbose=True)
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
@@ -442,24 +480,22 @@ class drpcomplete:
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            indx = numpy.where(nsa_catid == catid[i])
+            indx = numpy.where(self.nsa_catid == catid[i])
             if len(indx[0]) == 0:
-                print('WARNING: No NSA catalog {0} available!'.format(catid[i]))
+                print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
                 nsaid[i] = -1
-                continue
             elif catindx[i] >= nsa_ndata[indx]:
-                print('WARNING: No index {0} in NSA catalog {1}!'.format(catindx[i], catid[i]))
+                print('WARNING: No index {0} in NSA catalog {1}.  Setting NSAID=-1.'.format(
+                        catindx[i], catid[i]))
                 nsaid[i] = -1
-                continue
-
-            # Pull out the NSA data
-            nsaid[i] = numpy.int32(nsa_catdata[indx]['NSAID'][catindx[i]])
-            vel[i] = nsa_catdata[indx]['Z'][catindx[i]]*constants.c.to('km/s').value
-            ell[i] = 1.0-nsa_data[indx]['SERSIC_BA'][catindx[i]]
-            pa[i] = nsa_data[indx]['SERSIC_PHI'][catindx[i]]
-            Reff[i] = nsa_data[indx]['SERSIC_TH50'][catindx[i]]
-            if nsa_has_veldisp:
-                veldisp[i] = nsa_data[indx]['VELDISP'][catindx[i]]
+            else:
+                nsaid[i] = numpy.int32(nsa_id[indx[0]][catindx[i]])
+                vel[i] = numpy.float64(nsa_vel[indx[0]][catindx[i]])
+                ell[i] = numpy.float64(nsa_ell[indx[0]][catindx[i]])
+                pa[i] = numpy.float64(nsa_pa[indx[0]][catindx[i]])
+                Reff[i] = numpy.float64(nsa_Reff[indx[0]][catindx[i]])
+                if nsa_has_veldisp[indx[0]]:
+                    veldisp[i] = numpy.float64(nsa_veldisp[indx[0]][catindx[i]])
 
         return catid, catindx, nsaid, vel, veldisp, ell, pa, Reff
 
@@ -483,10 +519,10 @@ class drpcomplete:
 
     def _read_data(self):
         """Read the data and the number of rows."""
-        hdulist = fits.open(self.file_path())
-        self.data = hdulist[1].data
-        self.nrows = hdulist[1].header['NAXIS2']
-        hdulist.close()
+        hdu = fits.open(self.file_path())
+        self.data = hdu[1].data
+        self.nrows = hdu[1].header['NAXIS2']
+        hdu.close()
         print('Read data: %d rows' % self.nrows)
 
 
@@ -533,6 +569,7 @@ class drpcomplete:
                 ifudesignlist=[12703,12703], the CUBE files with
                 (plate,ifudesign)=[(7443,12704),(7459,12704) are chosen
         """
+
         path = self.redux_path
         matchedlist = (self.platelist is not None and self.ifudesignlist is not None and
                        (len(self.platelist) == len(self.ifudesignlist) and not combinatorics))
@@ -553,6 +590,8 @@ class drpcomplete:
             for file in files:
                 if file.endswith('-LOGCUBE.fits.gz'):
                     p, b, m = drpfile.parse_drp_file_name(file)
+
+#                   print('{0}, {1}, {2}'.format(p,b,m))
 
                     ip = 0
                     ib = 0
@@ -579,7 +618,9 @@ class drpcomplete:
                         plates = plates + [p]
                         ifudesigns = ifudesigns + [b]
 
-        return numpy.array(plates), numpy.array(ifudesigns)
+#       print(plates)
+#       print(ifudesigns)
+        return plates, ifudesigns #numpy.array(plates), numpy.array(ifudesigns)
 
 
     def _find_modes(self, drplist):
@@ -688,7 +729,7 @@ class drpcomplete:
         # _find_completed_reductions(), the length of platelist and
         # ifudesignlist should be the same!
         n_plates = len(self.platelist)
-        modelist = numpy.array(['CUBE' for i in range(0,n_plates)])
+        modelist = ['CUBE' for i in range(0,n_plates)]
         drplist = drpfile.drpfile_list(self.platelist, self.ifudesignlist, modelist,
                                        drpver=self.drpver)
 
@@ -757,7 +798,7 @@ class drpcomplete:
             nsa_catid = self.nsa_catid
         for i in range(0,nsa_cat.size):
             hdr['NSACAT{0}'.format(i+1)] = nsa_cat[i]
-            hdr['NSACATID{0}'.format(i+1)] = nsa_catid[i]
+            hdr['NSACID{0}'.format(i+1)] = nsa_catid[i]
         if platetargets is None:
             platetargets = self.platetargets
         for i in range(0,platetargets.size):

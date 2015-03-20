@@ -17,7 +17,7 @@ from argparse import ArgumentParser
 
 # DAP imports
 from mangadap.drpcomplete import drpcomplete
-from mangadap.drpfile import drpfile, default_redux_path
+from mangadap.drpfile import drpfile, default_redux_path, default_drp_directory_path
 from mangadap.dapfile import default_analysis_path, default_dap_directory_path
 from mangadap.dapfile import default_dap_plan_file
 from mangadap.util.exception_tools import print_frame
@@ -84,8 +84,6 @@ class rundap:
                            classes.
     """
 
-    # TODO: outver is actually just the directory for output to use in
-    # place of the current product version 
     def __init__(self,
                 # Run mode options
                 daily=None, all=None, clobber=None, redo=None,
@@ -251,10 +249,10 @@ class rundap:
             raise Exception('Undefined MPL:'+e)
 
         # Set the output paths
-        self.redux_path = default_redux_path(self.mpl.drpver) if redux_path is None \
-                                                              else str(redux_path)
-        self.analysis_path = default_analysis_path(self.dapver) if analysis_path is None \
-                                                                else str(analysis_path)
+        self.redux_path = default_redux_path(self.mpl.drpver) if self.redux_path is None \
+                                                              else str(self.redux_path)
+        self.analysis_path = default_analysis_path(self.dapver) if self.analysis_path is None \
+                                                                else str(self.analysis_path)
 
         # Alert the user of the versions to be used
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
@@ -305,6 +303,9 @@ class rundap:
                                 nsa_catid=self.nsa_catid, drpver=self.mpl.drpver,
                                 redux_path=self.redux_path, dapver=self.dapver,
                                 analysis_path=self.analysis_path)
+
+        if not os.path.isdir(self.analysis_path):
+            makedirs(self.analysis_path)
 
         # Update the drpcomplete list; force an update if platetarget or
         # NSA catalogs are provided
@@ -364,7 +365,7 @@ class rundap:
                             " regardless of state", action="store_true", default=False)
         parser.add_argument("--quiet", help="suppress screen output", action="store_true",
                             default=False)
-        parser.add_argument("--version", type=str, help="rundap version", default=None)
+        parser.add_argument("--version", help="rundap version", action="store_true", default=False)
        
         # Override default behavior
         parser.add_argument("--mplver", type=str, help="select MPL version to analyze",
@@ -847,9 +848,8 @@ class rundap:
         root = self.file_root(plate, ifudesign, mode, stage)
             
         # Get module name
-        # TODO: Set outver?
 #        module_version = self.module_version()
-        module_version = self.outver
+        module_version = self.dapver
 
         # Fault if no module version is available
         if module_version is None:
@@ -883,22 +883,22 @@ class rundap:
         file.write('touch {0}\n'.format(startfile))
         file.write('\n')
 
-        # Set the output path manually
-        dappath = os.path.join(self.manga_spectro_analysis, self.outver)
-
         # Command that runs the DAP
         parfile = self.parameter_file(plate, ifudesign, mode, stage)
+        drppath = default_drp_directory_path(self.redux_path, plate)
         if self.plan_file is None:
             # Will create and use the default plan
-            file.write('echo \" manga_dap, par=\'{0}\', dappath=\'{1}\', /nolog \" | idl \n'.format(parfile, dappath))
+            file.write('echo \" manga_dap, par=\'{0}\', drppath=\'{1}\', dappath=\'{2}\', /nolog' \
+                       '\" | idl \n'.format(parfile, drppath, self.analysis_path))
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
             default_plan_file = default_dap_plan_file(self.dapver, self.analysis_path, None, plate,
                                                       ifudesign, mode)
             file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
-            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', dappath=\'{2}\', /nolog \"' \
-                       ' | idl \n'.format(parfile, default_plan_file, dappath))
+            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', ' \
+                       'dappath=\'{3}\', /nolog \" | idl \n'.format(parfile, default_plan_file, \
+                       drppath, self.analysis_path))
         file.write('\n')
 
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
