@@ -166,6 +166,10 @@ PRO MDAP_TEMPLATE_LIBRARY_BLOCK, $
                     if execution_plan[j].abs_par eq -1 then $
                         continue
 
+                    ; This execution plan doesn't use this template library
+                    if execution_plan[j].tpl_lib ne i then $
+                        continue
+
                     ; Working template library used with MDAP_MEASURE_INDICES
                     tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
                                                                 tpl_library_keys[i], $
