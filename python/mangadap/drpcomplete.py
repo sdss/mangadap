@@ -431,7 +431,7 @@ class drpcomplete:
                         catindx[i], catid[i]))
                 nsaid[i] = -1
             else:
-                nsaid[i] = numpy.int32(nsa_id[nsa_indx[0]][catnsa_indx[i]])
+                nsaid[i] = numpy.int32(nsa_id[nsa_indx[0]][catindx[i]])
 
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
