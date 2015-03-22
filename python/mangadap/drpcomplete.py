@@ -422,16 +422,16 @@ class drpcomplete:
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            indx = numpy.where(self.nsa_catid == catid[i])
-            if len(indx[0]) == 0:
+            nsa_indx = numpy.where(self.nsa_catid == catid[i])
+            if len(nsa_indx[0]) == 0:
                 print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
                 nsaid[i] = -1
-            elif catindx[i] >= nsa_ndata[indx]:
+            elif catindx[i] >= nsa_ndata[nsa_indx]:
                 print('WARNING: No index {0} in NSA catalog {1}.  Setting NSAID=-1.'.format(
                         catindx[i], catid[i]))
                 nsaid[i] = -1
             else:
-                nsaid[i] = numpy.int32(nsa_id[indx[0]][catindx[i]])
+                nsaid[i] = numpy.int32(nsa_id[nsa_indx[0]][catnsa_indx[i]])
 
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
