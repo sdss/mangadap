@@ -18,7 +18,7 @@ def write_dap_par():
     drpc_file = sys.argv[1]
     drpver = drpc_file[drpc_file.find('_v')+1 : drpc_file.find('.fits')]
 
-    drpc = drpcomplete(drpver=drpver, dappath=root_dir, readonly=True)
+    drpc = drpcomplete(drpver=drpver, analysis_path=root_dir, readonly=True)
 
     drpc.write_par(ofile=sys.argv[5], mode=sys.argv[4], plate=int(sys.argv[2]),
                    ifudesign=int(sys.argv[3]))

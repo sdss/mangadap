@@ -118,7 +118,9 @@
 ;       MDAP_READ_OUTPUT
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       22 Mar 2015: (KBW) Added some comments on number of kinematic
+;                          moments
 ;-
 ;------------------------------------------------------------------------------
 
@@ -154,6 +156,7 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                 bestfit_continuum = bestfit_gndf - eml_model
 
             ; Get the input stellar kinematics
+            ; TODO: Check if there are at least two moments?
             if (size(stellar_kinematics))[1] eq sz[1] then begin
                 inp_kin = stellar_kinematics[*,0:1]
             endif else begin
@@ -163,6 +166,10 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                                                   velocity_dispersion_initial_guess, $
                                                   star_kin_guesses, gas_kin_guesses
 
+                ; Only save the first two moments
+                ; TODO: This is done explicitly even though
+                ; MDAP_INITIALIZE_GUESS_KINEMATICS actually now only
+                ; provides these two moments (as of 22 Mar 2015)
                 inp_kin = star_kin_guesses[*,0:1]
             endelse
 

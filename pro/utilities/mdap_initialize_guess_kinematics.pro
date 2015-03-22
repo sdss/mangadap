@@ -59,7 +59,7 @@
 ; OPTIONAL KEYWORDS:
 ;
 ; OUTPUT:
-;      star_kin_guesses dblarr[nb][4]
+;      star_kin_guesses dblarr[nb][2]
 ;               Guess values for the stellar kinematics (v, sigma, h3,
 ;               h4) for each binned spectrum.
 ;
@@ -80,7 +80,9 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       30 Jan 2015: (KBW) Pulled from manga_dap.pro
+;       30 Jan 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       22 Mar 2015: (KBW) Guess kinematics only provided for the first
+;                          two moments!
 ;-
 ;------------------------------------------------------------------------------
 
@@ -98,8 +100,7 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
             srange = [0.0d, 500.0d]
 
         ; Set the guess values for the stellar kinematics
-        star_kin_guesses = dblarr(nb, 4)
-;       if strlen(analysis_prior) ne 0 and n_elements(star_kin_interp) ne 0 then begin
+        star_kin_guesses = dblarr(nb, 2)
         if strlen(analysis_prior) ne 0 && n_elements(star_kin_interp) ne 0 then begin
 
             for j=0,nb-1 do begin
@@ -134,7 +135,6 @@ PRO MDAP_INITIALIZE_GUESS_KINEMATICS, $
         ; Set the guess values for the gas kinematics
         ; TODO: Allow for gas dispersion limits to be different than stellar dispersion limits?
         gas_kin_guesses = dblarr(nb, 2)
-;       if strlen(analysis_prior) ne 0 and n_elements(gas_kin_interp) ne 0 then begin
         if strlen(analysis_prior) ne 0 && n_elements(gas_kin_interp) ne 0 then begin
 
             for j=0,nb-1 do begin

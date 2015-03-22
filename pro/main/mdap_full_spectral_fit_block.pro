@@ -38,7 +38,7 @@
 ;               Structure defining which analysis blocks are to be
 ;               performed.
 ;
-;       star_kin_interp dblarr[N][4]
+;       star_kin_interp dblarr[N][2]
 ;               Interpolated set of stellar kinematics based on a
 ;               provided analysis prior.
 ;
@@ -199,14 +199,10 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
             ; MDAP_SPECTRAL_FITTING) as opposed to being set by
             ; execution_plan.analysis_par.moments.
 
-            ; TODO: This function has to have input and output that
-            ; match the expectations in
-            ; MDAP_SPECTRAL_FITTING_INIT_GUESSES (in
-            ; mdap_spectral_fitting.pro) or things may go ape
-
             ;-----------------------------------------------------------
             ; Get the starting guesses for the kinematics in each binned
-            ; spectrum
+            ; spectrum; this now only provides guess kinematics for the
+            ; first two moments! (22 Mar 2015)
             MDAP_INITIALIZE_GUESS_KINEMATICS, n_elements(nbin), execution_plan.analysis_prior, $
                                               star_kin_interp, gas_kin_interp, bin_indx, $
                                               velocity_initial_guess, $
@@ -223,7 +219,8 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
             ; ignored because the output wavelengths should be exactly
             ; the same as the input vector (wave).
             MDAP_SPECTRAL_FITTING, wave, bin_flux, bin_ivar, bin_mask, sres, tpl_wave, tpl_flux, $
-                                   tpl_ivar, tpl_mask, wavelength_output, obj_fit_mask_ppxf, $
+                                   tpl_ivar, tpl_mask, star_kin_guesses, gas_kin_guesses, $
+                                   wavelength_output, obj_fit_mask_ppxf, $
                                    weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
                                    bestfit_ppxf, chi2_ppxf, obj_fit_mask_gndf, weights_gndf, $
                                    mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, $
@@ -236,9 +233,8 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
                                    emission_line_EW, emission_line_EW_err, reddening_output, $
                                    reddening_output_err, analysis_par=execution_plan.analysis_par, $
                                    default_velocity=velocity_initial_guess, $
-                                   star_kin_starting_guesses=star_kin_guesses, $
-                                   gas_kin_starting_guesses=gas_kin_guesses, eml_par=eml_par, $
-                                   external_library=bvls_shared_lib, $
+                                   default_dispersion=velocity_dispersion_initial_guess, $
+                                   eml_par=eml_par, external_library=bvls_shared_lib, $
                                    wave_range_analysis=execution_plan.wave_range_analysis, $
                                    ppxf_only=perform_block.ppxf_only, quiet=quiet, plot=plot, $
                                    dbg=dbg

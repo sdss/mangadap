@@ -51,9 +51,10 @@
 ;               emission-line kinematics.
 ;
 ; OUTPUT:
-;       interpolated_kin dblarr[N]
+;       interpolated_kin dblarr[N][1 or 2]
 ;               Kinematics interpolated to the provided on-sky
-;               coordinates.
+;               coordinates.  Number of output moments depends on the
+;               input keywords.  Will either be 1 or 2.
 ;
 ; OPTIONAL OUTPUT:
 ;
@@ -77,9 +78,11 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       06 Dec 2014: Original implementation by K. Westfall
+;       06 Dec 2014: Original implementation by K. Westfall (KBW)
 ;       19 Feb 2015: (KBW) Fix behavior when small number (or one) bin
 ;                          in prior file.
+;       22 Mar 2015: (KBW) Added some notes on the number of output
+;                          kinematics
 ;-
 ;------------------------------------------------------------------------------
 

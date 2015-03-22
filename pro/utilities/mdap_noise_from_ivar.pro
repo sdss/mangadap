@@ -40,7 +40,7 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       03 Nov 2014: (KBW) Original implementation
+;       03 Nov 2014: Original implementation by K. Westfall
 ;-
 ;------------------------------------------------------------------------------
 

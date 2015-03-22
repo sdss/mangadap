@@ -45,15 +45,17 @@
 ;       result = MDAP_DEFINE_ANALYSIS_PAR()
 ;
 ; REVISION HISTORY:
-;       22 Oct 2014: (KBW) Original implementation
+;       22 Oct 2014: Original implementation by K. Westfall (KBW)
 ;       10 Nov 2014: (KBW) Add the default values
 ;       05 Dec 2014: (KBW) Add some more comments
-;       09 Jan 2014: (KBW) Add zero_instr_disp
+;       09 Jan 2015: (KBW) Add zero_instr_disp
+;       22 Mar 2015: (KBW) Change default multiplicative polynomial
+;                          degree to 0.
 ;-
 ;------------------------------------------------------------------------------
 FUNCTION MDAP_DEFINE_ANALYSIS_PAR
 
-        return, { AnalysisPar, moments:2, degree:-1, mdegree:-1, reddening:dblarr(2), $
+        return, { AnalysisPar, moments:2, degree:-1, mdegree:0, reddening:dblarr(2), $
                                reddening_order:0, zero_instr_disp:0 }
 END
 

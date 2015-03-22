@@ -20,24 +20,24 @@
 ;                              weights_ppxf, add_poly_coeff_ppxf, mult_poly_coeff_ppxf, $
 ;                              bestfit_ppxf, chi2_ppxf, obj_fit_mask_gndf, weights_gndf, $
 ;                              mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, $
-;                              best_template, best_template_losvd_conv, stellar_kinematics, $
-;                              stellar_kinematics_err, emission_line_kinematics, $
-;                              emission_line_kinematics_err, emission_line_omitted, $
-;                              emission_line_kinematics_individual, $
+;                              stellar_kinematics, stellar_kinematics_err, $
+;                              emission_line_kinematics, emission_line_kinematics_err, $
+;                              emission_line_omitted, emission_line_kinematics_individual, $
 ;                              emission_line_kinematics_individual_err, emission_line_intens, $
 ;                              emission_line_intens_err, emission_line_fluxes, $
 ;                              emission_line_fluxes_err, emission_line_EW, emission_line_EW_err, $
 ;                              reddening_output, reddening_output_err, analysis_par=analysis_par, $
-;                              default_velocity=defaul_velocity, $
+;                              default_velocity=default_velocity, $
+;                              default_velocity_dispersion=default_velocity_dispersion, $
 ;                              star_kin_starting_guesses=star_kin_starting_guesses, $
 ;                              gas_kin_starting_guesses=gas_kin_starting_guesses, eml_par=eml_par, $
 ;                              range_v_star=range_v_star, range_s_star=range_s_star, $
 ;                              range_v_gas=range_v_gas, range_s_gas=range_s_gas, $
 ;                              wavelength_input=wavelength_input, $
 ;                              external_library=external_library, region_mask=region_mask, $
-;                              wave_range_analysis=wave_range_analysis, $
-;                              ppxf_only=ppxf_only, /use_previous_guesses, /fix_star_kin, $
-;                              /fix_gas_kin, /quiet, /rest_frame_log, /plot, /dbg, version=version
+;                              wave_range_analysis=wave_range_analysis, ppxf_only=ppxf_only, $
+;                              version=version, /use_previous_guesses, /fix_star_kin, $
+;                              /fix_gas_kin, /quiet, /rest_frame_log, /plot, /dbg
 ;
 ; INPUTS:
 ;       obj_wave dblarr[C]
@@ -73,50 +73,7 @@
 ;       tpl_mask dblarr[T][S]
 ;               Pixel mask for each of T spectra with S spectral channels.
 ;
-; OPTIONAL INPUTS:
-;       =====================================OLD========================================
-;       extra_inputs strarr[]
-;
-;       TODO: Change this to a structure that sets all possible extra parameters!
-;
-;               A string array containing other inputs to be used in the fitting
-;               procedure, such as the polynomial order. The list is initialized
-;               using the execute command:
-;
-;                   for i = 0, n_elements(extra_inputs)-1 do $
-;                       d = execute(extra_inputs[i])
-;
-;               where, for example,
-;
-;                    extra_inputs=['MOMENTS=2', 'DEGREE=-1', 'BIAS=0', 'reddening=0', $
-;                                  'LAMBDA=exp(loglam_gal)']       
-;
-;               Warning: The reddening (stars and/or gas) fit is optional, and
-;               it is performed by the Gandalf module. If the reddening fit is
-;               required, MDEGREE and DEGREE are used as the input value for the
-;               pPXF run, but automatically set to 0 and -1 respectively in the
-;               Gandalf execution.
-;
-;               TODO: Are these basically all the optional parameters/keywords
-;               for pPXF?
-;
-;               MDEGREE
-;               BIAS
-;               DEGREE
-;               reddening
-;               lambda
-;       =====================================OLD========================================
-;
-;       analysis_par AnalysisPar structure
-;               A structure that defines parameters used by PPXF and GANDALF in
-;               the fitting procedure.  See its definition in
-;               MDAP_DEFINE_ANALYSIS_PAR.pro
-;
-;       default_velocity double
-;               Default velocity to use if *_kin_starting_guesses are
-;               not supplied or they have the wrong size.
-; 
-;       star_kin_starting_guesses dblarr[N][4]
+;       star_kin_starting_guesses dblarr[N][2]
 ;               The stellar kinematics starting guesses for V, sigma, H3, and H4
 ;               for the N galaxy spectra to fit.  If not provided, the default
 ;               guess is V=H3=H4=0 and sigma=50 km/s.  Starting guess values
@@ -127,6 +84,21 @@
 ;               for the N galaxy spectra to fit.  If not provided, the default
 ;               guess is V=0 km/s and sigma = 50 km/s.  Starting guess values
 ;               are overridden by the \use_previous_guesses keyword, if set.
+;
+; OPTIONAL INPUTS:
+;       analysis_par AnalysisPar structure
+;               A structure that defines parameters used by PPXF and GANDALF in
+;               the fitting procedure.  See its definition in
+;               MDAP_DEFINE_ANALYSIS_PAR.pro
+;
+;       default_velocity double
+;               Default velocity to use if *_kin_starting_guesses are
+;               not supplied or they have the wrong size.
+; 
+;       default_velocity_dispersion double
+;               Default velocity dispersion to use if
+;               *_kin_starting_guesses are not supplied or they have the
+;               wrong size.
 ;
 ;       eml_par EmissionLine[E]
 ;               The parameters for each of E emission lines used during the
@@ -158,8 +130,6 @@
 ;               TODO: Is the above correct?  What about H3 and H4 for the stars?
 ;
 ;       wavelength_input dblarr[QQ]
-;               TODO: Don't understand this.  Is it necessary?
-;
 ;               If specified, it will be used to create wavelength_output, i.e.
 ;               the wavelength vector (constant ang/pixel step, in linear units)
 ;               to interpolate the final results on.  If keyword /rest_frame_log
@@ -179,6 +149,11 @@
 ;                   lower_wave_limit[i] = region_mask[2*i]
 ;                   upper_wave_limit[i] = region_mask[2*i+1]
 ;               for i=0..N-1.
+;
+;       wave_range_analysis dblarr[2]
+;               Works the same as region_mask, but globally to all
+;               spectra.  This is used here, region_mask is used by
+;               MDAP_GANDALF_WRAP.
 ;
 ;       ppxf_only integer
 ;               Flag to run the GANDALF wrapper only using PPXF to fit the stellar
@@ -273,42 +248,26 @@
 ;               Best-fitting emission-line-only model for each of the N spectra
 ;               obtained by GANDALF.
 ;
-;       best_template dblarr[N][QQ]
-;               The best-fitting template (sum of the weighted template in the
-;               library) for each of the N galaxy spectra, sampled over
-;               wavelength_output (rest frame wavelength).  The weights used
-;               are:
-;                       weights_ppxf if ppxf_only=1 or gandalf_status=1
-;                       weights_gndf otherwise
+;       stellar_kinematics dblarr[N][M]
+;               The best-fit M moments for each of the N fitted input
+;               galaxy spectra.  If \fix_star_kin is set,
+;               MDAP_GANDALF_WRAP does NOT run the pPXF step.  This
+;               array is then just a copy of the kinematic guesses.
 ;
-;       best_template_losvd_conv dblarr[N][QQ]
-;               The best-fitting template (sum of the weighted templates in the
-;               library) for each of the N galaxy spectra, convolved with the
-;               best-fitting LOSVD and sampled over wavelength_output (rest
-;               frame wavelength).  These are the best_template spectra
-;               convolved with the LOSVDs in stellar_kinematics.
-;
-;       stellar_kinematics dblarr[N][5]
-;               The best-fit V, sigma, h3, h4, and chi2/DOF for each of the N
-;               fitted input galaxy spectra.  If \fix_star_kin is set, the array
-;               is not defined.  TODO: Which is it?  Is it set to the input
-;               values (as described above) or undefined?
-;
-;       stellar_kinematics_err dblarr[N][4]
-;               Estimates of the errors in the best-fit V, sigma, h3, h4 for the
-;               stellar kinematics for each of the N fitted input galaxy
-;               spectra.  TODO: How are these error generated?
+;       stellar_kinematics_err dblarr[N][M]
+;               Formal estimates of the errors in the best-fit M moments
+;               for the stellar kinematics for each of the N fitted
+;               input galaxy spectra.
 ;
 ;       emission_line_kinematics dblarr[N][2]
-;               The best-fit V and sigma for the emission lines in the N galaxy
-;               spectra. If \fix_gas_kin is set, the array is not defined.
-;               TODO: Which is it?  Is it set to the input values (as described
-;               above) or undefined?  Is chi^2 included?
+;               The best-fit V and sigma for the emission lines in the N
+;               galaxy spectra. If \fix_gas_kin is set, output values
+;               are the same as the input
 ;
 ;       emission_line_kinematics_err dblarr[N][2]
-;               Estimates of the errors in the best-fit V and sigma for the gas
-;               kinematics for each of the N fitted input galaxy spectra.  TODO:
-;               How are these error generated?
+;               Formal estimates of the errors in the best-fit V and
+;               sigma for the gas kinematics for each of the N fitted
+;               input galaxy spectra.
 ;
 ;       emission_line_omitted intarr[N][E]
 ;               Flag setting whether or not an emission-line was fit for all E
@@ -382,7 +341,7 @@
 ;
 ; REVISION HISTORY:
 ;       24 Sep 2014: Copied from v0_8 by L. Coccato
-;       24 Sep 2014: (KBW) Formatting + many edits
+;       24 Sep 2014: Formatting + many edits by K. Westfall (KBW)
 ;       16 Oct 2014: (KBW) Rearranged input and added more output
 ;       11 Nov 2014: (KBW) Do not produce or output the optimal templates.
 ;                          These were originally used as input for the spectral
@@ -393,8 +352,14 @@
 ;                          measurements are then based on the optimal templates
 ;                          created by combining these templates with the weights
 ;                          determined here.
-;       22 Jan 2014: (KBW) Better handling if default guesses are used.
+;       22 Jan 2015: (KBW) Better handling if default guesses are used.
 ;                          Added default_velocity keyword.
+;       22 Mar 2015: (KBW) Ensure stellar kinematic moments allow for
+;                          something other than moments=4.  Error in
+;                          reporting of additive polynomial.  degree=0
+;                          is valid as a constant offset.  degree=-1 is
+;                          for when no additive polynomials are allowed.
+;                          Other minor edits.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -451,18 +416,13 @@ END
 ; WARNING: Default velocity is 0!
 ; Will flag if use_defaults is used (use_defaults=1)
 PRO MDAP_SPECTRAL_FITTING_INIT_GUESSES, $
-                guesses, ns, h3h4=h3h4, use_defaults=use_defaults
+                guesses, ns, default_velocity, default_velocity_dispersion
 
         use_defaults = 1
         if n_elements(guesses) ne 0 then begin
             sz=size(guesses)
             if sz[0] ne 2 then begin
                 print, 'Kinematic guess arrays must be two-dimensional!  Using default.'
-;           endif else if (keyword_set(h3h4) and sz[2] ne 4) $
-;                          or (~keyword_set(h3h4) and sz[2] ne 2) then begin
-            endif else if (keyword_set(h3h4) && sz[2] ne 4) $
-                           || (~keyword_set(h3h4) && sz[2] ne 2) then begin
-                print, 'Incorrect number of kinematic parameters!  Using default.'
             endif else $
                 use_defaults=0
         endif
@@ -471,16 +431,19 @@ PRO MDAP_SPECTRAL_FITTING_INIT_GUESSES, $
 ;       print, size(guesses)
 ;       stop
 
+        ; Use the provided default values
         if use_defaults eq 1 then begin
-            if keyword_set(h3h4) then begin
-                ndim = 4
-            endif else $
-                ndim = 2
-            guesses = dblarr(ns, ndim)          ; set the array size and initialize v=h3=h4=0.0d
-            guesses[*,1] = 50.0d                ; ... but initalize sigma=50 km/s
+            if n_elements(default_velocity) eq 0 then $
+                message, 'Must provided default velocity or guess array!'
+            if n_elements(default_velocity_dispersion) eq 0 then $
+                message, 'Must provided default velocity disperison or guess array!'
+            guesses = dblarr(ns, 2)
+            guesses[*,0] = default_velocity
+            guesses[*,1] = default_velocity_dispersion
         endif
 END
 
+; TODO: Remove this.  Just always output on input wavelength grid
 PRO MDAP_SPECTRAL_FITTING_SET_OUTPUT_WAVELENGTHS, $
                 obj_wave, tpl_wave, wavelength_output, same_wave_as_input, $
                 wavelength_input=wavelength_input, rest_frame_log=rest_frame_log
@@ -516,7 +479,8 @@ END
 
 PRO MDAP_SPECTRAL_FITTING, $
                 obj_wave, obj_flux, obj_ivar, obj_mask, obj_sres, tpl_wave, tpl_flux, tpl_ivar, $
-                tpl_mask, wavelength_output, obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
+                tpl_mask, star_kin_starting_guesses, gas_kin_starting_guesses, wavelength_output, $
+                obj_fit_mask_ppxf, weights_ppxf, add_poly_coeff_ppxf, $
                 mult_poly_coeff_ppxf, bestfit_ppxf, chi2_ppxf, obj_fit_mask_gndf, weights_gndf, $
                 mult_poly_coeff_gndf, bestfit_gndf, chi2_gndf, eml_model, stellar_kinematics, $
                 stellar_kinematics_err, emission_line_kinematics, emission_line_kinematics_err, $
@@ -525,15 +489,14 @@ PRO MDAP_SPECTRAL_FITTING, $
                 emission_line_intens_err, emission_line_fluxes, emission_line_fluxes_err, $
                 emission_line_EW, emission_line_EW_err, reddening_output, reddening_output_err, $
                 analysis_par=analysis_par, default_velocity=default_velocity, $
-                star_kin_starting_guesses=star_kin_starting_guesses, $
-                gas_kin_starting_guesses=gas_kin_starting_guesses, eml_par=eml_par, $
+                default_dispersion=default_dispersion, eml_par=eml_par, $
                 range_v_star=range_v_star, range_s_star=range_s_star, range_v_gas=range_v_gas, $
                 range_s_gas=range_s_gas, wavelength_input=wavelength_input, $
                 external_library=external_library, region_mask=region_mask, $
-                wave_range_analysis=wave_range_analysis, $
+                wave_range_analysis=wave_range_analysis, ppxf_only=ppxf_only, version=version, $
                 use_previous_guesses=use_previous_guesses, fix_star_kin=fix_star_kin, $
                 fix_gas_kin=fix_gas_kin, quiet=quiet, rest_frame_log=rest_frame_log, $
-                plot=plot, ppxf_only=ppxf_only, dbg=dbg, version=version
+                plot=plot, dbg=dbg
 
         version_module = '0.9'                  ; Version number
         if n_elements(version) ne 0 then begin  ; If version is defined
@@ -547,10 +510,9 @@ PRO MDAP_SPECTRAL_FITTING, $
 
         velScale=MDAP_VELOCITY_SCALE(obj_wave, /log10)  ; km/s/pixel of the input spectra
 
-;       print, 'velscale: ', velScale
-
-        ; TODO: Need to know the moments to set size of the stellar_kinematics vector
-        ; TODO: Does this need to be done here.  Probably not because pPXF does the same thing.
+        ; Set the number of moments to fit for the stellar kinematics
+        ; TODO: If running through DAP should never actual enter the if
+        ; statement
         moments=analysis_par.moments
         if n_elements(moments) eq 0 then $
             moments=2                                   ; Defaults to fit just V,sigma
@@ -564,24 +526,12 @@ PRO MDAP_SPECTRAL_FITTING, $
         MDAP_SPECTRAL_FITTING_CHECK_DIMENSIONS, obj_flux, obj_ivar, obj_mask, obj_wave, obj_sres
         MDAP_SPECTRAL_FITTING_CHECK_DIMENSIONS, tpl_flux, tpl_ivar, tpl_mask, tpl_wave
 
+        ; TODO: Get rid of this option.  Force everything to be on the
+        ; same wavelength system as the input object wavelength vector.
         MDAP_SPECTRAL_FITTING_SET_OUTPUT_WAVELENGTHS, obj_wave, tpl_wave, wavelength_output, $
                                                       same_wave_as_input, $
                                                       wavelength_input=wavelength_input, $
                                                       rest_frame_log=rest_frame_log
-
-;       ; Declare the extra input parameters
-;       ; TODO: What is the full list of possible values
-;       if n_elements(extra_inputs) ne 0 then begin
-;           for k = 0, n_elements(extra_inputs)-1 do begin
-;               if strlen(extra_inputs[k]) eq 0 then $
-;                   continue
-;
-;               d = execute(extra_inputs[k])
-;               if ~keyword_set(quiet) then $
-;                   print, 'setting variable '+extra_inputs[k]
-;
-;           endfor
-;       endif
 
         ; Intialize some useful dimensions
         sz=size(obj_flux)
@@ -600,16 +550,12 @@ PRO MDAP_SPECTRAL_FITTING, $
         print, 'Number of emission lines: ', neml
         print, 'Number of spectral channels for output: ', nw
 
-;       stop
-
         ; Initialize the output arrays
-        ; TODO: Convert this to a structure?
-
         obj_fit_mask_ppxf = make_array(nobj, nw, /double, value=1.0d)
         weights_ppxf = dblarr(nobj, ntpl)
         degree=analysis_par.degree
         if n_elements(degree) ne 0 then begin
-            if degree gt 0 then $
+            if degree ge 0 then $
                 add_poly_coeff_ppxf = dblarr(nobj, degree+1)
         endif
         mdegree=analysis_par.mdegree
@@ -623,7 +569,6 @@ PRO MDAP_SPECTRAL_FITTING, $
         if ppxf_only eq 0 then begin
             obj_fit_mask_gndf = make_array(nobj, nw, /double, value=1.0d)
             weights_gndf = dblarr(nobj, ntpl)
-;           if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
             if analysis_par.reddening_order eq 0 && n_elements(mdegree) ne 0 then begin
                 if mdegree gt 0 then $
                     mult_poly_coeff_gndf = dblarr(nobj, mdegree)
@@ -632,9 +577,6 @@ PRO MDAP_SPECTRAL_FITTING, $
             chi2_gndf = dblarr(nobj)
             eml_model = dblarr(nobj, nw)
         endif
-
-;       best_template = dblarr(nobj, nw)
-;       best_template_losvd_conv = dblarr(nobj, nw)
 
         stellar_kinematics = dblarr(nobj, moments)
         stellar_kinematics_err= dblarr(nobj, moments)
@@ -658,16 +600,20 @@ PRO MDAP_SPECTRAL_FITTING, $
         endif
 
         ; Initialize the starting guesses
-        MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4, $
-                                            use_defaults=use_defaults
-;       if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
-        if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
-            star_kin_starting_guesses[*,0] = default_velocity
-        MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, $
-                                            use_defaults=use_defaults
-;       if use_defaults eq 1 and n_elements(default_velocity) ne 0 then $
-        if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
-            gas_kin_starting_guesses[*,0] = default_velocity
+;       MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, /h3h4, $
+;                                           use_defaults=use_defaults
+;       if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
+;           star_kin_starting_guesses[*,0] = default_velocity
+;       MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, $
+;                                           use_defaults=use_defaults
+;       if use_defaults eq 1 && n_elements(default_velocity) ne 0 then $
+;           gas_kin_starting_guesses[*,0] = default_velocity
+
+        ; Starting guesses are both of size [nobj,2]
+        MDAP_SPECTRAL_FITTING_INIT_GUESSES, star_kin_starting_guesses, nobj, default_velocity, $
+                                            default_dispersion
+        MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, default_velocity, $
+                                            default_dispersion
 
         ;-----------------------------------------------------------------------
         ; Limited the fitted pixels
@@ -676,7 +622,6 @@ PRO MDAP_SPECTRAL_FITTING, $
         now=(size(obj_wave))[1]
         if n_elements(wave_range_analysis) then begin
             MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
-;           if fit_indx[0] eq -1 then $
             if count eq 0 then $
                 message, 'wave_range_analysis selects no pixels!'
         endif else $
@@ -716,12 +661,13 @@ PRO MDAP_SPECTRAL_FITTING, $
         ; TODO: Allow these to be input parameters?
         sigomit = 6.                                    ; Number of sigma to mask (+/- 3)
         nalias = fix(sigomit*maxvel/velScale)           ; Number of pixels to mask (maxvel~maxsig)
+        print, 'Masking '+MDAP_STC(nalias,/integer)+' pixels at either end of the spectrum to' $
+               + ' avoid convolution aliasing.'
         ; Mask to the range that should be unaffected by alias errors
         wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]/(1+z_min) ]
         MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias*(1. + z_min), indx
         ; Merge with current index
         fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
-;       if fit_indx[0] eq -1 then $
         if count eq 0 then $
             message, 'No intersection between wave_range_tpl_unalias and fit_indx!'
 
@@ -734,15 +680,12 @@ PRO MDAP_SPECTRAL_FITTING, $
 
         ; Set to ignore emission lines that are not within the fitted wavelength range
         eml_par_lim = eml_par
-;       if n_elements(eml_par) ne 0 and ppxf_only eq 0 then begin
         if n_elements(eml_par) ne 0 && ppxf_only eq 0 then begin
             MDAP_CHECK_EMISSION_LINES, eml_par_lim, obj_wave_lim, $
-                                       velocity=gas_kin_starting_guesses[0]
+                                       velocity=gas_kin_starting_guesses[0,0]
         endif
 
         print, 'Number of emission lines to fit: ', n_elements(eml_par_lim)
-
-;       stop
 
         ; On input, pPXF expects the template and galaxy to have the same
         ;   wavelength coordinate system.  To account for the fact that this may not
@@ -755,14 +698,13 @@ PRO MDAP_SPECTRAL_FITTING, $
                (alog10(obj_wave_lim[1])-alog10(obj_wave_lim[0]))
 
         c=299792.458d                                   ; Speed of light in km/s (needed below)
-;       voff = (1.0d - obj_wave_lim[0]/tpl_wave[0])*c   ; Offset velocity in km/s
 
         ; Initialize the starting guesses vector used by MDAP_GANDALF_WRAP,
         ;   which DOES NOT change these values during its execution meaning this
         ;   only needs to be done once.
-        ; TODO: Make this a structure?
         start = MDAP_SPECTRAL_FITTING_START_KIN(reform(star_kin_starting_guesses[0,*]), $
                                                 reform(gas_kin_starting_guesses[0,*]) )
+        ; the returned vector has *four* elements!!
 
         if ~keyword_set(quiet) then begin
             print, "Voff: ", voff
@@ -773,54 +715,48 @@ PRO MDAP_SPECTRAL_FITTING, $
         ; Initialize the instrumental dispersion by interpolating the value from
         ;   the spectral resolution at the guess redshifts of the emission lines
         instr_disp = MDAP_INSTRUMENTAL_DISPERSION(obj_wave_lim, obj_sres_lim, eml_par_lim.lambda, $
-                                                  start[4], $
+                                                  start[2], $
                                                   zero_instr_disp=analysis_par.zero_instr_disp)
 
         ; Begin loop over all the object spectra
         if keyword_set(dbg) then $
             nobj=1                                      ; Only fit the first spectrum
         for i=0,nobj-1 do begin
-;       for i=0,0 do begin
-;           i = 0
 
             if ~keyword_set(quiet) then $
                 print, 'Fitting spectrum '+mdap_stc(i+1,/integer)+' of '+mdap_stc(nobj,/integer)
           
-            ; TODO: Necessary at every iteration?
             ; If not fitting the reddening, (re)set the values
             if analysis_par.reddening_order gt 0 then $
                 ebv=reddening
 
             ; Update the starting guesses and instrumental dispersion with the
             ;   previous fit values, if requested
-;           if i gt 0 and keyword_set(use_previous_guesses) then begin
             if i gt 0 && keyword_set(use_previous_guesses) then begin
-                start = MDAP_SPECTRAL_FITTING_START_KIN(sol[0:3], sol[7:8])
+                ; Returned solution fro GANDALF_WRAP has 9 elements:
+                ; 0:5 = stellar kin
+                ; 6 = chi-square
+                ; 7:8 = gas kin
+                ; start vector should only have:
+                ; 0:1 stellar v and sigma
+                ; 2:3 gas v and sigma
+                start = MDAP_SPECTRAL_FITTING_START_KIN(sol[0:1], sol[7:8])
 
                 instr_disp = MDAP_INSTRUMENTAL_DISPERSION(obj_wave_lim, obj_sres_lim, $
-                                                          eml_par_lim.lambda, start[4], $
+                                                          eml_par_lim.lambda, start[2], $
                                                     zero_instr_disp=analysis_par.zero_instr_disp)
-;               instr_disp = interpol(c/obj_sres_lim, obj_wave_lim, $
-;                                     eml_par_lim.lambda * (1.0d + start[4]/c))/sig2fwhm
             endif
 
-;           indx = where(eml_par_lim.action eq 'f')
-;           if indx[0] eq -1 then begin
-;               neml_f = 0
-;           endif else $
-;               neml_f = n_elements(indx)
-
-;   galaxy_=galaxy[*,i]
-;   noise_=noise[*,i]
-
- ;  ;-- correct for galactic reddening, if provided
- ;  TODO: RETURN TO THIS, does this need to be done for every spectrum?
-
- ;  IF KEYWORD_SET(MW_extinction) THEN BEGIN
- ;     ;dereddening_attenuation = DUST_CALZETTI(l0_gal,lstep_gal,n_elements(galaxy_),-MW_extinction,0.0d,/log10)
- ;     dereddening_attenuation = mdap_dust_calzetti(log_0_gal,log_step_gal,n_elements(galaxy_),-MW_extinction,0.0d)
- ;     galaxy_ = galaxy_*temporary(dereddening_attenuation)
- ;  ENDIF
+            ; TODO: correct for galactic reddening, if provided
+;           galaxy = reform(obj_flux_lim[i,*])
+;           if keyword_set(MW_extinction) then begin
+;               dereddening_attenuation = DUST_CALZETTI(l0_gal, lstep_gal, n_elements(galaxy_), $
+;                                                       -MW_extinction, 0.0d, /log10)
+;               dereddening_attenuation = mdap_dust_calzetti(log_0_gal, log_step_gal, $
+;                                                            n_elements(galaxy_), -MW_extinction, $
+;                                                            0.0d)
+;               galaxy = galaxy*temporary(dereddening_attenuation)
+;           endif
 
             ; TODO: Need to make these status flags actually do something!
             ppxf_status = 1                     ; Initialize the status: 0=success, 1=failure
@@ -861,9 +797,10 @@ PRO MDAP_SPECTRAL_FITTING, $
             ; Impose some limits on the results
             ; TODO: Put this into a procedure
 
-            ; If the error vector is flat (i.e. errors are not reliable),
-            ;   rescale the formal errors for sqrt(chi2/dof), as instructed
-            ;   by mpfit and ppxf.
+            ; If the error vector is flat (i.e. errors are not
+            ; reliable), rescale the formal errors by sqrt(chi2/dof), as
+            ; instructed by MPFIT and pPXF.  Output sol should ALWAYS
+            ; have chi2/dof at index=6
             if min(obj_ivar_lim[i,*]) eq max(obj_ivar_lim[i,*]) then begin
                 err = err * sqrt(sol[6])
                 gas_vel_err = gas_vel_err * sqrt(sol[6]) 
@@ -905,13 +842,18 @@ PRO MDAP_SPECTRAL_FITTING, $
             ; super-fucked.  Will need to check that this hasn't messed me
             ; up somewhere...
 
-            ; Store output
-            ; TODO: Put input and output into structures?
+            ; Store output stellar kinematics
+            if keyword_set(fix_star_kin) then begin
+                stellar_kinematics[i,0:1] = start[0:1]
+                stellar_kinematics_err[i,*] = 0
+            endif else begin
+                stellar_kinematics[i,*]=sol[0:moments-1]
+                stellar_kinematics_err[i,*]=err[0:moments-1]
+            endelse
 
-            stellar_kinematics[i,*]=sol[0:moments-1]            ; V,sigma,h3,h4 for stars
-            stellar_kinematics_err[i,*]=err[0:moments-1]        ; V,sigma,h3,h4 errors
-
+            ; Store output gas kinematics
             if ppxf_only eq 0 then begin
+
                 emission_line_kinematics[i,*]=sol[7:8]          ; V,sigma for emission lines
                 emission_line_kinematics_err[i,*]=err[6:7]      ; V,sigma errors for emission lines
 
@@ -1025,7 +967,6 @@ PRO MDAP_SPECTRAL_FITTING, $
             ; TODO: Put this all in a procedure!
 
             ; Output/input wavelengths are the same; copy the spectra and go to next spectrum
-;           print, 'save models'
             if same_wave_as_input eq 1 then begin
 
                 ; Best-fit PPXF model
@@ -1036,16 +977,8 @@ PRO MDAP_SPECTRAL_FITTING, $
                     eml_model[i,fit_indx] = eml_model_i ; Best-fit emission-line-only model
                 endif
 
-;               ; Best fitting template (does not include LOSVD effects or reddening)
-;               best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, obj_wave_lim)
-;
-;               ; Best fitting galaxy continuum (does not include reddening)
-;               best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
-;                                                               obj_wave_lim)
-
                 continue                                        ; Go to next spectrum
             endif
-;           endif else begin
             
             ; Generate the output spectra
             ;rf_gal_lam = exp(loglam_gal-sol[0]/velscale*(log_step_gal))
@@ -1062,14 +995,6 @@ PRO MDAP_SPECTRAL_FITTING, $
                 eml_model[i,fit_indx] = interpol(eml_model_i, obj_wave_lim_, wavelength_output)
             endif
 
-;           ; Best fitting template (does not include LOSVD effects or reddening)
-;           best_template[i,fit_indx] = interpol(best_template_i, tpl_wave, wavelength_output)
-;           
-;           ; Best fitting galaxy continuum (does not include reddening)
-;           best_template_losvd_conv[i,fit_indx] = interpol(best_template_losvd_i, tpl_wave, $
-;                                                           wavelength_output)
-
-;           endelse
         endfor
 END
 

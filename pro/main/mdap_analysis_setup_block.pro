@@ -68,11 +68,11 @@
 ;               performed.
 ;
 ; OPTIONAL OUTPUT:
-;       star_kin_interp dblarr
+;       star_kin_interp dblarr[B][2]
 ;               Interpolated set of stellar kinematics based on a
 ;               provided analysis prior.
 ;
-;       gas_kin_interp dblarr
+;       gas_kin_interp dblarr[B][2]
 ;               Interpolated set of gas kinematics based on a provided
 ;               analysis prior.
 ;
@@ -95,7 +95,9 @@
 ;       @mdap_analysis_block_logic
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       22 Mar 2015: (KBW) Added some notes on the number of
+;                          interpolated kinematic moments
 ;-
 ;------------------------------------------------------------------------------
 

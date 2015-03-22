@@ -3,11 +3,11 @@
 ;       MDAP_GANDALF_WRAP
 ;
 ; PURPOSE:
-;       Wrapper that calls PPXF and GANDALF in order to derive the stellar and
-;       gaseous kinematics for an input set of spectra.  TODO: Why is this
-;       specific to MaNGA?  The stellar continuum is matched with a combination
-;       of provided templates, whereas emission-lines are represented by
-;       Gaussian functions, with interdepencies regulated by the input
+;       Wrapper that calls PPXF and GANDALF in order to derive the
+;       stellar and gaseous kinematics for an input set of spectra.  The
+;       stellar continuum is matched with a combination of provided
+;       templates, whereas emission-lines are represented by Gaussian
+;       functions, with interdepencies regulated by the input
 ;       emission-setup file.
 ;
 ; CALLING SEQUENCE:
@@ -63,14 +63,12 @@
 ;
 ;               TODO: Better to just calculate this using MDAP_VELOCITY_SCALE?
 ;
-;       start dblarr[6]
+;       start dblarr[4]
 ;               Initial guesses for the:
 ;                   start[0] stellar veocity (km/sec)
 ;                   start[1] stellar velocity dispersion (km/sec)
-;                   start[2] stellar h3 Gauss Hermite moment
-;                   start[3] stellar h4 Gauss Hermite moment stellar velocity dispersion
-;                   start[4] gas velocity (km/sec)
-;                   start[5] gas velocity dispersion (km/sec).
+;                   start[2] gas velocity (km/sec)
+;                   start[3] gas velocity dispersion (km/sec).
 ;
 ; OPTIONAL INPUTS:
 ;       eml_par EmissionLine[E]
@@ -328,7 +326,7 @@
 ;
 ;       ppxf_status integer
 ;               If 0, pPXF failed; if 1, pPXF was successful.  If pPXF fails,
-;               GANDALF is still executed, but the stellar kinematics ere fixed
+;               GANDALF is still executed, but the stellar kinematics are fixed
 ;               to the starting guesses.
 ;
 ;       gandalf_status integer
@@ -459,13 +457,16 @@
 ; Mimic the output from pPXF
 ; TODO: does not check that sol_in has the expected size!
 PRO MDAP_MIMIC_PPXF_KIN, $
-                sol_in, sol_out, chi2, moments=moments, mdegree=mdegree
-        if n_elements(moments) ne 0 then begin
-            sol_out = [sol_in[0:moments-1], chi2]
-        endif else begin
-            moments=2
-            sol_out = [sol_in[0:1], chi2]
-        endelse
+                sol_in, sol_out, chi2, mdegree=mdegree
+
+        max_ppxf_moments=6
+
+        if n_elements(sol_in) ne 2 then $
+            message, 'Input guess expected to have two elements!'
+
+        sol_out = dblarr(max_ppxf_moments+1)
+        sol_out[0:1] = sol_in
+        sol_out[max_ppxf_moments] = chi2
 
         if n_elements(mdegree) eq 0 then $
             return
@@ -476,9 +477,9 @@ END
 PRO MDAP_SAVE_MULT_LEGENDRE, $
                 sol, mult
 
-        max_moments=6
+        max_ppxf_moments=6
         nfit = n_elements(sol)-1
-        mult = nfit gt max_moments ? sol[max_moments+1:n_elements(sol)-1] : -1
+        mult = nfit gt max_ppxf_moments ? sol[max_ppxf_moments+1:n_elements(sol)-1] : -1
         
 END
 
@@ -486,13 +487,11 @@ END
 ; TODO: Does not check that the input from pPXF has the correct size
 PRO MDAP_SAVE_STAR_KIN, $
                 sol_in, sol_out, voff, moments=moments, chi=chi
-        max_moments=6
-        if n_elements(moments) eq 0 then $
-            moments=2
-
-        sol_out = [sol_in[0]-voff, sol_in[1:moments-1], dblarr(max_moments-moments)]
+        max_ppxf_moments=6
+        sol_out = sol_in[0:max_ppxf_moments-1]
+        sol_out[0] = sol_in[0]-voff
         if keyword_set(chi) then $
-            sol_out = [sol_out, sol_in[max_moments]]
+            sol_out = [sol_out, sol_in[max_ppxf_moments]]
 
 END
 
@@ -516,12 +515,12 @@ PRO MDAP_GANDALFW_DEFAULT, $
         err = MDAP_GANDALFW_SOL(err_star, 99.0d, 99.0d) ; TODO: Set errors ton NaN?
 
         fitted_pixels_gndf=-1                           ; No pixels fitted by GANDALF
-        weights_gndf = dblarr(ntpl)                             ; No template weights
+        weights_gndf = dblarr(ntpl)                     ; No template weights
         if n_elements(mdegree) ne 0 then begin
-            mult_poly_coeff_gndf = dblarr(mdegree)              ; No polynomial weights
+            mult_poly_coeff_gndf = dblarr(mdegree)      ; No polynomial weights
         endif else $
             MDAP_ERASEVAR, mult_poly_coeff_gndf         ; Remove variable
-        bestfit_gndf = dblarr(nc)                               ; No GANDALF fit
+        bestfit_gndf = dblarr(nc)                       ; No GANDALF fit
         chi2_gndf = -1                                  ; No chi^2
         eml_model = dblarr(nc)                          ; No emission-line model
 
@@ -759,7 +758,6 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
                 gas_ew_err
 
         i_f = where(eml_par.action eq 'f', neml_f)              ; Fitted emission lines
-;       neml_f = n_elements(i_f)                                ; Number of fitted emission lines
         if neml_f eq 0 then $
             message, 'No emission lines to fit!'
         i_l = where(eml_par[i_f].kind eq 'l', neml_l)           ; Independent lines
@@ -778,7 +776,6 @@ PRO MDAP_GANDALFW_SAVE_RESULTS, $
         gas_ew = dblarr(neml_f,/nozero)
         gas_ew_err = dblarr(neml_f,/nozero)
 
-;       neml_l = n_elements(i_l)                                ; Number of independent lines
         for i=0,neml_l-1 do begin
 
             ; Copy the fitted lines
@@ -836,43 +833,26 @@ PRO MDAP_GANDALF_WRAP, $
                 
         ; TODO: How degenerate are the reddening, err_reddening, and for_error checks?
 
-        ; Preliminary Checks !
-        if ~keyword_set(mdegree) then $
+        ; Default to no multiplicative polynomial
+        if n_elements(mdegree) eq 0 then $
             mdegree=0
 
-        ; TODO: Does this need to be done here.  Probably not because pPXF does the same thing.
+        ; Default to fit just V,sigma
         if n_elements(moments) eq 0 then $
-            moments=2                                   ; Defaults to fit just V,sigma
+            moments=2
 
+        ; Default to perform both pPXF and GANDALF
         if n_elements(ppxf_only) eq 0 then $
             ppxf_only = 0
 
-;       print, 'mdegree: ', mdegree
-;       print, 'moments: ', moments
-
+        
         sz = size(tpl_flux)
         ntpl = sz[1]                                    ; Number of templates
 
         ; Initialize the error vector and the mask
-        ; TODO: Could I just continue using ivar?
         nc = n_elements(obj_flux)                               ; Number of spectral channels
         obj_mask_ = obj_mask                                    ; Copy the input mask; TODO: needed?
-
         MDAP_NOISE_FROM_IVAR, obj_ivar, obj_mask_, obj_sige
-
-;       indx = where(obj_ivar eq 0 or finite(obj_ivar) eq 0, complement=nindx)  ; Invalid variances
-;       if n_elements(indx) eq nc then begin                    ; No pixels are valid
-;           print, 'All errors are invalid!  Ignoring errors (by setting them to unity).'
-;           obj_sige = make_array(nc, /double, value=1.0d)
-;       endif else if indx[0] eq -1 then begin                  ; All pixels are valid
-;           obj_sige = sqrt(1.0d/obj_ivar)                      ; Errors
-;       endif else begin
-;           obj_mask_[indx] = 1.0d                              ; Mask invalid variances
-;           ; TODO: Mask doesn't need to be double
-;           obj_sige = dblarr(nc, /nozero)                      ; Initialize
-;           obj_sige[nindx] = sqrt(1.0d/obj_ivar[nindx])        ; Errors
-;           obj_sige[indx] = 1.0d                               ; Placeholder value (masked!)
-;       endelse
 
         ; Mask the input wavelength ranges
         ; TODO: Is this still necessary?
@@ -907,7 +887,10 @@ PRO MDAP_GANDALF_WRAP, $
         ; separate structure that contains the observed wavelengths of sky
         ; lines that should be masked.
 
-        ; Copy to the continuum mask (used in fitting the continuum, not the emission lines
+        ; Copy to the continuum mask (used in fitting the continuum, not
+        ; the emission lines
+        ; TODO: Uses the stellar velocity for the mask, *not* the gas
+        ; velocity.  Right thing to do?
         cnt_mask_ = obj_mask_
         neml = n_elements(eml_par)                      ; Number of defined emission lines
         if neml ne 0 then begin
@@ -987,8 +970,9 @@ PRO MDAP_GANDALF_WRAP, $
         if ppxf_status ne 0 then begin
 
             ; Mimic the pPXF using the starting guesses
-            MDAP_MIMIC_PPXF_KIN, start, sol_ppxf, 99.0d, moments=moments, mdegree=mdegree
-            err_ppxf = make_array(moments, /double, value=99.0d)        ; Set place-holder error
+            MDAP_MIMIC_PPXF_KIN, start[0:1], sol_ppxf, 99.0, mdegree=mdegree
+            max_ppxf_moments=6
+            err_ppxf = make_array(max_ppxf_moments, /double, value=99.0d)   ; Set place-holder error
 
             weights_ppxf = dblarr(ntpl)                                 ; No template weights
             bestfit_ppxf = dblarr(nc)                                   ; No fit
@@ -1022,7 +1006,6 @@ PRO MDAP_GANDALF_WRAP, $
         if n_elements(eml_par) eq 0 || ppxf_only eq 1 then begin
             if n_elements(eml_par) ne 0 then begin
                 i_f = where(eml_par.action eq 'f', neml_f)
-;               neml_f = i_f[0] eq -1 ? 0 : n_elements(i_f)
             endif else $
                 neml_f = 0
 
@@ -1037,8 +1020,11 @@ PRO MDAP_GANDALF_WRAP, $
 
         ; TODO: Adjust the continuum mask?
 
-        ; Now create a mask that includes the emission lines to fit
 ;       print, 'Number of unmasked pixels: ', n_elements(where(obj_mask_ lt 1.0))
+
+        ; Now create a mask that includes the emission lines to fit
+        ; TODO: Uses the stellar velocity for the mask, *not* the gas
+        ; velocity.  Right thing to do?
         ems_mask_ = obj_mask_                           ; Emission line mask
         MDAP_GANDALFW_MASK_EMISSION_LINES, eml_par, obj_wave, ems_mask_, velocity=start[0], $
                                            sigma=250.0d
@@ -1049,51 +1035,38 @@ PRO MDAP_GANDALF_WRAP, $
         ;   with the lines we fit
 
         ; TODO: This is done in GANDALF as well.  Does it need to be done here?
+        ; TODO: Handle this better here so that the program doesn't quit
         i_f = where(eml_par.action eq 'f', nf)
-;       if i_f[0] eq -1 then $
         if nf eq 0 then $
             message, 'No lines to fit!'
 
 ;       nf = n_elements(i_f)
 ;       print, 'Number of lines to fit: ', nf
 
-;       eml_par_fit = MDAP_ASSIGN_EMISSION_LINE_PARAMETERS(eml_par[i_f].i, eml_par[i_f].name, $
-;                                                          eml_par[i_f].lambda, $
-;                                                          eml_par[i_f].action, $
-;                                                          eml_par[i_f].kind, eml_par[i_f].a, $
-;                                                          eml_par[i_f].v, eml_par[i_f].s, $
-;                                                          eml_par[i_f].fit)
-
+        ; Create the structure used by GANDALF
         eml_par_fit = create_struct('i',eml_par[i_f].i,'name',eml_par[i_f].name,$
-                               'lambda',eml_par[i_f].lambda,'action',eml_par[i_f].action,$
-                               'kind',eml_par[i_f].kind,'a',eml_par[i_f].a,$
-                               'v',eml_par[i_f].v,'s',eml_par[i_f].s,$
-                               'fit',eml_par[i_f].fit)
-
+                                    'lambda',eml_par[i_f].lambda,'action',eml_par[i_f].action,$
+                                    'kind',eml_par[i_f].kind,'a',eml_par[i_f].a,$
+                                    'v',eml_par[i_f].v,'s',eml_par[i_f].s,$
+                                    'fit',eml_par[i_f].fit)
 
         ; Assign input initial guess for the gas kinematics, adding also the
         ; velocity offset specified in the emission-line setup.
-;       eml_par_fit[*].v = start[4]                     ; Gas velocity
-;       eml_par_fit[*].s = start[5]                     ; Gas velocity dispersion
-        eml_par_fit.v[*] = start[4]                     ; Gas velocity
-        eml_par_fit.s[*] = start[5]                     ; Gas velocity dispersion
-
-; mdegree_=mdegree
-; if n_elements(reddening) ne 0 then junk = temporary(mdegree_)
+        eml_par_fit.v[*] = eml_par_fit.v[*] + start[2]  ; Gas velocity
+        eml_par_fit.s[*] = start[3]                     ; Gas velocity dispersion
 
         ; Include a multiplicative polynomial ONLY if the reddening is not calculated
-        ; TODO: Throw an error instead
+        ; TODO: Throw an error instead?
         if n_elements(reddening) eq 0 then $
             mdegree_=mdegree
         ; Otherwise, mdegree_ is undefined
 
         ; Call GANDALF using only the stellar kinematics as input sol
         fitted_pixels_gndf = where(ems_mask_ lt 1., count)      ; Select the unmasked pixels
-;       if fitted_pixels_gndf[0] eq -1 then $
         if count eq 0 then $
             message, 'No pixels to fit by GANDALF!'
 
-        ; TODO: Need to check that my eml_par works the same as their emission_setup
+        ; Get the wavelength coordinate elements needed by GANDALF
         l0_gal = alog10(obj_wave[0])
         lstep_gal = alog10(obj_wave[1])-alog10(obj_wave[0])
         l0_templ = alog10(tpl_wave[0])
@@ -1144,7 +1117,6 @@ PRO MDAP_GANDALF_WRAP, $
         ; Select the independently fitted lines
         i_l = where(eml_par.action eq 'f' and eml_par.kind eq 'l', count);, complement=i_d) 
         ; TODO: Do this check earlier!
-;       if i_l[0] eq -1 then $
         if count eq 0 then $
             message, 'All lines are doublets!'
         neml_l = n_elements(i_l)
@@ -1219,8 +1191,8 @@ PRO MDAP_GANDALF_WRAP, $
             print, 'No valid lines for use in mean kinematics'
 ;           fw_vel = !VALUES.D_NAN
 ;           fw_sig = !VALUES.D_NAN
-            fw_vel = start[4]
-            fw_sig = start[5]
+            fw_vel = start[2]
+            fw_sig = start[3]
 
             fw_vel_err = 99.0d
             fw_sig_err = 99.0d
@@ -1242,9 +1214,6 @@ PRO MDAP_GANDALF_WRAP, $
 
         ; Recalculate the chi-square including the emission-line fits
         ; TODO: Have GANDALF return this!
-        ; TODO: goodpixels should always be ne 0, otherwise nothing is fit!
-        ; TODO: Keep the pPXF-only chi^2
-;       chi2=total(((obj_flux[goodpixels]-bestfit[goodpixels])/obj_sige[goodpixels])^2)
         resid = (obj_flux[fitted_pixels_gndf]-bestfit_gndf[fitted_pixels_gndf]) / $
                 obj_sige[fitted_pixels_gndf]
         chi2_gndf = robust_sigma(resid, /zero)^2

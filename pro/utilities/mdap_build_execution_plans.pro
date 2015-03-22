@@ -187,7 +187,7 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       10 Oct 2014: Original implementation by K. Westfall
+;       10 Oct 2014: Original implementation by K. Westfall (KBW)
 ;       13 Oct 2014: (KBW) Include bin_weight_by_sn2
 ;       15 Oct 2014: (KBW) Added analysis_extra
 ;       07 Nov 2014: (KBW) Checks that analysis steps are performed in
@@ -205,6 +205,9 @@
 ;       16 Mar 2015: (KBW) Allow noise_calib in bin_par.  Force
 ;                          optimal_weighting = 0 if applying the
 ;                          calibration.
+;       22 Mar 2015: (KBW) Include a check of the number of pPXF
+;                          moments.  Automatically set the number of
+;                          moments to 2 if input is set to 0.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -328,18 +331,24 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
 
         ; Analysis steps are check using MDAP_SET_EXECUTION_PLAN_ANALYSIS
 
+        ; Same check as is done in pPXF
+        if execution_plan.analysis[0] eq 1 $
+           && total(execution_plan.analysis_par.moments eq [0,2,4,6]) eq 0 then $
+            message, 'pPXF moments should be 0 (use default=2), 2, 4 or 6'
+
+        ; Set the default number of moments
+        if execution_plan.analysis[0] eq 1 && execution_plan.analysis_par.moments eq 0 then $
+            execution_plan.analysis_par.moments = 2
+       
         ; Check that the selected template library exists
-;       if execution_plan.tpl_lib ne -1 and execution_plan.tpl_lib ge n_tpl then $
         if execution_plan.tpl_lib ne -1 && execution_plan.tpl_lib ge n_tpl then $
             message, 'No template library index: ', execution_plan.tpl_lib
             
         ; Check that the selected emission-line parameter set exists
-;       if execution_plan.ems_par ne -1 and execution_plan.ems_par ge n_ems then $
         if execution_plan.ems_par ne -1 && execution_plan.ems_par ge n_ems then $
             message, 'No emission-line parameter set: ', execution_plan.ems_par
             
         ; Check that the selected absorption-line parameter set exists
-;       if execution_plan.abs_par ne -1 and execution_plan.abs_par ge n_abs then $
         if execution_plan.abs_par ne -1 && execution_plan.abs_par ge n_abs then $
             message, 'No absorption-line parameter set: ', execution_plan.abs_par
 
@@ -350,12 +359,9 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         if execution_plan.analysis[3] eq 0 then $
             execution_plan.abs_par = -1
         ; Emission-line parameters used for both stellar-continuum and star+gas analysis
-;       if execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then $
         if execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then $
             execution_plan.ems_par = -1
         ; Template spectra can be used for all analyses (what to do with [2]?)
-;       if execution_plan.analysis[3] eq 0 and execution_plan.analysis[2] eq 0 and $
-;          execution_plan.analysis[1] eq 0 and execution_plan.analysis[0] eq 0 then begin
         if execution_plan.analysis[3] eq 0 && execution_plan.analysis[2] eq 0 && $
            execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then begin
             execution_plan.tpl_lib = -1
