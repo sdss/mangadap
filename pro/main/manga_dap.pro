@@ -305,7 +305,8 @@ PRO MANGA_DAP, $
             ;-----------------------------------------------------------
             ; Re-write part of the DRPS extension; no need to re-read
             ; them because they're always calculated above
-            if execution_plan[i].overwrite eq 1 then begin
+            if execution_plan[i].overwrite eq 1 || file_test(execution_plan[i].ofile) ne 1 then $
+               begin
                 ; Write basics of the DRP fits files
                 MDAP_WRITE_OUTPUT, execution_plan[i].ofile, header=header, dx=spaxel_dx, $
                                    dy=spaxel_dy, xpos=bskyx, ypos=bskyy, quiet=quiet
