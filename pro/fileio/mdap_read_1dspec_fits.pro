@@ -44,7 +44,7 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       17 Sep 2014: (KBW) Original implementation
+;       17 Sep 2014: Original implementation by K. Westfall (KBW)
 ;-
 ;------------------------------------------------------------------------------
 
@@ -80,6 +80,7 @@ PRO MDAP_READ_1DSPEC_FITS, $
 
         wave = (wave - crpix) * cdelt + crval                   ; Set the wavelengh of each pixel
                                                                 ; TODO: Assumes linear sampling
+
 END
 
 

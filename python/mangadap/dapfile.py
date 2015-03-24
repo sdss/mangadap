@@ -23,6 +23,10 @@ def parse_dap_file_name(name):
     """
     Parse the name of a DAP file and return the plate, ifudesign, mode,
     binning type, and iteration number.
+
+    REVISION HISTORY:
+            ?? ??? 2014: Original implementation by K. Westfall (KBW)
+            23 Mar 2015: (KBW) Fixed bug in parsing of niter
     """
 
     if (type(name) != str):
@@ -46,7 +50,7 @@ def parse_dap_file_name(name):
     bintype = name[mode_end+5:bintype_end]
 
     niter_end = str.find(name,'.fits',bintype_end)
-    niter = int(name[bintype_end:niter_end])
+    niter = int(name[bintype_end+1:niter_end])
 
     return plate, ifudesign, mode, bintype, niter
 

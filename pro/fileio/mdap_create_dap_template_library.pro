@@ -67,9 +67,10 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       04 Nov 2014: (KBW) Original implementation (pulled from MANGA_DAP)
+;       04 Nov 2014: Original implementation (pulled from MANGA_DAP) by
+;                    K. Westfall (KBW)
 ;-
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------
 
 PRO MDAP_CREATE_DAP_TEMPLATE_LIBRARY, $
                 ofile, library_key, template_libraries, tpl_vacuum_wave, velocity_offset, wave, $
@@ -84,6 +85,16 @@ PRO MDAP_CREATE_DAP_TEMPLATE_LIBRARY, $
         ; Read the template library
         MDAP_READ_TEMPLATE_LIBRARY, library_key, template_libraries, tpl_flux, tpl_ivar, tpl_mask, $
                                     tpl_wave, tpl_sres
+
+;       tpl_wave = tpl_wave[0,*]
+;       tpl_flux = tpl_flux[0,*]
+;       tpl_ivar = tpl_ivar[0,*]
+;       tpl_mask = tpl_mask[0,*]
+;       tpl_sres = tpl_sres[0,*]
+
+;       print, size(tpl_flux)
+;       indx = where(tpl_wave[0,*] gt 6500 and tpl_wave[0,*] lt 6600)
+;       plot, tpl_wave[0,indx], tpl_flux[0,indx]
 
         ; Convert the wavelengths to vacuum if necessary
         ; TODO: Does not account for the effect on the spectral resolution
@@ -118,11 +129,16 @@ PRO MDAP_CREATE_DAP_TEMPLATE_LIBRARY, $
 
         ; Normalize the templates and save the normalization
         MDAP_NORMALIZE_TEMPLATES, tpl_flux, tpl_ivar, tpl_mask, tpl_flux_norm
+;       tpl_flux_norm = 1.0d
 
         ; Write the template data to a fits file
         MDAP_WRITE_RESAMPLED_TEMPLATES, ofile, library_key, redshift, tpl_flux_norm, $
                                         version_module, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
                                         tpl_sres, tpl_soff
+
+;       indx = where(tpl_wave gt 6500 and tpl_wave lt 6600)
+;       oplot, tpl_wave[indx], tpl_flux[0,indx], color=200
+;       stop
 END
 
 
