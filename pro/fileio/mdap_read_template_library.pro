@@ -152,6 +152,9 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
             ; 402, 433); assume value from Maraston & Strombach (2011,
             ; MNRAS, 418, 2785)
             return, 3.40
+        endif else if library_key eq 'MIUSCAT' then begin
+            ; As provided by the header in all the fits files
+            return, 2.51
         endif else begin
             message, 'Unknown library keyword!'
         endelse

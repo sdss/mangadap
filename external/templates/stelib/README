@@ -1,0 +1,37 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+STELIB STELLAR LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+Library downloaded from:
+
+http://www.ast.obs-mip.fr/article181.html
+
+specifically
+
+http://www.ast.obs-mip.fr/users/leborgne/stelib/fits/stelib_V3.2_corr_fits.tar.gz
+
+Apart from renaming the files with the prefix STELIB_v3.2_*, these data
+are used in the DAP directly.
+
+------------------------------------------------------------------------
+
+Stellar parameters are available here:
+
+http://www.ast.obs-mip.fr/users/leborgne/stelib/stars.html
+
+However, these have not yet been parsed into an ASCII file included in
+the DAP repository.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall, 24 Mar 2015
+------------------------------------------------------------------------
+
+
+
+
+
+
+

@@ -13,6 +13,7 @@
 ;           M11-MILES                2.54
 ;               MILES                2.50
 ;              STELIB                3.40
+;             MIUSCAT                2.51
 ;
 ;       See dapsrc/pro/fileio/mdap_read_template_library.pro.  When
 ;       adding additional libraries, you must add the keyword to the
@@ -36,7 +37,11 @@
 ;       wavelengths to vacuum if tpl_vacuum_wave = 0.
 ;
 ;===============================================================================
-
+;
+; REVISION HISTORY:
+;       ?? ??? 2015: Original implementation by K. Westfall (KBW)
+;       24 Mar 2015: (KBW) Added MIUSCAT library
+;
 ; dapsrc is an optional input to define the DAP source path instead of
 ; using environmental varaibles.
 
@@ -50,7 +55,7 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
         ; files is described above.
-        ntpl_libraries = 6
+        ntpl_libraries = 7
         tpl_library_keys = strarr(ntpl_libraries)
         template_libraries = strarr(ntpl_libraries)
         tpl_vacuum_wave = intarr(ntpl_libraries)
@@ -80,6 +85,11 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
         template_libraries[5] = dapsrc+'/external/templates/stelib/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[5] = 0
+
+        tpl_library_keys[6] = 'MIUSCAT'
+        template_libraries[6] = dapsrc+'/external/templates/miuscat/*.fits'
+        ; TODO: Unknown if this library is in vacuum or in air
+        tpl_vacuum_wave[6] = 0
 
 END
 

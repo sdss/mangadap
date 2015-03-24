@@ -75,6 +75,7 @@ doc/mdap_spatial_radial_binning.tex -text
 doc/mdap_spectral_fitting.tex -text
 doc/mdap_voronoi_2d_binning.tex -text
 etc/mangadap.module -text
+examples/README.execution_plans -text
 examples/create_manga_dap_execution_plan.pro -text
 examples/manga_dap_highsn_binonly_plan.pro -text
 examples/manga_dap_highsn_stelib_plan.pro -text
@@ -83,6 +84,7 @@ examples/manga_dap_highsn_twotpl_plan.pro -text
 examples/manga_dap_radial_binonly_plan.pro -text
 examples/manga_dap_radial_plan.pro -text
 examples/manga_dap_sn_strgaskin_miles.pro -text
+examples/mdap_mpl3beta_cube_p1.pro -text
 examples/mdap_velocity_field.pro -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
@@ -224,6 +226,7 @@ external/templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_8.0000000_z_0.04.fit
 external/templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_9.0000000_z_0.01.fits -text svneol=unset#unset
 external/templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_9.0000000_z_0.02.fits -text svneol=unset#unset
 external/templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_9.0000000_z_0.04.fits -text svneol=unset#unset
+external/templates/m11_elodie/README -text
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500.fits -text svneol=unset#unset
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_-2.2500_s.fits -text svneol=unset#unset
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_10.00_z_0.0000.fits -text svneol=unset#unset
@@ -268,6 +271,7 @@ external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000.fits -tex
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.0000_s.fits -text svneol=unset#unset
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500.fits -text svneol=unset#unset
 external/templates/m11_marcs/M11_MARCS_res2.7_imf_ss_age_8.00_z_0.3500_s.fits -text svneol=unset#unset
+external/templates/m11_marcs/README -text
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_0.0065000000_z_0.02.fits -text svneol=unset#unset
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_0.0070000000_z_0.02.fits -text svneol=unset#unset
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_0.0075000000_z_0.02.fits -text svneol=unset#unset
@@ -377,6 +381,7 @@ external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_8.0000000_z_0.04.fits 
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_9.0000000_z_0.01.fits -text svneol=unset#unset
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_9.0000000_z_0.02.fits -text svneol=unset#unset
 external/templates/m11_miles/M11_MILES_res2.54_imf_ss_age_9.0000000_z_0.04.fits -text svneol=unset#unset
+external/templates/m11_miles/README -text
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_0.030000000_z_0.02.fits -text svneol=unset#unset
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_0.030000000_z_0.02_s.fits -text svneol=unset#unset
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_0.035000000_z_0.02.fits -text svneol=unset#unset
@@ -547,7 +552,9 @@ external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.02.fit
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.02_s.fits -text svneol=unset#unset
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.04.fits -text svneol=unset#unset
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.04_s.fits -text svneol=unset#unset
+external/templates/m11_stelib/README -text
 external/templates/m11_stelib/rebin_stelib.pro -text
+external/templates/miles/MILES_params.db -text
 external/templates/miles/MILES_res2.50_star_m0001V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0002V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0003V.fits -text svneol=unset#unset
@@ -1533,6 +1540,210 @@ external/templates/miles/MILES_res2.50_star_m0982V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0983V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0984V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0985V.fits -text svneol=unset#unset
+external/templates/miles/README -text
+external/templates/miles/paramsMILES_v9.1.txt -text
+external/templates/miuscat/Iun1.30Zm0.40T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.0708.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.0891.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1122.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1413.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1778.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.2239.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.2818.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.3548.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.4467.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.5623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.7079.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T00.8913.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.1220.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.4125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.7783.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T02.2387.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T02.8184.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T03.5481.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T04.4668.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T05.6234.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T07.0795.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T08.9125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T11.2202.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T14.1254.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T15.8489.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.40T17.7828.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.0708.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.0891.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1122.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1413.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1778.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.2239.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.2818.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.3548.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.4467.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.5623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.7079.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T00.8913.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.1220.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.4125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.7783.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T02.2387.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T02.8184.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T03.5481.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T04.4668.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T05.6234.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T07.0795.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T08.9125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T11.2202.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T14.1254.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T15.8489.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zm0.71T17.7828.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.0708.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.0891.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1122.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1413.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1778.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.2239.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.2818.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.3548.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.4467.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.5623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.7079.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T00.8913.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.1220.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.4125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.7783.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T02.2387.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T02.8184.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T03.5481.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T04.4668.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T05.6234.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T07.0795.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T08.9125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T11.2202.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T14.1254.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T15.8489.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.00T17.7828.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.0708.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.0891.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1122.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1413.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1778.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.2239.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.2818.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.3548.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.4467.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.5623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.7079.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T00.8913.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.1220.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.4125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.7783.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T02.2387.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T02.8184.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T03.5481.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T04.4668.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T05.6234.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T07.0795.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T08.9125.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T11.2202.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T14.1254.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T15.8489.fits -text svneol=unset#unset
+external/templates/miuscat/Iun1.30Zp0.22T17.7828.fits -text svneol=unset#unset
+external/templates/miuscat/README -text
+external/templates/stelib/README -text
 external/templates/stelib/STELIB_v3.2_Feige110.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_G319.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_HD002857.fits -text svneol=unset#unset
