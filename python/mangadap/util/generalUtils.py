@@ -161,10 +161,11 @@ def readSDSSMaskBits(name=None):
     
     return data
     
-def getSDSSFlagName(bits, name=None):
+def getSDSSFlagName(bits, name=None, data=None):
     ''' Retrieve the flag names from a bit flag '''
-    
-    data = readSDSSMaskBits(name=name)
+   
+    if data is None:
+        data = readSDSSMaskBits(name=name)
     
     # if bits not a digit, return None
     if not str(bits).isdigit(): return 'NULL'
