@@ -477,13 +477,13 @@ class PlotQA:
                     ctmp = cmap((z[ind_b][i] - cbrange[0]) / cbdelta)
 
                 delta = spaxel_size / 2.
-                rect = patches.Rectangle((self.xpos[ind_tmp][i] - delta,
+                rect = patches.Rectangle((-(self.xpos[ind_tmp][i] - delta),
                                          self.ypos[ind_tmp][i] - delta),
                                          width=spaxel_size, height=spaxel_size,
                                          color=ctmp)
                 ax.add_patch(rect)
                 # dummy plot for colorbar
-                p = ax.scatter(self.xpos[ind_tmp][0], self.ypos[ind_tmp][0],
+                p = ax.scatter(-self.xpos[ind_tmp][0], self.ypos[ind_tmp][0],
                                cmap=cmap, c=z[ind_b][0], s=0, vmin=cbrange[0],
                                vmax=cbrange[1])
         if spaxel_num:
