@@ -18,10 +18,19 @@ import os
 import sys
 import numpy as np
 
+
+
 try:
-    file_list_name = sys.argv[1]
+    file_list = sys.argv[1]
+    if len(sys.argv) == 3:
+        overwrite = sys.argv[2]
 except:
-    file_list_name = 'qa_file_list.txt'
+    file_list = 'qa_file_list.txt'
+    overwrite = False
+
+print()
+print('Overwrite file list:', overwrite)
+print()
 
 home = os.path.expanduser('~')
 manga_dap_ver = os.getenv('MANGADAP_VER')
@@ -60,6 +69,17 @@ for manga_id in manga_ids:
         files_out.append(it)
 
 
-np.savetxt(path_dap_ver_plots + file_list_name, np.array(files_out), fmt='%s')
-print('Wrote: %s' % path_dap_ver_plots + file_list_name)
 
+if not overwrite:
+    if not os.path.isfile(path_dap_ver_plots + file_list):
+        write = True
+    else:
+        write = False
+else:
+    write = True
+
+if write:
+    np.savetxt(path_dap_ver_plots + file_list, np.array(files_out), fmt='%s')
+    print('Wrote: %s' % path_dap_ver_plots + file_list)
+else:
+    print('%s already exists. Use overwrite keyword to remake it.' % file_list)

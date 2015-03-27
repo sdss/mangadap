@@ -8,6 +8,8 @@ DESCRIPTION
 
     Generate QA plots.
    
+    usage: python plot_qa_wrap.py [file_list] [overwrite=False] 
+
 """
 
 from __future__ import division
@@ -28,6 +30,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 import plot_qa
 from plot_qa import PlotQA
+from plot_qa import FitError
 
 
 dict_tmp = {}
@@ -49,12 +52,19 @@ else:
         return d.iteritems()
 
 
+
+
 try:
     file_list = sys.argv[1]
+    if len(sys.argv) == 3:
+        overwrite = sys.argv[2]
 except:
     file_list = 'qa_file_list.txt'
+    overwrite = False
 
-
+print()
+print('Overwrite plots:', overwrite)
+print()
 
 #----- Set Path and File Names -----
 home = os.path.expanduser('~')
@@ -64,7 +74,10 @@ path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
 path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
 path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
 
-print('Input file list: %s' % (path_dap_ver_plots + file_list))
+print('Input file list directory: %s' % (path_dap_ver_plots))
+print()
+print('Input file list: %s' % (file_list))
+print()
 files = np.genfromtxt(path_dap_ver_plots + file_list, dtype='str')
 files = np.atleast_1d(files)
 #-----------------------------------
@@ -78,7 +91,8 @@ for dap_file in files:
     #----- Read in galaxy ID and DAP parameters -----
     
     stem_file = dap_file.strip('.fits')
-    
+    done_file = stem_file + '.done'
+
     ig1, pid, ifudesign, mode_in, binning_type, exec_num = stem_file.split('-')
     
     manga_id = '-'.join([pid, ifudesign])
@@ -96,6 +110,13 @@ for dap_file in files:
             raise e
         pass
     
+    # check for done file
+    if not overwrite:
+        if os.path.isfile(path_galaxy_plots + done_file):
+            print('%-12s %-6s: Plots already exist.' % (manga_id, binning_type) + 
+                  '  Use overwrite keyword to remake them')
+            continue
+
     #------------------------------------------------- 
     
     
@@ -123,17 +144,20 @@ for dap_file in files:
     # Remove
     #reload(plot_qa)
     #from plot_qa import PlotQA
-    
-    qa = PlotQA(path_galaxy + dap_file)
-    print(manga_id, binning_type)
-    # print('Template Library:', qa.tpl_lib)
-    qa.select_wave_range()
-    qa.set_axis_lims()
-    qa.calc_chisq()
-    qa.calc_resid()
-    qa.calc_resid_data()
-    qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
-    
+    try:
+        qa = PlotQA(path_galaxy + dap_file)
+        print(manga_id, binning_type)
+        # print('Template Library:', qa.tpl_lib)
+        qa.select_wave_range()
+        qa.set_axis_lims()
+        qa.calc_chisq()
+        qa.calc_resid()
+        qa.calc_resid_data()
+        qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
+    except FitError:
+        print('\n%-12s %-6s: *NOT* fit by DAP\n' % (manga_id, binning_type))
+        continue
+
     #---------------------------------
     
     
@@ -152,29 +176,35 @@ for dap_file in files:
     chisq_args = dict(val=qa.chisq_bin,
                       kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
                                   cmap=qa.ch1_r,
-                                  title_text=r'$\chi_{\rm red}^2$'))
+                                  title_text=r'$\chi_{\rm red}^2$',
+                                  nodots=True))
     resid_args = dict(val=qa.resid_data_bin_percent99,
                       kwargs=dict(cblabel=r'99th percentile |resid| / galaxy',
                                   cmap=qa.ch1_r,
-                                  title_text='99th percentile |resid| / galaxy'))
+                                  title_text='99th percentile |resid| / galaxy',
+                                  nodots=True))
     stvel_args = dict(val=qa.stvel,
                       kwargs=dict(cblabel=r'v$_\star$ [km/s]',
                                   cmap=cm.coolwarm,
-                                  title_text=r'v$_\star$'))
+                                  title_text=r'v$_\star$',
+                                  nodots=True))
     stvdisp_args = dict(val=qa.stvdisp,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
                                     cmap=qa.ch1_r, 
-                                    title_text=r'$\sigma_\star$'))
+                                    title_text=r'$\sigma_\star$',
+                                  nodots=True))
     sth3_args = dict(val=qa.sth3,
                      kwargs=dict(cblabel='h3',
                                  cbrange_symmetric=True,
                                  cmap=cm.coolwarm,
-                                 title_text='h3'))
+                                 title_text='h3',
+                                  nodots=True))
     sth4_args = dict(val=qa.sth4,
                      kwargs=dict(cblabel='h4',
                                  cbrange_symmetric=True,
                                  cmap=cm.coolwarm,
-                                 title_text='h4'))
+                                 title_text='h4',
+                                  nodots=True))
     
     stkin_map_kwargs = dict(chisq=chisq_args,
                             resid=resid_args,
@@ -438,10 +468,11 @@ for dap_file in files:
     
     plt.close()
     print('Wrote: %s' % fout)
+
+    open(path_galaxy_plots + done_file, 'a').close()
     
     print('')
     #--------------
 
 #---------------------------------------------
-
 

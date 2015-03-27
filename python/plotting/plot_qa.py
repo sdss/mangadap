@@ -17,6 +17,7 @@ import numpy as np
 import copy
 
 from astropy.io import fits
+from astropy.stats import sigma_clip
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -55,6 +56,10 @@ else:
         return d.iteritems()
 
 
+class FitError(Exception):
+    pass
+
+
 class PlotQA:
     def __init__(self, filename):
         self.dap_file = filename
@@ -83,7 +88,6 @@ class PlotQA:
         self.model = fin[fin.index_of('SMOD')].data.T
         self.stfit = fin[fin.index_of('STFIT')].data
         self.smsk = fin[fin.index_of('SMSK')].data.T
-        self.stfit = fin[fin.index_of('STFIT')].data.T
         self.elopar = fin[fin.index_of('ELOPAR')].data.T
         self.elofit = fin[fin.index_of('ELOFIT')].data.T
         self.n_bins, self.n_pix = self.galaxy.shape
@@ -99,6 +103,9 @@ class PlotQA:
         (self.binxrl, self.binyru, self.binr, self.bina, self.binsn,
             self.nbin, self.binf) = \
             [self.bin_prop[name] for name in self.bin_prop.dtype.names]
+
+        if (self.model == 0.).all():
+            raise FitError
 
         # stellar kinematics
         self.tplw, self.addpoly, self.multpoly, self.kin, self.kinerr, \
@@ -398,6 +405,7 @@ class PlotQA:
                  flux=None,
                  cblabel=None,
                  cbrange=None,
+                 cbrange_clip=True,
                  cbrange_symmetric=False,
                  n_ticks=7,
                  cmap=cm.coolwarm,
@@ -448,9 +456,16 @@ class PlotQA:
 
         # colorbar range
         if len(z) == self.n_spaxels:
-            cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
+            ind_cb = ind_tmp
         elif len(z) == self.n_bins:
-            cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
+            ind_cb = ind_b
+
+        cbrange = [z[ind_cb].min(), z[ind_cb].max()]
+
+        # if len(z) == self.n_spaxels:
+        #     cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
+        # elif len(z) == self.n_bins:
+        #     cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
 
         if cbrange is None:
             cbrange = cbrange_tmp
@@ -458,9 +473,15 @@ class PlotQA:
             for i in range(len(cbrange)):
                 if cbrange[i] is None:
                     cbrange[i] = cbrange_tmp[i]
+
+        if cbrange_clip:
+            zclip = sigma_clip(z[ind_cb], sig=3)
+            cbrange = [zclip.min(), zclip.max()]
+
         if cbrange_symmetric:
             cb_max = np.max(np.abs(cbrange))
             cbrange = [-cb_max, cb_max]
+
         cbdelta = cbrange[1] - cbrange[0]
     
         # plot spaxels
