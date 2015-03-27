@@ -8,7 +8,7 @@ DESCRIPTION
 
     Generate QA plots.
    
-    usage: python plot_qa_wrap.py [file_list] [overwrite=False] 
+    usage: python plot_qa_wrap.py [file_list] [-overwrite] 
 
 """
 
@@ -52,12 +52,11 @@ else:
         return d.iteritems()
 
 
-
-
 try:
     file_list = sys.argv[1]
     if len(sys.argv) == 3:
-        overwrite = sys.argv[2]
+        if sys.argv[2] == '-overwrite':
+            overwrite = True
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False

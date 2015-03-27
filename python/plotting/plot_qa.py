@@ -452,7 +452,7 @@ class PlotQA:
         spaxel_size = 0.5 # arcsec
 
         if not nodots:
-            ax.plot(self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
+            ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
 
         # colorbar range
         if len(z) == self.n_spaxels:
@@ -487,7 +487,7 @@ class PlotQA:
         # plot spaxels
         if interpolated:
             levels = np.linspace(cbrange[0], cbrange[1], n_colors)
-            p = ax.tricontourf(self.binxrl, self.binyru, z, levels=levels,
+            p = ax.tricontourf(-self.binxrl, self.binyru, z, levels=levels,
                                cmap=cmap)
         else:
             for i in range(len(ind_tmp)):
@@ -498,7 +498,7 @@ class PlotQA:
                     ctmp = cmap((z[ind_b][i] - cbrange[0]) / cbdelta)
 
                 delta = spaxel_size / 2.
-                rect = patches.Rectangle((-(self.xpos[ind_tmp][i] - delta),
+                rect = patches.Rectangle((-(self.xpos[ind_tmp][i] + delta),
                                          self.ypos[ind_tmp][i] - delta),
                                          width=spaxel_size, height=spaxel_size,
                                          color=ctmp)
@@ -516,14 +516,14 @@ class PlotQA:
                 else:
                     fontsize_tmp = fontsize + 2
                 ctmp = cmap((z[i] - cbrange[0]) / cbdelta)
-                ax.text(self.binxrl[i] - (spaxel_size / 4),
+                ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
                         self.binyru[i] - (spaxel_size / 4),
                         str(i), fontsize=fontsize_tmp,
                         color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
 
         # overplot flux contours (which flux? in what band?)
         if flux is not None:
-            ax.tricontour(self.binxrl, self.binyru,
+            ax.tricontour(-self.binxrl, self.binyru,
                           -2.5*np.log10(flux/np.max(flux).ravel()),
                           levels=np.arange(20), colors='k') # 1 mag contours
 
