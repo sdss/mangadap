@@ -54,9 +54,8 @@ else:
 
 try:
     file_list = sys.argv[1]
-    if len(sys.argv) == 3:
-        if sys.argv[2] == '-overwrite':
-            overwrite = True
+    if '-overwrite' in sys.argv:
+        overwrite = True
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
@@ -162,70 +161,7 @@ for dap_file in files:
     
     
     #----- Plot Parameters -----
-    
-    #--- Stellar Kinematics Map Parameters ---
-    stkin_mapname = [
-      'chisq',
-      'stvel',
-      'stvdisp',
-      'resid',
-      'sth3',
-      'sth4',]
-    
-    chisq_args = dict(val=qa.chisq_bin,
-                      kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
-                                  cmap=qa.ch1_r,
-                                  title_text=r'$\chi_{\rm red}^2$',
-                                  nodots=True))
-    resid_args = dict(val=qa.resid_data_bin_percent99,
-                      kwargs=dict(cblabel=r'99th percentile |resid| / galaxy',
-                                  cmap=qa.ch1_r,
-                                  title_text='99th percentile |resid| / galaxy',
-                                  nodots=True))
-    stvel_args = dict(val=qa.stvel,
-                      kwargs=dict(cblabel=r'v$_\star$ [km/s]',
-                                  cmap=cm.coolwarm,
-                                  title_text=r'v$_\star$',
-                                  nodots=True))
-    stvdisp_args = dict(val=qa.stvdisp,
-                        kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
-                                    cmap=qa.ch1_r, 
-                                    title_text=r'$\sigma_\star$',
-                                  nodots=True))
-    sth3_args = dict(val=qa.sth3,
-                     kwargs=dict(cblabel='h3',
-                                 cbrange_symmetric=True,
-                                 cmap=cm.coolwarm,
-                                 title_text='h3',
-                                  nodots=True))
-    sth4_args = dict(val=qa.sth4,
-                     kwargs=dict(cblabel='h4',
-                                 cbrange_symmetric=True,
-                                 cmap=cm.coolwarm,
-                                 title_text='h4',
-                                  nodots=True))
-    
-    stkin_map_kwargs = dict(chisq=chisq_args,
-                            resid=resid_args,
-                            stvel=stvel_args,
-                            stvdisp=stvdisp_args,
-                            sth3=sth3_args,
-                            sth4=sth4_args)
-    
-    stkin_map_kwargs_interp = copy.deepcopy(stkin_map_kwargs)
-    for v in itervalues(stkin_map_kwargs_interp):
-        v['kwargs']['interpolated'] = True
-    
-    bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
-                              cmap=qa.cubehelix111_r,
-                              title_text=r'$\chi_{\rm red}^2$',
-                              nodots=True,
-                              spaxel_num=True,
-                              figsize=(15, 12))
-    
-    #----------------------------------------
-    
-    
+     
     #--- Emission Line Kinematics Map Parameters ---
     emkin_mapname = [
       'signal',
@@ -274,6 +210,83 @@ for dap_file in files:
                             emvdisp_halpha=emvdisp_halpha_args)
     #---------------------------------
     
+    #--- Stellar Kinematics Map Parameters ---
+    # stkin_mapname = [
+    #   'chisq',
+    #   'stvel',
+    #   'stvdisp',
+    #   'resid',
+    #   'sth3',
+    #   'sth4',]
+    stkin_mapname = [
+      'chisq',
+      'stvel',
+      'stvdisp',
+      'resid',
+      'emvel',
+      'emvdisp',]
+    
+    chisq_args = dict(val=qa.chisq_bin,
+                      kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
+                                  cmap=qa.ch1,
+                                  title_text=r'$\chi_{\rm red}^2$',
+                                  nodots=True))
+    resid_args = dict(val=qa.resid_data_bin_percent99,
+                      kwargs=dict(cblabel=r'99th percentile |resid| / galaxy',
+                                  cmap=qa.ch1,
+                                  title_text='99th percentile |resid| / galaxy',
+                                  nodots=True))
+    stvel_args = dict(val=qa.stvel,
+                      kwargs=dict(cblabel=r'v$_\star$ [km/s]',
+                                  cmap=cm.coolwarm,
+                                  title_text=r'v$_\star$',
+                                  nodots=True))
+    stvdisp_args = dict(val=qa.stvdisp,
+                        kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
+                                    cmap=qa.ch1, 
+                                    title_text=r'$\sigma_\star$',
+                                  nodots=True))
+    # sth3_args = dict(val=qa.sth3,
+    #                  kwargs=dict(cblabel='h3',
+    #                              cbrange_symmetric=True,
+    #                              cmap=cm.coolwarm,
+    #                              title_text='h3',
+    #                               nodots=True))
+    # sth4_args = dict(val=qa.sth4,
+    #                  kwargs=dict(cblabel='h4',
+    #                              cbrange_symmetric=True,
+    #                              cmap=cm.coolwarm,
+    #                              title_text='h4',
+    #                               nodots=True))
+    
+    # stkin_map_kwargs = dict(chisq=chisq_args,
+    #                         resid=resid_args,
+    #                         stvel=stvel_args,
+    #                         stvdisp=stvdisp_args,
+    #                         sth3=sth3_args,
+    #                         sth4=sth4_args)
+
+    stkin_map_kwargs = dict(chisq=chisq_args,
+                            resid=resid_args,
+                            stvel=stvel_args,
+                            stvdisp=stvdisp_args,
+                            emvel=emvel_args,
+                            emvdisp=emvdisp_args)
+    
+    stkin_map_kwargs_interp = copy.deepcopy(stkin_map_kwargs)
+    for v in itervalues(stkin_map_kwargs_interp):
+        v['kwargs']['interpolated'] = True
+    
+    bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
+                              cmap=qa.ch1,
+                              title_text=r'$\chi_{\rm red}^2$',
+                              nodots=True,
+                              spaxel_num=True,
+                              figsize=(15, 12))
+    
+    #----------------------------------------
+    
+   
     #--- Emission Line Fluxes Map Parameters ---
     emflux_mapname = [
       'oii3727',
@@ -327,7 +340,7 @@ for dap_file in files:
     
     #--- Spectra Parameters ----
     
-    lam_lim = [3600, 7000]
+    lam_lim = [3600, 9300]
     
     # set the same min and max flux for each spectrum
     p32 = np.array([np.percentile(qa.galaxy[i], 32) for i in range(qa.n_bins)])
@@ -459,7 +472,10 @@ for dap_file in files:
     with PdfPages(path_galaxy_plots + fout) as pdf:
         for bin in spec_to_plot:
             fig = qa.plot_resid(bin=bin, **resid_kwargs)
-            pdf.savefig(fig)
+            try:
+                pdf.savefig(fig)
+            except TypeError as e:
+                print('TypeError')
             plt.close()
             plt.clf()
             if bin % 25 == 0:

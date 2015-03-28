@@ -757,7 +757,7 @@ class PlotQA:
             if i == 0:
                 ax.set_title('%s bin %i' % (self.manga_id, bin))
                 ax.set_ylabel('Flux [10$^{-17}$ erg/s/cm$^2$]')
-                p.append(ax.plot(wave[ind], gal[bin][ind], color='gray')[0])
+                p.append(ax.plot(wave[ind], gal[bin][ind], color='#808080')[0])
                 y = models
 
             # residuals
@@ -776,7 +776,7 @@ class PlotQA:
             
             for j in range(n_models):
                 p.append(ax.plot(wave[ind_mod[j]], y[j][bin][ind_mod[j]],
-                         color=c[j], **kwargs)[0])
+                         color=c[j])[0])
                 if i == 0:
                     plt.legend(p, ['galaxy'] + leg_lab, loc=2)
 
