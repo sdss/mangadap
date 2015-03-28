@@ -460,12 +460,16 @@ class PlotQA:
         elif len(z) == self.n_bins:
             ind_cb = ind_b
 
-        cbrange = [z[ind_cb].min(), z[ind_cb].max()]
+        cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
 
         # if len(z) == self.n_spaxels:
         #     cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
         # elif len(z) == self.n_bins:
         #     cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
+
+        if cbrange_clip:
+            zclip = sigma_clip(z[ind_cb], sig=3)
+            cbrange_tmp = [zclip.min(), zclip.max()]
 
         if cbrange is None:
             cbrange = cbrange_tmp
@@ -474,17 +478,11 @@ class PlotQA:
                 if cbrange[i] is None:
                     cbrange[i] = cbrange_tmp[i]
 
-        if cbrange_clip:
-            zclip = sigma_clip(z[ind_cb], sig=3)
-            cbrange = [zclip.min(), zclip.max()]
-
         if cbrange_symmetric:
             cb_max = np.max(np.abs(cbrange))
             cbrange = [-cb_max, cb_max]
 
         cbdelta = cbrange[1] - cbrange[0]
-
-        print('cbrange:', cbrange)
 
         # plot spaxels
         if interpolated:
