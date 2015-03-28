@@ -193,6 +193,7 @@ for dap_file in files:
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
+                                 cbrange=[35, 150],
                                  cmap=qa.ch1,
                                  title_text=r'$\sigma_{\rm gas}$ (Enci)',
                                  nodots=True))
@@ -243,6 +244,7 @@ for dap_file in files:
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
+                                    cbrange=[35, 150],
                                     cmap=qa.ch1, 
                                     title_text=r'$\sigma_\star$',
                                   nodots=True))
@@ -402,11 +404,11 @@ for dap_file in files:
     #plot_map = False
     if plot_map:
     
-        # Plot bin numbers on top of chisq map
-        qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
-        fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
-        print('Wrote: %s' % fout)
+        # # Plot bin numbers on top of chisq map
+        # qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
+        # fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
+        # plt.savefig(path_galaxy_plots + fout)
+        # print('Wrote: %s' % fout)
         
         # Plot binned maps of chisq, resid/galaxy, stellar kinematics
         qa.plot_multi_map(stkin_mapname, stkin_map_kwargs)
@@ -414,26 +416,26 @@ for dap_file in files:
         plt.savefig(path_galaxy_plots + fout)
         print('Wrote: %s' % fout)
         
-        # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
-        qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
-        fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
-        print('Wrote: %s' % fout)
-        
-        # Plot binned maps of signal to noise and emission line kinematics
-        qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
-        fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
-        print('Wrote: %s' % fout)
-        
-        # Plot binned maps of signal to noise and emission line kinematics
-        qa.plot_multi_map(emkin_mapname, emkin_map_kwargs)
-        fout =  ('_').join([stem_file, 'emkin', 'maps']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
-        print('Wrote: %s' % fout)
+        # # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
+        # qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
+        # fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
+        # plt.savefig(path_galaxy_plots + fout)
+        # print('Wrote: %s' % fout)
+        # 
+        # # Plot binned maps of signal to noise and emission line kinematics
+        # qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
+        # fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
+        # plt.savefig(path_galaxy_plots + fout)
+        # print('Wrote: %s' % fout)
+        # 
+        # # Plot binned maps of signal to noise and emission line kinematics
+        # qa.plot_multi_map(emkin_mapname, emkin_map_kwargs)
+        # fout =  ('_').join([stem_file, 'emkin', 'maps']) + '.png'
+        # plt.savefig(path_galaxy_plots + fout)
+        # print('Wrote: %s' % fout)
     
     
-    #overplot_all = False
+    overplot_all = False
     if overplot_all:
     
         # Overplot all residuals (observed frame)
@@ -461,28 +463,28 @@ for dap_file in files:
         print('Wrote: %s' % fout)
         
     
-    # Plot spectra individually (one file)
-    if plot_all_spec_as_pdf:
-        spec_to_plot = np.arange(qa.n_bins)
-    else:
-        spec_to_plot = np.arange(0, qa.n_bins, 10)
-    
-    fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
-    print('Writing: %s ...' % fout)
-    with PdfPages(path_galaxy_plots + fout) as pdf:
-        for bin in spec_to_plot:
-            fig = qa.plot_resid(bin=bin, **resid_kwargs)
-            try:
-                pdf.savefig(fig)
-            except TypeError as e:
-                print('TypeError')
-            plt.close()
-            plt.clf()
-            if bin % 25 == 0:
-                print('    bin %s...done' % bin)
-    
-    plt.close()
-    print('Wrote: %s' % fout)
+    # # Plot spectra individually (one file)
+    # if plot_all_spec_as_pdf:
+    #     spec_to_plot = np.arange(qa.n_bins)
+    # else:
+    #     spec_to_plot = np.arange(0, qa.n_bins, 10)
+    # 
+    # fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
+    # print('Writing: %s ...' % fout)
+    # with PdfPages(path_galaxy_plots + fout) as pdf:
+    #     for bin in spec_to_plot:
+    #         fig = qa.plot_resid(bin=bin, **resid_kwargs)
+    #         try:
+    #             pdf.savefig(fig)
+    #         except TypeError as e:
+    #             print('TypeError')
+    #         plt.close()
+    #         plt.clf()
+    #         if bin % 25 == 0:
+    #             print('    bin %s...done' % bin)
+    # 
+    # plt.close()
+    # print('Wrote: %s' % fout)
 
     open(path_galaxy_plots + done_file, 'a').close()
     

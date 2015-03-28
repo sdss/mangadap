@@ -483,7 +483,9 @@ class PlotQA:
             cbrange = [-cb_max, cb_max]
 
         cbdelta = cbrange[1] - cbrange[0]
-    
+
+        print('cbrange:', cbrange)
+
         # plot spaxels
         if interpolated:
             levels = np.linspace(cbrange[0], cbrange[1], n_colors)
