@@ -487,8 +487,9 @@ class PlotQA:
         # plot spaxels
         if interpolated:
             levels = np.linspace(cbrange[0], cbrange[1], n_colors)
-            p = ax.tricontourf(-self.binxrl, self.binyru, z, levels=levels,
-                               cmap=cmap)
+            # do I want [ind_cb] here?
+            p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
+                               z[ind_cb], levels=levels, cmap=cmap)
         else:
             for i in range(len(ind_tmp)):
 

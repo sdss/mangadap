@@ -90,7 +90,7 @@ for dap_file in files:
     
     stem_file = dap_file.strip('.fits')
     done_file = stem_file + '.done'
-
+    
     ig1, pid, ifudesign, mode_in, binning_type, exec_num = stem_file.split('-')
     
     manga_id = '-'.join([pid, ifudesign])
@@ -114,7 +114,7 @@ for dap_file in files:
             print('%-12s %-6s: Plots already exist.' % (manga_id, binning_type) + 
                   '  Use overwrite keyword to remake them')
             continue
-
+    
     #------------------------------------------------- 
     
     
@@ -155,7 +155,7 @@ for dap_file in files:
     except FitError:
         print('\n%-12s %-6s: *NOT* fit by DAP\n' % (manga_id, binning_type))
         continue
-
+    
     #---------------------------------
     
     
@@ -267,7 +267,7 @@ for dap_file in files:
     #                         stvdisp=stvdisp_args,
     #                         sth3=sth3_args,
     #                         sth4=sth4_args)
-
+    
     stkin_map_kwargs = dict(chisq=chisq_args,
                             resid=resid_args,
                             stvel=stvel_args,
@@ -278,6 +278,7 @@ for dap_file in files:
     stkin_map_kwargs_interp = copy.deepcopy(stkin_map_kwargs)
     for v in itervalues(stkin_map_kwargs_interp):
         v['kwargs']['interpolated'] = True
+        #v['kwargs']['cbrange_clip'] = False
     
     bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
                               cmap=qa.ch1,
@@ -288,7 +289,7 @@ for dap_file in files:
     
     #----------------------------------------
     
-   
+    
     #--- Emission Line Fluxes Map Parameters ---
     emflux_mapname = [
       'oii3727',
@@ -404,17 +405,17 @@ for dap_file in files:
     #plot_map = False
     if plot_map:
     
-        # # Plot bin numbers on top of chisq map
-        # qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
-        # fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
-        # plt.savefig(path_galaxy_plots + fout)
-        # print('Wrote: %s' % fout)
+        # Plot bin numbers on top of chisq map
+        qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
+        fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
+        plt.savefig(path_galaxy_plots + fout)
+        print('Wrote: %s' % fout)
         
-        # # Plot binned maps of chisq, resid/galaxy, stellar kinematics
-        # qa.plot_multi_map(stkin_mapname, stkin_map_kwargs)
-        # fout =  ('_').join([stem_file, 'stkin', 'maps']) + '.png'
-        # plt.savefig(path_galaxy_plots + fout)
-        # print('Wrote: %s' % fout)
+        # Plot binned maps of chisq, resid/galaxy, stellar kinematics
+        qa.plot_multi_map(stkin_mapname, stkin_map_kwargs)
+        fout =  ('_').join([stem_file, 'stkin', 'maps']) + '.png'
+        plt.savefig(path_galaxy_plots + fout)
+        print('Wrote: %s' % fout)
         
         # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
         qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
@@ -427,15 +428,15 @@ for dap_file in files:
         fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
         plt.savefig(path_galaxy_plots + fout)
         print('Wrote: %s' % fout)
-        # 
-        # # Plot binned maps of signal to noise and emission line kinematics
-        # qa.plot_multi_map(emkin_mapname, emkin_map_kwargs)
-        # fout =  ('_').join([stem_file, 'emkin', 'maps']) + '.png'
-        # plt.savefig(path_galaxy_plots + fout)
-        # print('Wrote: %s' % fout)
+        
+        # Plot binned maps of signal to noise and emission line kinematics
+        qa.plot_multi_map(emkin_mapname, emkin_map_kwargs)
+        fout =  ('_').join([stem_file, 'emkin', 'maps']) + '.png'
+        plt.savefig(path_galaxy_plots + fout)
+        print('Wrote: %s' % fout)
     
     
-    overplot_all = False
+    #overplot_all = False
     if overplot_all:
     
         # Overplot all residuals (observed frame)
@@ -462,9 +463,10 @@ for dap_file in files:
         plt.savefig(path_galaxy_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
-
-    plot_spec_pdf = False
+    
+    plot_spec_pdf = True #False
     if plot_spec_pdf:
+    
         # Plot spectra individually (one file)
         if plot_all_spec_as_pdf:
             spec_to_plot = np.arange(qa.n_bins)
@@ -494,4 +496,6 @@ for dap_file in files:
     #--------------
 
 #---------------------------------------------
+
+
 
