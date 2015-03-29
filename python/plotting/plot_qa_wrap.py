@@ -189,13 +189,13 @@ for dap_file in files:
     emvel_args = dict(val=qa.emvel_ew,
                       kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
                                   cmap=cm.coolwarm,
-                                  title_text=r'v$_{\rm gas}$ (Enci)',
+                                  title_text=r'v_gas (Enci)',
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
                                  cbrange=[35, 150],
                                  cmap=qa.ch1,
-                                 title_text=r'$\sigma_{\rm gas}$ (Enci)',
+                                 title_text=r'$\sigma$_gas (Enci)',
                                  nodots=True))
     emvdisp_halpha_args = dict(val=qa.emvdisp_halpha_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm inst}$ H$\alpha$ [km/s]',
@@ -233,20 +233,20 @@ for dap_file in files:
                                   title_text=r'$\chi_{\rm red}^2$',
                                   nodots=True))
     resid_args = dict(val=qa.resid_data_bin_percent99,
-                      kwargs=dict(cblabel=r'99th percentile |resid| / galaxy',
+                      kwargs=dict(cblabel='99th percentile |resid| / galaxy',
                                   cmap=qa.ch1,
                                   title_text='99th percentile |resid| / galaxy',
                                   nodots=True))
     stvel_args = dict(val=qa.stvel,
-                      kwargs=dict(cblabel=r'v$_\star$ [km/s]',
+                      kwargs=dict(cblabel=r'$v_\star$ [km/s]',
                                   cmap=cm.coolwarm,
-                                  title_text=r'v$_\star$',
+                                  title_text=r'v_star',
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
                                     cbrange=[35, 150],
                                     cmap=qa.ch1, 
-                                    title_text=r'$\sigma_\star$',
+                                    title_text=r'$\sigma$_star',
                                   nodots=True))
     # sth3_args = dict(val=qa.sth3,
     #                  kwargs=dict(cblabel='h3',
@@ -410,23 +410,23 @@ for dap_file in files:
         # plt.savefig(path_galaxy_plots + fout)
         # print('Wrote: %s' % fout)
         
-        # Plot binned maps of chisq, resid/galaxy, stellar kinematics
-        qa.plot_multi_map(stkin_mapname, stkin_map_kwargs)
-        fout =  ('_').join([stem_file, 'stkin', 'maps']) + '.png'
+        # # Plot binned maps of chisq, resid/galaxy, stellar kinematics
+        # qa.plot_multi_map(stkin_mapname, stkin_map_kwargs)
+        # fout =  ('_').join([stem_file, 'stkin', 'maps']) + '.png'
+        # plt.savefig(path_galaxy_plots + fout)
+        # print('Wrote: %s' % fout)
+        
+        # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
+        qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
+        fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
         plt.savefig(path_galaxy_plots + fout)
         print('Wrote: %s' % fout)
         
-        # # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
-        # qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
-        # fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
-        # plt.savefig(path_galaxy_plots + fout)
-        # print('Wrote: %s' % fout)
-        # 
-        # # Plot binned maps of signal to noise and emission line kinematics
-        # qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
-        # fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
-        # plt.savefig(path_galaxy_plots + fout)
-        # print('Wrote: %s' % fout)
+        # Plot binned maps of emission line fluxes
+        qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
+        fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
+        plt.savefig(path_galaxy_plots + fout)
+        print('Wrote: %s' % fout)
         # 
         # # Plot binned maps of signal to noise and emission line kinematics
         # qa.plot_multi_map(emkin_mapname, emkin_map_kwargs)
@@ -462,30 +462,32 @@ for dap_file in files:
         plt.savefig(path_galaxy_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
-    
-    # # Plot spectra individually (one file)
-    # if plot_all_spec_as_pdf:
-    #     spec_to_plot = np.arange(qa.n_bins)
-    # else:
-    #     spec_to_plot = np.arange(0, qa.n_bins, 10)
-    # 
-    # fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
-    # print('Writing: %s ...' % fout)
-    # with PdfPages(path_galaxy_plots + fout) as pdf:
-    #     for bin in spec_to_plot:
-    #         fig = qa.plot_resid(bin=bin, **resid_kwargs)
-    #         try:
-    #             pdf.savefig(fig)
-    #         except TypeError as e:
-    #             print('TypeError')
-    #         plt.close()
-    #         plt.clf()
-    #         if bin % 25 == 0:
-    #             print('    bin %s...done' % bin)
-    # 
-    # plt.close()
-    # print('Wrote: %s' % fout)
 
+    plot_spec_pdf = False
+    if plot_spec_pdf:
+        # Plot spectra individually (one file)
+        if plot_all_spec_as_pdf:
+            spec_to_plot = np.arange(qa.n_bins)
+        else:
+            spec_to_plot = np.arange(0, qa.n_bins, 10)
+        
+        fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
+        print('Writing: %s ...' % fout)
+        with PdfPages(path_galaxy_plots + fout) as pdf:
+            for bin in spec_to_plot:
+                fig = qa.plot_resid(bin=bin, **resid_kwargs)
+                try:
+                    pdf.savefig(fig)
+                except TypeError as e:
+                    print('TypeError')
+                plt.close()
+                plt.clf()
+                if bin % 25 == 0:
+                    print('    bin %s...done' % bin)
+        
+        plt.close()
+        print('Wrote: %s' % fout)
+    
     open(path_galaxy_plots + done_file, 'a').close()
     
     print('')

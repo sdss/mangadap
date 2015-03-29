@@ -371,9 +371,9 @@ class PlotQA:
         bigAxes = fig.add_axes([0.04, 0.05, 0.9, 0.88], frameon=False)
         bigAxes.set_xticks([])
         bigAxes.set_yticks([])
-        bigAxes.set_xlabel('arcsec')
-        bigAxes.set_ylabel('arcsec')
-        bigAxes.set_title(self.manga_id)
+        bigAxes.set_xlabel('arcsec', fontsize=20)
+        bigAxes.set_ylabel('arcsec', fontsize=20)
+        bigAxes.set_title(self.manga_id, fontsize=20)
 
         for i in range(n_ax):
             dx = 0.31 * i
@@ -438,7 +438,7 @@ class PlotQA:
             ax.set_ylabel('arcsec')
 
         if title_text is not None:
-            ax.set_title(title_text)
+            ax.set_title(title_text, fontsize=20)
 
         if not seaborn_installed:
             ax.set_axis_bgcolor('#A8A8A8')
