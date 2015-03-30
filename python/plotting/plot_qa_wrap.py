@@ -56,6 +56,8 @@ try:
     file_list = sys.argv[1]
     if '-overwrite' in sys.argv:
         overwrite = True
+    else:
+        overwrite = False
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
