@@ -7,6 +7,8 @@ FILE
 DESCRIPTION
 
     Make a list of files that plot_qa_wrap.py will process.
+
+    Usage: python make_qa_file_list [-overwrite]
    
 """
 
@@ -16,14 +18,17 @@ from __future__ import absolute_import
 
 import os
 import sys
+import errno
 import numpy as np
 
 
 
 try:
     file_list = sys.argv[1]
-    if len(sys.argv) == 3:
-        overwrite = sys.argv[2]
+    if '-overwrite' in sys.argv:
+        overwrite = True
+    else:
+        overwrite = False
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
@@ -68,6 +73,14 @@ for manga_id in manga_ids:
     for it in files:
         files_out.append(it)
 
+
+try:
+    os.makedirs(path_dap_ver_plots)
+    print('\nCreated directory: %s\n' % path_dap_ver_plots)
+except OSError as e:
+    if e.errno != errno.EEXIST:
+        raise e
+    pass
 
 
 if not overwrite:
