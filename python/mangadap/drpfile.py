@@ -253,7 +253,7 @@ class drpfile:
         self.w = None                   # WCS structure
 
         if read:
-            self._open_hdu()
+            self.open_hdu()
         
 
     def __del__(self):
@@ -266,22 +266,6 @@ class drpfile:
         self.hdu.close()
         self.hdu = None
 
-
-    def _open_hdu(self):
-        """
-        Internal support routine used to gather header information from
-        the file.
-        """
-        if self.hdu is not None:
-            return
-
-        inp = self.file_path()
-        if (not os.path.exists(inp)):
-            raise Exception('Cannot open file: {0}'.format(inp))
-
-        # Open the fits file, but do NOT allow the file to be
-        # overwritten
-        self.hdu = fits.open(inp, mode='readonly')
 
 # MOVED outside class definition
 #   def _default_drp_version(self):
@@ -428,7 +412,7 @@ class drpfile:
         """
 
         # Make sure that the fits file is ready for reading
-        self._open_hdu()
+        self.open_hdu()
 
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
@@ -559,7 +543,7 @@ class drpfile:
 
 
     def _fix_header(self):
-        self._open_hdu()
+        self.open_hdu()
 
         # So that astropy 0.4.4 wcs can read the first two dimensions of
         # the WCS header values
@@ -593,18 +577,35 @@ class drpfile:
         return os.path.join(self.directory_path, 'images', str(self.ifudesign)+'.png')
 
 
+    def open_hdu(self):
+        """
+        Internal support routine used to gather header information from
+        the file.
+        """
+        if self.hdu is not None:
+            return
+
+        inp = self.file_path()
+        if (not os.path.exists(inp)):
+            raise Exception('Cannot open file: {0}'.format(inp))
+
+        # Open the fits file, but do NOT allow the file to be
+        # overwritten
+        self.hdu = fits.open(inp, mode='readonly')
+
+
     def object_data(self):
         """
         Return some selected object data from the fits file header.
         """
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['MANGAID'], self.hdu[0].header['OBJRA'], \
                self.hdu[0].header['OBJDEC']
 
 
     def object_coo(self):
         """Return the object coordinates read from the fits header"""
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['OBJRA'], self.hdu[0].header['OBJDEC']
 
 
@@ -943,7 +944,7 @@ class drpfile:
                 raise Exception('Must use default pixel scale, rlim, and sigma to get '
                                 + 'wavelength-channel image for DRP-produced CUBE files.')
 
-            self._open_hdu()
+            self.open_hdu()
             return numpy.transpose(self.hdu['FLUX'].data[channel,:,:])
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
@@ -1105,7 +1106,7 @@ class drpfile:
             return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, \
                                         sigma_rho, csr, quiet)
 
-        self._open_hdu()
+        self.open_hdu()
 
         if channels is None:
             nc = self.hdu['FLUX'].data.shape[1]     # The number of wavelength channels

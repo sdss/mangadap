@@ -159,7 +159,7 @@ class dapfile:
         self.par = None
 
         if read:
-            self._open_hdu()
+            self.open_hdu()
 
 
     def __del__(self):
@@ -173,7 +173,29 @@ class dapfile:
         self.hdu = None
 
 
-    def _open_hdu(self, permissions='readonly'):
+    def _read_par(self):
+        if self.par is not None:
+            return
+
+        if not os.path.exists(self.par_file):
+            raise Exception('Cannot open file: {0}'.format(inp))
+            
+        self.par = yanny(filename=self.par_file, np=True)
+
+    
+    def _twod_image_data(self, exten, indx):
+        self.open_hdu()
+        try:
+            data = self.hdu[exten].data[:,indx]
+        except IndexError as e:
+            print_frame('IndexError')
+            print('{0}'.format(e))
+            return None
+        else:
+            return data
+    
+    
+    def open_hdu(self, permissions='readonly'):
         """
         Internal support routine used to gather header information from
         the file.
@@ -188,62 +210,6 @@ class dapfile:
         # Open the fits file with the requested read/write permission
         self.hdu = fits.open(inp, mode=permissions)
 
-    
-    def _read_par(self):
-        if self.par is not None:
-            return
-
-        if not os.path.exists(self.par_file):
-            raise Exception('Cannot open file: {0}'.format(inp))
-            
-        self.par = yanny(filename=self.par_file, np=True)
-
-# MOVED outside dap class
-#   def _default_dap_version(self):
-#       """
-#       Return the DAP version defined by the environmental variable.
-#       """
-#       return environ['MANGADAP_VER']
-#
-#
-#   def _default_analysis_path(self):
-#       """Return the directory path used by the DAP."""
-#
-#       # Make sure the DRP version is set
-#       if self.dapver is None:
-#           self.dapver = self._default_dap_version()
-#
-#       return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
-#
-#
-#   def _default_directory_path(self):
-#       """Return the directory path used by the DAP."""
-#
-#       # Make sure the DRP version is set
-#       if self.analysis_path is None:
-#           self.analysis_path = self._default_analysis_path()
-#
-#       return os.path.join(self.analysis_path, str(self.plate), str(self.ifudesign))
-#
-#
-#   def _default_par_file(self):
-#       if self.directory_path is None:
-#           self.directory_path = self._default_directory_path()
-#       par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(self.plate, self.ifudesign, self.mode)
-#       return os.path.join(self.directory_path, par_file)
-
-    
-    def _twod_image_data(self, exten, indx):
-        self._open_hdu()
-        try:
-            data = self.hdu[exten].data[:,indx]
-        except IndexError as e:
-            print_frame('IndexError')
-            print('{0}'.format(e))
-            return None
-        else:
-            return data
-    
     
     def file_name(self):
         """Return the name of the DAP file"""
@@ -261,36 +227,36 @@ class dapfile:
 
     def header(self):
         """Return the primary header"""
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header
 
 
     def sn_stats(self):
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['SNWAVE1'], self.hdu[0].header['SNWAVE2'], \
                self.hdu[0].header['MINSNBIN']
 
 
     def spaxel_size(self):
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['SPAXDX'], self.hdu[0].header['SPAXDY']
 
 
     def bin_ston(self):
         if self.bintype is not 'STON':
             raise Exception('Binning type was not STON!')
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['BINSN']
 
 
     def analysis_stats(self):
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu[0].header['FITWAVE1'], self.hdu[0].header['FITWAVE2'], \
                self.hdu[0].header['MINSNFIT']
 
 
     def table_column(self, exten, col):
-        self._open_hdu()
+        self.open_hdu()
         try:
             data = self.hdu[exten].data[col]
         except KeyError as e:
@@ -302,7 +268,7 @@ class dapfile:
 
     
     def bin_wavelength(self):
-        self._open_hdu()
+        self.open_hdu()
         return self.hdu['WAVE'].data
 
 
@@ -339,7 +305,7 @@ class dapfile:
         return self._twod_image_data('ELOMFB', indx)
 
 
-    def bin_disk_polar_coo(self, xc=None, yc=None, rot=None, pa=None, inc=None):
+    def bin_disk_polar_coo(self, xc=None, yc=None, rot=None, pa=None, inc=None, flip=False):
 
         # Position angle and inclination
         if pa is None or inc is None:
@@ -350,7 +316,7 @@ class dapfile:
 
             if self.par is not None:
                 if pa is None:
-                    pa = self.guess_position_angle()
+                    pa = self.guess_position_angle(flip)
                 if inc is None:
                     inc = self.guess_inclination()
 
@@ -358,7 +324,7 @@ class dapfile:
         disk_plane = projected_disk_plane(xc, yc, rot, pa, inc)
 
         # Calculate the in-plane radius and azimuth for each bin
-        self._open_hdu()
+        self.open_hdu()
         nbin = self.hdu['BINS'].data['BINXRL'].size
         radius = numpy.zeros(nbin, dtype=numpy.float64)
         azimuth = numpy.zeros(nbin, dtype=numpy.float64)
@@ -379,10 +345,14 @@ class dapfile:
         return numpy.degrees( numpy.arccos(1.0 - self.par['DAPPAR']['ell'][0]) )
 
 
-    def guess_position_angle(self):
+    def guess_position_angle(self, flip=False):
         self._read_par()
-        return self.par['DAPPAR']['pa'][0]
+        pa = self.par['DAPPAR']['pa'][0] if not flip else self.par['DAPPAR']['pa'][0] + 180
+        return pa if pa < 360 else pa-360
         
+    def effective_radius(self):
+        self._read_par()
+        return self.par['DAPPAR']['reff'][0]
 
 
 
