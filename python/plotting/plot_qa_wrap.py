@@ -8,7 +8,8 @@ DESCRIPTION
 
     Generate QA plots.
    
-    usage: python plot_qa_wrap.py [file_list] [-overwrite] 
+    usage: python plot_qa_wrap.py [file_list] [-overwrite] [-no_plot_spec_pdf]
+    [-no_stkin_interp]
 
 """
 
@@ -58,9 +59,19 @@ try:
         overwrite = True
     else:
         overwrite = False
+    if '-no_plot_spec_pdf':
+        plot_spec_pdf = False
+    else:
+        plot_spec_pdf = True
+    if '-no_stkin_interp':
+        stkin_interp = False
+    else:
+        stkin_interp = True
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
+    plot_spec_pdf = True
+    stkin_interp = True
 
 print()
 print('Overwrite plots:', overwrite)
@@ -419,11 +430,12 @@ for dap_file in files:
         plt.savefig(path_galaxy_plots + fout)
         print('Wrote: %s' % fout)
         
-        # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
-        qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
-        fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
-        print('Wrote: %s' % fout)
+        if stkin_interp:
+            # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
+            qa.plot_multi_map(stkin_mapname, stkin_map_kwargs_interp)
+            fout =  ('_').join([stem_file, 'stkin', 'maps', 'interp']) + '.png'
+            plt.savefig(path_galaxy_plots + fout)
+            print('Wrote: %s' % fout)
         
         # Plot binned maps of emission line fluxes
         qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
@@ -466,14 +478,14 @@ for dap_file in files:
         print('Wrote: %s' % fout)
         
     
-    plot_spec_pdf = True #False
+    plot_spec_pdf = False
     if plot_spec_pdf:
     
         # Plot spectra individually (one file)
         if plot_all_spec_as_pdf:
             spec_to_plot = np.arange(qa.n_bins)
         else:
-            spec_to_plot = np.arange(0, qa.n_bins, 10)
+            spec_to_plot = np.arange(0, qa.n_bins, 50)
         
         fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
         print('Writing: %s ...' % fout)

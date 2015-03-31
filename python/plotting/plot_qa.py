@@ -134,6 +134,19 @@ class PlotQA:
         fin.close()
 
 
+    # def read_val(self, extname, colname=None):
+    #     fin = fits.open(self.dap_file)
+    #     extval = fin[fin.index_of(extname)].data
+    #     fin.close()
+    # 
+    #     if colname is not None:
+    #         value = extval[colname]
+    #     else:
+    #         value = extval
+    # 
+    #     return value
+ 
+
     def deredshift(self):
         c = 299792.458
         self.v_star = np.array([item[3][0] for item in self.stfit]) 
