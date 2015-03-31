@@ -478,7 +478,7 @@ for dap_file in files:
         print('Wrote: %s' % fout)
         
     
-    plot_spec_pdf = False
+    #plot_spec_pdf = False
     if plot_spec_pdf:
     
         # Plot spectra individually (one file)
