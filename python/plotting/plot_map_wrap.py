@@ -112,9 +112,8 @@ for dap_file in files:
     
     
     #----- Plot -----
-    # Remove
-    reload(plot_qa)
-    from plot_qa import PlotQA
+    # reload(plot_qa)
+    # from plot_qa import PlotQA
     
     qa = PlotQA(path_galaxy + dap_file)
     print(manga_id, binning_type)
@@ -122,6 +121,8 @@ for dap_file in files:
     qa.set_axis_lims()
     qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
     
+
+    # change mapval to quantity of your choosing
     mapval = qa.__dict__[parname]
     
     
