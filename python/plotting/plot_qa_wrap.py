@@ -206,7 +206,7 @@ for dap_file in files:
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
-                                 cbrange=[35, 150],
+                                 #cbrange=[35, 150],
                                  cmap=qa.ch1,
                                  title_text=r'$\sigma$_gas (Enci)',
                                  nodots=True))
@@ -257,7 +257,7 @@ for dap_file in files:
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
-                                    cbrange=[35, 150],
+                                    #cbrange=[35, 150],
                                     cmap=qa.ch1, 
                                     title_text=r'$\sigma$_star',
                                   nodots=True))
