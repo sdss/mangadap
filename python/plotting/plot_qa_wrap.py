@@ -59,11 +59,11 @@ try:
         overwrite = True
     else:
         overwrite = False
-    if '-no_plot_spec_pdf':
+    if '-no_plot_spec_pdf' in sys.argv:
         plot_spec_pdf = False
     else:
         plot_spec_pdf = True
-    if '-no_stkin_interp':
+    if '-no_stkin_interp' in sys.argv:
         stkin_interp = False
     else:
         stkin_interp = True
