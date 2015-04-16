@@ -121,9 +121,7 @@ class dapfile:
                                 os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
                                  self.dapver)
 
-            directory_path - 
-            
-                             Exact path the DAP file.  If not provided,
+            directory_path - Exact path the DAP file.  If not provided,
                              the default is:
                                os.path.join(self.analysis_path, str(self.plate),
                                             str(self.ifudesign))
@@ -173,16 +171,6 @@ class dapfile:
         self.hdu = None
 
 
-    def _read_par(self):
-        if self.par is not None:
-            return
-
-        if not os.path.exists(self.par_file):
-            raise Exception('Cannot open file: {0}'.format(inp))
-            
-        self.par = yanny(filename=self.par_file, np=True)
-
-    
     def _twod_image_data(self, exten, indx):
         self.open_hdu()
         try:
@@ -209,6 +197,16 @@ class dapfile:
 
         # Open the fits file with the requested read/write permission
         self.hdu = fits.open(inp, mode=permissions)
+
+
+    def read_par(self):
+        if self.par is not None:
+            return
+
+        if not os.path.exists(self.par_file):
+            raise Exception('Cannot open file: {0}'.format(inp))
+            
+        self.par = yanny(filename=self.par_file, np=True)
 
     
     def file_name(self):
@@ -310,7 +308,7 @@ class dapfile:
         # Position angle and inclination
         if pa is None or inc is None:
             try:
-                self._read_par()                # Try to read the parameter file
+                self.read_par()                # Try to read the parameter file
             except:
                 print('WARNING: Using default pa and/or inclination.')
 
@@ -336,23 +334,28 @@ class dapfile:
 
     
     def guess_cz(self):
-        self._read_par()
+        self.read_par()
         return self.par['DAPPAR']['vel'][0]
 
 
     def guess_inclination(self):
-        self._read_par()
+        self.read_par()
         return numpy.degrees( numpy.arccos(1.0 - self.par['DAPPAR']['ell'][0]) )
 
 
     def guess_position_angle(self, flip=False):
-        self._read_par()
+        self.read_par()
         pa = self.par['DAPPAR']['pa'][0] if not flip else self.par['DAPPAR']['pa'][0] + 180
         return pa if pa < 360 else pa-360
-        
+       
+
     def effective_radius(self):
-        self._read_par()
+        self.read_par()
         return self.par['DAPPAR']['reff'][0]
+
+    def nsa_ellipticity(self):
+        self.read_par()
+        return self.par['DAPPAR']['ell'][0]
 
 
 
