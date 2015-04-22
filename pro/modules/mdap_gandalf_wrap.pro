@@ -486,8 +486,17 @@ END
 ; Save the output kinematics to an array of a fixed size
 ; TODO: Does not check that the input from pPXF has the correct size
 PRO MDAP_SAVE_STAR_KIN, $
-                sol_in, sol_out, voff, moments=moments, chi=chi
+                sol_in, sol_out, voff, moments=moments, chi=chi, err=err
+
         max_ppxf_moments=6
+
+        if keyword_set(err) then begin
+            sol_out = sol_in[0:moments-1]
+            for i=0,max_ppxf_moments-moments do $
+                sol_out = [ sol_out, -1.0 ]
+            return
+        endif
+
         sol_out = sol_in[0:max_ppxf_moments-1]
         sol_out[0] = sol_in[0]-voff
         if keyword_set(chi) then $
@@ -516,7 +525,7 @@ PRO MDAP_GANDALFW_DEFAULT, $
 
         fitted_pixels_gndf=-1                           ; No pixels fitted by GANDALF
         weights_gndf = dblarr(ntpl)                     ; No template weights
-        if n_elements(mdegree) ne 0 then begin
+        if n_elements(mdegree) ne 0 && mdegree gt 0 then begin
             mult_poly_coeff_gndf = dblarr(mdegree)      ; No polynomial weights
         endif else $
             MDAP_ERASEVAR, mult_poly_coeff_gndf         ; Remove variable
@@ -984,8 +993,14 @@ PRO MDAP_GANDALF_WRAP, $
 
         endif
 
+;       print, n_elements(sol_ppxf)
+;       print, n_elements(err_ppxf)
+;       print, mdegree
+;       print, moments
+;       stop
+
         MDAP_SAVE_STAR_KIN, sol_ppxf, sol_star, voff, moments=moments, /chi
-        MDAP_SAVE_STAR_KIN, err_ppxf, err_star, 0.0d, moments=moments
+        MDAP_SAVE_STAR_KIN, err_ppxf, err_star, 0.0d, moments=moments, /err
 
         ; Save the multiplicative polynomial terms
         MDAP_SAVE_MULT_LEGENDRE, sol_ppxf, mult_poly_coeff_ppxf

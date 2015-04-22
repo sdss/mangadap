@@ -220,7 +220,7 @@ if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
    par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},7)
    par(*).value = [meansp,4959.*shift,4959.*100.0/c0,300.,5007.*shift,5007.*100.0/c0,900.]
         par(0).fixed=1
-   par(3).tied = 'p(6)/3.'
+   par(3).tied = 'p[6]/3.'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-4959.*400.0/c0
    par(1).limited(1) = 1
@@ -276,7 +276,7 @@ if keyword_set(Ha6563) || keyword_set(NII6583) then begin
    par=replicate({value:0.D, fixed:0, tied:' ', limited:[0,0], limits:[0.D,0.D]},10)
    par(*).value = [meansp,6548.*shift,6548.*100.0/c0,200.,6563*shift,6563.*100.0/c0,2000.,6583.*shift,6583.0*100.0/c0,500.]
         par(0).fixed=1
-   par(3).tied = '0.348116 * p(9)'
+   par(3).tied = '0.348116 * p[9]'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-6548.*400/c0
    par(1).limited(1) = 1
