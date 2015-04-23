@@ -164,7 +164,8 @@ try:
     qa.calc_chisq()
     qa.calc_resid()
     qa.calc_resid_data()
-    qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
+    #qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
+    #qa.ch4, qa.ch4_r = qa.define_custom_cubehelix(rot=1.5, start=0.5, gamma=1)
 except FitError:
     print('\n%-12s %-6s: *NOT* fit by DAP\n' % (manga_id, binning_type))
     continue
@@ -184,19 +185,20 @@ emkin_mapname = [
   'emvdisp',
   'emvdisp_halpha',]
 
+
 signal_args = dict(val=qa.signal,
                   kwargs=dict(cblabel=r'signal',
-                              cmap=qa.ch1,
+                              cmap=qa.linearL,
                               title_text=r'DRPS signal',
                               nodots=True))
 noise_args = dict(val=qa.noise,
                   kwargs=dict(cblabel=r'noise',
-                              cmap=qa.ch1,
+                              cmap=qa.linearL,
                               title_text='DRPS noise',
                               nodots=True))
 snr_args = dict(val=qa.snr,
                     kwargs=dict(cblabel=r'S/N',
-                                cmap=qa.ch1, 
+                                cmap=qa.linearL, 
                                 title_text=r'DRPS S/N',
                                 nodots=True))
 emvel_args = dict(val=qa.emvel_ew,
@@ -207,12 +209,12 @@ emvel_args = dict(val=qa.emvel_ew,
 emvdisp_args = dict(val=qa.emvdisp_ew,
                  kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
                              #cbrange=[35, 150],
-                             cmap=qa.ch1,
+                             cmap=qa.linearL,
                              title_text=r'$\sigma$_gas (Enci)',
                              nodots=True))
 emvdisp_halpha_args = dict(val=qa.emvdisp_halpha_ew,
                  kwargs=dict(cblabel=r'$\sigma_{\rm inst}$ H$\alpha$ [km/s]',
-                             cmap=qa.ch1,
+                             cmap=qa.linearL,
                              title_text=r'$\sigma_{\rm inst}$ H$\alpha$ (Enci)',
                              nodots=True))
 
@@ -242,12 +244,12 @@ stkin_mapname = [
 
 chisq_args = dict(val=qa.chisq_bin,
                   kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
-                              cmap=qa.ch1,
+                              cmap=qa.linearL,
                               title_text=r'$\chi_{\rm red}^2$',
                               nodots=True))
 resid_args = dict(val=qa.resid_data_bin_percent99,
                   kwargs=dict(cblabel='99th percentile |resid| / galaxy',
-                              cmap=qa.ch1,
+                              cmap=qa.linearL,
                               title_text='99th percentile |resid| / galaxy',
                               nodots=True))
 stvel_args = dict(val=qa.stvel,
@@ -258,7 +260,7 @@ stvel_args = dict(val=qa.stvel,
 stvdisp_args = dict(val=qa.stvdisp,
                     kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
                                 #cbrange=[35, 150],
-                                cmap=qa.ch1, 
+                                cmap=qa.linearL, 
                                 title_text=r'$\sigma$_star',
                               nodots=True))
 # sth3_args = dict(val=qa.sth3,
@@ -270,7 +272,7 @@ stvdisp_args = dict(val=qa.stvdisp,
 # sth4_args = dict(val=qa.sth4,
 #                  kwargs=dict(cblabel='h4',
 #                              cbrange_symmetric=True,
-#                              cmap=cm.coolwarm,
+#                              cmap=qa.linearL,
 #                              title_text='h4',
 #                               nodots=True))
 
@@ -294,7 +296,7 @@ for v in itervalues(stkin_map_kwargs_interp):
     #v['kwargs']['cbrange_clip'] = False
 
 bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
-                          cmap=qa.ch1,
+                          cmap=qa.linearL,
                           title_text=r'$\chi_{\rm red}^2$',
                           nodots=True,
                           spaxel_num=True,
@@ -312,36 +314,34 @@ emflux_mapname = [
   'halpha',
   'sii6717',]
 
-oii3727_args = dict(val=np.log10(qa.oii3727_ew),
-                    kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                                cbrange=[-1, 1],
-                                cmap=qa.ch1,
+oii3727_args = dict(val=qa.oii3727_ew,
+                    kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                                cmap=qa.linearL,
                                 title_text=r'[OII] $\lambda$3727 (Enci)',
                                 nodots=True))
-hbeta_args = dict(val=np.log10(qa.hbeta_ew),
-                  kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                              cmap=qa.ch1,
+hbeta_args = dict(val=qa.hbeta_ew,
+                  kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                              cmap=qa.linearL,
                               title_text=r'H$\beta$ (Enci)',
                               nodots=True))
-nii6583_args = dict(val=np.log10(qa.nii6583_ew),
-                    kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                                cmap=qa.ch1, 
+nii6583_args = dict(val=qa.nii6583_ew,
+                    kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                                cmap=qa.linearL, 
                                 title_text=r'[NII] $\lambda$6583 (Enci)',
                                 nodots=True))
-oiii5007_args = dict(val=np.log10(qa.oiii5007_ew),
-                     kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                                 cbrange=[-1.5, 0.5],
-                                 cmap=qa.ch1,
+oiii5007_args = dict(val=qa.oiii5007_ew,
+                     kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                                 cmap=qa.linearL,
                                  title_text=r'[OIII] $\lambda$5007 (Enci)',
                                  nodots=True))
-halpha_args = dict(val=np.log10(qa.halpha_ew),
-                   kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                               cmap=qa.ch1,
+halpha_args = dict(val=qa.halpha_ew,
+                   kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                               cmap=qa.linearL,
                                title_text=r'H$\beta$ (Enci)',
                                nodots=True))
-sii6717_args = dict(val=np.log10(qa.sii6717_ew),
-                 kwargs=dict(cblabel=r'log(Flux [10$^{-17}$ erg/s/cm$^2$])',
-                             cmap=qa.ch1,
+sii6717_args = dict(val=qa.sii6717_ew,
+                 kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                             cmap=qa.linearL,
                              title_text=r'[SII] $\lambda$6717 (Enci)',
                              nodots=True))
 
@@ -402,26 +402,25 @@ all_resid_rest_kwargs = dict(resid=True,
 
 
 #----- Plots -----
-    
-# reload(plot_qa)
-# from plot_qa import PlotQA
-# 
-# qa = PlotQA(path_galaxy + dap_file)
-# print('\nTemplate Library:', qa.tpl_lib)
-# qa.select_wave_range()
-# qa.set_axis_lims()
-# qa.calc_chisq()
-# qa.calc_resid()
-# qa.calc_resid_data()
-# qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
 
+reload(plot_qa)
+from plot_qa import PlotQA
+ 
+qa = PlotQA(path_galaxy + dap_file)
+print('\nTemplate Library:', qa.tpl_lib)
+qa.select_wave_range()
+qa.set_axis_lims()
+#qa.calc_chisq()
+#qa.calc_resid()
+#qa.calc_resid_data()
+qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
 
 
 #plot_map = False
 if plot_map:
 
     # Plot bin numbers on top of chisq map
-    qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
+    qa.plot_map_imshow(qa.chisq_bin, **bin_num_map_kwargs)
     fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
     plt.savefig(path_galaxy_plots + fout)
     print('Wrote: %s' % fout)
@@ -512,95 +511,4 @@ print('')
 #--------------
 
 #---------------------------------------------
-
-
-
-
-
-#----- Re-orient Data -----
-
-# xpos and ypos are oriented to start in the lower left and go up then right
-# Re-orient data so that it starts in the upper left and goes right then down
-xp0 = np.round(qa.xpos * 2.) / 2.
-yp0 = np.round(qa.ypos * 2.) / 2.
-
-xp1 = np.reshape(xp0, (52, 52))
-yp1 = np.reshape(yp0, (52, 52))
-
-xp2 = xp1.T
-yp2 = yp1.T
-
-xp3 = xp2
-yp3 = yp2[::-1]
-
-binid1 = np.reshape(qa.binid, (52, 52))
-binid2 = binid1.T
-binid3 = binid2[::-1]
-
-binid4 = np.ma.array(binid3, mask=(binid3 == -1))
-#--------------------------
-
-# Re-oriented [OIII]5007 map
-g = np.empty((52, 52)) * np.nan
-for i in range(52):
-    for j in range(52):
-        if not binid4.mask[i, j]:
-            g[i, j] = qa.oiii5007_ew[binid4.data[i, j]]
-
-g_mask = np.ma.array(g, mask=np.isnan(g))
-#-------------------------
-
-
-#----- Generate Color Map -----
-LinL = np.loadtxt(home + '/Downloads/0-1/Linear_L_0-1.csv', delimiter=',')
-
-b3=LinL[:,2] # value of blue at sample n
-b2=LinL[:,2] # value of blue at sample n
-b1=linspace(0,1,len(b2)) # position of sample n - ranges from 0 to 1
-
-# setting up columns for list
-g3=LinL[:,1]
-g2=LinL[:,1]
-g1=linspace(0,1,len(g2))
-
-r3=LinL[:,0]
-r2=LinL[:,0]
-r1=linspace(0,1,len(r2))
-
-# creating list
-R=zip(r1,r2,r3)
-G=zip(g1,g2,g3)
-B=zip(b1,b2,b3)
-
-# transposing list
-RGB=zip(R,G,B)
-rgb=zip(*RGB)
-# print rgb
-
-# creating dictionary
-k=['red', 'green', 'blue']
-LinearL=dict(zip(k,rgb)) # makes a dictionary from 2 lists
-
-
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',LinearL)
-#-------------------------------
-
-qa.ch2, qa.ch2_r = qa.define_custom_cubehelix(rot=-1.5, start=0.5, gamma=1)
-qa.ch3, qa.ch3_r = qa.define_custom_cubehelix(rot=-1.5, start=1., gamma=1)
-qa.ch4, qa.ch4_r = qa.define_custom_cubehelix(rot=1.5, start=0.5, gamma=1)
-
-
-
-# Plot
-#cmap = cm.binary_r
-cmap = qa.ch4
-#cmap = my_cmap
-cmap.set_bad('gray', 1.)
-fig, ax = plt.subplots()
-ax.grid(False, which='both', axis='both')
-extent = [-13, 13, -13, 13]
-p = ax.imshow(g_mask, interpolation='none', extent=extent, cmap=cmap)
-cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
-cb = fig.colorbar(p, cax)
-
 

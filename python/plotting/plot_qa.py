@@ -90,19 +90,29 @@ class PlotQA:
         self.smsk = fin[fin.index_of('SMSK')].data.T
         self.elopar = fin[fin.index_of('ELOPAR')].data.T
         self.elofit = fin[fin.index_of('ELOFIT')].data.T
+
+        # spaxel, pixel and bin counts
         self.n_bins, self.n_pix = self.galaxy.shape
         self.n_spaxels = len(self.drps)
+        self.sqrt_n_spaxels = np.sqrt(self.n_spaxels)
+        if np.mod(self.sqrt_n_spaxels, 1) != 0:
+            print('Sqrt of number of bins in cube is not an integer.')
+        else:
+            self.sqrt_n_spaxels = int(self.sqrt_n_spaxels)
 
         # DRP measurements
         (self.xpos, self.ypos, ig1, ig2, self.signal, self.noise, self.binvr,
             self.binid, self.binw) = \
             [self.drps[name] for name in self.drps.dtype.names]
+        self.signal[np.where(self.signal == 0.)] = np.nan
+        self.noise[np.where(self.noise == 1.)] = np.nan
         self.snr = self.signal / self.noise
 
         # bin properties
         (self.binxrl, self.binyru, self.binr, self.bina, self.binsn,
             self.nbin, self.binf) = \
             [self.bin_prop[name] for name in self.bin_prop.dtype.names]
+
 
         if (self.model == 0.).all():
             raise FitError
@@ -277,11 +287,12 @@ class PlotQA:
 
     #----- Plot Setup --------------------------------------------------------
 
-    #--requires cubhelix module
-    #
-    # def define_custom_cubehelix(self, rot=1, start=1, gamma=1):
-    #     self.cubehelix_cust = cubehelix.cmap(reverse=True, rot=rot,
-    #                                          start=start, gamma=gamma)
+    def plot_setup(self):
+        self.cubehelix111, self.cubehelix111_r = \
+            self.define_custom_cubehelix(rot=1, start=1, gamma=1)
+        self.linearL, self.linearL_r = self.linear_Lab()
+        self.set_axis_lims()
+
     def reverse_cmap(self, x):
         def out(y):
             return x(1. - y)
@@ -297,10 +308,44 @@ class PlotQA:
         cmap_r = LinearSegmentedColormap('cubehelix_cust_r', c_r_dict)
         return (cmap, cmap_r)
 
-    def plot_setup(self):
-        self.cubehelix111, self.cubehelix111_r = \
-            self.define_custom_cubehelix(rot=1, start=1, gamma=1)
 
+    def linear_Lab(self):
+        LinL = np.loadtxt('Linear_L_0-1.csv', delimiter=',')
+
+        b3 = LinL[:, 2] # value of blue at sample n
+        b2 = LinL[:, 2] # value of blue at sample n
+        b1 = np.linspace(0, 1, len(b2)) # position of sample n - ranges from 0 to 1
+        
+        # setting up columns for list
+        g3 = LinL[:, 1]
+        g2 = LinL[:, 1]
+        g1 = np.linspace(0, 1, len(g2))
+        
+        r3 = LinL[:, 0]
+        r2 = LinL[:, 0]
+        r1 = np.linspace(0, 1, len(r2))
+        
+        # creating list
+        R = zip(r1, r2, r3)
+        G = zip(g1, g2, g3)
+        B = zip(b1, b2, b3)
+        
+        # transposing list
+        RGB = zip(R, G, B)
+        rgb = zip(*RGB)
+        
+        # creating dictionary
+        k = ['red', 'green', 'blue']
+        LinearL = dict(zip(k, rgb)) # makes a dictionary from 2 lists
+
+        LinearL_r = {}
+        for k in iterkeys(LinearL):
+            LinearL_r[k] = self.reverse_cmap(LinearL[k])
+
+        cmap = LinearSegmentedColormap('linearL', LinearL)
+        cmap_r = LinearSegmentedColormap('linearL_r', LinearL_r)
+
+        return (cmap, cmap_r)
 
     #-------------------------------------------------------------------------
 
@@ -316,7 +361,7 @@ class PlotQA:
     def set_axis_lims(self):
         ind_b = np.where(self.binid >= 0)
         self.xy_lim = np.max((np.abs(self.xpos[ind_b]), 
-                             np.abs(self.ypos[ind_b]))) * 1.2
+                             np.abs(self.ypos[ind_b]))) * 1.1
         
         # Don't need to set these unless comparing different analyses of the
         # same galaxy
@@ -408,8 +453,10 @@ class PlotQA:
             d = args[map_order[i]]
             k = d['kwargs']
             if not np.isnan(d['val']).all():
-                self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
+                self.plot_map_imshow(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                               **d['kwargs'])
+                # self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
+                #               **d['kwargs'])
 
 
     def plot_map(self,
@@ -567,6 +614,170 @@ class PlotQA:
 
         if seaborn_installed:
             sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
+
+
+    def plot_map_imshow(self,
+                 z,
+                 interpolated=False,
+                 flux=None,
+                 cblabel=None,
+                 cbrange=None,
+                 cbrange_clip=False,
+                 cbrange_symmetric=False,
+                 n_ticks=7,
+                 cmap=cm.coolwarm,
+                 xy_max=None,
+                 title_text=None,
+                 spaxel_num=False,
+                 nodots=False,
+                 fontsize=7,
+                 n_colors=64,
+                 fig=None,
+                 ax=None,
+                 axloc=None,
+                 figsize=(10, 8)):
+        '''
+        Plot map
+        '''
+        if seaborn_installed:
+            if ax is None:
+                sns.set_context('poster', rc={'lines.linewidth': 2})
+            else:
+                sns.set_context('talk', rc={'lines.linewidth': 2})
+            sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
+
+        if ax is None:
+            fig = plt.figure(figsize=figsize)
+            ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
+            #ax = fig.add_axes([0.15, 0.15, 0.6, 0.75])
+
+            ax.set_xlabel('arcscec')
+            ax.set_ylabel('arcsec')
+
+        if title_text is not None:
+            ax.set_title(title_text, fontsize=20)
+
+        if not seaborn_installed:
+            ax.set_axis_bgcolor('#A8A8A8')
+
+        ax.grid(False, which='both', axis='both')
+
+        ind_tmp = np.where(self.binid >= 0)[0]
+        ind_b = self.binid[ind_tmp]
+        bin_num = np.arange(len(z), dtype=int).astype(str)
+
+        spaxel_size = 0.5 # arcsec
+
+        if not nodots:
+            ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
+
+        # colorbar range
+        if len(z) == self.n_spaxels:
+            ind_cb = ind_tmp
+        elif len(z) == self.n_bins:
+            ind_cb = ind_b
+
+        cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
+
+        if cbrange_clip:
+            zclip = sigma_clip(z[ind_cb], sig=3)
+            cbrange_tmp = [zclip.min(), zclip.max()]
+
+        if cbrange is None:
+            cbrange = cbrange_tmp
+        else:
+            for i in range(len(cbrange)):
+                if cbrange[i] is None:
+                    cbrange[i] = cbrange_tmp[i]
+
+        if cbrange_symmetric:
+            cb_max = np.max(np.abs(cbrange))
+            cbrange = [-cb_max, cb_max]
+
+        cbdelta = cbrange[1] - cbrange[0]
+
+        #----- Re-orient Data -----
+
+        if len(z) == self.n_spaxels:
+            im1 = np.reshape(z, (self.sqrt_n_spaxels, self.sqrt_n_spaxels))
+            im = im1.T[::-1]
+
+        elif len(z) == self.n_bins:
+            # xpos and ypos are oriented to start in the lower left and go up then right
+            # Re-orient data so that it starts in the upper left and goes right then down
+            binid1 = np.reshape(self.binid, (self.sqrt_n_spaxels, self.sqrt_n_spaxels))
+            binid2 = binid1.T[::-1]
+            binid3 = np.ma.array(binid2, mask=(binid2 == -1))
+
+            # create a masked array of the data
+            im = np.empty((self.sqrt_n_spaxels, self.sqrt_n_spaxels)) * np.nan
+            for i in range(self.sqrt_n_spaxels):
+                for j in range(self.sqrt_n_spaxels):
+                    if not binid3.mask[i, j]:
+                        im[i, j] = z[binid3.data[i, j]]
+        
+        im_mask = np.ma.array(im, mask=np.isnan(im))
+
+        # plot map
+        if interpolated:
+            levels = np.linspace(cbrange[0], cbrange[1], n_colors)
+            # do I want [ind_cb] here?
+            p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
+                               z[ind_cb], levels=levels, cmap=cmap)
+        else:
+            #extent = np.array([self.xpos.min(), self.xpos.max(),
+            #                  self.ypos.min(), self.ypos.max()])
+            extent = np.array([-self.xpos.max() - spaxel_size / 2.,
+                              -self.xpos.min() + spaxel_size / 2.,
+                              self.ypos.min() - spaxel_size / 2.,
+                              self.ypos.max() + spaxel_size / 2.])
+            p = ax.imshow(im_mask, interpolation='none', extent=extent, cmap=cmap)
+
+
+        if spaxel_num:
+            for i in range(self.n_bins):
+                if (i >= 100) and (i < 1000) and (self.nbin[i] <= 2):
+                    fontsize_tmp = fontsize - 1
+                elif (i >= 1000) and (self.nbin[i] <= 2):
+                    fontsize_tmp = fontsize - 2
+                elif self.nbin[i] == 1:
+                    fontsize_tmp = fontsize
+                else:
+                    fontsize_tmp = fontsize + 2
+                ctmp = cmap((z[i] - cbrange[0]) / cbdelta)
+                ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
+                        self.binyru[i] - (spaxel_size / 4),
+                        str(i), fontsize=fontsize_tmp,
+                        color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
+
+        # overplot flux contours (which flux? in what band?)
+        if flux is not None:
+            ax.tricontour(-self.binxrl, self.binyru,
+                          -2.5*np.log10(flux/np.max(flux).ravel()),
+                          levels=np.arange(20), colors='k') # 1 mag contours
+
+        # colorbar
+        if axloc is None:
+            cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
+        else:
+            cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
+
+        try:
+            ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
+        except AttributeError:
+            print('AttributeError: MaxNLocator instance has no attribute' +
+                  ' "tick_values" ')
+            cb = fig.colorbar(p, cax)
+        else:
+            cb = fig.colorbar(p, cax, ticks=ticks)
+
+        if cblabel is not None:
+            cb.set_label(cblabel)
+
+        if seaborn_installed:
+            sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
+
+
 
 
 
