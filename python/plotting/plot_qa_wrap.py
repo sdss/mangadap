@@ -309,49 +309,38 @@ bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
 emflux_mapname = [
   'oii3727',
   'hbeta',
-  'nii6583',
   'oiii5007',
   'halpha',
+  'nii6583',
   'sii6717',]
 
 oii3727_args = dict(val=qa.oii3727_ew,
-                    kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                                cmap=qa.linearL,
-                                title_text=r'[OII] $\lambda$3727 (Enci)',
-                                nodots=True))
+                    kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
 hbeta_args = dict(val=qa.hbeta_ew,
-                  kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                              cmap=qa.linearL,
-                              title_text=r'H$\beta$ (Enci)',
-                              nodots=True))
-nii6583_args = dict(val=qa.nii6583_ew,
-                    kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                                cmap=qa.linearL, 
-                                title_text=r'[NII] $\lambda$6583 (Enci)',
-                                nodots=True))
+                  kwargs=dict(title_text=r'H$\beta$ (Enci)'))
 oiii5007_args = dict(val=qa.oiii5007_ew,
-                     kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                                 cmap=qa.linearL,
-                                 title_text=r'[OIII] $\lambda$5007 (Enci)',
-                                 nodots=True))
+                     kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
 halpha_args = dict(val=qa.halpha_ew,
-                   kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                               cmap=qa.linearL,
-                               title_text=r'H$\beta$ (Enci)',
-                               nodots=True))
+                   kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
+nii6583_args = dict(val=qa.nii6583_ew,
+                    kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
 sii6717_args = dict(val=qa.sii6717_ew,
-                 kwargs=dict(cblabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                             cmap=qa.linearL,
-                             title_text=r'[SII] $\lambda$6717 (Enci)',
-                             nodots=True))
+                 kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
 
 
 emflux_map_kwargs = dict(oii3727=oii3727_args,
                          hbeta=hbeta_args,
                          oiii5007=oiii5007_args,
-                         nii6583=nii6583_args,
                          halpha=halpha_args,
+                         nii6583=nii6583_args,
                          sii6717=sii6717_args)
+
+for v in itervalues(emflux_map_kwargs):
+    v['kwargs']['cblabel'] = r'Flux [10$^{-17}$ erg/s/cm$^2$]'
+    v['kwargs']['cmap'] = qa.linearL
+    v['kwargs']['nodots'] = True
+    v['kwargs']['val_no_measure'] = 0.
+
 #---------------------------------
 
 
@@ -420,7 +409,7 @@ qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
 if plot_map:
 
     # Plot bin numbers on top of chisq map
-    qa.plot_map_imshow(qa.chisq_bin, **bin_num_map_kwargs)
+    qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
     fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
     plt.savefig(path_galaxy_plots + fout)
     print('Wrote: %s' % fout)

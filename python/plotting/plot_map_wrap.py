@@ -119,7 +119,7 @@ for dap_file in files:
     print(manga_id, binning_type)
     qa.select_wave_range()
     qa.set_axis_lims()
-    qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
+    #qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
     
 
     # change mapval to quantity of your choosing
@@ -129,7 +129,7 @@ for dap_file in files:
     if diverging_cmap:
         cmap = cm.RdBu_r
     else:
-        cmap = qa.ch1
+        cmap = qa.linearL
     
     
     kwargs = dict(cblabel=parname,

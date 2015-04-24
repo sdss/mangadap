@@ -292,6 +292,7 @@ class PlotQA:
             self.define_custom_cubehelix(rot=1, start=1, gamma=1)
         self.linearL, self.linearL_r = self.linear_Lab()
         self.set_axis_lims()
+        self.cm_gray = mpl.colors.ListedColormap(['#303030'])
 
     def reverse_cmap(self, x):
         def out(y):
@@ -453,171 +454,18 @@ class PlotQA:
             d = args[map_order[i]]
             k = d['kwargs']
             if not np.isnan(d['val']).all():
-                self.plot_map_imshow(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
+                self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                               **d['kwargs'])
                 # self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                 #               **d['kwargs'])
 
 
+
+
+
     def plot_map(self,
                  z,
-                 interpolated=False,
-                 flux=None,
-                 cblabel=None,
-                 cbrange=None,
-                 cbrange_clip=True,
-                 cbrange_symmetric=False,
-                 n_ticks=7,
-                 cmap=cm.coolwarm,
-                 xy_max=None,
-                 title_text=None,
-                 spaxel_num=False,
-                 nodots=False,
-                 fontsize=7,
-                 n_colors=64,
-                 fig=None,
-                 ax=None,
-                 axloc=None,
-                 figsize=(10, 8)):
-        '''
-        Plot map
-        '''
-        if seaborn_installed:
-            if ax is None:
-                sns.set_context('poster', rc={'lines.linewidth': 2})
-            else:
-                sns.set_context('talk', rc={'lines.linewidth': 2})
-            sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
-
-        if ax is None:
-            fig = plt.figure(figsize=figsize)
-            ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
-            #ax = fig.add_axes([0.15, 0.15, 0.6, 0.75])
-
-            ax.set_xlabel('arcscec')
-            ax.set_ylabel('arcsec')
-
-        if title_text is not None:
-            ax.set_title(title_text, fontsize=20)
-
-        if not seaborn_installed:
-            ax.set_axis_bgcolor('#A8A8A8')
-
-        ax.grid(False, which='both', axis='both')
-
-        ind_tmp = np.where(self.binid >= 0)[0]
-        ind_b = self.binid[ind_tmp]
-        bin_num = np.arange(len(z), dtype=int).astype(str)
-
-        spaxel_size = 0.5 # arcsec
-
-        if not nodots:
-            ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
-
-        # colorbar range
-        if len(z) == self.n_spaxels:
-            ind_cb = ind_tmp
-        elif len(z) == self.n_bins:
-            ind_cb = ind_b
-
-        cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
-
-        # if len(z) == self.n_spaxels:
-        #     cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
-        # elif len(z) == self.n_bins:
-        #     cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
-
-        if cbrange_clip:
-            zclip = sigma_clip(z[ind_cb], sig=3)
-            cbrange_tmp = [zclip.min(), zclip.max()]
-
-        if cbrange is None:
-            cbrange = cbrange_tmp
-        else:
-            for i in range(len(cbrange)):
-                if cbrange[i] is None:
-                    cbrange[i] = cbrange_tmp[i]
-
-        if cbrange_symmetric:
-            cb_max = np.max(np.abs(cbrange))
-            cbrange = [-cb_max, cb_max]
-
-        cbdelta = cbrange[1] - cbrange[0]
-
-        # plot spaxels
-        if interpolated:
-            levels = np.linspace(cbrange[0], cbrange[1], n_colors)
-            # do I want [ind_cb] here?
-            p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
-                               z[ind_cb], levels=levels, cmap=cmap)
-        else:
-            for i in range(len(ind_tmp)):
-
-                if len(z) == self.n_spaxels:
-                    ctmp = cmap((z[ind_tmp][i] - cbrange[0]) / cbdelta)
-                elif len(z) == self.n_bins:
-                    ctmp = cmap((z[ind_b][i] - cbrange[0]) / cbdelta)
-
-                delta = spaxel_size / 2.
-                rect = patches.Rectangle((-(self.xpos[ind_tmp][i] + delta),
-                                         self.ypos[ind_tmp][i] - delta),
-                                         width=spaxel_size, height=spaxel_size,
-                                         color=ctmp)
-                ax.add_patch(rect)
-                # dummy plot for colorbar
-                p = ax.scatter(-self.xpos[ind_tmp][0], self.ypos[ind_tmp][0],
-                               cmap=cmap, c=z[ind_b][0], s=0, vmin=cbrange[0],
-                               vmax=cbrange[1])
-        if spaxel_num:
-            for i in range(self.n_bins):
-                if (i >= 100) and (self.nbin[i] <= 2):
-                    fontsize_tmp = fontsize - 1
-                elif self.nbin[i] == 1:
-                    fontsize_tmp = fontsize
-                else:
-                    fontsize_tmp = fontsize + 2
-                ctmp = cmap((z[i] - cbrange[0]) / cbdelta)
-                ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
-                        self.binyru[i] - (spaxel_size / 4),
-                        str(i), fontsize=fontsize_tmp,
-                        color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
-
-        # overplot flux contours (which flux? in what band?)
-        if flux is not None:
-            ax.tricontour(-self.binxrl, self.binyru,
-                          -2.5*np.log10(flux/np.max(flux).ravel()),
-                          levels=np.arange(20), colors='k') # 1 mag contours
-
-        # colorbar
-        if axloc is None:
-            cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
-        else:
-            cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
-        try:
-            ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
-        except AttributeError:
-            print('AttributeError: MaxNLocator instance has no attribute' +
-                  ' "tick_values" ')
-            cb = fig.colorbar(p, cax)
-        else:
-            cb = fig.colorbar(p, cax, ticks=ticks)
-        if cblabel is not None:
-            cb.set_label(cblabel)
-
-        # axis limits
-        #xlim = ax.get_xlim()
-        #ylim = ax.get_ylim()
-        if xy_max is None:
-            #xy_max = np.max(np.abs([xlim, ylim]))
-            xy_max = self.xy_lim
-        ax.axis([-xy_max, xy_max, -xy_max, xy_max])
-
-        if seaborn_installed:
-            sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
-
-
-    def plot_map_imshow(self,
-                 z,
+                 val_no_measure=None,
                  interpolated=False,
                  flux=None,
                  cblabel=None,
@@ -667,10 +515,14 @@ class PlotQA:
         bin_num = np.arange(len(z), dtype=int).astype(str)
 
         spaxel_size = 0.5 # arcsec
+        delta = spaxel_size / 2.
 
         if not nodots:
             ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
-
+        
+        if val_no_measure is None:
+            val_no_measure = 0.
+        
         # colorbar range
         if len(z) == self.n_spaxels:
             ind_cb = ind_tmp
@@ -696,6 +548,7 @@ class PlotQA:
 
         cbdelta = cbrange[1] - cbrange[0]
 
+
         #----- Re-orient Data -----
 
         if len(z) == self.n_spaxels:
@@ -703,9 +556,21 @@ class PlotQA:
             im = im1.T[::-1]
 
         elif len(z) == self.n_bins:
-            # xpos and ypos are oriented to start in the lower left and go up then right
-            # Re-orient data so that it starts in the upper left and goes right then down
-            binid1 = np.reshape(self.binid, (self.sqrt_n_spaxels, self.sqrt_n_spaxels))
+            # xpos and ypos are oriented to start in the lower left and go up
+            # then right
+            # Re-orient data so that it starts in the upper left and goes
+            # right then down
+
+            xpos1 = np.reshape(self.xpos, (self.sqrt_n_spaxels,
+                               self.sqrt_n_spaxels))
+            xpos2 = xpos1.T[::-1]
+
+            ypos1 = np.reshape(self.ypos, (self.sqrt_n_spaxels,
+                               self.sqrt_n_spaxels))
+            ypos2 = ypos1.T[::-1]
+
+            binid1 = np.reshape(self.binid, (self.sqrt_n_spaxels,
+                                self.sqrt_n_spaxels))
             binid2 = binid1.T[::-1]
             binid3 = np.ma.array(binid2, mask=(binid2 == -1))
 
@@ -715,8 +580,12 @@ class PlotQA:
                 for j in range(self.sqrt_n_spaxels):
                     if not binid3.mask[i, j]:
                         im[i, j] = z[binid3.data[i, j]]
-        
-        im_mask = np.ma.array(im, mask=np.isnan(im))
+
+        ind_no_measure = np.where(im == val_no_measure)
+        mask_no_data = np.isnan(im)
+        mask_no_data[im == val_no_measure] = True
+        im_mask_no_data = np.ma.array(im, mask=mask_no_data)
+
 
         # plot map
         if interpolated:
@@ -725,13 +594,19 @@ class PlotQA:
             p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
                                z[ind_cb], levels=levels, cmap=cmap)
         else:
-            #extent = np.array([self.xpos.min(), self.xpos.max(),
-            #                  self.ypos.min(), self.ypos.max()])
-            extent = np.array([-self.xpos.max() - spaxel_size / 2.,
-                              -self.xpos.min() + spaxel_size / 2.,
-                              self.ypos.min() - spaxel_size / 2.,
-                              self.ypos.max() + spaxel_size / 2.])
-            p = ax.imshow(im_mask, interpolation='none', extent=extent, cmap=cmap)
+            extent = np.array([-self.xpos.max() - delta,
+                              -self.xpos.min() + delta,
+                              self.ypos.min() - delta,
+                              self.ypos.max() + delta])
+            if len(ind_no_measure[0]) > 0:
+                for i0, i1 in zip(ind_no_measure[0], ind_no_measure[1]):
+                    ax.add_patch(mpl.patches.Rectangle(
+                        (-(xpos2[i0, i1] + delta), ypos2[i0, i1] - delta),
+                        spaxel_size, spaxel_size, hatch='///', linewidth=5,
+                        fill=True, fc='#D6D6E5', zorder=10))
+
+            p = ax.imshow(im_mask_no_data, interpolation='none',
+                          extent=extent, cmap=cmap)
 
 
         if spaxel_num:
@@ -1018,3 +893,165 @@ class PlotQA:
                         ax.fill_between(x, ylower, yupper, **mskargs)
 
         return fig
+
+
+
+
+    # deprecated usage of rectangle patches in favor of imshow
+
+    # def plot_map(self,
+    #              z,
+    #              interpolated=False,
+    #              flux=None,
+    #              cblabel=None,
+    #              cbrange=None,
+    #              cbrange_clip=True,
+    #              cbrange_symmetric=False,
+    #              n_ticks=7,
+    #              cmap=cm.coolwarm,
+    #              xy_max=None,
+    #              title_text=None,
+    #              spaxel_num=False,
+    #              nodots=False,
+    #              fontsize=7,
+    #              n_colors=64,
+    #              fig=None,
+    #              ax=None,
+    #              axloc=None,
+    #              figsize=(10, 8)):
+    #     '''
+    #     Plot map
+    #     '''
+    #     if seaborn_installed:
+    #         if ax is None:
+    #             sns.set_context('poster', rc={'lines.linewidth': 2})
+    #         else:
+    #             sns.set_context('talk', rc={'lines.linewidth': 2})
+    #         sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
+    # 
+    #     if ax is None:
+    #         fig = plt.figure(figsize=figsize)
+    #         ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
+    #         #ax = fig.add_axes([0.15, 0.15, 0.6, 0.75])
+    # 
+    #         ax.set_xlabel('arcscec')
+    #         ax.set_ylabel('arcsec')
+    # 
+    #     if title_text is not None:
+    #         ax.set_title(title_text, fontsize=20)
+    # 
+    #     if not seaborn_installed:
+    #         ax.set_axis_bgcolor('#A8A8A8')
+    # 
+    #     ax.grid(False, which='both', axis='both')
+    # 
+    #     ind_tmp = np.where(self.binid >= 0)[0]
+    #     ind_b = self.binid[ind_tmp]
+    #     bin_num = np.arange(len(z), dtype=int).astype(str)
+    # 
+    #     spaxel_size = 0.5 # arcsec
+    # 
+    #     if not nodots:
+    #         ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
+    # 
+    #     # colorbar range
+    #     if len(z) == self.n_spaxels:
+    #         ind_cb = ind_tmp
+    #     elif len(z) == self.n_bins:
+    #         ind_cb = ind_b
+    # 
+    #     cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
+    # 
+    #     # if len(z) == self.n_spaxels:
+    #     #     cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
+    #     # elif len(z) == self.n_bins:
+    #     #     cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
+    # 
+    #     if cbrange_clip:
+    #         zclip = sigma_clip(z[ind_cb], sig=3)
+    #         cbrange_tmp = [zclip.min(), zclip.max()]
+    # 
+    #     if cbrange is None:
+    #         cbrange = cbrange_tmp
+    #     else:
+    #         for i in range(len(cbrange)):
+    #             if cbrange[i] is None:
+    #                 cbrange[i] = cbrange_tmp[i]
+    # 
+    #     if cbrange_symmetric:
+    #         cb_max = np.max(np.abs(cbrange))
+    #         cbrange = [-cb_max, cb_max]
+    # 
+    #     cbdelta = cbrange[1] - cbrange[0]
+    # 
+    #     # plot spaxels
+    #     if interpolated:
+    #         levels = np.linspace(cbrange[0], cbrange[1], n_colors)
+    #         # do I want [ind_cb] here?
+    #         p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
+    #                            z[ind_cb], levels=levels, cmap=cmap)
+    #     else:
+    #         for i in range(len(ind_tmp)):
+    # 
+    #             if len(z) == self.n_spaxels:
+    #                 ctmp = cmap((z[ind_tmp][i] - cbrange[0]) / cbdelta)
+    #             elif len(z) == self.n_bins:
+    #                 ctmp = cmap((z[ind_b][i] - cbrange[0]) / cbdelta)
+    # 
+    #             delta = spaxel_size / 2.
+    #             rect = patches.Rectangle((-(self.xpos[ind_tmp][i] + delta),
+    #                                      self.ypos[ind_tmp][i] - delta),
+    #                                      width=spaxel_size, height=spaxel_size,
+    #                                      color=ctmp)
+    #             ax.add_patch(rect)
+    #             # dummy plot for colorbar
+    #             p = ax.scatter(-self.xpos[ind_tmp][0], self.ypos[ind_tmp][0],
+    #                            cmap=cmap, c=z[ind_b][0], s=0, vmin=cbrange[0],
+    #                            vmax=cbrange[1])
+    #     if spaxel_num:
+    #         for i in range(self.n_bins):
+    #             if (i >= 100) and (self.nbin[i] <= 2):
+    #                 fontsize_tmp = fontsize - 1
+    #             elif self.nbin[i] == 1:
+    #                 fontsize_tmp = fontsize
+    #             else:
+    #                 fontsize_tmp = fontsize + 2
+    #             ctmp = cmap((z[i] - cbrange[0]) / cbdelta)
+    #             ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
+    #                     self.binyru[i] - (spaxel_size / 4),
+    #                     str(i), fontsize=fontsize_tmp,
+    #                     color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
+    # 
+    #     # overplot flux contours (which flux? in what band?)
+    #     if flux is not None:
+    #         ax.tricontour(-self.binxrl, self.binyru,
+    #                       -2.5*np.log10(flux/np.max(flux).ravel()),
+    #                       levels=np.arange(20), colors='k') # 1 mag contours
+    # 
+    #     # colorbar
+    #     if axloc is None:
+    #         cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
+    #     else:
+    #         cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
+    #     try:
+    #         ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
+    #     except AttributeError:
+    #         print('AttributeError: MaxNLocator instance has no attribute' +
+    #               ' "tick_values" ')
+    #         cb = fig.colorbar(p, cax)
+    #     else:
+    #         cb = fig.colorbar(p, cax, ticks=ticks)
+    #     if cblabel is not None:
+    #         cb.set_label(cblabel)
+    # 
+    #     # axis limits
+    #     #xlim = ax.get_xlim()
+    #     #ylim = ax.get_ylim()
+    #     if xy_max is None:
+    #         #xy_max = np.max(np.abs([xlim, ylim]))
+    #         xy_max = self.xy_lim
+    #     ax.axis([-xy_max, xy_max, -xy_max, xy_max])
+    # 
+    #     if seaborn_installed:
+    #         sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
+
