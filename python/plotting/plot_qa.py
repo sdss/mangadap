@@ -63,7 +63,7 @@ class FitError(Exception):
 class PlotQA:
     def __init__(self, filename):
         self.dap_file = filename
-        self.manga_id = ('-').join(self.dap_file.split('-')[1:3])
+        self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
         self.setup()
 
     def setup(self):
@@ -141,6 +141,7 @@ class PlotQA:
 
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
+        self.manga_id = h['MANGAID']
         fin.close()
 
 
@@ -432,7 +433,9 @@ class PlotQA:
         bigAxes.set_yticks([])
         bigAxes.set_xlabel('arcsec', fontsize=20)
         bigAxes.set_ylabel('arcsec', fontsize=20)
-        bigAxes.set_title(self.manga_id, fontsize=20)
+        bigAxes.set_title(
+            'pid-ifu %s     manga-id %s' % (self.manga_pid, self.manga_id),
+            fontsize=20)
 
         for i in range(n_ax):
             dx = 0.31 * i
@@ -470,7 +473,7 @@ class PlotQA:
                  flux=None,
                  cblabel=None,
                  cbrange=None,
-                 cbrange_clip=False,
+                 cbrange_clip=True,
                  cbrange_symmetric=False,
                  n_ticks=7,
                  cmap=cm.coolwarm,
@@ -590,7 +593,7 @@ class PlotQA:
         # plot map
         if interpolated:
             levels = np.linspace(cbrange[0], cbrange[1], n_colors)
-            # do I want [ind_cb] here?
+            #ind_cb = np.arange(300)
             p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
                                z[ind_cb], levels=levels, cmap=cmap)
         else:
@@ -598,6 +601,7 @@ class PlotQA:
                               -self.xpos.min() + delta,
                               self.ypos.min() - delta,
                               self.ypos.max() + delta])
+
             if len(ind_no_measure[0]) > 0:
                 for i0, i1 in zip(ind_no_measure[0], ind_no_measure[1]):
                     ax.add_patch(mpl.patches.Rectangle(
@@ -605,8 +609,13 @@ class PlotQA:
                         spaxel_size, spaxel_size, hatch='///', linewidth=5,
                         fill=True, fc='#D6D6E5', zorder=10))
 
+            kwargs = {}
+            if cbrange_clip:
+                kwargs['vmin'] = zclip.min()
+                kwargs['vmax'] = zclip.max()
+
             p = ax.imshow(im_mask_no_data, interpolation='none',
-                          extent=extent, cmap=cmap)
+                          extent=extent, cmap=cmap, **kwargs)
 
 
         if spaxel_num:
@@ -697,7 +706,8 @@ class PlotQA:
         ax = fig.add_axes([0.1, 0.1, 0.85, 0.8])
         ax.set_xlabel(r'$\lambda [\AA]$')
         ax.set_ylabel('Flux [10$^{-17}$ erg/s/cm$^2$]')
-        ax.set_title('%s bin %i' % (self.manga_id, bin))
+        ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (self.manga_pid,
+                     self.manga_id, bin))
         pgal = ax.plot(wave, gal[bin], color='gray')[0]
         pmod = []
         for i in range(n_models):
@@ -740,7 +750,7 @@ class PlotQA:
 
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.1, 0.1, 0.85, 0.8])
-        ax.set_title('%s' % (self.manga_id))
+        ax.set_title('pid-ifu %s     manga-id %s' % (self.manga_pid, self.manga_id))
         ax.set_xlabel('%s ' % lframe + r'$\lambda [\AA]$')
         ax.set_ylabel(ylabel)       
 
@@ -855,7 +865,8 @@ class PlotQA:
 
             # spectrum
             if i == 0:
-                ax.set_title('%s bin %i' % (self.manga_id, bin))
+                ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (
+                             self.manga_pid, self.manga_id, bin))
                 ax.set_ylabel('Flux [10$^{-17}$ erg/s/cm$^2$]')
                 p.append(ax.plot(wave[ind], gal[bin][ind], color='#808080')[0])
                 y = models
