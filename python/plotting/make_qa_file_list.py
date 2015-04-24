@@ -29,20 +29,28 @@ try:
         overwrite = True
     else:
         overwrite = False
+    if '-test_dir' in sys.argv:
+        test_dir = True
+    else:
+        test_dir = False
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
+    test_dir = False
 
-print()
-print('Overwrite file list:', overwrite)
-print()
 
 home = os.path.expanduser('~')
 manga_dap_ver = os.getenv('MANGADAP_VER')
 path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
 path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
-path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
-path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+
+if test_dir:
+    path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
+    path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+    path_file_list = path_dap_ver_plots
+else:
+    path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
+    path_file_list = path_dap_ver
 
 
 files_out = []
@@ -75,8 +83,8 @@ for manga_id in manga_ids:
 
 
 try:
-    os.makedirs(path_dap_ver_plots)
-    print('\nCreated directory: %s\n' % path_dap_ver_plots)
+    os.makedirs(path_file_list)
+    print('\nCreated directory: %s\n' % path_file_list)
 except OSError as e:
     if e.errno != errno.EEXIST:
         raise e
@@ -84,15 +92,19 @@ except OSError as e:
 
 
 if not overwrite:
-    if not os.path.isfile(path_dap_ver_plots + file_list):
+    if not os.path.isfile(path_file_list + file_list):
         write = True
     else:
         write = False
 else:
     write = True
+    if os.path.isfile(path_file_list + file_list):
+        print()
+        print('Overwriting file list...')
+        print()
 
 if write:
-    np.savetxt(path_dap_ver_plots + file_list, np.array(files_out), fmt='%s')
-    print('Wrote: %s' % path_dap_ver_plots + file_list)
+    np.savetxt(path_file_list + file_list, np.array(files_out), fmt='%s')
+    print('Wrote: %s' % path_file_list + file_list)
 else:
     print('%s already exists. Use overwrite keyword to remake it.' % file_list)

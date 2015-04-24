@@ -71,6 +71,10 @@ try:
         stkin_interp = False
     else:
         stkin_interp = True
+    if '-test_dir' in sys.argv:
+        test_dir = True
+    else:
+        test_dir = False
 except:
     file_list = 'qa_file_list.txt'
     overwrite = False
@@ -89,13 +93,14 @@ manga_drp_ver = os.getenv('MANGADRP_VER')
 manga_dap_ver = os.getenv('MANGADAP_VER')
 path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
 path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
-path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
-path_file_list = path_dap_ver
 
 if test_dir:
     path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
     path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
     path_file_list = path_dap_ver_plots
+else:
+    path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
+    path_file_list = path_dap_ver
 
 
 
