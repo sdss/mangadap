@@ -77,6 +77,7 @@ except:
     plot_spec_pdf = False
     plot_spec_png = True
     stkin_interp = False
+    test_dir = False
 
 print()
 print('Overwrite plots:', overwrite)
@@ -84,17 +85,25 @@ print()
 
 #----- Set Path and File Names -----
 home = os.path.expanduser('~')
+manga_drp_ver = os.getenv('MANGADRP_VER')
 manga_dap_ver = os.getenv('MANGADAP_VER')
 path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
 path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
-path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
-path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
+path_file_list = path_dap_ver
 
-print('Input file list directory: %s' % (path_dap_ver_plots))
+if test_dir:
+    path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
+    path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+    path_file_list = path_dap_ver_plots
+
+
+
+print('Input file list directory: %s' % (path_file_list))
 print()
 print('Input file list: %s' % (file_list))
 print()
-files = np.genfromtxt(path_dap_ver_plots + file_list, dtype='str')
+files = np.genfromtxt(path_file_list + file_list, dtype='str')
 files = np.atleast_1d(files)
 #-----------------------------------
 
@@ -115,7 +124,11 @@ for dap_file in files:
     mode = mode_in.split('_')[0]
     
     path_galaxy = path_dap_ver + ('/').join([pid, ifudesign, ''])
-    path_galaxy_plots = path_dap_ver_plots + ('/').join([pid, ifudesign, ''])
+    if test_dir:
+        path_galaxy_plots = path_dap_ver_plots + ('/').join([pid, ifudesign, ''])
+    else:
+        path_galaxy_plots = path_galaxy + 'plots/'
+
     path_galaxy_plots_spectra = path_galaxy_plots + 'spectra/'
     
     # create plot directories if necessary
