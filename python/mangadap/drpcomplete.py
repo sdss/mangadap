@@ -216,9 +216,15 @@ class drpcomplete:
                                    plateTarget files.
         """
 
-        catalog = numpy.array([ os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
-                                             '12-nsa_v1b_0_0_v2.fits.gz'), 
-                                os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits') ])
+#       catalog = numpy.array([ os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
+#                                            '12-nsa_v1b_0_0_v2.fits.gz'), 
+#                               os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits') ])
+#       catalogid = numpy.array([ 12, 1 ])
+
+        catalog = numpy.array([ os.path.join(environ['MANGA_TARGET'], 'catalogues',
+                                             '12-nsa_v1b_0_0_v2.fits'), 
+                                os.path.join(environ['MANGA_TARGET'], 'catalogues',
+                                             '1-nsa_v1_0_0.fits') ])
         catalogid = numpy.array([ 12, 1 ])
         return catalog, catalogid
 

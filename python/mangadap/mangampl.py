@@ -44,7 +44,7 @@ class mangampl:
                                     ['MPL-1', 'v5_5_16', 'v1_0_0'],
                                     ['MPL-2', 'v5_5_17', 'v1_1_2'],
                                     ['v1_2_0', 'v5_5_19', 'v1_2_0'],
-                                    ['v1_3_1', 'v5_5_20', 'v1_3_1']
+                                    ['MPL-3', 'v5_5_22', 'v1_3_3']
                                   ])
     
             if write:
@@ -63,8 +63,10 @@ class mangampl:
             """
             if self.mplver == 'MPL-1':
                 return 'manga/westfall3_mpl1'
-            if self.mplver == 'MPL-2':
+            elif self.mplver == 'MPL-2':
                 return 'manga/westfall3_mpl2'
+            elif self.mplver == 'MPL-3':
+                return 'manga/westfall3_mpl3'
             else:
                 return 'manga/westfall3_mpl1'
 
