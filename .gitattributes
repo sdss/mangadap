@@ -1,79 +1,59 @@
 * text=auto !eol
-/Desktop.ini -text
-/README.txt -text
 /RELEASE_NOTES -text
 bin/dap_unsuccessful.bash -text
 bin/mangadap_version -text
 bin/rundap -text
 bin/rundap3 -text
 bin/write_dap_par.py -text
-conf/authz -text
-conf/hooks-env.tmpl -text
-conf/passwd -text
-conf/svnserve.conf -text
-db/current -text
-db/format -text
-db/fs-type -text
-db/fsfs.conf -text
-db/min-unpacked-rev -text
-db/rep-cache.db -text
-db/revprops/0/0 -text
-db/revprops/0/1 -text
-db/revs/0/0 -text
-db/revs/0/1 -text
-db/txn-current -text
-db/txn-current-lock -text
-db/uuid -text
-db/write-lock -text
-doc/configuration_file.tex -text
-doc/dap.bbl -text
-doc/dap.pdf -text
-doc/dap.tex -text
-doc/dap_workflow_description.tex -text
-doc/figures/Block_4_zoom.ps -text
-doc/figures/Blocks_1-3.odg -text
-doc/figures/block1.odg -text
-doc/figures/block1.pdf -text
-doc/figures/block1.ps -text
-doc/figures/block2.pdf -text
-doc/figures/block2.ps -text
-doc/figures/block3.pdf -text
-doc/figures/block3.ps -text
-doc/figures/block4.pdf -text
-doc/figures/block4.ps -text
-doc/figures/block5.pdf -text
-doc/figures/block5.ps -text
-doc/figures/dap_workflow_2.pdf -text
-doc/figures/dap_workflow_2.ps -text
-doc/figures/mangaDAP_workflow.odg -text
-doc/figures/mangaDAP_workflow.pdf -text
-doc/figures/mangaDAP_workflow.ps -text
-doc/figures/mangaDAP_workflow_1.ps -text
-doc/figures/mangaDAP_workflow_2.pdf -text
-doc/figures/mangaDAP_workflow_2.ps -text
-doc/mdap_calculate_spectrum_sn.tex -text
-doc/mdap_calibrate_sn.tex -text
-doc/mdap_convol_sigma.tex -text
-doc/mdap_create_starting_guesses.tex -text
-doc/mdap_do_k_rprofiles.tex -text
-doc/mdap_do_kinemetry.tex -text
-doc/mdap_do_log_rebin.tex -text
-doc/mdap_do_measure_indices.tex -text
-doc/mdap_dust_calzetti.tex -text
-doc/mdap_gandalf.tex -text
-doc/mdap_gandalf_wrap.tex -text
-doc/mdap_get_2d_map.tex -text
-doc/mdap_interpolate_2dmaps.tex -text
-doc/mdap_kinemetry.tex -text
-doc/mdap_log_rebin.tex -text
-doc/mdap_measure_indices.tex -text
-doc/mdap_ppxf.tex -text
-doc/mdap_read_datacube.tex -text
-doc/mdap_sgandalf.tex -text
-doc/mdap_spatial_binning.tex -text
-doc/mdap_spatial_radial_binning.tex -text
-doc/mdap_spectral_fitting.tex -text
-doc/mdap_voronoi_2d_binning.tex -text
+doc.0/configuration_file.tex -text
+doc.0/dap.bbl -text
+doc.0/dap.pdf -text
+doc.0/dap.tex -text
+doc.0/dap_workflow_description.tex -text
+doc.0/figures/Block_4_zoom.ps -text
+doc.0/figures/Blocks_1-3.odg -text
+doc.0/figures/block1.odg -text
+doc.0/figures/block1.pdf -text
+doc.0/figures/block1.ps -text
+doc.0/figures/block2.pdf -text
+doc.0/figures/block2.ps -text
+doc.0/figures/block3.pdf -text
+doc.0/figures/block3.ps -text
+doc.0/figures/block4.pdf -text
+doc.0/figures/block4.ps -text
+doc.0/figures/block5.pdf -text
+doc.0/figures/block5.ps -text
+doc.0/figures/dap_workflow_2.pdf -text
+doc.0/figures/dap_workflow_2.ps -text
+doc.0/figures/mangaDAP_workflow.odg -text
+doc.0/figures/mangaDAP_workflow.pdf -text
+doc.0/figures/mangaDAP_workflow.ps -text
+doc.0/figures/mangaDAP_workflow_1.ps -text
+doc.0/figures/mangaDAP_workflow_2.pdf -text
+doc.0/figures/mangaDAP_workflow_2.ps -text
+doc.0/mdap_calculate_spectrum_sn.tex -text
+doc.0/mdap_calibrate_sn.tex -text
+doc.0/mdap_convol_sigma.tex -text
+doc.0/mdap_create_starting_guesses.tex -text
+doc.0/mdap_do_k_rprofiles.tex -text
+doc.0/mdap_do_kinemetry.tex -text
+doc.0/mdap_do_log_rebin.tex -text
+doc.0/mdap_do_measure_indices.tex -text
+doc.0/mdap_dust_calzetti.tex -text
+doc.0/mdap_gandalf.tex -text
+doc.0/mdap_gandalf_wrap.tex -text
+doc.0/mdap_get_2d_map.tex -text
+doc.0/mdap_interpolate_2dmaps.tex -text
+doc.0/mdap_kinemetry.tex -text
+doc.0/mdap_log_rebin.tex -text
+doc.0/mdap_measure_indices.tex -text
+doc.0/mdap_ppxf.tex -text
+doc.0/mdap_read_datacube.tex -text
+doc.0/mdap_sgandalf.tex -text
+doc.0/mdap_spatial_binning.tex -text
+doc.0/mdap_spatial_radial_binning.tex -text
+doc.0/mdap_spectral_fitting.tex -text
+doc.0/mdap_voronoi_2d_binning.tex -text
 etc/mangadap.module -text
 examples/README.execution_plans -text
 examples/create_manga_dap_execution_plan.pro -text
@@ -1542,6 +1522,444 @@ external/templates/miles/MILES_res2.50_star_m0984V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0985V.fits -text svneol=unset#unset
 external/templates/miles/README -text
 external/templates/miles/paramsMILES_v9.1.txt -text
+external/templates/miles_avg/MILES_res2.50_lt3.53_lg5.2_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.54_lg0.4_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.54_lg4.9_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.55_lg0.5_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.55_lg0.5_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.55_lg0.5_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.55_lg4.9_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.56_lg0.8_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.56_lg0.9_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.56_lg4.8_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.56_lg4.9_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.58_lg0.9_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.58_lg1.5_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg0.7_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg1.4_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg1.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg1.7_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg1.7_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.59_lg4.7_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.60_lg0.3_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.60_lg0.6_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.60_lg1.3_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.61_lg0.6_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.61_lg0.7_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.61_lg1.5_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.62_lg0.9_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.62_lg0.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.63_lg0.3_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.63_lg0.6_fe-1.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.63_lg1.0_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.63_lg1.1_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.63_lg1.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg0.3_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg0.9_fe-2.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg1.0_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg1.0_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg1.5_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.64_lg2.0_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.65_lg1.3_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.65_lg1.4_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.65_lg1.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg1.1_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg1.4_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg1.9_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg1.9_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg2.4_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg4.5_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg4.6_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg4.7_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.66_lg4.7_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg1.4_fe-1.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg1.4_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg1.7_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg1.8_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg2.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg2.4_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg2.9_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg3.4_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg4.4_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.67_lg4.6_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg2.0_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg2.4_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg2.8_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg2.8_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg4.5_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.68_lg4.6_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg2.2_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg2.8_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg3.0_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg3.3_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg3.3_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg4.0_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg4.3_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg4.4_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.69_lg4.6_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg1.8_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg2.4_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg2.4_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg2.5_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg2.7_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg2.9_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg3.2_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg3.4_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg3.4_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.70_lg3.6_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.71_lg2.1_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.71_lg2.4_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.71_lg2.5_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.71_lg2.8_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.71_lg2.9_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg1.5_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg1.6_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg1.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg2.4_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg2.4_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg3.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.72_lg4.6_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg2.0_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg3.0_fe-2.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg3.2_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg4.6_fe-2.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg4.7_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.73_lg4.7_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.74_lg0.3_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.74_lg1.9_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.74_lg4.3_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.74_lg4.7_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.75_lg1.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.75_lg2.4_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.75_lg3.5_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.75_lg4.3_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.75_lg4.3_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg3.4_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg3.9_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg3.9_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg3.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg3.9_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg4.3_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg4.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg4.5_fe-2.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.76_lg5.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg1.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg1.9_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg3.4_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg3.8_fe-1.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.77_lg4.3_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.78_lg0.4_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.78_lg3.0_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.78_lg4.4_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.79_lg1.7_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.79_lg2.6_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.79_lg4.0_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg1.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg2.8_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg2.9_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg2.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg3.9_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.80_lg4.6_fe-2.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.81_lg1.6_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.81_lg4.1_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.82_lg0.5_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.82_lg3.0_fe+0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.82_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.82_lg4.2_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg2.3_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg2.5_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg2.6_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg3.9_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg3.9_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg4.2_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.83_lg4.2_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.84_lg3.4_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.85_lg3.1_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.86_lg0.8_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.86_lg3.4_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.86_lg4.0_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.87_lg3.5_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.88_lg2.6_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.89_lg3.0_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.89_lg3.6_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.91_lg2.8_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.91_lg3.4_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.91_lg3.9_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.92_lg1.4_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.92_lg3.9_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.92_lg4.2_fe+0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg1.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg2.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg3.3_fe-2.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg3.4_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg3.9_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.93_lg4.2_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.94_lg3.4_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.95_lg3.0_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.95_lg3.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.95_lg3.9_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.95_lg4.1_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.95_lg4.3_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.96_lg1.4_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.96_lg3.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.97_lg1.0_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.97_lg3.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.97_lg4.2_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.98_lg2.4_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt3.99_lg2.0_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.00_lg2.2_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.01_lg3.3_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.01_lg3.4_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.01_lg3.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.02_lg3.9_fe+0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.03_lg3.5_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.04_lg3.7_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.04_lg3.8_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.05_lg3.8_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.09_lg3.7_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.10_lg3.5_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.12_lg3.7_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.12_lg4.0_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.13_lg3.3_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.13_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.13_lg4.2_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.17_lg4.0_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.18_lg4.1_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.18_lg4.2_fe+1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.19_lg2.2_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.21_lg4.2_fe+0.7.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.25_lg2.7_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.25_lg3.4_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.27_lg4.3_fe+1.6.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.29_lg3.4_fe+1.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.31_lg3.8_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.35_lg3.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.35_lg3.8_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.40_lg5.4_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.43_lg4.2_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.48_lg3.3_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_avg/MILES_res2.50_lt4.56_lg5.5_fe-1.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.51_lg5.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.53_lg4.9_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.53_lg5.2_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.54_lg0.4_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.54_lg0.8_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.55_lg0.5_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.55_lg0.5_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.56_lg1.8_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.56_lg4.9_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.57_lg0.9_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.57_lg4.7_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.58_lg0.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.58_lg1.2_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.58_lg1.5_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.59_lg0.7_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.59_lg1.3_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.59_lg1.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.59_lg4.7_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.60_lg0.3_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.60_lg0.6_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.60_lg0.9_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.60_lg1.7_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.61_lg0.6_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.61_lg0.7_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.61_lg1.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.61_lg1.8_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.62_lg0.9_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.62_lg1.0_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.63_lg0.3_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.63_lg0.6_fe-1.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.63_lg0.9_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.63_lg0.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.63_lg2.1_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.64_lg0.8_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.64_lg1.2_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.64_lg1.3_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.64_lg1.5_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.64_lg1.7_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg0.2_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg1.1_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg1.1_fe-2.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg1.3_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg4.6_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.65_lg4.8_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg1.1_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg1.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg2.0_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg2.5_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg4.2_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.66_lg4.7_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.67_lg1.5_fe-1.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.67_lg1.7_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.67_lg1.9_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.67_lg2.5_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.67_lg3.0_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg1.5_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg2.0_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg2.2_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg2.3_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg2.4_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg2.8_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg4.5_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg4.6_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.68_lg4.6_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg2.7_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg3.0_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg3.1_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg3.2_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg3.3_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg3.5_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg4.0_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg4.1_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg4.4_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg4.5_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.69_lg4.6_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg1.8_fe-2.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg2.4_fe-2.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg2.4_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg2.5_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg2.7_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg3.0_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg3.3_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg3.4_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.70_lg3.6_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.1_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.3_fe+0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.4_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.4_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.4_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.5_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.7_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg2.8_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg3.1_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.71_lg4.6_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.72_lg1.3_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.72_lg1.6_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.72_lg2.0_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.72_lg3.0_fe-2.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg1.8_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg2.0_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg3.0_fe-2.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg3.2_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg4.2_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.73_lg4.6_fe-2.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.74_lg1.0_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.74_lg4.3_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.74_lg4.7_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.74_lg4.7_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.74_lg4.7_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.75_lg3.5_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg3.2_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg3.6_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg3.9_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg4.0_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg4.3_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.76_lg5.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.77_lg0.3_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.77_lg4.0_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.77_lg4.0_fe-1.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.77_lg4.2_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.77_lg4.5_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.78_lg0.4_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.78_lg3.0_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.78_lg4.0_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.78_lg4.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.78_lg4.5_fe-1.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg1.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg1.6_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg1.7_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg2.6_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg3.2_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg4.0_fe-2.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.79_lg4.4_fe-2.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg1.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg2.8_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg2.9_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg2.9_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg3.0_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg4.0_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg4.1_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg4.1_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg4.1_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.80_lg4.6_fe-2.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.81_lg1.6_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.81_lg3.2_fe+0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.81_lg4.3_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.82_lg0.6_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.82_lg2.3_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.82_lg3.0_fe+0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.82_lg4.0_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.83_lg2.5_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.83_lg2.6_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.83_lg4.2_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.85_lg3.3_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.86_lg0.8_fe-2.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.86_lg3.4_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.87_lg3.9_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.88_lg2.6_fe-1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.89_lg3.0_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.89_lg3.6_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.90_lg4.0_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.91_lg2.8_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.91_lg3.8_fe-0.7.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.91_lg4.0_fe-1.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.92_lg1.4_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.92_lg3.9_fe-1.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.93_lg1.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.93_lg2.5_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.93_lg3.5_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.93_lg3.6_fe-1.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.93_lg4.2_fe+0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.94_lg3.4_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.94_lg3.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.94_lg3.5_fe-2.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.95_lg3.0_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.95_lg4.1_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.96_lg1.4_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.96_lg3.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.96_lg4.2_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.97_lg1.0_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.97_lg4.2_fe-1.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.98_lg2.4_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.98_lg3.0_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.98_lg4.5_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.99_lg2.0_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt3.99_lg4.0_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.00_lg2.2_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.00_lg3.6_fe-0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.01_lg3.3_fe-0.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.01_lg3.4_fe-1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.01_lg3.5_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.03_lg3.8_fe+0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.05_lg3.5_fe-0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.05_lg3.7_fe+0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.06_lg3.8_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.09_lg3.7_fe+0.5.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.10_lg3.5_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.11_lg3.5_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.11_lg3.8_fe+0.4.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.12_lg4.0_fe-1.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.13_lg4.2_fe-0.9.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.14_lg4.0_fe-0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.17_lg4.0_fe-0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.18_lg4.1_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.18_lg4.2_fe+1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.19_lg2.2_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.23_lg4.2_fe+0.8.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.24_lg3.4_fe-0.0.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.25_lg2.7_fe-0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.27_lg4.3_fe+1.6.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.29_lg3.4_fe+1.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.33_lg3.9_fe+0.1.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.35_lg3.3_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.36_lg3.9_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.40_lg5.4_fe+0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.43_lg4.2_fe-0.2.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.48_lg3.3_fe+0.3.fits -text svneol=unset#unset
+external/templates/miles_thin/MILES_res2.50_lt4.56_lg5.5_fe-1.3.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0631.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0708.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0794.fits -text svneol=unset#unset
@@ -1743,6 +2161,78 @@ external/templates/miuscat/Iun1.30Zp0.22T14.1254.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zp0.22T15.8489.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zp0.22T17.7828.fits -text svneol=unset#unset
 external/templates/miuscat/README -text
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zm0.40T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.00T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.0631.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.0794.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.1000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.1259.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.1585.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.1995.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.2512.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.3162.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.3981.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.5012.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.6310.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T00.7943.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T01.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T01.2589.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T01.5849.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T01.9953.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T02.5119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T03.1623.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T03.9811.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T05.0119.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T06.3096.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T07.9433.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T10.0000.fits -text svneol=unset#unset
+external/templates/miuscat_thin/Iun1.30Zp0.22T12.5893.fits -text svneol=unset#unset
 external/templates/stelib/README -text
 external/templates/stelib/STELIB_v3.2_Feige110.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_G319.fits -text svneol=unset#unset
@@ -1999,16 +2489,6 @@ external/templates/stelib/STELIB_v3.2_HD271163.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_HD271182.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_HD338529.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_LTT4364.fits -text svneol=unset#unset
-/format -text
-hooks/post-commit.tmpl -text
-hooks/post-lock.tmpl -text
-hooks/post-revprop-change.tmpl -text
-hooks/post-unlock.tmpl -text
-hooks/pre-commit.tmpl -text
-hooks/pre-lock.tmpl -text
-hooks/pre-revprop-change.tmpl -text
-hooks/pre-unlock.tmpl -text
-hooks/start-commit.tmpl -text
 legacy_pro/manga_dap_0.pro -text
 legacy_pro/manga_dap_1.pro -text
 legacy_pro/mdap_add_fits_layer.pro -text
@@ -2044,8 +2524,6 @@ legacy_pro/range.pro -text
 legacy_pro/read_header.pro -text
 legacy_pro/test_sn_definition.pro -text
 legacy_pro/usersymbol.pro -text
-locks/db-logs.lock -text
-locks/db.lock -text
 pro/contrib/Belfiore_ELfit.zip -text
 pro/contrib/Enci_ELfit.tar.gz -text
 pro/contrib/mdap_define_emission_lines_enci_belfiore.pro -text
@@ -2229,5 +2707,4 @@ scripts/old/mdap_environment.csh -text
 scripts/old/mdap_setup.csh -text
 scripts/old/run_dap.sh -text
 scripts/tcshrc_environment.txt -text
-/svn.ico -text
 ups/mangadap.table -text
