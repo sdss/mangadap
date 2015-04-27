@@ -90,12 +90,20 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
         raise ValueError('Must provide platelist, ifudesignlist, and modelist!')
 
     platelist_ = arginp_to_list(platelist, evaluate=True)
+#   print(platelist)
+#   print(platelist_)
     ifudesignlist_ = arginp_to_list(ifudesignlist, evaluate=True)
+#   print(ifudesignlist)
+#   print(ifudesignlist_)
     modelist_ = arginp_to_list(modelist)
 
     n_plates = len(platelist_)
     n_designs = len(ifudesignlist_)
     n_modes = len(modelist_)
+
+#   print(n_plates)
+#   print(n_designs)
+#   print(n_modes)
 
     # Perform the combinatorics
     if (n_plates != n_designs or n_plates != n_modes or combinatorics is True):

@@ -555,7 +555,8 @@ class drpcomplete:
                 if os.path.exists(drpf.file_path()):
                     plates = plates + [self.platelist[i]]
                     ifudesigns = ifudesigns + [self.ifudesignlist[i]]
-            return numpy.array(plates), numpy.array(ifudesigns)
+            return plates, ifudesigns
+#            return numpy.array(plates), numpy.array(ifudesigns)
 
         for root, dir, files in walk(path):
             for file in files:

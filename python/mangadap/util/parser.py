@@ -26,6 +26,8 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
 
     out = inp
 
+#   print('INP type: {0}'.format(type(inp)))
+
     # Simply return a None value
     if out is None:
         return out
@@ -54,11 +56,12 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
             else:
                 out[i] = tmp
 
+#   print('OUT type: {0}'.format(type(out)))
     return out
 
 
 def funcarg_to_list(*arg):
-    print(len(arg))
+#   print(len(arg))
     return arg[1:]
 
 
