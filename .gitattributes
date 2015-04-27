@@ -2690,6 +2690,7 @@ python/mangadap/survey/rundap.py -text
 python/mangadap/survey/util.py -text
 python/mangadap/util/__init__.py -text
 python/mangadap/util/covariance.py -text
+python/mangadap/util/defaults.py -text
 python/mangadap/util/exception_tools.py -text
 python/mangadap/util/generalUtils.py -text
 python/mangadap/util/geometry.py -text
