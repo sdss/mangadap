@@ -11,6 +11,8 @@ if sys.version > '3':
 # Imports
 import numpy
 
+# TODO: Add DAP version
+
 class mangampl:
 
         def __init__(self, version=None):
@@ -38,7 +40,7 @@ class mangampl:
                     19 Mar 2015: (KBW) Added v1_2_0 and v1_3_1 (INCOMPLETE)
             """
 
-            nmpl = 2
+            nmpl = 4
             #                        MPL      IDLUTILS   DRP
             mpl_def = numpy.array([
                                     ['MPL-1', 'v5_5_16', 'v1_0_0'],
@@ -66,7 +68,7 @@ class mangampl:
             elif self.mplver == 'MPL-2':
                 return 'manga/westfall3_mpl2'
             elif self.mplver == 'MPL-3':
-                return 'manga/westfall3_mpl3'
+                return 'manga/mpl3'
             else:
                 return 'manga/westfall3_mpl1'
 

@@ -15,7 +15,9 @@ import numpy
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.yanny import yanny
 from mangadap.util.projected_disk_plane import projected_disk_plane
-
+from mangadap.util.defaults import default_drp_version, default_dap_version
+from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
+from mangadap.util.defaults import default_dap_par_file, default_dap_plan_file
 
 __author__ = 'Kyle Westfall'
 
@@ -54,40 +56,40 @@ def parse_dap_file_name(name):
 
     return plate, ifudesign, mode, bintype, niter
 
-
-def default_dap_version():
-    """Return the DAP version defined by the environmental variable."""
-    return environ['MANGADAP_VER']
-
-
-def default_analysis_path(dapver):
-    """Return the directory path used by the DAP."""
-    # Make sure the DRP version is set
-    if dapver is None:
-        dapver = default_dap_version()
-    return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], dapver)
-
-
-def default_dap_directory_path(dapver, analysis_path, plate, ifudesign):
-    """Return the directory path used by the DAP."""
-    # Make sure the DRP version is set
-    if analysis_path is None:
-        analysis_path = default_analysis_path(dapver)
-    return os.path.join(analysis_path, str(plate), str(ifudesign))
-
-
-def default_dap_par_file(dapver, analysis_path, directory_path, plate, ifudesign, mode):
-    if directory_path is None:
-        directory_path = default_dap_directory_path(dapver, analysis_path, plate, ifudesign)
-    par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(plate, ifudesign, mode)
-    return os.path.join(directory_path, par_file)
-
-    
-def default_dap_plan_file(dapver, analysis_path, directory_path, plate, ifudesign, mode):
-    if directory_path is None:
-        directory_path = default_dap_directory_path(dapver, analysis_path, plate, ifudesign)
-    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
-    return os.path.join(directory_path, plan_file)
+# MOVED to util/defaults.py
+#def default_dap_version():
+#    """Return the DAP version defined by the environmental variable."""
+#    return environ['MANGADAP_VER']
+#
+#
+#def default_analysis_path(dapver):
+#    """Return the directory path used by the DAP."""
+#    # Make sure the DRP version is set
+#    if dapver is None:
+#        dapver = default_dap_version()
+#    return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], dapver)
+#
+#
+#def default_dap_directory_path(dapver, analysis_path, plate, ifudesign):
+#    """Return the directory path used by the DAP."""
+#    # Make sure the DRP version is set
+#    if analysis_path is None:
+#        analysis_path = default_analysis_path(dapver)
+#    return os.path.join(analysis_path, str(plate), str(ifudesign))
+#
+#
+#def default_dap_par_file(dapver, analysis_path, directory_path, plate, ifudesign, mode):
+#    if directory_path is None:
+#        directory_path = default_dap_directory_path(dapver, analysis_path, plate, ifudesign)
+#    par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(plate, ifudesign, mode)
+#    return os.path.join(directory_path, par_file)
+#
+#    
+#def default_dap_plan_file(dapver, analysis_path, directory_path, plate, ifudesign, mode):
+#    if directory_path is None:
+#        directory_path = default_dap_directory_path(dapver, analysis_path, plate, ifudesign)
+#    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
+#    return os.path.join(directory_path, plan_file)
 
     
 class dapfile:
@@ -97,13 +99,14 @@ class dapfile:
     REVISION HISTORY:
         16 Dec 2014: Original Implementation by K. Westfall (KBW)
         19 Mar 2015: (KBW) Added analysis_path
+        26 Apr 2015: (KBW) Include DRP version in output path
     """
 
     # TODO: Allow default of niter=None, then search for the first file
     # with the appropriate name and set niter
 
-    def __init__(self, plate, ifudesign, mode, bintype, niter, dapver=None, analysis_path=None,
-                 directory_path=None, par_file=None, read=True):
+    def __init__(self, plate, ifudesign, mode, bintype, niter, drpver=None, dapver=None,
+                 analysis_path=None, directory_path=None, par_file=None, read=True):
         """
         ARGUMENTS:
             plate - plate designation
@@ -113,6 +116,9 @@ class dapfile:
             niter - iteration number
 
         OPTIONAL:
+            drpver - DRP version to use; ONLY USED TO DEFINE THE
+                     DIRECTORY PATH. Defaults to $MANGADRP_VER.
+
             dapver - DAP version to use; ONLY USED TO DEFINE THE
                      DIRECTORY PATH. Defaults to $MANGADAP_VER.
 
@@ -141,16 +147,18 @@ class dapfile:
         self.bintype = str(bintype)
         self.niter = int(niter)
 
+        self.drpver = default_drp_version() if drpver is None else str(drpver)
         self.dapver = default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = default_analysis_path(self.dapver) if analysis_path is None \
-                                                                else str(analysis_path)
-        self.directory_path = default_dap_directory_path(self.dapver, self.analysis_path,
-                                                         self.plate, self.ifudesign) \
-                                                         if directory_path is None \
-                                                         else str(directory_path)
+        self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
+                             if analysis_path is None else str(analysis_path)
+        self.directory_path = default_dap_directory_path(self.drpver, self.dapver, \
+                                                         self.analysis_path, self.plate, \
+                                                         self.ifudesign) \
+                              if directory_path is None else str(directory_path)
 
-        self.par_file = default_dap_par_file(self.dapver, self.analysis_path, self.directory_path,
-                                             self.plate, self.ifudesign, self.mode) \
+        self.par_file = default_dap_par_file(self.drpver, self.dapver, self.analysis_path, \
+                                             self.directory_path, self.plate, self.ifudesign, \
+                                             self.mode) \
                                              if par_file is None else str(par_file)
 
         self.hdu = None

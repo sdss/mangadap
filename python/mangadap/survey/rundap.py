@@ -17,14 +17,14 @@ from argparse import ArgumentParser
 
 # DAP imports
 from mangadap.drpcomplete import drpcomplete
-from mangadap.drpfile import drpfile, default_redux_path, default_drp_directory_path
-from mangadap.dapfile import default_analysis_path, default_dap_directory_path
-from mangadap.dapfile import default_dap_plan_file
+from mangadap.drpfile import drpfile
+from mangadap.util.defaults import default_redux_path, default_drp_directory_path
+from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
+from mangadap.util.defaults import default_dap_plan_file
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.mangampl import mangampl
 from mangadap.survey import util
-
 
 __author__ = 'Kyle Westfall'
 
@@ -251,8 +251,8 @@ class rundap:
         # Set the output paths
         self.redux_path = default_redux_path(self.mpl.drpver) if self.redux_path is None \
                                                               else str(self.redux_path)
-        self.analysis_path = default_analysis_path(self.dapver) if self.analysis_path is None \
-                                                                else str(self.analysis_path)
+        self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
+                             if self.analysis_path is None else str(self.analysis_path)
 
         # Alert the user of the versions to be used
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
@@ -486,7 +486,8 @@ class rundap:
         """
         Check if the output path exists, creating it if it doesn't.
         """
-        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+                                          ifudesign)
         if not os.path.isdir(path):
             makedirs(path)
 
@@ -648,7 +649,8 @@ class rundap:
                 
         # Touch status file
         root = self.file_root(plate, ifudesign, mode, stage)
-        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+                                          ifudesign)
         statfile = os.path.join(path, '{0}.{1}'.format(root,status))
         file = open(statfile,'w')
         file.close()
@@ -664,7 +666,7 @@ class rundap:
                 - within the path, the *.done touch file exits
         """
 
-        path = default_dap_directory_path(self.dapver, self.analysis_path, drpf.plate,
+        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, drpf.plate,
                                           drpf.ifudesign)
         if not os.path.isdir(path):
             return False
@@ -844,7 +846,8 @@ class rundap:
         # TODO: Check that *.ready file exists?
 
         # Generate the path name and root name of the output files
-        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+                                          ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
             
         # Get module name
@@ -893,8 +896,8 @@ class rundap:
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
-            default_plan_file = default_dap_plan_file(self.dapver, self.analysis_path, None, plate,
-                                                      ifudesign, mode)
+            default_plan_file = default_dap_plan_file(self.drpver, self.dapver, self.analysis_path,
+                                                      None, plate, ifudesign, mode)
             file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
             file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', ' \
                        'dappath=\'{3}\', /nolog \" | idl \n'.format(parfile, default_plan_file, \
@@ -904,6 +907,10 @@ class rundap:
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
         donefile = '{0}.done'.format(scriptfile)
         file.write('touch {0}\n'.format(donefile))
+
+        # python make_qa_file_list.py
+        # python plot_qa_wrap.py qa_file_list.txt -no_stkin_interp -no_plot_spec_pdf
+
         file.write('\n')
 
         file.close()
@@ -915,7 +922,8 @@ class rundap:
 
     def parameter_file(self, plate, ifudesign, mode, stage='dap'):
         """Get the name of the parameter file."""
-        path = default_dap_directory_path(self.dapver, self.analysis_path, plate, ifudesign)
+        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+                                          ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
         parfile = '{0}.par'.format(os.path.join(path,root))
         return parfile

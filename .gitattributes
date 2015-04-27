@@ -1741,6 +1741,7 @@ external/templates/miles_avg/MILES_res2.50_lt4.40_lg5.4_fe+0.2.fits -text svneol
 external/templates/miles_avg/MILES_res2.50_lt4.43_lg4.2_fe-0.2.fits -text svneol=unset#unset
 external/templates/miles_avg/MILES_res2.50_lt4.48_lg3.3_fe+0.3.fits -text svneol=unset#unset
 external/templates/miles_avg/MILES_res2.50_lt4.56_lg5.5_fe-1.3.fits -text svneol=unset#unset
+external/templates/miles_avg/README -text
 external/templates/miles_thin/MILES_res2.50_lt3.51_lg5.0_fe+0.1.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt3.53_lg4.9_fe-0.5.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt3.53_lg5.2_fe-1.4.fits -text svneol=unset#unset
@@ -1960,6 +1961,7 @@ external/templates/miles_thin/MILES_res2.50_lt4.40_lg5.4_fe+0.2.fits -text svneo
 external/templates/miles_thin/MILES_res2.50_lt4.43_lg4.2_fe-0.2.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt4.48_lg3.3_fe+0.3.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt4.56_lg5.5_fe-1.3.fits -text svneol=unset#unset
+external/templates/miles_thin/README -text
 external/templates/miuscat/Iun1.30Zm0.40T00.0631.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0708.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0794.fits -text svneol=unset#unset
@@ -2233,6 +2235,7 @@ external/templates/miuscat_thin/Iun1.30Zp0.22T06.3096.fits -text svneol=unset#un
 external/templates/miuscat_thin/Iun1.30Zp0.22T07.9433.fits -text svneol=unset#unset
 external/templates/miuscat_thin/Iun1.30Zp0.22T10.0000.fits -text svneol=unset#unset
 external/templates/miuscat_thin/Iun1.30Zp0.22T12.5893.fits -text svneol=unset#unset
+external/templates/miuscat_thin/README -text
 external/templates/stelib/README -text
 external/templates/stelib/STELIB_v3.2_Feige110.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_G319.fits -text svneol=unset#unset

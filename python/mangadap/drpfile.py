@@ -13,10 +13,12 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import time
 import numpy
+from matplotlib import pyplot
 
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.covariance import covariance
-from matplotlib import pyplot
+from mangadap.util.defaults import default_drp_version
+from mangadap.util.defaults import default_redux_path, default_drp_directory_path
 
 __author__ = 'Kyle B. Westfall'
 
@@ -138,31 +140,33 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
             for i in range(0,nn)]
 
 
-def default_drp_version():
-    """
-    Return the DRP version defined by the environmental variable.
-    """
-    return environ['MANGADRP_VER']
-
-
-def default_redux_path(drpver):
-    """Return the main output path for the DRP products."""
-
-    # Make sure the DRP version is set
-    if drpver is None:
-        drpver = default_drp_version()
-
-    return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
-
-
-def default_drp_directory_path(redux_path, plate):
-    """Return the exact directory path with the file."""
-
-    # Make sure the DRP version is set
-    if redux_path is None:
-        redux_path = default_redux_path()
-
-    return os.path.join(redux_path, str(plate), 'stack')
+# MOVED to util/defaults.py
+#
+#def default_drp_version():
+#    """
+#    Return the DRP version defined by the environmental variable.
+#    """
+#    return environ['MANGADRP_VER']
+#
+#
+#def default_redux_path(drpver):
+#    """Return the main output path for the DRP products."""
+#
+#    # Make sure the DRP version is set
+#    if drpver is None:
+#        drpver = default_drp_version()
+#
+#    return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
+#
+#
+#def default_drp_directory_path(redux_path, plate):
+#    """Return the exact directory path with the file."""
+#
+#    # Make sure the DRP version is set
+#    if redux_path is None:
+#        redux_path = default_redux_path()
+#
+#    return os.path.join(redux_path, str(plate), 'stack')
 
 
 class drpfile:

@@ -14,6 +14,7 @@ from astropy import constants
 
 # DAP imports
 from mangadap.util.yanny import yanny, read_yanny
+from mangadap.util import defaults
 from mangadap import drpfile
 from mangadap import dapfile
 from mangadap.util.parser import arginp_to_list, list_to_csl_string
@@ -111,13 +112,13 @@ class drpcomplete:
         """
 
         # Input properties
-        self.drpver = drpfile.default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = drpfile.default_redux_path(self.drpver) if redux_path is None \
+        self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
+        self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
                                                                   else str(redux_path)
 
-        self.dapver = dapfile.default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = dapfile.default_analysis_path(self.dapver) if analysis_path is None \
-                                                                        else str(analysis_path)
+        self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
+        self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
+                             if analysis_path is None else str(analysis_path)
         
         if os.path.exists(self.file_path()):
             self._read_data()
@@ -156,42 +157,6 @@ class drpcomplete:
     # ******************************************************************
     #  Default values
     # ******************************************************************
-
-# Use the drpfile versions
-#   def _default_drp_version(self):
-#       """
-#       Return the DRP version defined by the environmental variable.
-#       """
-#       return environ['MANGADRP_VER']
-#
-#
-#   def _default_redux_path(self):
-#       """Return the directory path used by the DRP."""
-#
-#       # Make sure the DRP version is set
-#       if self.drpver is None:
-#           self.drpver = self._default_drp_version()
-#
-#       return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver)
-
-
-# Use the dapfile versions
-#   def _default_dap_version(self):
-#       """
-#       Return the DRP version defined by the environmental variable.
-#       """
-#       return environ['MANGADAP_VER']
-#
-#
-#   def _default_analysis_path(self):
-#       """Return the directory path used by the DAP."""
-#
-#       # Make sure the DAP version is set
-#       if self.dapver is None:
-#           self.dapver = self._default_dap_version()
-#
-#       return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], self.dapver)
-
 
     def _default_plate_target_files(self):
         """
