@@ -69,6 +69,7 @@
 ;       27 Jan 2015: (KBW) Changed STELIB resolution to match Maraston &
 ;                          Strombach (2011) Table 1
 ;       10 Feb 2015: (KBW) Added M11-MILES, MILES, and STELIB
+;       27 Apr 2015: (KBW) Added MILES-AVG, MILES-THIN, MIUSCAT-THIN
 ;-
 ;------------------------------------------------------------------------------
 
@@ -147,12 +148,21 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
         endif else if library_key eq 'MILES' then begin
             ; Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
             return, 2.50
+        endif else if library_key eq 'MILES-THIN' then begin
+            ; Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+            return, 2.50
+        endif else if library_key eq 'MILES-AVG' then begin
+            ; Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+            return, 2.50
         endif else if library_key eq 'STELIB' then begin
             ; Only given as approximate in Le Borgne et al. (2003, A&A,
             ; 402, 433); assume value from Maraston & Strombach (2011,
             ; MNRAS, 418, 2785)
             return, 3.40
         endif else if library_key eq 'MIUSCAT' then begin
+            ; As provided by the header in all the fits files
+            return, 2.51
+        endif else if library_key eq 'MIUSCAT-THIN' then begin
             ; As provided by the header in all the fits files
             return, 2.51
         endif else begin

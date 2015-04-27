@@ -17,6 +17,7 @@ import sys
 if sys.version > '3':
     long = int
 
+import os.path
 from os import environ
 
 __author__ = 'Kyle B. Westfall'
@@ -91,5 +92,12 @@ def default_dap_plan_file(drpver, dapver, analysis_path, directory_path, plate, 
     plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
     return os.path.join(directory_path, plan_file)
 
+
+def default_dap_file_name(plate, ifudesign, mode, bintype, niter):
+    """Return the default name of the DAP file."""
     
+    # Number of spaces provided for iteration number is 3
+    siter = str(niter).zfill(3)
+    return 'manga-{0}-{1}-LOG{2}_BIN-{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
+
 

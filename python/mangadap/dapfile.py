@@ -18,6 +18,7 @@ from mangadap.util.projected_disk_plane import projected_disk_plane
 from mangadap.util.defaults import default_drp_version, default_dap_version
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
 from mangadap.util.defaults import default_dap_par_file, default_dap_plan_file
+from mangadap.util.defaults import default_dap_file_name
 
 __author__ = 'Kyle Westfall'
 
@@ -219,11 +220,14 @@ class dapfile:
     
     def file_name(self):
         """Return the name of the DAP file"""
+        return default_dap_file_name(self.plate, self.ifudesign, self.mode,
+                                     self.bintype, self.iter)
 
-        # Number of spaces provided for iteration number is 3
-        siter = str(self.niter).zfill(3)
-        return 'manga-{0}-{1}-LOG{2}_BIN-{3}-{4}.fits'.format(self.plate, self.ifudesign,
-                                                              self.mode, self.bintype, siter)
+# MOVED to defaults
+#       # Number of spaces provided for iteration number is 3
+#       siter = str(self.niter).zfill(3)
+#       return 'manga-{0}-{1}-LOG{2}_BIN-{3}-{4}.fits'.format(self.plate, self.ifudesign,
+#                                                             self.mode, self.bintype, siter)
 
 
     def file_path(self):

@@ -20,7 +20,7 @@ from mangadap.drpcomplete import drpcomplete
 from mangadap.drpfile import drpfile
 from mangadap.util.defaults import default_redux_path, default_drp_directory_path
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-from mangadap.util.defaults import default_dap_plan_file
+from mangadap.util.defaults import default_dap_plan_file, default_dap_file_name
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.mangampl import mangampl
@@ -94,6 +94,7 @@ class rundap:
                 # Definitions used to set files to process
                 plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
                 combinatorics=False,
+                prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
                 # Databases with input parameter information
                 platetargets=None, nsa_cat=None, nsa_catid=None,
                 # Cluster options
@@ -145,6 +146,16 @@ class rundap:
                 plan_file string
                         Name of the plan file to use for ALL DRP data in
                         this run
+
+        # TODO: Need to simplify this functionality
+
+                prior_mode string
+                prior_bin string
+                prior_iter int
+                prior_old string
+                        Used to construct a plate-ifu specific prior
+                        fits file name that then replaces an existing
+                        prior_old value.
                 platelist string
                         specified list of plates to analyze
                 ifudesignlist string
@@ -204,6 +215,10 @@ class rundap:
 
         # List of files to analyze
         self.plan_file = plan_file
+        self.prior_mode = prior_mode
+        self.prior_bin = prior_bin
+        self.prior_iter = prior_iter
+        self.prior_old = prior_old
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
         self.modelist = arginp_to_list(modelist)
@@ -238,7 +253,7 @@ class rundap:
 
         # Only print the version of the DAP
         if self.version:
-            print('This is version 0.96.')
+            print('This is version 0.97.')
             return
 
         # Make sure the selected MPL version is available
@@ -251,7 +266,7 @@ class rundap:
         # Set the output paths
         self.redux_path = default_redux_path(self.mpl.drpver) if self.redux_path is None \
                                                               else str(self.redux_path)
-        self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
+        self.analysis_path = default_analysis_path(self.mpl.drpver, self.dapver) \
                              if self.analysis_path is None else str(self.analysis_path)
 
         # Alert the user of the versions to be used
@@ -289,6 +304,26 @@ class rundap:
         # If a plan file is provided, make sure it exists
         if self.plan_file is not None and not os.path.exists(self.plan_file):
             raise Exception('Provided plan file does not exist.')
+
+        # If the prior is to be replaced, make sure all four arguments
+        # are provided
+        npri = 0
+        if self.prior_mode is not None:
+            npri += 1
+        if self.prior_bin is not None:
+            npri += 1
+        if self.prior_iter is not None:
+            npri += 1
+        if self.prior_old is not None:
+            npri += 1
+
+        if npri > 0 and npri != 4:
+            raise Exception('To define prior, must provided mode, bin, iter, and old value!')
+        # From now on can decide if prior exists by just testing one of
+        # the four options
+
+        if npri == 4 and self.plan_file is None:
+            raise Exception('To define prior, must provide a plan file to edit.')
 
         # If running all or daily, make sure lists are set to None such
         # that drpcomplete will search for all available DRP files and
@@ -378,6 +413,14 @@ class rundap:
 
         parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
                             "execution plan to use instead of the default" , default=None)
+        parser.add_argument("--prior_mode", type=str, help="mode type to use for prior",
+                            default=None)
+        parser.add_argument("--prior_bin", type=str, help="bin type to use for prior",
+                            default=None)
+        parser.add_argument("--prior_iter", type=str, help="iteration to use for prior",
+                            default=None)
+        parser.add_argument("--prior_old", type=str,
+                            help="old value to replace in existing plan file", default=None)
         parser.add_argument("--platelist", type=str, help="set list of plates to reduce",
                             default=None)
         parser.add_argument("--ifudesignlist", type=str, help="set list of ifus to reduce",
@@ -446,6 +489,15 @@ class rundap:
         if self.arg.plan_file is not None:
             self.plan_file = self.arg.plan_file
 
+        if self.arg.prior_mode is not None:
+            self.prior_mode = self.arg.prior_mode
+        if self.arg.prior_bin is not None:
+            self.prior_bin = self.arg.prior_bin
+        if self.arg.prior_iter is not None:
+            self.prior_iter = self.arg.prior_iter
+        if self.arg.prior_old is not None:
+            self.prior_old = self.arg.prior_old
+
         if self.arg.platelist is not None:
             self.platelist = arginp_to_list(self.arg.platelist, evaluate=True)
         if self.arg.ifudesignlist is not None:
@@ -486,7 +538,7 @@ class rundap:
         """
         Check if the output path exists, creating it if it doesn't.
         """
-        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
                                           ifudesign)
         if not os.path.isdir(path):
             makedirs(path)
@@ -649,7 +701,7 @@ class rundap:
                 
         # Touch status file
         root = self.file_root(plate, ifudesign, mode, stage)
-        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
                                           ifudesign)
         statfile = os.path.join(path, '{0}.{1}'.format(root,status))
         file = open(statfile,'w')
@@ -666,8 +718,8 @@ class rundap:
                 - within the path, the *.done touch file exits
         """
 
-        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, drpf.plate,
-                                          drpf.ifudesign)
+        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
+                                          drpf.plate, drpf.ifudesign)
         if not os.path.isdir(path):
             return False
 
@@ -846,7 +898,7 @@ class rundap:
         # TODO: Check that *.ready file exists?
 
         # Generate the path name and root name of the output files
-        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
                                           ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
             
@@ -896,20 +948,34 @@ class rundap:
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
-            default_plan_file = default_dap_plan_file(self.drpver, self.dapver, self.analysis_path,
-                                                      None, plate, ifudesign, mode)
+            default_plan_file = default_dap_plan_file(self.mpl.drpver, self.dapver,
+                                                      self.analysis_path, None, plate, ifudesign,
+                                                      mode)
             file.write('\cp -rf {0} {1}\n'.format(self.plan_file, default_plan_file))
+            file.write('\n')
+            # Change the prior if requested
+            if self.prior_mode is not None:
+                path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
+                                                  plate, ifudesign)
+                prior_file = default_dap_file_name(plate, ifudesign, self.prior_mode,
+                                                   self.prior_bin, self.prior_iter)
+                prior_file = os.path.join(path, prior_file)
+                file.write('edit_dap_plan.py {0} analysis_prior {1} {2}\n'.format(default_plan_file,
+                           self.prior_old, prior_file))
+                file.write('\n')
+
             file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', ' \
                        'dappath=\'{3}\', /nolog \" | idl \n'.format(parfile, default_plan_file, \
                        drppath, self.analysis_path))
+
         file.write('\n')
 
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
         donefile = '{0}.done'.format(scriptfile)
         file.write('touch {0}\n'.format(donefile))
 
-        # python make_qa_file_list.py
-        # python plot_qa_wrap.py qa_file_list.txt -no_stkin_interp -no_plot_spec_pdf
+        # python3 make_qa_file_list.py
+        # python3 plot_qa_wrap.py qa_file_list.txt -no_stkin_interp -no_plot_spec_pdf
 
         file.write('\n')
 
@@ -922,7 +988,7 @@ class rundap:
 
     def parameter_file(self, plate, ifudesign, mode, stage='dap'):
         """Get the name of the parameter file."""
-        path = default_dap_directory_path(self.drpver, self.dapver, self.analysis_path, plate,
+        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
                                           ifudesign)
         root = self.file_root(plate, ifudesign, mode, stage)
         parfile = '{0}.par'.format(os.path.join(path,root))

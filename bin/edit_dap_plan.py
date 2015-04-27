@@ -9,7 +9,8 @@ from mangadap.util.yanny import yanny
 def edit_dap_plan():
 
     if len(sys.argv) != 5:
-        print('Usage: edit_dap_plan.py <plan file> <variable> <new value> <plan index>')
+#       print('Usage: edit_dap_plan.py <plan file> <variable> <new value> <plan index>')
+        print('Usage: edit_dap_plan.py <plan file> <variable> <old value> <new value>')
         raise Exception('Incorrect number of arguments!')
 
     print(sys.argv)
@@ -19,13 +20,17 @@ def edit_dap_plan():
     nplan = len(par['DAPPLAN'][sys.argv[2]])
     print('Number of plans read: {0}'.format(nplan))
 
-    if sys.argv[4] == 'all':
-        for i in range(0,len(par['DAPPLAN'][sys.argv[2]])):
-            par['DAPPLAN'][sys.argv[2]][i] = sys.argv[3]
-    else:
-        if int(sys.argv[4]) < 0 or int(sys.argv[4]) >= nplan:
-            raise Exception('{0} is not a valid index. Length is: {1}'.format(sys.argv[4], nplan))
-        par['DAPPLAN'][sys.argv[2]][int(sys.argv[4])] = sys.argv[3]
+#   if sys.argv[4] == 'all':
+#       for i in range(0,len(par['DAPPLAN'][sys.argv[2]])):
+#           par['DAPPLAN'][sys.argv[2]][i] = sys.argv[3]
+#   else:
+#       if int(sys.argv[4]) < 0 or int(sys.argv[4]) >= nplan:
+#           raise Exception('{0} is not a valid index. Length is: {1}'.format(sys.argv[4], nplan))
+#       par['DAPPLAN'][sys.argv[2]][int(sys.argv[4])] = sys.argv[3]
+
+    for i in range(0,nplan):
+        if par['DAPPLAN'][sys.argv[2]][i] == sys.argv[3]:
+            par['DAPPLAN'][sys.argv[2]][i] = sys.argv[4]
 
     print(par['DAPPLAN'][sys.argv[2]])
 

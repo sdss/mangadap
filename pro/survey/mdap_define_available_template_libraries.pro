@@ -12,8 +12,11 @@
 ;          M11-ELODIE                0.55
 ;           M11-MILES                2.54
 ;               MILES                2.50
+;           MILES-AVG                2.50
+;          MILES-THIN                2.50
 ;              STELIB                3.40
 ;             MIUSCAT                2.51
+;        MIUSCAT-THIN                2.51
 ;
 ;       See dapsrc/pro/fileio/mdap_read_template_library.pro.  When
 ;       adding additional libraries, you must add the keyword to the
@@ -55,7 +58,7 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
         ; files is described above.
-        ntpl_libraries = 7
+        ntpl_libraries = 10
         tpl_library_keys = strarr(ntpl_libraries)
         template_libraries = strarr(ntpl_libraries)
         tpl_vacuum_wave = intarr(ntpl_libraries)
@@ -81,15 +84,30 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[4] = 0
 
-        tpl_library_keys[5] = 'STELIB'
-        template_libraries[5] = dapsrc+'/external/templates/stelib/*.fits'
+        tpl_library_keys[5] = 'MILES-AVG'
+        template_libraries[5] = dapsrc+'/external/templates/miles_avg/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[5] = 0
 
-        tpl_library_keys[6] = 'MIUSCAT'
-        template_libraries[6] = dapsrc+'/external/templates/miuscat/*.fits'
+        tpl_library_keys[6] = 'MILES-THIN'
+        template_libraries[6] = dapsrc+'/external/templates/miles_thin/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[6] = 0
+
+        tpl_library_keys[7] = 'STELIB'
+        template_libraries[7] = dapsrc+'/external/templates/stelib/*.fits'
+        ; TODO: Unknown if this library is in vacuum or in air
+        tpl_vacuum_wave[7] = 0
+
+        tpl_library_keys[8] = 'MIUSCAT'
+        template_libraries[8] = dapsrc+'/external/templates/miuscat/*.fits'
+        ; TODO: Unknown if this library is in vacuum or in air
+        tpl_vacuum_wave[8] = 0
+
+        tpl_library_keys[9] = 'MIUSCAT-THIN'
+        template_libraries[9] = dapsrc+'/external/templates/miuscat_thin/*.fits'
+        ; TODO: Unknown if this library is in vacuum or in air
+        tpl_vacuum_wave[9] = 0
 
 END
 

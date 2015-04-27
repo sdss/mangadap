@@ -196,7 +196,7 @@ PRO MDAP_WRITE_EXECUTION_PLANS_STRUCT, $
         printf, unit, '    double analysis_reddening[2];'
         printf, unit, '    int analysis_reddening_order;'
         printf, unit, '    int analysis_zero_instr_disp;'
-        printf, unit, '    char analysis_prior[50];'
+        printf, unit, '    char analysis_prior[300];'
         printf, unit, '    int overwrite_flag;'
         printf, unit, '} DAPPLAN;'
         printf, unit, ''
@@ -255,7 +255,7 @@ PRO MDAP_WRITE_EXECUTION_PLANS_INSTANCE, $
                 overwrite_flag, $
                 format='("DAPPLAN ", A6, 3(I2), 7(E14.6), I4, I2, E14.6, 2(" { ", 2(E14.6), ' $
                        + '" } ", E14.6), " { ", 4(A20), " } ", 3(A12), 3(I3), " { ", 2(E14.6), ' $
-                       + '" } ", 2(I2), A51, I2)'
+                       + '" } ", 2(I2), A301, I2)'
 END
 
 
