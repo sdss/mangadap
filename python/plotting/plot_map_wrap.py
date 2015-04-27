@@ -68,9 +68,9 @@ except:
 home = os.path.expanduser('~')
 manga_dap_ver = os.getenv('MANGADAP_VER')
 path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
-path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
 
 if test_dir:
+    path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
     path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
     path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
     path_file_list = path_dap_ver_plots

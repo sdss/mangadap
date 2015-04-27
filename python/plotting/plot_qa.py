@@ -85,11 +85,13 @@ class PlotQA:
         self.wave_obs = fin[fin.index_of('WAVE')].data
         self.galaxy = fin[fin.index_of('FLUX')].data.T
         self.ivar = fin[fin.index_of('IVAR')].data.T
-        self.model = fin[fin.index_of('SMOD')].data.T
+        self.smod = fin[fin.index_of('SMOD')].data.T
         self.stfit = fin[fin.index_of('STFIT')].data
         self.smsk = fin[fin.index_of('SMSK')].data.T
         self.elopar = fin[fin.index_of('ELOPAR')].data.T
         self.elofit = fin[fin.index_of('ELOFIT')].data.T
+        self.elomew = fin[fin.index_of('ELOMEW')].data.T
+        self.elomfb = fin[fin.index_of('ELOMFB')].data.T
 
         # spaxel, pixel and bin counts
         self.n_bins, self.n_pix = self.galaxy.shape
@@ -113,8 +115,7 @@ class PlotQA:
             self.nbin, self.binf) = \
             [self.bin_prop[name] for name in self.bin_prop.dtype.names]
 
-
-        if (self.model == 0.).all():
+        if (self.smod == 0.).all():
             raise FitError
 
         # stellar kinematics
@@ -136,8 +137,12 @@ class PlotQA:
             self.nii6548_ew, self.halpha_ew, self.nii6583_ew, self.sii6717_ew,
             self.sii6731_ew) = self.elofit['FLUX_EW'].T
 
+        # emission line + stellar continuum fits
+        self.fullfitew = self.smod + self.elomew
+        self.fullfitfb = self.smod + self.elomfb
+
         # Need to account for bins where certain emission lines weren't fit
-        # qa.elofit['ELOMIT_EW'] # = 1/0 where 1 is not fit and 0 is fit
+        # self.elofit['ELOMIT_EW'] # = 1/0 where 1 is not fit and 0 is fit
 
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
@@ -174,8 +179,9 @@ class PlotQA:
         # conserve flux by multiplying by (1+z)
         self.galaxy_rest = (self.galaxy.T * (1. + self.z)).T
         self.ivar_rest = (self.ivar.T * (1. + self.z)).T
-        self.model_rest = (self.model.T * (1. + self.z)).T
-
+        self.smod_rest = (self.smod.T * (1. + self.z)).T
+        self.fullfitew_rest = (self.fullfitew.T * (1. + self.z)).T
+        self.fullfitfb_rest = (self.fullfitfb.T * (1. + self.z)).T
 
     def select_wave_range(self, lam_good=None):
         '''Default wavelength range:
@@ -230,7 +236,7 @@ class PlotQA:
         chisq_pix: chisq at every pixel
         chisq_bin: chisq for each binned spectrum
         '''
-        self.chisq_pix = (self.galaxy - self.model)**2. * self.ivar
+        self.chisq_pix = (self.galaxy - self.smod)**2. * self.ivar
         self.chisq_pix[np.where(self.smsk==1)] = np.nan
         self.chisq_bin = self.calc_metric_per_bin(self.chisq_pix)
 
@@ -240,7 +246,7 @@ class PlotQA:
         resid_pix: residual at every pixel
         resid_bin: residual for each binned spectrum
         '''
-        self.resid_pix = self.galaxy - self.model
+        self.resid_pix = self.galaxy - self.smod
         self.resid_pix[np.where(self.smsk==1)] = np.nan
         self.resid_bin = self.calc_metric_per_bin(self.resid_pix)
         
@@ -250,7 +256,7 @@ class PlotQA:
         resid_mod_pix: residual / model at every pixel
         resid_mod_bin: residual / model for each binned spectrum
         '''
-        self.resid_mod_pix = (self.galaxy - self.model) / self.model
+        self.resid_mod_pix = (self.galaxy - self.smod) / self.smod
         self.resid_mod_pix[np.where(self.smsk==1)] = np.nan
         self.resid_mod_bin = self.calc_metric_per_bin(self.resid_mod_pix)
         
@@ -260,7 +266,7 @@ class PlotQA:
         resid_err_pix: residual / error at every pixel
         resid_err_bin: residual / error for each binned spectrum
         '''
-        self.resid_err_pix = (self.galaxy - self.model) * np.sqrt(self.ivar)
+        self.resid_err_pix = (self.galaxy - self.smod) * np.sqrt(self.ivar)
         self.resid_err_pix[np.where(self.smsk==1)] = np.nan
         self.resid_err_bin = self.calc_metric_per_bin(self.resid_err_pix)
 
@@ -272,7 +278,7 @@ class PlotQA:
         resid_data_bin_percent68: 68th percentile of resid_data_bin
         '''
         with np.errstate(divide='ignore', invalid='ignore'):
-            self.resid_data_pix = np.abs(self.galaxy - self.model) / self.galaxy
+            self.resid_data_pix = np.abs(self.galaxy - self.smod) / self.galaxy
         self.resid_data_pix[np.where(self.smsk==1)] = np.nan
         self.resid_data_bin = self.calc_metric_per_bin(self.resid_data_pix)
         self.resid_data_bin_percent99 = np.array(
@@ -284,6 +290,13 @@ class PlotQA:
 
     #-------------------------------------------------------------------------
     
+
+    #----- FITS file ---------------------------------------------------------
+    #def fits_out(self):
+
+
+    #-------------------------------------------------------------------------
+
 
 
     #----- Plot Setup --------------------------------------------------------
@@ -513,6 +526,8 @@ class PlotQA:
 
         ax.grid(False, which='both', axis='both')
 
+        kwargs = {}
+
         ind_tmp = np.where(self.binid >= 0)[0]
         ind_b = self.binid[ind_tmp]
         bin_num = np.arange(len(z), dtype=int).astype(str)
@@ -544,6 +559,11 @@ class PlotQA:
             for i in range(len(cbrange)):
                 if cbrange[i] is None:
                     cbrange[i] = cbrange_tmp[i]
+                else:
+                    if i == 0:
+                        kwargs['vmin'] = cbrange[i]
+                    elif i == 1:
+                        kwargs['vmax'] = cbrange[i]
 
         if cbrange_symmetric:
             cb_max = np.max(np.abs(cbrange))
@@ -609,10 +629,11 @@ class PlotQA:
                         spaxel_size, spaxel_size, hatch='///', linewidth=5,
                         fill=True, fc='#D6D6E5', zorder=10))
 
-            kwargs = {}
             if cbrange_clip:
-                kwargs['vmin'] = zclip.min()
-                kwargs['vmax'] = zclip.max()
+                if 'vmin' not in kwargs.keys():
+                    kwargs['vmin'] = zclip.min()
+                if 'vmax' not in kwargs.keys():
+                    kwargs['vmax'] = zclip.max()
 
             p = ax.imshow(im_mask_no_data, interpolation='none',
                           extent=extent, cmap=cmap, **kwargs)
@@ -692,12 +713,12 @@ class PlotQA:
             wave = self.wave_rest[bin]
             gal = self.galaxy_rest
             ivar = self.ivar_rest
-            models = [self.model_rest] 
+            models = [self.smod_rest] 
         else:
             wave = self.wave_obs
             gal = self.galaxy
             ivar = self.ivar
-            models = [self.model]
+            models = [self.smod]
 
         if seaborn_installed:
             sns.set_context('poster', rc={"lines.linewidth": 2})
@@ -772,54 +793,47 @@ class PlotQA:
 
     def plot_resid(self,
                    bin=0,
-                   resid_model=False,
-                   resid_err=False,
                    rest_frame=True,
                    kwargs={'alpha':0.75},
-                   lw=2,
-                   leg_lab=None,
+                   lw=1,
                    xlim=None,
                    ylim=None,
                    masks=True,
                    figsize=(20, 12)):
-        # Uncomment when you implement reading in multiple DAP analysis files
-        # models, n_models = self.count_models(models)
-        # c = generate_colors(colors, n_models)
-        # labels = ['M11-STELIB', 'MILES']
-        n_models = 1
 
         if seaborn_installed:
-            c = sns.color_palette('bright', n_models)
+            c = sns.color_palette('bright', 5)
+            sns.set_context('poster', rc={"lines.linewidth": lw})
         else:
             c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
 
-        labels = [self.tpl_lib]
-        
         n_ax = 2
-        if resid_model:
-            n_ax += 1
-        if resid_err:
-            n_ax += 1
-
-        if ylim is not None:
-            ylim = np.array(ylim)
-            if ylim.shape == (2,):
-                ylim = np.ones((4, 2)) * ylim
 
         if rest_frame:
             wave = self.wave_rest[bin]
-            gal = self.galaxy_rest
-            ivar = self.ivar_rest
-            models = [self.model_rest]
+            gal = self.galaxy_rest[bin]
+            ivar = self.ivar_rest[bin]
+            stmodel = self.smod_rest[bin]
+            fullfitew = self.fullfitew_rest[bin]
+            fullfitfb = self.fullfitfb_rest[bin]
         else:
             wave = self.wave_obs
-            gal = self.galaxy
-            ivar = self.ivar
-            models = [self.model]
+            gal = self.galaxy[bin]
+            ivar = self.ivar[bin]
+            stmodel = self.smod[bin]
+            fullfitfb = self.fullfitfb[bin]
         
-        residuals = [gal - models[j] for j in range(n_models)]
+        residew = gal - fullfitew
+        residfb = gal - fullfitfb
 
+        ind_stmodel = np.where(stmodel > 0.)[0]
         ind = np.where((wave >= xlim[0]) & (wave <= xlim[1]))[0]
+
+        if ylim[0] is not None:
+            if ylim[0][1] is None:
+                print('ylim[0][1] is None')
+                p50 = np.percentile(gal[ind], 50)
+                ylim[0][1] = p50 * 3.
 
         if masks:
             ind_split = np.where(np.diff(self.smsk[bin]) != 0)[0]
@@ -830,12 +844,9 @@ class PlotQA:
             if self.smsk.shape[1] not in ind_split:
                 ind_split = np.append(ind_split, [self.smsk.shape[1] - 1])
 
-        if seaborn_installed:
-            sns.set_context('poster', rc={"lines.linewidth": lw})
 
         fig = plt.figure(figsize=figsize)
 
-        ind_mod = [np.where(models[k][bin] > 0.)[0] for k in range(n_models)]
         for i in range(n_ax):
             if i == 0:
                 bottom = 0.32
@@ -862,34 +873,39 @@ class PlotQA:
                         lw=2, zorder=1)
 
             p = []
+            labels = []
 
             # spectrum
             if i == 0:
                 ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (
                              self.manga_pid, self.manga_id, bin))
                 ax.set_ylabel('Flux [10$^{-17}$ erg/s/cm$^2$]')
-                p.append(ax.plot(wave[ind], gal[bin][ind], color='#808080')[0])
-                y = models
+                p.append(ax.plot(wave[ind], gal[ind], color='#808080')[0])
+                labels.append('galaxy')
 
-            # residuals
+                # stellar continuum fit
+                p.append(ax.plot(wave[ind_stmodel], stmodel[ind_stmodel],
+                         color=c[1])[0])
+                labels.append('stellar continuum fit')
+
+                y = [fullfitfb, fullfitew]
+                fit_labels = ['F. Belfiore emline + cont fit', 
+                              'E. Wang emline + cont fit']
+
+            #  residuals
             elif i == 1:
                 ax.set_ylabel(r'$\Delta$')
-                y = residuals
+                y = [residfb, residew]
 
-            # residuals / model
-            elif i == 2:
-                ax.set_ylabel(r'$\Delta$ / model')                    
-                y = [residuals[j] / models[j] for j in range(n_models)]
-
-            # residuals / error
-            elif i == 3:
-                y = residuals * np.sqrt(ivar[bin])
-            
-            for j in range(n_models):
-                p.append(ax.plot(wave[ind_mod[j]], y[j][bin][ind_mod[j]],
-                         color=c[j])[0])
+            # emission line + stellar continuum fits
+            for j in range(len(y)):
+                p.append(ax.plot(wave[ind_stmodel], y[j][ind_stmodel],
+                         color=c[2-2*j])[0])
                 if i == 0:
-                    plt.legend(p, ['galaxy'] + leg_lab, loc=2)
+                    labels.append(fit_labels[j])
+
+            if i == 0:
+                plt.legend(p, labels, loc=2)
 
             # plot masks
             if masks:
@@ -904,165 +920,3 @@ class PlotQA:
                         ax.fill_between(x, ylower, yupper, **mskargs)
 
         return fig
-
-
-
-
-    # deprecated usage of rectangle patches in favor of imshow
-
-    # def plot_map(self,
-    #              z,
-    #              interpolated=False,
-    #              flux=None,
-    #              cblabel=None,
-    #              cbrange=None,
-    #              cbrange_clip=True,
-    #              cbrange_symmetric=False,
-    #              n_ticks=7,
-    #              cmap=cm.coolwarm,
-    #              xy_max=None,
-    #              title_text=None,
-    #              spaxel_num=False,
-    #              nodots=False,
-    #              fontsize=7,
-    #              n_colors=64,
-    #              fig=None,
-    #              ax=None,
-    #              axloc=None,
-    #              figsize=(10, 8)):
-    #     '''
-    #     Plot map
-    #     '''
-    #     if seaborn_installed:
-    #         if ax is None:
-    #             sns.set_context('poster', rc={'lines.linewidth': 2})
-    #         else:
-    #             sns.set_context('talk', rc={'lines.linewidth': 2})
-    #         sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
-    # 
-    #     if ax is None:
-    #         fig = plt.figure(figsize=figsize)
-    #         ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
-    #         #ax = fig.add_axes([0.15, 0.15, 0.6, 0.75])
-    # 
-    #         ax.set_xlabel('arcscec')
-    #         ax.set_ylabel('arcsec')
-    # 
-    #     if title_text is not None:
-    #         ax.set_title(title_text, fontsize=20)
-    # 
-    #     if not seaborn_installed:
-    #         ax.set_axis_bgcolor('#A8A8A8')
-    # 
-    #     ax.grid(False, which='both', axis='both')
-    # 
-    #     ind_tmp = np.where(self.binid >= 0)[0]
-    #     ind_b = self.binid[ind_tmp]
-    #     bin_num = np.arange(len(z), dtype=int).astype(str)
-    # 
-    #     spaxel_size = 0.5 # arcsec
-    # 
-    #     if not nodots:
-    #         ax.plot(-self.binxrl, self.binyru, '.k', markersize=3, zorder=10)
-    # 
-    #     # colorbar range
-    #     if len(z) == self.n_spaxels:
-    #         ind_cb = ind_tmp
-    #     elif len(z) == self.n_bins:
-    #         ind_cb = ind_b
-    # 
-    #     cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
-    # 
-    #     # if len(z) == self.n_spaxels:
-    #     #     cbrange_tmp = [z[ind_tmp].min(), z[ind_tmp].max()]
-    #     # elif len(z) == self.n_bins:
-    #     #     cbrange_tmp = [z[ind_b].min(), z[ind_b].max()]
-    # 
-    #     if cbrange_clip:
-    #         zclip = sigma_clip(z[ind_cb], sig=3)
-    #         cbrange_tmp = [zclip.min(), zclip.max()]
-    # 
-    #     if cbrange is None:
-    #         cbrange = cbrange_tmp
-    #     else:
-    #         for i in range(len(cbrange)):
-    #             if cbrange[i] is None:
-    #                 cbrange[i] = cbrange_tmp[i]
-    # 
-    #     if cbrange_symmetric:
-    #         cb_max = np.max(np.abs(cbrange))
-    #         cbrange = [-cb_max, cb_max]
-    # 
-    #     cbdelta = cbrange[1] - cbrange[0]
-    # 
-    #     # plot spaxels
-    #     if interpolated:
-    #         levels = np.linspace(cbrange[0], cbrange[1], n_colors)
-    #         # do I want [ind_cb] here?
-    #         p = ax.tricontourf(-self.binxrl[ind_cb], self.binyru[ind_cb],
-    #                            z[ind_cb], levels=levels, cmap=cmap)
-    #     else:
-    #         for i in range(len(ind_tmp)):
-    # 
-    #             if len(z) == self.n_spaxels:
-    #                 ctmp = cmap((z[ind_tmp][i] - cbrange[0]) / cbdelta)
-    #             elif len(z) == self.n_bins:
-    #                 ctmp = cmap((z[ind_b][i] - cbrange[0]) / cbdelta)
-    # 
-    #             delta = spaxel_size / 2.
-    #             rect = patches.Rectangle((-(self.xpos[ind_tmp][i] + delta),
-    #                                      self.ypos[ind_tmp][i] - delta),
-    #                                      width=spaxel_size, height=spaxel_size,
-    #                                      color=ctmp)
-    #             ax.add_patch(rect)
-    #             # dummy plot for colorbar
-    #             p = ax.scatter(-self.xpos[ind_tmp][0], self.ypos[ind_tmp][0],
-    #                            cmap=cmap, c=z[ind_b][0], s=0, vmin=cbrange[0],
-    #                            vmax=cbrange[1])
-    #     if spaxel_num:
-    #         for i in range(self.n_bins):
-    #             if (i >= 100) and (self.nbin[i] <= 2):
-    #                 fontsize_tmp = fontsize - 1
-    #             elif self.nbin[i] == 1:
-    #                 fontsize_tmp = fontsize
-    #             else:
-    #                 fontsize_tmp = fontsize + 2
-    #             ctmp = cmap((z[i] - cbrange[0]) / cbdelta)
-    #             ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
-    #                     self.binyru[i] - (spaxel_size / 4),
-    #                     str(i), fontsize=fontsize_tmp,
-    #                     color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
-    # 
-    #     # overplot flux contours (which flux? in what band?)
-    #     if flux is not None:
-    #         ax.tricontour(-self.binxrl, self.binyru,
-    #                       -2.5*np.log10(flux/np.max(flux).ravel()),
-    #                       levels=np.arange(20), colors='k') # 1 mag contours
-    # 
-    #     # colorbar
-    #     if axloc is None:
-    #         cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
-    #     else:
-    #         cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
-    #     try:
-    #         ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
-    #     except AttributeError:
-    #         print('AttributeError: MaxNLocator instance has no attribute' +
-    #               ' "tick_values" ')
-    #         cb = fig.colorbar(p, cax)
-    #     else:
-    #         cb = fig.colorbar(p, cax, ticks=ticks)
-    #     if cblabel is not None:
-    #         cb.set_label(cblabel)
-    # 
-    #     # axis limits
-    #     #xlim = ax.get_xlim()
-    #     #ylim = ax.get_ylim()
-    #     if xy_max is None:
-    #         #xy_max = np.max(np.abs([xlim, ylim]))
-    #         xy_max = self.xy_lim
-    #     ax.axis([-xy_max, xy_max, -xy_max, xy_max])
-    # 
-    #     if seaborn_installed:
-    #         sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
-

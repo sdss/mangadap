@@ -8,7 +8,7 @@ DESCRIPTION
 
     Make a list of files that plot_qa_wrap.py will process.
 
-    Usage: python make_qa_file_list [-overwrite]
+    Usage: python make_qa_file_list.py path [output file name] [-overwrite]
    
 """
 
@@ -21,90 +21,121 @@ import sys
 import errno
 import numpy as np
 
+print()
 
-
-try:
-    file_list = sys.argv[1]
-    if '-overwrite' in sys.argv:
-        overwrite = True
-    else:
-        overwrite = False
-    if '-test_dir' in sys.argv:
-        test_dir = True
-    else:
-        test_dir = False
+#----- Read in command line arguments -----
+try:    
+    path_out = sys.argv[1]
 except:
-    file_list = 'qa_file_list.txt'
-    overwrite = False
-    test_dir = False
+    print('Usage: python make_qa_file_list.py path [output file name] [-overwrite]')
 
-
-home = os.path.expanduser('~')
-manga_dap_ver = os.getenv('MANGADAP_VER')
-path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
-path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
-
-if test_dir:
-    path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
-    path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
-    path_file_list = path_dap_ver_plots
-else:
-    path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
-    path_file_list = path_dap_ver
-
-
-files_out = []
-manga_ids = []
-
-pids_in = os.listdir(path_dap_ver)
-pids = [it for it in pids_in if os.path.isdir(path_dap_ver + it)]
-
-# get the IFUs from each plate
-for pid in pids:
-    ifudesigns_in = os.listdir('/'.join([path_dap_ver, pid]))
-    ifudesigns = [it for it in ifudesigns_in
-        if os.path.isdir('/'.join([path_dap_ver, pid, it]))]
-    for ifudesign in ifudesigns:
-        manga_ids.append('-'.join([pid, ifudesign]))
-
-# get the DAP output file names from each galaxy
-for manga_id in manga_ids:
-    file_stem = '-'.join(['manga', manga_id, 'LOGCUBE_BIN'])
-    path_tmp = '/'.join([path_dap_ver] + manga_id.split('-') + [''])
-    files_in_tmp = os.listdir(path_tmp)
-    files_in = [it for it in files_in_tmp if os.path.isfile(path_tmp + it)]
-    files_tmp = np.array([it for it in files_in 
-                         if it[:len(file_stem)] == file_stem])
-    exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp])
-    ind_sort = np.argsort(exec_num)
-    files = files_tmp[ind_sort]
-    for it in files:
-        files_out.append(it)
-
-
+    
 try:
-    os.makedirs(path_file_list)
-    print('\nCreated directory: %s\n' % path_file_list)
+    if sys.argv[2][0] is not '-':
+        file_list = sys.argv[2]
+    else:
+        file_list = 'qa_file_list.txt'
+except IndexError:
+    file_list = 'qa_file_list.txt'
+
+
+if '-overwrite' in sys.argv:
+    overwrite = True
+else:
+    overwrite = False
+
+#----------------------------------------
+
+
+#----- Set Path ------
+if path_out[-1] is not '/':
+    path_out += '/'
+
+print('Path: %s\n' % path_out)
+#---------------------
+
+
+
+#----- Read the file names -----
+pid, ifudesign = path_out.split('/')[-3:-1]
+file_stem = '-'.join(['manga', pid, ifudesign, 'LOG'])
+
+files_tmp0 = os.listdir(path_out)
+files_tmp1 = np.array([it for it in files_tmp0 if file_stem in it])
+
+
+exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp1])
+ind_sort1 = np.argsort(exec_num)
+files_tmp2 = files_tmp1[ind_sort1]
+mode_id = np.array([it.split('LOG')[1].split('_')[0] for it in files_tmp2])
+ind_sort2 = np.argsort(mode_id)
+files_out = files_tmp2[ind_sort2]
+#------------------------------
+
+
+# #----- Read the file names -----
+# files_out = []
+# manga_pids = []
+# 
+# pids_in = os.listdir(path_out)
+# pids = [it for it in pids_in if os.path.isdir(path_out + it)]
+# 
+# # get the IFUs from each plate
+# for pid in pids:
+#     ifudesigns_in = os.listdir('/'.join([path_out, pid]))
+#     ifudesigns = [it for it in ifudesigns_in
+#         if os.path.isdir('/'.join([path_out, pid, it]))]
+#     for ifudesign in ifudesigns:
+#         manga_pids.append('-'.join([pid, ifudesign]))
+# 
+# # get the DAP output file names from each galaxy
+# for manga_pid in manga_pids:
+#     file_stem = '-'.join(['manga', manga_pid, 'LOG'])
+#     path_tmp = path_out + '/'.join(manga_pid.split('-') + [''])
+#     files_in_tmp = os.listdir(path_tmp)
+#     files_in = [it for it in files_in_tmp if os.path.isfile(path_tmp + it)]
+#     files_tmp0 = np.array([it for it in files_in 
+#                           if it[:len(file_stem)] == file_stem])
+#     exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp0])
+#     ind_sort1 = np.argsort(exec_num)
+#     files_tmp1 = files_tmp0[ind_sort1]
+#     mode_id = np.array([it.split('LOG')[1].split('_')[0] for it in files_tmp1])
+#     ind_sort2 = np.argsort(mode_id)
+#     files = files_tmp1[ind_sort2]
+#     for it in files:
+#         files_out.append(it)
+# 
+# #------------------------------
+
+
+#----- Create directories if necessary -----
+try:
+    os.makedirs(path_out)
+    print('\nCreated directory: %s\n' % path_out)
 except OSError as e:
     if e.errno != errno.EEXIST:
         raise e
     pass
+#-------------------------------------------
 
 
+#----- Write file list ------
 if not overwrite:
-    if not os.path.isfile(path_file_list + file_list):
+    if not os.path.isfile(path_out + file_list):
         write = True
     else:
         write = False
 else:
     write = True
-    if os.path.isfile(path_file_list + file_list):
+    if os.path.isfile(path_out + file_list):
         print()
         print('Overwriting file list...')
         print()
 
 if write:
-    np.savetxt(path_file_list + file_list, np.array(files_out), fmt='%s')
-    print('Wrote: %s' % path_file_list + file_list)
+    np.savetxt(path_out + file_list, files_out, fmt='%s')
+    print('Wrote: %s' % path_out + file_list)
 else:
     print('%s already exists. Use overwrite keyword to remake it.' % file_list)
+
+#----------------------------

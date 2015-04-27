@@ -8,7 +8,7 @@ DESCRIPTION
 
     Generate QA plots.
    
-    usage: python plot_qa_wrap.py [file_list] [-overwrite] [-no_plot_spec_pdf]
+    usage: python plot_qa_wrap.py path [file_list] [-overwrite] [-no_plot_spec_pdf]
     [-no_stkin_interp]
 
 """
@@ -24,6 +24,8 @@ import copy
 import numpy as np
 
 from imp import reload
+
+from astropy.stats import sigma_clip
 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -53,55 +55,70 @@ else:
         return d.iteritems()
 
 
-try:
-    file_list = sys.argv[1]
-    if '-overwrite' in sys.argv:
-        overwrite = True
-    else:
-        overwrite = False
-    if '-no_plot_spec_pdf' in sys.argv:
-        plot_spec_pdf = False
-    else:
-        plot_spec_pdf = True
-    if '-no_plot_spec_png' in sys.argv:
-        plot_spec_png = False
-    else:
-        plot_spec_png = True
-    if '-no_stkin_interp' in sys.argv:
-        stkin_interp = False
-    else:
-        stkin_interp = True
-    if '-test_dir' in sys.argv:
-        test_dir = True
-    else:
-        test_dir = False
+#----- Read in command line arguments -----
+try:    
+    path_out = sys.argv[1]
 except:
-    file_list = 'qa_file_list.txt'
+    print('Usage: python plot_qa_wrap.py path [file list] [-overwrite]' + 
+          '[-no_plot_spec_png] [-plot_spec_pdf] [-no_stkin_interp]')
+
+
+if '-overwrite' in sys.argv:
+    overwrite = True
+else:
     overwrite = False
+if '-plot_spec_pdf' in sys.argv:
+    plot_spec_pdf = True
+else:
     plot_spec_pdf = False
+if '-no_plot_spec_png' in sys.argv:
+    plot_spec_png = False
+else:
     plot_spec_png = True
+if '-no_stkin_interp' in sys.argv:
     stkin_interp = False
-    test_dir = False
+else:
+    stkin_interp = True
+
+try:
+    if sys.argv[1][0] is not '-':
+        file_list_in = sys.argv[1]
+        path_file_list = '/'.join(file_list_in.split('/')[:-1] + [''])
+        file_list = file_list_in.split('/')[-1]
+    else:
+        raise NameError
+    if sys.argv[2][0] is not '-':
+        path_dap = sys.argv[2]
+    else:
+        raise NameError
+except:
+    path_file_list = None
+    path_dap = None
+    file_list = 'qa_file_list.txt'
 
 print()
 print('Overwrite plots:', overwrite)
 print()
+#----------------------------------------
+
 
 #----- Set Path and File Names -----
-home = os.path.expanduser('~')
 manga_drp_ver = os.getenv('MANGADRP_VER')
 manga_dap_ver = os.getenv('MANGADAP_VER')
 path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
-path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
 
 if test_dir:
-    path_dap_ver = '/'.join([path_analysis, manga_dap_ver, ''])
-    path_dap_ver_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
-    path_file_list = path_dap_ver_plots
+    if path_dap is None:
+        path_dap = '/'.join([path_analysis, manga_dap_ver, ''])
+    path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
+    path_dap_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+    if path_file_list is None:
+        path_file_list = path_dap_plots
 else:
-    path_dap_ver = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
-    path_file_list = path_dap_ver
-
+    if path_dap is None:
+        path_dap = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
+    if path_file_list is None:
+        path_file_list = path_dap
 
 
 print('Input file list directory: %s' % (path_file_list))
@@ -128,12 +145,12 @@ for dap_file in files:
     manga_pid = '-'.join([pid, ifudesign])
     mode = mode_in.split('_')[0]
     
-    path_galaxy = path_dap_ver + ('/').join([pid, ifudesign, ''])
+    path_galaxy = path_dap + ('/').join([pid, ifudesign, ''])
     if test_dir:
-        path_galaxy_plots = path_dap_ver_plots + ('/').join([pid, ifudesign, ''])
+        path_galaxy_plots = path_dap_plots + ('/').join([pid, ifudesign, ''])
     else:
         path_galaxy_plots = path_galaxy + 'plots/'
-
+    
     path_galaxy_plots_spectra = path_galaxy_plots + 'spectra/'
     
     # create plot directories if necessary
@@ -228,6 +245,10 @@ for dap_file in files:
           'emvdisp',
           'resid',]
     
+    # plot sigma_star and sigma_gas on same scale
+    vdisp_range = sigma_clip(np.concatenate((qa.stvdisp, qa.emvdisp_ew)), sig=3)
+    cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
+    
     stvel_args = dict(val=qa.stvel,
                       kwargs=dict(cblabel=r'$v_\star$ [km/s]',
                                   cmap=cm.coolwarm,
@@ -235,7 +256,8 @@ for dap_file in files:
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
-                                    #cbrange=[35, 150],
+                                    cbrange=cbrange_vdisp,
+                                    cbrange_clip=False,
                                     cmap=qa.linearL, 
                                     title_text=r'$\sigma$_star',
                                   nodots=True))
@@ -259,7 +281,8 @@ for dap_file in files:
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
-                                 #cbrange=[35, 150],
+                                 cbrange=cbrange_vdisp,
+                                 cbrange_clip=False,
                                  cmap=qa.linearL,
                                  title_text=r'$\sigma$_gas (Enci)',
                                  nodots=True))
@@ -381,21 +404,19 @@ for dap_file in files:
     lam_lim = [3600, 9300]
     
     # set the same min and max flux for each spectrum
-    p32 = np.array([np.percentile(qa.galaxy[i], 32) for i in range(qa.n_bins)])
-    p50 = np.array([np.percentile(qa.galaxy[i], 50) for i in range(qa.n_bins)])
-    p68 = np.array([np.percentile(qa.galaxy[i], 68) for i in range(qa.n_bins)])
-    
-    sig1 = (np.sort(p68) - np.sort(p32))[-1] / 2.
+    # p32 = np.array([np.percentile(qa.galaxy[i], 32) for i in range(qa.n_bins)])
+    # p50 = np.array([np.percentile(qa.galaxy[i], 50) for i in range(qa.n_bins)])
+    # p68 = np.array([np.percentile(qa.galaxy[i], 68) for i in range(qa.n_bins)])
+    # sig1 = (np.sort(p68) - np.sort(p32))[-1] / 2.
+    # fluxmax = np.max(p50) + 4. * sig1
     
     fluxmin = 0.
-    fluxmax = np.max(p50) + 4. * sig1
+    fluxmax = None
     
     residmin = -0.25
     residmax = 0.25
     
-    resid_kwargs = dict(lw=1,
-                        leg_lab=['fit'],
-                        xlim=lam_lim,
+    resid_kwargs = dict(xlim=lam_lim,
                         ylim=[[fluxmin, fluxmax], [residmin, residmax]],
                         masks=True)
     
@@ -425,7 +446,7 @@ for dap_file in files:
     
     #reload(plot_qa)
     #from plot_qa import PlotQA
-    # 
+     
     #qa = PlotQA(path_galaxy + dap_file)
     #print('\nTemplate Library:', qa.tpl_lib)
     #qa.select_wave_range()
@@ -507,7 +528,7 @@ for dap_file in files:
             spec_to_plot = np.arange(qa.n_bins)
         else:
             spec_to_plot = np.arange(0, qa.n_bins, 50)
-        
+                
         fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
         print('Writing: %s ...' % fout)
         with PdfPages(path_galaxy_plots + fout) as pdf:
@@ -534,7 +555,7 @@ for dap_file in files:
             spec_to_plot = np.arange(qa.n_bins)
         else:
             spec_to_plot = np.arange(0, qa.n_bins, 50)
-    
+        
         fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.png'
         for bin in spec_to_plot:
             fig = qa.plot_resid(bin=bin, **resid_kwargs)
@@ -550,4 +571,8 @@ for dap_file in files:
     #--------------
 
 #---------------------------------------------
+
+
+
+
 
