@@ -21,6 +21,7 @@ from mangadap.drpfile import drpfile
 from mangadap.util.defaults import default_redux_path, default_drp_directory_path
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
 from mangadap.util.defaults import default_dap_plan_file, default_dap_file_name
+from mangadap.util.defaults import default_dap_source
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.mangampl import mangampl
@@ -941,6 +942,8 @@ class rundap:
         # Command that runs the DAP
         parfile = self.parameter_file(plate, ifudesign, mode, stage)
         drppath = default_drp_directory_path(self.redux_path, plate)
+        output_path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
+                                                 plate, ifudesign)
         if self.plan_file is None:
             # Will create and use the default plan
             file.write('echo \" manga_dap, par=\'{0}\', drppath=\'{1}\', dappath=\'{2}\', /nolog' \
@@ -955,11 +958,9 @@ class rundap:
             file.write('\n')
             # Change the prior if requested
             if self.prior_mode is not None:
-                path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
-                                                  plate, ifudesign)
                 prior_file = default_dap_file_name(plate, ifudesign, self.prior_mode,
                                                    self.prior_bin, self.prior_iter)
-                prior_file = os.path.join(path, prior_file)
+                prior_file = os.path.join(output_path, prior_file)
                 file.write('edit_dap_plan.py {0} analysis_prior {1} {2}\n'.format(default_plan_file,
                            self.prior_old, prior_file))
                 file.write('\n')
@@ -970,12 +971,23 @@ class rundap:
 
         file.write('\n')
 
+        # Plotting scripts
+        dap_source = default_dap_source()
+        pylist_path = os.path.join(dap_source, 'python', 'plotting', 'make_qa_file_list_kyle.py')
+        pyplot_path = os.path.join(dap_source, 'python', 'plotting', 'plot_qa_wrap.py')
+
+        file.write('python3 {0} {1} {2} {3}_file_to_plot.txt -overwrite \n'.format(pylist_path,
+                   output_path, mode, mode)
+        file.write('\n')
+
+        file.write('python3 {0} {1} {2}_file_to_plot.txt -no_stkin_interp -overwrite \n'.format(
+                   pyplot_path, output_path, mode)
+        file.write('\n')
+
+        # Touch the done file
         #file.write('setStatusDone -f "{0}" \n'.format(errfile))
         donefile = '{0}.done'.format(scriptfile)
         file.write('touch {0}\n'.format(donefile))
-
-        # python3 make_qa_file_list.py
-        # python3 plot_qa_wrap.py qa_file_list.txt -no_stkin_interp -no_plot_spec_pdf
 
         file.write('\n')
 
