@@ -428,7 +428,8 @@ for dap_file in files:
     
     resid_kwargs = dict(xlim=lam_lim,
                         ylim=[[fluxmin, fluxmax], [residmin, residmax]],
-                        masks=False)
+                        masks=True)
+#                       masks=False)
     
     all_spec_obs_kwargs = dict(rest_frame=False,
                                xlim=lam_lim,
