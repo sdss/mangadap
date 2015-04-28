@@ -8,8 +8,34 @@ DESCRIPTION
 
     Generate QA plots.
    
-    usage: python plot_qa_wrap.py path [file_list] [-overwrite]
-        [-no_plot_spec_pdf] [-no_stkin_interp]
+    Usage: python plot_qa_wrap.py path [file_list] [-overwrite]
+        [-plot_spec_pdf] [-no_stkin_interp]
+
+    ARGUMENTS:
+        path
+            Path with DAP output files.
+
+        [file list] 
+            File with the list of DAP files; default is qa_file_list.txt.
+
+        [-overwrite]
+            Overwrite any existing output file; default is False.
+
+        [-plot_spec_pdf]
+            Plot multiple spectra as separate pages in a single pdf file;
+            default is False.
+
+        [-no_plot_spec_png]
+            Do NOT plot spectra as separate png files; default is False.
+
+        [-stkin_interp]
+            Plot an interpolated version of the stellar kinematics maps;
+            default is False.
+
+REVISION HISTORY:
+    24 Feb 2015 - Original implementation by B. Andrews
+    28 Apr 2015: (KBW) Some documentation edits and use of glob; added mode
+
 
 """
 
@@ -62,8 +88,8 @@ else:
 try:    
     path_gal = sys.argv[1]
 except:
-    print('Usage: python plot_qa_wrap.py path [file list] [-overwrite]' + 
-          '[-no_plot_spec_png] [-plot_spec_pdf] [-no_stkin_interp]')
+    raise Exception('Usage: python plot_qa_wrap.py path [file list] [-overwrite]' + 
+                    '[-no_plot_spec_png] [-plot_spec_pdf] [-no_stkin_interp]')
 
  
 try:
@@ -566,7 +592,11 @@ for dap_file in files:
         if plot_all_spec_as_png:
             spec_to_plot = np.arange(qa.n_bins)
         else:
-            spec_to_plot = np.arange(0, qa.n_bins, 50)
+            #spec_to_plot = np.arange(0, qa.n_bins, 50)
+            if qa.n_bins < 100.:
+                spec_to_plot = np.arange(qa.n_bins)
+            else:
+                spec_to_plot = np.linspace(0, qa.n_bins-1, 100).astype(int)
         
         fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.png'
         for bin in spec_to_plot:

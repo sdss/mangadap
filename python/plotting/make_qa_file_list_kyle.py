@@ -64,7 +64,6 @@ try:
 except IndexError:
     file_list = 'qa_file_list.txt'
 
-
 if '-overwrite' in sys.argv:
     overwrite = True
 else:
