@@ -895,7 +895,12 @@ class PlotQA:
             if i == 0:
                 ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (
                              self.manga_pid, self.manga_id, bin))
-                ax.set_ylabel('Flux [10$^{-17}$ erg/s/cm$^2$]')
+                flux_units = 'Flux'
+                if self.dap_mode == 'CUBE':
+                    flux_units += ' / spaxel'
+                elif self.dap_mode == 'RSS':
+                    flux_units += ' / fiber'
+                ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units)
                 p.append(ax.plot(wave[ind], gal[ind], color='#808080')[0])
                 labels.append('galaxy')
 
