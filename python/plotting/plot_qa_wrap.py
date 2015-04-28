@@ -28,9 +28,8 @@ from imp import reload
 from astropy.stats import sigma_clip
 
 import matplotlib as mpl
-print('default:', mpl.get_backend())
 mpl.use('Agg')
-print('current:', mpl.get_backend())
+print('backend:', mpl.get_backend())
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
@@ -429,7 +428,8 @@ for dap_file in files:
     residmax = 0.25
     
     resid_kwargs = dict(xlim=lam_lim,
-                        ylim=[[fluxmin, fluxmax], [residmin, residmax]],
+                        ylim=[[fluxmin, fluxmax], None], 
+                        #ylim=[[fluxmin, fluxmax], [residmin, residmax]],
                         masks=True)
     
     all_spec_obs_kwargs = dict(rest_frame=False,
@@ -458,8 +458,8 @@ for dap_file in files:
     
     #reload(plot_qa)
     #from plot_qa import PlotQA
-     
-    #qa = PlotQA(path_galaxy + dap_file)
+    # 
+    #qa = PlotQA(path_gal + dap_file)
     #print('\nTemplate Library:', qa.tpl_lib)
     #qa.select_wave_range()
     #qa.set_axis_lims()

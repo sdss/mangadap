@@ -2,7 +2,7 @@
 
 """
 FILE
-    make_qa_file_list.py
+    make_qa_file_list_kyle.py
 
 DESCRIPTION
 

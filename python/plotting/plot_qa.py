@@ -847,6 +847,9 @@ class PlotQA:
             if ylim_tmp[0][1] is None:
                 p50 = np.percentile(gal[ind], 50)
                 ylim_tmp[0][1] = p50 * 3.
+                if ylim_tmp[1] is None:
+                    ymax_tmp = 0.1 + p50 * 0.2
+                    ylim_tmp[1] = [-ymax_tmp, ymax_tmp]
 
         if masks:
             ind_split = np.where(np.diff(self.smsk[bin]) != 0)[0]
