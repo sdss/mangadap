@@ -331,7 +331,10 @@ class PlotQA:
 
 
     def linear_Lab(self):
-        LinL = np.loadtxt('Linear_L_0-1.csv', delimiter=',')
+        try:
+            LinL = np.loadtxt('Linear_L_0-1.csv', delimiter=',')
+        except:
+            return define_custom_cubehelix()
 
         b3 = LinL[:, 2] # value of blue at sample n
         b2 = LinL[:, 2] # value of blue at sample n
