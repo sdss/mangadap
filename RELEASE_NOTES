@@ -1,3 +1,8 @@
+KBW (28 Apr 2015): tag v1_0_0
+    Tagged version run on MPL-3 DRP fits files. 
+
+--------------------------------------------------------------------------------
+
 KBW (19 Feb 2015)
 Altered python directory structure in anticipation of a python rewrite of DAP
 
