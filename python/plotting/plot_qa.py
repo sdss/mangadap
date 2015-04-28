@@ -337,7 +337,7 @@ class PlotQA:
             LinL_file = os.path.join(os.environ['MANGADAP_DIR'], 'python', 'plotting',
                                      'Linear_L_0-1.csv')
             print(LinL_file)
-            print(os.isfile(LinL_file))
+            print(os.path.isfile(LinL_file))
             LinL = np.loadtxt(LinL_file, delimiter=',')
         except:
             print('Problem with Linear_L_0-1.csv')
