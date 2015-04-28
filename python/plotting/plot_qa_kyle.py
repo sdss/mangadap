@@ -924,7 +924,8 @@ class PlotQA:
                 mskargs = dict(facecolor='gray', alpha=0.25)
                 lglam = np.log10(wave)
                 dlglam = (lglam[1] - lglam[0]) / 2.
-                ylower, yupper = -100, 10000
+                ylower, yupper = ylim[i]
+#               ylower, yupper = -100, 10000
                 for m in range(len(smsk_val)):
                     x = np.array([10**(lglam[ind_split[m]+1] - dlglam),
                                  10**(lglam[ind_split[m+1]] + dlglam)])
