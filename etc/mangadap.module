@@ -42,9 +42,6 @@ module-whatis "Sets up $product/$version in your environment."
 # A mandatory dependency is a module load command followed by a prereq
 # command.  An optional dependency is not followed by a prereq statement.
 #
-module unload idlutils
-module load idlutils/v5_5_16
-prereq idlutils/v5_5_16
 #
 # ENVIRONMENT SECTION
 #
