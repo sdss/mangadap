@@ -8,8 +8,26 @@ DESCRIPTION
 
     Make a list of files that plot_qa_wrap.py will process.
 
-    Usage: python make_qa_file_list.py path [output file name] [-overwrite]
-   
+    Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]
+
+    ARGUMENTS:
+        path
+            Path to search for completed DAP files
+
+        mode
+            Mode ('CUBE' or 'RSS') of reductions to search for.
+
+        [output file name] 
+            File name with the list of DAP files; default is
+            qa_file_list.txt.  Written to 'path'.
+
+        [-overwrite]
+            Overwrite any existing output file.
+
+REVISION HISTORY:
+    26 Mar 2015 - Original implementation by B. Andrews
+    28 Apr 2015: (KBW) Some documentation edits and use of glob; added mode
+
 """
 
 from __future__ import division
@@ -19,6 +37,7 @@ from __future__ import absolute_import
 import os
 import sys
 import errno
+import glob
 import numpy as np
 
 print()
@@ -27,18 +46,23 @@ print()
 try:    
     path_out = sys.argv[1]
 except:
-    print('Usage: python make_qa_file_list.py path [output file name] ' + 
-          '[-overwrite]')
+    raise Exception('Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]')
 
+try:
+    mode = sys.argv[2]
+except:
+    raise Exception('Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]')
+
+if mode != 'RSS' and mode != 'CUBE':
+    raise Exception('mode must be RSS or CUBE')
     
 try:
-    if sys.argv[2][0] is not '-':
-        file_list = sys.argv[2]
+    if sys.argv[3][0] is not '-':
+        file_list = sys.argv[3]
     else:
         file_list = 'qa_file_list.txt'
 except IndexError:
     file_list = 'qa_file_list.txt'
-
 
 if '-overwrite' in sys.argv:
     overwrite = True
@@ -58,19 +82,26 @@ print('Path: %s\n' % path_out)
 
 
 #----- Read the file names -----
-pid, ifudesign = path_out.split('/')[-3:-1]
-file_stem = '-'.join(['manga', pid, ifudesign, 'LOG'])
+search_string = path_out + '*LOG' + mode + '*BIN*fits'
+files_tmp = glob.glob(search_string)
+files_out = [ f.split('/')[-1] for f in files_tmp ]
+#------------------------------
 
-files_tmp0 = os.listdir(path_out)
-files_tmp1 = np.array([it for it in files_tmp0 if file_stem in it])
 
-
-exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp1])
-ind_sort1 = np.argsort(exec_num)
-files_tmp2 = files_tmp1[ind_sort1]
-mode_id = np.array([it.split('LOG')[1].split('_')[0] for it in files_tmp2])
-ind_sort2 = np.argsort(mode_id)
-files_out = files_tmp2[ind_sort2]
+# #----- Read the file names -----
+# pid, ifudesign = path_out.split('/')[-3:-1]
+# file_stem = '-'.join(['manga', pid, ifudesign, 'LOG'])
+# 
+# files_tmp0 = os.listdir(path_out)
+# files_tmp1 = np.array([it for it in files_tmp0 if file_stem in it])
+# 
+# 
+# exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp1])
+# ind_sort1 = np.argsort(exec_num)
+# files_tmp2 = files_tmp1[ind_sort1]
+# mode_id = np.array([it.split('LOG')[1].split('_')[0] for it in files_tmp2])
+# ind_sort2 = np.argsort(mode_id)
+# files_out = files_tmp2[ind_sort2]
 #------------------------------
 
 

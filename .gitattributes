@@ -2703,7 +2703,6 @@ python/mangadap/util/yanny.py -text
 python/plotting/Linear_L_0-1.csv -text
 python/plotting/__init__.py -text
 python/plotting/make_qa_file_list.py -text
-python/plotting/make_qa_file_list_kyle.py -text
 python/plotting/plot_map_wrap.py -text
 python/plotting/plot_qa.py -text
 python/plotting/plot_qa_kyle.py -text
