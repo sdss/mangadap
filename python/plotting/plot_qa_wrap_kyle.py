@@ -428,7 +428,7 @@ for dap_file in files:
     
     resid_kwargs = dict(xlim=lam_lim,
                         ylim=[[fluxmin, fluxmax], [residmin, residmax]],
-                        masks=True)
+                        masks=False)
     
     all_spec_obs_kwargs = dict(rest_frame=False,
                                xlim=lam_lim,
@@ -570,10 +570,10 @@ for dap_file in files:
         for bin in spec_to_plot:
             fout =  ('_').join([stem_file, 'spec']) + '-%0.4i.png' % bin
             print('Trying to create: {0}'.format(fout))
-#           fig = qa.plot_resid(bin=bin, **resid_kwargs)
-#           plt.savefig(path_gal_plots_spec + fout, dpi=200)
-#           plt.close()
-#           print('Wrote: %s' % fout)
+            fig = qa.plot_resid(bin=bin, **resid_kwargs)
+            plt.savefig(path_gal_plots_spec + fout, dpi=200)
+            plt.close()
+            print('Wrote: %s' % fout)
     
     
     open(path_gal_plots + done_file, 'a').close()
