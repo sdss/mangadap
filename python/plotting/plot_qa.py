@@ -333,10 +333,14 @@ class PlotQA:
 
     def linear_Lab(self):
         try:
+            print(os.environ['MANGADAP_DIR'])
             LinL_file = os.join.path(os.environ['MANGADAP_DIR'], 'python', 'plotting',
                                      'Linear_L_0-1.csv')
+            print(LinL_file)
+            print(os.isfile(LinL_file))
             LinL = np.loadtxt(LinL_file, delimiter=',')
         except:
+            
             return self.define_custom_cubehelix()
 
         b3 = LinL[:, 2] # value of blue at sample n
