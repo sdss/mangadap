@@ -64,6 +64,7 @@ class PlotQA:
     def __init__(self, filename):
         self.dap_file = filename
         self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
+        self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
         self.setup()
 
     def setup(self):
@@ -96,11 +97,12 @@ class PlotQA:
         # spaxel, pixel and bin counts
         self.n_bins, self.n_pix = self.galaxy.shape
         self.n_spaxels = len(self.drps)
-        self.sqrt_n_spaxels = np.sqrt(self.n_spaxels)
-        if np.mod(self.sqrt_n_spaxels, 1) != 0:
-            print('Sqrt of number of bins in cube is not an integer.')
-        else:
-            self.sqrt_n_spaxels = int(self.sqrt_n_spaxels)
+        if self.dap_mode == 'CUBE':
+            self.sqrt_n_spaxels = np.sqrt(self.n_spaxels)
+            if np.mod(self.sqrt_n_spaxels, 1) != 0:
+                print('Sqrt of number of bins in cube is not an integer.')
+            else:
+                self.sqrt_n_spaxels = int(self.sqrt_n_spaxels)
 
         # DRP measurements
         (self.xpos, self.ypos, ig1, ig2, self.signal, self.noise, self.binvr,
@@ -146,7 +148,11 @@ class PlotQA:
 
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
-        self.manga_id = h['MANGAID']
+        try:
+            self.manga_id = h['MANGAID']
+        except KeyError:
+            self.manga_id = 'n/a'
+
         fin.close()
 
 
@@ -831,7 +837,6 @@ class PlotQA:
 
         if ylim[0] is not None:
             if ylim[0][1] is None:
-                print('ylim[0][1] is None')
                 p50 = np.percentile(gal[ind], 50)
                 ylim[0][1] = p50 * 3.
 

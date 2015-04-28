@@ -8,8 +8,8 @@ DESCRIPTION
 
     Generate QA plots.
    
-    usage: python plot_qa_wrap.py path [file_list] [-overwrite] [-no_plot_spec_pdf]
-    [-no_stkin_interp]
+    usage: python plot_qa_wrap.py path [file_list] [-overwrite]
+        [-no_plot_spec_pdf] [-no_stkin_interp]
 
 """
 
@@ -57,10 +57,19 @@ else:
 
 #----- Read in command line arguments -----
 try:    
-    path_out = sys.argv[1]
+    path_gal = sys.argv[1]
 except:
     print('Usage: python plot_qa_wrap.py path [file list] [-overwrite]' + 
           '[-no_plot_spec_png] [-plot_spec_pdf] [-no_stkin_interp]')
+
+ 
+try:
+    if sys.argv[2][0] is not '-':
+        file_list = sys.argv[2]
+    else:
+        file_list = 'qa_file_list.txt'
+except IndexError:
+    file_list = 'qa_file_list.txt'
 
 
 if '-overwrite' in sys.argv:
@@ -75,26 +84,11 @@ if '-no_plot_spec_png' in sys.argv:
     plot_spec_png = False
 else:
     plot_spec_png = True
-if '-no_stkin_interp' in sys.argv:
-    stkin_interp = False
-else:
+if '-stkin_interp' in sys.argv:
     stkin_interp = True
+else:
+    stkin_interp = False
 
-try:
-    if sys.argv[1][0] is not '-':
-        file_list_in = sys.argv[1]
-        path_file_list = '/'.join(file_list_in.split('/')[:-1] + [''])
-        file_list = file_list_in.split('/')[-1]
-    else:
-        raise NameError
-    if sys.argv[2][0] is not '-':
-        path_dap = sys.argv[2]
-    else:
-        raise NameError
-except:
-    path_file_list = None
-    path_dap = None
-    file_list = 'qa_file_list.txt'
 
 print()
 print('Overwrite plots:', overwrite)
@@ -102,32 +96,44 @@ print()
 #----------------------------------------
 
 
-#----- Set Path and File Names -----
-manga_drp_ver = os.getenv('MANGADRP_VER')
-manga_dap_ver = os.getenv('MANGADAP_VER')
-path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
+#----- Set Path ------
+if path_gal[-1] is not '/':
+    path_gal += '/'
 
-if test_dir:
-    if path_dap is None:
-        path_dap = '/'.join([path_analysis, manga_dap_ver, ''])
-    path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
-    path_dap_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
-    if path_file_list is None:
-        path_file_list = path_dap_plots
-else:
-    if path_dap is None:
-        path_dap = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
-    if path_file_list is None:
-        path_file_list = path_dap
+print('Path: %s\n' % path_gal)
+#---------------------
 
 
-print('Input file list directory: %s' % (path_file_list))
-print()
-print('Input file list: %s' % (file_list))
-print()
-files = np.genfromtxt(path_file_list + file_list, dtype='str')
+# #----- Set Path and File Names -----
+# manga_drp_ver = os.getenv('MANGADRP_VER')
+# manga_dap_ver = os.getenv('MANGADAP_VER')
+# path_analysis = os.getenv('MANGA_SPECTRO_ANALYSIS')
+# 
+# if test_dir:
+#     if path_dap is None:
+#         path_dap = '/'.join([path_analysis, manga_dap_ver, ''])
+#     path_analysis_plots = os.getenv('MANGA_SPECTRO_ANALYSIS_PLOTS')
+#     path_dap_plots = '/'.join([path_analysis_plots, manga_dap_ver, ''])
+#     if path_file_list is None:
+#         path_file_list = path_dap_plots
+# else:
+#     if path_dap is None:
+#         path_dap = '/'.join([path_analysis, manga_drp_ver, manga_dap_ver, ''])
+#     if path_file_list is None:
+#         path_file_list = path_dap
+# 
+# 
+# print('Input file list directory: %s' % (path_file_list))
+# print()
+# print('Input file list: %s' % (file_list))
+# print()
+# #-------------------------------
+
+
+#----- Read the file names -----
+files = np.genfromtxt(path_gal + file_list, dtype='str')
 files = np.atleast_1d(files)
-#-----------------------------------
+#-------------------------------
 
 
 
@@ -145,18 +151,13 @@ for dap_file in files:
     manga_pid = '-'.join([pid, ifudesign])
     mode = mode_in.split('_')[0]
     
-    path_galaxy = path_dap + ('/').join([pid, ifudesign, ''])
-    if test_dir:
-        path_galaxy_plots = path_dap_plots + ('/').join([pid, ifudesign, ''])
-    else:
-        path_galaxy_plots = path_galaxy + 'plots/'
-    
-    path_galaxy_plots_spectra = path_galaxy_plots + 'spectra/'
+    path_gal_plots = path_gal + 'plots/'
+    path_gal_plots_spec = path_gal_plots + 'spectra/'
     
     # create plot directories if necessary
     try:
-        os.makedirs(path_galaxy_plots_spectra)
-        print('\nCreated directory: %s\n' % path_galaxy_plots_spectra)
+        os.makedirs(path_gal_plots_spec)
+        print('\nCreated directory: %s\n' % path_gal_plots_spec)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
@@ -164,7 +165,7 @@ for dap_file in files:
     
     # check for done file
     if not overwrite:
-        if os.path.isfile(path_galaxy_plots + done_file):
+        if os.path.isfile(path_gal_plots + done_file):
             print('%-12s %-6s: Plots already exist.' % (manga_pid, binning_type) + 
                   '  Use overwrite keyword to remake them')
             continue
@@ -173,27 +174,34 @@ for dap_file in files:
     
     
     #----- Plots for each binning type  ----- 
-    if binning_type == 'NONE':
-        plot_map = True
-        overplot_all = True
-        plot_all_spec_as_pdf = False
-        plot_all_spec_as_png = False
-        plot_h3_h4 = False
-    elif binning_type == 'STON':
-        plot_map = True
-        overplot_all = True
-        plot_all_spec_as_pdf = True
-        plot_all_spec_as_png = True
-        plot_h3_h4 = True
-    elif binning_type == 'RADIAL':
+    if mode == 'LOGCUBE':
+        if binning_type == 'NONE':
+            plot_map = True
+            overplot_all = True
+            plot_all_spec_as_pdf = False
+            plot_all_spec_as_png = False
+            plot_h3_h4 = False
+        elif binning_type == 'STON':
+            plot_map = True
+            overplot_all = True
+            plot_all_spec_as_pdf = True
+            plot_all_spec_as_png = True
+            plot_h3_h4 = True
+        elif binning_type == 'RADIAL':
+            plot_map = False
+            overplot_all = True
+            plot_all_spec_as_pdf = True
+            plot_all_spec_as_png = True
+            plot_h3_h4 = False
+        elif binning_type == 'ALL':
+            plot_map = False
+            overplot_all = False
+            plot_all_spec_as_pdf = True
+            plot_all_spec_as_png = True
+            plot_h3_h4 = False
+    elif mode == 'LOGRSS':
         plot_map = False
         overplot_all = True
-        plot_all_spec_as_pdf = True
-        plot_all_spec_as_png = True
-        plot_h3_h4 = False
-    elif binning_type == 'ALL':
-        plot_map = False
-        overplot_all = False
         plot_all_spec_as_pdf = True
         plot_all_spec_as_png = True
         plot_h3_h4 = False
@@ -205,9 +213,9 @@ for dap_file in files:
     #reload(plot_qa)
     #from plot_qa import PlotQA
     try:
-        qa = PlotQA(path_galaxy + dap_file)
+        qa = PlotQA(path_gal + dap_file)
         print('pid-ifu: %s, binning: %s' % (manga_pid, binning_type))
-        # print('Template Library:', qa.tpl_lib)
+        print('Template Library:', qa.tpl_lib)
         qa.select_wave_range()
         qa.set_axis_lims()
         qa.calc_chisq()
@@ -463,32 +471,32 @@ for dap_file in files:
         # Plot bin numbers on top of chisq map
         qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
         fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
+        plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
         
         # Plot binned maps of chisq, resid/galaxy, stellar kinematics
         qa.plot_multi_map(kin_mapname, kin_map_kwargs)
         fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
+        plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
         
         if stkin_interp:
             # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
             qa.plot_multi_map(kin_mapname, kin_map_kwargs_interp)
             fout =  ('_').join([stem_file, 'kin', 'maps', 'interp']) + '.png'
-            plt.savefig(path_galaxy_plots + fout)
+            plt.savefig(path_gal_plots + fout)
             print('Wrote: %s' % fout)
         
         # Plot binned maps of emission line fluxes
         qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
         fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
+        plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
         
         # Plot binned maps of signal to noise and emission line kinematics
         qa.plot_multi_map(snr_mapname, snr_map_kwargs)
         fout =  ('_').join([stem_file, 'snr', 'maps']) + '.png'
-        plt.savefig(path_galaxy_plots + fout)
+        plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
     
     
@@ -498,25 +506,25 @@ for dap_file in files:
         # Overplot all residuals (observed frame)
         qa.plot_all_spec(**all_resid_obs_kwargs)
         fout =  ('_').join([stem_file, 'all', 'resid', 'obs']) + '.png'
-        plt.savefig(path_galaxy_plots + fout, dpi=200)
+        plt.savefig(path_gal_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
         # Overplot all residuals (rest frame)
         qa.plot_all_spec(**all_resid_rest_kwargs)
         fout =  ('_').join([stem_file, 'all', 'resid', 'rest']) + '.png'
-        plt.savefig(path_galaxy_plots + fout, dpi=200)
+        plt.savefig(path_gal_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
         # Overplot all spectra (observed frame)
         qa.plot_all_spec(**all_spec_obs_kwargs)
         fout =  ('_').join([stem_file, 'all', 'spec', 'obs']) + '.png'
-        plt.savefig(path_galaxy_plots + fout, dpi=200)
+        plt.savefig(path_gal_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
         # Overplot all spectra (rest frame)
         qa.plot_all_spec(**all_spec_rest_kwargs)
         fout =  ('_').join([stem_file, 'all', 'spec', 'rest']) + '.png'
-        plt.savefig(path_galaxy_plots + fout, dpi=200)
+        plt.savefig(path_gal_plots + fout, dpi=200)
         print('Wrote: %s' % fout)
         
     
@@ -531,7 +539,7 @@ for dap_file in files:
                 
         fout =  ('_').join([stem_file, 'resid', 'all', 'bins']) + '.pdf'
         print('Writing: %s ...' % fout)
-        with PdfPages(path_galaxy_plots + fout) as pdf:
+        with PdfPages(path_gal_plots + fout) as pdf:
             for bin in spec_to_plot:
                 fig = qa.plot_resid(bin=bin, **resid_kwargs)
                 try:
@@ -560,12 +568,12 @@ for dap_file in files:
         for bin in spec_to_plot:
             fig = qa.plot_resid(bin=bin, **resid_kwargs)
             fout =  ('_').join([stem_file, 'spec']) + '-%0.4i.png' % bin
-            plt.savefig(path_galaxy_plots_spectra + fout, dpi=200)
+            plt.savefig(path_gal_plots_spec + fout, dpi=200)
             plt.close()
             print('Wrote: %s' % fout)
     
     
-    open(path_galaxy_plots + done_file, 'a').close()
+    open(path_gal_plots + done_file, 'a').close()
     
     print('')
     #--------------

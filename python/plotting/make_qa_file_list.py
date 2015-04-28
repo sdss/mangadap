@@ -27,7 +27,8 @@ print()
 try:    
     path_out = sys.argv[1]
 except:
-    print('Usage: python make_qa_file_list.py path [output file name] [-overwrite]')
+    print('Usage: python make_qa_file_list.py path [output file name] ' + 
+          '[-overwrite]')
 
     
 try:
@@ -134,8 +135,9 @@ else:
 
 if write:
     np.savetxt(path_out + file_list, files_out, fmt='%s')
-    print('Wrote: %s' % path_out + file_list)
+    print('Wrote: %s' % file_list)
 else:
-    print('%s already exists. Use overwrite keyword to remake it.' % file_list)
+    print('File %s --> already exists. Use overwrite keyword to remake it.' %
+          file_list)
 
 #----------------------------
