@@ -48,13 +48,14 @@ PRO MDAP_DEFINE_BAD_PIXEL_FLAGS, $
                 maskbit_type, flag_name, exists
 
         ; Define the maskbit type
-        maskbit_type = 'MANGA_DRPPIXFLAG'           ; idlutils v5_5_19; drpver < v1_3
-;       maskbit_type = 'MANGA_DRP3PIXMASK'          ; idlutils v5_5_20; drpver >= v1_3
+;       maskbit_type = 'MANGA_DRPPIXFLAG'           ; idlutils v5_5_19; drpver < v1_3
+        maskbit_type = 'MANGA_DRP3PIXMASK'          ; idlutils v5_5_20; drpver >= v1_3
 
         ; Define ALL the maskbits to set to a bad pixel
 ;       flag_name = [ 'DEADFIBER', 'BADDATA', 'LOWCOV', 'NOCOV' ]   ; idlutils v5_5_19; drpver<v1_3
-        flag_name = [ 'LOWCOV', 'NOCOV' ]                           ; idlutils v5_5_19; drpver<v1_3
+;       flag_name = [ 'LOWCOV', 'NOCOV' ]                           ; idlutils v5_5_19; drpver<v1_3
 ;       flag_name = [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'DONOTUSE' ]  ; idlutils v5_5_20; drpver>=v1_3
+        flag_name = [ 'DONOTUSE', 'FORESTAR' ]  ; idlutils v5_5_20; drpver>=v1_3
 
         ; Determine which maskbits are actually defined, and warn the
         ; user if any of the above are not defined
