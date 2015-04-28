@@ -20,6 +20,7 @@ from astropy.io import fits
 from astropy.stats import sigma_clip
 
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap
