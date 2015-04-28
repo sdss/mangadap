@@ -281,7 +281,12 @@ SN = max(signal/noise, currentBin) ; Start from the pixel with highest S/N
 ; remaining computation time when binning very big dataset.
 ;
 w = where(signal/noise lt targetSN, COMPLEMENT=w1, NCOMPLEMENT=nc)
-maxnum = round(total((signal[w]/noise[w])^2)/targetSN^2) + nc
+sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[w], noise[w], noise_calib=noise_calib, $
+                                      optimal_weighting=optimal_weighting)
+; maxnum = round(total((signal[w]/noise[w])^2)/targetSN^2) + nc
+maxnum = round(sn_total_eval^2/targetSN^2) + nc
+print, 'maxnum: ', maxnum
+;stop
 
 ; The first bin will be assigned CLASS = 1
 ; With N pixels there will be at most N bins
@@ -604,6 +609,7 @@ if count eq 0 then $
 
 sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[indx], noise[indx], noise_calib=noise_calib, $
                                       optimal_weighting=optimal_weighting)
+print, 'S/N of all data: ', sn_total_eval
 if sn_total_eval lt targetSN then begin
 ;   message, 'Not enough S/N in the whole set of pixels. ' $
 ;       + 'Many pixels may have noise but virtually no signal. ' $
@@ -641,8 +647,23 @@ if not keyword_set(quiet) then $
     print, 'Bin-accretion...'
 bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, noise_calib=noise_calib, $
                  optimal_weighting=optimal_weighting, QUIET=quiet
+print, 'class: ', class
+indx = where(ston gt 0. and finite(ston), count)
+print, count, n_elements(class) 
 if not keyword_set(quiet) then begin
-    print, strtrim(max(class),2), ' initial bins.'
+    print, strtrim(max(class)+1,2), ' initial bins.'
+endif
+
+; All in a single bin
+if max(class) eq 0 then begin
+    indx = where(ston gt 0. and finite(ston), count)
+    print, 'WARNING: All spectra assigned to a single bin!  Proceeding by combining all spectra.'
+    BIN2D_ONE_BIN, indx, x, y, signal, noise, xnode, ynode, scale, class, xbar, ybar, sn, $
+                   area, noise_calib=noise_calib, optimal_weighting=optimal_weighting
+    return
+endif
+
+if not keyword_set(quiet) then begin
     print, 'Reassign bad bins...'
 endif
 bin2d_reassign_bad_bins, x, y, class, xnode, ynode
