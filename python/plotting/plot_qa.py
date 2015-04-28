@@ -842,10 +842,11 @@ class PlotQA:
         ind_stmodel = np.where(stmodel > 0.)[0]
         ind = np.where((wave >= xlim[0]) & (wave <= xlim[1]))[0]
 
-        if ylim[0] is not None:
-            if ylim[0][1] is None:
+        ylim_tmp = copy.deepcopy(ylim)
+        if ylim_tmp[0] is not None:
+            if ylim_tmp[0][1] is None:
                 p50 = np.percentile(gal[ind], 50)
-                ylim[0][1] = p50 * 3.
+                ylim_tmp[0][1] = p50 * 3.
 
         if masks:
             ind_split = np.where(np.diff(self.smsk[bin]) != 0)[0]
@@ -870,8 +871,8 @@ class PlotQA:
 
             if xlim is not None:
                 ax.set_xlim(xlim)
-            if ylim is not None:
-                ax.set_ylim(ylim[i])
+            if ylim_tmp is not None:
+                ax.set_ylim(ylim_tmp[i])
 
             if i in np.arange(n_ax-1):
                 plt.setp(ax.get_xticklabels(), visible=False)
@@ -924,7 +925,8 @@ class PlotQA:
                 mskargs = dict(facecolor='gray', alpha=0.25)
                 lglam = np.log10(wave)
                 dlglam = (lglam[1] - lglam[0]) / 2.
-                ylower, yupper = -100, 10000
+                #ylower, yupper = -100, 10000
+                ylower, yupper = ylim_tmp[i]
                 for m in range(len(smsk_val)):
                     x = np.array([10**(lglam[ind_split[m]+1] - dlglam),
                                  10**(lglam[ind_split[m+1]] + dlglam)])

@@ -28,8 +28,9 @@ from imp import reload
 from astropy.stats import sigma_clip
 
 import matplotlib as mpl
-print(mpl.get_backend())
+print('default:', mpl.get_backend())
 mpl.use('Agg')
+print('current:', mpl.get_backend())
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
