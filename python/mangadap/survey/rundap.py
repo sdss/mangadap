@@ -976,11 +976,11 @@ class rundap:
         pylist_path = os.path.join(dap_source, 'python', 'plotting', 'make_qa_file_list.py')
         pyplot_path = os.path.join(dap_source, 'python', 'plotting', 'plot_qa_wrap.py')
 
-        file.write('python3 {0} {1} {2} {3}_file_to_plot.txt -overwrite \n'.format(pylist_path,
+        file.write('python3 {0} {1} {2} {3}_files_to_plot.txt -overwrite \n'.format(pylist_path,
                    output_path, mode, mode))
         file.write('\n')
 
-        file.write('python3 {0} {1} {2}_file_to_plot.txt -no_stkin_interp -overwrite \n'.format(
+        file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp -overwrite \n'.format(
                    pyplot_path, output_path, mode))
         file.write('\n')
 
