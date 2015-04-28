@@ -28,8 +28,8 @@ from imp import reload
 from astropy.stats import sigma_clip
 
 import matplotlib as mpl
-print(mpl.backend)
-#mpl.use('GTKAgg')
+print(mpl.get_backend())
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
