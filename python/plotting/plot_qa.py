@@ -62,6 +62,10 @@ class FitError(Exception):
 
 
 class PlotQA:
+    '''
+    Generate QA plots.
+    '''
+
     def __init__(self, filename):
         self.dap_file = filename
         self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
@@ -191,14 +195,14 @@ class PlotQA:
         self.fullfitfb_rest = (self.fullfitfb.T * (1. + self.z)).T
 
     def select_wave_range(self, lam_good=None):
-        '''Default wavelength range:
+        '''
+        Select wavelength range for calculating goodness-of-fit metrics.
 
-        includes:
-        - blue-ward of [SII]6731,
-        - CaT region
-        
-        excludes:
-        - sky lines at 4230, 5575
+        :param lam_good: Ranges of wavelengths over which to evaluate goodness-of-fit. Default is [[3650, 4200], [4250, 5400], [5450, 6732]].
+        :type lam_good: array, optional
+
+        Default wavelength ranges covers from 3650 A to [SII]6731 line except
+        for windows around the sky lines at 4230 and 5575 A.
         '''
         if lam_good is None:
             self.lam_good = np.array([[3650., 4200.], # ends at 4230 sky line
