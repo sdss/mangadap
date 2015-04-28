@@ -60,9 +60,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-import plot_qa
-from plot_qa import PlotQA
-from plot_qa import FitError
+from plotting.plot_qa_kyle import PlotQA
+from plotting.plot_qa_kyle import FitError
 
 
 dict_tmp = {}
