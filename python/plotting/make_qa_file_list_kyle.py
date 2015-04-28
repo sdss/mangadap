@@ -25,8 +25,8 @@ DESCRIPTION
             Overwrite any existing output file.
 
 REVISION HISTORY:
-    ?? - Original implementation by B. Andrews
-    28 Apr 2015 - Some documentation edits and use of glob; added mode
+    ?? ??? ???? - Original implementation by B. Andrews
+    28 Apr 2015: (KBW) Some documentation edits and use of glob; added mode
 
 """
 
@@ -84,7 +84,8 @@ print('Path: %s\n' % path_out)
 
 #----- Read the file names -----
 search_string = path_out + '*LOG' + mode + '*BIN*fits'
-files_out = glob.glob(search_string)
+files_tmp = glob.glob(search_string)
+files_out = [ f.split('/')[-1] for f in files_tmp ]
 #------------------------------
 
 
