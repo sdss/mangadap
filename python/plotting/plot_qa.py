@@ -333,7 +333,9 @@ class PlotQA:
 
     def linear_Lab(self):
         try:
-            LinL = np.loadtxt('Linear_L_0-1.csv', delimiter=',')
+            LinL_file = os.join.path(os.environ['MANGADAP_DIR'], 'python', 'plotting',
+                                     'Linear_L_0-1.csv')
+            LinL = np.loadtxt(LinL_file, delimiter=',')
         except:
             return self.define_custom_cubehelix()
 
