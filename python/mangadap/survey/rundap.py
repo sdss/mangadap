@@ -973,7 +973,7 @@ class rundap:
 
         # Plotting scripts
         dap_source = default_dap_source()
-        pylist_path = os.path.join(dap_source, 'python', 'plotting', 'make_qa_file_list_kyle.py')
+        pylist_path = os.path.join(dap_source, 'python', 'plotting', 'make_qa_file_list.py')
         pyplot_path = os.path.join(dap_source, 'python', 'plotting', 'plot_qa_wrap.py')
 
         file.write('python3 {0} {1} {2} {3}_file_to_plot.txt -overwrite \n'.format(pylist_path,
