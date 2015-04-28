@@ -334,7 +334,7 @@ class PlotQA:
     def linear_Lab(self):
         try:
             print(os.environ['MANGADAP_DIR'])
-            LinL_file = os.join.path(os.environ['MANGADAP_DIR'], 'python', 'plotting',
+            LinL_file = os.path.join(os.environ['MANGADAP_DIR'], 'python', 'plotting',
                                      'Linear_L_0-1.csv')
             print(LinL_file)
             print(os.isfile(LinL_file))
