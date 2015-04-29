@@ -409,7 +409,7 @@ class rundap:
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
         parser.add_argument("--dapver", type=str,
                             help="optional output version, different from product version",
-                            default="trunk")
+                            default=None)
         parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
         parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
