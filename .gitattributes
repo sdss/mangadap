@@ -1,5 +1,6 @@
 * text=auto !eol
 /RELEASE_NOTES -text
+bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
 bin/edit_dap_plan.py -text
 bin/mangadap_version -text

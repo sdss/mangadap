@@ -8,17 +8,17 @@ fi
 echo ${dir}
 
 ((tot=0))
-((flt=0))
+((fin=0))
 for donef in $( ls */*/*.done ); do
     root=$( echo $donef | cut -f 1 -d '.')
     ((++tot))
-    if [ $( grep -c SUCCESSFULLY ${root}.out ) -ne 1 ]; then 
+    if [ $( grep -c SUCCESSFULLY ${root}.out ) -eq 1 ]; then 
         echo ${root}
-        ((++flt))
+        ((++fin))
     fi
 done
 
-echo "Fault in ${flt} of ${tot} files."
+echo "Successfully processed ${fin} of ${tot} files."
 
 exit
 
