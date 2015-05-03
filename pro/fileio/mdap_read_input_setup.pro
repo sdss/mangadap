@@ -41,8 +41,9 @@
 ;               Path for the DAP output to use instead of the default
 ;               path.  The default path is
 ;
-;               def_dappath = getenv('MANGA_SPECTRO_ANALYSIS') + '/' + $
-;                             getenv('MANGADAP_VER')
+;               def_dappath = getenv('MANGA_SPECTRO_ANALYSIS') + '/' $
+;                             + getenv('MANGADRP_VER') + '/' $
+;                             + getenv('MANGADAP_VER')
 ;
 ; OPTIONAL KEYWORDS:
 ;
@@ -104,9 +105,10 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       28 Nov 2014: (KBW) Original implementation
+;       28 Nov 2014: Original implementation by K. Westfall (KBW)
+;       29 Apr 2015: (KBW) Change output DAP path to include DRP version
 ;-
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------
 
 PRO MDAP_READ_INPUT_SETUP, $
         inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, plate, ifudesign, $
@@ -164,12 +166,13 @@ PRO MDAP_READ_INPUT_SETUP, $
 
         ; Define the DRP input path
         if n_elements(drppath) eq 0 then $
-            drppath = getenv('MANGA_SPECTRO_REDUX') + '/' + getenv('MANGADRP_VER') + '/' + $
-                      MDAP_STC(plate, /integer) + '/stack'
+            drppath = getenv('MANGA_SPECTRO_REDUX') + '/' + getenv('MANGADRP_VER') + '/' $
+                      + MDAP_STC(plate, /integer) + '/stack'
 
         ; Define the DAP output path
         if n_elements(dappath) eq 0 then $
-            dappath = getenv('MANGA_SPECTRO_ANALYSIS') + '/' + getenv('MANGADAP_VER')
+            dappath = getenv('MANGA_SPECTRO_ANALYSIS') + '/' + getenv('MANGADRP_VER') + '/' $
+                      + getenv('MANGADAP_VER')
 
         
         root_name = drppath + '/manga-' + MDAP_STC(plate, /integer) + '-' + $
