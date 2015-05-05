@@ -9,7 +9,7 @@ DESCRIPTION
     Generate QA plots.
    
     Usage: python plot_qa_wrap.py path [file_list] [-overwrite]
-        [-plot_spec_pdf] [-no_stkin_interp]
+        [-plot_spec_pdf] [-no_plot_spec_png] [-no_stkin_interp]
 
     ARGUMENTS:
         path
@@ -60,8 +60,14 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-from plotting.plot_qa import PlotQA
-from plotting.plot_qa import FitError
+# for Utah cluster
+# from plotting.plot_qa import PlotQA
+# from plotting.plot_qa import FitError
+
+# for Brett
+import plot_qa
+from plot_qa import PlotQA
+from plot_qa import FitError
 
 
 dict_tmp = {}
@@ -205,30 +211,37 @@ for dap_file in files:
     if mode == 'LOGCUBE':
         if binning_type == 'NONE':
             plot_map = True
+            plot_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = False
             plot_all_spec_as_png = False
             plot_h3_h4 = False
         elif binning_type == 'STON':
             plot_map = True
+            plot_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
             plot_h3_h4 = True
         elif binning_type == 'RADIAL':
             plot_map = False
+            plot_gradients = True
             overplot_all = True
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
             plot_h3_h4 = False
         elif binning_type == 'ALL':
             plot_map = False
+            plot_gradients = False
             overplot_all = False
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
             plot_h3_h4 = False
     elif mode == 'LOGRSS':
+        # add this line
+        # if binning_type == 'RADIAL':
         plot_map = False
+        plot_gradients = True
         overplot_all = True
         plot_all_spec_as_pdf = True
         plot_all_spec_as_png = True
@@ -366,19 +379,31 @@ for dap_file in files:
       'halpha',
       'nii6583',
       'sii6717',]
-    
-    oii3727_args = dict(val=qa.oii3727_ew,
+    oii3727_args = dict(val=qa.oii3727_ew, val2=qa.oii3727_fb,
                         kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
-    hbeta_args = dict(val=qa.hbeta_ew,
+    hbeta_args = dict(val=qa.hbeta_ew, val2=qa.hbeta_fb,
                       kwargs=dict(title_text=r'H$\beta$ (Enci)'))
-    oiii5007_args = dict(val=qa.oiii5007_ew,
+    oiii5007_args = dict(val=qa.oiii5007_ew, val2=qa.oiii5007_fb,
                          kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
-    halpha_args = dict(val=qa.halpha_ew,
+    halpha_args = dict(val=qa.halpha_ew, val2=qa.halpha_fb,
                        kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
-    nii6583_args = dict(val=qa.nii6583_ew,
+    nii6583_args = dict(val=qa.nii6583_ew, val2=qa.nii6583_fb,
                         kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
-    sii6717_args = dict(val=qa.sii6717_ew,
+    sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
                      kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
+
+    # oii3727_args = dict(val=qa.oii3727_ew,
+    #                     kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
+    # hbeta_args = dict(val=qa.hbeta_ew,
+    #                   kwargs=dict(title_text=r'H$\beta$ (Enci)'))
+    # oiii5007_args = dict(val=qa.oiii5007_ew,
+    #                      kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
+    # halpha_args = dict(val=qa.halpha_ew,
+    #                    kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
+    # nii6583_args = dict(val=qa.nii6583_ew,
+    #                     kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
+    # sii6717_args = dict(val=qa.sii6717_ew,
+    #                  kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
     
     
     emflux_map_kwargs = dict(oii3727=oii3727_args,
@@ -528,7 +553,17 @@ for dap_file in files:
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
     
+
+    # plot_gradients = False
+    if plot_gradients:
+
+        # Plot emission line flux gradients
+        qa.plot_radial_gradients(emflux_mapname, emflux_map_kwargs)
+        fout =  ('_').join([stem_file, 'emflux', 'gradients']) + '.png'
+        plt.savefig(path_gal_plots + fout)
+        print('Wrote: %s' % fout)
     
+
     overplot_all = False
     if overplot_all:
     

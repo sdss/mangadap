@@ -61,10 +61,14 @@ class FitError(Exception):
     pass
 
 
-class PlotQA:
-    '''
+class PlotQA(object):
+    """
     Generate QA plots.
-    '''
+
+    Attributes:
+        chisq_pix (array): chisq at each spectral pixel.
+        chisq_bin (array): chisq for each binned spectrum.
+    """
 
     def __init__(self, filename):
         self.dap_file = filename
@@ -85,6 +89,9 @@ class PlotQA:
         return ret
 
     def read_fits(self):
+        """
+        Read in DAP FITS file.
+        """
         fin = fits.open(self.dap_file)
         self.drps = fin[fin.index_of('DRPS')].data
         self.bin_prop = fin[fin.index_of('BINS')].data
@@ -143,6 +150,9 @@ class PlotQA:
         (self.oii3727_ew, self.hbeta_ew, self.oiii4959_ew, self.oiii5007_ew,
             self.nii6548_ew, self.halpha_ew, self.nii6583_ew, self.sii6717_ew,
             self.sii6731_ew) = self.elofit['FLUX_EW'].T
+        (self.oii3727_fb, self.hbeta_fb, self.oiii4959_fb, self.oiii5007_fb,
+            self.nii6548_fb, self.halpha_fb, self.nii6583_fb, self.sii6717_fb,
+            self.sii6731_fb) = self.elofit['FLUX_FB'].T
 
         # emission line + stellar continuum fits
         self.fullfitew = self.smod + self.elomew
@@ -175,6 +185,9 @@ class PlotQA:
  
 
     def deredshift(self):
+        """
+        Deredshift spectra while conserving flux.
+        """
         c = 299792.458
         self.v_star = np.array([item[3][0] for item in self.stfit]) 
         self.z = self.v_star / c
@@ -195,18 +208,20 @@ class PlotQA:
         self.fullfitfb_rest = (self.fullfitfb.T * (1. + self.z)).T
 
     def select_wave_range(self, lam_good=None):
-        '''
+        """
         Select wavelength range for calculating goodness-of-fit metrics.
 
-        :param lam_good: Ranges of wavelengths over which to evaluate goodness-of-fit. Default is [[3650, 4200], [4250, 5400], [5450, 6732]].
-        :type lam_good: array, optional
+        Args:
+            lam_good (array, optional): Ranges of wavelengths over which to
+                evaluate goodness-of-fit. Default is::
+                    np.array([[3650, 4200],  # ends at 4230 sky line
+                              [4250, 5400],  # ends at 5575 sky line
+                              [5450, 6732]]) # ends at [SII]
 
-        Default wavelength ranges covers from 3650 A to [SII]6731 line except
-        for windows around the sky lines at 4230 and 5575 A.
-        '''
+        """
         if lam_good is None:
-            self.lam_good = np.array([[3650., 4200.], # ends at 4230 sky line
-                                      [4250., 5400.], # ends at 5575 sky line
+            self.lam_good = np.array([[3650., 4200.],  # ends at 4230 sky line
+                                      [4250., 5400.],  # ends at 5575 sky line
                                       [5450., 6732.]]) # ends at [SII]
                                       #[8470., 8770.]]) # CaT
         else:
@@ -231,10 +246,14 @@ class PlotQA:
     #----- Derive Quantities -------------------------------------------------
 
     def calc_metric_per_bin(self, metric_pix):
-        '''
-        calculate average metric (e.g., chisq or residuals) for each binned
-        spectrum while masking bad pixels
-        '''
+        """
+        Calculate average goodness-of-fit metric (e.g., chisq or residuals) for
+        each binned spectrum while masking bad pixels.
+
+        Args:
+            metric_pix (array): goodness-of-fit metric at each spectral pixel
+
+        """
         metric_bin = np.ones(self.n_bins) * np.nan
         for i in range(self.n_bins):
             indt = np.where(self.ind_lam[0] == i)[0]
@@ -243,51 +262,50 @@ class PlotQA:
 
 
     def calc_chisq(self):
-        '''
-        chisq_pix: chisq at every pixel
-        chisq_bin: chisq for each binned spectrum
-        '''
+        """
+        Calculate chisq at each spectral pixel and for each binned spectrum.
+        """
         self.chisq_pix = (self.galaxy - self.smod)**2. * self.ivar
         self.chisq_pix[np.where(self.smsk==1)] = np.nan
         self.chisq_bin = self.calc_metric_per_bin(self.chisq_pix)
 
 
     def calc_resid(self):
-        '''
+        """
         resid_pix: residual at every pixel
         resid_bin: residual for each binned spectrum
-        '''
+        """
         self.resid_pix = self.galaxy - self.smod
         self.resid_pix[np.where(self.smsk==1)] = np.nan
         self.resid_bin = self.calc_metric_per_bin(self.resid_pix)
         
 
     def calc_resid_mod(self):
-        '''
+        """
         resid_mod_pix: residual / model at every pixel
         resid_mod_bin: residual / model for each binned spectrum
-        '''
+        """
         self.resid_mod_pix = (self.galaxy - self.smod) / self.smod
         self.resid_mod_pix[np.where(self.smsk==1)] = np.nan
         self.resid_mod_bin = self.calc_metric_per_bin(self.resid_mod_pix)
         
 
     def calc_resid_err(self):
-        '''
+        """
         resid_err_pix: residual / error at every pixel
         resid_err_bin: residual / error for each binned spectrum
-        '''
+        """
         self.resid_err_pix = (self.galaxy - self.smod) * np.sqrt(self.ivar)
         self.resid_err_pix[np.where(self.smsk==1)] = np.nan
         self.resid_err_bin = self.calc_metric_per_bin(self.resid_err_pix)
 
     def calc_resid_data(self):
-        '''
+        """
         resid_data_pix: residual / data at every pixel
         resid_data_bin: residual / data for each binned spectrum
         resid_data_bin_percent99: 99th percentile of resid_data_bin
         resid_data_bin_percent68: 68th percentile of resid_data_bin
-        '''
+        """
         with np.errstate(divide='ignore', invalid='ignore'):
             self.resid_data_pix = np.abs(self.galaxy - self.smod) / self.galaxy
         self.resid_data_pix[np.where(self.smsk==1)] = np.nan
@@ -431,9 +449,9 @@ class PlotQA:
     
 
     def plot_hist(self, x, label, axlim=None):
-        '''
+        """
         Plot distribution of metric (e.g., chisq).
-        '''
+        """
         sns.set_context('talk')
         fig, ax = plt.subplots(figsize=(8, 6))
         sns.axlabel(label, '$N$')
@@ -451,9 +469,9 @@ class PlotQA:
                        args,
                        n_ax=6,
                        figsize=(20, 12)):
-        '''
+        """
         Plot multiple maps at once.
-        '''
+        """
 
         fig = plt.figure(figsize=figsize)
         if seaborn_installed:
@@ -517,9 +535,9 @@ class PlotQA:
                  ax=None,
                  axloc=None,
                  figsize=(10, 8)):
-        '''
+        """
         Plot map
-        '''
+        """
         if seaborn_installed:
             if ax is None:
                 sns.set_context('poster', rc={'lines.linewidth': 2})
@@ -700,6 +718,78 @@ class PlotQA:
             sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
 
 
+    def plot_radial_gradients(self,
+                              map_order,
+                              args,
+                              ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                              n_ax=6,
+                              leg_kwargs=dict(handlelength=2, loc=1),
+                              figsize=(20, 12)):
+        """
+        Plot radial gradients.
+        """
+        fig = plt.figure(figsize=figsize)
+        if seaborn_installed:
+            sns.set_context('poster', rc={'lines.linewidth': 2})
+            c = sns.color_palette('bright')
+
+        flux_units = 'Flux'
+        if self.dap_mode == 'CUBE':
+            flux_units += ' / spaxel'
+        elif self.dap_mode == 'RSS':
+            flux_units += ' / fiber'
+
+        bigAxes = fig.add_axes([0.04, 0.05, 0.9, 0.88], frameon=False)
+        bigAxes.set_xticks([])
+        bigAxes.set_yticks([])
+        bigAxes.set_xlabel('R [arcsec]', fontsize=20)
+        bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
+        #bigAxes.set_ylabel(ylabel, fontsize=20)
+        bigAxes.set_title(
+            'pid-ifu %s     manga-id %s' % (self.manga_pid, self.manga_id),
+            fontsize=20)
+        
+        bin_edges = np.concatenate((self.binxrl,
+                                   np.atleast_1d(self.binyru[-1])))
+
+        for i, k in enumerate(map_order):
+            dx = 0.31 * i
+            dy = 0.45
+            if i >= (n_ax / 2):
+                dx = 0.31 * (i - n_ax / 2)
+                dy = 0
+            left, bottom = (0.08+dx, 0.1+dy)
+            if seaborn_installed:
+                sns.set_context('poster', rc={'lines.linewidth': 2})
+        
+            ax = fig.add_axes([left, bottom, 0.23, 0.33333])
+            axtitle = args[k]['kwargs']['title_text'].split(' (')[0]
+            ax.set_title(axtitle)
+            
+            if not seaborn_installed:
+                ax.set_axis_bgcolor('#EAEAF2')
+                ax.grid(False, which='both', axis='both')
+        
+            d = args[map_order[i]]
+            p = []
+            lab = []
+            if not np.isnan(d['val']).all():
+                for kk, j, author in zip(['val2', 'val'], [2, 0], ['F. Belfiore', 'E. Wang']):
+                    p.append(ax.hlines(args[k][kk], self.binxrl, self.binyru, color=c[j]))
+                    #ytmp = np.concatenate((args[k][kk],
+                    #                      np.atleast_1d(args[k][kk][-1])))
+                    #p.append(ax.step(bin_edges, ytmp, c=c[j],
+                    #         where='post')[0])
+                    #p.append(ax.plot(self.binr, args[k][kk], c=c[j], zorder=8)[0])
+                    ax.plot(self.binr, args[k][kk], c=c[j], zorder=8, lw=0.5)
+                    ax.scatter(self.binr, args[k][kk], c=c[j], s=60, zorder=9)
+                    label = args[k]['kwargs']['title_text'].split(' (')[0]
+                    lab.append(author)
+        
+            leg = plt.legend(p, lab, **leg_kwargs)
+            ax.set_xlim(left=0)
+            ax.set_ylim(bottom=0)
+
 
 
 
@@ -710,9 +800,9 @@ class PlotQA:
                   kwargs={'alpha':0.75}, 
                   bin=0,
                   figsize=(20, 12)):
-        '''
+        """
         Plot spectrum, model fits, and inverse variance.
-        '''
+        """
         # Uncomment when you implement reading in multiple DAP analysis files
         # models, n_models = self.count_models(models)
         # c = generate_colors(colors, n_models)
@@ -765,9 +855,9 @@ class PlotQA:
                       xlim=None,
                       ylim=None,
                       figsize=(20, 12)):
-        '''
+        """
         Plot all spectra (normalized to their median value).
-        '''
+        """
         if rest_frame:
             gal = self.galaxy_rest
             lframe = 'rest frame'
