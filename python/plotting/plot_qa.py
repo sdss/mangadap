@@ -137,22 +137,35 @@ class PlotQA(object):
             self.rchi2 = [self.stfit[name] for name in self.stfit.dtype.names]
         if self.kin.shape[1] == 2:
             self.stvel, self.stvdisp = self.kin.T
+            self.stvelerr, self.stvdisperr = self.kinerr.T
             self.sth3 = self.stvel * np.nan
             self.sth4 = self.stvel * np.nan
+            self.sth3err = self.stvel * np.nan
+            self.sth4err = self.stvel * np.nan
         elif self.kin.shape[1] == 4:
             self.stvel, self.stvdisp, self.sth3, self.sth4 = self.kin.T
-        
+            self.stvelerr, self.stvdisperr, self.sth3err, self.sth4err = self.kinerr.T
+
         # emission line kinematics
         self.emvel_ew, self.emvdisp_ew = self.elofit['KIN_EW'].T
+        self.emvelerr_ew, self.emvdisperr_ew = self.elofit['KINERR_EW'].T
         self.emvdisp_halpha_ew = self.elofit['sinst_ew'][:, 5]
 
         # emission line fluxes
         (self.oii3727_ew, self.hbeta_ew, self.oiii4959_ew, self.oiii5007_ew,
             self.nii6548_ew, self.halpha_ew, self.nii6583_ew, self.sii6717_ew,
             self.sii6731_ew) = self.elofit['FLUX_EW'].T
+        (self.oii3727err_ew, self.hbetaerr_ew, self.oiii4959err_ew,
+            self.oiii5007err_ew, self.nii6548err_ew, self.halphaerr_ew,
+            self.nii6583err_ew, self.sii6717err_ew,
+            self.sii6731err_ew) = self.elofit['FLUXERR_EW'].T
         (self.oii3727_fb, self.hbeta_fb, self.oiii4959_fb, self.oiii5007_fb,
             self.nii6548_fb, self.halpha_fb, self.nii6583_fb, self.sii6717_fb,
             self.sii6731_fb) = self.elofit['FLUX_FB'].T
+        (self.oii3727err_fb, self.hbetaerr_fb, self.oiii4959err_fb,
+            self.oiii5007err_fb, self.nii6548err_fb, self.halphaerr_fb,
+            self.nii6583err_fb, self.sii6717err_fb,
+            self.sii6731err_fb) = self.elofit['FLUXERR_FB'].T
 
         # emission line + stellar continuum fits
         self.fullfitew = self.smod + self.elomew
@@ -504,8 +517,11 @@ class PlotQA(object):
 
             d = args[map_order[i]]
             k = d['kwargs']
+            val_err = None
             if not np.isnan(d['val']).all():
-                self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
+                if 'val_err' in d:
+                    val_err = d['val_err']
+                self.plot_map(d['val'], z_err=val_err, fig=fig, ax=ax, axloc=[left, bottom],
                               **d['kwargs'])
                 # self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                 #               **d['kwargs'])
@@ -516,7 +532,9 @@ class PlotQA(object):
 
     def plot_map(self,
                  z,
+                 z_err=None,
                  val_no_measure=None,
+                 snr_thresh=1.,
                  interpolated=False,
                  flux=None,
                  cblabel=None,
@@ -575,36 +593,6 @@ class PlotQA(object):
         
         if val_no_measure is None:
             val_no_measure = 0.
-        
-        # colorbar range
-        if len(z) == self.n_spaxels:
-            ind_cb = ind_tmp
-        elif len(z) == self.n_bins:
-            ind_cb = ind_b
-
-        cbrange_tmp = [z[ind_cb].min(), z[ind_cb].max()]
-
-        if cbrange_clip:
-            zclip = sigma_clip(z[ind_cb], sig=3)
-            cbrange_tmp = [zclip.min(), zclip.max()]
-
-        if cbrange is None:
-            cbrange = cbrange_tmp
-        else:
-            for i in range(len(cbrange)):
-                if cbrange[i] is None:
-                    cbrange[i] = cbrange_tmp[i]
-                else:
-                    if i == 0:
-                        kwargs['vmin'] = cbrange[i]
-                    elif i == 1:
-                        kwargs['vmax'] = cbrange[i]
-
-        if cbrange_symmetric:
-            cb_max = np.max(np.abs(cbrange))
-            cbrange = [-cb_max, cb_max]
-
-        cbdelta = cbrange[1] - cbrange[0]
 
 
         #----- Re-orient Data -----
@@ -612,6 +600,9 @@ class PlotQA(object):
         if len(z) == self.n_spaxels:
             im1 = np.reshape(z, (self.sqrt_n_spaxels, self.sqrt_n_spaxels))
             im = im1.T[::-1]
+            if z_err is not None:
+                im_err1 = np.reshape(z_err, (self.sqrt_n_spaxels, self.sqrt_n_spaxels))
+                im_err = im_err1.T[::-1]
 
         elif len(z) == self.n_bins:
             # xpos and ypos are oriented to start in the lower left and go up
@@ -634,15 +625,50 @@ class PlotQA(object):
 
             # create a masked array of the data
             im = np.empty((self.sqrt_n_spaxels, self.sqrt_n_spaxels)) * np.nan
+            if z_err is not None:
+                im_err = np.empty((self.sqrt_n_spaxels, self.sqrt_n_spaxels)) * np.nan
             for i in range(self.sqrt_n_spaxels):
                 for j in range(self.sqrt_n_spaxels):
                     if not binid3.mask[i, j]:
                         im[i, j] = z[binid3.data[i, j]]
+                        if z_err is not None:
+                            im_err[i, j] = z_err[binid3.data[i, j]]
 
-        ind_no_measure = np.where(im == val_no_measure)
+        if z_err is not None:
+            ind_no_measure = np.where((im == val_no_measure) | (im / im_err < snr_thresh))
+        else:
+            ind_no_measure = np.where(im == val_no_measure)
         mask_no_data = np.isnan(im)
         mask_no_data[im == val_no_measure] = True
+        if z_err is not None:
+            mask_no_data[im / im_err < snr_thresh] = True
         im_mask_no_data = np.ma.array(im, mask=mask_no_data)
+
+
+        # colorbar range
+        cbrange_tmp = [im_mask_no_data.min(), im_mask_no_data.max()]
+
+        if cbrange_clip:
+            zclip = sigma_clip(im_mask_no_data, sig=3)
+            cbrange_tmp = [zclip.min(), zclip.max()]
+
+        if cbrange is None:
+            cbrange = cbrange_tmp
+        else:
+            for i in range(len(cbrange)):
+                if cbrange[i] is None:
+                    cbrange[i] = cbrange_tmp[i]
+                else:
+                    if i == 0:
+                        kwargs['vmin'] = cbrange[i]
+                    elif i == 1:
+                        kwargs['vmax'] = cbrange[i]
+
+        if cbrange_symmetric:
+            cb_max = np.max(np.abs(cbrange))
+            cbrange = [-cb_max, cb_max]
+
+        cbdelta = cbrange[1] - cbrange[0]
 
 
         # plot map
@@ -661,8 +687,8 @@ class PlotQA(object):
                 for i0, i1 in zip(ind_no_measure[0], ind_no_measure[1]):
                     ax.add_patch(mpl.patches.Rectangle(
                         (-(xpos2[i0, i1] + delta), ypos2[i0, i1] - delta),
-                        spaxel_size, spaxel_size, hatch='///', linewidth=5,
-                        fill=True, fc='#D6D6E5', zorder=10))
+                        spaxel_size, spaxel_size, hatch='////', linewidth=0,
+                        fill=True, fc='#D6D6E5', ec='k', zorder=10))
 
             if cbrange_clip:
                 if 'vmin' not in kwargs.keys():
@@ -672,6 +698,7 @@ class PlotQA(object):
 
             p = ax.imshow(im_mask_no_data, interpolation='none',
                           extent=extent, cmap=cmap, **kwargs)
+
 
 
         if spaxel_num:

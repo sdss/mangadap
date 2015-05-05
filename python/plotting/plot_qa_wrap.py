@@ -295,40 +295,44 @@ for dap_file in files:
           'resid',]
     
     # plot sigma_star and sigma_gas on same scale
-    vdisp_range = sigma_clip(np.concatenate((qa.stvdisp, qa.emvdisp_ew)), sig=3)
+    ind_stvdisp = np.where((qa.stvdisp / qa.stvdisperr >= 3.) & (qa.stvdisperr > 0.))
+    # qa.emvdisp is 0 for all spaxels
+    # ind_emvdisp = np.where(qa.emvdisp_ew / qa.emvdisperr_ew >= 3. & (qa.stvdisperr > 0.))
+    vdisp_range = sigma_clip(np.concatenate((qa.stvdisp[ind_stvdisp],
+                             qa.emvdisp_ew)), sig=3)
     cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
     
-    stvel_args = dict(val=qa.stvel,
+    stvel_args = dict(val=qa.stvel, val_err=qa.stvelerr,
                       kwargs=dict(cblabel=r'$v_\star$ [km/s]',
                                   cmap=cm.coolwarm,
                                   title_text=r'v_star',
                                   nodots=True))
-    stvdisp_args = dict(val=qa.stvdisp,
+    stvdisp_args = dict(val=qa.stvdisp, val_err=qa.stvdisperr,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
                                     cbrange=cbrange_vdisp,
                                     cbrange_clip=False,
                                     cmap=qa.linearL, 
                                     title_text=r'$\sigma$_star',
                                   nodots=True))
-    sth3_args = dict(val=qa.sth3,
+    sth3_args = dict(val=qa.sth3, val_err=qa.sth3err,
                      kwargs=dict(cblabel='h3',
                                  cbrange_symmetric=True,
                                  cmap=cm.coolwarm,
                                  title_text='h3',
                                   nodots=True))
-    sth4_args = dict(val=qa.sth4,
+    sth4_args = dict(val=qa.sth4, val_err=qa.sth4err,
                      kwargs=dict(cblabel='h4',
                                  cbrange_symmetric=False,
                                  cmap=qa.linearL,
                                  title_text='h4',
                                   nodots=True))
     
-    emvel_args = dict(val=qa.emvel_ew,
+    emvel_args = dict(val=qa.emvel_ew, val_err=qa.emvelerr_ew,
                       kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
                                   cmap=cm.coolwarm,
                                   title_text=r'v_gas (Enci)',
                                   nodots=True))
-    emvdisp_args = dict(val=qa.emvdisp_ew,
+    emvdisp_args = dict(val=qa.emvdisp_ew, val_err=qa.emvdisperr_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
                                  cbrange=cbrange_vdisp,
                                  cbrange_clip=False,
@@ -380,31 +384,24 @@ for dap_file in files:
       'nii6583',
       'sii6717',]
     oii3727_args = dict(val=qa.oii3727_ew, val2=qa.oii3727_fb,
+                        val_err=qa.oii3727err_ew, val2_err=qa.oii3727err_fb,
                         kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
     hbeta_args = dict(val=qa.hbeta_ew, val2=qa.hbeta_fb,
+                      val_err=qa.hbetaerr_ew, val2_err=qa.hbetaerr_fb,
                       kwargs=dict(title_text=r'H$\beta$ (Enci)'))
     oiii5007_args = dict(val=qa.oiii5007_ew, val2=qa.oiii5007_fb,
+                         val_err=qa.oiii5007err_ew, val2_err=qa.oiii5007err_fb,
                          kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
     halpha_args = dict(val=qa.halpha_ew, val2=qa.halpha_fb,
+                       val_err=qa.halphaerr_ew, val2_err=qa.halphaerr_fb,
                        kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
     nii6583_args = dict(val=qa.nii6583_ew, val2=qa.nii6583_fb,
+                        val_err=qa.nii6583err_ew, val2_err=qa.nii6583err_fb,
                         kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
     sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
-                     kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
-
-    # oii3727_args = dict(val=qa.oii3727_ew,
-    #                     kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
-    # hbeta_args = dict(val=qa.hbeta_ew,
-    #                   kwargs=dict(title_text=r'H$\beta$ (Enci)'))
-    # oiii5007_args = dict(val=qa.oiii5007_ew,
-    #                      kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
-    # halpha_args = dict(val=qa.halpha_ew,
-    #                    kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
-    # nii6583_args = dict(val=qa.nii6583_ew,
-    #                     kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
-    # sii6717_args = dict(val=qa.sii6717_ew,
-    #                  kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
-    
+                        val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
+                        kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
+                            
     
     emflux_map_kwargs = dict(oii3727=oii3727_args,
                              hbeta=hbeta_args,
@@ -508,7 +505,7 @@ for dap_file in files:
     
     #reload(plot_qa)
     #from plot_qa import PlotQA
-    # 
+     
     #qa = PlotQA(path_gal + dap_file)
     #print('\nTemplate Library:', qa.tpl_lib)
     #qa.select_wave_range()
@@ -553,17 +550,17 @@ for dap_file in files:
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
     
-
+    
     # plot_gradients = False
     if plot_gradients:
-
+    
         # Plot emission line flux gradients
         qa.plot_radial_gradients(emflux_mapname, emflux_map_kwargs)
         fout =  ('_').join([stem_file, 'emflux', 'gradients']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
     
-
+    
     overplot_all = False
     if overplot_all:
     
