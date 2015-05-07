@@ -9,7 +9,7 @@ DESCRIPTION
     Generate QA plots.
    
     Usage: python plot_qa_wrap.py path [file_list] [-overwrite]
-        [-plot_spec_pdf] [-no_plot_spec_png] [-no_stkin_interp]
+        [-plot_spec_pdf] [-no_plot_spec_png] [-stkin_interp]
 
     ARGUMENTS:
         path
@@ -401,7 +401,7 @@ for dap_file in files:
     sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
                         val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
                         kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
-                            
+
     
     emflux_map_kwargs = dict(oii3727=oii3727_args,
                              hbeta=hbeta_args,
@@ -551,7 +551,7 @@ for dap_file in files:
         print('Wrote: %s' % fout)
     
     
-    # plot_gradients = False
+    plot_gradients = False
     if plot_gradients:
     
         # Plot emission line flux gradients

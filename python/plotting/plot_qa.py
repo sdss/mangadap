@@ -649,8 +649,12 @@ class PlotQA(object):
         cbrange_tmp = [im_mask_no_data.min(), im_mask_no_data.max()]
 
         if cbrange_clip:
-            zclip = sigma_clip(im_mask_no_data, sig=3)
-            cbrange_tmp = [zclip.min(), zclip.max()]
+            zclip = sigma_clip(im_mask_no_data.data[~im_mask_no_data.mask], sig=3)
+            try:
+                cbrange_tmp = [zclip.min(), zclip.max()]
+            except ValueError:
+                cbrange = None
+                zclip = np.array(cbrange_tmp)
 
         if cbrange is None:
             cbrange = cbrange_tmp
