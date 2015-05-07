@@ -302,9 +302,10 @@ for dap_file in files:
                              qa.emvdisp_ew)), sig=3)
     cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
     
-    stvel_args = dict(val=qa.stvel, val_err=qa.stvelerr,
+    stvel_args = dict(val=qa.stvel_rest, val_err=qa.stvelerr_rest,
                       kwargs=dict(cblabel=r'$v_\star$ [km/s]',
                                   cmap=cm.coolwarm,
+                                  cbrange_symmetric=True,
                                   title_text=r'v_star',
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp, val_err=qa.stvdisperr,
@@ -327,9 +328,10 @@ for dap_file in files:
                                  title_text='h4',
                                   nodots=True))
     
-    emvel_args = dict(val=qa.emvel_ew, val_err=qa.emvelerr_ew,
+    emvel_args = dict(val=qa.emvel_rest_ew, val_err=qa.emvelerr_rest_ew,
                       kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
                                   cmap=cm.coolwarm,
+                                  cbrange_symmetric=True,
                                   title_text=r'v_gas (Enci)',
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew, val_err=qa.emvdisperr_ew,

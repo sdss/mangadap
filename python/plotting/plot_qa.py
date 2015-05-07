@@ -145,11 +145,24 @@ class PlotQA(object):
         elif self.kin.shape[1] == 4:
             self.stvel, self.stvdisp, self.sth3, self.sth4 = self.kin.T
             self.stvelerr, self.stvdisperr, self.sth3err, self.sth4err = self.kinerr.T
+        # put stellar velocity in systemic frame
+        # USE SYSTEMIC VELOCITY --- WHERE IS THIS INFO?
+        self.stvel_rest = self.stvel - np.median(self.stvel)
+        self.stvelerr_rest = self.stvelerr * 0.
+        ind_stvelerr = np.where((self.stvel_rest > 500.) | (self.stvelerr > 500.))
+        self.stvelerr_rest[ind_stvelerr] = 1e8
 
         # emission line kinematics
         self.emvel_ew, self.emvdisp_ew = self.elofit['KIN_EW'].T
         self.emvelerr_ew, self.emvdisperr_ew = self.elofit['KINERR_EW'].T
         self.emvdisp_halpha_ew = self.elofit['sinst_ew'][:, 5]
+        # put emission line velocity in systemic frame
+        # USE SYSTEMIC VELOCITY --- WHERE IS THIS INFO?
+        self.emvel_rest_ew = self.emvel_ew - np.median(self.emvel_ew)
+        self.emvelerr_rest_ew = self.emvelerr_ew * 0.
+        ind_emvelerr_ew = np.where((self.emvel_rest_ew > 500.) |
+                                   (self.emvelerr_ew > 500.))
+        self.emvelerr_rest_ew[ind_emvelerr_ew] = 1e8
 
         # emission line fluxes
         (self.oii3727_ew, self.hbeta_ew, self.oiii4959_ew, self.oiii5007_ew,
@@ -635,13 +648,13 @@ class PlotQA(object):
                             im_err[i, j] = z_err[binid3.data[i, j]]
 
         if z_err is not None:
-            ind_no_measure = np.where((im == val_no_measure) | (im / im_err < snr_thresh))
+            ind_no_measure = np.where((im == val_no_measure) | (np.abs(im / im_err) < snr_thresh))
         else:
             ind_no_measure = np.where(im == val_no_measure)
         mask_no_data = np.isnan(im)
         mask_no_data[im == val_no_measure] = True
         if z_err is not None:
-            mask_no_data[im / im_err < snr_thresh] = True
+            mask_no_data[np.abs(im / im_err) < snr_thresh] = True
         im_mask_no_data = np.ma.array(im, mask=mask_no_data)
 
 
@@ -693,13 +706,12 @@ class PlotQA(object):
                         (-(xpos2[i0, i1] + delta), ypos2[i0, i1] - delta),
                         spaxel_size, spaxel_size, hatch='////', linewidth=0,
                         fill=True, fc='k', ec='#B2B2B2', zorder=10))
-            # #D6D6E5
 
             if cbrange_clip:
                 if 'vmin' not in kwargs.keys():
-                    kwargs['vmin'] = zclip.min()
+                    kwargs['vmin'] = cbrange[0] #zclip.min()
                 if 'vmax' not in kwargs.keys():
-                    kwargs['vmax'] = zclip.max()
+                    kwargs['vmax'] = cbrange[1] #zclip.max()
 
             p = ax.imshow(im_mask_no_data, interpolation='none',
                           extent=extent, cmap=cmap, **kwargs)
