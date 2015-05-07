@@ -692,7 +692,8 @@ class PlotQA(object):
                     ax.add_patch(mpl.patches.Rectangle(
                         (-(xpos2[i0, i1] + delta), ypos2[i0, i1] - delta),
                         spaxel_size, spaxel_size, hatch='////', linewidth=0,
-                        fill=True, fc='#D6D6E5', ec='k', zorder=10))
+                        fill=True, fc='k', ec='#B2B2B2', zorder=10))
+            # #D6D6E5
 
             if cbrange_clip:
                 if 'vmin' not in kwargs.keys():
