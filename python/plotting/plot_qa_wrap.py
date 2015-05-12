@@ -364,7 +364,7 @@ for dap_file in files:
                           sth3=sth3_args,
                           sth4=sth4_args,
                           emvel=emvel_args,
-                          emvdisp=emvdisp_args,)
+                          emvdisp=emvdisp_args,
                           chisq=chisq_args,
                           resid=resid_args,)
     
@@ -442,7 +442,7 @@ for dap_file in files:
       'noise',
       'snr',
       'halpha',
-      'resid',]
+      'resid',
       'chisq',]
     
     

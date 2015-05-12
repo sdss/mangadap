@@ -75,9 +75,8 @@ class PlotQA(object):
         self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
         self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
         self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
-        self.path_drp = (self.dap_file.split('analysis/')[0] +
-                         '/'.join(['redux', 'MPL-3', '']))
-        self.drpall_file = self.path_drp + 'drpall-v1_3_3.fits'
+        self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
+                            os.getenv('MANGADRP_VER')) + '/drpall-v1_3_3.fits')
         self.setup()
 
     def setup(self):
@@ -783,7 +782,8 @@ class PlotQA(object):
                 ax.text(-(self.binxrl[i] + (spaxel_size / 4)),
                         self.binyru[i] - (spaxel_size / 4),
                         str(i), fontsize=fontsize_tmp,
-                        color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
+                        color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]),
+                        zorder=10)
 
         # overplot signal contours (wavelength range in header as SNWAVE1, SNWAVE2)
         if show_flux_contours:
@@ -881,14 +881,20 @@ class PlotQA(object):
                     ax.plot(self.binr, args[k][kk], c=c[j], zorder=8, lw=0.5)
                     ax.scatter(self.binr, args[k][kk], facecolor=c[j],
                                edgecolor='None', s=60, zorder=9)
-                    ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
-                                ecolor=c[j], elinewidth=1, marker='None', ls='None')
+                    #ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
+                    #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
                     label = args[k]['kwargs']['title_text'].split(' (')[0]
                     lab.append(author)
         
             leg = plt.legend(p, lab, **leg_kwargs)
             ax.set_xlim(left=0)
             ax.set_ylim(bottom=0)
+            
+            if not np.isnan(d['val']).all():
+                for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
+                    ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
+                                ecolor=c[j], elinewidth=1, marker='None', ls='None')
+
 
 
 
