@@ -75,10 +75,14 @@ class PlotQA(object):
         self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
         self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
         self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
+        self.path_drp = (self.dap_file.split('analysis/')[0] +
+                         '/'.join(['redux', 'MPL-3', '']))
+        self.drpall_file = self.path_drp + 'drpall-v1_3_3.fits'
         self.setup()
 
     def setup(self):
         self.read_fits()
+        self.read_drpall()
         self.deredshift()
         self.plot_setup()
 
@@ -146,24 +150,11 @@ class PlotQA(object):
         elif self.kin.shape[1] == 4:
             self.stvel, self.stvdisp, self.sth3, self.sth4 = self.kin.T
             self.stvelerr, self.stvdisperr, self.sth3err, self.sth4err = self.kinerr.T
-        # put stellar velocity in systemic frame
-        # USE SYSTEMIC VELOCITY --- WHERE IS THIS INFO?
-        self.stvel_rest = self.stvel - np.median(self.stvel)
-        self.stvelerr_rest = self.stvelerr * 0.
-        ind_stvelerr = np.where((self.stvel_rest > 500.) | (self.stvelerr > 500.))
-        self.stvelerr_rest[ind_stvelerr] = 1e8
 
         # emission line kinematics
         self.emvel_ew, self.emvdisp_ew = self.elofit['KIN_EW'].T
         self.emvelerr_ew, self.emvdisperr_ew = self.elofit['KINERR_EW'].T
         self.emvdisp_halpha_ew = self.elofit['sinst_ew'][:, 5]
-        # put emission line velocity in systemic frame
-        # USE SYSTEMIC VELOCITY --- WHERE IS THIS INFO?
-        self.emvel_rest_ew = self.emvel_ew - np.median(self.emvel_ew)
-        self.emvelerr_rest_ew = self.emvelerr_ew * 0.
-        ind_emvelerr_ew = np.where((self.emvel_rest_ew > 500.) |
-                                   (self.emvelerr_ew > 500.))
-        self.emvelerr_rest_ew[ind_emvelerr_ew] = 1e8
 
         # emission line fluxes
         (self.oii3727_ew, self.hbeta_ew, self.oiii4959_ew, self.oiii5007_ew,
@@ -198,6 +189,32 @@ class PlotQA(object):
         fin.close()
 
 
+    def read_drpall(self):
+        """
+        Read in drpall FITS file.
+        """
+        try:
+            fin = fits.open(self.drpall_file)
+        except IOError:
+            raise Exception('Cannot find drpall file: %s' % self.drpall_file)
+        else:
+            tbl = fin[1]
+            plate = tbl.data['plate'].astype(str)
+            ifudesign = tbl.data['ifudsgn']
+            manga_id = tbl.data['mangaid']
+            nsa_redshift = tbl.data['nsa_redshift']
+            nsa_vdisp = tbl.data['nsa_vdisp']
+
+            pid, ifu = self.manga_pid.split('-')
+
+            ind_tbl = np.where((plate == pid) & (ifudesign == ifu))[0]
+            if self.manga_id == 'n/a':
+                self.manga_id = manga_id[ind_tbl]
+            self.nsa_redshift = nsa_redshift[ind_tbl]
+            self.nsa_vdisp = nsa_vdisp[ind_tbl]
+
+
+
     # def read_val(self, extname, colname=None):
     #     fin = fits.open(self.dap_file)
     #     extval = fin[fin.index_of(extname)].data
@@ -214,6 +231,7 @@ class PlotQA(object):
     def deredshift(self):
         """
         Deredshift spectra while conserving flux.
+        Also shift velocities to systemic frame.
         """
         c = 299792.458
         self.v_star = np.array([item[3][0] for item in self.stfit]) 
@@ -233,6 +251,37 @@ class PlotQA(object):
         self.smod_rest = (self.smod.T * (1. + self.z)).T
         self.fullfitew_rest = (self.fullfitew.T * (1. + self.z)).T
         self.fullfitfb_rest = (self.fullfitfb.T * (1. + self.z)).T
+
+        # put stellar velocity in systemic frame
+        stvel_out = self.deredshift_velocities(self.stvel, self.stvelerr)
+        self.stvel_rest, self.stvelerr_rest = stvel_out
+
+        # put emission line velocity in systemic frame
+        emvel_ew_out = self.deredshift_velocities(self.emvel_ew, self.emvelerr_ew)
+        self.emvel_rest_ew, self.emvelerr_rest_ew = emvel_ew_out
+
+
+    def deredshift_velocities(self, vel, velerr):
+        """
+        Shift velocities to systemic frame.
+
+        Args:
+            vel (array): velocities
+            velerr (array): velocity errors
+
+        Returns:
+            vel_rest (array): velocites in systemic frame
+            velerr_rest (array): velocity errors with bad values = 1e8
+        """
+        c = 299792.458
+        vel_rest = vel - (self.nsa_redshift * c)
+        velerr_rest = velerr * 0.
+        ind_stvelerr = np.where((np.abs(vel_rest) > 250.) | 
+                                (velerr > 250.) |
+                                (velerr == 0.))
+        velerr_rest[ind_stvelerr] = 1e8
+        return vel_rest, velerr_rest
+
 
     def select_wave_range(self, lam_good=None):
         """
@@ -725,7 +774,7 @@ class PlotQA(object):
                 if (i >= 100) and (i < 1000) and (self.nbin[i] <= 2):
                     fontsize_tmp = fontsize - 3
                 elif (i >= 1000) and (self.nbin[i] <= 2):
-                    fontsize_tmp = fontsize - 6
+                    fontsize_tmp = fontsize - 4
                 elif self.nbin[i] == 1:
                     fontsize_tmp = fontsize
                 else:
@@ -820,15 +869,20 @@ class PlotQA(object):
             p = []
             lab = []
             if not np.isnan(d['val']).all():
-                for kk, j, author in zip(['val2', 'val'], [2, 0], ['F. Belfiore', 'E. Wang']):
-                    p.append(ax.hlines(args[k][kk], self.binxrl, self.binyru, color=c[j]))
+                for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
+                                                [2, 0], ['F. Belfiore', 'E. Wang']):
+                    p.append(ax.hlines(args[k][kk], self.binxrl, self.binyru,
+                             color=c[j]))
                     #ytmp = np.concatenate((args[k][kk],
                     #                      np.atleast_1d(args[k][kk][-1])))
                     #p.append(ax.step(bin_edges, ytmp, c=c[j],
                     #         where='post')[0])
                     #p.append(ax.plot(self.binr, args[k][kk], c=c[j], zorder=8)[0])
                     ax.plot(self.binr, args[k][kk], c=c[j], zorder=8, lw=0.5)
-                    ax.scatter(self.binr, args[k][kk], c=c[j], s=60, zorder=9)
+                    ax.scatter(self.binr, args[k][kk], facecolor=c[j],
+                               edgecolor='None', s=60, zorder=9)
+                    ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
+                                ecolor=c[j], elinewidth=1, marker='None', ls='None')
                     label = args[k]['kwargs']['title_text'].split(' (')[0]
                     lab.append(author)
         

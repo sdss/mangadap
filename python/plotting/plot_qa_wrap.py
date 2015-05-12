@@ -60,14 +60,14 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-# for Utah cluster
-# from plotting.plot_qa import PlotQA
-# from plotting.plot_qa import FitError
+for Utah cluster
+from plotting.plot_qa import PlotQA
+from plotting.plot_qa import FitError
 
 # for Brett
-import plot_qa
-from plot_qa import PlotQA
-from plot_qa import FitError
+# import plot_qa
+# from plot_qa import PlotQA
+# from plot_qa import FitError
 
 
 dict_tmp = {}
@@ -238,14 +238,20 @@ for dap_file in files:
             plot_all_spec_as_png = True
             plot_h3_h4 = False
     elif mode == 'LOGRSS':
-        # add this line
-        # if binning_type == 'RADIAL':
-        plot_map = False
-        plot_gradients = True
-        overplot_all = True
-        plot_all_spec_as_pdf = True
-        plot_all_spec_as_png = True
-        plot_h3_h4 = False
+        if binning_type == 'RADIAL':
+            plot_map = False
+            plot_gradients = True
+            overplot_all = True
+            plot_all_spec_as_pdf = True
+            plot_all_spec_as_png = True
+            plot_h3_h4 = False
+        if binning_type == 'ALL':
+            plot_map = False
+            plot_gradients = False
+            overplot_all = False
+            plot_all_spec_as_pdf = True
+            plot_all_spec_as_png = True
+            plot_h3_h4 = False
     #----------------------------------------
     
     
@@ -343,15 +349,15 @@ for dap_file in files:
                                  nodots=True))
     
     chisq_args = dict(val=qa.chisq_bin,
-                      kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
-                                  cmap=qa.linearL,
-                                  title_text=r'$\chi_{\rm red}^2$',
-                                  nodots=True))
+                 kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
+                             cmap=qa.linearL,
+                             title_text=r'$\chi_{\rm red}^2$',
+                             nodots=True))
     resid_args = dict(val=qa.resid_data_bin_percent99,
-                      kwargs=dict(cblabel='99th percentile |resid| / galaxy',
-                                  cmap=qa.linearL,
-                                  title_text='99th percentile |resid| / galaxy',
-                                  nodots=True))
+                 kwargs=dict(cblabel='99th percentile |resid| / galaxy',
+                             cmap=qa.linearL,
+                             title_text='99th percentile |resid| / galaxy',
+                             nodots=True))
     
     
     kin_map_kwargs = dict(stvel=stvel_args,
@@ -359,7 +365,7 @@ for dap_file in files:
                           sth3=sth3_args,
                           sth4=sth4_args,
                           emvel=emvel_args,
-                          emvdisp=emvdisp_args,
+                          emvdisp=emvdisp_args,)
                           chisq=chisq_args,
                           resid=resid_args,)
     
@@ -437,7 +443,7 @@ for dap_file in files:
       'noise',
       'snr',
       'halpha',
-      'resid',
+      'resid',]
       'chisq',]
     
     
@@ -540,39 +546,39 @@ for dap_file in files:
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
 
-        # # Plot binned maps of chisq, resid/galaxy, stellar kinematics
-        # qa.plot_multi_map(kin_mapname, kin_map_kwargs)
-        # fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
-        # plt.savefig(path_gal_plots + fout)
-        # print('Wrote: %s' % fout)
-        # 
-        # if stkin_interp:
-        #     # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
-        #     qa.plot_multi_map(kin_mapname, kin_map_kwargs_interp)
-        #     fout =  ('_').join([stem_file, 'kin', 'maps', 'interp']) + '.png'
-        #     plt.savefig(path_gal_plots + fout)
-        #     print('Wrote: %s' % fout)
-        # 
+        # Plot binned maps of chisq, resid/galaxy, stellar kinematics
+        qa.plot_multi_map(kin_mapname, kin_map_kwargs)
+        fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
+        plt.savefig(path_gal_plots + fout)
+        print('Wrote: %s' % fout)
+        
+        if stkin_interp:
+            # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
+            qa.plot_multi_map(kin_mapname, kin_map_kwargs_interp)
+            fout =  ('_').join([stem_file, 'kin', 'maps', 'interp']) + '.png'
+            plt.savefig(path_gal_plots + fout)
+            print('Wrote: %s' % fout)
+        
         # Plot binned maps of emission line fluxes (Enci Wang's code)
         qa.plot_multi_map(emflux_mapname, emflux_ew_map_kwargs)
         fout =  ('_').join([stem_file, 'emflux', 'ew','maps']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-
+        
         # Plot binned maps of emission line fluxes (Francesco Belfiore's code)
         qa.plot_multi_map(emflux_mapname, emflux_fb_map_kwargs)
         fout =  ('_').join([stem_file, 'emflux', 'fb', 'maps']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-        # 
-        # # Plot binned maps of signal to noise and emission line kinematics
-        # qa.plot_multi_map(snr_mapname, snr_map_kwargs)
-        # fout =  ('_').join([stem_file, 'snr', 'maps']) + '.png'
-        # plt.savefig(path_gal_plots + fout)
-        # print('Wrote: %s' % fout)
+        
+        # Plot binned maps of signal to noise and emission line kinematics
+        qa.plot_multi_map(snr_mapname, snr_map_kwargs)
+        fout =  ('_').join([stem_file, 'snr', 'maps']) + '.png'
+        plt.savefig(path_gal_plots + fout)
+        print('Wrote: %s' % fout)
     
     
-    plot_gradients = False
+    #plot_gradients = False
     if plot_gradients:
     
         # Plot emission line flux gradients
