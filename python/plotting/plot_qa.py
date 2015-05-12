@@ -74,6 +74,7 @@ class PlotQA(object):
         self.dap_file = filename
         self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
         self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
+        self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
         self.setup()
 
     def setup(self):
@@ -508,7 +509,8 @@ class PlotQA(object):
         bigAxes.set_xlabel('arcsec', fontsize=20)
         bigAxes.set_ylabel('arcsec', fontsize=20)
         bigAxes.set_title(
-            'pid-ifu %s     manga-id %s' % (self.manga_pid, self.manga_id),
+            'pid-ifu %s     manga-id %s     %s     %s' % (
+            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
             fontsize=20)
 
         for i in range(n_ax):
@@ -549,7 +551,7 @@ class PlotQA(object):
                  val_no_measure=None,
                  snr_thresh=1.,
                  interpolated=False,
-                 flux=None,
+                 show_flux_contours=False,
                  cblabel=None,
                  cbrange=None,
                  cbrange_clip=True,
@@ -721,9 +723,9 @@ class PlotQA(object):
         if spaxel_num:
             for i in range(self.n_bins):
                 if (i >= 100) and (i < 1000) and (self.nbin[i] <= 2):
-                    fontsize_tmp = fontsize - 1
+                    fontsize_tmp = fontsize - 3
                 elif (i >= 1000) and (self.nbin[i] <= 2):
-                    fontsize_tmp = fontsize - 2
+                    fontsize_tmp = fontsize - 6
                 elif self.nbin[i] == 1:
                     fontsize_tmp = fontsize
                 else:
@@ -734,11 +736,10 @@ class PlotQA(object):
                         str(i), fontsize=fontsize_tmp,
                         color=(1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3]))
 
-        # overplot flux contours (which flux? in what band?)
-        if flux is not None:
-            ax.tricontour(-self.binxrl, self.binyru,
-                          -2.5*np.log10(flux/np.max(flux).ravel()),
-                          levels=np.arange(20), colors='k') # 1 mag contours
+        # overplot signal contours (wavelength range in header as SNWAVE1, SNWAVE2)
+        if show_flux_contours:
+            ax.tricontour(-self.xpos, self.ypos,
+                          self.signal, colors='k', zorder=10) # 1 mag contours
 
         # colorbar
         if axloc is None:
@@ -790,7 +791,8 @@ class PlotQA(object):
         bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
         #bigAxes.set_ylabel(ylabel, fontsize=20)
         bigAxes.set_title(
-            'pid-ifu %s     manga-id %s' % (self.manga_pid, self.manga_id),
+            'pid-ifu %s     manga-id %s     %s     %s' % (
+            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
             fontsize=20)
         
         bin_edges = np.concatenate((self.binxrl,

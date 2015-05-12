@@ -332,14 +332,14 @@ for dap_file in files:
                       kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
                                   cmap=cm.coolwarm,
                                   cbrange_symmetric=True,
-                                  title_text=r'v_gas (Enci)',
+                                  title_text=r'v_gas (Wang)',
                                   nodots=True))
     emvdisp_args = dict(val=qa.emvdisp_ew, val_err=qa.emvdisperr_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
                                  cbrange=cbrange_vdisp,
                                  cbrange_clip=False,
                                  cmap=qa.linearL,
-                                 title_text=r'$\sigma$_gas (Enci)',
+                                 title_text=r'$\sigma$_gas (Wang)',
                                  nodots=True))
     
     chisq_args = dict(val=qa.chisq_bin,
@@ -387,22 +387,22 @@ for dap_file in files:
       'sii6717',]
     oii3727_args = dict(val=qa.oii3727_ew, val2=qa.oii3727_fb,
                         val_err=qa.oii3727err_ew, val2_err=qa.oii3727err_fb,
-                        kwargs=dict(title_text=r'[OII] $\lambda$3727 (Enci)'))
+                        kwargs=dict(title_text=r'[OII] $\lambda$3727'))
     hbeta_args = dict(val=qa.hbeta_ew, val2=qa.hbeta_fb,
                       val_err=qa.hbetaerr_ew, val2_err=qa.hbetaerr_fb,
-                      kwargs=dict(title_text=r'H$\beta$ (Enci)'))
+                      kwargs=dict(title_text=r'H$\beta$'))
     oiii5007_args = dict(val=qa.oiii5007_ew, val2=qa.oiii5007_fb,
                          val_err=qa.oiii5007err_ew, val2_err=qa.oiii5007err_fb,
-                         kwargs=dict(title_text=r'[OIII] $\lambda$5007 (Enci)'))
+                         kwargs=dict(title_text=r'[OIII] $\lambda$5007'))
     halpha_args = dict(val=qa.halpha_ew, val2=qa.halpha_fb,
                        val_err=qa.halphaerr_ew, val2_err=qa.halphaerr_fb,
-                       kwargs=dict(title_text=r'H$\alpha$ (Enci)'))
+                       kwargs=dict(title_text=r'H$\alpha$'))
     nii6583_args = dict(val=qa.nii6583_ew, val2=qa.nii6583_fb,
                         val_err=qa.nii6583err_ew, val2_err=qa.nii6583err_fb,
-                        kwargs=dict(title_text=r'[NII] $\lambda$6583 (Enci)'))
+                        kwargs=dict(title_text=r'[NII] $\lambda$6583'))
     sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
                         val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
-                        kwargs=dict(title_text=r'[SII] $\lambda$6717 (Enci)'))
+                        kwargs=dict(title_text=r'[SII] $\lambda$6717'))
 
     
     emflux_map_kwargs = dict(oii3727=oii3727_args,
@@ -418,7 +418,16 @@ for dap_file in files:
         v['kwargs']['nodots'] = True
         v['kwargs']['val_no_measure'] = 0.
         v['kwargs']['cbrange_clip'] = False
-    
+        v['kwargs']['show_flux_contours'] = False
+
+    emflux_ew_map_kwargs = copy.deepcopy(emflux_map_kwargs)
+    emflux_fb_map_kwargs = copy.deepcopy(emflux_map_kwargs)
+
+    for dd, nm in zip([emflux_ew_map_kwargs, emflux_fb_map_kwargs],
+                  ['Wang', 'Belfiore']):
+        for vv in itervalues(dd):
+            vv['kwargs']['title_text'] += ' (%s)' % nm
+
     #---------------------------------
     
     
@@ -522,35 +531,45 @@ for dap_file in files:
     if plot_map:
     
         # Plot bin numbers on top of chisq map
-        qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
+        #qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
+        qa.plot_map(qa.oii3727_ew, **bin_num_map_kwargs)
         fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-        
-        # Plot binned maps of chisq, resid/galaxy, stellar kinematics
-        qa.plot_multi_map(kin_mapname, kin_map_kwargs)
-        fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
+        fout =  ('_').join([stem_file, 'bin', 'num']) + '.pdf'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-        
-        if stkin_interp:
-            # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
-            qa.plot_multi_map(kin_mapname, kin_map_kwargs_interp)
-            fout =  ('_').join([stem_file, 'kin', 'maps', 'interp']) + '.png'
-            plt.savefig(path_gal_plots + fout)
-            print('Wrote: %s' % fout)
-        
-        # Plot binned maps of emission line fluxes
-        qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
-        fout =  ('_').join([stem_file, 'emflux', 'maps']) + '.png'
+
+        # # Plot binned maps of chisq, resid/galaxy, stellar kinematics
+        # qa.plot_multi_map(kin_mapname, kin_map_kwargs)
+        # fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
+        # plt.savefig(path_gal_plots + fout)
+        # print('Wrote: %s' % fout)
+        # 
+        # if stkin_interp:
+        #     # Plot interpolated maps of chisq, resid/galaxy, stellar kinematics
+        #     qa.plot_multi_map(kin_mapname, kin_map_kwargs_interp)
+        #     fout =  ('_').join([stem_file, 'kin', 'maps', 'interp']) + '.png'
+        #     plt.savefig(path_gal_plots + fout)
+        #     print('Wrote: %s' % fout)
+        # 
+        # Plot binned maps of emission line fluxes (Enci Wang's code)
+        qa.plot_multi_map(emflux_mapname, emflux_ew_map_kwargs)
+        fout =  ('_').join([stem_file, 'emflux', 'ew','maps']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-        
-        # Plot binned maps of signal to noise and emission line kinematics
-        qa.plot_multi_map(snr_mapname, snr_map_kwargs)
-        fout =  ('_').join([stem_file, 'snr', 'maps']) + '.png'
+
+        # Plot binned maps of emission line fluxes (Francesco Belfiore's code)
+        qa.plot_multi_map(emflux_mapname, emflux_fb_map_kwargs)
+        fout =  ('_').join([stem_file, 'emflux', 'fb', 'maps']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
+        # 
+        # # Plot binned maps of signal to noise and emission line kinematics
+        # qa.plot_multi_map(snr_mapname, snr_map_kwargs)
+        # fout =  ('_').join([stem_file, 'snr', 'maps']) + '.png'
+        # plt.savefig(path_gal_plots + fout)
+        # print('Wrote: %s' % fout)
     
     
     plot_gradients = False
