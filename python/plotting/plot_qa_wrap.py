@@ -1,5 +1,4 @@
-#!/usr/bin/env python -W ignore::DeprecationWarning
-
+#!/usr/bin/env python3 
 """
 FILE
     plot_qa_wrap.py
@@ -60,7 +59,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-for Utah cluster
+# for Utah cluster
 from plotting.plot_qa import PlotQA
 from plotting.plot_qa import FitError
 
