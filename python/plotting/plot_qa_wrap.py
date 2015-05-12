@@ -1,4 +1,4 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python
 """
 FILE
     plot_qa_wrap.py
@@ -60,13 +60,13 @@ import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
 # for Utah cluster
-from plotting.plot_qa import PlotQA
-from plotting.plot_qa import FitError
+# from plotting.plot_qa import PlotQA
+# from plotting.plot_qa import FitError
 
 # for Brett
-# import plot_qa
-# from plot_qa import PlotQA
-# from plot_qa import FitError
+import plot_qa
+from plot_qa import PlotQA
+from plot_qa import FitError
 
 
 dict_tmp = {}

@@ -698,12 +698,15 @@ class PlotQA(object):
                             im_err[i, j] = z_err[binid3.data[i, j]]
 
         if z_err is not None:
-            ind_no_measure = np.where((im == val_no_measure) | (np.abs(im / im_err) < snr_thresh))
+            ind_no_measure = np.where((im == val_no_measure) |
+                                      (im_err == 0.) |
+                                      (np.abs(im / im_err) < snr_thresh))
         else:
             ind_no_measure = np.where(im == val_no_measure)
         mask_no_data = np.isnan(im)
         mask_no_data[im == val_no_measure] = True
         if z_err is not None:
+            mask_no_data[im_err == 0.] = True
             mask_no_data[np.abs(im / im_err) < snr_thresh] = True
         im_mask_no_data = np.ma.array(im, mask=mask_no_data)
 
