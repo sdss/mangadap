@@ -63,12 +63,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from plotting.plot_qa import PlotQA
 from plotting.plot_qa import FitError
 
-# for Brett
-# import plot_qa
-# from plot_qa import PlotQA
-# from plot_qa import FitError
-
-
 dict_tmp = {}
 try:
     dict_tmp.iteritems
