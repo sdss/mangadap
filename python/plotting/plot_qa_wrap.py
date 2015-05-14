@@ -308,7 +308,7 @@ for dap_file in files:
     cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
     
     stvel_args = dict(val=qa.stvel_rest, val_err=qa.stvelerr_rest,
-                      kwargs=dict(cblabel=r'$v_\star$ [km/s]',
+                      kwargs=dict(cblabel=r'v$_\star$ [km/s]',
                                   cmap=cm.coolwarm,
                                   cbrange_symmetric=True,
                                   title_text=r'v_star',
