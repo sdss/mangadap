@@ -536,8 +536,7 @@ for dap_file in files:
     if plot_map:
     
         # Plot bin numbers on top of chisq map
-        #qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
-        qa.plot_map(qa.oii3727_ew, **bin_num_map_kwargs)
+        qa.plot_map(qa.chisq_bin, **bin_num_map_kwargs)
         fout =  ('_').join([stem_file, 'bin', 'num']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)

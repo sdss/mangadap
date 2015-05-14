@@ -76,7 +76,8 @@ class PlotQA(object):
         self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
         self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
         self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
-                            os.getenv('MANGADRP_VER')) + '/drpall-v1_3_3.fits')
+                            os.getenv('MANGADRP_VER')) +
+                            '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
         self.setup()
 
     def setup(self):
@@ -199,7 +200,12 @@ class PlotQA(object):
         else:
             tbl = fin[1]
             plate = tbl.data['plate'].astype(str)
-            ifudesign = tbl.data['ifudsgn']
+            if 'ifudsgn' in tbl.data.names:
+                ifudesign = tbl.data['ifudsgn']
+            elif 'ifudesign' in tbl.data.names:
+                ifudesign = tbl.data['ifudesign']
+            else:
+                raise KeyError
             manga_id = tbl.data['mangaid']
             nsa_redshift = tbl.data['nsa_redshift']
             nsa_vdisp = tbl.data['nsa_vdisp']
@@ -274,7 +280,7 @@ class PlotQA(object):
         """
         c = 299792.458
         vel_rest = vel - (self.nsa_redshift * c)
-        velerr_rest = velerr * 0.
+        velerr_rest = velerr * 0. + 1e-6
         ind_stvelerr = np.where((np.abs(vel_rest) > 250.) | 
                                 (velerr > 250.) |
                                 (velerr == 0.))
@@ -790,8 +796,9 @@ class PlotQA(object):
 
         # overplot signal contours (wavelength range in header as SNWAVE1, SNWAVE2)
         if show_flux_contours:
-            ax.tricontour(-self.xpos, self.ypos,
-                          self.signal, colors='k', zorder=10) # 1 mag contours
+            ind_sig = np.where(np.isfinite(self.signal))
+            ax.tricontour(-self.xpos[ind_sig], self.ypos[ind_sig],
+                          self.signal[ind_sig]) # , colors='k', zorder=10)
 
         # colorbar
         if axloc is None:
