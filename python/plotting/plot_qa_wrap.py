@@ -59,7 +59,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-# for Utah cluster
 from plotting.plot_qa import PlotQA
 from plotting.plot_qa import FitError
 
@@ -295,7 +294,7 @@ for dap_file in files:
     
     # plot sigma_star and sigma_gas on same scale
     ind_stvdisp = np.where((qa.stvdisp / qa.stvdisperr >= 3.) & (qa.stvdisperr > 0.))
-    # qa.emvdisp is 0 for all spaxels
+    # qa.emvdisp is 0 or 99 for all spaxels
     # ind_emvdisp = np.where(qa.emvdisp_ew / qa.emvdisperr_ew >= 3. & (qa.stvdisperr > 0.))
     vdisp_range = sigma_clip(np.concatenate((qa.stvdisp[ind_stvdisp],
                              qa.emvdisp_ew)), sig=3)
@@ -309,8 +308,10 @@ for dap_file in files:
                                   nodots=True))
     stvdisp_args = dict(val=qa.stvdisp, val_err=qa.stvdisperr,
                         kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
-                                    cbrange=cbrange_vdisp,
-                                    cbrange_clip=False,
+                                    #cbrange=cbrange_vdisp,
+                                    #cbrange_clip=False,
+                                    cbrange_clip=True,
+                                    snr_thresh=3.,
                                     cmap=qa.linearL, 
                                     title_text=r'$\sigma$_star',
                                   nodots=True))
@@ -333,10 +334,11 @@ for dap_file in files:
                                   cbrange_symmetric=True,
                                   title_text=r'v_gas (Wang)',
                                   nodots=True))
-    emvdisp_args = dict(val=qa.emvdisp_ew, val_err=qa.emvdisperr_ew,
+    emvdisp_args = dict(val=qa.emvdisp_ew,
                      kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
-                                 cbrange=cbrange_vdisp,
-                                 cbrange_clip=False,
+                                 #cbrange=cbrange_vdisp,
+                                 #cbrange_clip=False,
+                                 cbrange_clip=True,
                                  cmap=qa.linearL,
                                  title_text=r'$\sigma$_gas (Wang)',
                                  nodots=True))
