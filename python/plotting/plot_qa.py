@@ -214,9 +214,9 @@ class PlotQA(object):
 
             ind_tbl = np.where((plate == pid) & (ifudesign == ifu))[0]
             if self.manga_id == 'n/a':
-                self.manga_id = manga_id[ind_tbl]
-            self.nsa_redshift = nsa_redshift[ind_tbl]
-            self.nsa_vdisp = nsa_vdisp[ind_tbl]
+                self.manga_id = manga_id[ind_tbl][0]
+            self.nsa_redshift = nsa_redshift[ind_tbl][0]
+            self.nsa_vdisp = nsa_vdisp[ind_tbl][0]
 
 
 
