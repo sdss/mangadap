@@ -2618,6 +2618,8 @@ python/mangadap/util/geometry.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
+python/mangadap/www/make_dapqa.py -text
+python/mangadap/www/templates/maps.jinja2 -text
 python/plotting/Linear_L_0-1.csv -text
 python/plotting/README -text
 python/plotting/__init__.py -text
@@ -2637,3 +2639,4 @@ scripts/old/mdap_setup.csh -text
 scripts/old/run_dap.sh -text
 scripts/tcshrc_environment.txt -text
 ups/mangadap.table -text
+www/html/images/Favicon.ico -text

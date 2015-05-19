@@ -621,6 +621,8 @@ class PlotQA(object):
                  fig=None,
                  ax=None,
                  axloc=None,
+                 axfacecolor='#A8A8A8',
+                 show_colorbar=True,
                  figsize=(10, 8)):
         """
         Plot map
@@ -630,7 +632,7 @@ class PlotQA(object):
                 sns.set_context('poster', rc={'lines.linewidth': 2})
             else:
                 sns.set_context('talk', rc={'lines.linewidth': 2})
-            sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
+            sns.set_style(rc={'axes.facecolor': axfacecolor})
 
         if ax is None:
             fig = plt.figure(figsize=figsize)
@@ -775,6 +777,9 @@ class PlotQA(object):
             p = ax.imshow(im_mask_no_data, interpolation='none',
                           extent=extent, cmap=cmap, **kwargs)
 
+            if xy_max is not None:
+                plt.xlim(-xy_max, xy_max)
+                plt.ylim(-xy_max, xy_max)
 
 
         if spaxel_num:
@@ -801,22 +806,24 @@ class PlotQA(object):
                           self.signal[ind_sig]) # , colors='k', zorder=10)
 
         # colorbar
-        if axloc is None:
-            cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
-        else:
-            cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
+        if show_colorbar:
 
-        try:
-            ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
-        except AttributeError:
-            print('AttributeError: MaxNLocator instance has no attribute' +
-                  ' "tick_values" ')
-            cb = fig.colorbar(p, cax)
-        else:
-            cb = fig.colorbar(p, cax, ticks=ticks)
+            if axloc is None:
+                cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
+            else:
+                cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
 
-        if cblabel is not None:
-            cb.set_label(cblabel)
+            try:
+                ticks = MaxNLocator(n_ticks).tick_values(cbrange[0], cbrange[1])
+            except AttributeError:
+                print('AttributeError: MaxNLocator instance has no attribute' +
+                      ' "tick_values" ')
+                cb = fig.colorbar(p, cax)
+            else:
+                cb = fig.colorbar(p, cax, ticks=ticks)
+    
+            if cblabel is not None:
+                cb.set_label(cblabel)
 
         if seaborn_installed:
             sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
