@@ -1,9 +1,6 @@
 """
 Create html pages that flip through maps of one galaxy.
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 from __future__ import print_function
 
@@ -19,19 +16,6 @@ template = templateEnv.get_template( TEMPLATE_FILE )
 # Here we add a new input variable containing a list.
 # Its contents will be expanded in the HTML as a unordered list.
 
-plates = [7443]
-ifus = [12701, 12703, 12705, 1902, 3702, 3704, 6102, 6104, 9102,
-    12702, 12704, 1901, 3701, 3703, 6101, 6103, 9101]
-dap_modes = ['CUBE']
-binnings = ['NONE-002', 'STON-001']
-
-plates = map(str, plates)
-ifus = map(str, ifus)
-
-
-
-
-
 topdir_utah = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3')
 topdir_sas = 'https://data.sdss.org/sas/' + topdir_utah.split('sdss03')[1]
 
@@ -42,6 +26,14 @@ plot_types = [
     'emflux_fb_maps.png']
 
 
+# plates = [7443]
+# ifus = [12701, 12703, 12705, 1902, 3702, 3704, 6102, 6104, 9102,
+#     12702, 12704, 1901, 3701, 3703, 6101, 6103, 9101]
+# dap_modes = ['CUBE']
+# binnings = ['NONE-002', 'STON-001']
+# 
+# plates = map(str, plates)
+# ifus = map(str, ifus)
 
 
 # for plate in plates:
@@ -1452,17 +1444,28 @@ data = [{'plate':7443, 'ifudsgn':'12701', 'mode':'CUBE', 'binning':'STON-001', '
         {'plate':8480, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'STON-001', 'spec':'0000', 'plotname':'maps'},
         {'plate':8480, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'NONE-002', 'spec':'0000', 'plotname':'maps'}]
 
+all_urls = [[]]
 for it in data:
     path_plots_utah = os.path.join(topdir_utah, str(it['plate']), it['ifudsgn'], 'plots', '')
     path_plots_sas = os.path.join(topdir_sas, str(it['plate']), it['ifudsgn'], 'plots', '')
     stem = ('-'.join(['manga', str(it['plate']), it['ifudsgn'],
                         'LOG%s_BIN' % it['mode'], it['binning']]) + '_')
     urls = []
-    for plot_type in plot_types:
-        urls.append(path_plots_sas + stem + plot_type)
+    for i, plot_type in enumerate(plot_types):
+        url = path_plots_sas + stem + plot_type
+        urls.append(url)
+        all_urls[i].append(url)
     templateVars = dict(urls=urls)
     outputText = template.render(templateVars)
-    f = open(path_plots_utah + it['binning'] + '_maps.html', 'w')
+    # f = open(path_plots_utah + it['binning'] + '_maps.html', 'w')
+    # f.write(outputText)
+    # f.close()
+
+
+for ptype_urls, plot_type in zip(all_urls, plot_types):
+    templateVars = dict(urls=pytpe_urls)
+    outputText = template.render(templateVars)
+    f = open(os.path.join(topdir_utah, plot_type.strip('.png'), '.html'), 'w')
     f.write(outputText)
     f.close()
 
