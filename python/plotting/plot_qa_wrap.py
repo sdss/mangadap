@@ -31,6 +31,9 @@ DESCRIPTION
             Plot an interpolated version of the stellar kinematics maps;
             default is False.
 
+        [-plot_indiv_map]
+            Plot maps for individual quantities; default is False.
+
 REVISION HISTORY:
     24 Feb 2015 - Original implementation by B. Andrews
     28 Apr 2015: (KBW) Some documentation edits and use of glob; added mode
@@ -114,6 +117,10 @@ if '-stkin_interp' in sys.argv:
     stkin_interp = True
 else:
     stkin_interp = False
+if '-plot_indiv_map':
+    plot_indiv_map = True
+else:
+    plot_indiv_map = False
 
 
 print()
@@ -179,7 +186,8 @@ for dap_file in files:
     
     path_gal_plots = path_gal + 'plots/'
     path_gal_plots_spec = path_gal_plots + 'spectra/'
-    
+    path_gal_plots_maps = path_gal_plots + 'maps/'
+
     # create plot directories if necessary
     try:
         os.makedirs(path_gal_plots_spec)
@@ -188,7 +196,15 @@ for dap_file in files:
         if e.errno != errno.EEXIST:
             raise e
         pass
-    
+
+    try:
+        os.makedirs(path_gal_plots_maps)
+        print('\nCreated directory: %s\n' % path_gal_plots_maps)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise e
+        pass
+
     # check for done file
     if not overwrite:
         if os.path.isfile(path_gal_plots + done_file):
@@ -314,19 +330,19 @@ for dap_file in files:
                                     snr_thresh=3.,
                                     cmap=qa.linearL, 
                                     title_text=r'$\sigma$_star',
-                                  nodots=True))
+                                    nodots=True))
     sth3_args = dict(val=qa.sth3, val_err=qa.sth3err,
                      kwargs=dict(cblabel='h3',
                                  cbrange_symmetric=True,
                                  cmap=cm.coolwarm,
                                  title_text='h3',
-                                  nodots=True))
+                                 nodots=True))
     sth4_args = dict(val=qa.sth4, val_err=qa.sth4err,
                      kwargs=dict(cblabel='h4',
                                  cbrange_symmetric=False,
                                  cmap=qa.linearL,
                                  title_text='h4',
-                                  nodots=True))
+                                 nodots=True))
     
     emvel_args = dict(val=qa.emvel_rest_ew, val_err=qa.emvelerr_rest_ew,
                       kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
@@ -404,7 +420,7 @@ for dap_file in files:
     sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
                         val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
                         kwargs=dict(title_text=r'[SII] $\lambda$6717'))
-
+    
     
     emflux_map_kwargs = dict(oii3727=oii3727_args,
                              hbeta=hbeta_args,
@@ -420,15 +436,15 @@ for dap_file in files:
         v['kwargs']['val_no_measure'] = 0.
         v['kwargs']['cbrange_clip'] = False
         v['kwargs']['show_flux_contours'] = False
-
+    
     emflux_ew_map_kwargs = copy.deepcopy(emflux_map_kwargs)
     emflux_fb_map_kwargs = copy.deepcopy(emflux_map_kwargs)
-
+    
     for dd, nm in zip([emflux_ew_map_kwargs, emflux_fb_map_kwargs],
                   ['Wang', 'Belfiore']):
         for vv in itervalues(dd):
             vv['kwargs']['title_text'] += ' (%s)' % nm
-
+    
     #---------------------------------
     
     
@@ -528,7 +544,7 @@ for dap_file in files:
     #qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
     
     
-    #plot_map = False
+    plot_map = False
     if plot_map:
     
         # Plot bin numbers on top of chisq map
@@ -539,7 +555,7 @@ for dap_file in files:
         fout =  ('_').join([stem_file, 'bin', 'num']) + '.pdf'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
-
+    
         # Plot binned maps of chisq, resid/galaxy, stellar kinematics
         qa.plot_multi_map(kin_mapname, kin_map_kwargs)
         fout =  ('_').join([stem_file, 'kin', 'maps']) + '.png'
@@ -572,7 +588,46 @@ for dap_file in files:
         print('Wrote: %s' % fout)
     
     
-    #plot_gradients = False
+    # plot_indiv_map = False
+    if plot_indiv_map:
+    
+        for k, v in iteritems(kin_map_kwargs):
+            qa.plot_map(v['val'], **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual kin maps')
+    
+        if stkin_interp:
+            for k, v in iteritems(kin_map_kwargs_interp):
+                qa.plot_map(v['val'], **v['kwargs'])
+                fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
+                plt.savefig(path_gal_plots_maps + fout)
+            print('Wrote: individual kin interp maps')
+    
+        for k, v in iteritems(emflux_ew_map_kwargs):
+            qa.plot_map(v['val'], **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual emflux_ew maps')
+    
+        for k, v in iteritems(emflux_fb_map_kwargs):
+            qa.plot_map(v['val'], **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual emflux_fb maps')
+    
+    
+        for k, v in iteritems(snr_map_kwargs):
+            if k is 'halpha':
+                pass
+            else:
+                qa.plot_map(v['val'], **v['kwargs'])
+                fout =  ('_').join([stem_file, k, 'map']) + '.png'
+                plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual snr maps')
+    
+    
+    # plot_gradients = False
     if plot_gradients:
     
         # Plot emission line flux gradients
@@ -610,7 +665,7 @@ for dap_file in files:
         print('Wrote: %s' % fout)
         
     
-    #plot_spec_pdf = False
+    # plot_spec_pdf = False
     if plot_spec_pdf:
     
         # Plot spectra individually (one file)
