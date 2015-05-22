@@ -829,20 +829,21 @@ class PlotQA(object):
             sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
 
 
-    def plot_radial_gradients(self,
-                              map_order,
-                              args,
-                              ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
-                              n_ax=6,
-                              leg_kwargs=dict(handlelength=2, loc=1),
-                              figsize=(20, 12)):
+
+
+    def plot_multi_radial_gradients(self,
+                                    map_order,
+                                    args,
+                                    ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                                    n_ax=6,
+                                    leg_kwargs=dict(handlelength=2, loc=1),
+                                    figsize=(20, 12)):
         """
-        Plot radial gradients.
+        Plot multiple radial gradients at once.
         """
         fig = plt.figure(figsize=figsize)
         if seaborn_installed:
             sns.set_context('poster', rc={'lines.linewidth': 2})
-            c = sns.color_palette('bright')
 
         flux_units = 'Flux'
         if self.dap_mode == 'CUBE':
@@ -886,31 +887,166 @@ class PlotQA(object):
             p = []
             lab = []
             if not np.isnan(d['val']).all():
-                for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
-                                                [2, 0], ['F. Belfiore', 'E. Wang']):
-                    p.append(ax.hlines(args[k][kk], self.binxrl, self.binyru,
-                             color=c[j]))
-                    #ytmp = np.concatenate((args[k][kk],
-                    #                      np.atleast_1d(args[k][kk][-1])))
-                    #p.append(ax.step(bin_edges, ytmp, c=c[j],
-                    #         where='post')[0])
-                    #p.append(ax.plot(self.binr, args[k][kk], c=c[j], zorder=8)[0])
-                    ax.plot(self.binr, args[k][kk], c=c[j], zorder=8, lw=0.5)
-                    ax.scatter(self.binr, args[k][kk], facecolor=c[j],
-                               edgecolor='None', s=60, zorder=9)
-                    #ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
-                    #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
-                    label = args[k]['kwargs']['title_text'].split(' (')[0]
-                    lab.append(author)
-        
-            leg = plt.legend(p, lab, **leg_kwargs)
-            ax.set_xlim(left=0)
-            ax.set_ylim(bottom=0)
+                self.plot_radial_gradients(k, args, c_ind=[2, 0],
+                                           leglabels=['F. Belfiore', 'E. Wang'],
+                                           fig=fig, ax=ax)
+
+
+
+    def plot_radial_gradients(self,
+                              gradname,
+                              args,
+                              ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+                              c_ind=[0],
+                              leglabels=None,
+                              leg_kwargs=dict(handlelength=2, loc=1),
+                              fig=None,
+                              ax=None,
+                              figsize=(10, 8)):
+        """
+        Plot radial gradients.
+        """
+        if seaborn_installed:
+            if ax is None:
+                sns.set_context('poster', rc={'lines.linewidth': 2})
+            else:
+                sns.set_context('talk', rc={'lines.linewidth': 2})
+            c = sns.color_palette('bright')
+
+        flux_units = 'Flux'
+        if self.dap_mode == 'CUBE':
+            flux_units += ' / spaxel'
+        elif self.dap_mode == 'RSS':
+            flux_units += ' / fiber'
+
+        if ax is None:
+            fig = plt.figure(figsize=figsize)
+            ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
+            ax.set_xlabel('R [arcsec]', fontsize=20)
+            ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
+            axtitle = args[gradname]['kwargs']['title_text'].split(' (')[0]
+            ax.set_title(axtitle, fontsize=20)
+
+        if not seaborn_installed:
+            ax.set_axis_bgcolor('#A8A8A8')
+            ax.grid(False, which='both', axis='both')
+            c = ['b', 'r', 'c']
+
+        d = args[gradname]
+        p = []
+        lab = []
+        if not np.isnan(d['val']).all():
+            for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
+                                            c_ind, leglabels):
+                p.append(ax.hlines(args[gradname][kk], self.binxrl, self.binyru,
+                         color=c[j]))
+                #ytmp = np.concatenate((args[gradname][kk],
+                #                      np.atleast_1d(args[gradname][kk][-1])))
+                #p.append(ax.step(bin_edges, ytmp, c=c[j],
+                #         where='post')[0])
+                #p.append(ax.plot(self.binr, args[gradname][kk], c=c[j], zorder=8)[0])
+                ax.plot(self.binr, args[gradname][kk], c=c[j], zorder=8, lw=0.5)
+                ax.scatter(self.binr, args[gradname][kk], facecolor=c[j],
+                           edgecolor='None', s=60, zorder=9)
+                #ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
+                #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
+                label = args[gradname]['kwargs']['title_text'].split(' (')[0]
+                lab.append(author)
+    
+        leg = plt.legend(p, lab, **leg_kwargs)
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
             
-            if not np.isnan(d['val']).all():
-                for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
-                    ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
-                                ecolor=c[j], elinewidth=1, marker='None', ls='None')
+        if not np.isnan(d['val']).all():
+            for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
+                ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
+                            ecolor=c[j], elinewidth=1, marker='None', ls='None')
+
+
+
+
+#     def plot_radial_gradients(self,
+#                               map_order,
+#                               args,
+#                               ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+#                               n_ax=6,
+#                               leg_kwargs=dict(handlelength=2, loc=1),
+#                               figsize=(20, 12)):
+#         """
+#         Plot radial gradients.
+#         """
+#         fig = plt.figure(figsize=figsize)
+#         if seaborn_installed:
+#             sns.set_context('poster', rc={'lines.linewidth': 2})
+#             c = sns.color_palette('bright')
+# 
+#         flux_units = 'Flux'
+#         if self.dap_mode == 'CUBE':
+#             flux_units += ' / spaxel'
+#         elif self.dap_mode == 'RSS':
+#             flux_units += ' / fiber'
+# 
+#         bigAxes = fig.add_axes([0.04, 0.05, 0.9, 0.88], frameon=False)
+#         bigAxes.set_xticks([])
+#         bigAxes.set_yticks([])
+#         bigAxes.set_xlabel('R [arcsec]', fontsize=20)
+#         bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
+#         #bigAxes.set_ylabel(ylabel, fontsize=20)
+#         bigAxes.set_title(
+#             'pid-ifu %s     manga-id %s     %s     %s' % (
+#             self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
+#             fontsize=20)
+#         
+#         bin_edges = np.concatenate((self.binxrl,
+#                                    np.atleast_1d(self.binyru[-1])))
+# 
+#         for i, k in enumerate(map_order):
+#             dx = 0.31 * i
+#             dy = 0.45
+#             if i >= (n_ax / 2):
+#                 dx = 0.31 * (i - n_ax / 2)
+#                 dy = 0
+#             left, bottom = (0.08+dx, 0.1+dy)
+#             if seaborn_installed:
+#                 sns.set_context('poster', rc={'lines.linewidth': 2})
+#         
+#             ax = fig.add_axes([left, bottom, 0.23, 0.33333])
+#             axtitle = args[k]['kwargs']['title_text'].split(' (')[0]
+#             ax.set_title(axtitle)
+#             
+#             if not seaborn_installed:
+#                 ax.set_axis_bgcolor('#EAEAF2')
+#                 ax.grid(False, which='both', axis='both')
+#         
+#             d = args[map_order[i]]
+#             p = []
+#             lab = []
+#             if not np.isnan(d['val']).all():
+#                 for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
+#                                                 [2, 0], ['F. Belfiore', 'E. Wang']):
+#                     p.append(ax.hlines(args[k][kk], self.binxrl, self.binyru,
+#                              color=c[j]))
+#                     #ytmp = np.concatenate((args[k][kk],
+#                     #                      np.atleast_1d(args[k][kk][-1])))
+#                     #p.append(ax.step(bin_edges, ytmp, c=c[j],
+#                     #         where='post')[0])
+#                     #p.append(ax.plot(self.binr, args[k][kk], c=c[j], zorder=8)[0])
+#                     ax.plot(self.binr, args[k][kk], c=c[j], zorder=8, lw=0.5)
+#                     ax.scatter(self.binr, args[k][kk], facecolor=c[j],
+#                                edgecolor='None', s=60, zorder=9)
+#                     #ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
+#                     #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
+#                     label = args[k]['kwargs']['title_text'].split(' (')[0]
+#                     lab.append(author)
+#         
+#             leg = plt.legend(p, lab, **leg_kwargs)
+#             ax.set_xlim(left=0)
+#             ax.set_ylim(bottom=0)
+#             
+#             if not np.isnan(d['val']).all():
+#                 for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
+#                     ax.errorbar(self.binr, args[k][kk], yerr=args[k][kkerr],
+#                                 ecolor=c[j], elinewidth=1, marker='None', ls='None')
 
 
 

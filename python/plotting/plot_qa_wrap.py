@@ -179,6 +179,7 @@ for dap_file in files:
     path_gal_plots = path_gal + 'plots/'
     path_gal_plots_spec = path_gal_plots + 'spectra/'
     path_gal_plots_maps = path_gal_plots + 'maps/'
+    path_gal_plots_gradients = path_gal_plots + 'gradients/'
 
     # create plot directories if necessary
     try:
@@ -192,6 +193,14 @@ for dap_file in files:
     try:
         os.makedirs(path_gal_plots_maps)
         print('\nCreated directory: %s\n' % path_gal_plots_maps)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise e
+        pass
+
+    try:
+        os.makedirs(path_gal_plots_gradients)
+        print('\nCreated directory: %s\n' % path_gal_plots_gradients)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
@@ -213,6 +222,7 @@ for dap_file in files:
             plot_map = True
             plot_indiv_map = True
             plot_gradients = False
+            plot_indiv_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = False
             plot_all_spec_as_png = False
@@ -221,6 +231,7 @@ for dap_file in files:
             plot_map = True
             plot_indiv_map = True
             plot_gradients = False
+            plot_indiv_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
@@ -229,6 +240,7 @@ for dap_file in files:
             plot_map = False
             plot_indiv_map = False
             plot_gradients = True
+            plot_indiv_gradients = True
             overplot_all = True
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
@@ -237,6 +249,7 @@ for dap_file in files:
             plot_map = False
             plot_indiv_map = False
             plot_gradients = False
+            plot_indiv_gradients = False
             overplot_all = False
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
@@ -246,6 +259,7 @@ for dap_file in files:
             plot_map = False
             plot_indiv_map = False
             plot_gradients = True
+            plot_indiv_gradients = True
             overplot_all = True
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
@@ -254,6 +268,7 @@ for dap_file in files:
             plot_map = False
             plot_indiv_map = False
             plot_gradients = False
+            plot_indiv_gradients = False
             overplot_all = False
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
@@ -629,10 +644,19 @@ for dap_file in files:
     if plot_gradients:
     
         # Plot emission line flux gradients
-        qa.plot_radial_gradients(emflux_mapname, emflux_map_kwargs)
+        qa.plot_multi_radial_gradients(emflux_mapname, emflux_map_kwargs)
         fout =  ('_').join([stem_file, 'emflux', 'gradients']) + '.png'
         plt.savefig(path_gal_plots + fout)
         print('Wrote: %s' % fout)
+    
+    if plot_indiv_gradients:
+    
+        for k, v in iteritems(emflux_map_kwargs):
+            qa.plot_radial_gradients(k, emflux_map_kwargs, c_ind=[2, 0],
+                                     leglabels=['F. Belfiore', 'E. Wang'])
+            fout =  ('_').join([stem_file, k, 'gradient']) + '.png'
+            plt.savefig(path_gal_plots_gradients + fout)
+        print('Wrote: individual emflux gradients')
     
     
     overplot_all = False
