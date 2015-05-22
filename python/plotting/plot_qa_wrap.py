@@ -556,8 +556,7 @@ for dap_file in files:
     #qa.calc_resid_data()
     #qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
     
-    
-    plot_map = False
+    # plot_map = False
     if plot_map:
     
         # Plot bin numbers on top of chisq map
