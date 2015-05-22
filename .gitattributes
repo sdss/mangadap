@@ -2619,6 +2619,7 @@ python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
 python/mangadap/www/make_dapqa.py -text
+python/mangadap/www/table_data.py -text
 python/mangadap/www/templates/maps.jinja2 -text
 python/plotting/Linear_L_0-1.csv -text
 python/plotting/README -text
