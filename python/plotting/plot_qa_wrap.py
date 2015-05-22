@@ -31,9 +31,6 @@ DESCRIPTION
             Plot an interpolated version of the stellar kinematics maps;
             default is False.
 
-        [-plot_indiv_map]
-            Plot maps for individual quantities; default is False.
-
 REVISION HISTORY:
     24 Feb 2015 - Original implementation by B. Andrews
     28 Apr 2015: (KBW) Some documentation edits and use of glob; added mode
@@ -117,11 +114,6 @@ if '-stkin_interp' in sys.argv:
     stkin_interp = True
 else:
     stkin_interp = False
-if '-plot_indiv_map':
-    plot_indiv_map = True
-else:
-    plot_indiv_map = False
-
 
 print()
 print('Overwrite plots:', overwrite)
@@ -219,6 +211,7 @@ for dap_file in files:
     if mode == 'LOGCUBE':
         if binning_type == 'NONE':
             plot_map = True
+            plot_indiv_map = True
             plot_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = False
@@ -226,6 +219,7 @@ for dap_file in files:
             plot_h3_h4 = False
         elif binning_type == 'STON':
             plot_map = True
+            plot_indiv_map = True
             plot_gradients = False
             overplot_all = True
             plot_all_spec_as_pdf = True
@@ -233,6 +227,7 @@ for dap_file in files:
             plot_h3_h4 = True
         elif binning_type == 'RADIAL':
             plot_map = False
+            plot_indiv_map = False
             plot_gradients = True
             overplot_all = True
             plot_all_spec_as_pdf = True
@@ -240,6 +235,7 @@ for dap_file in files:
             plot_h3_h4 = False
         elif binning_type == 'ALL':
             plot_map = False
+            plot_indiv_map = False
             plot_gradients = False
             overplot_all = False
             plot_all_spec_as_pdf = True
@@ -248,6 +244,7 @@ for dap_file in files:
     elif mode == 'LOGRSS':
         if binning_type == 'RADIAL':
             plot_map = False
+            plot_indiv_map = False
             plot_gradients = True
             overplot_all = True
             plot_all_spec_as_pdf = True
@@ -255,6 +252,7 @@ for dap_file in files:
             plot_h3_h4 = False
         if binning_type == 'ALL':
             plot_map = False
+            plot_indiv_map = False
             plot_gradients = False
             overplot_all = False
             plot_all_spec_as_pdf = True
