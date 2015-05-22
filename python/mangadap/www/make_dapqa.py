@@ -49,8 +49,19 @@ global_spec_filenames = [it + '.png' for it in global_spec]
 # ifus = map(str, ifus)
 
 data = [{'plate':7443, 'ifudsgn':'12702', 'mode':'CUBE', 'binning':'NONE-002', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'6102', 'mode':'CUBE', 'binning':'STON-001', 'spec':'0000', 'plotname':'maps'},
         {'plate':7443, 'ifudsgn':'6102', 'mode':'CUBE', 'binning':'NONE-002', 'spec':'0000', 'plotname':'maps'}, 
-        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'RADIAL-003', 'spec':'0000', 'plotname':'maps'}]
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'RADIAL-003', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'RADIAL-004', 'spec':'0000', 'plotname':'maps'}, 
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'ALL-005', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'ALL-006', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'CUBE', 'binning':'ALL-007', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'RSS', 'binning':'RADIAL-001', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'RSS', 'binning':'RADIAL-002', 'spec':'0000', 'plotname':'maps'}, 
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'RSS', 'binning':'ALL-003', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'RSS', 'binning':'ALL-004', 'spec':'0000', 'plotname':'maps'},
+        {'plate':7443, 'ifudsgn':'3701', 'mode':'RSS', 'binning':'ALL-005', 'spec':'0000', 'plotname':'maps'},
+        ]
 
 
 # for plate in plates:
@@ -121,10 +132,10 @@ for g in grad_types:
         all_urls['RSS'][binning][g] = []
 
 for binning in ['ALL-005', 'ALL-006', 'ALL-007']:
-    all_urls['CUBE'][binning]['global_spec'] = []
+    all_urls['CUBE'][binning]['spec-0000'] = []
 
 for binning in ['ALL-003', 'ALL-004', 'ALL-005']:
-    all_urls['RSS'][binning]['global_spec'] = []
+    all_urls['RSS'][binning]['spec-0000'] = []
 
 
 
@@ -133,9 +144,16 @@ for it in data:
     path_plots_sas = os.path.join(topdir_sas, str(it['plate']), it['ifudsgn'], 'plots', '')
     stem = ('-'.join(['manga', str(it['plate']), it['ifudsgn'],
                         'LOG%s_BIN' % it['mode'], it['binning']]) + '_')
+    if it['mode'] == 'CUBE':
+        ptypes = cube_ptypes[it['binning']]
+    elif it['mode'] == 'RSS':
+        ptypes = rss_ptypes[it['binning']]
     urls = []
-    for i, plot_type in enumerate(cube_ptypes[it['binning']]):
-        url = path_plots_sas + stem + plot_type + '.png'
+    for i, plot_type in enumerate(ptypes):
+        specdir = ''
+        if 'ALL' in it['binning']:
+            specdir = 'spectra/'
+        url = path_plots_sas + specdir + stem + plot_type + '.png'
         urls.append(url)
         all_urls[it['mode']][it['binning']][plot_type].append(url)
     templateVars = dict(urls=urls)
