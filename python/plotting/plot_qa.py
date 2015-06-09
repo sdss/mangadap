@@ -590,8 +590,9 @@ class PlotQA(object):
             if not np.isnan(d['val']).all():
                 if 'val_err' in d:
                     val_err = d['val_err']
-                self.plot_map(d['val'], z_err=val_err, fig=fig, ax=ax, axloc=[left, bottom],
-                              **d['kwargs'])
+                self.plot_map(d['val'], z_err=val_err, fig=fig, ax=ax,
+                              axloc=[left, bottom], title_text_fontsize=20,
+                              cblabel_fontsize=20, **d['kwargs'])
                 # self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                 #               **d['kwargs'])
 
@@ -607,6 +608,8 @@ class PlotQA(object):
                  interpolated=False,
                  show_flux_contours=False,
                  cblabel=None,
+                 cblabel_fontsize=20,
+                 cbtick_fontsize=20,
                  cbrange=None,
                  cbrange_clip=True,
                  cbrange_symmetric=False,
@@ -614,6 +617,7 @@ class PlotQA(object):
                  cmap=cm.coolwarm,
                  xy_max=None,
                  title_text=None,
+                 title_text_fontsize=28,
                  spaxel_num=False,
                  nodots=False,
                  fontsize=7,
@@ -643,7 +647,7 @@ class PlotQA(object):
             ax.set_ylabel('arcsec')
 
         if title_text is not None:
-            ax.set_title(title_text, fontsize=20)
+            ax.set_title(title_text, fontsize=title_text_fontsize)
 
         if not seaborn_installed:
             ax.set_axis_bgcolor('#A8A8A8')
@@ -809,7 +813,7 @@ class PlotQA(object):
         if show_colorbar:
 
             if axloc is None:
-                cax = fig.add_axes([0.85, 0.1, 0.02, 5/6.])
+                cax = fig.add_axes([0.82, 0.1, 0.02, 5/6.])
             else:
                 cax = fig.add_axes([axloc[0]+0.21, axloc[1], 0.01, 0.3333])
 
@@ -823,7 +827,13 @@ class PlotQA(object):
                 cb = fig.colorbar(p, cax, ticks=ticks)
     
             if cblabel is not None:
-                cb.set_label(cblabel)
+                cb.set_label(cblabel, size=28)
+
+            if cbtick_fontsize is not None:
+                cb.ax.tick_params(labelsize=cbtick_fontsize)
+
+            #if colorbar_label_fontsize is not None:
+            #    cb.ax.tick_params(labelsize=colorbar_label_fontsize)
 
         if seaborn_installed:
             sns.set_style(rc={'axes.facecolor': '#EAEAF2'})

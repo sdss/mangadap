@@ -180,7 +180,7 @@ for dap_file in files:
     path_gal_plots_spec = path_gal_plots + 'spectra/'
     path_gal_plots_maps = path_gal_plots + 'maps/'
     path_gal_plots_gradients = path_gal_plots + 'gradients/'
-
+    
     # create plot directories if necessary
     try:
         os.makedirs(path_gal_plots_spec)
@@ -189,7 +189,7 @@ for dap_file in files:
         if e.errno != errno.EEXIST:
             raise e
         pass
-
+    
     try:
         os.makedirs(path_gal_plots_maps)
         print('\nCreated directory: %s\n' % path_gal_plots_maps)
@@ -197,7 +197,7 @@ for dap_file in files:
         if e.errno != errno.EEXIST:
             raise e
         pass
-
+    
     try:
         os.makedirs(path_gal_plots_gradients)
         print('\nCreated directory: %s\n' % path_gal_plots_gradients)
@@ -205,7 +205,7 @@ for dap_file in files:
         if e.errno != errno.EEXIST:
             raise e
         pass
-
+    
     # check for done file
     if not overwrite:
         if os.path.isfile(path_gal_plots + done_file):
@@ -546,7 +546,7 @@ for dap_file in files:
     
     #reload(plot_qa)
     #from plot_qa import PlotQA
-     
+    #
     #qa = PlotQA(path_gal + dap_file)
     #print('\nTemplate Library:', qa.tpl_lib)
     #qa.select_wave_range()
@@ -604,26 +604,38 @@ for dap_file in files:
     if plot_indiv_map:
     
         for k, v in iteritems(kin_map_kwargs):
-            qa.plot_map(v['val'], **v['kwargs'])
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
             fout =  ('_').join([stem_file, k, 'map']) + '.png'
             plt.savefig(path_gal_plots_maps + fout)
         print('Wrote: individual kin maps')
     
         if stkin_interp:
             for k, v in iteritems(kin_map_kwargs_interp):
-                qa.plot_map(v['val'], **v['kwargs'])
+                val_err = None
+                if 'val_err' in v:
+                    val_err = v['val_err']
+                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
                 fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
                 plt.savefig(path_gal_plots_maps + fout)
             print('Wrote: individual kin interp maps')
     
         for k, v in iteritems(emflux_ew_map_kwargs):
-            qa.plot_map(v['val'], **v['kwargs'])
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
             fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
             plt.savefig(path_gal_plots_maps + fout)
         print('Wrote: individual emflux_ew maps')
     
         for k, v in iteritems(emflux_fb_map_kwargs):
-            qa.plot_map(v['val'], **v['kwargs'])
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val2_err']
+            qa.plot_map(v['val2'], z_err=val_err, **v['kwargs'])
             fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
             plt.savefig(path_gal_plots_maps + fout)
         print('Wrote: individual emflux_fb maps')
@@ -633,7 +645,10 @@ for dap_file in files:
             if k is 'halpha':
                 pass
             else:
-                qa.plot_map(v['val'], **v['kwargs'])
+                val_err = None
+                if 'val_err' in v:
+                    val_err = v['val_err']
+                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
                 fout =  ('_').join([stem_file, k, 'map']) + '.png'
                 plt.savefig(path_gal_plots_maps + fout)
         print('Wrote: individual snr maps')
