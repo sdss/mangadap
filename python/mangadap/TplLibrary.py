@@ -97,7 +97,7 @@ from mangadap.util.bitmasks import TplLibraryBitMask, HDUList_mask_wavelengths
 from mangadap.util.instrument import log_rebin, log_rebin_pix
 from mangadap.util.instrument import match_spectral_resolution, spectrum_velocity_scale
 
-from matplotlib import pyplot
+#from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 
@@ -434,11 +434,11 @@ class TplLibrary:
         self._read_raw()
 
         # Convert to vacuum wavelengths
-        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
         if not self.invac:
             self.hdu['WAVE'].data = airtovac(self.hdu['WAVE'].data)
-        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
-        pyplot.show()
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
+#        pyplot.show()
 
         # Calculate the redshift to use to set the DRP observed
         # wavelength to the rest wavelength; important for matching the
@@ -465,8 +465,8 @@ class TplLibrary:
         print('... done.')
 
         oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
-        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['SPECRES'].data[0,:]) 
-        pyplot.plot(self.drpf.hdu['WAVE'].data, self.drpf.hdu['SPECRES'].data, 'r') 
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['SPECRES'].data[0,:]) 
+#        pyplot.plot(self.drpf.hdu['WAVE'].data, self.drpf.hdu['SPECRES'].data, 'r') 
         # Match the resolution of the templates to the galaxy data
         # accounting for the redshift of the galaxy.
         print('Matching spectral resolution ... ')
@@ -476,8 +476,8 @@ class TplLibrary:
                                       self.drpf.hdu['WAVE'].data/(1.+redshift),
                                       self.drpf.hdu['SPECRES'].data, min_sig_pix=0.0,
                                       new_log10=True)
-        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['SPECRES'].data[0,:], 'g') 
-        pyplot.show()
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['SPECRES'].data[0,:], 'g') 
+#        pyplot.show()
         print('... done')
 
         # Mask any pixels where the template resolution was too low to
@@ -487,9 +487,9 @@ class TplLibrary:
             self.tplbm.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
         print('... done')
 
-        pyplot.plot(self.hdu['WAVE'].data[0,:], oldflux)
-        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
-        pyplot.show()
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], oldflux)
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
+#        pyplot.show()
 
         # Determine the wavelength range that encloses all spectra
         print('Matching sampling ... ')

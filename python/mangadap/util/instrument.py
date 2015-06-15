@@ -32,6 +32,8 @@ Provides a set of functions to handle instrumental effects.
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
         based on downgrader_MANGA.f provided by D. Thomas, O. Steele, D.
         Wilkinson, D. Goddard.
+    | **13 Jun 2015**: D.Wilkinson edit to not calculate unimportant
+        convolution terms -> runs 5x faster.
 
 """
 
@@ -51,7 +53,7 @@ from mangadap.util.constants import constants
 from mangadap.util.misc import where_not
 import astropy.constants
 
-from matplotlib import pyplot
+# from matplotlib import pyplot
 
 def spectrum_velocity_scale(wave, log10=False):
     """
@@ -116,10 +118,18 @@ class convolution_integral_element:
         self.sigma = sigma
         self.norm = numpy.sqrt(2.0*numpy.pi)*self.sigma
 
-    
+
     def _get_kernel(self, xc):
         """Calculate the kernel vector when centered at *xc*."""
-        return numpy.exp(-0.5*numpy.square((self.x-xc)/self.sigma))/self.norm
+        div = numpy.square((self.x-xc)/self.sigma) 
+        close_value = numpy.where(div < 50.0)
+        outkern = numpy.exp(-0.5*div[close_value])/self.norm[close_value]
+        return close_value, outkern
+
+
+#    def _get_kernel(self, xc):
+#        """Calculate the kernel vector when centered at *xc*."""
+#        return numpy.exp(-0.5*numpy.square((self.x-xc)/self.sigma))/self.norm
 
 
     def __call__(self, xc):
@@ -135,10 +145,13 @@ class convolution_integral_element:
             float: The weighted mean of :attr:`y`
 
         """
-        kernel = self._get_kernel(xc)
+#        kernel = self._get_kernel(xc)
+#        return numpy.sum(self.y*kernel) / numpy.sum(kernel)
+        close_array, kernel = self._get_kernel(xc)
+        return numpy.sum(self.y[close_array]*kernel) / numpy.sum(kernel)
+
         # Need to test equivalence and speed of these two implementations
 #        return integrate.simps(self.y*kernel) / integrate.simps(kernel)
-        return numpy.sum(self.y*kernel) / numpy.sum(kernel)
 
 
     def error(self, xc):
@@ -155,8 +168,10 @@ class convolution_integral_element:
             float: The error in the weighted mean of :attr:`y`
 
         """
-        kernel = self._get_kernel(xc)
-        return numpy.sqrt(numpy.sum(numpy.square(self.ye*kernel)) / numpy.sum(kernel))
+        close_array, kernel = self._get_kernel(xc)
+        return numpy.sqrt(numpy.sum(numpy.square(self.ye[close_array]*kernel)) / numpy.sum(kernel))
+#        kernel = self._get_kernel(xc)
+#        return numpy.sqrt(numpy.sum(numpy.square(self.ye*kernel)) / numpy.sum(kernel))
 
 
 def convolution_variable_sigma(y, sigma, ye=None):
@@ -218,11 +233,13 @@ def convolution_variable_sigma(y, sigma, ye=None):
 
     """
     kernel = convolution_integral_element(y,sigma,ye=ye)
-    conv = numpy.array(list(map(kernel, kernel.x)))
+#    conv = numpy.array(list(map(kernel, kernel.x)))
+    conv = numpy.array([kernel(x) for x in kernel.x])
     if ye is None:
         return conv
 
-    return conv, numpy.array(list(map(kernel.error, kernel.x)))
+#    return conv, numpy.array(list(map(kernel.error, kernel.x)))
+    return conv, numpy.array([kernel.error(x) for x in kernel.x])
 
 
 class spectral_resolution:
@@ -832,8 +849,8 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         res = [spectral_resolution(wave, sres, log10=log10)]
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
-        pyplot.plot(wave, res[0].sig_pd)
-        pyplot.show()
+#        pyplot.plot(wave, res[0].sig_pd)
+#        pyplot.show()
     else:
         for i in range(0,nspec):
             _wave = wave[i,:].ravel() if wave_matrix else wave
