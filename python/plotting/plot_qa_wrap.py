@@ -772,12 +772,6 @@ for dap_file in files:
 def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
                       figsize=(20, 12)):
 
-    if seaborn_installed:
-        c = sns.color_palette('bright', 5)
-        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']})
-    else:
-        c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
-
     win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
 
     fig = plt.figure(figsize=figsize)
@@ -806,11 +800,21 @@ def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
 def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
                 win_cen=None, nii=False,
                 kwargs={'alpha':0.75, 'lw':2}, figsize=(10, 8)):
+
+    if seaborn_installed:
+        c = sns.color_palette('bright', 5)
+        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']},
+                        font_scale=1.25)
+    else:
+        c = ['b', 'r', 'lime', 'DarkOrchid', 'gold']
+
     if ax is None:
         fig = plt.figure(figsize=figsize)
-        ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
-        ax.set_xlabel(r'$\lambda \, [\AA]$')
-        ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]')
+        ax = fig.add_axes([0.15, 0.15, 0.75, 0.75])
+        ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
+        ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=24)
+        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']},
+                        font_scale=1.25)
 
     wave = self.wave_rest[bin]
     gal = self.galaxy_rest[bin]
@@ -863,12 +867,18 @@ def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
                 x_off = -1
             elif line_name[k] is '[NII]6548':
                 x_off = -15
-            print(k, nii)
-            if (not nii) and (k is not 'halpha'):
+            if (not nii) or (k is not 'halpha'):
                 ax.text(w + x_off,
                         np.max(gal[ind_wave[-1]-5:ind_wave[-1]+6])+y_off,
                         line_name[k])
+                # plot vertical line
+                # ax.plot()
     leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], loc=2)
     plt.setp(leg.get_texts(), fontsize=20)
 
-emlines = plot_emline_multi(qa)
+win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+#for w in win_cen
+
+plot_emline(qa, win_cen=win_cen[0])
+
+# plot_emline_multi(qa)
