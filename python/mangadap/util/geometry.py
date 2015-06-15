@@ -1,3 +1,28 @@
+"""
+
+Provides a set of utility functions dealing with computational geometry.
+
+*Source location*:
+    $MANGADAP_DIR/python/mangadap/util/geometry.py
+
+*Python2/3 compliance*::
+
+    from __future__ import division
+    from __future__ import print_function
+    from __future__ import absolute_import
+    
+    import sys
+    if sys.version > '3':
+        long = int
+
+*Imports*:
+    None
+
+*Revision history*:
+    | **2015**: Original implementation by K. Westfall (KBW)
+    | **20 May 2015**: (KBW) Documentation and Sphinx tests
+"""
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -6,14 +31,29 @@ import sys
 if sys.version > '3':
     long = int
 
-import inspect
-
 __author__ = 'Kyle Westfall'
 
 def polygon_winding_number(polygon, point):
     """
-    Determine the winding number of a polygon in 2D about a point.
-    Taken from Numerical Recipies Section 21.4.
+    Determine the winding number of a 2D polygon about a point.  The
+    code does **not** check if the polygon is simple (no interesecting
+    line segments).  Algorithm taken from Numerical Recipies Section
+    21.4.
+
+    Args:
+        polygon (numpy.ndarray): An Nx2 array containing the x,y
+            coordinates of a polygon.  The points should be ordered
+            either counter-clockwise or clockwise.
+        point (numpy.ndarray): A 2-element array defining the x,y
+            position of the point to use as a reference for the winding
+            number.
+
+    Returns:
+        int : Winding number of *polygon* w.r.t. *point*
+
+    Raises:
+        Exception: Raised if *polygon* is not 2D, if *polygon* does not
+            have two columns, or if *point* is not a 2-element array.
     """
 
     # Check input shape is for 2D only
@@ -46,10 +86,24 @@ def polygon_winding_number(polygon, point):
 
 def point_inside_polygon(polygon, point):
     """
-    Determine if a point is inside a polygon.
 
-    If the point is *on* the polygon (or very close to it wrt the
-    machine precision), the returned value is false.
+    Determine if a point is inside a polygon using the winding number.
+
+    Args:
+        polygon (numpy.ndarray): An Nx2 array containing the x,y
+            coordinates of a polygon.  The points should be ordered
+            either counter-clockwise or clockwise.
+        point (numpy.ndarray): A 2-element array defining the x,y
+            position of the point to use as a reference for the winding
+            number.
+
+    Returns:
+        bool : True if the point is inside the polygon.
+
+    .. warning:: 
+        If the point is **on** the polygon (or very close to it w.r.t.
+        the machine precision), the returned value is false.
+
     """
     return (abs(polygon_winding_number(polygon, point)) == 1)
         

@@ -1,3 +1,76 @@
+"""
+
+Defines a class used to produce and provide an interface for data
+required to create the input `SDSS parameter files`_ for the DAP.
+
+The drpcomplete file/data is primarily requred for the survey-level
+execution of the `DAP at Utah`_.  However, it does provide useful
+information regarding the completed DRP files, and it can be used to
+create DAP par files.
+
+Until further documented here, the description of the `DAP par
+file`_ is available in the SDSS-IV/MaNGA `MPL-3 Technical Reference Manual`_.
+
+*Source location*:
+    $MANGADAP_DIR/python/mangadap/drpcomplete.py
+
+*Python2/3 compliance*::
+
+    from __future__ import division
+    from __future__ import print_function
+    from __future__ import absolute_import
+    
+    import sys
+    if sys.version > '3':
+        long = int
+
+*Imports*::
+
+    import os.path
+    from os import environ, makedirs, walk
+    import numpy
+    from astropy.io import fits
+    from astropy import constants
+    from mangadap.util.yanny import yanny, read_yanny
+    from mangadap.util import defaults
+    from mangadap import drpfile
+    from mangadap import dapfile
+    from mangadap.util.parser import arginp_to_list, list_to_csl_string
+    from mangadap.util.exception_tools import print_frame
+
+*Class usage examples*:
+
+    .. todo::
+
+        Add some usage comments here!
+
+*Revision history*:
+    | **20 Nov 2014**: Started implementation by K. Westfall (KBW)
+    | **01 Dec 2014**: (KBW) Committed to SVN
+    | **12 Jan 2015**: (KBW) Allow for use of plateTargets file using yanny.py
+    | **19 Mar 2015**: (KBW) Adjustments for changes to drpfile and
+        drpfile_list.  Now always sets the names of the NSA catalogs and
+        the plateTargets files; added the nsa_catid.  Changed drppath to
+        redux_path.  Added catid and catindx to output file.  Major
+        change to matching when using NSA catalog(s).  Imports full
+        :class:`mangadap.drpfile` and :class:`mangadap.dapfile` classes,
+        require a change to the function calls. Changed parameter order
+        in :func:`write` and allowed for use of attributes as default.
+    | **20 May 2015**: (KBW) Documentation and Sphinx tests. Prep for
+        conversion from NSA to TRG nomenclatature, but still need to
+        make the full conversion.
+
+.. todo::
+    - Need accommodate more than just the CATID=1,12 (NSA) catalogs
+    - Move default plateTargets and catalog file names to defaults.py
+
+.. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-3/dap/Summary/parFile
+.. _MPL-3 Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-3
+.. _SDSS parameter files: http://www.sdss.org/dr12/software/par/
+.. _DAP at Utah: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-3/dap/Summary/Utah
+
+"""
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -11,106 +84,116 @@ from os import environ, makedirs, walk
 import numpy
 from astropy.io import fits
 from astropy import constants
-
-# DAP imports
 from mangadap.util.yanny import yanny, read_yanny
 from mangadap.util import defaults
 from mangadap import drpfile
 from mangadap import dapfile
-from mangadap.util.parser import arginp_to_list, list_to_csl_string
+from mangadap.util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from mangadap.util.exception_tools import print_frame
 
 __author__ = 'Kyle Westfall'
 
-
-# MOVED to util/parser.py
-#def list_to_csl_string(flist):
-#    """
-#    Convert a list to a comma-separated string.
-#    """
-#    n = len(flist)
-#    out=str(flist[0])
-#    for i in range(1,n):
-#        out += ', '+str(flist[i])
-#    return out
-
-
-
 class drpcomplete:
     """
-    drpcomplete object with creates, updates, and reads data from the
-    drpcomplete file, uses as a reference file for the DAP.
+    Class is used to determine which DRP files are ready for analysis
+    with the DAP, and collect the data necessary for and write the DAP
+    input parameter file.
 
     Provided files have priority over default ones.
     platetargets file has priority over NSA catalog.
 
-    REVISION HISTORY:
-        20 Nov 2014: Started implementation by K. Westfall (KBW)
-        01 Dec 2014: (KBW) Committed to SVN
-        12 Jan 2015: (KBW) Allow for use of plateTargets file using yanny.py
-        19 Mar 2015: (KBW) Adjustments for changes to drpfile and
-                           drpfile_list.  Now always sets the names of
-                           the NSA catalogs and the plateTargets files;
-                           added the nsa_catid.  Changed drppath to
-                           redux_path.  Added catid and catindx to
-                           output file.  Major change to matching when
-                           using NSA catalog(s).  Imports full drpfile
-                           and dapfile, so now functions called as
-                           drpfile.*, dapfile.*; uses default paths,
-                           names, etc from there.
-    """
-
-
-    def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, nsa_cat=None,
-                 nsa_catid=None, drpver=None, redux_path=None, dapver=None, analysis_path=None,
-                 readonly=False):
-        """
-        Initializes the class and its members.
-    
-        ARGUMENTS (all optional):
+    Args:
+        platelist (str or list): (Optional) List of plates to search
+            for.  Default is to search the full DRP path.
+        ifudesignlist (str or list): (Optional) List of ifudesign to
+            search for.  Default is to search the full DRP path.
+        platetargets (str or list): (Optional) List of platetargets
+            files to search through to find any given plate ifudesign
+            combination. Default is::
             
-            platelist - specified list of plates to analyze
-            ifudesignlist - specified list of ifudesign to analyze
+                numpy.array([ os.path.join(environ['MANGACORE_DIR'],
+                                           'platedesign',
+                                           'platetargets',
+                                           'plateTargets-12.par'),
+                              os.path.join(environ['MANGACORE_DIR'],
+                                           'platedesign',
+                                           'platetargets',
+                                           'plateTargets-1.par') ])
 
-            platetargets - plate targets file to use for data collection
-            nsa_cat - NSA catalog to use for data collection
-            nsa_catid - The ID numbers of the NSA catalog used to match
-                        with the MaNGA ID
+        trg_cat (str or list): (Optional) List of catalogs to search
+            through to grab the target ID from that catalog. Default
+            is::
+            
+                numpy.array([ os.path.join(environ['MANGA_TARGET'],
+                                           'catalogues',
+                                           '12-nsa_v1b_0_0_v2.fits'), 
+                              os.path.join(environ['MANGA_TARGET'],
+                                           'catalogues',
+                                           '1-nsa_v1_0_0.fits') ])
+            
+        trg_catid (str or list): (Optional) List of target catalog ID
+            numbers to use.  Default is::
+            
+                numpy.array([ 12, 1 ])
 
-            drpver - DRP version:
-                        - used to define the default DRP redux path
-                        - used when declaring a drpfile instance
-                        - used in the name of the drpcomplete file
-                        - included as a header keyword in the output
-                          file
-                     If not provided, set to environ['MANGADRP_VER']
+        drpver (str): (Optional) DRP version, which is:
+                - used to define the default DRP redux path
+                - used when declaring a drpfile instance
+                - used in the name of the drpcomplete file
+                - included as a header keyword in the output file
 
-            redux_path  - The path to the top level directory containing
-                          the DRP output; this is the same as the
-                          redux_path in the drpfile class.  If not
-                          provided, the default redux_path is:
+            Default is defined by :func:`mangadap.util.defaults.default_drp_version`
+        redux_path (str): (Optional) The path to the top level directory
+            containing the DRP output files; this is the same as the
+            *redux_path* in the :class:`mangadap.drpfile` class.
+            Default is defined by
+            :func:`mangadap.util.defaults.default_redux_path`.
 
-                              os.path.join(environ['MANGA_SPECTRO_REDUX'],
-                                self.drpver)
+        dapver (str): (Optional) DAP version, which is:
+                - used to define the default DAP analysis path
+                - included as a header keyword in the output drpcomplete
+                  file
 
-            dapver - DAP version:
-                        - used to define the default DAP analysis path
-                        - included as a header keyword in the output
-                          drpcomplete file
-                     If not provided, set to environ['MANGADAP_VER']
+            Default is defined by
+            :func:`mangadap.util.defaults.default_dap_version`
+        analysis_path (str): The path to the top level directory for the
+            DAP output files; this is **different** from the
+            directory_path in the :class:`mangadap.dapfile` class.  Default is
+            defined by
+            :func:`mangadap.util.defaults.default_analysis_path`
+        readonly (bool) : Flag that the drpcomplete fits file is only
+            opened for reading, not for updating.
 
-            analysis_path - The path to the top level directory for the
-                            DAP output; this is DIFFERENT from the
-                            directory_path in the dapfile class.  If not
-                            provided, the default analysis_path is:
+    Raises:
+        Exception: Raised if user supplies only one of trg_cat or
+            trg_catid instead of both.
 
-                              os.path.join(environ['MANGA_SPECTRO_ANALYSIS'],
-                                self.dapver)
-          
-            readonly - Flag that the drpcomplete file is only opened for
-                       reading, not for updating.
-        """
+    Attributes:
+        platelist (list) : List of plates to search for, see above.
+        ifudesignlist (list) : List of IFU designs to search for, see
+            above.
+        platetargets (numpy.ndarray, dtype=str) : List of platetargets
+            files to search through, see above
+        trg_cat (numpy.ndarray, dtype=str) : List of target catalogs to
+            search through, see above
+        trg_catid (numpy.ndarray, dtype=str) : List of target catalog
+            IDs, see above
+        drpver (str) : DRP version, see above.
+        redux_path (str) : Path to the top level of directory for the
+            DRP output, see above.
+        dapver (str) : DAP version, see above.
+        analysis_path (str) : Path to the top level directory for the
+            DAP output files, see above.
+        readonly (bool) : Flag that the drpcomplete fits file is only
+            opened for reading, not for updating.
+        data (dict) : Data storage structure.  *Need to check exact data
+            type*.
+        nrows (int) : Number of rows in the data structure.
 
+    """
+    def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, trg_cat=None,
+                 trg_catid=None, drpver=None, redux_path=None, dapver=None, analysis_path=None,
+                 readonly=False):
         # Input properties
         self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
         self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
@@ -131,8 +214,8 @@ class drpcomplete:
             self.platelist = None
             self.ifudesignlist = None
             self.platetargets = None
-            self.nsa_cat = None
-            self.nsa_catid = None
+            self.trg_cat = None
+            self.trg_catid = None
             return
 
         self.readonly = False
@@ -143,15 +226,15 @@ class drpcomplete:
         self.platetargets = numpy.array( arginp_to_list(platetargets) ) \
                             if platetargets is not None else self._default_plate_target_files()
 
-        if (nsa_cat is not None and nsa_catid is None) or \
-           (nsa_cat is None and nsa_catid is not None):
-            raise Exception('Must provide both nsa_cat and nsa_catid')
+        if (trg_cat is not None and trg_catid is None) or \
+           (trg_cat is None and trg_catid is not None):
+            raise Exception('Must provide both trg_cat and trg_catid')
 
-        if nsa_cat is not None:
-            self.nsa_cat = numpy.array( arginp_to_list(nsa_cat) )
-            self.nsa_catid = numpy.array( arginp_to_list(nsa_catid) )
+        if trg_cat is not None:
+            self.trg_cat = numpy.array( arginp_to_list(trg_cat) )
+            self.trg_catid = numpy.array( arginp_to_list(trg_catid) )
         else:
-            self.nsa_cat, self.nsa_catid = self._default_nsa_catalogs()
+            self.trg_cat, self.trg_catid = self._default_trg_catalogs()
 
 
     # ******************************************************************
@@ -160,8 +243,12 @@ class drpcomplete:
 
     def _default_plate_target_files(self):
         """
-        Return the default plateTargets file used to get the NSA
+        Return the default plateTargets file used to get the target
         information
+
+        .. todo::
+            Move this to :file:`mangadap/util/defaults.py`
+
         """
         return numpy.array([ os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
                                           'plateTargets-12.par'),
@@ -169,23 +256,15 @@ class drpcomplete:
                                           'plateTargets-1.par') ])
 
 
-    def _default_nsa_catalogs(self):
+    def _default_trg_catalogs(self):
         """
-        Return the default NSA catalogs and their respective catalog id
+        Return the default target catalogs and their respective catalog id
         numbers.
 
-        REVISION HISTORY:
-                19 Mar 2015: (KBW) Now returns two lists, one with the
-                                   catalog name and the other with the
-                                   catalog number.  Should match the
-                                   plateTarget files.
+        .. todo::
+            Move this to :file:`mangadap/util/defaults.py`
+
         """
-
-#       catalog = numpy.array([ os.path.join(environ['MANGAWORK_DIR'], 'manga', 'target', 'temp',
-#                                            '12-nsa_v1b_0_0_v2.fits.gz'), 
-#                               os.path.join(environ['MANGA_TARGET'], 'input', 'nsa_v1_0_0.fits') ])
-#       catalogid = numpy.array([ 12, 1 ])
-
         catalog = numpy.array([ os.path.join(environ['MANGA_TARGET'], 'catalogues',
                                              '12-nsa_v1b_0_0_v2.fits'), 
                                 os.path.join(environ['MANGA_TARGET'], 'catalogues',
@@ -200,7 +279,21 @@ class drpcomplete:
 
 
     def _drp_mangaid(self, drplist):
-        """Grab the mangaids from the DRP fits files."""
+        """
+        Grab the MaNGA IDs from the DRP fits files.
+        
+        Args:
+            drplist (drpfile) : List :class:`mangadap.drpfile` objects
+
+        Returns:
+            numpy.ndarray : Array with the MaNGA IDs from the headers of
+                the DRP fits files.
+
+        .. note::
+            This takes far too long; astropy.io.fits must be reading the
+            entire file instead of just the header.
+
+        """
         nn = len(drplist)
         mangaid = []
         print("Gathering MANGA-IDs for DRP files...")
@@ -214,8 +307,21 @@ class drpcomplete:
 
     def _drp_info(self, drplist):
         """
-        Grab the mangaid, object RA, and object DEC from the DRP fits
+        Grab the MaNGA IDs and object coordinates from the DRP fits
         files.
+        
+        Args:
+            drplist (list) : List of :class:`mangadap.drpfile` objects
+
+        Returns:
+            numpy.ndarray, numpy.ndarray, numpy.ndarray : Arrays with
+                the MaNGA IDs from the headers of the DRP fits files,
+                the object right ascension, and the object declination.
+
+        .. note::
+            This takes far too long; astropy.io.fits must be reading the
+            entire file instead of just the header.
+
         """
         nn = len(drplist)
         mangaid = []
@@ -232,7 +338,16 @@ class drpcomplete:
 
     def _read_platetargets(self, verbose=False):
         """
-        Read all platetargets files and return a single set of data.
+        Read all the platetargets files using
+        :class:`mangadap.util.yanny.yanny` and return a single set of
+        data.
+
+        Args:
+            verbose (bool): (Optional) Suppress terminal output
+
+        Returns:
+            numpy.ndarray : Single array with the platetargets data.
+
         """
 
         # Check the files exist
@@ -253,57 +368,79 @@ class drpcomplete:
         return par_data
 
 
-    def _read_nsa_idonly(self, verbose=False):
+    def _read_trg_idonly(self, verbose=False):
         """
-        Read the NSA catalogs.
+        Read the target catalogs.
 
-        Returned quantites are:
-            nsa_id - a list of numpy.ndarrays with the NSA IDs
-            nsa_ndata - a numpy.array with the number of elements in
-                        each nsa_id element
+        Args:
+            verbose (bool): (Optional) Suppress terminal output
+
+        Returns:
+            list, numpy.ndarray : A list of numpy.ndarrays with the
+                target IDs and a single numpy.array with the number of
+                elements in each trg_id element
         
         """
         # Check the files exist
-        if not all([ os.path.exists(n) for n in self.nsa_cat ]):
+        if not all([ os.path.exists(n) for n in self.trg_cat ]):
             raise Exception('Cannot open one or more NSA catalogs!')
 
-        nsa_id = []
-        nsa_ndata = []
-        for n in self.nsa_cat:
+        trg_id = []
+        trg_ndata = []
+        for n in self.trg_cat:
             print(n)
             hdu = fits.open(n)
 
-            nsa_ndata = nsa_ndata + [ hdu[1].header['NAXIS2'] ]
-            nsa_id = nsa_id + [ numpy.array(hdu[1].data['NSAID']) ]
+            trg_ndata = trg_ndata + [ hdu[1].header['NAXIS2'] ]
+#           trg_id = trg_id + [ numpy.array(hdu[1].data['TARGID']) ]
+            trg_id = trg_id + [ numpy.array(hdu[1].data['NSAID']) ]
             hdu.close()
 
-        return nsa_id, numpy.array(nsa_ndata)
+        return trg_id, numpy.array(trg_ndata)
 
 
-    def _read_nsa(self, verbose=False):
-        """Read all the necessary data from the NSA catalogs."""
+    def _read_trg(self, verbose=False):
+        """
+        Read all the data from the target catalogs necessary to create
+        the drpcomplete data array.  This is only necessary if the
+        platetargets files are not available.
+
+        Args:
+            verbose (bool): (Optional) Suppress terminal output
+        
+        Returns:
+            list, list, list, list, list, list, numpy.ndarray,
+                numpy.ndarray : Lists of numpy.ndarrays with the target
+                IDs, velocities, velocity dispersions, ellipticities,
+                position angles, effective radii, and single
+                numpy.arrays with the number of elements in each list
+                element and flags signifying if the target catalog has
+                velocity dispersions
+        
+        """
         # Check the files exist
-        if not all([ os.path.exists(n) for n in self.nsa_cat ]):
-            raise Exception('Cannot open one or more NSA catalogs!')
+        if not all([ os.path.exists(n) for n in self.trg_cat ]):
+            raise Exception('Cannot open one or more of the target catalogs!')
 
-        nsa_id = []
-        nsa_vel = []
-        nsa_ell = []
-        nsa_pa = []
-        nsa_Reff = []
-        nsa_ndata = []
-        nsa_veldisp = []
-        nsa_has_veldisp = []
-        for n in self.nsa_cat:
+        trg_id = []
+        trg_vel = []
+        trg_ell = []
+        trg_pa = []
+        trg_Reff = []
+        trg_ndata = []
+        trg_veldisp = []
+        trg_has_veldisp = []
+        for n in self.trg_cat:
             print(n)
             hdu = fits.open(n)
 
-            nsa_ndata = nsa_ndata + [ hdu[1].header['NAXIS2'] ]
-            nsa_id = nsa_id + [ numpy.array(hdu[1].data['NSAID']) ]
-            nsa_vel = nsa_vel + [ numpy.array(hdu[1].data['Z']*constants.c.to('km/s').value) ]
-            nsa_ell = nsa_ell + [ numpy.array(1.0-hdu[1].data['SERSIC_BA']) ]
-            nsa_pa = nsa_pa + [ numpy.array(hdu[1].data['SERSIC_PHI']) ]
-            nsa_Reff = nsa_Reff + [ numpy.array(hdu[1].data['SERSIC_TH50']) ]
+            trg_ndata = trg_ndata + [ hdu[1].header['NAXIS2'] ]
+#           trg_id = trg_id + [ numpy.array(hdu[1].data['TARGID']) ]
+            trg_id = trg_id + [ numpy.array(hdu[1].data['NSAID']) ]
+            trg_vel = trg_vel + [ numpy.array(hdu[1].data['Z']*constants.c.to('km/s').value) ]
+            trg_ell = trg_ell + [ numpy.array(1.0-hdu[1].data['SERSIC_BA']) ]
+            trg_pa = trg_pa + [ numpy.array(hdu[1].data['SERSIC_PHI']) ]
+            trg_Reff = trg_Reff + [ numpy.array(hdu[1].data['SERSIC_TH50']) ]
 
             # Try to get the column number with the velocity dispersion
             # to test if the NSA catalog has it.
@@ -312,16 +449,16 @@ class drpcomplete:
             except ValueError:
                 if verbose:
                     print('WARNING: {0} does not have vel. dispersion.  Using default.'.format(n))
-                nsa_has_veldisp = nsa_has_veldisp + [ False ]
-                nsa_veldisp = nsa_veldisp + [ numpy.empty(0) ]
+                trg_has_veldisp = trg_has_veldisp + [ False ]
+                trg_veldisp = trg_veldisp + [ numpy.empty(0) ]
             else:
-                nsa_has_veldisp = nsa_has_veldisp + [ True ]
-                nsa_veldisp = nsa_veldisp + [ numpy.array(hdu[1].data['VELDISP']) ]
+                trg_has_veldisp = trg_has_veldisp + [ True ]
+                trg_veldisp = trg_veldisp + [ numpy.array(hdu[1].data['VELDISP']) ]
 
             hdu.close()
 
-        return nsa_id, nsa_vel, nsa_veldisp, nsa_ell, nsa_pa, nsa_Reff, numpy.array(nsa_ndata), \
-               numpy.array(nsa_has_veldisp)
+        return trg_id, trg_vel, trg_veldisp, trg_ell, trg_pa, trg_Reff, numpy.array(trg_ndata), \
+               numpy.array(trg_has_veldisp)
 
 
     def _match_platetargets(self, def_veldisp):
@@ -330,6 +467,18 @@ class drpcomplete:
         reductions based on the plate and ifudesign numbers.  The NSA
         catalogs are also read so that the ID can be pulled from the
         appropriate catalog.
+
+        Args:
+            def_veldisp (float): Default value to use for the velocity
+                dispersion
+
+        Returns:
+            numpy.ndarray : Arrays with the MaNGA ID, object right
+                ascension, object declination, catalog ID, index of the
+                entry in the catalog, target ID, velocity, velocity
+                dispersion, ellipticity, position angle, and effective
+                radius
+
         """
 
         # Read the platetargets file
@@ -338,8 +487,8 @@ class drpcomplete:
         print('DONE')
 
         # Read the NSA catalogs
-        print('Reading NSA catalog(s)...')
-        nsa_id, nsa_ndata = self._read_nsa_idonly(verbose=True)
+        print('Reading the target catalog(s)...')
+        trg_id, trg_ndata = self._read_trg_idonly(verbose=True)
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
@@ -351,7 +500,7 @@ class drpcomplete:
         objdec = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['target_dec'].dtype)
         catid = numpy.full(n_drp, -1, dtype=numpy.int32)
         catindx = numpy.full(n_drp, -1, dtype=numpy.int32)
-        nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
+        trgid = numpy.full(n_drp, -1, dtype=numpy.int32)
         vel = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_redshift'].dtype)
         veldisp = numpy.full(n_drp, def_veldisp, dtype=par_data['PLTTRGT']['nsa_vdisp'].dtype)
         ell = numpy.zeros(n_drp, dtype=par_data['PLTTRGT']['nsa_sersic_ba'].dtype)
@@ -393,16 +542,18 @@ class drpcomplete:
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            nsa_indx = numpy.where(self.nsa_catid == catid[i])
-            if len(nsa_indx[0]) == 0:
-                print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
-                nsaid[i] = -1
-            elif catindx[i] >= nsa_ndata[nsa_indx]:
-                print('WARNING: No index {0} in NSA catalog {1}.  Setting NSAID=-1.'.format(
+            trg_indx = numpy.where(self.trg_catid == catid[i])
+            if len(trg_indx[0]) == 0:
+#               print('WARNING: No target catalog {0} available.  Setting TARGID=-1.'.format(catid[i]))
+                print('WARNING: No target catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
+                trgid[i] = -1
+            elif catindx[i] >= trg_ndata[trg_indx]:
+#               print('WARNING: No index {0} in target catalog {1}.  Setting TARGID=-1.'.format(
+                print('WARNING: No index {0} in target catalog {1}.  Setting NSAID=-1.'.format(
                         catindx[i], catid[i]))
-                nsaid[i] = -1
+                trgid[i] = -1
             else:
-                nsaid[i] = numpy.int32(nsa_id[nsa_indx[0]][catindx[i]])
+                trgid[i] = numpy.int32(trg_id[trg_indx[0]][catindx[i]])
 
             vel[i] = par_data['PLTTRGT']['nsa_redshift'][indx][0] * constants.c.to('km/s').value
             ell[i] = 1.0-par_data['PLTTRGT']['nsa_sersic_ba'][indx][0]
@@ -414,14 +565,30 @@ class drpcomplete:
 
         print('DONE')
 
-        return numpy.array(mangaid), objra, objdec, catid, catindx, nsaid, vel, veldisp, ell, \
+        return numpy.array(mangaid), objra, objdec, catid, catindx, trgid, vel, veldisp, ell, \
                pa, Reff
 
 
-    def _match_nsa(self, mangaid, def_veldisp):
+    def _match_trg(self, mangaid, def_veldisp):
         """
-        Read the NSA catalogs and extract the necessary information for
-        the DRP files.
+        Read the target catalogs and extract the necessary data.
+
+        Args:
+            mangaid (list) : List of MaNGA IDs pulled from the DRP file headers
+
+            def_veldisp (float): Default value to use for the velocity
+                dispersion
+
+        Returns:
+            numpy.ndarray : Arrays with the catalog ID, index of the
+                entry in the catalog, target ID, velocity, velocity
+                dispersion, ellipticity, position angle, and effective
+                radius
+
+        Raises:
+            Exception: Raised if the number of MaNGA IDs does not match
+                the number of plates in :attr:`platelist`, see above.
+
         """
 
         # Check the number of MaNGA IDs provided.
@@ -430,51 +597,61 @@ class drpcomplete:
             raise Exception('Incorrect number of MaNGA IDs')
 
         # Read the NSA catalogs
-        print('Reading NSA catalog(s)...')
-        nsa_id, nsa_vel, nsa_veldisp, nsa_ell, nsa_pa, nsa_Reff, nsa_ndata, nsa_has_veldisp = \
-                self._read_nsa(verbose=True)
+        print('Reading target catalog(s)...')
+        trg_id, trg_vel, trg_veldisp, trg_ell, trg_pa, trg_Reff, trg_ndata, trg_has_veldisp = \
+                self._read_trg(verbose=True)
         print('DONE')
 
         # Initialize the output arrays (needed in case some DRP targets not found)
         catid = numpy.full(n_drp, -1, dtype=numpy.int32)
         catindx = numpy.full(n_drp, -1, dtype=numpy.int32)
-        nsaid = numpy.full(n_drp, -1, dtype=numpy.int32)
+        trgid = numpy.full(n_drp, -1, dtype=numpy.int32)
         vel = numpy.zeros(n_drp, dtype=numpy.float64)
         veldisp = numpy.full(n_drp, def_veldisp, dtype=numpy.float64)
         ell = numpy.zeros(n_drp, dtype=numpy.float64)
         pa = numpy.zeros(n_drp, dtype=numpy.float64)
         Reff = numpy.zeros(n_drp, dtype=numpy.float64)
 
-        print('Using MaNGA ID to get information from NSA catalog(s)...')
+        print('Using MaNGA ID to get information from target catalog(s)...')
         for i in range(0,n_drp):
            
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
-            indx = numpy.where(self.nsa_catid == catid[i])
+            indx = numpy.where(self.trg_catid == catid[i])
             if len(indx[0]) == 0:
-                print('WARNING: No NSA catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
-                nsaid[i] = -1
-            elif catindx[i] >= nsa_ndata[indx]:
+#               print('WARNING: No target catalog {0} available.  Setting TARGID=-1.'.format(catid[i]))
+                print('WARNING: No target catalog {0} available.  Setting NSAID=-1.'.format(catid[i]))
+                trgid[i] = -1
+            elif catindx[i] >= trg_ndata[indx]:
+#               print('WARNING: No index {0} in target catalog {1}.  Setting TARGID=-1.'.format(
                 print('WARNING: No index {0} in NSA catalog {1}.  Setting NSAID=-1.'.format(
                         catindx[i], catid[i]))
-                nsaid[i] = -1
+                trgid[i] = -1
             else:
-                nsaid[i] = numpy.int32(nsa_id[indx[0]][catindx[i]])
-                vel[i] = numpy.float64(nsa_vel[indx[0]][catindx[i]])
-                ell[i] = numpy.float64(nsa_ell[indx[0]][catindx[i]])
-                pa[i] = numpy.float64(nsa_pa[indx[0]][catindx[i]])
-                Reff[i] = numpy.float64(nsa_Reff[indx[0]][catindx[i]])
-                if nsa_has_veldisp[indx[0]]:
-                    veldisp[i] = numpy.float64(nsa_veldisp[indx[0]][catindx[i]])
+                trgid[i] = numpy.int32(trg_id[indx[0]][catindx[i]])
+                vel[i] = numpy.float64(trg_vel[indx[0]][catindx[i]])
+                ell[i] = numpy.float64(trg_ell[indx[0]][catindx[i]])
+                pa[i] = numpy.float64(trg_pa[indx[0]][catindx[i]])
+                Reff[i] = numpy.float64(trg_Reff[indx[0]][catindx[i]])
+                if trg_has_veldisp[indx[0]]:
+                    veldisp[i] = numpy.float64(trg_veldisp[indx[0]][catindx[i]])
 
-        return catid, catindx, nsaid, vel, veldisp, ell, pa, Reff
+        return catid, catindx, trgid, vel, veldisp, ell, pa, Reff
 
 
     def _all_data_exists(self, quiet=True):
         """
-        Determine if the data for all the plates/ifudesigns is already
+        Determines if the data for all the plates/ifudesigns is already
         present in the current drpcomplete file.
+
+        Args:
+            quiet (bool): (Optional) Suppress terminal output
+
+        Returns:
+            bool : Flag that all data has already been collated for the
+                requiested plate/ifudesign list.
+
         """
         nn = len(self.platelist)
         for i in range(0,nn):
@@ -489,7 +666,10 @@ class drpcomplete:
 
 
     def _read_data(self):
-        """Read the data and the number of rows."""
+        """
+        Read the data in the existing file at :func:`file_path`.
+
+        """
         hdu = fits.open(self.file_path())
         self.data = hdu[1].data
         self.nrows = hdu[1].header['NAXIS2']
@@ -499,8 +679,12 @@ class drpcomplete:
 
     def _confirm_access(self, reread):
         """
-        Check drpcomplete file is accessible.  Read the data if not yet
-        read.
+        Check the drpcomplete file at :func:`file_path` is accessible,
+        and read the data if not yet read.
+
+        Args:
+            reread (bool): Force the file to be re-read
+
         """
         inp = self.file_path()
         if not os.path.exists(inp):
@@ -514,31 +698,51 @@ class drpcomplete:
         """
         Search the DRP path for reduced CUBE files.
 
-        Function allows for one or both of self.platelist and
-        self.ifudesignlist to be None:
-            If both are None
-                all available CUBE files are used to create the
-                platelist and ifudesignlist.
-            If one is None
-                all available CUBE files within the provided list of the
-                one that is not None are used to create the platelist
-                and ifudesignlist.  E.g., if platelist=[7443] and
-                ifudesignlist is None, all CUBE files with platelist =
-                7443 are chosen.
+        Function allows for one or both of :attr:`platelist` and
+        :attr:`ifudesignlist` to be None.  The behavior is:
+        
+            - If both are None, all available CUBE files are used to
+              create :attr:`platelist` and :attr:`ifudesignlist`.
 
-            If both are not None and they have different lengths (or the
-            same length and combinatorics=True)
-                all available CUBE files within the constraints of both
-                lists are selected. E.g., if platelist=[7443,7495] and
-                ifudesignlist=[12704], the CUBE files with
-                (plate,ifudesign)=[(7443,12704),(7459,12704) are chosen
+            - If one is None, all available CUBE files within the
+              provided list of the one that is not None are used to
+              create :attr:`platelist` and :attr:`ifudesignlist`.  E.g.,
+              if :attr:`platelist` =[7443] and :attr:`ifudesignlist` is
+              None, all CUBE files with plate=7443 are chosen.
 
-            If both are not None and they have the same length and
-            combinatorics=False
-                all available CUBE files in the matched lists are
-                chosen.  E.g. if platelist=[7443,7495] and
-                ifudesignlist=[12703,12703], the CUBE files with
-                (plate,ifudesign)=[(7443,12704),(7459,12704) are chosen
+            - If both are not None and they have different lengths, or
+              the same length and combinatorics is True, all available
+              CUBE files within the constraints of both lists are
+              selected. E.g., if :attr:`platelist` =[7443,7495] and
+              :attr:`ifudesignlist` =[12704], the CUBE files with
+              (plate,ifudesign)=[(7443,12704),(7459,12704)] are chosen.
+
+            - If both are not None and they have the same length and
+              combinatorics is False, all available CUBE files in the
+              matched lists are chosen.  E.g. if :attr:`platelist`
+              =[7443,7495] and :attr:`ifudesignlist` =[12703,12703], the
+              CUBE files with
+              (plate,ifudesign)=[(7443,12704),(7459,12704) are chosen
+
+        Args:
+            mindesign (int): (Optional) Minimum bundle design to
+                consider.  The bundle design is determined by
+                ifudesign/100, such that::
+
+                    if mindesign is not None and b/100 < mindesign:
+                        continue
+
+                a DRP file is ignored.  Default only ignores the
+                minibundles (design=7).
+
+            combinatorics (bool): (Optional) Create :attr:`platelist`
+                and :attr:`ifudesignlist` by determining all possible
+                combinations of the input values. See above.
+
+        Returns:
+            list, list: Lists with the available plates and ifudesigns
+                for which to collect data.
+
         """
 
         path = self.redux_path
@@ -561,7 +765,7 @@ class drpcomplete:
         for root, dir, files in walk(path):
             for file in files:
                 if file.endswith('-LOGCUBE.fits.gz'):
-                    p, b, m = drpfile.parse_drp_file_name(file)
+                    p, b, m = parse_drp_file_name(file)
 
 #                   print('{0}, {1}, {2}'.format(p,b,m))
 
@@ -597,12 +801,21 @@ class drpcomplete:
 
     def _find_modes(self, drplist):
         """
-        Using the provided list of CUBE DRP files, find if RSS mode is
-        also available.
+        Using the provided list of CUBE DRP files, find if the RSS mode
+        is also available.
 
         Currently only two modes are possible:
-            modes[i] = 1 -> only 'CUBE' file are available
-            modes[i] = 2 -> both 'CUBE' and 'RSS' files are available
+
+            - modes[i] = 1 -> only 'CUBE' file are available
+
+            - modes[i] = 2 -> both 'CUBE' and 'RSS' files are available
+
+        Args:
+            drplist (list) : List of :class:`mangadap.drpfile` objects
+
+        Returns:
+            numpy.ndarray : Array of modes for each input DRP file.
+
         """
         n_drp = len(drplist)
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
@@ -614,6 +827,13 @@ class drpcomplete:
 
 
     def _write_parameter_struct(self, ostream):
+        """
+        Write the yanny file structure to a file.
+
+        Args:
+            ostream (_io.TextIOWrapper) : File stream for output
+        
+        """
         ostream.write('typedef struct {\n')
         ostream.write('    long plate;\n')
         ostream.write('    long ifudesign;\n')
@@ -627,6 +847,15 @@ class drpcomplete:
 
 
     def _write_parameter_list(self, ostream, index, mode):
+        """
+        Write a DAPPAR entry to the yanny file.
+
+        Args:
+            ostream (_io.TextIOWrapper) : File stream for output
+            index (int) : Index of the entry in :attr:`data` to write
+            mode (int) : Mode of the entry; see :func:`_find_modes`
+
+        """
         ostream.write('DAPPAR {0:4d} {1:5d} {2:4s} {3:14.7e} {4:14.7e} {5:14.7e} {6:14.7e}'
                       ' {7:14.7e}\n'.format(self.data['PLATE'][index],
                                             self.data['IFUDESIGN'][index], mode,
@@ -650,34 +879,50 @@ class drpcomplete:
 
 
     def update(self, platelist=None, ifudesignlist=None, combinatorics=False, force=False,
-               alldrp=False, def_veldisp=100.0, use_nsa=False):
+               alldrp=False, def_veldisp=100.0, use_trg=False):
         """
         Update the DRP complete file.
         
-        If platelist, ifudesignlist are provided, the existing (self)
-        values are replaced.
+        If *platelist* and/or *ifudesignlist* are provided, the existing
+        :attr:`platelist` and :attr:`ifudesignlist` attributes are
+        replaced.
 
-        If platelist and ifudesignlist do not have the same length or
-        combinatorics is True, the lists are expanded to include all
-        combinations of their elements.
+        If *platelist* and *ifudesignlist* do not have the same length
+        or *combinatorics* is True, the lists are expanded to include
+        all combinations of their elements.
 
-        If platelist and ifudesignlist are None or alldrp is True, all
-        available plates/ifudesigns are collected from within the drpver
-        directory structure.
+        If *platelist* and *ifudesignlist* are None or *alldrp* is True,
+        all available plates/ifudesigns are collected from within the
+        DRP directory structure.
 
-        If self.file_path() does not exist, it is created.
+        If the result of :func:`file_path` does not exist, it is
+        created.
 
-        If self.file_path() does exist, the available plates and
-        ifudesigns in the file are compared against the list (provided
-        or collected) to update.  If the lists differ, self.file_path()
-        is re-created from scratch.  If all the plates and ifudesigns
-        are available, nothing is done, unless force=True.
+        If the result of :func:`file_path` does exist, the available
+        plates and ifudesigns in the file are compared against the list
+        (provided or collected) to update.  If the lists differ, the
+        drpcomplete file is re-created from scratch.  If all the plates
+        and ifudesigns are available, nothing is done, unless
+        force=True.
 
-        OPTIONAL:
-                use_nsa bool
-                        Force the matching to be done using the NSA
-                        catalog(s).  Default is to use the platetargets
-                        files.
+        Args:
+            platelist (str or list): (Optional) List of plates to
+                include in the drpcomplete file.
+            ifudesignlist (str or list): (Optional) List of ifudesigns
+                to include in the drpcomplete file.
+            combinatorics (bool): (Optional) Determine all combinations
+                of the entered plates and ifudesigns.
+            force (bool): (Optional) Overwrite any existing drpcomplete
+                file with a new one built from scratch.
+            alldrp (bool): (Optional) Find the full list of available
+                DRP files.
+            def_veldisp (float): (Optional) Default value of the
+                velocity dispersion if the sourced databases do not
+                contain it.
+            use_trg (bool): (Optional) Force the matching to be done
+                using the target catalog(s).  Default is to use the
+                platetargets files.
+
         """
 
         if self.readonly:
@@ -724,31 +969,94 @@ class drpcomplete:
         print('Number of DRP files: {0}'.format(nn))
 
         # Default to using the plateTargets files
-        if use_nsa:
+        if use_trg:
             mangaid, objra, objdec = self._drp_info(drplist)
-            catid, catindx, nsaid, vel, veldisp, ell, pa, Reff = self._match_nsa(mangaid,
+            catid, catindx, trgid, vel, veldisp, ell, pa, Reff = self._match_trg(mangaid,
                                                                                  def_veldisp)
         else:
-            mangaid, objra, objdec, catid, catindx, nsaid, vel, veldisp, ell, pa, Reff \
+            mangaid, objra, objdec, catid, catindx, trgid, vel, veldisp, ell, pa, Reff \
                     = self._match_platetargets(def_veldisp)
 
         self.write([drplist[i].plate for i in range(0,nn)],
                    [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, objra, objdec,
-                   catid, catindx, nsaid, vel, veldisp, ell, pa, Reff)
+                   catid, catindx, trgid, vel, veldisp, ell, pa, Reff)
 
         self._read_data()
 
 
-    def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx, nsaid,
+    def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx, trgid,
               vel, veldisp, ell, pa, Reff, drpver=None, redux_path=None, dapver=None,
-              analysis_path=None, platetargets=None, nsa_cat=None, nsa_catid=None, clobber=True):
+              analysis_path=None, platetargets=None, trg_cat=None, trg_catid=None, clobber=True):
         """
-        Write the drpcomplete file.
-        
-        REVISION HISTORY:
-                19 Mar 2015: (KBW) Changed order of input and allowed
-                                   for use of self components as
-                                   default.
+        Write the drpcomplete fits binary table.
+
+        Header keywords are:
+            - VERSDRP: DRP version
+            - RDXPTH: DRP reduction path
+            - VERSDAP: DAP version
+            - SISPTH: DAP analysis path
+            - NSACAT *N*: Location of target catalog *N*
+            - NSACID *N*: ID Number of target catalog *N*
+            - PLTARG *N*: plateTargets file *N*
+            - AUTHOR: Set to 'K.B. Westfall <kbwestfall@gmail.com>'
+
+        Binary table columns:
+            1. PLATE (1J): Plate number
+            2. IFUDESIGN (1J): IFU design
+            3. MODES (1B): Modes available 
+                * MODES=1: only 'CUBE' file is available
+                * MODES=2: both 'CUBE' and 'RSS' files are available
+
+            4. MANGAID (*n* A): MaNGA ID (same as 'CATID-CATINDX')
+            5. OBJRA (1D): Object right ascension
+            6. OBJDEC (1D): Object declination
+            7. CATID (1J): Catalog ID used for target selection
+            8. CATINDX (1J): Index in catalog with target data
+            9. TARGID (1J): Target ID in catalog
+            10. VEL (1D): Velocity from catalog, if available
+            11. VDISP (1D): Velocity dispersion from catalog, if
+                available
+            12. ELL (1D): Ellipticity (1-b/a) from catalog, if available
+            13. PA (1D): Position angle from catalog, if available
+            14. REFF (1D): Effective radius from catalog, if available
+
+        Args:
+            platelist (list) : List of plates
+            ifudesignlist (list) : List of IFU designs
+            modes (numpy.ndarray): Mode values, see above
+            mangaid (numpy.ndarray): MaNGA IDs
+            objra (numpy.ndarray): Object right ascensions
+            objdec (numpy.ndarray): Object declinations
+            catid (numpy.ndarray): Catalog ID used for target selection
+            catindx (numpy.ndarray): Index in catalog with target data
+            trgid (numpy.ndarray): Target ID in catalog
+            vel (numpy.ndarray): Velocity from catalog, if available
+            veldisp (numpy.ndarray): Velocity dispersion from catalog,
+                if available
+            ell (numpy.ndarray): Ellipticity (1-b/a) from catalog, if
+                available
+            pa (numpy.ndarray): Position angle from catalog, if
+                available
+            Reff (numpy.ndarray): Effective radius from catalog, if
+                available
+            drpver (str) : (Optional) DRP version, see above.
+            redux_path (str) : (Optional) Path to the top level of
+                directory for the DRP output, see above.
+            dapver (str) : (Optional) DAP version, see above.
+            analysis_path (str) : (Optional) Path to the top level
+                directory for the DAP output files, see above.
+            platetargets (numpy.ndarray) : (Optional) List of the
+                plateTargets files
+            trg_cat (numpy.ndarray): (Optional) List of catalogs to
+                search through to grab the target ID from that catalog.
+            trg_catid (numpy.ndarray): (Optional) List of target catalog
+                ID numbers to use.
+            clobber (bool): (Optional) Overwrite any existing file.
+
+        Raises:
+            Exception: Raised if the drpcomplete file was opened as read
+                only or if the drpcomplete file exists and clobber=False.
+
         """
 
         if self.readonly:
@@ -764,13 +1072,15 @@ class drpcomplete:
         hdr['RDXPTH'] = self.redux_path if redux_path is None else redux_path
         hdr['VERSDAP'] = self.dapver if dapver is None else dapver
         hdr['SISPTH'] = self.analysis_path if analysis_path is None else analysis_path
-        if nsa_cat is None:
-            nsa_cat = self.nsa_cat
-        if nsa_catid is None:
-            nsa_catid = self.nsa_catid
-        for i in range(0,nsa_cat.size):
-            hdr['NSACAT{0}'.format(i+1)] = nsa_cat[i]
-            hdr['NSACID{0}'.format(i+1)] = nsa_catid[i]
+        if trg_cat is None:
+            trg_cat = self.trg_cat
+        if trg_catid is None:
+            trg_catid = self.trg_catid
+        for i in range(0,trg_cat.size):
+#           hdr['TARGCAT{0}'.format(i+1)] = trg_cat[i]
+#           hdr['TARGCID{0}'.format(i+1)] = trg_catid[i]
+            hdr['NSACAT{0}'.format(i+1)] = trg_cat[i]
+            hdr['NSACID{0}'.format(i+1)] = trg_catid[i]
         if platetargets is None:
             platetargets = self.platetargets
         for i in range(0,platetargets.size):
@@ -789,7 +1099,8 @@ class drpcomplete:
         col6 = fits.Column(name='OBJDEC', format='1D', array=objdec)
         col7 = fits.Column(name='CATID', format='1J', array=catid)
         col8 = fits.Column(name='CATINDX', format='1J', array=catindx)
-        col9 = fits.Column(name='NSAID', format='1J', array=nsaid)
+#       col9 = fits.Column(name='NSAID', format='1J', array=nsaid)
+        col9 = fits.Column(name='TARGID', format='1J', array=trgid)
         col10 = fits.Column(name='VEL', format='1D', array=vel)
         col11 = fits.Column(name='VDISP', format='1D', array=veldisp)
         col12 = fits.Column(name='ELL', format='1D', array=ell)
@@ -803,6 +1114,30 @@ class drpcomplete:
 
 
     def grab_data(self, plate=None, ifudesign=None, index=None, reread=False):
+        """
+        Return the data for a given plate-ifudesign, or index in the
+        :attr:`data`.  Even though *plate*, *ifudesign*, and *index* are
+        all optional, the arguments must contain either *plate* and
+        *ifudesign* or *index*.
+
+        Args:
+            plate (int): (Optional) Plate number
+            ifudesign (int): (Optional) IFU design
+            index (int): (Optional) Index of the row in :attr:`data`
+                with the data to return
+            reread (bool): (Optional) Force the database to be re-read
+
+        Returns:
+            list : List of the 14 elements of :attr:`data`; see
+                :func:`write`.
+
+        Raises:
+            ValueError: Raised if the row with the data is unknown
+                because either *index* is not defined or one or both of
+                *plate* and *ifudesign* is not defined.  Also raised if
+                *index* does not exist in the data array.
+
+        """
 
         if (plate is None or ifudesign is None) and index is None:
             raise ValueError('Must provide plate and ifudesign or row index!')
@@ -817,6 +1152,7 @@ class drpcomplete:
         return [ self.data['PLATE'][index], self.data['IFUDESIGN'][index],
                  self.data['MODES'][index], self.data['MANGAID'][index], self.data['OBJRA'][index],
                  self.data['OBJDEC'][index], self.data['CATID'][index], self.data['CATINDX'][index],
+#                self.data['TARGID'][index], self.data['VEL'][index], self.data['VDISP'][index],
                  self.data['NSAID'][index], self.data['VEL'][index], self.data['VDISP'][index],
                  self.data['ELL'][index], self.data['PA'][index], self.data['REFF'][index] ]
 
@@ -825,6 +1161,31 @@ class drpcomplete:
                   clobber=True):
         """
         Write the SDSS parameter (Yanny) file for use with the MaNGA DAP.
+
+        Args: 
+            ofile (str): Output file name
+            mode (str): Mode of the DRP file to analyze; must be either
+                'RSS' or 'CUBE'
+            plate (int): (Optional) Plate number
+            ifudesign (int): (Optional) IFU design
+            index (int): (Optional) Index of the row in :attr:`data`
+                with the data to return
+            reread (bool): (Optional) Force the database to be re-read
+            clobber (bool): (Optional) Overwrite any existing parameter
+                file
+
+        Raises:
+            IOError: Raised if the parameter file already exists and
+                clobber is False.
+            ValueError: Raised if
+
+                - the row with the data is unknown because either
+                  *index* is not defined or one or both of *plate* and
+                  *ifudesign* is not defined.
+                - *index* does not exist in the data array.
+                - the 'RSS' mode is selected but unavailable
+
+
         """
 
         if os.path.exists(ofile) and not clobber:
@@ -862,6 +1223,20 @@ class drpcomplete:
         """
         Find the index of the row with the information for the specified
         plate and ifudesign.
+
+        Args:
+            plate (int): Plate number
+            ifudesign (int): IFU design
+            reread (bool): (Optional) Force the database to be re-read
+
+        Returns:
+            int: Index of the row in :attr:`data` with the data for the
+                given *plate* and *ifudesign*
+
+        Raises:
+            Exception: Raised if the given *plate* and *ifudesign* were
+                not found.
+
         """
         self._confirm_access(reread)
 

@@ -1,3 +1,44 @@
+"""
+
+Defines a class to calculate and convert between on-sky and a projected
+(disk) plane.
+
+*Source location*:
+    $MANGADAP_DIR/python/mangadap/util/projected_disk_plane.py
+
+*Python2/3 compliance*::
+
+    from __future__ import division
+    from __future__ import print_function
+    from __future__ import absolute_import
+    
+    import sys
+    if sys.version > '3':
+        long = int
+
+*Imports*::
+
+    import os.path
+    from os import environ
+    import time
+    import numpy
+    from scipy import linalg
+
+*Class usage examples*:
+
+    .. todo::
+
+        Add some usage comments here!
+
+*Revision history*:
+    | **01 Mar 2015**: Original Implementation by K. Westfall (KBW)
+    | **20 May 2015**: (KBW) Documentation and Sphinx tests.  Changed
+        :func:`_solve` from hidden to visible.  Moved the check that
+        :math:`{\mathbf A}` is define to only occur in :func:`solve`
+        since it is called by all the other coordinate calculation
+        methods.
+"""
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -12,26 +53,107 @@ import time
 import numpy
 from scipy import linalg
 
-
 __author__ = 'Kyle B. Westfall'
 
 class projected_disk_plane:
-    """
-    Calculate projected galaxy coordinates given a set of input parameters.
+    r"""
 
-    REVISION HISTORY:
-        01 Mar 2015: Original Implementation by K. Westfall
-    """
+    Calculate projected galaxy coordinates given a set of input
+    parameters by calculating :math:`{\mathbf x} = {\mathbf A}^{-1}\
+    {\mathbf b}`, where
 
+    .. math::
+
+        {\mathbf A} = \left[
+        \begin{array}{rrrrrr}
+            1 & 0 & 0 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 & 0 & 0 \\
+            \cos\psi & \sin\psi & -1 & 0 & 0 & 0 \\
+            -\sin\psi & \cos\psi & 0 & -1 & 0 &  0 \\
+            0 & 0 & \sin\phi_0 & \cos\phi_0 & -1 & 0 \\
+            0 & 0 & -\cos\phi_0 & \sin\phi_0 & 0 & -\cos i
+        \end{array}
+        \right]
+
+        {\mathbf b} = \left[
+        \begin{array}{r}
+            x_f \\
+            y_f \\
+            -x_0 \\
+            -y_0 \\
+            0 \\
+            0 
+        \end{array}
+        \right]
+
+    such that
+
+    .. math::
+
+        {\mathbf x} = \left[
+        \begin{array}{r}
+            x_f \\
+            y_f \\
+            x_s \\
+            y_s \\
+            x_d \\
+            y_d 
+        \end{array}
+        \right]
+
+    where:
+        - :math:`\psi` is the Cartesian rotation of the focal-plane
+          relative to the sky-plane (+x toward East; +y toward North),
+        - :math:`\phi_0` is the on-sky position angle of the major axis
+          of the ellipse traced on the sky by a circle in the projected
+          plane, defined as the angle from North through East
+        - :math:`i` is the inclination of the plane, the angle between
+          the plane normal and the normal of the sky plane (:math:`i=0`
+          is a face-on plane).
+        - :math:`(x_f,y_f)` is the sky-right, focal-plane position
+          relative to a reference on-sky position :math:`(x_0,y_0)`
+          relative to the center of the projected plane (galaxy center),
+        - :math:`(x_s,y_s)` is the on-sky position of :math:`(x_f,y_f)`
+          relative to the center of the projected plane, and
+        - :math:`(x_d,y_d)` is the Cartesian position of
+          :math:`(x_f,y_f)` in the projected plane.
+
+    Args:
+        xc (float): Same as :math:`x_0`, defined above
+        yc (float): Same as :math:`y_0`, defined above
+        rot (float): Same as :math:`\psi`, defined above
+        pa (float): Same as :math:`\phi_0`, defined above
+        inc (float): Same as :math:`i`, defined above
+
+    Attributes:
+        xc,yc (float,float): a reference on-sky position relative to the
+            center of the projected plane (galaxy center); same as
+            :math:`(x_0,y_0)` defined above
+        rot (float): Cartesian rotation of the focal-plane relative to
+            the sky-plane (+x toward East; +y toward North); same as
+            :math:`\psi` defined above
+        pa (float): On-sky position angle of the major axis of the
+            ellipse traced on the sky by a circle in the projected
+            plane, defined as the angle from North through East and is
+            the same as :math:`\phi_0` defined above
+        inc (float): Inclination of the plane, angle between the disk
+            normal and the normal of the sky plane (:math:`i=0` is a
+            face-on plane).
+        A (numpy.ndarray): The coordinate transformation matrix
+        Alu (numpy.ndarray): The **lu** array returned by
+            `scipy.linalg.lu_factor`_, which is used to calculate the LU
+            decomposition of :math:`{\mathbf A}` 
+        Apiv (numpy.ndarray): The **piv** array returned by
+            `scipy.linalg.lu_factor`_, which is used to calculate the LU
+            decomposition of :math:`{\mathbf A}` 
+        B (numpy.ndarray): The vector :math:`{\mathbf b}`, as defined
+            above, used to calculate :math:`{\mathbf x} = {\mathbf
+            A}^{-1}\ {\mathbf b}`
+        
+    .. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html#scipy.linalg.lu_factor
+
+    """
     def __init__(self, xc=None, yc=None, rot=None, pa=None, inc=None):
-        """
-        ARGUMENTS:
-            xc - X position of galaxy center. Default is 0.0
-            yc - Y position of galaxy center. Default is 0.0
-            rot - On-sky rotation of the IFU. Default is 0.0
-            pa - On-sky position angle. Default is 0.0
-            inc - Plane inclination (0=face-on). Default is 0.0
-        """
 
         self.xc = 0.0 if xc is None else xc
         self.yc = 0.0 if yc is None else yc
@@ -47,7 +169,13 @@ class projected_disk_plane:
 
         self._setA()
 
+
     def _defined(self):
+        """
+        Determine if the object is defined such that its methods can be
+        used to convert between coordinates.
+        
+        """
         if self.A is None:
             return False
         if self.Alu is None:
@@ -58,6 +186,11 @@ class projected_disk_plane:
     
 
     def _setA(self):
+        """
+        Set the transformation matrix and calculate its LU
+        decomposition.
+
+        """
         cosr = numpy.cos( numpy.radians(self.rot) )
         sinr = numpy.sin( numpy.radians(self.rot) )
         cosp = numpy.cos( numpy.radians(self.pa) )
@@ -75,49 +208,137 @@ class projected_disk_plane:
         
 
     def _setB(self, x, y):
+        """Set the on-sky coordinate vector."""
         self.B = numpy.array([ x, y, -self.xc, -self.yc, 0.0, 0.0 ])
 
 
-    def _solve(self, x, y):
-        self._setB(x,y)
-        return linalg.lu_solve((self.Alu, self.Apiv), self.B)
-
-
     def _calculate_polar(self, x, y):
+        r"""
+        Calculate the projected polar coordinates (radius and azimuth)
+        of :math:`(x_f,y_f)` in the projected plane relative to the
+        plane center using
+        
+        .. math::
 
+            R &= \sqrt{x_d^2 + y_d^2} \\
+            \theta &= \tan^{-1}\left(\frac{-y_d}{x_d}\right)
+
+        Args:
+            x,y (float,float): The projected Cartesian coordinates
+                :math:`(x_d,y_d)`.
+
+        Returns:
+            float, float: The projected polar coordinates: :math:`R,
+                \theta`.
+        
+        """
         R = numpy.sqrt( x*x + y*y)
         theta = numpy.degrees( numpy.arctan2(-y, x) )
         # Returned range in theta is -pi,pi: convert to 0,2pi
-        if (theta < 0):
+        if theta < 0:
             theta += 360
 
         return R, theta
     
 
-    # TODO: Allow these functions to accept array-like x and y?
-    def coo(self, x, y):
+    def solve(self, x, y):
+        r"""
+        Use `scipy.linalg.lu_solve`_ to solve :math:`{\mathbf x} =
+        {\mathbf A}^{-1}\ {\mathbf b}`.
+
+        Args:
+            x,y (float,float): The coordinate :math:`(x_f,y_f)`, which
+                is the sky-right, focal-plane position relative to a
+                reference on-sky position :math:`(x_0,y_0)` relative to
+                the center of the projected plane (galaxy center),
+        
+        .. _scipy.linalg.lu_solve: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html#scipy.linalg.lu_solve
+
+        Returns:
+            numpy.ndarray : The :math:`{\mathbf x}` vector as defined by
+                the solution to :math:`{\mathbf A}^{-1}\ {\mathbf b}`
+
+        Raises:
+            Exception: Raised if the coordinate transformation matrix,
+                :math:`A`, was not properly defined.
+        """
         if not self._defined():
             raise Exception('projected_coo object not fully defined!')
 
-        c = self._solve(x, y)
+        self._setB(x,y)
+        return linalg.lu_solve((self.Alu, self.Apiv), self.B)
+
+
+    # TODO: Allow these functions to accept array-like x and y?
+    def coo(self, x, y):
+        r"""
+        Calculate :math:`{\mathbf x}` using :func:`solve` for the
+        provided :math:`(x_f,y_f)` and return the projected Cartesian
+        and polar coordinates, :math:`(x_d,y_d)` and :math:`(R,\theta)`.
+        This combines the functionality of :func:`cartesian` and
+        :func:`polar`, and so is more efficient than using these both
+        separately.
+
+        Args:
+            x,y (float,float): The coordinate :math:`(x_f,y_f)`, which
+                is the sky-right, focal-plane position relative to a
+                reference on-sky position :math:`(x_0,y_0)` relative to
+                the center of the projected plane (galaxy center),
+
+        Returns:
+            float, float, float, float: The projected Cartesian and
+                polar coordinates:  :math:`x_d, y_d, R, \theta`.
+        """
+        c = self.solve(x, y)
         R, theta = self._calculate_polar(c[4], c[5])
         
         return c[4], c[5], R, theta
 
 
     def polar(self, x, y):
-        if not self._defined():
-            raise Exception('projected_coo object not fully defined!')
+        r"""
+        Calculate :math:`{\mathbf x}` using :func:`solve` for the
+        provided :math:`(x_f,y_f)` and return the projected polar
+        coordinates, :math:`(R,\theta)`, where
+        
+        .. math::
 
-        c = self._solve(x, y)
+            R &= \sqrt{x_d^2 + y_d^2} \\
+            \theta &= \tan^{-1}\left(\frac{-y_d}{x_d}\right)
+
+        Args:
+            x,y (float,float): The coordinate :math:`(x_f,y_f)`, which
+                is the sky-right, focal-plane position relative to a
+                reference on-sky position :math:`(x_0,y_0)` relative to
+                the center of the projected plane (galaxy center),
+
+        Returns:
+            float, float: The projected polar coordinates: :math:`R,
+                \theta`.
+
+        """
+        c = self.solve(x, y)
         return self._calculate_polar(c[4], c[5])
 
     
     def cartesian(self, x, y):
-        if not self._defined():
-            raise Exception('projected_coo object not fully defined!')
+        r"""
+        Calculate :math:`{\mathbf x}` using :func:`solve` for the
+        provided :math:`(x_f,y_f)` and return the projected Cartesian
+        and coordinates, :math:`(x_d,y_d)`.
 
-        c = self._solve(x, y)
+        Args:
+            x,y (float,float): The coordinate :math:`(x_f,y_f)`, which
+                is the sky-right, focal-plane position relative to a
+                reference on-sky position :math:`(x_0,y_0)` relative to
+                the center of the projected plane (galaxy center),
+
+        Returns:
+            float, float: The projected Cartesian coordinates,
+                :math:`x_d, y_d`.
+
+        """
+        c = self.solve(x, y)
         return c[4], c[5]
 
-    
+

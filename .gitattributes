@@ -10,6 +10,7 @@ bin/rundap3 -text
 bin/write_dap_par.py -text
 etc/mangadap.module -text
 examples/README.execution_plans -text
+examples/Test_LR_MaNGA.py -text
 examples/create_manga_dap_execution_plan.pro -text
 examples/manga_dap_highsn_binonly_plan.pro -text
 examples/manga_dap_highsn_stelib_plan.pro -text
@@ -22,6 +23,9 @@ examples/mdap_mpl3_cube.pro -text
 examples/mdap_mpl3_rss.pro -text
 examples/mdap_mpl3beta_cube_p1.pro -text
 examples/mdap_velocity_field.pro -text
+examples/test_log_rebin.py -text
+examples/test_resolution_matching.py -text
+examples/test_template_library.py -text
 external/F90_32/README_from_Remco -text
 external/F90_32/bvls.f90 -text
 external/F90_32/bvls_wrapper.c -text
@@ -2598,7 +2602,9 @@ pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
 python/README -text
+python/mangadap/TplLibrary.py -text
 python/mangadap/__init__.py -text
+python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/dapfile.py -text
 python/mangadap/drpcomplete.py -text
 python/mangadap/drpfile.py -text
@@ -2610,11 +2616,18 @@ python/mangadap/survey/__init__.py -text
 python/mangadap/survey/rundap.py -text
 python/mangadap/survey/util.py -text
 python/mangadap/util/__init__.py -text
+python/mangadap/util/bitmasks.py -text
+python/mangadap/util/constants.py -text
 python/mangadap/util/covariance.py -text
 python/mangadap/util/defaults.py -text
 python/mangadap/util/exception_tools.py -text
+python/mangadap/util/fileio.py -text
 python/mangadap/util/generalUtils.py -text
 python/mangadap/util/geometry.py -text
+python/mangadap/util/idlutils.py -text
+python/mangadap/util/instrument.py -text
+python/mangadap/util/mapping.py -text
+python/mangadap/util/misc.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text

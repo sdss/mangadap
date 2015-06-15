@@ -1,3 +1,46 @@
+"""
+
+Provides some basic quality assessment plotting tools.
+
+*Source location*:
+    $MANGADAP_DIR/python/mangadap/qaplot.py
+
+*Python2/3 compliance*::
+
+    from __future__ import division
+    from __future__ import print_function
+    from __future__ import absolute_import
+    
+    import sys
+    if sys.version > '3':
+        long = int
+
+*Imports*::
+
+    import numpy
+    import os.path
+    from matplotlib import cm
+    from matplotlib import mlab
+    from matplotlib import pyplot
+    from matplotlib import image
+    from matplotlib.ticker import NullFormatter
+    from scipy.interpolate import interp1d
+    from mangadap.util.parser import arginp_to_list
+    from mangadap.util.exception_tools import print_frame
+    from mangadap.drpfile import drpfile
+    from mangadap.drpcomplete import drpcomplete
+    from mangadap.mangampl import mangampl
+    from mangadap.dapfile import dapfile
+
+*Revision history*:
+    | **2015**: Original Implementation by K. Westfall (KBW)
+    | **20 May 2015**: (KBW) Documentation and Sphinx tests.
+
+.. warning::
+    **IN DEVELOPMENT**
+
+"""
+
 # Force Python 3 behavior
 from __future__ import division
 from __future__ import print_function
@@ -29,7 +72,7 @@ from mangadap.dapfile import dapfile
 
 
 def spec_fit(dapf, binspec):
-    
+    """Plot the SMOD fit against the data."""
     wave = dapf.hdu['WAVE'].data
     flux = dapf.hdu['FLUX'].data[:,binspec]
     smod = dapf.hdu['SMOD'].data[:,binspec]
@@ -41,7 +84,11 @@ def spec_fit(dapf, binspec):
 
 
 def resid_vs_err(dapf, binspec, window=100):
+    """
+    Plot the SMOD fit against the data and the residual against the
+    error.
     
+    """
     wave = dapf.hdu['WAVE'].data
     flux = dapf.hdu['FLUX'].data[:,binspec]
     smod = dapf.hdu['SMOD'].data[:,binspec]
