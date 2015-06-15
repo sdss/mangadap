@@ -759,5 +759,116 @@ for dap_file in files:
 
 
 
+    """Plot data and models in windows around strong emission lines.
 
+    Args:
+        figsize (tuple): figure width and height in inches
 
+    Returns:
+        figure object
+    
+    """
+
+def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
+                      figsize=(20, 12)):
+
+    if seaborn_installed:
+        c = sns.color_palette('bright', 5)
+        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']})
+    else:
+        c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
+
+    win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+
+    fig = plt.figure(figsize=figsize)
+    bigAxes = fig.add_axes([0.06, 0.06, 0.9, 0.82], frameon=False)
+    bigAxes.set_xticks([])
+    bigAxes.set_yticks([])
+    bigAxes.set_xlabel(r'$\lambda \, [\AA]$', fontsize=28)
+    bigAxes.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=28)
+    fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
+                        right=0.95, top=0.95)
+    # axis_ranges = np.array([[4830, 4900, -0.6, 2.5],
+    #                        [4920, 5050, -0.3, 1],
+    #                        [6530, 6600, -0.5, 6.5]])
+    # xtext_offset = np.array([1, 2.5, 1])
+    # ytext_offset = ax.get_ylim
+
+    for i in xrange(6):
+        ax = fig.add_subplot(2, 3, i+1)
+        nii = False
+        if i == 3:
+            nii = True
+        plot_emline(qa, fig=fig, ax=ax, bin=bin, xlim=None, ylim=None,
+                    win_cen=win_cen[i], nii=nii,
+                    kwargs=kwargs, figsize=figsize)
+
+def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
+                win_cen=None, nii=False,
+                kwargs={'alpha':0.75, 'lw':2}, figsize=(10, 8)):
+    if ax is None:
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
+        ax.set_xlabel(r'$\lambda \, [\AA]$')
+        ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]')
+
+    wave = self.wave_rest[bin]
+    gal = self.galaxy_rest[bin]
+    ivar = self.ivar_rest[bin]
+    noise = ivar**-0.5
+    stmodel = self.smod_rest[bin]
+    fullfitew = self.fullfitew_rest[bin]
+    fullfitfb = self.fullfitfb_rest[bin]
+
+    line_wave =  dict(oii3727=3727., hbeta=4861.32, oiii4959=4958.83,
+                      oiii5007=5006.77, nii6548=6547.96, halpha=6562.80,
+                      nii6583=6583.34, sii6717=6716.31, sii6731=6730.68)
+    line_name = dict(oii3727='[OII]3727', hbeta=r'H$\beta$',
+                     oiii4959='[OIII]4959', oiii5007='[OIII]5007',
+                     nii6548='[NII]6548', halpha=r'H$\alpha$',
+                     nii6583='[NII]6583', sii6717='[SII]6716',
+                     sii6731='[SII]6731')
+
+    if xlim is None:
+        xmin = win_cen - 50.
+        xmax = win_cen + 50.
+    else:
+        xmin, xmax = xlim
+    if ylim is None:
+        ymin = np.min(gal[np.where((wave > xmin) & (wave < xmax))])
+        ymax = np.max(gal[np.where((wave > xmin) & (wave < xmax))])
+        if nii:
+            ymax = np.max(gal[np.where((wave > 6575.) & (wave < 6591.))])
+        dy = ymax - ymin
+        ymin = ymin - (dy * 0.1)
+        ymax = ymax + (dy * 0.2)
+    else:
+        ymin, ymax = ylim
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    ind = np.where((wave > xmin-5.) & (wave < xmax+5.))[0]
+    #ax.plot(wave[ind], gal[ind], 'gray', drawstyle='steps-mid', zorder=1)
+    ax.scatter(wave[ind], gal[ind], c='k', zorder=1)
+    ax.errorbar(wave[ind], gal[ind], yerr=noise[ind], ecolor='k',
+                fmt=None, zorder=1)
+    pFB = ax.plot(wave[ind], fullfitfb[ind], 'r', **kwargs)[0]
+    pEW = ax.plot(wave[ind], fullfitew[ind], 'b', **kwargs)[0]
+    y_off = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.05
+    for k, w in iteritems(line_wave):
+        if (w > xmin) and (w < xmax):
+            ind_wave = np.where(wave < w)[0]
+            x_off = -8
+            if line_name[k][0] is 'H':
+                x_off = -1
+            elif line_name[k] is '[NII]6548':
+                x_off = -15
+            print(k, nii)
+            if (not nii) and (k is not 'halpha'):
+                ax.text(w + x_off,
+                        np.max(gal[ind_wave[-1]-5:ind_wave[-1]+6])+y_off,
+                        line_name[k])
+    leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], loc=2)
+    plt.setp(leg.get_texts(), fontsize=20)
+
+emlines = plot_emline_multi(qa)
