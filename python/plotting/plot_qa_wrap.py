@@ -759,6 +759,69 @@ for dap_file in files:
 
 
 
+def airtovac(wave_air):
+    """Convert from air to vacuum wavelengths.
+
+    Based on Ciddor (1996) (implemented in IDL AIRTOVAC)
+
+    Args:
+        wave_vac (array): wavelengths in air
+
+    Returns:
+        wavelengths in vacuum
+    """
+    sigma2 = (1e4 / wave_air)**2. # Convert to wavenumber squared
+    # Compute conversion factor
+    factor = (1. +  5.792105e-2/(238.0185 - sigma2) + 
+              (1.67917e-3 / ( 57.362 - sigma2)))
+    return wave_air * factor
+
+
+def set_emline_param(self):
+    keys = ['oii3727', 'hbeta', 'oiii4959', 'oiii5007', 'nii6548',
+        'halpha', 'nii6583', 'sii6717', ' sii6731']
+    names = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
+        '[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
+    wave_air = np.array([3727., 4861.32, 4958.83, 5006.77, 6547.96, 6562.80, 6583.34,
+        6716.31, 6730.68])
+    wave_vac = airtovac(wave_air)
+    
+    a = [names, wave_vac]
+    b = [list(x) for x in zip(*a)]
+    self.emline_par = pd.DataFrame(b, index=keys, columns=['name', 'wave'])
+
+set_emline_param(qa)
+
+
+
+#     line_wave_air =  dict(oii3727=3727., hbeta=4861.32, oiii4959=4958.83,
+#                           oiii5007=5006.77, nii6548=6547.96, halpha=6562.80,
+#                           nii6583=6583.34, sii6717=6716.31, sii6731=6730.68)
+#     line_wave = copy.deepcopy(line_wave_air)
+#     for k, w in iteritems(line_wave_air):
+#         line_wave[k] = airtovac(w)
+# 
+#     line_name = dict(oii3727='[OII]3727', hbeta=r'H$\beta$',
+#                      oiii4959='[OIII]4959', oiii5007='[OIII]5007',
+#                      nii6548='[NII]6548', halpha=r'H$\alpha$',
+#                      nii6583='[NII]6583', sii6717='[SII]6716',
+#                      sii6731='[SII]6731')
+#     for k, w in iteritems(line_wave):
+#         if (w > xmin) and (w < xmax):
+#             ind_wave = np.where(wave < w)[0]
+#             x_off = -8
+#             if line_name[k][0] is 'H':
+#                 x_off = -1
+#             elif line_name[k] is '[NII]6548':
+#                 x_off = -15
+#             if (not nii) or (k is not 'halpha'):
+#                 ind_max = np.arange(ind_wave[-1]-5, ind_wave[-1]+6)
+#                 fmax = np.max((gal[ind_max]+noise[ind_max],
+#                               fullfitfb[ind_max], fullfitew[ind_max]))
+#                 ax.text(w + x_off, fmax + y_off, line_name[k], color='k')
+#                 ax.plot([w, w], [fmax+dy*0.03, fmax+dy*0.07], c='k')#c='#545454')
+
+
     """Plot data and models in windows around strong emission lines.
 
     Args:
@@ -775,19 +838,17 @@ def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
     win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
 
     fig = plt.figure(figsize=figsize)
-    bigAxes = fig.add_axes([0.06, 0.06, 0.9, 0.82], frameon=False)
+    bigAxes = fig.add_axes([0.04, 0.06, 0.9, 0.9], frameon=False)
     bigAxes.set_xticks([])
     bigAxes.set_yticks([])
     bigAxes.set_xlabel(r'$\lambda \, [\AA]$', fontsize=28)
     bigAxes.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=28)
+    bigAxes.set_title(
+        'pid-ifu %s     manga-id %s     %s     %s    bin %s' % (
+        self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id, bin),
+        fontsize=20)
     fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
                         right=0.95, top=0.95)
-    # axis_ranges = np.array([[4830, 4900, -0.6, 2.5],
-    #                        [4920, 5050, -0.3, 1],
-    #                        [6530, 6600, -0.5, 6.5]])
-    # xtext_offset = np.array([1, 2.5, 1])
-    # ytext_offset = ax.get_ylim
-
     for i in xrange(6):
         ax = fig.add_subplot(2, 3, i+1)
         nii = False
@@ -797,24 +858,25 @@ def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
                     win_cen=win_cen[i], nii=nii,
                     kwargs=kwargs, figsize=figsize)
 
+
+
+
+
 def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
                 win_cen=None, nii=False,
                 kwargs={'alpha':0.75, 'lw':2}, figsize=(10, 8)):
 
     if seaborn_installed:
-        c = sns.color_palette('bright', 5)
-        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']},
-                        font_scale=1.25)
-    else:
-        c = ['b', 'r', 'lime', 'DarkOrchid', 'gold']
+        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']})
 
     if ax is None:
         fig = plt.figure(figsize=figsize)
-        ax = fig.add_axes([0.15, 0.15, 0.75, 0.75])
+        ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
         ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
         ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=24)
-        sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']},
-                        font_scale=1.25)
+        x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+    else:
+        x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
 
     wave = self.wave_rest[bin]
     gal = self.galaxy_rest[bin]
@@ -824,14 +886,8 @@ def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
     fullfitew = self.fullfitew_rest[bin]
     fullfitfb = self.fullfitfb_rest[bin]
 
-    line_wave =  dict(oii3727=3727., hbeta=4861.32, oiii4959=4958.83,
-                      oiii5007=5006.77, nii6548=6547.96, halpha=6562.80,
-                      nii6583=6583.34, sii6717=6716.31, sii6731=6730.68)
-    line_name = dict(oii3727='[OII]3727', hbeta=r'H$\beta$',
-                     oiii4959='[OIII]4959', oiii5007='[OIII]5007',
-                     nii6548='[NII]6548', halpha=r'H$\alpha$',
-                     nii6583='[NII]6583', sii6717='[SII]6716',
-                     sii6731='[SII]6731')
+    names = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
+    '[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
 
     if xlim is None:
         xmin = win_cen - 50.
@@ -839,12 +895,14 @@ def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
     else:
         xmin, xmax = xlim
     if ylim is None:
-        ymin = np.min(gal[np.where((wave > xmin) & (wave < xmax))])
-        ymax = np.max(gal[np.where((wave > xmin) & (wave < xmax))])
+        ind_w = np.where((wave > xmin) & (wave < xmax))
+        ymin = np.min(gal[ind_w] - noise[ind_w])
+        ymax = np.max(gal[ind_w] + noise[ind_w])
         if nii:
-            ymax = np.max(gal[np.where((wave > 6575.) & (wave < 6591.))])
+            ind_w_nii = np.where((wave > 6575.) & (wave < 6591.))
+            ymax = np.max(gal[ind_w_nii] + noise[ind_w_nii])
         dy = ymax - ymin
-        ymin = ymin - (dy * 0.1)
+        ymin = ymin - (dy * 0.2)
         ymax = ymax + (dy * 0.2)
     else:
         ymin, ymax = ylim
@@ -853,32 +911,24 @@ def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
 
     ind = np.where((wave > xmin-5.) & (wave < xmax+5.))[0]
     #ax.plot(wave[ind], gal[ind], 'gray', drawstyle='steps-mid', zorder=1)
-    ax.scatter(wave[ind], gal[ind], c='k', zorder=1)
-    ax.errorbar(wave[ind], gal[ind], yerr=noise[ind], ecolor='k',
+    ax.scatter(wave[ind], gal[ind], c='gray', zorder=1)
+    ax.errorbar(wave[ind], gal[ind], yerr=noise[ind], ecolor='gray',
                 fmt=None, zorder=1)
     pFB = ax.plot(wave[ind], fullfitfb[ind], 'r', **kwargs)[0]
     pEW = ax.plot(wave[ind], fullfitew[ind], 'b', **kwargs)[0]
-    y_off = (ax.get_ylim()[1] - ax.get_ylim()[0]) * 0.05
-    for k, w in iteritems(line_wave):
+
+    for name, w, x_off in zip(names, qa.elopar['RESTWAVE'], x_offs):
         if (w > xmin) and (w < xmax):
-            ind_wave = np.where(wave < w)[0]
-            x_off = -8
-            if line_name[k][0] is 'H':
-                x_off = -1
-            elif line_name[k] is '[NII]6548':
-                x_off = -15
-            if (not nii) or (k is not 'halpha'):
-                ax.text(w + x_off,
-                        np.max(gal[ind_wave[-1]-5:ind_wave[-1]+6])+y_off,
-                        line_name[k])
-                # plot vertical line
-                # ax.plot()
-    leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], loc=2)
+            if (not nii) or (name is not r'H$\alpha$'):
+                ax.text(w + x_off, ymax-dy*0.08, name, color='k')
+                ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], c='k')
+
+    leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], borderaxespad=0.1,
+                     ncol=2, loc=8)
     plt.setp(leg.get_texts(), fontsize=20)
 
 win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
-#for w in win_cen
-
-plot_emline(qa, win_cen=win_cen[0])
-
-# plot_emline_multi(qa)
+#for w in win_cen:
+#    plot_emline(qa, win_cen=w)
+plot_emline(qa, bin=0, nii=True, win_cen=win_cen[3])
+#plot_emline_multi(qa, bin=0)
