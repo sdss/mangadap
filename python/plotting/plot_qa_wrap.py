@@ -767,11 +767,14 @@ for dap_file in files:
                 spec_to_plot = np.linspace(0, qa.n_bins-1, 100).astype(int)
 
         for bin in spec_to_plot:
+            # multi-panel plot
             qa.plot_emline_multi(bin=bin)
             fout =  ('_').join([stem_file, 'spec']) + '-%0.4i_%s.png' % (bin, 'emlines')
             plt.savefig(path_gal_plots_spec + fout, dpi=200)
             plt.close()
             print('Wrote: %s' % fout)
+
+            # individual plots
             for ii, (wc, wn) in enumerate(zip(win_cen, win_names)):
                 nii = False
                 if ii == 3:
