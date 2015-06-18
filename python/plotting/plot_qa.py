@@ -1306,3 +1306,121 @@ class PlotQA(object):
         return fig
 
 
+
+
+    def plot_emline_multi(self, bin=0, kwargs={'alpha':0.75, 'lw':2},
+                          figsize=(20, 12)):
+        """Plot multiple panel zoom-ins of spectra near strong emission lines.
+    
+        Args:
+            bin (int): bin number
+            kwargs (dict): keyword args for ax.plot
+            figsize (tuple): figure width and height in inches
+        
+        """
+        win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+    
+        fig = plt.figure(figsize=figsize)
+        bigAxes = fig.add_axes([0.04, 0.06, 0.9, 0.9], frameon=False)
+        bigAxes.set_xticks([])
+        bigAxes.set_yticks([])
+        bigAxes.set_xlabel(r'$\lambda \, [\AA]$', fontsize=28)
+        bigAxes.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=28)
+        bigAxes.set_title(
+            'pid-ifu %s     manga-id %s     %s     %s    bin %s' % (
+            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id, bin),
+            fontsize=20)
+        fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
+                            right=0.95, top=0.95)
+        for i in xrange(6):
+            ax = fig.add_subplot(2, 3, i+1)
+            nii = False
+            if i == 3:
+                nii = True
+            self.plot_emline(fig=fig, ax=ax, bin=bin, xlim=None, ylim=None,
+                        win_cen=win_cen[i], nii=nii,
+                        kwargs=kwargs, figsize=figsize)
+    
+    
+    
+    
+    
+    def plot_emline(self, fig=None, ax=None, bin=0, xlim=None, ylim=None,
+                    win_cen=None, nii=False,
+                    kwargs={'alpha':0.75, 'lw':2}, figsize=(10, 8)):
+        """Plot data and model spectra near strong emission lines.
+    
+        Args:
+            fig: figure object
+            ax: axis object
+            bin (int): bin number
+            xlim (list): minimum and maximum x-axis values
+            ylim (list): minimum and maximum y-axis values
+            nii (bool): If True, maximum y value is determined by the
+                [NII]6548,6583 lines (not Halpha)
+            kwargs (dict): keyword args for ax.plot
+            figsize (tuple): figure width and height in inches
+        
+        """
+        if seaborn_installed:
+            sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']})
+    
+        if ax is None:
+            fig = plt.figure(figsize=figsize)
+            ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
+            ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
+            ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=24)
+            x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+        else:
+            x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
+    
+        wave = self.wave_rest[bin]
+        gal = self.galaxy_rest[bin]
+        ivar = self.ivar_rest[bin]
+        noise = ivar**-0.5
+        stmodel = self.smod_rest[bin]
+        fullfitew = self.fullfitew_rest[bin]
+        fullfitfb = self.fullfitfb_rest[bin]
+    
+        names = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
+        '[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
+    
+        if xlim is None:
+            xmin = win_cen - 50.
+            xmax = win_cen + 50.
+        else:
+            xmin, xmax = xlim
+        if ylim is None:
+            ind_w = np.where((wave > xmin) & (wave < xmax))
+            ymin = np.min(gal[ind_w] - noise[ind_w])
+            ymax = np.max(gal[ind_w] + noise[ind_w])
+            if nii:
+                ind_w_nii = np.where((wave > 6575.) & (wave < 6591.))
+                ymax = np.max(gal[ind_w_nii] + noise[ind_w_nii])
+            dy = ymax - ymin
+            ymin = ymin - (dy * 0.2)
+            ymax = ymax + (dy * 0.2)
+        else:
+            ymin, ymax = ylim
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+    
+        ind = np.where((wave > xmin-5.) & (wave < xmax+5.))[0]
+        #ax.plot(wave[ind], gal[ind], 'gray', drawstyle='steps-mid', zorder=1)
+        ax.scatter(wave[ind], gal[ind], c='gray', zorder=1)
+        ax.errorbar(wave[ind], gal[ind], yerr=noise[ind], ecolor='gray',
+                    fmt=None, zorder=1)
+        pFB = ax.plot(wave[ind], fullfitfb[ind], 'r', **kwargs)[0]
+        pEW = ax.plot(wave[ind], fullfitew[ind], 'b', **kwargs)[0]
+    
+        for name, w, x_off in zip(names, self.elopar['RESTWAVE'], x_offs):
+            if (w > xmin) and (w < xmax):
+                if (not nii) or (name is not r'H$\alpha$'):
+                    ax.text(w + x_off, ymax-dy*0.08, name, color='k')
+                    ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], c='k')
+    
+        leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], borderaxespad=0.1,
+                         ncol=2, loc=8)
+        plt.setp(leg.get_texts(), fontsize=20)
+
+
