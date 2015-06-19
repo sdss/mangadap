@@ -4,6 +4,7 @@ Generate data to populate Individual Galaxies table of dapqa.html.
 from __future__ import print_function
 
 import os
+import re
 import json
 
 path_data = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3')
@@ -16,6 +17,12 @@ def list_dirs(path):
             out.append(it)
     return out
 
+def list_spec(path, binning):
+    out = []
+    for it in os.listdir(path):
+        if re.search(binning + r'_spec-\d\d\d\d.png', os.path.join(path, it)):
+            out.append(it.split('spec-')[1].strip('.png'))
+    return out
 
 plates = list_dirs(path_data)
 
@@ -41,7 +48,10 @@ for item in table:
         plotname = ''
     else:
         plotname = 'maps'
-    table_json.append({'plate':item[0], 'ifudsgn':item[1], 'mode':item[2], 'binning':item[3], 'spec':'0000', 'plotname':plotname})
+    specnums = list_spec(os.path.join(path_data, item[0], item[1], 'plots', 'spectra'), item[3])
+    specnums.sort()
+    table_json.append({'plate':item[0], 'ifudsgn':item[1], 'mode':item[2], 'binning':item[3],
+                      'spec':specnums, 'emline_spec':specnums, 'plotname':plotname})
 
 
 with open(os.path.join(path_data, 'table_data.json'), 'w') as outfile:

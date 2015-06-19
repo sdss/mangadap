@@ -34,11 +34,17 @@ plot_types = [
     'emflux_ew_maps',
     'emflux_fb_maps']
 grad_types = ['emflux_gradients']
-global_spec = ['spec-0000']
+#global_spec = ['spec-0000']
+#emline_spec ['spec-0000_emlines']
+spec_types = ['spec-0000',
+    'spec-0000_emlines']
+
 
 plot_type_filenames = [it + '.png' for it in plot_types]
 grad_type_filenames = [it + '.png' for it in grad_types]
-global_spec_filenames = [it + '.png' for it in global_spec]
+#global_spec_filenames = [it + '.png' for it in global_spec]
+#emline_spec_filenames = [it + '.png' for it in emline_spec]
+spec_type_filenames = [it + '.png' for it in spec_types]
 
 
 #data = [{'plate':7443, 'ifudsgn':'12702', 'mode':'CUBE', 'binning':'NONE-002', 'spec':'0000', 'plotname':'maps'},
@@ -68,17 +74,23 @@ cube_ptypes = {
     'NONE-002': plot_types, 
     'RADIAL-003': grad_types,
     'RADIAL-004': grad_types,
-    'ALL-005': global_spec,
-    'ALL-006': global_spec,
-    'ALL-007': global_spec
+    'ALL-005': spec_types,
+    'ALL-006': spec_types,
+    'ALL-007': spec_types
+    # 'ALL-005': global_spec,
+    # 'ALL-006': global_spec,
+    # 'ALL-007': global_spec
     }
 
 rss_ptypes = {
     'RADIAL-001': grad_types,
     'RADIAL-002': grad_types,
-    'ALL-003': global_spec,
-    'ALL-004': global_spec,
-    'ALL-005': global_spec
+    'ALL-003': spec_types,
+    'ALL-004': spec_types,
+    'ALL-005': spec_types
+    # 'ALL-003': global_spec,
+    # 'ALL-004': global_spec,
+    # 'ALL-005': global_spec
     }
 
 
@@ -112,11 +124,17 @@ for g in grad_types:
     for binning in ['RADIAL-001', 'RADIAL-002']:
         all_urls['RSS'][binning][g] = []
 
-for binning in ['ALL-005', 'ALL-006', 'ALL-007']:
-    all_urls['CUBE'][binning]['spec-0000'] = []
+for s in spec_types:
+    for binning in ['ALL-005', 'ALL-006', 'ALL-007']:
+        all_urls['CUBE'][binning][s] = []
+    for binning in ['ALL-003', 'ALL-004', 'ALL-005']:
+        all_urls['RSS'][binning][s] = []
 
-for binning in ['ALL-003', 'ALL-004', 'ALL-005']:
-    all_urls['RSS'][binning]['spec-0000'] = []
+# for binning in ['ALL-005', 'ALL-006', 'ALL-007']:
+#         all_urls['CUBE'][binning]['spec-0000'] = []
+# 
+# for binning in ['ALL-003', 'ALL-004', 'ALL-005']:
+#     all_urls['RSS'][binning]['spec-0000'] = []
 
 
 
@@ -129,6 +147,8 @@ for it in data:
         ptypes = cube_ptypes[it['binning']]
     elif it['mode'] == 'RSS':
         ptypes = rss_ptypes[it['binning']]
+
+    # create map and gradient flip books
     urls = []
     for i, plot_type in enumerate(ptypes):
         specdir = ''
@@ -144,10 +164,35 @@ for it in data:
     elif 'RADIAL' in it['binning']:
         suffix = '_gradients'
     else:
-        suffix = '_global_spec'
+        suffix = '_spec'
     f = open(path_plots_utah + it['binning'] + suffix + '.html', 'w')
     f.write(outputText)
     f.close()
+
+    # create spectra flip books
+    full_spec = it['spec']
+    emline_spec = it['emline_spec']
+    full_spec_urls = []
+    emline_spec_urls = []
+    for fs, es in zip(full_spec, emline_spec):
+        stem_spec = path_plots_sas + 'spectra/' + stem + 'spec-'
+        full_spec_url = stem_spec + fs + '.png'
+        full_spec_urls.append(full_spec_url)
+        emline_spec_url = stem_spec + es + '_emlines.png'
+        emline_spec_urls.append(emline_spec_url)
+
+    templateVars = dict(urls=full_spec_urls)
+    outputText = template.render(templateVars)
+    f = open(path_plots_utah + it['binning'] + '_spec.html', 'w')
+    f.write(outputText)
+    f.close()
+
+    templateVars = dict(urls=emline_spec_urls)
+    outputText = template.render(templateVars)
+    f = open(path_plots_utah + it['binning'] + '_spec_emlines.html', 'w')
+    f.write(outputText)
+    f.close()
+
 
 
 for k1 in iterkeys(all_urls):

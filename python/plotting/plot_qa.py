@@ -592,7 +592,7 @@ class PlotQA(object):
                     val_err = d['val_err']
                 self.plot_map(d['val'], z_err=val_err, fig=fig, ax=ax,
                               axloc=[left, bottom], title_text_fontsize=20,
-                              cblabel_fontsize=20, **d['kwargs'])
+                              cblabel_fontsize=16, cbtick_fontsize=16, **d['kwargs'])
                 # self.plot_map(d['val'], fig=fig, ax=ax, axloc=[left, bottom],
                 #               **d['kwargs'])
 
@@ -827,7 +827,7 @@ class PlotQA(object):
                 cb = fig.colorbar(p, cax, ticks=ticks)
     
             if cblabel is not None:
-                cb.set_label(cblabel, size=28)
+                cb.set_label(cblabel, size=cblabel_fontsize)
 
             if cbtick_fontsize is not None:
                 cb.ax.tick_params(labelsize=cbtick_fontsize)
@@ -866,7 +866,6 @@ class PlotQA(object):
         bigAxes.set_yticks([])
         bigAxes.set_xlabel('R [arcsec]', fontsize=20)
         bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
-        #bigAxes.set_ylabel(ylabel, fontsize=20)
         bigAxes.set_title(
             'pid-ifu %s     manga-id %s     %s     %s' % (
             self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
@@ -931,11 +930,15 @@ class PlotQA(object):
 
         if ax is None:
             fig = plt.figure(figsize=figsize)
-            ax = fig.add_axes([0.12, 0.1, 2/3., 5/6.])
-            ax.set_xlabel('R [arcsec]', fontsize=20)
-            ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
+            ax = fig.add_axes([0.17, 0.11, 2/3., 5/6.])
+            ax.set_xlabel('R [arcsec]', fontsize=28)
+            ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=28)
+            for tick in ax.xaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
+            for tick in ax.yaxis.get_major_ticks():
+                tick.label.set_fontsize(20)
             axtitle = args[gradname]['kwargs']['title_text'].split(' (')[0]
-            ax.set_title(axtitle, fontsize=20)
+            ax.set_title(axtitle, fontsize=28)
 
         if not seaborn_installed:
             ax.set_axis_bgcolor('#A8A8A8')
@@ -964,6 +967,7 @@ class PlotQA(object):
                 lab.append(author)
     
         leg = plt.legend(p, lab, **leg_kwargs)
+        plt.setp(leg.get_texts(), fontsize=24)
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)
             
@@ -1332,7 +1336,7 @@ class PlotQA(object):
             fontsize=20)
         fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
                             right=0.95, top=0.95)
-        for i in xrange(6):
+        for i in range(6):
             ax = fig.add_subplot(2, 3, i+1)
             nii = False
             if i == 3:
@@ -1364,15 +1368,20 @@ class PlotQA(object):
         """
         if seaborn_installed:
             sns.set_context('poster', rc={"lines.linewidth": kwargs['lw']})
-    
+            c = sns.color_palette('bright', 5)
+        else:
+            c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
+
         if ax is None:
             fig = plt.figure(figsize=figsize)
             ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
             ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
             ax.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=24)
             x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+            indiv_ax = True
         else:
             x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
+            indiv_ax = False
     
         wave = self.wave_rest[bin]
         gal = self.galaxy_rest[bin]
@@ -1381,7 +1390,7 @@ class PlotQA(object):
         stmodel = self.smod_rest[bin]
         fullfitew = self.fullfitew_rest[bin]
         fullfitfb = self.fullfitfb_rest[bin]
-    
+
         names = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
         '[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
     
@@ -1392,11 +1401,17 @@ class PlotQA(object):
             xmin, xmax = xlim
         if ylim is None:
             ind_w = np.where((wave > xmin) & (wave < xmax))
-            ymin = np.min(gal[ind_w] - noise[ind_w])
-            ymax = np.max(gal[ind_w] + noise[ind_w])
+            ymin_tmp = gal[ind_w] - noise[ind_w]
+            ymin_tmp = np.append(ymin_tmp, 1e6)
+            ymax_tmp = gal[ind_w] + noise[ind_w]
+            ymax_tmp = np.append(ymax_tmp, 1e-10)
+            ymin = np.min(ymin_tmp[np.isfinite(ymin_tmp)])
+            ymax = np.max(ymax_tmp[np.isfinite(ymax_tmp)])
             if nii:
                 ind_w_nii = np.where((wave > 6575.) & (wave < 6591.))
-                ymax = np.max(gal[ind_w_nii] + noise[ind_w_nii])
+                ymax_tmp = gal[ind_w_nii] + noise[ind_w_nii]
+                ymax_tmp = np.append(ymax_tmp, 1e-10)
+                ymax = np.max(ymax_tmp[np.isfinite(ymax_tmp)])
             dy = ymax - ymin
             ymin = ymin - (dy * 0.2)
             ymax = ymax + (dy * 0.2)
@@ -1407,20 +1422,26 @@ class PlotQA(object):
     
         ind = np.where((wave > xmin-5.) & (wave < xmax+5.))[0]
         #ax.plot(wave[ind], gal[ind], 'gray', drawstyle='steps-mid', zorder=1)
-        ax.scatter(wave[ind], gal[ind], c='gray', zorder=1)
+        ax.scatter(wave[ind], gal[ind], c='gray', edgecolor='None', zorder=1)
         ax.errorbar(wave[ind], gal[ind], yerr=noise[ind], ecolor='gray',
                     fmt=None, zorder=1)
-        pFB = ax.plot(wave[ind], fullfitfb[ind], 'r', **kwargs)[0]
-        pEW = ax.plot(wave[ind], fullfitew[ind], 'b', **kwargs)[0]
+        pst = ax.plot(wave[ind], stmodel[ind], c=c[1], **kwargs)[0]
+        pFB = ax.plot(wave[ind], fullfitfb[ind], c=c[2], **kwargs)[0]
+        pEW = ax.plot(wave[ind], fullfitew[ind], c=c[0], **kwargs)[0]
     
         for name, w, x_off in zip(names, self.elopar['RESTWAVE'], x_offs):
             if (w > xmin) and (w < xmax):
                 if (not nii) or (name is not r'H$\alpha$'):
-                    ax.text(w + x_off, ymax-dy*0.08, name, color='k')
+                    ax.text(w + x_off, ymax-dy*0.08, name, color='k', fontsize=20)
                     ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], c='k')
     
-        leg = plt.legend([pFB, pEW], ['Belfiore', 'Wang'], borderaxespad=0.1,
-                         ncol=2, loc=8)
-        plt.setp(leg.get_texts(), fontsize=20)
+        leg = plt.legend([pst, pFB, pEW],
+                         ['Stellar Cont.', 'Belfiore', 'Wang'],
+                         borderaxespad=0.1, handlelength=1.25,
+                         handletextpad=0.5, ncol=3, loc=8)
+        if indiv_ax:
+            plt.setp(leg.get_texts(), fontsize=24)
+        else:
+            plt.setp(leg.get_texts(), fontsize=16)
 
 
