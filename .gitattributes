@@ -23,7 +23,9 @@ examples/mdap_mpl3_cube.pro -text
 examples/mdap_mpl3_rss.pro -text
 examples/mdap_mpl3beta_cube_p1.pro -text
 examples/mdap_velocity_field.pro -text
+examples/test_base_class.py -text
 examples/test_log_rebin.py -text
+examples/test_par.py -text
 examples/test_resolution_matching.py -text
 examples/test_template_library.py -text
 external/F90_32/README_from_Remco -text
@@ -1481,6 +1483,7 @@ external/templates/miles/MILES_res2.50_star_m0983V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0984V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0985V.fits -text svneol=unset#unset
 external/templates/miles/README -text
+external/templates/miles/omit/MILES_res2.50_star_m0970V.fits -text svneol=unset#unset
 external/templates/miles/paramsMILES_v9.1.txt -text
 external/templates/miles_avg/MILES_res2.50_lt3.53_lg5.2_fe-1.4.fits -text svneol=unset#unset
 external/templates/miles_avg/MILES_res2.50_lt3.54_lg0.4_fe-2.5.fits -text svneol=unset#unset
@@ -2605,16 +2608,21 @@ python/README -text
 python/mangadap/TplLibrary.py -text
 python/mangadap/__init__.py -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
+python/mangadap/contrib/__init__.py -text
 python/mangadap/dapfile.py -text
 python/mangadap/drpcomplete.py -text
 python/mangadap/drpfile.py -text
 python/mangadap/mangampl.py -text
+python/mangadap/proc/SpatiallyBinnedSpectra.py -text
+python/mangadap/proc/TemplateLibrary.py -text
 python/mangadap/proc/__init__.py -text
+python/mangadap/proc/ppxf.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
 python/mangadap/survey/__init__.py -text
 python/mangadap/survey/rundap.py -text
 python/mangadap/survey/util.py -text
+python/mangadap/util/AnalysisPlan.py -text
 python/mangadap/util/__init__.py -text
 python/mangadap/util/bitmasks.py -text
 python/mangadap/util/constants.py -text
@@ -2628,6 +2636,8 @@ python/mangadap/util/idlutils.py -text
 python/mangadap/util/instrument.py -text
 python/mangadap/util/mapping.py -text
 python/mangadap/util/misc.py -text
+python/mangadap/util/options.py -text
+python/mangadap/util/par.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text

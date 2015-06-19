@@ -14,6 +14,8 @@ This library was created as follows:
     - Remove any templates with placeholder logT, logg, and [Fe/H]
       values in ../miles/MILES_params.db.
 
+    - Ignore spectrum m0970.
+
     - Divide the full range in logT, logg, and [Fe/H] into a 12x12x12 3D
       grid and determine which templates fall in which grid cell.
 
@@ -33,6 +35,7 @@ stellar parameters provided by the MILES library.
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
 K.B. Westfall, 26 Apr 2015
+               19 Jun 2015 - New selection that ignores spectrum m0970
 ------------------------------------------------------------------------
 
 

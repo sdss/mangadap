@@ -1,9 +1,12 @@
 """
 
-Bitmask class
+Provides an AnalysisPlan class used to create, read, and edit MaNGA DAP
+analysis plans.
+
+This is mostly just an interface with a yanny object.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/bitmask.py
+    $MANGADAP_DIR/python/mangadap/util/AnalysisPlan.py
 
 *Python2/3 compliance*::
 
@@ -41,12 +44,19 @@ if sys.version > '3':
     long = int
 
 import numpy
+from mangadap.util.yanny import yanny
 
 __author__ = 'Kyle B. Westfall'
 
-class BitMask:
+class AnalysisPlan:
     """
-    Generic class to handle and manipulate bitmasks.
+    Generic class to handle and manipulate MaNGA DAP analysis plans.
+
+    open empty, open from file
+    add new plan, and iteratively do so
+    delete (all) plan(s)
+    print plans to screen or log file
+    write plans
 
     Args:
         keys (str, list, numpy.ndarray): List of keys (or single key) to
@@ -68,7 +78,7 @@ class BitMask:
             number of bits.
 
     """
-    def __init__(self, keys):
+    def __init__(self, planfile=None):
         if type(keys) not in [str, list, numpy.ndarray]:
             raise Exception('Input bit names do not have the right type.')
 
@@ -203,10 +213,10 @@ class BitMask:
         return value & ~(1 << self.flags[flag])
 
 
-class TemplateLibraryBitMask(BitMask):
+def TemplateLibraryBitMask():
     """
-    Derived class that specifies a BitMask for the template library
-    data.
+    Return a BitMask object with the bit names used for the template
+    library bit mask.
 
     The bit names and meanings are:
     
@@ -214,11 +224,11 @@ class TemplateLibraryBitMask(BitMask):
 
         - 'WAVE_INVALID': Used to designate pixels in the 1D spectra
           that are outside the valid wavelength range defined by
-          :func:`mangadap.util.defaults.default_template_libraries`
+          :func:`mangadap.util.defaults.available_template_libraries`
 
         - 'FLUX_INVALID': Used to designate pixels in the 1D spectra
           that are below the valid flux limit defined by
-          :func:`mangadap.util.defaults.default_template_libraries`
+          :func:`mangadap.util.defaults.available_template_libraries`
 
         - 'SPECRES_EXTRAP': The spectral resolution has been matched to
           a value that was an extrapolation of the target spectral
@@ -228,15 +238,18 @@ class TemplateLibraryBitMask(BitMask):
           the target value because the target value was *higher* than
           the existing spectral resolution.
 
+    Returns:
+        class:`BitMask` : Bit mask object with the appropriate bit
+            names.
+
     """
-    def __init__(self):
-        BitMask.__init__(self, numpy.array([
+    return BitMask(numpy.array([
                 'NO_DATA',          # Pixel not observed
                 'WAVE_INVALID',     # Designated as invalid wavelength region
                 'FLUX_INVALID',     # Designated as invalid flux value
                 'SPECRES_EXTRAP',   # Spectral resolution match used extrapolated resolution value
                 'SPECRES_LOW'       # No spectral resolution match because target higher than input
-                         ]))
+                                ]))
 
 
 def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \

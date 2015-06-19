@@ -14,7 +14,7 @@ Binney 2005, 363, 937.
 
 .. math::
 
-    \lamdba_R = \frac{\sum F\ |V|}{\sum F\ (V^2 + S^2)^{1/2}}
+    \lambda_R = \frac{\sum F\ |V|}{\sum F\ (V^2 + \sigma^2)^{1/2}}
 
 and
 

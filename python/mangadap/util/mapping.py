@@ -80,10 +80,10 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
             along rows; i.e., the output is the transpose of the default
             behavior.  The appropriate call to imshow that will then put
             increasing x values along the abcissa and increasing y
-            values along the ordinate is, e.g.:
+            values along the ordinate is, e.g.::
 
-            >>> ext, img = masked_pixelized_image(x, y, z, imshow_prep=True)
-            >>> pyplot.imshow(img, interpolation='nearest', extent=ext, origin='lower')
+                ext, img = masked_pixelized_image(x, y, z, imshow_prep=True)
+                pyplot.imshow(img, interpolation='nearest', extent=ext, origin='lower')
 
             Note that origin **must** be "lower" when calling
             `pyplot.imshow`_ on the array produced by this routine for

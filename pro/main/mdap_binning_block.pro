@@ -176,6 +176,7 @@
 ; REVISION HISTORY:
 ;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
 ;       16 Mar 2015: (KBW) Include adjustments for bin_par.noise_calib
+;       17 Jun 2015: (KBW) Fixed a bug in logging; may be rampant!
 ;-
 ;------------------------------------------------------------------------------
 
@@ -257,20 +258,35 @@ PRO MDAP_BINNING_BLOCK, $
 
             ; Add some information to the log
             if ~keyword_set(nolog) then begin
-                printf, log_file_unit, '[INFO] Type of spatial binning: ', $
-                        execution_plan.bin_par.type
                 printf, log_file_unit, '[INFO] Spatial bining version: ' + $
                         manga_dap_version.spatial_binning
+                printf, log_file_unit, '[INFO] Type of spatial binning: ', $
+                        execution_plan.bin_par.type
+
                 if execution_plan.bin_par.type ne 'NONE' then begin
-                    if n_elements(execution_plan.bin_par) then $
-                        printf, log_file_unit, '[INFO] Bin parameter: ', execution_plan.bin_par
-                    printf, log_file_unit, '[INFO] Bin threshold S/N: ', $
-                            execution_plan.threshold_ston_bin
-                    printf, log_file_unit, '[INFO] Optimal weighting by S/(N)^2: ', $
-                            execution_plan.optimal_weighting
-                    printf, log_file_unit, '[INFO] Calibrated noise vector: ', $
-                            execution_plan.noise_calib
+                    printf, log_file_unit, '    Velocity register the spectra before binning: ', $
+                            execution_plan.bin_par.v_register
+                    printf, log_file_unit, '    Use S/(N)^2 weighting when combining spectra: ', $
+                            execution_plan.bin_par.optimal_weighting
+                    printf, log_file_unit, '    Change nominal noise based on S/N calibration: ', $
+                            execution_plan.bin_par.noise_calib
                 endif
+                if execution_plan.bin_par.type eq 'STON' then $
+                    printf, log_file_unit, '    Minimum S/N per bin: ', execution_plan.bin_par.ston
+                if execution_plan.bin_par.type eq 'RADIAL' then begin
+                    printf, log_file_unit, '    X center: ', execution_plan.bin_par.cx
+                    printf, log_file_unit, '    Y center: ', execution_plan.bin_par.cy
+                    printf, log_file_unit, '    Position angle: ', execution_plan.bin_par.pa
+                    printf, log_file_unit, '    Ellipticity: ', execution_plan.bin_par.ell
+                    printf, log_file_unit, '    Starting radius: ', execution_plan.bin_par.rs
+                    printf, log_file_unit, '    Ending radius (-1 for maximum): ',
+                            execution_plan.bin_par.re
+                    printf, log_file_unit, '    Number of radial bins: ', execution_plan.bin_par.nr
+                    printf, log_file_unit, '    Logarithmic bins: ', execution_plan.bin_par.rlog
+                    printf, log_file_unit, '    Radius scale parameter: ',
+                            execution_plan.bin_par.rscale
+                endif
+
                 printf, log_file_unit, '[INFO] Number of bins: ', n_elements(nbin)
             endif
 

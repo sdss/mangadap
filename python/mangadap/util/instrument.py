@@ -880,12 +880,13 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:
         for i in range(0,nspec):
-            print('Matching resolution: {0}/{1}'.format(i+1,nspec))
+            print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
             out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
             out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
             out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (mask[i,:] == 1)).astype(numpy.uint)
+        print('Matching resolution: {0}/{0}'.format(nspec))
 
     # TODO: Add this functionality from the IDL version?
     #
@@ -1108,7 +1109,7 @@ def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newR
     leads to a few repeat calculations in that function, the use of this
     function is in determine a common wavelength range for a large
     number of spectra before resampling the spectra themselves.  See
-    :class:`mangadap.TplLibrary` .
+    :class:`mangadap.TemplateLibrary` .
 
     Args:
         lamRange (numpy.ndarray): two elements vector containing the

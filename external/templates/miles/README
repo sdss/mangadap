@@ -32,12 +32,14 @@ original file to 99999 for the temperature and 9999 for the logg and
 MILES_params.db
 
 ------------------------------------------------------------------------
+I moved spectrum m0970 to the omit/ directory, meaning it will be
+omitted from the list of included templates.  This spectrum has a
+shortened wavelength range, and it has what looks like a strong,
+non-zero artifact at the red end.  Propagated through to miles_thin/ and
+miles_avg/ as well.
+
+------------------------------------------------------------------------
 ------------------------------------------------------------------------
 K.B. Westfall, 24 Mar 2015
+               19 Jun 2015 - m970 omitted, added reasoning
 ------------------------------------------------------------------------
-
-
-
-
-
-

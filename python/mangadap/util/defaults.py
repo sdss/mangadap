@@ -29,6 +29,11 @@ MaNGA DAP, such as paths and file names.
         and output fits files
     | **15 Jun 2015**: (KBW) Added default functions moved from
         :class:`mangadap.drpfile`
+    | **16 Jun 2015**: (KBW) Added wavelength limits and lower flux
+        limit to :func:`available_template_libraries`
+    | **17 Jun 2015**: (KBW) Moved declarations of template library keys
+        to its own function: :func:`default_template_library_keys', and
+        edited :func:`available_template_libraries` accordingly
 
 """
 
@@ -43,6 +48,7 @@ if sys.version > '3':
 import os.path
 from os import environ
 import numpy
+from mangadap.util.par import TemplateLibraryParSet
 
 __author__ = 'Kyle B. Westfall'
 
@@ -297,53 +303,50 @@ def default_template_library_file(plate, ifudesign, mode, library_key, spindex_k
     return 'manga-{0}-{1}-LOG{2}_{3}.fits'.format(plate, ifudesign, mode, library_key)
 
 
-def available_template_libraries(dapsrc=None):
+def default_template_libraries(dapsrc=None):
     """
-
     Return the list of library keys, the searchable string of the 1D
     template library fits files for the template libraries available for
     use by the DAP, the FWHM of the libraries, and whether or not the
-    wavelengths are in vacuum.  The currently available libraries are:
+    wavelengths are in vacuum.
 
     The stellar template library files should be a list of 1D fits
     files, and be associated with one of the following library keys:
 
-    +--------------+-------------------+-------------+
-    |              |          Spectral |             |
-    |          KEY |  resolution (ang) |  In vacuum? |
-    +==============+===================+=============+
-    |    M11-MARCS |              2.73 |          No |
-    +--------------+-------------------+-------------+
-    |   M11-STELIB |              3.40 |          No |
-    +--------------+-------------------+-------------+
-    |   M11-ELODIE |              0.55 |          No |
-    +--------------+-------------------+-------------+
-    |    M11-MILES |              2.54 |          No |
-    +--------------+-------------------+-------------+
-    |        MILES |              2.50 |          No |
-    +--------------+-------------------+-------------+
-    |    MILES-AVG |              2.50 |          No |
-    +--------------+-------------------+-------------+
-    |   MILES-THIN |              2.50 |          No |
-    +--------------+-------------------+-------------+
-    |       STELIB |              3.40 |          No |
-    +--------------+-------------------+-------------+
-    |      MIUSCAT |              2.51 |          No |
-    +--------------+-------------------+-------------+
-    | MIUSCAT-THIN |              2.51 |          No |
-    +--------------+-------------------+-------------+
- 
+    +--------------+------------+---------+-------------+-------+
+    |              |   Spectral |         |  Wavelength | Lower |
+    |          KEY |  res (ang) | Vacuum? | Range (ang) | Limit |
+    +==============+============+=========+=============+=======+
+    |    M11-MARCS |       2.73 |      No |        full |  None |
+    +--------------+------------+---------+-------------+-------+
+    |   M11-STELIB |       3.40 |      No |        full |  None |
+    +--------------+------------+---------+-------------+-------+
+    |   M11-ELODIE |       0.55 |      No |      < 6795 |  None |
+    +--------------+------------+---------+-------------+-------+
+    |    M11-MILES |       2.54 |      No | 3550 - 7400 |  None |
+    +--------------+------------+---------+-------------+-------+
+    |        MILES |       2.50 |      No |      < 7400 |  None |
+    +--------------+------------+---------+-------------+-------+
+    |    MILES-AVG |       2.50 |      No |      < 7400 |  None |
+    +--------------+------------+---------+-------------+-------+
+    |   MILES-THIN |       2.50 |      No |      < 7400 |  None |
+    +--------------+------------+---------+-------------+-------+
+    |       STELIB |       3.40 |      No |        full |   0.0 |
+    +--------------+------------+---------+-------------+-------+
+    |      MIUSCAT |       2.51 |      No | 3480 - 9430 |  None |
+    +--------------+------------+---------+-------------+-------+
+    | MIUSCAT-THIN |       2.51 |      No | 3480 - 9430 |  None |
+    +--------------+------------+---------+-------------+-------+
+
     Args:
         dapsrc (str): (Optional) Root path to the DAP source
             directory.  If not provided, the default is defined by
             :func:`mangadap.util.defaults.default_dap_source`.
 
     Returns:
-        numpy.ndarray: Four arrays with, respectively, the list of
-            valid library keys, the searchable file string for the
-            list of templates in the directory, the FWHM of the
-            spectral resolution element in the library, and the
-            boolean flag that the library is or is not in vacuum.
+        list : An list with of :class:`mangadap.util.par.ParSet`
+            objects, each of which is created using
+            :func:`mangadap.util.par.TemplateLibraryParSet`.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -354,98 +357,118 @@ def available_template_libraries(dapsrc=None):
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
-    #---------------------------------------------------------------
-    # Define the set of template libraries.  The format expected for
-    # these files is described above.
-
-    ntpl_libraries = 10
-    tpl_library_keys = []
     template_libraries = []
-    tpl_fwhm = numpy.zeros(ntpl_libraries, dtype=numpy.float64)
-    tpl_vacuum_wave = numpy.empty(ntpl_libraries, dtype=numpy.bool_)
 
-    i = 0
-    tpl_library_keys += [ 'M11-MARCS' ]
-    template_libraries += [ dapsrc+'/external/templates/m11_marcs/*_s.fits' ]
-    # TODO: This is the resolution in the header of the files, is it
-    # right?
-    tpl_fwhm[i] = 2.73
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # M11-MARCS
+    template_libraries += \
+        [ TemplateLibraryParSet(key='M11-MARCS',
+                                file_search=dapsrc+'/external/templates/m11_marcs/*_s.fits',
+                                # TODO: This is the resolution in the header of the files, is it
+                                # right?
+                                fwhm=2.73, in_vacuum=False,
+                                wave_limit=numpy.array([ None, None ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'M11-STELIB' ]
-    template_libraries += [ dapsrc+'/external/templates/m11_stelib/*_s.fits' ]
-    # Changed in IDL version on 27 Jan 2015 to match Maraston &
-    # Strombach (2011) Table 1
-    tpl_fwhm[i] = 3.40
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # M11-STELIB
+    template_libraries += \
+        [ TemplateLibraryParSet(key='M11-STELIB',
+                                file_search=dapsrc+'/external/templates/m11_stelib/*_s.fits',
+                                # Changed in IDL version on 27 Jan 2015 to match Maraston &
+                                # Strombach (2011) Table 1
+                                fwhm=3.40, in_vacuum=False,
+                                wave_limit=numpy.array([ None, None ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'M11-ELODIE' ]
-    template_libraries += [ dapsrc+'/external/templates/m11_elodie/*.fits' ]
-    # Resolution taken from Maraston & Strombach (2011, MNRAS, 418, 2785)
-    tpl_fwhm[i] = 0.55
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # M11-ELODIE
+    template_libraries += \
+        [ TemplateLibraryParSet(key='M11-ELODIE',
+                                file_search=dapsrc+'/external/templates/m11_elodie/*.fits',
+                                # Resolution taken from Maraston & Strombach (2011)
+                                fwhm=0.55, in_vacuum=False,
+                                wave_limit=numpy.array([ None, 6795. ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'M11-MILES' ]
-    template_libraries += [ dapsrc+'/external/templates/m11_miles/*.fits' ]
-    # TODO: Should this be the same as MILES?
-    tpl_fwhm[i] = 2.54
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # M11-MILES
+    template_libraries += \
+        [ TemplateLibraryParSet(key='M11-MILES',
+                                file_search=dapsrc+'/external/templates/m11_miles/*.fits',
+                                # TODO: Should this be the same as MILES?
+                                fwhm=2.54, in_vacuum=False,
+                                wave_limit=numpy.array([ 3550., 7400. ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'MILES' ]
-    template_libraries += [ dapsrc+'/external/templates/miles/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-    tpl_fwhm[i] = 2.50
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # MILES
+    template_libraries += \
+        [ TemplateLibraryParSet(key='MILES',
+                                file_search=dapsrc+'/external/templates/miles/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+                                fwhm=2.50, in_vacuum=False,
+                                wave_limit=numpy.array([ 3575., 7400. ]),
+                                lower_flux_limit=0.0)
+        ]
 
-    tpl_library_keys += [ 'MILES-AVG' ]
-    template_libraries += [ dapsrc+'/external/templates/miles_avg/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-    tpl_fwhm[i] = 2.50
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # MILES-AVG
+    template_libraries += \
+        [ TemplateLibraryParSet(key='MILES-AVG',
+                                file_search=dapsrc+'/external/templates/miles_avg/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+                                fwhm=2.50, in_vacuum=False,
+                                wave_limit=numpy.array([ 3575., 7400. ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'MILES-THIN' ]
-    template_libraries += [ dapsrc+'/external/templates/miles_thin/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-    tpl_fwhm[i] = 2.50
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # MILES-THIN
+    template_libraries += \
+        [ TemplateLibraryParSet(key='MILES-THIN',
+                                file_search=dapsrc+'/external/templates/miles_thin/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
+                                fwhm=2.50, in_vacuum=False,
+                                wave_limit=numpy.array([ 3575., 7400. ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'STELIB' ]
-    template_libraries += [ dapsrc+'/external/templates/stelib/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Only given as approximate in Le Borgne et al. (2003, A&A, 402,
-    # 433); assume value from Maraston & Strombach (2011, MNRAS,
-    # 418, 2785)
-    tpl_fwhm[i] = 3.40
-    tpl_vacuum_wave[i] = False
-    i += 1
+    # STELIB
+    template_libraries += \
+        [ TemplateLibraryParSet(key='STELIB',
+                                file_search=dapsrc+'/external/templates/stelib/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Only given as approximate in Le Borgne et al. (2003, A&A, 402,
+                                # 433); assume value from Maraston & Strombach (2011, MNRAS,
+                                # 418, 2785)
+                                fwhm=3.40, in_vacuum=False,
+                                wave_limit=numpy.array([ None, None ]),
+                                lower_flux_limit=0.0)
+        ]
 
-    tpl_library_keys += [ 'MIUSCAT' ]
-    template_libraries += [ dapsrc+'/external/templates/miuscat/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Using value provided by the header in all the fits files
-    tpl_fwhm[i] = 2.51
-    tpl_vacuum_wave[i] = False
+    # MIUSCAT
+    template_libraries += \
+        [ TemplateLibraryParSet(key='MIUSCAT',
+                                file_search=dapsrc+'/external/templates/miuscat/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Using value provided by the header in all the fits files
+                                fwhm=2.51, in_vacuum=False,
+                                wave_limit=numpy.array([ 3480., 9430. ]),
+                                lower_flux_limit=None)
+        ]
 
-    tpl_library_keys += [ 'MIUSCAT-THIN' ]
-    template_libraries += [ dapsrc+'/external/templates/miuscat_thin/*.fits' ]
-    # TODO: Unknown if this library is in vacuum or in air
-    # Using value provided by the header in all the fits files
-    tpl_fwhm[i] = 2.51
-    tpl_vacuum_wave[i] = False
+    # MIUSCAT-THIN
+    template_libraries += \
+        [ TemplateLibraryParSet(key='MIUSCAT-THIN',
+                                file_search=dapsrc+'/external/templates/miuscat_thin/*.fits',
+                                # TODO: Unknown if this library is in vacuum or in air
+                                # Using value provided by the header in all the fits files
+                                fwhm=2.51, in_vacuum=False,
+                                wave_limit=numpy.array([ 3480., 9430. ]),
+                                lower_flux_limit=None)
+        ]
 
-    return numpy.array(tpl_library_keys), numpy.array(template_libraries), tpl_fwhm, \
-           tpl_vacuum_wave
-
-
+    return template_libraries
 
 
