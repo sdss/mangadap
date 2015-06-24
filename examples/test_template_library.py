@@ -12,6 +12,7 @@ from mangadap.util.par import TemplateLibraryParSet
 from mangadap.util.defaults import default_dap_source
 
 from mangadap.util.fileio import readfits_1dspec
+from mangadap.util.instrument import spectral_resolution, spectrum_velocity_scale
 
 #-----------------------------------------------------------------------------
 
@@ -46,28 +47,30 @@ def overplot_test():
 
 def run_test():
 
-    drpf = drpfile(7495, 12703, 'CUBE')
+#    drpf = drpfile(7495, 12703, 'CUBE')
+    drpf = drpfile(7495, 12703, 'CUBE', read=True)
+
+    sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data, log10=True)
+    velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
 
     print(drpf.file_path())
 
-
-    dapsrc = default_dap_source()
-
-    # M11-MARCS
-    template_libraries = TemplateLibraryParSet(key='M11-MARCS',
-                                file_search=dapsrc+'/external/templates/m11_marcs/*_s.fits',
-                                # TODO: This is the resolution in the header of the files, is it
-                                # right?
-                                fwhm=2.73, in_vacuum=False,
-                                wave_limit=numpy.array([ None, None ]),
-                                lower_flux_limit=None)
-
-
-
 #    tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.', force=True)
-#    tpl_lib = TemplateLibrary('STELIB', drpf=drpf, directory_path='.', force=True)
+    tpl_lib = TemplateLibrary('STELIB', velscale=velscale, sres=sres, directory_path='.',
+                              processed_file='test.fits', force=True)
 #    tpl_lib = TemplateLibrary('STELIB', process=False)
-    tpl_lib = TemplateLibrary('MILES-AVG', tpllib_list=template_libraries, process=False)
+
+#    dapsrc = default_dap_source()
+#
+#    # M11-MARCS
+#    template_libraries = TemplateLibraryParSet(key='M11-MARCS',
+#                                file_search=dapsrc+'/external/templates/m11_marcs/*_s.fits',
+#                                # TODO: This is the resolution in the header of the files, is it
+#                                # right?
+#                                fwhm=2.73, in_vacuum=False,
+#                                wave_limit=numpy.array([ None, None ]),
+#                                lower_flux_limit=None)
+#    tpl_lib = TemplateLibrary('MILES-AVG', tpllib_list=template_libraries, process=False)
     
     print(tpl_lib.hdu['FLUX'].shape)
     nspec = tpl_lib.hdu['FLUX'].shape[0]
@@ -83,8 +86,8 @@ def run_test():
 #    for i in range(969,970):
 #        print(tpl_lib.file_list[i])
 #        pyplot.plot(tpl_lib.hdu['WAVE'].data[i,unmasked[i,:]], tpl_lib.hdu['FLUX'].data[i,unmasked[i,:]])
-#        x = tpl_lib.hdu['WAVE'].data[:]
-        x = tpl_lib.hdu['WAVE'].data[i,:]
+        x = tpl_lib.hdu['WAVE'].data[:]
+#        x = tpl_lib.hdu['WAVE'].data[i,:]
         y = tpl_lib.hdu['FLUX'].data[i,:]
         pyplot.plot(x[unmasked[i,:]], y[unmasked[i,:]], ms=5, linestyle='none', marker='.', markeredgecolor=None, color='black')
         pyplot.plot(x[numpy.invert(unmasked[i,:])], y[numpy.invert(unmasked[i,:])], ms=10, linestyle='none', marker='.', markeredgecolor=None, color='red')

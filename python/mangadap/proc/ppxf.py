@@ -494,7 +494,8 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre
 from scipy import ndimage, optimize, linalg
  
-import cap_mpfit as mpfit
+#import cap_mpfit as mpfit
+import mangadap.util.cap_mpfit as mpfit
 
 #-------------------------------------------------------------------------------
 
