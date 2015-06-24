@@ -3,7 +3,7 @@
 # This is the path to the equivalent of 
 #   $MANGAWORK_DIR/manga/spectro
 # at Utah, with your local copy of the DRP products
-export LOCAL_MANGA_PATH=/Users/westfall/Work/MaNGA
+export LOCAL_MANGA_PATH=$HOME/data/MaNGA
 
 export MANGA_SPECTRO_REDUX=$LOCAL_MANGA_PATH/redux
 export MANGA_SPECTRO_ANALYSIS=$LOCAL_MANGA_PATH/analysis

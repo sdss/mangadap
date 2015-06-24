@@ -279,11 +279,11 @@ PRO MDAP_BINNING_BLOCK, $
                     printf, log_file_unit, '    Position angle: ', execution_plan.bin_par.pa
                     printf, log_file_unit, '    Ellipticity: ', execution_plan.bin_par.ell
                     printf, log_file_unit, '    Starting radius: ', execution_plan.bin_par.rs
-                    printf, log_file_unit, '    Ending radius (-1 for maximum): ',
+                    printf, log_file_unit, '    Ending radius (-1 for maximum): ', $
                             execution_plan.bin_par.re
                     printf, log_file_unit, '    Number of radial bins: ', execution_plan.bin_par.nr
                     printf, log_file_unit, '    Logarithmic bins: ', execution_plan.bin_par.rlog
-                    printf, log_file_unit, '    Radius scale parameter: ',
+                    printf, log_file_unit, '    Radius scale parameter: ', $
                             execution_plan.bin_par.rscale
                 endif
 
