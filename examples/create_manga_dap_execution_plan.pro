@@ -43,12 +43,13 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
 
         ; Define the analyses to apply
         analysis[0,0] = 'stellar-cont'
-        analysis[0,1] = 'star+gas'
+;        analysis[0,1] = 'star+gas'
         analysis[0,1] = 'emission-line'
-        analysis[0,2] = 'abs-indices'
+;        analysis[0,2] = 'abs-indices'
 
         ; Define the template library to use
-        tpl_lib_analysis[0] = 'M11-STELIB'
+;       tpl_lib_analysis[0] = 'M11-STELIB'
+        tpl_lib_analysis[0] = 'M11-MILES'
         ; Define the emission-line list to use
         ems_par_analysis[0] = 'STANDARD'
         ; Define the spectral-index parameters to use
@@ -101,7 +102,8 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
         analysis[1,1] = 'emission-line'
 
         ; Define the template library to use
-        tpl_lib_analysis[1] = 'M11-STELIB'
+;        tpl_lib_analysis[1] = 'M11-STELIB'
+        tpl_lib_analysis[1] = 'M11-MILES'
         ; Define the emission-line list to use
         ems_par_analysis[1] = 'STANDARD'
 

@@ -811,6 +811,11 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
                 tpl_library_key=tpl_library_key, ems_line_key=ems_line_key, $
                 abs_line_key=abs_line_key
 
+;       bitpix = FXPAR(header, 'BITPIX')
+;       print, 'BITPIX == ', bitpix
+;       print, header
+;       stop
+
         ; Add the number of DRP spectra
         if n_elements(ndrp) ne 0 then $
             SXADDPAR, header, 'NS_DRP', ndrp, 'Number of DRP produced spectra'
@@ -891,7 +896,10 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
         ; This is the PRIMARY HDU so...
         SXDELPAR, header, 'XTENSION'                    ; ... remove extension keyword
         SXDELPAR, header, 'EXTNAME'                     ; ... remove extension name
-        SXADDPAR, header, 'EXTEND', 'T', 'FITS data may contain extensions'; ... allow extensions
+        SXADDPAR, header, 'SIMPLE', 'T', 'Primary header', before='BITPIX'  ; add SIMPLE
+        SXADDPAR, header, 'BITPIX', 8                                       ; change BITPIX
+        ; ... allow extensions
+        SXADDPAR, header, 'EXTEND', 'T', 'FITS data may contain extensions', after='NAXIS'
 
         ; Update the file header
         if file_test(file) eq 1 then begin
@@ -901,6 +909,12 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
             MDAP_FITS_HEADER_ADD_DATE, header                   ; Add parameter with original date
             WRITEFITS, file, 0, header                          ; Write the header (no data)
         endelse
+
+;       bitpix = FXPAR(header, 'BITPIX')
+;       print, 'BITPIX == ', bitpix
+;       print, header
+;       stop
+
 END
 
 ;-------------------------------------------------------------------------------
