@@ -776,22 +776,24 @@ for dap_file in files:
 
         for bin in spec_to_plot:
             # multi-panel plot
-            qa.plot_emline_multi(bin=bin)
             fout =  ('_').join([stem_file, 'spec']) + '-%0.4i_%s.png' % (bin, 'emlines')
-            plt.savefig(path_gal_plots_spec + fout, dpi=200)
-            plt.close()
-            print('Wrote: %s' % fout)
+            if not os.path.isfile(fout):
+                qa.plot_emline_multi(bin=bin)
+                plt.savefig(path_gal_plots_spec + fout, dpi=200)
+                plt.close()
+                print('Wrote: %s' % fout)
 
             # individual plots
             for ii, (wc, wn) in enumerate(zip(win_cen, win_names)):
                 nii = False
                 if ii == 3:
                     nii = True
-                qa.plot_emline(bin=bin, nii=nii, win_cen=wc)
                 fout =  ('_').join([stem_file, 'spec']) + '-%0.4i_%s.png' % (bin, wn)
-                plt.savefig(path_gal_plots_spec + fout, dpi=200)
-                plt.close()
-                #print('Wrote: %s' % fout)
+                if not os.path.isfile(fout):
+                    qa.plot_emline(bin=bin, nii=nii, win_cen=wc)
+                    plt.savefig(path_gal_plots_spec + fout, dpi=200)
+                    plt.close()
+                    #print('Wrote: %s' % fout)
     
     open(path_gal_plots + done_file, 'a').close()
     
