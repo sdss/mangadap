@@ -1069,6 +1069,7 @@ class TemplateLibrary:
         if os.path.isfile(ofile) and not force:
             print('Using existing file: {0}'.format(self.processed_file))
             self.hdu = fits.open(ofile)
+            self.file_list = glob.glob(self.libparset['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
             return
