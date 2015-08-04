@@ -1,5 +1,6 @@
 * text=auto !eol
 /RELEASE_NOTES -text
+bin/calculate_covariance.py -text
 bin/dap_running.bash -text
 bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
