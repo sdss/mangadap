@@ -593,9 +593,9 @@ class drpfile:
 
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
-            self.pixelscale = self.default_cube_pixelscale()
-            self.recenter = self.default_cube_recenter()
-            self.width_buffer = self.default_cube_width_buffer()
+            self.pixelscale = default_cube_pixelscale()
+            self.recenter = default_cube_recenter()
+            self.width_buffer = default_cube_width_buffer()
             # RA of first pixel edge
             self.xs = self.hdu['FLUX'].header['CRVAL1'] \
                       - self.hdu['FLUX'].header['CD1_1']*(self.hdu['FLUX'].header['CRPIX1']-1.5)
@@ -614,11 +614,11 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
 
         # Check if the cube_dimensions already exist and were determined
         # using the correct parameters
@@ -646,6 +646,7 @@ class drpfile:
         if self.nx % 2 != 0:
             self.nx += 1
         self.ny = self.nx
+#        print('CUBE size: {0} {1}\n'.format(self.nx, self.ny))
 
         # Set the starting coordinate
         self.xs = -self.nx*self.pixelscale/2.
@@ -704,15 +705,15 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
         if rlim is None:
-            rlim = self.default_regrid_rlim()
+            rlim = default_regrid_rlim()
         if sigma is None:
-            sigma = self.default_regrid_sigma()
+            sigma = default_regrid_sigma()
 
         # Check if the variance correlation coefficients already exist
         # and were determined using the correct parameters
@@ -1153,15 +1154,15 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
         if rlim is None:
-            rlim = self.default_regrid_rlim()
+            rlim = default_regrid_rlim()
         if sigma is None:
-            sigma = self.default_regrid_sigma()
+            sigma = default_regrid_sigma()
 
         # Check if the calculation is necessary
         if not self._regrid_transfer_undefined() \
@@ -1175,15 +1176,15 @@ class drpfile:
             # Do not perform the calculation if the parameters are not
             # the default used by the DRP to create the CUBE file.
             use_RSS = True
-            if pixelscale != self.default_cube_pixelscale():
+            if pixelscale != default_cube_pixelscale():
                 use_RSS = False
-            if recenter != self.default_cube_recenter():
+            if recenter != default_cube_recenter():
                 use_RSS = False
-            if width_buffer != self.default_cube_width_buffer():
+            if width_buffer != default_cube_width_buffer():
                 use_RSS = False
-            if rlim != self.default_regrid_rlim():
+            if rlim != default_regrid_rlim():
                 use_RSS = False
-            if sigma != self.default_regrid_sigma():
+            if sigma != default_regrid_sigma():
                 use_RSS = False
 
             if not use_RSS:
@@ -1267,6 +1268,7 @@ class drpfile:
 
             # Calcuate the distance
             # ---- WITH RESPECT TO THE EDGE OF THE FIRST PIXEL ----
+            #  - matches DRP, but why?!?!
             r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale - ii) \
                  + numpy.square((self.hdu['YPOS'].data[k,channel]-self.ys)/pixelscale - jj)
             # ---- WITH RESPECT TO THE CENTER OF THE FIRST PIXEL ----
@@ -1355,28 +1357,28 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
         if rlim is None:
-            rlim = self.default_regrid_rlim()
+            rlim = default_regrid_rlim()
         if sigma is None:
-            sigma = self.default_regrid_sigma()
+            sigma = default_regrid_sigma()
 
         # Allow CUBE output under certain conditions
         if self.mode is 'CUBE':
             select_plane = True
-            if pixelscale != self.default_cube_pixelscale():
+            if pixelscale != default_cube_pixelscale():
                 select_plane = False
-            if recenter != self.default_cube_recenter():
+            if recenter != default_cube_recenter():
                 select_plane = False
-            if width_buffer != self.default_cube_width_buffer():
+            if width_buffer != default_cube_width_buffer():
                 select_plane = False
-            if rlim != self.default_regrid_rlim():
+            if rlim != default_regrid_rlim():
                 select_plane = False
-            if sigma != self.default_regrid_sigma():
+            if sigma != default_regrid_sigma():
                 select_plane = False
 
             if not select_plane:
@@ -1474,15 +1476,15 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
         if rlim is None:
-            rlim = self.default_regrid_rlim()
+            rlim = default_regrid_rlim()
         if sigma is None:
-            sigma = self.default_regrid_sigma()
+            sigma = default_regrid_sigma()
 
 
         # If sigma_rho is not provided, do the exact calculation
@@ -1491,15 +1493,15 @@ class drpfile:
             # Allow CUBE output under certain conditions
             if self.mode is 'CUBE':
                 use_RSS = True
-                if pixelscale != self.default_cube_pixelscale():
+                if pixelscale != default_cube_pixelscale():
                     use_RSS = False
-                if recenter != self.default_cube_recenter():
+                if recenter != default_cube_recenter():
                     use_RSS = False
-                if width_buffer != self.default_cube_width_buffer():
+                if width_buffer != default_cube_width_buffer():
                     use_RSS = False
-                if rlim != self.default_regrid_rlim():
+                if rlim != default_regrid_rlim():
                     use_RSS = False
-                if sigma != self.default_regrid_sigma():
+                if sigma != default_regrid_sigma():
                     use_RSS = False
 
                 if not use_RSS:
@@ -1614,28 +1616,28 @@ class drpfile:
 
         # Set the default values for the input
         if pixelscale is None:
-            pixelscale = self.default_cube_pixelscale()
+            pixelscale = default_cube_pixelscale()
         if recenter is None:
-            recenter = self.default_cube_recenter()
+            recenter = default_cube_recenter()
         if width_buffer is None:
-            width_buffer = self.default_cube_width_buffer()
+            width_buffer = default_cube_width_buffer()
         if rlim is None:
-            rlim = self.default_regrid_rlim()
+            rlim = default_regrid_rlim()
         if sigma is None:
-            sigma = self.default_regrid_sigma()
+            sigma = default_regrid_sigma()
 
         # Allow CUBE output under certain conditions
         if self.mode is 'CUBE':
             use_RSS = True
-            if pixelscale != self.default_cube_pixelscale():
+            if pixelscale != default_cube_pixelscale():
                 use_RSS = False
-            if recenter != self.default_cube_recenter():
+            if recenter != default_cube_recenter():
                 use_RSS = False
-            if width_buffer != self.default_cube_width_buffer():
+            if width_buffer != default_cube_width_buffer():
                 use_RSS = False
-            if rlim != self.default_regrid_rlim():
+            if rlim != default_regrid_rlim():
                 use_RSS = False
-            if sigma != self.default_regrid_sigma():
+            if sigma != default_regrid_sigma():
                 use_RSS = False
 
             if not use_RSS:

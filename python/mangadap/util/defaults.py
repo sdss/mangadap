@@ -100,14 +100,14 @@ def default_drp_directory_path(drpver, redux_path, plate):
     return os.path.join(redux_path, str(plate), 'stack')
 
 
-def default_cube_pixelscale(self):
+def default_cube_pixelscale():
     """
     Return the default pixel scale of the DRP CUBE files in arcsec.
     """
     return 0.5
 
 
-def default_cube_width_buffer(self):
+def default_cube_width_buffer():
     """
     Return the default width buffer in pixels used when regridding the
     DRP RSS spectra into the CUBE format.
@@ -115,7 +115,7 @@ def default_cube_width_buffer(self):
     return 10
 
 
-def default_cube_recenter(self):
+def default_cube_recenter():
     """
     Return the default recentering flag used when regridding the DRP RSS
     spectra into the CUBE format.
@@ -123,7 +123,7 @@ def default_cube_recenter(self):
     return False
 
 
-def default_regrid_rlim(self):
+def default_regrid_rlim():
     """
     Return the default limiting radius for the Gaussian kernel used when
     regridding the DRP RSS spectra into the CUBE format.
@@ -131,7 +131,7 @@ def default_regrid_rlim(self):
     return 1.6
 
 
-def default_regrid_sigma(self):
+def default_regrid_sigma():
     """
     Return the default standard deviation of the Gaussian kernel used
     when regridding the DRP RSS spectra into the CUBE format.

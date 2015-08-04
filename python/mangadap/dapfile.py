@@ -49,6 +49,8 @@ Analysis Pipeline (DAP).
         functions.  Added checksum=True when opening the DRP file.
     | **04 Jun 2015**: (KBW) Moved parse_dap_file_name to
         :func:`parser.parse_dap_file_name`
+    | **04 Jul 2015**: (KBW) Allow the guess inclination to include an
+        intrinsic oblateness.
 
 .. todo::
     - check that *bintype* is valid 
@@ -405,13 +407,45 @@ class dapfile:
         return self.par['DAPPAR']['vel'][0]
 
 
-    def guess_inclination(self):
-        """
-        Return a guess inclination, assuming an infinitly thin disk and
-        the isophotal ellipticity from the parameter file.
+    def guess_inclination(self, q0=None):
+        r"""
+
+        Return a guess inclination based on the isophotal ellipticity
+        from the input parameter file using the equation:
+
+        .. math::
+        
+            \cos^2 i = \frac{ q^2 - q_0^2 }{ 1 - q_0^2 },
+
+        where :math:`q` is the observed oblateness (the semi-minor to
+        semi-major axis ratio, :math:`q = 1-\epsilon = b/a`) and
+        :math:`q_0` is the intrinsic oblateness.
+        
+        If :math:`q < q_0`, the function returns a 90 degree
+        inclination.
+        
+        Args:
+            q0 (float): (Optional) The intrinsic oblateness of the
+                system.  If not provided, the system is assumed to be
+                infinitely thin.
+
+        Raises:
+            Exception: Raised if the input intrinsic oblatenss is not
+                less than one and greater than 0.
         """
         self.read_par()
-        return numpy.degrees( numpy.arccos(1.0 - self.par['DAPPAR']['ell'][0]) )
+        if q0 is None or q0 == 0.0:
+            return numpy.degrees( numpy.arccos(1.0 - self.par['DAPPAR']['ell'][0]) )
+
+        if not (q0 < 1.0) or (q0 < 0.0):
+            raise Exception('Intrinsic oblateness must be 0.0 <= q0 < 1.0!')
+
+        q = 1.0 - self.par['DAPPAR']['ell'][0]
+        if q < q0:
+            return 90.0
+
+        q02 = q0*q0
+        return numpy.degrees(numpy.arccos(numpy.sqrt( (q*q - q02) / (1.0 - q02) )))
 
 
     def guess_position_angle(self, flip=False):

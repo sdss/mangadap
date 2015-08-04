@@ -52,7 +52,9 @@ Defines a class to calculate and convert between on-sky and a projected
         :math:`{\mathbf A}` is define to only occur in :func:`solve`
         since it is called by all the other coordinate calculation
         methods.
-    | **
+    | **04 Jul 2015**: (KBW) Allow for inverse calculations, i.e.
+        calculations of the focal-plane cartesian coordinates given the
+        disk-plane (Cartesian or polar) coordinates.
 
 .. _scipy.linalg.lu_solve: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html#scipy.linalg.lu_solve
 """
