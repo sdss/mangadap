@@ -1401,7 +1401,30 @@ class drpfile:
         r"""
         Return the covariance matrix for the specified wavelength
         channel.
-        
+
+        For a regrided cube image with :math:`N\times M` pixels, the
+        covariance matrix has a size that is :math:`(N M)\times (N M)`;
+        however, the majority of these pixels will be zero.  Therefore,
+        the covariance matrix is stored as a sparse matrix and
+        interfaced with using the :class:`mangadap.util.covariance`
+        object class.
+
+        The value of the covariance matrix at pixel :math:`(i,j)` is the
+        covariance between pixels :math:`(n_0,m_0)` and
+        :math:`(n_1,m_1)` at the specified wavelength channel of the DRP
+        CUBE file, where
+
+        .. math::
+
+            n_0 &= \lfloor i / M \rfloor \\
+            m_0 &= i - n_0 M \\
+            n_1 &= \lfloor j / M \rfloor \\
+            m_1 &= j - n_1 M
+
+        and :math:`\lfloor x\rfloor` is the "floor" of :math:`x`.  The
+        diagonal of the covariance matrix (:math:`i=j`) should directly
+        provide the inverse of the IVAR values provided by the DRP.
+
         If *sigma_rho* is None, the returned matrix is the formal
         covariance matrix defined as
 
@@ -1412,15 +1435,15 @@ class drpfile:
 
         where :math:`{\mathbf \Sigma}` is the covariance matrix for the
         'RSS' spectra for the specified wavelength channel.  For 'CUBE'
-        files, will attempt to use the 'RSS' counterpart of the file to
-        produce transfer matrix.  In this case, the input parameters
-        *must* be the defaults.
+        files, the function will attempt to use the 'RSS' counterpart of
+        the file to produce the transfer matrix, :math:`{\mathbf T}`.
+        In this case, the input parameters *must* be the defaults.
 
         .. note::
         
             The current DRP does not produce covariance matrices for the
             'RSS' spectra.  Here, it is assumed that the covariance
-            matrix is zero everywhere except along the diagonal which
+            matrix is zero everywhere except along the diagonal, which
             contains the inverse of the values in the 'IVAR' extension.
 
         If *sigma_rho* is not None, the returned matrix is an
