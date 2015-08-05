@@ -51,6 +51,12 @@ Analysis Pipeline (DAP).
         :func:`parser.parse_dap_file_name`
     | **04 Jul 2015**: (KBW) Allow the guess inclination to include an
         intrinsic oblateness.
+    | **05 Aug 2015**: (KBW) Changed how directory path is set;
+        previously required drpver, dapver, and analysis_path defaults,
+        even if directory_path was provided directly.  **May need to add
+        checks to other code to make sure drpver, dapver, and
+        analysis_path are not None when directory_path has been directly
+        defined.**
 
 .. todo::
     - check that *bintype* is valid 
@@ -148,14 +154,19 @@ class dapfile:
         self.bintype = str(bintype)
         self.niter = int(niter)
 
-        self.drpver = default_drp_version() if drpver is None else str(drpver)
-        self.dapver = default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
-                             if analysis_path is None else str(analysis_path)
-        self.directory_path = default_dap_directory_path(self.drpver, self.dapver, \
-                                                         self.analysis_path, self.plate, \
-                                                         self.ifudesign) \
-                              if directory_path is None else str(directory_path)
+        if directory_path is None:
+            self.drpver = default_drp_version() if drpver is None else str(drpver)
+            self.dapver = default_dap_version() if dapver is None else str(dapver)
+            self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
+                                 if analysis_path is None else str(analysis_path)
+            self.directory_path = default_dap_directory_path(self.drpver, self.dapver,
+                                                             self.analysis_path, self.plate,
+                                                             self.ifudesign)
+        else:
+            self.drpver = None
+            self.dapver = None
+            self.analysis_path = None
+            self.directory_path = str(directory_path)
 
         self.par_file = default_dap_par_file(self.drpver, self.dapver, self.analysis_path, \
                                              self.directory_path, self.plate, self.ifudesign, \

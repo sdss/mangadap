@@ -59,6 +59,13 @@ matrix for the DRP 'CUBE' files.
     | **15 Jun 2015**: (KBW) Moved functions that return default values
         (like :func:`drpfile._default_pixelscale`) to
         :file:`mangadap/util/defaults.py`
+    | **05 Aug 2015**: (KBW) Changed mode testing to be more robust.
+        Added directory_path keyword to :func:`drpfile_list`.  Changed
+        how directory path is set; previously required drpver and
+        redux_path defaults, even if directory_path was provided
+        directly.  **May need to add checks to other code to make sure
+        drpver and redux_path are not None when directory_path has been
+        directly defined.**
 
 .. todo::
 
@@ -101,7 +108,7 @@ from mangadap.util.defaults import default_regrid_sigma
 __author__ = 'Kyle B. Westfall'
 
 def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
-                 redux_path=None):
+                 redux_path=None, directory_path=None):
     """
     Provided a list of plates, ifudesigns, and modes, return a list of
     DRP files to be analyzed by the DAP.
@@ -123,6 +130,9 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files; this is the same as the
             *redux_path* in the :class:`mangadap.drpfile` class.
+        directory_path (str): (Optional) The exact path to the DRP file.
+            Default is defined by
+            :func:`mangadap.util.defaults.default_drp_directory_path`.
 
     Returns:
         list : A list of DRP file objects
@@ -138,6 +148,8 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
         raise Exception('drpver must be a string')
     if redux_path is not None and type(redux_path) != str:
         raise Exception('redux_path must be a string')
+    if directory_path is not None and type(directory_path) != str:
+        raise Exception('directory_path must be a string')
 
     if platelist is None or ifudesignlist is None or modelist is None:
         raise ValueError('Must provide platelist, ifudesignlist, and modelist!')
@@ -197,7 +209,7 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
 
     # Set the directory path based on the provided main path
     return [drpfile(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver,
-                    redux_path=redux_path) \
+                    redux_path=redux_path, directory_path=directory_path) \
             for i in range(0,nn)]
 
 
@@ -347,13 +359,25 @@ class drpfile:
         self.ifudesign = long(ifudesign)
         self.mode = str(mode)
 
-        if mode is not 'CUBE' and mode is not 'RSS':
+        if mode not in [ 'CUBE', 'RSS']:
             raise Exception('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
 
-        self.drpver = default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = default_redux_path(self.drpver) if redux_path is None else str(redux_path)
-        self.directory_path = default_drp_directory_path(self.drpver, self.redux_path, self.plate) \
-                              if directory_path is None else str(directory_path)
+
+#       self.drpver = default_drp_version() if drpver is None else str(drpver)
+#       self.redux_path = default_redux_path(self.drpver) if redux_path is None else str(redux_path)
+#       self.directory_path = default_drp_directory_path(self.drpver, self.redux_path, self.plate) \
+#                             if directory_path is None else str(directory_path)
+
+        if directory_path is None:
+            self.drpver = default_drp_version() if drpver is None else str(drpver)
+            self.redux_path = default_redux_path(self.drpver) \
+                              if redux_path is None else str(redux_path)
+            self.directory_path = default_drp_directory_path(self.drpver, self.redux_path,
+                                                             self.plate)
+        else:
+            self.drpver = None
+            self.redux_path = None
+            self.directory_path = str(directory_path)
 
         # Initialize the image dimensions and their parameters
         self.pixelscale = None

@@ -21,6 +21,7 @@ MaNGA DAP, such as paths and file names.
     import os.path
     from os import environ
     import numpy
+    from mangadap.util.par import TemplateLibraryParSet
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)

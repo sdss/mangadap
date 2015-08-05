@@ -33,7 +33,7 @@ Defines a class used to store and interface with covariance matrices.
 
 *Revision history*:
     | **23 Feb 2015**: Original Implementation by K. Westfall (KBW)
-    | **04 Jul 2015**: (KBW) Sphinx documentation and minor edits.
+    | **04 Aug 2015**: (KBW) Sphinx documentation and minor edits.
 
 .. todo::
     - Allow for calculation of the inverse of the covariance matrix.
