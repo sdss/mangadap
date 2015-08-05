@@ -1,11 +1,13 @@
 * text=auto !eol
 /RELEASE_NOTES -text
 bin/calculate_covariance.py -text
+bin/dap_data_to_fits_cube.py -text
 bin/dap_running.bash -text
 bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
 bin/edit_dap_plan.py -text
 bin/mangadap_version -text
+bin/matched_template_library.py -text
 bin/rundap -text
 bin/rundap3 -text
 bin/write_dap_par.py -text

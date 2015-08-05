@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+import sys
+if sys.version > '3':
+    long = int
+
+import numpy
+from os import remove
+import os.path
+from time import clock
+
+from mangadap.drpfile import drpfile
+from mangadap.proc.TemplateLibrary import TemplateLibrary
+from matplotlib import pyplot
+from mangadap.util.par import TemplateLibraryParSet
+from mangadap.util.defaults import default_dap_source
+
+from mangadap.util.fileio import readfits_1dspec
+from mangadap.util.instrument import spectral_resolution, spectrum_velocity_scale
+
+from mangadap.util.defaults import default_template_libraries
+
+#-----------------------------------------------------------------------------
+
+def valid_dap_template_libraries():
+    """Return a list of the available template libraries."""
+    tpllib_list = default_template_libraries()
+    return [ l['key'] for l in tpllib_list ]
+
+
+def create_matched_template_library(plate, ifudesign, mode, library_key, ofile_path, ofile_name,
+                                    drp_path, dapsrc):
+
+    # Report to the user
+    print('     PLATE: {0}'.format(plate))
+    print(' IFUDESIGN: {0}'.format(ifudesign))
+    print('      MODE: {0}'.format(mode))
+
+    # Read the DRP file
+    print('Attempting to open DRP file:')
+    drpf = drpfile(plate, ifudesign, mode, read=True, directory_path=drp_path)
+    print('     FOUND: {0}'.format(drpf.file_path()))
+
+    # Set the spectral resolution and velocity scale for the matching
+    sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data, log10=True)
+    velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
+
+    # Produce the matched template library (output object not saved!)
+    TemplateLibrary(library_key, dapsrc=dapsrc, velscale=velscale, sres=sres,
+                    directory_path=ofile_path, processed_file=ofile_name, force=True)
+
+
+#-----------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    t = clock()
+
+    # Check the number of arguments and provide usage comments
+    narg = len(sys.argv)
+    if narg != 6 and narg != 8 :
+        print('Usage: matched_template_library.py <plate> <ifudesign> <CUBE or RSS> <library> '
+              '<output file> <file directory> <DAP source directory>')
+        print('  or')
+        print('       matched_template_library.py <plate> <ifudesign> <CUBE or RSS> <library> '
+              '<output file>')
+
+        print('Available template libraries are:')
+        try:
+            print(valid_dap_template_libraries())
+        except KeyError as e:
+            print('KeyError: {0}'.format(e))
+            print('Determination of available template libraries failed, likely because the '
+                  'environmental variable $MANGADAP_DIR is not defined.')
+        exit(1)
+
+    # Check that the mode is either CUBE or RSS
+    if str(sys.argv[3]) not in [ 'CUBE', 'RSS' ]:
+        raise KeyError('DRP mode must be CUBE or RSS!')
+
+    # Check if the file already exists
+    ofile = sys.argv[5]
+    if os.path.isfile(ofile):
+        print('WARNING: Overwriting existing file {0}!'.format(ofile))
+
+    # Convert the output file string into a path and file name
+    i = ofile.rfind('/')
+    if i < 0:
+        ofile_path = '.'
+        ofile_name = ofile
+    else:
+        ofile_path = ofile[:i]
+        ofile_name = ofile[i+1:]
+
+    # If provided, use the optional arguments to set the DRP path and
+    # DAP source directories
+    drp_path = None if narg == 6 else str(sys.argv[6])
+    dapsrc = None if narg == 6 else str(sys.argv[7])
+
+    # Create the resolution and sampling matched template library
+    create_matched_template_library(int(sys.argv[1]), int(sys.argv[2]), str(sys.argv[3]),
+                                    str(sys.argv[4]), ofile_path, ofile_name, drp_path, dapsrc)
+
+    print('Elapsed time: {0} seconds'.format(clock() - t))
+
+
+

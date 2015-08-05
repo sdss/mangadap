@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import numpy
 from os import remove
 import os.path
@@ -29,10 +33,11 @@ def calculate_covariance_cube(plate, ifudesign, nchannels, ofile, directory_path
         print('Only one channel selected.  Calculating covariance at central channel...')
         C = drpf.covariance_matrix(nw/2)
     else:
-        print('Calculating covariance in {0} evenly spaced wavelength channels...'.format(nchannels))
-#        planes = numpy.linspace(0, nw-1, num=nchannels, dtype=numpy.int)
-        planes = numpy.linspace(0, nw-1, num=nchannels).astype(numpy.int)
-        print(planes)
+        print('Calculating covariance in {0} wavelength channels...'.format(nchannels))
+        if sys.version > '3':
+            planes = numpy.linspace(0, nw-1, num=nchannels, dtype=numpy.int)
+        else:
+            planes = numpy.linspace(0, nw-1, num=nchannels).astype(numpy.int)
         C = drpf.covariance_cube(channels=planes)
     print('... done.')
 
