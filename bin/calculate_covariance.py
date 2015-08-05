@@ -30,7 +30,9 @@ def calculate_covariance_cube(plate, ifudesign, nchannels, ofile, directory_path
         C = drpf.covariance_matrix(nw/2)
     else:
         print('Calculating covariance in {0} evenly spaced wavelength channels...'.format(nchannels))
-        planes = numpy.linspace(0, nw-1, num=nchannels, dtype=numpy.int)
+#        planes = numpy.linspace(0, nw-1, num=nchannels, dtype=numpy.int)
+        planes = numpy.linspace(0, nw-1, num=nchannels).astype(numpy.int)
+        print(planes)
         C = drpf.covariance_cube(channels=planes)
     print('... done.')
 
