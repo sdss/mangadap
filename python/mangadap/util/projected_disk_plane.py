@@ -359,8 +359,10 @@ class projected_disk_plane:
         
         .. math::
 
-            x_d &= R / \sqrt{1 + \tan^2\theta} \\
+            x_d &= \pm R / \sqrt{1 + \tan^2\theta}\\
             y_d &= -x_d\ \tan\theta
+
+        where :math:`x_d` is negative when :math:`\pi/2 \leq \theta < 3\pi/2`.
 
         Args:
             r,theta (float,float): The disk-plane polar coordinates
@@ -373,6 +375,8 @@ class projected_disk_plane:
         """
         tant = numpy.tan(numpy.radians(theta))
         xd = r/numpy.sqrt(1.0 + numpy.square(tant))
+        if theta >= 90 and theta < 270:
+            xd *= -1
         yd = -xd*tant
         return xd, yd
     
@@ -482,7 +486,7 @@ class projected_disk_plane:
         r"""
         Calculate :math:`{\mathbf f}` using :func:`solve` for the
         provided :math:`(R,\theta)` and return focal-plane cartesian
-        coordinates :math:`(x_f,y_f)'.
+        coordinates :math:`(x_f,y_f)`.
 
         Args:
             r,theta (float,float): The disk-plane polar coordinates
@@ -490,7 +494,7 @@ class projected_disk_plane:
 
         Returns:
             float, float: The focal-plane Cartesian coordinates
-                :math:`(x_f,y_f)'.
+                :math:`(x_f,y_f)`.
 
         """
         xd, yd = self._calculate_cartesian(r, theta)
@@ -523,7 +527,7 @@ class projected_disk_plane:
         r"""
         Calculate :math:`{\mathbf f}` using :func:`solve` for the
         provided :math:`(x_d,y_d)` and return focal-plane cartesian
-        coordinates :math:`(x_f,y_f)'.
+        coordinates :math:`(x_f,y_f)`.
 
         Args:
             x,y (float,float): The disk-plane Cartesian coordinates
@@ -531,7 +535,7 @@ class projected_disk_plane:
 
         Returns:
             float, float: The focal-plane Cartesian coordinates
-                :math:`(x_f,y_f)'.
+                :math:`(x_f,y_f)`.
 
         """
         coo = self.solve_inverse(x, y)
