@@ -375,7 +375,7 @@ class projected_disk_plane:
         """
         tant = numpy.tan(numpy.radians(theta))
         xd = r/numpy.sqrt(1.0 + numpy.square(tant))
-        if theta >= 90 and theta < 270:
+        if theta > 90 and theta <= 270:
             xd *= -1
         yd = -xd*tant
         return xd, yd
