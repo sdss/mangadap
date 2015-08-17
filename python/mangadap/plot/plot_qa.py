@@ -178,6 +178,20 @@ class PlotQA(object):
          self.Fe5406, self.Fe5709, self.Fe5782, self.NaD, self.TiO1,
          self.TiO2, self.NaI0p82, self.CaII0p86A, self.CaII0p86B,
          self.CaII0p86C, self.MgI0p88, self.TiO0p89, self.FeH0p99) = self.sindx.INDX.T
+        (self.D4000err, self.CaII0p39err, self.HDeltaAerr, self.HDeltaFerr, self.CN1err,
+         self.CN2err, self.Ca4227err, self.G4300err, self.HGammaAerr,
+         self.HGammaFerr, self.Fe4383err, self.Ca4455err, self.Fe4531err,
+         self.Fe4668err, self.Hberr, self.Fe5015err, self.Mg1err, self.Mg2err,
+         self.Mgberr, self.Fe5270err, self.Fe5335err, self.Fe5406err,
+         self.Fe5709err, self.Fe5782err, self.NaDerr, self.TiO1err,
+         self.TiO2err, self.NaI0p82err, self.CaII0p86Aerr, self.CaII0p86Berr,
+         self.CaII0p86Cerr, self.MgI0p88err, self.TiO0p89err,
+         self.FeH0p99err) = self.sindx.INDXERR.T
+
+        # Fe indicator from Thomas et al. (2003): (0.72*Fe5270 + 0.28*Fe5335)
+        self.Fe5270_5335, self.Fe5270_5335err = self.combine_spec_ind(
+            [self.Fe5270, self.Fe5335], [self.Fe5270err, self.Fe5335err],
+            [0.72, 0.28])
 
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
@@ -219,6 +233,19 @@ class PlotQA(object):
             self.nsa_vdisp = nsa_vdisp[ind_tbl][0]
 
 
+    def get_spec_ind_units(self, spec_ind, sinames, units):
+        """Determine units of a spectral index measurement.
+    
+        Args:
+            spec_ind (str): Spectral index name.
+            sinames (str): Names of all spectral indices.
+            units (array): Units of spectral index measurements.
+    
+        Returns:
+            str: Units of spectral index measurement.
+        """
+        ind = np.where(sinames == spec_ind)[0][0]
+        return units[ind]
 
     # def read_val(self, extname, colname=None):
     #     fin = fits.open(self.dap_file)
@@ -396,6 +423,29 @@ class PlotQA(object):
         self.resid_data_bin_percent68 = np.array(
             [np.percentile(self.resid_data_pix[i][np.where(self.smsk[i]==0)], 68.)
             for i in range(self.n_bins)])
+
+    def combine_spec_ind(self, spec_inds, spec_inds_err, factors):
+        """Calculate combination of spectral indices.
+
+        Args:
+            spec_inds (list): Arrays of spectral index measurements.
+            spec_inds_err (list): Arrays of spectral index measurement errors.
+            factors (list): Multiplicative factors to combine the spectral
+            indices.
+
+        Returns:
+            array: Linear combination of spectral indices.
+
+        """
+        size = len(spec_inds[0])
+        si_combo = np.zeros(size)
+        si_err_combo = np.zeros(size)
+        for si, si_err, factor in zip(spec_inds, spec_ind_errs, factors):
+            si_combo += factor * si
+            si_err_combo += si_err**2. # DEAL WITH FACTOR
+        # TRYING TO ADD ERRORS IN QUADRATURE
+        # si_err_combo = np.sqrt(si_err_combo)
+        return si_combo, si_err_combo
 
     #-------------------------------------------------------------------------
     

@@ -477,61 +477,60 @@ for dap_file in files:
 
 
     spec_ind_mapname = [
-      'oii3727',
-      'hbeta',
-      'oiii5007',
-      'halpha',
-      'nii6583',
-      'sii6717',]
-    oii3727_args = dict(val=qa.oii3727_ew, val2=qa.oii3727_fb,
-                        val_err=qa.oii3727err_ew, val2_err=qa.oii3727err_fb,
-                        kwargs=dict(title_text=r'[OII] $\lambda$3727'))
-    hbeta_args = dict(val=qa.hbeta_ew, val2=qa.hbeta_fb,
-                      val_err=qa.hbetaerr_ew, val2_err=qa.hbetaerr_fb,
-                      kwargs=dict(title_text=r'H$\beta$'))
-    oiii5007_args = dict(val=qa.oiii5007_ew, val2=qa.oiii5007_fb,
-                         val_err=qa.oiii5007err_ew, val2_err=qa.oiii5007err_fb,
-                         kwargs=dict(title_text=r'[OIII] $\lambda$5007'))
-    halpha_args = dict(val=qa.halpha_ew, val2=qa.halpha_fb,
-                       val_err=qa.halphaerr_ew, val2_err=qa.halphaerr_fb,
-                       kwargs=dict(title_text=r'H$\alpha$'))
-    nii6583_args = dict(val=qa.nii6583_ew, val2=qa.nii6583_fb,
-                        val_err=qa.nii6583err_ew, val2_err=qa.nii6583err_fb,
-                        kwargs=dict(title_text=r'[NII] $\lambda$6583'))
-    sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
-                        val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
-                        kwargs=dict(title_text=r'[SII] $\lambda$6717'))
+      'D4000',
+      'HDeltaA',
+      'Hb',
+      'Mgb'
+      'Fe5270_5335'
+      'CaII0p86']
+    # need name of spectal index (not a combination of indices) to get units
+    spec_ind_name = [
+      'D4000',
+      'HDeltaA',
+      'Hb',
+      'Mgb'
+      'Fe5270'
+      'CaII0p86A']
+    D4000_args = dict(val=qa.D4000, val_err=qa.D4000err,
+                      kwargs=dict(title_text=r'D4000'))
+    HDeltaA_args = dict(val=qa.hbeta_ew, val_err=qa.hbetaerr_ew,
+                        kwargs=dict(title_text=r'H$\Delta$A'))
+    Hb_args = dict(val=qa.Hb, val_err=qa.Hberr,
+                   kwargs=dict(title_text=r'H$\beta$'))
+    Mgb_args = dict(val=qa.Mgb, val_err=qa.Mgberr,
+                    kwargs=dict(title_text=r'Mg $b$'))
+    Fe5270_5335_args = dict(val=qa.Fe5270_5335, val_err=qa.Fe5270_5335err,
+                            kwargs=dict(title_text=r'0.72$\times$Fe5270 + ' +
+                                        r'0.28$\times$Fe5335'))
+    CaII0p86_args = dict(val=qa.CaII0p86, val_err=qa.CaII0p86,
+                         kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
+                                     'CaII0p86C)/3.'))
     
     
-    emflux_map_kwargs = dict(oii3727=oii3727_args,
-                             hbeta=hbeta_args,
-                             oiii5007=oiii5007_args,
-                             halpha=halpha_args,
-                             nii6583=nii6583_args,
-                             sii6717=sii6717_args)
+    spec_ind_map_kwargs = dict(D4000=D4000_args,
+                               HDeltaA=HDeltaA_args,
+                               Hb=Hb_args,
+                               Mgb=Mgb_args,
+                               Fe5270_5335=Fe5270_5335_args,
+                               CaII0p86=CaII0p86_args)
     
-    for v in itervalues(emflux_map_kwargs):
-        v['kwargs']['cblabel'] = r'Flux [10$^{-17}$ erg/s/cm$^2$]'
+    for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
+        spec_ind_units = qa.get_spec_ind_units(name, qa.sipar.SINAME, qa.sipar.UNIT)
+        if spec_ind_units == 'ang':
+            si_cblabel = r'$\AA$'
+        elif spec_ind_units == 'mag':
+            si_cblabel = 'Mag'
+        else:
+            raise('Unknown spectral index units.')
+            si_cblabel = None
+        v['kwargs']['cblabel'] = si_cblabel
         v['kwargs']['cmap'] = qa.linearL
         v['kwargs']['nodots'] = True
         v['kwargs']['val_no_measure'] = 0.
         v['kwargs']['cbrange_clip'] = False
         v['kwargs']['show_flux_contours'] = False
     
-    emflux_ew_map_kwargs = copy.deepcopy(emflux_map_kwargs)
-    emflux_fb_map_kwargs = copy.deepcopy(emflux_map_kwargs)
-    
-    for v in itervalues(emflux_fb_map_kwargs):
-        v['val'] = v['val2']
-        v['val_err'] = v['val2_err']
-
-    for dd, nm in zip([emflux_ew_map_kwargs, emflux_fb_map_kwargs],
-                      ['Wang', 'Belfiore']):
-        for vv in itervalues(dd):
-            vv['kwargs']['title_text'] += ' (%s)' % nm
-            del vv['val2']
-            del vv['val2_err']
-    
+        
     #---------------------------------
 
     # UNCOMMENT
