@@ -25,8 +25,10 @@ TEMPLATE_FILE = 'maps.jinja2'
 template = templateEnv.get_template( TEMPLATE_FILE )
 
 path_data = os.path.join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3')
-# topdir_sas = path_data
-topdir_sas = 'https://data.sdss.org/sas/' + path_data.split('sdss03')[1]
+try:
+    topdir_sas = 'https://data.sdss.org/sas/' + path_data.split('sdss03')[1]
+except IndexError as e:
+    topdir_sas = path_data
 
 plot_types = [
     'snr_maps',
