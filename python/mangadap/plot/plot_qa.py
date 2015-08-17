@@ -1,13 +1,3 @@
-"""
-FILE
-    plot_qa.py
-
-DESCRIPTION
-
-    Generate quality assessment plots.
-   
-"""
-
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -62,8 +52,7 @@ class FitError(Exception):
 
 
 class PlotQA(object):
-    """
-    Generate QA plots.
+    """Generate QA plots.
 
     Attributes:
         chisq_pix (array): chisq at each spectral pixel.
@@ -110,6 +99,8 @@ class PlotQA(object):
         self.elofit = fin[fin.index_of('ELOFIT')].data.T
         self.elomew = fin[fin.index_of('ELOMEW')].data.T
         self.elomfb = fin[fin.index_of('ELOMFB')].data.T
+        self.sipar = fin[fin.index_of('SIPAR')].data
+        self.sindx = fin[fin.index_of('SINDX')].data.T
 
         # spaxel, pixel and bin counts
         self.n_bins, self.n_pix = self.galaxy.shape
@@ -178,6 +169,15 @@ class PlotQA(object):
 
         # Need to account for bins where certain emission lines weren't fit
         # self.elofit['ELOMIT_EW'] # = 1/0 where 1 is not fit and 0 is fit
+
+        # spectral indices
+        (self.D4000, self.CaII0p39, self.HDeltaA, self.HDeltaF, self.CN1,
+         self.CN2, self.Ca4227, self.G4300, self.HGammaA, self.HGammaF,
+         self.Fe4383, self.Ca4455, self.Fe4531, self.Fe4668, self.Hb,
+         self.Fe5015, self.Mg1, self.Mg2, self.Mgb, self.Fe5270, self.Fe5335,
+         self.Fe5406, self.Fe5709, self.Fe5782, self.NaD, self.TiO1,
+         self.TiO2, self.NaI0p82, self.CaII0p86A, self.CaII0p86B,
+         self.CaII0p86C, self.MgI0p88, self.TiO0p89, self.FeH0p99) = self.sindx.INDX.T
 
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
@@ -267,8 +267,7 @@ class PlotQA(object):
 
 
     def deredshift_velocities(self, vel, velerr):
-        """
-        Shift velocities to systemic frame.
+        """Shift velocities to systemic frame.
 
         Args:
             vel (array): velocities
@@ -436,8 +435,8 @@ class PlotQA(object):
 
     def linear_Lab(self):
         try:
-            LinL_file = os.path.join(os.environ['MANGADAP_DIR'], 'python', 'plotting',
-                                     'Linear_L_0-1.csv')
+            LinL_file = os.path.join(os.environ['MANGADAP_DIR'], 'python',
+                                     'mangadap', 'plot', 'Linear_L_0-1.csv')
             LinL = np.loadtxt(LinL_file, delimiter=',')
         except:
             print('Could not find or open Linear_L_0-1.csv')

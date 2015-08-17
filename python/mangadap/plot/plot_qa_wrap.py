@@ -470,6 +470,70 @@ for dap_file in files:
     
     #---------------------------------
     
+    #--- Spectral Index Map Parameters ---
+
+
+    # STOPPED HERE
+
+
+    spec_ind_mapname = [
+      'oii3727',
+      'hbeta',
+      'oiii5007',
+      'halpha',
+      'nii6583',
+      'sii6717',]
+    oii3727_args = dict(val=qa.oii3727_ew, val2=qa.oii3727_fb,
+                        val_err=qa.oii3727err_ew, val2_err=qa.oii3727err_fb,
+                        kwargs=dict(title_text=r'[OII] $\lambda$3727'))
+    hbeta_args = dict(val=qa.hbeta_ew, val2=qa.hbeta_fb,
+                      val_err=qa.hbetaerr_ew, val2_err=qa.hbetaerr_fb,
+                      kwargs=dict(title_text=r'H$\beta$'))
+    oiii5007_args = dict(val=qa.oiii5007_ew, val2=qa.oiii5007_fb,
+                         val_err=qa.oiii5007err_ew, val2_err=qa.oiii5007err_fb,
+                         kwargs=dict(title_text=r'[OIII] $\lambda$5007'))
+    halpha_args = dict(val=qa.halpha_ew, val2=qa.halpha_fb,
+                       val_err=qa.halphaerr_ew, val2_err=qa.halphaerr_fb,
+                       kwargs=dict(title_text=r'H$\alpha$'))
+    nii6583_args = dict(val=qa.nii6583_ew, val2=qa.nii6583_fb,
+                        val_err=qa.nii6583err_ew, val2_err=qa.nii6583err_fb,
+                        kwargs=dict(title_text=r'[NII] $\lambda$6583'))
+    sii6717_args = dict(val=qa.sii6717_ew, val2=qa.sii6717_fb,
+                        val_err=qa.sii6717err_ew, val2_err=qa.sii6717err_fb,
+                        kwargs=dict(title_text=r'[SII] $\lambda$6717'))
+    
+    
+    emflux_map_kwargs = dict(oii3727=oii3727_args,
+                             hbeta=hbeta_args,
+                             oiii5007=oiii5007_args,
+                             halpha=halpha_args,
+                             nii6583=nii6583_args,
+                             sii6717=sii6717_args)
+    
+    for v in itervalues(emflux_map_kwargs):
+        v['kwargs']['cblabel'] = r'Flux [10$^{-17}$ erg/s/cm$^2$]'
+        v['kwargs']['cmap'] = qa.linearL
+        v['kwargs']['nodots'] = True
+        v['kwargs']['val_no_measure'] = 0.
+        v['kwargs']['cbrange_clip'] = False
+        v['kwargs']['show_flux_contours'] = False
+    
+    emflux_ew_map_kwargs = copy.deepcopy(emflux_map_kwargs)
+    emflux_fb_map_kwargs = copy.deepcopy(emflux_map_kwargs)
+    
+    for v in itervalues(emflux_fb_map_kwargs):
+        v['val'] = v['val2']
+        v['val_err'] = v['val2_err']
+
+    for dd, nm in zip([emflux_ew_map_kwargs, emflux_fb_map_kwargs],
+                      ['Wang', 'Belfiore']):
+        for vv in itervalues(dd):
+            vv['kwargs']['title_text'] += ' (%s)' % nm
+            del vv['val2']
+            del vv['val2_err']
+    
+    #---------------------------------
+
     # UNCOMMENT
 
     # #--- SNR Map Parameters ---
@@ -650,8 +714,21 @@ for dap_file in files:
             fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
             plt.savefig(path_gal_plots_maps + fout)
         print('Wrote: individual emflux_fb maps')
-    
-    
+        
+        #--------
+        #
+        # Spectral Index Plots
+        #
+        #--------
+        for k, v in iteritems(spec_ind_map_kwargs):
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual spectral index maps')
+
         for k, v in iteritems(snr_map_kwargs):
             if k is 'halpha':
                 pass
