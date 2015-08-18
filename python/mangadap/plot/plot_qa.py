@@ -193,6 +193,12 @@ class PlotQA(object):
             [self.Fe5270, self.Fe5335], [self.Fe5270err, self.Fe5335err],
             [0.72, 0.28])
 
+        # Ca indicator?
+        self.CaII0p86, self.CaII0p86err = self.combine_spec_ind(
+            [self.self.CaII0p86A, self.CaII0p86B, self.CaII0p86C],
+            [self.self.CaII0p86Aerr, self.CaII0p86Berr, self.CaII0p86Cerr],
+            [1/3., 1/3., 1/3.])
+
         h = fin[0].header
         self.tpl_lib = h['TPLKEY']
         try:
@@ -442,9 +448,8 @@ class PlotQA(object):
         si_err_combo = np.zeros(size)
         for si, si_err, factor in zip(spec_inds, spec_ind_errs, factors):
             si_combo += factor * si
-            si_err_combo += si_err**2. # DEAL WITH FACTOR
-        # TRYING TO ADD ERRORS IN QUADRATURE
-        # si_err_combo = np.sqrt(si_err_combo)
+            si_err_combo += factor**2. * si_err**2.
+        si_err_combo = np.sqrt(si_err_combo)
         return si_combo, si_err_combo
 
     #-------------------------------------------------------------------------

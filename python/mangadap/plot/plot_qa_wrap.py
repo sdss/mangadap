@@ -506,7 +506,6 @@ for dap_file in files:
                          kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
                                      'CaII0p86C)/3.'))
     
-    
     spec_ind_map_kwargs = dict(D4000=D4000_args,
                                HDeltaA=HDeltaA_args,
                                Hb=Hb_args,
