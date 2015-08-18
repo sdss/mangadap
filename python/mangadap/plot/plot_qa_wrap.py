@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 FILE
     plot_qa_wrap.py
@@ -43,9 +43,11 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import os
+from os.path import join
 import sys
 import errno
 import copy
+
 import numpy as np
 
 from imp import reload
@@ -59,8 +61,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 
-from plotting.plot_qa import PlotQA
-from plotting.plot_qa import FitError
+from plot_qa import PlotQA
+from plot_qa import FitError
 
 dict_tmp = {}
 try:
@@ -122,10 +124,8 @@ print()
 
 
 #----- Set Path ------
-if path_gal[-1] is not '/':
-    path_gal += '/'
-
-print('Path: %s\n' % path_gal)
+path_gal = join(path_gal, '')
+print('Path: {}\n'.format(path_gal))
 #---------------------
 
 
@@ -156,7 +156,7 @@ print('Path: %s\n' % path_gal)
 
 
 #----- Read the file names -----
-files = np.genfromtxt(path_gal + file_list, dtype='str')
+files = np.genfromtxt(join(path_gal, file_list), dtype='str')
 files = np.atleast_1d(files)
 #-------------------------------
 
@@ -172,22 +172,22 @@ for dap_file in files:
     #----- Read in galaxy ID and DAP parameters -----
     
     stem_file = dap_file.strip('.fits')
-    done_file = stem_file + '.done'
+    done_file = join(stem_file, '.done')
     
     ig1, pid, ifudesign, mode_in, binning_type, exec_num = stem_file.split('-')
     
     manga_pid = '-'.join([pid, ifudesign])
     mode = mode_in.split('_')[0]
     
-    path_gal_plots = path_gal + 'plots/'
-    path_gal_plots_spec = path_gal_plots + 'spectra/'
-    path_gal_plots_maps = path_gal_plots + 'maps/'
-    path_gal_plots_gradients = path_gal_plots + 'gradients/'
+    path_gal_plots = join(path_gal, 'plots', '')
+    path_gal_plots_spec = join(path_gal_plots, 'spectra')
+    path_gal_plots_maps = join(path_gal_plots, 'maps')
+    path_gal_plots_gradients = join(path_gal_plots, 'gradients')
     
     # create plot directories if necessary
     try:
         os.makedirs(path_gal_plots_spec)
-        print('\nCreated directory: %s\n' % path_gal_plots_spec)
+        print('\nCreated directory: {}\n'.format(path_gal_plots_spec))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
@@ -195,7 +195,7 @@ for dap_file in files:
     
     try:
         os.makedirs(path_gal_plots_maps)
-        print('\nCreated directory: %s\n' % path_gal_plots_maps)
+        print('\nCreated directory: {}\n'.format(path_gal_plots_maps))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
@@ -203,7 +203,7 @@ for dap_file in files:
     
     try:
         os.makedirs(path_gal_plots_gradients)
-        print('\nCreated directory: %s\n' % path_gal_plots_gradients)
+        print('\nCreated directory: {}\n'.format(path_gal_plots_gradients))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise e
@@ -211,9 +211,9 @@ for dap_file in files:
     
     # check for done file
     if not overwrite:
-        if os.path.isfile(path_gal_plots + done_file):
-            print('%-12s %-6s: Plots already exist.' % (manga_pid, binning_type) + 
-                  '  Use overwrite keyword to remake them')
+        if os.path.isfile(join(path_gal_plots, done_file)):
+            print('{:12} {:6}: '.format(manga_pid, binning_type) + 
+                  'Plots already exist. Use overwrite keyword to remake them')
             continue
     
     #------------------------------------------------- 
@@ -284,8 +284,8 @@ for dap_file in files:
     #reload(plot_qa)
     #from plot_qa import PlotQA
     try:
-        qa = PlotQA(path_gal + dap_file)
-        print('pid-ifu: %s, binning: %s' % (manga_pid, binning_type))
+        qa = PlotQA(join(path_gal, dap_file))
+        print('pid-ifu: {}, binning: {}'.format(manga_pid, binning_type))
         print('Template Library:', qa.tpl_lib)
         qa.select_wave_range()
         qa.set_axis_lims()
@@ -295,7 +295,8 @@ for dap_file in files:
         #qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
         #qa.ch4, qa.ch4_r = qa.define_custom_cubehelix(rot=1.5, start=0.5, gamma=1)
     except FitError:
-        print('\n%-12s %-6s: *NOT* fit by DAP\n' % (manga_pid, binning_type))
+        print('\n{:12} {:6}: *NOT* fit by DAP\n'.format(manga_pid,
+              binning_type))
         continue
     
     #---------------------------------
@@ -476,58 +477,59 @@ for dap_file in files:
     # STOPPED HERE
 
 
-    spec_ind_mapname = [
-      'D4000',
-      'HDeltaA',
-      'Hb',
-      'Mgb'
-      'Fe5270_5335'
-      'CaII0p86']
-    # need name of spectal index (not a combination of indices) to get units
-    spec_ind_name = [
-      'D4000',
-      'HDeltaA',
-      'Hb',
-      'Mgb'
-      'Fe5270'
-      'CaII0p86A']
-    D4000_args = dict(val=qa.D4000, val_err=qa.D4000err,
-                      kwargs=dict(title_text=r'D4000'))
-    HDeltaA_args = dict(val=qa.hbeta_ew, val_err=qa.hbetaerr_ew,
-                        kwargs=dict(title_text=r'H$\Delta$A'))
-    Hb_args = dict(val=qa.Hb, val_err=qa.Hberr,
-                   kwargs=dict(title_text=r'H$\beta$'))
-    Mgb_args = dict(val=qa.Mgb, val_err=qa.Mgberr,
-                    kwargs=dict(title_text=r'Mg $b$'))
-    Fe5270_5335_args = dict(val=qa.Fe5270_5335, val_err=qa.Fe5270_5335err,
-                            kwargs=dict(title_text=r'0.72$\times$Fe5270 + ' +
-                                        r'0.28$\times$Fe5335'))
-    CaII0p86_args = dict(val=qa.CaII0p86, val_err=qa.CaII0p86,
-                         kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
-                                     'CaII0p86C)/3.'))
-    
-    spec_ind_map_kwargs = dict(D4000=D4000_args,
-                               HDeltaA=HDeltaA_args,
-                               Hb=Hb_args,
-                               Mgb=Mgb_args,
-                               Fe5270_5335=Fe5270_5335_args,
-                               CaII0p86=CaII0p86_args)
-    
-    for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
-        spec_ind_units = qa.get_spec_ind_units(name, qa.sipar.SINAME, qa.sipar.UNIT)
-        if spec_ind_units == 'ang':
-            si_cblabel = r'$\AA$'
-        elif spec_ind_units == 'mag':
-            si_cblabel = 'Mag'
-        else:
-            raise('Unknown spectral index units.')
-            si_cblabel = None
-        v['kwargs']['cblabel'] = si_cblabel
-        v['kwargs']['cmap'] = qa.linearL
-        v['kwargs']['nodots'] = True
-        v['kwargs']['val_no_measure'] = 0.
-        v['kwargs']['cbrange_clip'] = False
-        v['kwargs']['show_flux_contours'] = False
+spec_ind_mapname = [
+  'D4000',
+  'HDeltaA',
+  'Hb',
+  'Mgb'
+  'Fe5270_5335'
+  'CaII0p86']
+# need name of spectal index (not a combination of indices) to get units
+spec_ind_name = [
+  'D4000',
+  'HDeltaA',
+  'Hb',
+  'Mgb',
+  'Fe5270',
+  'CaII0p86A']
+D4000_args = dict(val=qa.D4000, val_err=qa.D4000err,
+                  kwargs=dict(title_text=r'D4000'))
+HDeltaA_args = dict(val=qa.hbeta_ew, val_err=qa.hbetaerr_ew,
+                    kwargs=dict(title_text=r'H$\delta$A'))
+Hb_args = dict(val=qa.Hb, val_err=qa.Hberr,
+               kwargs=dict(title_text=r'H$\beta$'))
+Mgb_args = dict(val=qa.Mgb, val_err=qa.Mgberr,
+                kwargs=dict(title_text=r'Mg $b$'))
+Fe5270_5335_args = dict(val=qa.Fe5270_5335, val_err=qa.Fe5270_5335err,
+                        kwargs=dict(title_text=r'0.72$\cdot$Fe5270 + ' +
+                                    r'0.28$\cdot$Fe5335'))
+CaII0p86_args = dict(val=qa.CaII0p86, val_err=qa.CaII0p86,
+                     kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
+                                 'CaII0p86C)/3.'))
+
+spec_ind_map_kwargs = dict(D4000=D4000_args,
+                           HDeltaA=HDeltaA_args,
+                           Hb=Hb_args,
+                           Mgb=Mgb_args,
+                           Fe5270_5335=Fe5270_5335_args,
+                           CaII0p86=CaII0p86_args)
+
+for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
+    spec_ind_units = qa.get_spec_ind_units(name, qa.sipar.SINAME, qa.sipar.UNIT)
+    if spec_ind_units == 'ang':
+        si_cblabel = r'$\AA$'
+    elif spec_ind_units == 'mag':
+        si_cblabel = 'Mag'
+    else:
+        raise('Unknown spectral index units.')
+        si_cblabel = None
+    v['kwargs']['cblabel'] = si_cblabel
+    v['kwargs']['cmap'] = cm.RdBu
+    v['kwargs']['cbrange_symmetric'] = True
+    v['kwargs']['nodots'] = True
+    v['kwargs']['val_no_measure'] = 0.
+    v['kwargs']['cbrange_clip'] = True
+    v['kwargs']['show_flux_contours'] = False
     
         
     #---------------------------------
@@ -718,14 +720,14 @@ for dap_file in files:
         # Spectral Index Plots
         #
         #--------
-        for k, v in iteritems(spec_ind_map_kwargs):
-            val_err = None
-            if 'val_err' in v:
-                val_err = v['val_err']
-            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-            fout =  ('_').join([stem_file, k, 'map']) + '.png'
-            plt.savefig(path_gal_plots_maps + fout)
-        print('Wrote: individual spectral index maps')
+for k, v in iteritems(spec_ind_map_kwargs):
+    val_err = None
+    if 'val_err' in v:
+        val_err = v['val_err']
+    qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+    fout =  ('_').join([stem_file, k, 'map']) + '.png'
+    plt.savefig(path_gal_plots_maps + fout)
+print('Wrote: individual spectral index maps')
 
         for k, v in iteritems(snr_map_kwargs):
             if k is 'halpha':

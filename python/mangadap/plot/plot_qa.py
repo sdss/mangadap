@@ -195,8 +195,8 @@ class PlotQA(object):
 
         # Ca indicator?
         self.CaII0p86, self.CaII0p86err = self.combine_spec_ind(
-            [self.self.CaII0p86A, self.CaII0p86B, self.CaII0p86C],
-            [self.self.CaII0p86Aerr, self.CaII0p86Berr, self.CaII0p86Cerr],
+            [self.CaII0p86A, self.CaII0p86B, self.CaII0p86C],
+            [self.CaII0p86Aerr, self.CaII0p86Berr, self.CaII0p86Cerr],
             [1/3., 1/3., 1/3.])
 
         h = fin[0].header
@@ -446,7 +446,7 @@ class PlotQA(object):
         size = len(spec_inds[0])
         si_combo = np.zeros(size)
         si_err_combo = np.zeros(size)
-        for si, si_err, factor in zip(spec_inds, spec_ind_errs, factors):
+        for si, si_err, factor in zip(spec_inds, spec_inds_err, factors):
             si_combo += factor * si
             si_err_combo += factor**2. * si_err**2.
         si_err_combo = np.sqrt(si_err_combo)
