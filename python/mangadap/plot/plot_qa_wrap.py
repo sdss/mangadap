@@ -524,7 +524,7 @@ for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
         raise('Unknown spectral index units.')
         si_cblabel = None
     v['kwargs']['cblabel'] = si_cblabel
-    v['kwargs']['cmap'] = cm.RdBu
+    v['kwargs']['cmap'] = qa.linearL
     v['kwargs']['cbrange_symmetric'] = True
     v['kwargs']['nodots'] = True
     v['kwargs']['val_no_measure'] = 0.
