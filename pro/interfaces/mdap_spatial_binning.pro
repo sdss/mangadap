@@ -142,8 +142,17 @@
 ; BUGS:
 ;
 ; PROCEDURES CALLED:
+;       MDAP_ALL_SPECTRA_BINNING
+;       MDAP_BASIC_COLORS
+;       MDAP_VORONOI_2D_BINNING
+;       MDAP_RADIAL_BINNING
+;       MDAP_INSERT_FLAGGED
+;       MDAP_GENERATE_BINNING_WEIGHTS
+;       MDAP_COMBINE_SPECTRA
+;       MDAP_SPATIAL_BIN_AREA
 ;
 ; INTERNAL SUPPORT ROUTINES:
+;       MDAP_SPATIAL_BINNING_SETUP_NONE
 ;
 ; REVISION HISTORY:
 ;       01 Sep 2014: Copied from v0_8 by L. Coccato
@@ -159,30 +168,39 @@
 ;                          to include sn_calibration if provided.
 ;       16 Mar 2015: (KBW) Remove sn_calibration keyword, in favor of
 ;                          bin_par.noise_calib.
+;       13 Aug 2015: (KBW) Added /snsort keyword to
+;                          MDAP_SPATIAL_BINNING_SETUP_NONE such that
+;                          returned "bins" are sorted by their S/N.
+;                          /snsort is *automatically* used when it is
+;                          called throughout the rest of the code.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_SPATIAL_BINNING_SETUP_NONE, $
                 gindx, dx, dy, xcoo, ycoo, signal, noise, flux, ivar, mask, bin_weights, $
                 binned_indx, binned_flux, binned_ivar, binned_mask, binned_x_rl, binned_y_ru, $
-                binned_wrad, binned_area, binned_ston, nbinned
+                binned_wrad, binned_area, binned_ston, nbinned, snsort=snsort
 
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
         ngood = n_elements(gindx)                       ; Number of good spectra
 
+        sorted_gindx = gindx
+        if keyword_set(snsort) then $
+            sorted_gindx = gindx[ reverse(sort(signal[gindx]/noise[gindx])) ]
+
         bin_weights = dblarr(ns)                        ; Initialize weights to 0
-        bin_weights[gindx] = 1.0d                       ; Set weights of good spectra to unity
+        bin_weights[sorted_gindx] = 1.0d                ; Set weights of good spectra to unity
         binned_indx = make_array(ns, /int, value=-1)    ; Initialize bin index to -1
-        binned_indx[gindx] = indgen(ngood)              ; Set bin index of good spectra
-        binned_flux = flux[gindx,*]                     ; Save the input
-        binned_ivar = ivar[gindx,*]
-        binned_mask = mask[gindx,*]
-        binned_x_rl = xcoo[gindx,*]
-        binned_y_ru = ycoo[gindx,*]
+        binned_indx[sorted_gindx] = indgen(ngood)       ; Set bin index of good spectra
+        binned_flux = flux[sorted_gindx,*]              ; Save the input
+        binned_ivar = ivar[sorted_gindx,*]
+        binned_mask = mask[sorted_gindx,*]
+        binned_x_rl = xcoo[sorted_gindx,*]
+        binned_y_ru = ycoo[sorted_gindx,*]
         binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )     ; Calculate the radius
         binned_area = make_array(ngood, /double, value=dx*dy)   ; Set the area to a single spaxel
-        binned_ston = signal[gindx]/noise[gindx]
+        binned_ston = signal[sorted_gindx]/noise[sorted_gindx]
 ;       binned_ston = dblarr(ngood)                             ; Calculate the S/N
 ;       for i=0,ngood-1 do $
 ;           binned_ston[i] = MDAP_CALCULATE_BIN_SN(signal[gindx[i]], noise[gindx[i]], $
@@ -221,7 +239,8 @@ PRO MDAP_SPATIAL_BINNING, $
             MDAP_SPATIAL_BINNING_SETUP_NONE, gindx, dx, dy, xcoo, ycoo, signal, noise, flux, ivar, $
                                              mask, bin_weights, binned_indx, binned_flux, $
                                              binned_ivar, binned_mask, binned_x_rl, binned_y_ru, $
-                                             binned_wrad, binned_area, binned_ston, nbinned
+                                             binned_wrad, binned_area, binned_ston, nbinned, $
+                                             /snsort
             return
         endif
 
@@ -239,7 +258,7 @@ PRO MDAP_SPATIAL_BINNING, $
 
             ; Approximate the luminosity-weighted radius
             binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
-        endif 
+        endif
         
         if bin_par.type eq 'STON' then begin             ; Use the Voronoi binning scheme
             if keyword_set(plot) then begin                     ; setup plot
@@ -269,7 +288,7 @@ PRO MDAP_SPATIAL_BINNING, $
                                                  ivar, mask, bin_weights, binned_indx, $
                                                  binned_flux, binned_ivar, binned_mask, $
                                                  binned_x_rl, binned_y_ru, binned_wrad, $
-                                                 binned_area, binned_ston, nbinned
+                                                 binned_area, binned_ston, nbinned, /snsort
                 return
             endif
                 
@@ -306,9 +325,9 @@ PRO MDAP_SPATIAL_BINNING, $
                                  nbinned
         endif
 
-        print, 'N per bin:'
-        for i=0,n_elements(nbinned)-1 do $
-            print, i+1, ':', nbinned[i]
+;        print, 'N per bin:'
+;        for i=0,n_elements(nbinned)-1 do $
+;            print, i+1, ':', nbinned[i]
 
         ; Remove any bins with zero spectra
         indx = where(nbinned eq 0, count, complement=nindx)

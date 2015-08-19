@@ -119,6 +119,7 @@
 ;
 ; TODO:
 ;       - MDAP_CONVOL_SIGMA is very slow.  Farm this out to a C/C++ program?
+;       - Allow for different levels of verbosity (quiet levels)
 ;
 ; BUGS:
 ;
@@ -225,7 +226,7 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION_APPLY, $
         x = dindgen(n_elements(wave))                   ; Get pixel coordinates
         if keyword_set(log10) then begin
             dp = MDAP_VELOCITY_SCALE(wave, /log10)      ; Linear step in log10(wavelength)
-            print, 'dp:', dp
+;           print, 'dp:', dp
             diff_sig = diff_sig/dp                      ; Convert to pixels
         endif else begin
             dp = wave[1] - wave[0]                      ; Linear step in wavelength
@@ -300,9 +301,10 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
 
         ; Determine any necessary offsets to account for an existing resolution
         ; that is lower than the target resolution
+        if ~keyword_set(quiet) then $
+            print, 'Assessing Spectra '
+
         for i=0,nt-1 do begin
-            if ~keyword_set(quiet) then $
-                print, '    Assessing spectrum: ', i+1
 
             ; Allow wave and sres to be either a vector or matrix
             if wave_matrix eq 1 then $
@@ -313,17 +315,18 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
             unmasked=MDAP_MATCH_SPECTRAL_RESOLUTION_UNMASKED_PIXELS(reform(mask[i,*]))
             num = n_elements(unmasked)                          ; Number of unmasked pixels
            
-            ; Report some numbers to the screen
-            if ~keyword_set(quiet) then begin
-                print, 'Spectrum length: ', n_elements(reform(flux[i,*]))
-                print, 'Number of unmasked pixels: ', num
-                zero_vals = where(flux[i,unmasked] eq 0., count)  ; Number of pixels with zero flux
-                print, 'Number of zero valued fluxes: ', count
-;               if zero_vals[0] eq -1 then begin
-;                   print, 'Number of zero valued fluxes: ', 0
-;               endif else $
-;                   print, 'Number of zero valued fluxes: ', n_elements(zero_vals)
-            endif
+;            ; Report some numbers to the screen
+;            if ~keyword_set(quiet) then begin
+;                print, '    Spectrum: ', i+1
+;                print, 'Spectrum length: ', n_elements(reform(flux[i,*]))
+;                print, 'Number of unmasked pixels: ', num
+;                zero_vals = where(flux[i,unmasked] eq 0., count)  ; Number of pixels with zero flux
+;                print, 'Number of zero valued fluxes: ', count
+;;               if zero_vals[0] eq -1 then begin
+;;                   print, 'Number of zero valued fluxes: ', 0
+;;               endif else $
+;;                   print, 'Number of zero valued fluxes: ', n_elements(zero_vals)
+;            endif
 
             ; Object resolution interpolated to template wavelengths
             interp_sres=interpol(target_sres, target_wave, reform(wave_[unmasked]))
@@ -360,8 +363,8 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
 
             if ~keyword_set(no_offset) then begin               ; Allow any offset
                 soff[i] = sqrt(max([ positive_offset, 0.0d ]))  ; Necessary sigma offset
-                if ~keyword_set(quiet) then $
-                    print, 'Offset: '+MDAP_STC(soff[i])
+;                if ~keyword_set(quiet) then $
+;                    print, 'Offset: '+MDAP_STC(soff[i])
             endif else begin                                    ; Force offset to be 0
 
                 soff[i] = 0.                            ; Offset is zero
@@ -369,11 +372,11 @@ PRO MDAP_MATCH_SPECTRAL_RESOLUTION, $
                 ; Find the region with zero offset needed
                 MDAP_MATCH_SPECTRAL_RESOLUTION_WAVE_WITH_ZERO_OFFSET, positive_offset, $
                                                                       wave_[unmasked], waverange, $
-                                                                     zero_dispersion=zero_dispersion
+                                                                zero_dispersion=zero_dispersion, $
+                                                                      /quiet ; quiet=quiet
 
                 ; Mask regions that require an offset
                 MDAP_SELECT_WAVE, wave_, waverange, indx, complement=comp, count=count
-;               if comp[0] ne -1 then $
                 if count ne n_elements(wave_) then $
                     mask[i,comp] = 1.0
 

@@ -147,6 +147,10 @@
 ;                          save_intermediate_steps from initialization
 ;                          block.  Allowed for plan parameter file
 ;                          input.
+;       07 Aug 2015: (KBW) Added spectral fitting masks to input for
+;                          emission-line-only fitting.
+;       12 Aug 2015: (KBW) Adjusted for changes to
+;                          MDAP_SPECTRAL_INDEX_BLOCK.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -273,7 +277,7 @@ PRO MANGA_DAP, $
         for i=0,n_plans-1 do begin
 
             if ~keyword_set(quiet) then $
-                print, 'Beginning ExecutionPlans: ', i+1
+                print, 'Beginning ExecutionPlan: ', i+1
 
             ;-----------------------------------------------------------
             ; No reading or writing occurs in this block
@@ -289,9 +293,9 @@ PRO MANGA_DAP, $
                                        execution_plan[i], bskyy, bskyx, eml_par, abs_par, $
                                        perform_block, star_kin_interp, gas_kin_interp
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             ;-----------------------------------------------------------
@@ -324,9 +328,9 @@ PRO MANGA_DAP, $
             MDAP_DRP_SNR_BLOCK, manga_dap_version, execution_plan[i], perform_block, header, wave, $
                                 flux, ivar, mask, gflag, signal, noise, nolog=nolog, $
                                 log_file_unit=log_file_unit, quiet=quiet
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             if ~keyword_set(quiet) then $
@@ -349,11 +353,11 @@ PRO MANGA_DAP, $
                                 gas_kin_interp, bin_vreg, reg_velocity_initial_guess, bin_wgts, $
                                 bin_indx, bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_rad, $
                                 bin_area, bin_ston, nbin, plot=plot, nolog=nolog, $
-                                log_file_unit=log_file_unit, quiet=quiet
+                                log_file_unit=log_file_unit, quiet=quiet, /to_surface_brightness
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             if ~keyword_set(quiet) then $
@@ -390,9 +394,9 @@ PRO MANGA_DAP, $
             MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
                                            tpl_sres, tpl_soff
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             ; TODO: Need to account for tpl_soff further down the line?
@@ -417,9 +421,9 @@ PRO MANGA_DAP, $
                                           bvls_shared_lib=bvls_shared_lib, quiet=quiet, plot=plot, $
                                           dbg=dbg
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             if ~keyword_set(quiet) then $
@@ -442,13 +446,14 @@ PRO MANGA_DAP, $
                                           star_kin_interp, gas_kin_interp, $
                                           reg_velocity_initial_guess, $
                                           velocity_dispersion_initial_guess, wave, sres, nbin, $
-                                          bin_indx, bin_flux, bin_ivar, bin_mask, bestfit_ppxf, $
-                                          bestfit_gndf, eml_model, stellar_kinematics, $
-                                          elo_ew_eml_model, quiet=quiet, dbg=dbg
+                                          bin_indx, bin_flux, bin_ivar, bin_mask, tpl_wave, $
+                                          bestfit_ppxf, bestfit_gndf, eml_model, $
+                                          stellar_kinematics, elo_ew_eml_model, quiet=quiet, $
+                                          dbg=dbg
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             if ~keyword_set(quiet) then $
@@ -475,16 +480,18 @@ PRO MANGA_DAP, $
                                             abs_line_key=abs_line_keys[execution_plan[i].abs_par])
 
             MDAP_SPECTRAL_INDEX_BLOCK, manga_dap_version, execution_plan[i], perform_block, $
-                                       (size(tpl_flux))[1], tpl_out_fits, abs_line_keys, $
-                                       abs_par, obj_fit_mask_ppxf, weights_ppxf, bestfit_ppxf, $
-                                       obj_fit_mask_gndf, weights_gndf, bestfit_gndf, $
-                                       eml_model, stellar_kinematics, elo_ew_eml_model, wave, $
-                                       sres, bin_flux, bin_ivar, bin_mask, $
+                                       star_kin_interp, gas_kin_interp, $
+                                       reg_velocity_initial_guess, $
+                                       velocity_dispersion_initial_guess, (size(tpl_flux))[1], $
+                                       tpl_out_fits, abs_line_keys, abs_par, weights_ppxf, $
+                                       bestfit_ppxf, weights_gndf, bestfit_gndf, eml_model, $
+                                       stellar_kinematics, elo_ew_eml_model, wave, sres, bin_indx, $
+                                       bin_flux, bin_ivar, bin_mask, $
                                        remove_outliers=remove_outliers, quiet=quiet, dbg=dbg
 
-            get_lun, unit
-            print, unit
-            free_lun, unit
+;           get_lun, unit
+;           print, unit
+;           free_lun, unit
             ;stop
 
             if ~keyword_set(quiet) then $

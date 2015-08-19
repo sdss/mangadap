@@ -43,6 +43,12 @@
 ;       09 Sep 2014: (KBW) Original Implementation
 ;       01 Feb 2015: (KBW) Switch to reading the file using the name of
 ;                          the extension instead of its number
+;       24 Jul 2015: (KBW) DRP convention is that x offsets are positive
+;                          toward the west and negative toward the east,
+;                          which is opposite to what is currently done
+;                          in MDAP_CUBE_ONSKY_XY for the CUBE files.
+;                          I've switched this convension to be
+;                          consistent with the radial binning approach.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -52,7 +58,7 @@ PRO MDAP_RSS_ONSKY_XY, $
         MDAP_READ_FITS_EXTENSION, file, 'XPOS', skyx, /to_double
         MDAP_READ_FITS_EXTENSION, file, 'YPOS', skyy, /to_double
 
-        skyx=transpose(temporary(skyx))                 ; Transpose the matrices to match spectra
+        skyx=transpose(temporary(-skyx))            ; Transpose the matrices to match spectra
         skyy=transpose(temporary(skyy))
 END
         

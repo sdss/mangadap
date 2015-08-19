@@ -4,7 +4,12 @@
 ;
 ; PURPOSE:
 ;       Determine the radial bins for a set of spectra with the provided
-;       set of on-sky x and y coordinates.
+;       set of on-sky x and y coordinates.  The coordinates should be in
+;       arcseconds from some reference position.  This reference
+;       position is at (bin_par.cx, bin_par.cy) with respect to the
+;       galaxy center.  The x coordinates must increase toward the east
+;       and decrease toward the west.  The position angle must be
+;       defined as the angle from North through east.
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_RADIAL_BINNING, fibx, fiby, signal, noise, bin_par, binned_indx, binned_rlow, $
@@ -69,8 +74,11 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       03 Dec 2014: Adapted from some C++ code by K. Westfall
+;       03 Dec 2014: Adapted from some C++ code by K. Westfall (KBW)
 ;       16 Mar 2015: (KBW) Change to calibrated S/N calculation
+;       14 Aug 2015: (KBW) Edited the documentation to clarify the x
+;                          coordinate convention (+x is toward east, -x
+;                          toward west).
 ;-
 ;-----------------------------------------------------------------------
 

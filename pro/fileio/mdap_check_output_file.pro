@@ -27,7 +27,9 @@
 ;       MDAP_CHECK_BINTABLE_COLUMNS()
 ;
 ; REVISION HISTORY:
-;       01 Dec 2014: (KBW) Original Implementation (comments added)
+;       01 Dec 2014: Original Implementation (comments added) by K.
+;                    Westfall (KBW)
+;       12 Aug 2015: (KBW) Added SIOTPLM and SIBOTPLM extensions.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -112,7 +114,9 @@ FUNCTION MDAP_CHECK_OUTPUT_FILE, $
         if MDAP_FIND_EXTENSION_NAME(extname, 'SIIVAR') eq 0 then return, 0
         if MDAP_FIND_EXTENSION_NAME(extname, 'SIMASK') eq 0 then return, 0
         if MDAP_FIND_EXTENSION_NAME(extname, 'SIOTPL') eq 0 then return, 0
+        if MDAP_FIND_EXTENSION_NAME(extname, 'SIOTPLM') eq 0 then return, 0
         if MDAP_FIND_EXTENSION_NAME(extname, 'SIBOTPL') eq 0 then return, 0
+        if MDAP_FIND_EXTENSION_NAME(extname, 'SIBOTPLM') eq 0 then return, 0
 ;       if MDAP_FIND_EXTENSION_NAME(extname, 'OTPL') eq 0 then  return, 0
 ;       if MDAP_FIND_EXTENSION_NAME(extname, 'BOTPL') eq 0 then return, 0
 

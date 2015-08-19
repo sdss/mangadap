@@ -161,7 +161,7 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
 
         nsr = 0
         for i=0,nt-1 do begin
-            print, 'Rebinning spectrum: ', i+1
+;            print, 'Rebinning spectrum: ', i+1
 
             ; TODO: Must only select a single, contiguous spectral region
             ;           - What happens if the are masked regions spread through the spectral range?
@@ -192,7 +192,7 @@ PRO MDAP_RESAMPLE_TEMPLATES, $
                 print, ng, ns
                 message, 'tpl_flux not big enough'
             endif
-            print, 'Rebinned length: ', ng
+;            print, 'Rebinned length: ', ng
             tpl_flux[i,0:ng-1] = tpl_rebin[0:ng-1]              ; Save the spectrum
             tpl_ivar[i,0:ng-1] = 1.0/tpl_ivr_rebin[0:ng-1]      ; Save the variances
 ;           tpl_wave[i,0:ng-1] = 10^(logLam[0:ng-1])            ; Save the wavelengths in angstroms

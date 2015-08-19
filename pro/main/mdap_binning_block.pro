@@ -91,6 +91,11 @@
 ;               File unit pointing to the log file
 ;
 ; OPTIONAL KEYWORDS:
+;       /to_surface_brightness
+;               Use the aperture area (spaxel_dx*spaxel_dy) to convert
+;               the binned spectra to the average surface brightness in
+;               the bin in on-sky units (e.g., arcsec^2).
+;
 ;       /plot
 ;               Show the plot produced by the spatial binning procedure.
 ;
@@ -163,6 +168,8 @@
 ;
 ; BUGS:
 ;
+; TODO:
+;
 ; PROCEDURES CALLED:
 ;       MDAP_SPATIAL_BINNING
 ;       MDAP_VELOCITY_REGISTER
@@ -177,6 +184,12 @@
 ;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
 ;       16 Mar 2015: (KBW) Include adjustments for bin_par.noise_calib
 ;       17 Jun 2015: (KBW) Fixed a bug in logging; may be rampant!
+;       14 Aug 2015: (KBW) Allowed binned flux to be converted from mean
+;                          flux per aperture (e.g., fiber) to per unit
+;                          area (e.g., arcsec^2) using the provided
+;                          spaxel dx and dy.  This is assumed to be
+;                          appropriate for both the CUBE and RSS
+;                          spectra.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -185,7 +198,8 @@ PRO MDAP_BINNING_BLOCK, $
                 wave, sres, flux, ivar, mask, bskyx, bskyy, gflag, signal, noise, $
                 velocity_initial_guess, star_kin_interp, gas_kin_interp, bin_vreg, $
                 reg_velocity_initial_guess, bin_wgts, bin_indx, bin_flux, bin_ivar, bin_mask, $
-                xbin, ybin, bin_rad, bin_area, bin_ston, nbin, plot=plot, nolog=nolog, $
+                xbin, ybin, bin_rad, bin_area, bin_ston, nbin, $
+                to_surface_brightness=to_surface_brightness, plot=plot, nolog=nolog, $
                 log_file_unit=log_file_unit, quiet=quiet
 
         if perform_block.bin eq 1 then begin
@@ -252,6 +266,18 @@ PRO MDAP_BINNING_BLOCK, $
                                   bin_ivar, bin_mask, xbin, ybin, bin_rad, bin_area, bin_ston, $
                                   nbin, plot=plot, quiet=quiet
 
+            if keyword_set(to_surface_brightness) then begin
+                aperture_area = spaxel_dx*spaxel_dy
+                bin_flux = bin_flux / aperture_area
+                indx = where(bin_ivar gt 0.0)
+                bin_ivar[indx] = 1.0 / bin_ivar[indx] / aperture_area / aperture_area
+
+                ; Change the units in the header
+                SXADDPAR, header, 'BUNIT', '1E-17 erg/s/cm^2/Ang/arcsec^2', $
+                      'Flux units are per arcsec^2'
+                SXADDPAR, header, 'APAREA', aperture_area, 'Area of each spectrum area in arcsec^2'
+            endif
+
             ; Write the version of the spatial binning to the header
             SXADDPAR, header, 'VDAPBIN', manga_dap_version.spatial_binning, $
                       'mdap_spatial_binning version'
@@ -262,6 +288,10 @@ PRO MDAP_BINNING_BLOCK, $
                         manga_dap_version.spatial_binning
                 printf, log_file_unit, '[INFO] Type of spatial binning: ', $
                         execution_plan.bin_par.type
+                if keyword_set(to_surface_brightness) then begin
+                    printf, log_file_unit, '[INFO] Flux converted to on-sky area.'
+                    printf, log_file_unit, '[INFO]    Aperture area: ', spaxel_dx*spaxel_dy
+                endif
 
                 if execution_plan.bin_par.type ne 'NONE' then begin
                     printf, log_file_unit, '    Velocity register the spectra before binning: ', $
@@ -297,7 +327,7 @@ PRO MDAP_BINNING_BLOCK, $
                                bin_vreg=bin_vreg, bin_indx=bin_indx, bin_weights=bin_wgts, $
                                wave=wave, sres=sres, bin_flux=bin_flux, bin_ivar=bin_ivar, $
                                bin_mask=bin_mask, xbin_rlow=xbin, ybin_rupp=ybin, rbin=bin_rad, $
-                               bin_area=bin_area, bin_ston=bin_ston, bin_n=nbin, /read_header, $
+                               bin_area=bin_area, bin_ston=bin_ston, bin_n=nbin, $; /read_header, $
                                quiet=quiet
         endif else begin
 

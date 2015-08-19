@@ -59,7 +59,7 @@
 ;       by MDAP_CONVERT_PIXEL_KINEMATICS.
 ;
 ; REVISION HISTORY:
-;       05 Nov 2014: (KBW) Original implementation
+;       05 Nov 2014: Original implementation by K. Westfall (KBW)
 ;-
 ;------------------------------------------------------------------------------
 

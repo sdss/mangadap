@@ -46,7 +46,7 @@
 ;                  eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
 ;
 ;           where nlines2 is the number of fitted lines.  For now this
-;           is hard-coded to be the 9 lines defined by
+;           is hard-coded to be the lines defined by
 ;           MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE.
 ;
 ;       eml_model dblarr[C]
@@ -59,6 +59,10 @@
 ; EXAMPLES:
 ;
 ; BUGS:
+;
+; TODO:
+;   - Handle when MPFITEXPR() status = 5 in some other way than saving
+;     the result?
 ;
 ; PROCEDURES CALLED:
 ;
@@ -78,9 +82,19 @@
 ;       09 Dec 2014: (FB) new first guess for sigma of emission lines is
 ;                         80 km s-1. Uncommented the tied lines option
 ;   --
-;   11 Dec 2014: (KBW) Edited down to basic emission-line-only fitting
-;                      aspects for inclusion in the DAP.
-;   19 Feb 2015: (KBW) Fixed an error in where counting (line 184)
+;       11 Dec 2014: Edited down to basic emission-line-only fitting
+;                    aspects for inclusion in the DAP by K. Westfall
+;                    (KBW).
+;       19 Feb 2015: (KBW) Fixed an error in where counting (line 184)
+;       13 Aug 2014: (KBW) Fit OII as a doublet, and add the fit to the
+;                          OI doublet.  The velocities of the OI, OII,
+;                          OIII, NII, and SII lines are now tied; the
+;                          SII lines were NOT tied in the previous
+;                          version.  As before, only the flux ratios of
+;                          the OIII and NII lines are fixed.
+;                          Documentation changes.  Added warning if
+;                          MPFIT() reaches the maximum number of
+;                          iterations.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -90,11 +104,10 @@
 PRO MDAP_DEFINE_EMISSION_LINES_BELFIORE, $
                 n_l, w_l, fit_l, con_l
 
-        n_l = [ 'OII_3727', 'Hb', 'OIII_4959', 'OIII_5007', 'NII_6548', 'Ha', 'NII_6583', $
-                'SII_6716', 'SII_6731' ]
-        ;w_l = [ 3727.38, 4861.33, 4958.92, 5006.84, 6548.03, 6562.80, 6583.41, 6716.47, 6730.85 ]
-        fit_l = [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-        con_l = [ 0, 0, 2, 2, 1, 0, 1, 0, 0 ]
+        n_l = [ 'OII_3727', 'OII_3729', 'Hb', 'OIII_4959', 'OIII_5007', 'OI_6300', 'OI_6363', $
+                'NII_6548', 'Ha', 'NII_6583', 'SII_6716', 'SII_6731' ]
+        fit_l = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+        con_l = [ 3, 3, 0, 2, 2, 4, 4, 1, 0, 1, 5, 5 ]
 
         ; Force the rest wavelengths to be the same between Enci and Belfiore fits
         eml_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
@@ -143,7 +156,10 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
   ;emission lines sigma and velocity are set equal to those of the stars
   sigma2=fltarr(nlines2)
   v2=fltarr(nlines2)
-  ;NOTE sometimes the stars are badly fitted, especially when the continuum is very low. In this case the velocity/sigma for the stars can  be nonsense.
+
+  ; NOTE sometimes the stars are badly fitted, especially when the
+  ; continuum is very low. In this case the velocity/sigma for the stars
+  ; can  be nonsense.
   for i=0, nlines2-1 do begin
 ;   if star_sigma le 200 and star_sigma ge 70 then begin
     if star_sigma le 200 && star_sigma ge 70 then begin
@@ -153,10 +169,10 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     endelse
   endfor
   
-  mask=600.0                                                                          ;draw a mask of 600 km s-1 around each line
-  dw=mask*l.wl/c                                                                      ;width of the mask in angstrom
+  mask=600.0                        ;draw a mask of 600 km s-1 around each line
+  dw=mask*l.wl/c                    ;width of the mask in angstrom
  
-                                                      ;guess for the line velocity using the max of the flux within the mask
+  ;guess for the line velocity using the max of the flux within the mask
   
   for i=0, nlines2-1 do begin
       ;subscripts of the wav range within the mask
@@ -166,8 +182,10 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
         vguess = redshift*c
         continue
       endif
-      amp=max(resid[wrange], w_max)                                                       ;max of the flux within the mask, and its subscripts (w_max)
-      x_max=x[wrange[w_max]]                                                                      ;wavelength of max subscript
+      ;max of the flux within the mask, and its subscripts (w_max)
+      amp=max(resid[wrange], w_max)
+      ;wavelength of max subscript
+      x_max=x[wrange[w_max]]
       vguess=(x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
 ;      if vguess gt -400 and vguess lt 400 then begin
        if vguess gt -400 && vguess lt 400 then begin
@@ -187,7 +205,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       vguess = redshift*c
       continue
     endif
-    amp=max(resid[wrange], w_max)                                                       ;max of the flux within the mask, and its subscripts (w_max)
+    ;max of the flux within the mask, and its subscripts (w_max)
+    amp=max(resid[wrange], w_max)
     p_start[3*i]   =  v2[i]
     p_start[1+3*i] =  sigma2[i]
 
@@ -212,17 +231,16 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     endfor
     
     
-    ;Tie the relative amplitude and sigmas and velocities of multiplet lines (here only [OIII] and [NII])
+    ; Tie the relative amplitude and sigmas and velocities of multiplet
+    ; lines (here only [OIII] and [NII])
     wOIII_4959=where( l.n eq 'OIII_4959', count_4959)
     wOIII_5007=where(l.n eq 'OIII_5007', count_5007)
-    
     
     WNII_6548=where(l.n eq 'NII_6548', count_6548)
     wNII_6583=where(l.n eq 'NII_6583', count_6583)
     ;print, 'OIII 4959', WOIII_4959, 'OIII 5007', WOIII_5007
 
-;   if wOIII_4959[0] ne -1 and wOIII_5007[0] ne -1 then begin
-;   if count_4959 ne 0 and count_5007 ne 0 then begin
+    ; KBW: To tie fluxes, must tie both amplitude and velocity dispersion!
     if count_4959 ne 0 && count_5007 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*wOIII_4959+2].tied='0.330*p['+string(3*wOIII_5007+2)+']'
@@ -232,8 +250,6 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       parinfo[3*wOIII_4959+1].tied='p['+string(3*wOIII_5007+1)+']'
     endif
     
-;   if WNII_6548[0] ne -1 and wNII_6583[0] ne -1 then begin
-;   if count_6548 ne 0 and count_6583 ne 0 then begin
     if count_6548 ne 0 && count_6583 ne 0 then begin
       ;ratio of amplitudes fixed to theoretical
       parinfo[3*WNII_6548+2].tied='0.340*p['+string(3*wNII_6583+2)+']'
@@ -243,7 +259,7 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       parinfo[3*WNII_6548+1].tied='p['+string(3*wNII_6583+1)+']'
     endif
     
-    ; TODO: KBW add the SII lines to this list?
+    ; TODO: KBW: add the SII lines to this list?
 
     for i=0, nlines2-1 do begin              ;all sigmas between 70 and 200 km sec-1
       parinfo[3*i+1].limited=[1,1]
@@ -272,6 +288,11 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
         eflg = 1
         return
     endif
+
+    ; TODO: Only print this if !quiet
+    if status eq 5 then $
+        print, 'WARNING: Maximum number of iterations reached in MPFIT()!'
+
     ;;print, p
     ;print, 'fitting lines', l.n
     ;for kk=0, nlines2-1 do begin
@@ -374,7 +395,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
             El.evel[s_l]=l[0].ev
             El.esigma[s_l]=l[0].es
             if ~keyword_set(quiet) then $
-                print, 'Succesfully fitted ', nl_m, ' untied lines'
+                print, 'Successfully fitted ', nl_m, ' untied lines'
         endelse
     endfor
     
@@ -383,7 +404,8 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
 
     
     ;*** Fitting of the kinematically tied lines (only the velocity is tied!)***
-    print, n_tied
+    if ~keyword_set(quiet) then $
+        print, 'Number of tied lines:', n_tied
     for kl=1, n_tied do begin
       wgroup=where(con_l eq kl, count)
 ;     while wgroup[0] eq -1 do begin

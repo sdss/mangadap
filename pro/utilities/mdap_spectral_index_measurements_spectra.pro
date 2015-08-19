@@ -3,62 +3,71 @@
 ;       MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA
 ;
 ; PURPOSE:
-;       Prepares the binned spectra for the spectral index measurments, and
-;       creates the unbroadened and broadened optimal templates.
+;       Prepares the binned spectra for the spectral index measurments,
+;       and creates the unbroadened and broadened optimal templates.
 ;       
 ;       For the binned spectra:
 ;
-;           1. Determine the error spectrum using either the difference with
-;           respect to the input best-fitting model (/rms, bestfit=bestfit) or
-;           using the input inverse variance vector.
+;           1. Determine the error spectrum using either the difference
+;           with respect to the input best-fitting model (/rms,
+;           bestfit=bestfit) or using the input inverse variance vector.
 ;
-;           2. If requested, replace the outlying pixels with the best-fit model
-;           values (remove_outliers=remove_outliers, bestfit=bestfit).
+;           2. If requested, replace the outlying pixels with the
+;           best-fit model values (remove_outliers=remove_outliers,
+;           bestfit=bestfit).
 ;
 ;           3. If requested, remove a model of the emission lines
 ;           (eml_model=eml_model)
 ;
-;           4. If requested, replace the masked region of the object spectra
-;           with the value of the best-fit model.
+;           4. If requested, replace the masked region of the object
+;           spectra with the value of the best-fit model.
 ;
-;               CAREFUL!!: At least for MDAP_SPECTRAL_FITTING, some of the
-;               masked pixels are masked because the MODEL is bad (i.e.
-;               unobserved spectral regions of the redshifted template), not the
-;               data.
+;               CAREFUL!!: At least for MDAP_SPECTRAL_FITTING, some of
+;               the masked pixels are masked because the MODEL is bad
+;               (i.e.  unobserved spectral regions of the redshifted
+;               template), not the data.
 ;
 ;           5. Calculate the spectral resolution of the system over the
-;           REST-FRAME wavelengths of the galaxy spectra using the MEDIAN
-;           REDSHIFT obtained from the input stellar_kinematics matrix, and
-;           match the resolution of the spectra to this.
+;           REST-FRAME wavelengths of the galaxy spectra using the
+;           MEDIAN REDSHIFT obtained from the input stellar_kinematics
+;           matrix, and match the resolution of the spectra to this.
 ;
 ;       For the templates:
 ;
 ;           1. Get the optimal template using the provided weights.
 ;
-;           2. Get the LOSVD parameters using the input stellar kinematics.
-;           This reverts the input velocity (cz) to the pixel-based kinematics.
-;           TODO: Have a keyword that turns this off?
+;           2. Get the LOSVD parameters using the input stellar
+;           kinematics.  This reverts the input velocity (cz) to the
+;           pixel-based kinematics.  TODO: Have a keyword that turns
+;           this off?
 ;           
-;           3. Create the broadened optimal template using the optimal template
-;           and the pixel-based LOSVD.  For use with
-;           MDAP_SPECTRAL_INDEX_MEASUREMENTS, it is expected that this will
-;           shift the spectrum to match the redshift of the galaxy spectrum!
+;           3. Create the broadened optimal template using the optimal
+;           template and the pixel-based LOSVD.  For use with
+;           MDAP_SPECTRAL_INDEX_MEASUREMENTS, it is expected that this
+;           will shift the spectrum to match the redshift of the galaxy
+;           spectrum!
 ;
-;           4. Interpolate both the unbroadened and broadened templates to the
-;           wavelength vector of the object spectra.
+;           4. Interpolate both the unbroadened and broadened templates
+;           to the wavelength vector of the object spectra.
 ;
 ; CALLING SEQUENCE:
-;       MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, wave, sres, flux, ivar, mask, tpl_lib_fits, $
-;                                                 weights, stellar_kinematics, abs_line_key, $
-;                                                 wave_indx, flux_indx, ivar_indx, mask_indx, $
-;                                                 otpl_indx, botpl_indx, redshift, $
+;       MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, bin_indx, wave, sres, flux, ivar, mask, $
+;                                                 tpl_lib_fits, execution_plan, star_kin_interp, $
+;                                                 gas_kin_interp, velocity_initial_guess, $
+;                                                 velocity_dispersion_initial_guess, weights, $
+;                                                 stellar_kinematics, abs_line_key, si_bin_wave, $
+;                                                 si_bin_flux, si_bin_ivar, si_bin_mask, si_otpl, $
+;                                                 si_otpl_mask, si_botpl, si_botpl_mask, $
 ;                                                 bestfit=bestfit, eml_model=eml_model, $
 ;                                                 fit_mask=fit_mask, $
-;                                                 remove_outliers=remove_outliers,
+;                                                 remove_outliers=remove_outliers, $
 ;                                                 moments=moments, /replace_masked, /oversample, $
 ;                                                 /rms
 ;
 ; INPUTS:
+;       bin_indx intarr[N]
+;               Index of the bin that contains each of the N DRP spectrum.
+;
 ;       wave dblarr[C]
 ;               Wavelength at each of C spectral channels of the input spectra.
 ; 
@@ -79,6 +88,24 @@
 ;               File name for the fits file with the resolution- and
 ;               sampling-matched template library.  This should have been
 ;               previously created using MDAP_CREATE_DAP_TEMPLATE_LIBRARY.
+;
+;       execution_plan ExecutionPlan
+;               Structure providing plan and parameters needed for the
+;               analyses.
+;
+;       star_kin_interp dblarr[N][4]
+;               Interpolated set of stellar kinematics based on a
+;               provided analysis prior.
+;
+;       gas_kin_interp dblarr[N][2]
+;               Interpolated set of gas kinematics based on a provided
+;               analysis prior.
+;
+;       velocity_initial_guess double
+;               Initial guess velocity for the galaxy.
+;
+;       velocity_dispersion_initial_guess double
+;               Initial guess velocity dispersion for the galaxy.
 ;
 ;       weights dblarr[B][T]
 ;               Weights that when applied to the template library provides the
@@ -138,32 +165,31 @@
 ;               array.
 ;
 ; OUTPUT:
-;       wave_indx dblarr[D]
+;       si_bin_wave dblarr[D]
 ;               Wavelength vector for the resolution-matched spectra.
 ;
-;       flux_indx dblarr[B][D]
+;       si_bin_flux dblarr[B][D]
 ;               Flux of the resolution-matched spectra.
 ;
-;       ivar_indx dblarr[B][D]
+;       si_bin_ivar dblarr[B][D]
 ;               Inverse variance of the resolution-matched spectra.
 ;
-;       mask_indx dblarr[B][D]
+;       si_bin_mask dblarr[B][D]
 ;               Bad pixel mask (0-good, 1-bad) for the resolution-matched
 ;               spectra.
 ;
-;       otpl_indx dblarr[B][D]
+;       si_otpl dblarr[B][D]
+;       si_otpl_mask dblarr[B][D]
 ;               Optimal template spectrum, resolution-matched to the
-;               spectral-index system.
+;               spectral-index system, and its bad pixel mask.  The bad
+;               pixel mask is just a de-redshifted version of the
+;               broadened optimal template mask.
 ;
-;       botpl_indx dblarr[B][D]
+;       si_botpl dblarr[B][D]
+;       si_botpl_mask dblarr[B][D]
 ;               Optimal template spectrum, resolution-matched to the
-;               spectral-index system, and broadened by the best-fitting LOSVD
-;               for each of the B spectra.
-;
-;       redshift dblarr[B]
-;               The redshift of the object spectra (flux_indx) and the broadened
-;               optimal template with with respect to the unbroadened optimal
-;               template.
+;               spectral-index system, and broadened by the best-fitting
+;               LOSVD for each of the B spectra, and its bad pixel mask.
 ;
 ; OPTIONAL OUTPUT:
 ;
@@ -175,49 +201,67 @@
 ;
 ; TODO:
 ;       - Output the spectral resolution vector as well?
-;       - Allow for the masked pixels to be replaced by the best fit data!
+;       - Allow for the masked pixels to be replaced by the best fit
+;         data!
 ;
 ; PROCEDURES CALLED:
+;       MDAP_NOISE_FROM_RESIDUAL
+;       MDAP_NOISE_FROM_IVAR
+;       MDAP_REPLACE_OUTLIERS
+;       MDAP_ABS_LINE_RESOLUTION()
+;       MDAP_MATCH_SPECTRAL_RESOLUTION
+;       MDAP_READ_RESAMPLED_TEMPLATES
+;       MDAP_VELOCITY_SCALE()
+;       MDAP_REVERT_PIXEL_KINEMATICS
+;       MDAP_GET_BROADENED_TEMPLATE()
+;       MDAP_INITIALIZE_GUESS_KINEMATICS
+;       MDAP_SPECTRAL_FITTING_MASK()
 ;
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       12 Nov 2014: (KBW) Original implementation
+;       12 Nov 2014: Original implementation by K. Westfall (KBW)
+;       12 Aug 2015: (KBW) Substantial changes to the input to allow for
+;                          the calculation of the template masks.  Some
+;                          changes to the names of the output to make
+;                          things more consistent with calling
+;                          procedure.  Edited documentation.
 ;-
-;------------------------------------------------------------------------------
+;----------------------------------------------------------------------
 
 PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
-                wave, sres, flux, ivar, mask, tpl_lib_fits, weights, stellar_kinematics, $
-                abs_line_key, wave_indx, flux_indx, ivar_indx, mask_indx, otpl_indx, botpl_indx, $
-                median_redshift, bestfit=bestfit, eml_model=eml_model, fit_mask=fit_mask, $
+                bin_indx, wave, sres, flux, ivar, mask, tpl_lib_fits, execution_plan, $
+                star_kin_interp, gas_kin_interp, velocity_initial_guess, $
+                velocity_dispersion_initial_guess, weights, stellar_kinematics, abs_line_key, $
+                si_bin_wave, si_bin_flux, si_bin_ivar, si_bin_mask, si_otpl, si_otpl_mask, $
+                si_botpl, si_botpl_mask, bestfit=bestfit, eml_model=eml_model, fit_mask=fit_mask, $
                 remove_outliers=remove_outliers, moments=moments, replace_masked=replace_masked, $
                 oversample=oversample, rms=rms
 
+;               median_redshift,
+
         ; Cannot get error from RMS if bestfit is not provided
-;       if keyword_set(rms) and n_elements(bestfit) eq 0 then $
         if keyword_set(rms) && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to calculate error using RMS.'
         ; Cannot replace outliers if bestfit is not provided
-;       if n_elements(remove_outliers) ne 0 and n_elements(bestfit) eq 0 then $
         if n_elements(remove_outliers) ne 0 && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to replace outliers.'
         ; Cannot replace the masked pixels with the model if the model is not provided
-;       if keyword_set(replace_masked) and n_elements(bestfit) eq 0 then $
         if keyword_set(replace_masked) && n_elements(bestfit) eq 0 then $
             message, 'Must provide best-fitting spectrum to replace masked pixels.'
 
-        ;-----------------------------------------------------------------------
-        ; Manipulate the object data -------------------------------------------
+        ;---------------------------------------------------------------
+        ; Manipulate the object data -----------------------------------
         ; 0. Do NOT alter the input spectra, so copy over to some working arrays
-        wave_indx = wave
-        flux_indx = flux
-        ivar_indx = ivar
-        mask_indx = mask
-        sres_indx = sres
+        si_bin_wave = wave
+        si_bin_flux = flux
+        si_bin_ivar = ivar
+        si_bin_mask = mask
+        si_bin_sres = sres
 
         sz = size(flux)
         nspec = sz[1]                                   ; Number of spectra
-;       if keyword_set(rms) or n_elements(remove_outliers) ne 0 then begin
+        nw = sz[2]
         if keyword_set(rms) || n_elements(remove_outliers) ne 0 then begin
             for i=0,nspec-1 do begin
                 ;  1. Determine the error spectrum
@@ -231,8 +275,8 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
                     MDAP_NOISE_FROM_IVAR, reform(ivar[i,*]), mask_, sige
 
                 ; TODO: Don't like this switching back and forth between ivar and sige
-                mask_indx[i,*] = mask_
-                ivar_indx[i,*] = (sige)^(-2)
+                si_bin_mask[i,*] = mask_
+                si_bin_ivar[i,*] = (sige)^(-2)
 
                 ;  2. Replace the outliers with the model values
 
@@ -243,21 +287,20 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
                 if n_elements(remove_outliers) ne 0 then begin
                     flux_ = reform(flux_indx[i,*])
                     MDAP_REPLACE_OUTLIERS, flux_, reform(bestfit[i,*]), sige, remove_outliers
-                    flux_indx[i,*] = flux_
+                    si_bin_flux[i,*] = flux_
                 endif
             endfor
         endif
 
         ; 3. Remove the emission lines from the object spectra, if provided
         if n_elements(eml_model) ne 0 then $
-            flux_indx = flux_indx - eml_model
+            si_bin_flux = si_bin_flux - eml_model
 
-        ; 4. Replace masked pixels with the best-fit model
+        ; 4. Replace masked pixels with the best-fit model, if requested
         if keyword_set(replace_masked) then begin
-            indx = where(mask gt 0.5, count)                   ; Select masked pixels
-;           if indx[0] ne -1 then $
+            indx = where(mask gt 0.5, count)                ; Select masked pixels
             if count ne 0 then $
-                flux_indx[indx] = bestfit[indx]         ; Set them to the best-fit model
+                si_bin_flux[indx] = bestfit[indx]           ; Set them to the best-fit model
         endif
 
         ; 5. Match the spectral resolution of the object spectra to the
@@ -267,13 +310,14 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
         median_redshift = median(stellar_kinematics[*,0])/c     ; Median redshift
 ;       print, median_redshift
 
-        wave_indx_rf = wave_indx/(median_redshift + 1.0d)
-        abs_sres = MDAP_ABS_LINE_RESOLUTION(abs_line_key, wave_indx_rf) ; Spectral resolution
+        si_bin_wave_rf = si_bin_wave/(median_redshift + 1.0d)
+        abs_sres = MDAP_ABS_LINE_RESOLUTION(abs_line_key, si_bin_wave_rf) ; Spectral resolution
 
         ; TODO: This may perform some interpolation of sres_si_system onto the range
         ;       of wave_indx (?)
-        MDAP_MATCH_SPECTRAL_RESOLUTION, flux_indx, ivar_indx, mask_indx, wave_indx_rf, sres_indx, $
-                                        wave_indx_rf, abs_sres, soff_indx, /no_offset
+        MDAP_MATCH_SPECTRAL_RESOLUTION, si_bin_flux, si_bin_ivar, si_bin_mask, si_bin_wave_rf, $
+                                        si_bin_sres, si_bin_wave_rf, abs_sres, si_bin_soff, $
+                                        /no_offset
 
 ;       ; 5. Mask leading and trailing pixels omitted during the spectral fit
 ;       if n_elements(fit_mask) ne 0 then begin
@@ -288,15 +332,17 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 ;               endif
 ;           endfor
 ;       endif
-        ;-----------------------------------------------------------------------
-        ;-----------------------------------------------------------------------
+        ;---------------------------------------------------------------
+        ;---------------------------------------------------------------
 
-        ;-----------------------------------------------------------------------
-        ; Build the template data ----------------------------------------------
 
-        npix = (size(flux_indx))[2]             ; Number of pixels
-        otpl_indx = dblarr(nspec, npix)         ; Allocate the arrays
-        botpl_indx = dblarr(nspec, npix)
+        ;---------------------------------------------------------------
+        ; Build the template data --------------------------------------
+
+        nspec = (size(si_bin_flux))[1]          ; Number of spectra
+        npix = (size(si_bin_flux))[2]           ; Number of pixels
+        si_otpl = dblarr(nspec, npix)           ; Allocate the arrays
+        si_botpl = dblarr(nspec, npix)
 
         ; Read the resolution-matched templates
         MDAP_READ_RESAMPLED_TEMPLATES, tpl_lib_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
@@ -313,10 +359,11 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 
             ; 2. Revert the input stellar kinematics back to the pixel-based kinematics
             sol = reform(stellar_kinematics[i,0:moments-1])
-            vel = sol[0]
-            vel_err = 1.0
-            MDAP_REVERT_PIXEL_KINEMATICS, vel, vel_err
-            sol[0] = vel
+;            vel = sol[0]
+            v = sol[0]
+            v_err = 1.0
+            MDAP_REVERT_PIXEL_KINEMATICS, v, v_err
+            sol[0] = v
 
             ; 3. Get the broadened optimal template.  It is expected that this will
             ; shift the spectrum to match the redshift of the galaxy spectrum!
@@ -326,15 +373,72 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS_SPECTRA, $
 
             ; 4. Interpolate both the unbroadened and broadened templates to the
             ; wavelength vector of the object spectra.
-            otpl_indx[i,*] = interpol(optimal_template, tpl_wave, wave_indx)
-            botpl_indx[i,*] = interpol(losvd_optimal_template, tpl_wave, wave_indx)
-
-            ; TODO: Masks for botpl should be the same as fit_mask; however,
-            ; this will not be true of otpl.  How do I account for this?
+            si_otpl[i,*] = interpol(optimal_template, tpl_wave, si_bin_wave)
+            si_botpl[i,*] = interpol(losvd_optimal_template, tpl_wave, si_bin_wave)
 
         endfor
-        ;-----------------------------------------------------------------------
-        ;-----------------------------------------------------------------------
+
+        ;---------------------------------------------------------------
+        ; Build the mask for the broadened optimal templates using the
+        ; same functionality in MDAP_EMISSION_LINE_FIT_BLOCK.  The
+        ; result should provide a mask for any leading/trailing spectral
+        ; regions not available to the redshifted template, as well as
+        ; include any other masks in the galaxy data.
+
+        ; Initialize the guess kinematics for use in setting the template mask.
+        MDAP_INITIALIZE_GUESS_KINEMATICS, nspec, execution_plan.analysis_prior, star_kin_interp, $
+                                          gas_kin_interp, bin_indx, velocity_initial_guess, $
+                                          velocity_dispersion_initial_guess, star_kin_guesses, $
+                                          gas_kin_guesses
+
+        ; Get the mask that excludes regions where the fitted template is not valid
+        fit_indx = MDAP_SPECTRAL_FITTING_MASK(si_bin_wave, tpl_wave, velScale, $
+                                              execution_plan.wave_range_analysis, $
+                                              star_kin_guesses)
+        sz = size(si_bin_flux)
+        si_botpl_mask = make_array(sz[1], sz[2], /double, value=1.0d)
+        si_botpl_mask[*,fit_indx] = 0.0d
+        ; Include any intrinsically masked pixels
+        indx = where(si_bin_mask > 0, count)
+        if count ne 0 then $
+            si_botpl_mask[indx] = 1.0d
+
+        ;---------------------------------------------------------------
+        ; Get the the mask for the unbroadened optimal templates, which
+        ; is a matter of interpolating the version for the broadened
+        ; optimal templates to rest wavelength.
+        si_otpl_mask = make_array(sz[1], sz[2], /double, value=1.0d)
+
+        ; Get the mask that excludes regions where the fitted template is not valid
+        star_kin_guesses[*,0] = 0.0
+        fit_indx = MDAP_SPECTRAL_FITTING_MASK(si_bin_wave, tpl_wave, velScale, $
+                                              execution_plan.wave_range_analysis, $
+                                              star_kin_guesses)
+        si_otpl_mask[*,fit_indx] = 0.0d
+
+
+;        ;---------------------------------------------------------------
+;        ; Get the the mask for the unbroadened optimal templates, which
+;        ; is a matter of interpolating the version for the broadened
+;        ; optimal templates to rest wavelength.
+;        si_otpl_mask = make_array(sz[1], sz[2], /double, value=1.0d)
+;
+;        ; Center redshift made to match what is done in MDAP_SPECTRAL_FITTING_MASK
+;        redshift = (min(star_kin_guesses[*,0]) + max(star_kin_guesses[*,0]))/2.0/c
+;        for i=0,nspec-1 do begin
+;            si_otpl_mask[i,*] = interpol(reform(si_botpl_mask[i,*]), si_bin_wave, $
+;                                         si_bin_wave/(redshift+1.0d))
+;            ; Force a binary (0/1) mask
+;            indx = where(si_otpl_mask gt 0.5, count, complement=nindx, ncomplement=ncount)
+;            if count ne 0 then $
+;                si_otpl_mask[indx] = 1.0d
+;            if ncount ne 0 then $
+;                si_otpl_mask[nindx] = 0.0d
+;        endfor
+;        ;---------------------------------------------------------------
+
+        ;---------------------------------------------------------------
+        ;---------------------------------------------------------------
 
 
 END

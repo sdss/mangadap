@@ -1926,6 +1926,7 @@ external/templates/miles_thin/MILES_res2.50_lt4.40_lg5.4_fe+0.2.fits -text svneo
 external/templates/miles_thin/MILES_res2.50_lt4.43_lg4.2_fe-0.2.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt4.48_lg3.3_fe+0.3.fits -text svneol=unset#unset
 external/templates/miles_thin/MILES_res2.50_lt4.56_lg5.5_fe-1.3.fits -text svneol=unset#unset
+external/templates/miles_thin/README -text
 external/templates/miuscat/Iun1.30Zm0.40T00.0631.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0708.fits -text svneol=unset#unset
 external/templates/miuscat/Iun1.30Zm0.40T00.0794.fits -text svneol=unset#unset
@@ -2513,6 +2514,7 @@ pro/modules/mdap_do_log_rebin.pro -text
 pro/modules/mdap_dust_calzetti.pro -text
 pro/modules/mdap_gandalf.pro -text
 pro/modules/mdap_gandalf_wrap.pro -text
+pro/modules/mdap_nonpar_emission_line_measurements.pro -text
 pro/modules/mdap_ppxf.pro -text
 pro/modules/mdap_spectral_index_measurements.pro -text
 pro/modules/mdap_voronoi_2d_binning.pro -text
@@ -2546,6 +2548,7 @@ pro/utilities/mdap_cube_onsky_xy.pro -text
 pro/utilities/mdap_define_analysis_par.pro -text
 pro/utilities/mdap_define_bin_par.pro -text
 pro/utilities/mdap_define_manga_dap_version.pro -text
+pro/utilities/mdap_define_nonpar_emission_line_bands.pro -text
 pro/utilities/mdap_distribute_binned_data.pro -text
 pro/utilities/mdap_drp_filetype.pro -text
 pro/utilities/mdap_emission_line_window.pro -text
@@ -2555,6 +2558,7 @@ pro/utilities/mdap_fits_header_add_date.pro -text
 pro/utilities/mdap_fits_zero_naxes.pro -text
 pro/utilities/mdap_generate_binning_weights.pro -text
 pro/utilities/mdap_get_broadened_template.pro -text
+pro/utilities/mdap_get_pseudocontinuum.pro -text
 pro/utilities/mdap_get_resolution_difference.pro -text
 pro/utilities/mdap_get_spaxel_size.pro -text
 pro/utilities/mdap_get_spectral_index.pro -text
@@ -2563,6 +2567,7 @@ pro/utilities/mdap_initialize_guess_kinematics.pro -text
 pro/utilities/mdap_insert_flagged.pro -text
 pro/utilities/mdap_instr_dispersion_at_emission_line.pro -text
 pro/utilities/mdap_instrumental_dispersion.pro -text
+pro/utilities/mdap_integrate_pixelized_value.pro -text
 pro/utilities/mdap_interpolate_2dmaps.pro -text
 pro/utilities/mdap_interpolate_kinematics.pro -text
 pro/utilities/mdap_lines_for_mean_gas_kinematics.pro -text
@@ -2597,6 +2602,7 @@ pro/utilities/mdap_set_intersection.pro -text
 pro/utilities/mdap_set_output_file_cols.pro -text
 pro/utilities/mdap_set_tpl_lib_output_file.pro -text
 pro/utilities/mdap_spatial_bin_area.pro -text
+pro/utilities/mdap_spectral_fitting_mask.pro -text
 pro/utilities/mdap_spectral_index_measurements_spectra.pro -text
 pro/utilities/mdap_stc.pro -text
 pro/utilities/mdap_trim_spectral_range.pro -text

@@ -47,7 +47,10 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       12 Sep 2014: (KBW) Original implementation
+;       12 Sep 2014: Original implementation by K. Westfall (KBW)
+;       14 Aug 2015: (KBW) The RSS spectra have been calibrated to have
+;                          an effective aperture of pi arcsec^2.
+;                          Correct the returned values of dx and dy.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -78,10 +81,11 @@ PRO MDAP_GET_SPAXEL_SIZE, $
             MDAP_WCSUNIT2ARCSEC, unit, dx, dy                   ; Convert from WCS unit to arcsec
 
         endif else begin
-            ; TODO: Find a better solution to this
-            dx = sqrt(!PI)*(2.5/2.0)                            ; area = pi * (2.5/2.0)^2
+            ; The area of the RSS fiber data have been calibrated to
+            ; have an effective aperture of pi arcsec^2.
+;           dx = sqrt(!PI)*(2.5/2.0)
+            dx = sqrt(!PI)
             dy = dx
         endelse
-
 END
 

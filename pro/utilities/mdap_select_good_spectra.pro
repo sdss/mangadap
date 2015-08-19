@@ -79,6 +79,7 @@
 ;       09 Feb 2015: (KBW) Debug problem with incorporation of pixel
 ;                          mask. Add fraction_good and min_eq_max to
 ;                          output.
+;       12 Aug 2015: (KBW) Turned off printing of properties to stdout
 ;-
 ;------------------------------------------------------------------------------
 
@@ -93,10 +94,10 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
         ns=sz[1]                                        ; Number of spectra
         nc=sz[2]                                        ; Number of spectral channels
 
-        if ~keyword_set(quiet) then begin
-            print, ['Spec', 'max=min', 'Unmasked', 'Good ivar', 'Fin. ivar', 'Fin. flux', $
-                    'Total'], format='(%"%9s %9s %9s %9s %9s %9s %9s")'
-        endif
+;        if ~keyword_set(quiet) then begin
+;            print, ['Spec', 'max=min', 'Unmasked', 'Good ivar', 'Fin. ivar', 'Fin. flux', $
+;                    'Total'], format='(%"%9s %9s %9s %9s %9s %9s %9s")'
+;        endif
 
         gflag=intarr(ns)                                ; Initialize all flags as false (gflag=0)
         fraction_good=dblarr(ns)                        ; Fraction of good pixels in the spectrum
@@ -136,7 +137,7 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
             min_eq_max[i] = min(flux[i,*]) eq max(flux[i,*])    ; Flag the min(flux) eq max(flux)
     
             ; Spectrum is good if the total number of good pixels is
-            ; greater or equal to the threshold (goodfrac)
+            ; greater or equal to the threshold
             if fraction_good[i] ge good_fraction_threshold then $
                 gflag[i] = 1                            ; Flag spectrum as good
 
@@ -148,10 +149,10 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
             endif 
 
             ; Report on this spectrum
-            if ~keyword_set(quiet) then begin
-                print, [i, min_eq_max[i], unmasked, posivar, finivar, finflux, $
-                        fraction_good[i]*100.], format='(%"%9d %9d %9.2f %9.2f %9.2f %9.2f %9.2f")'
-            endif
+;            if ~keyword_set(quiet) then begin
+;                print, [i, min_eq_max[i], unmasked, posivar, finivar, finflux, $
+;                        fraction_good[i]*100.], format='(%"%9d %9d %9.2f %9.2f %9.2f %9.2f %9.2f")'
+;            endif
 
         endfor
 

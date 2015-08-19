@@ -360,6 +360,11 @@
 ;                          is valid as a constant offset.  degree=-1 is
 ;                          for when no additive polynomials are allowed.
 ;                          Other minor edits.
+;       10 Jul 2015: (KBW) Converted placeholder values to -9999.0d
+;       10 Aug 2015: (KBW) Moved selection of pixels to fit to
+;                          pro/utilities/mdap_spectral_fitting_mask.pro
+;                          to allow for that function to be used
+;                          elsewhere.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -615,61 +620,65 @@ PRO MDAP_SPECTRAL_FITTING, $
         MDAP_SPECTRAL_FITTING_INIT_GUESSES, gas_kin_starting_guesses, nobj, default_velocity, $
                                             default_dispersion
 
-        ;-----------------------------------------------------------------------
-        ; Limited the fitted pixels
-        ;-----------------------------------------------------------------------
-        ; 1. Apply the wavelength range limit, if provided
-        now=(size(obj_wave))[1]
-        if n_elements(wave_range_analysis) then begin
-            MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
-            if count eq 0 then $
-                message, 'wave_range_analysis selects no pixels!'
-        endif else $
-            fit_indx = indgen(now)
+        ; Limit the fitted pixels
+        fit_indx = MDAP_SPECTRAL_FITTING_MASK(obj_wave, tpl_wave, velScale, wave_range_analysis, $
+                                              star_kin_starting_guesses)
 
-        c=299792.458d                                   ; Speed of light in km/s
-        maxvel = 400.                                   ; Maximum expected motions (km/s)
-        z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c  ; Minimum redshift
-        z_max = (max(star_kin_starting_guesses[*,0])+maxvel)/c  ; Maximum redshift
-
-        ; 2. If the number of template pixels is not >= number of fitted galaxy pixels,
-        ;    further limit the blue and red edges of the galaxy spectra
-        now=(size(obj_wave[fit_indx]))[1]               ; Number of object pixels
-        ntw=(size(tpl_wave))[1]                         ; Number of template pixels
-        if ntw lt now then begin
-
-            ; Expected minimum redshift of all spectra
-            z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c
-
-            ; Indices of wavelengths redward of the redshifted template
-            indx=where(obj_wave gt tpl_wave[0]*(1. + z_min), count)
-            if count eq 0 then $
-                message, 'No overlapping wavelengths between galaxy and template!'
-
-            now_=(size(obj_wave[indx]))[1]
-            if ntw lt now_ then $
-                indx=indx[0:ntw-1]                      ; Truncate the red edge as well
-            ; Merge with current index
-            fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
+;-----------------------------------------------------------------------
+; Moved to pro/utilities/mdap_spectral_fitting_mask.pro
+;       ; 1. Apply the wavelength range limit, if provided
+;       now=(size(obj_wave))[1]
+;       if n_elements(wave_range_analysis) then begin
+;           MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
+;           if count eq 0 then $
+;               message, 'wave_range_analysis selects no pixels!'
+;       endif else $
+;           fit_indx = indgen(now)
+;
+;       c=299792.458d                                   ; Speed of light in km/s
+;       maxvel = 400.                                   ; Maximum expected motions (km/s)
+;       z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c  ; Minimum redshift
+;       z_max = (max(star_kin_starting_guesses[*,0])+maxvel)/c  ; Maximum redshift
+;
+;       ; 2. If the number of template pixels is not >= number of fitted galaxy pixels,
+;       ;    further limit the blue and red edges of the galaxy spectra
+;       now=(size(obj_wave[fit_indx]))[1]               ; Number of object pixels
+;       ntw=(size(tpl_wave))[1]                         ; Number of template pixels
+;       if ntw lt now then begin
+;
+;           ; Expected minimum redshift of all spectra
+;           z_min = (min(star_kin_starting_guesses[*,0])-maxvel)/c
+;
+;           ; Indices of wavelengths redward of the redshifted template
+;           indx=where(obj_wave gt tpl_wave[0]*(1. + z_min), count)
+;           if count eq 0 then $
+;               message, 'No overlapping wavelengths between galaxy and template!'
+;
+;           now_=(size(obj_wave[indx]))[1]
+;           if ntw lt now_ then $
+;               indx=indx[0:ntw-1]                      ; Truncate the red edge as well
+;           ; Merge with current index
+;           fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
 ;           if fit_indx[0] eq -1 then $
-            if count eq 0 then $
-                message, 'No overlapping wavelengths between galaxy and template!'
-        endif
-        now=(size(obj_wave[fit_indx]))[1]               ; Update number of object pixels
-
-        ; 3. Limit wavelength range to avoid aliasing problems in the template convolution
-        ; TODO: Allow these to be input parameters?
-        sigomit = 6.                                    ; Number of sigma to mask (+/- 3)
-        nalias = fix(sigomit*maxvel/velScale)           ; Number of pixels to mask (maxvel~maxsig)
-        print, 'Masking '+MDAP_STC(nalias,/integer)+' pixels at either end of the spectrum to' $
-               + ' avoid convolution aliasing.'
-        ; Mask to the range that should be unaffected by alias errors
-        wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]/(1+z_min) ]
-        MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias*(1. + z_min), indx
-        ; Merge with current index
-        fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
-        if count eq 0 then $
-            message, 'No intersection between wave_range_tpl_unalias and fit_indx!'
+;           if count eq 0 then $
+;               message, 'No overlapping wavelengths between galaxy and template!'
+;       endif
+;       now=(size(obj_wave[fit_indx]))[1]               ; Update number of object pixels
+;
+;       ; 3. Limit wavelength range to avoid aliasing problems in the template convolution
+;       ; TODO: Allow these to be input parameters?
+;       sigomit = 6.                                    ; Number of sigma to mask (+/- 3)
+;       nalias = fix(sigomit*maxvel/velScale)           ; Number of pixels to mask (maxvel~maxsig)
+;       print, 'Masking '+MDAP_STC(nalias,/integer)+' pixels at either end of the spectrum to' $
+;              + ' avoid convolution aliasing.'
+;       ; Mask to the range that should be unaffected by alias errors
+;       wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]/(1+z_min) ]
+;       MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias*(1. + z_min), indx
+;       ; Merge with current index
+;       fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
+;       if count eq 0 then $
+;           message, 'No intersection between wave_range_tpl_unalias and fit_indx!'
+;-----------------------------------------------------------------------
 
         ; Truncate the vectors to the valid pixels
         obj_wave_lim = obj_wave[fit_indx]
@@ -693,11 +702,8 @@ PRO MDAP_SPECTRAL_FITTING, $
         ;   to the initial wavelength of the galaxy.  That is, we determine the
         ;   pseudo-velocity shift required to match the observed wavelengths of the
         ;   template library and the galaxy spectrum.
-
         voff = (alog10(tpl_wave[0]) - alog10(obj_wave_lim[0]))*velScale / $
                (alog10(obj_wave_lim[1])-alog10(obj_wave_lim[0]))
-
-        c=299792.458d                                   ; Speed of light in km/s (needed below)
 
         ; Initialize the starting guesses vector used by MDAP_GANDALF_WRAP,
         ;   which DOES NOT change these values during its execution meaning this
@@ -719,6 +725,7 @@ PRO MDAP_SPECTRAL_FITTING, $
                                                   zero_instr_disp=analysis_par.zero_instr_disp)
 
         ; Begin loop over all the object spectra
+        c=299792.458d                                   ; Speed of light in km/s (needed below)
         if keyword_set(dbg) then $
             nobj=1                                      ; Only fit the first spectrum
         for i=0,nobj-1 do begin
@@ -819,16 +826,16 @@ PRO MDAP_SPECTRAL_FITTING, $
 ;               print, 'Bad lines!'
 
                 ; TODO: This is inconsistent with the default behavior in GANDALF_WRAP
-                gas_vel[*] = !VALUES.D_NAN      ; Individual gas velocities
-                gas_vel_err[*] = 99.0d          ; Individual gas velocity errors
-                gas_sig[*] = !VALUES.D_NAN      ; Individual gas velocity dispersions
-                gas_sig_err[*] = 99.0d          ; Individual gas velocity disperison errors
+                gas_vel[*] = -9999.0d       ; Individual gas velocities
+                gas_vel_err[*] = -9999.0d   ; Individual gas velocity errors
+                gas_sig[*] = -9999.0d       ; Individual gas velocity dispersions
+                gas_sig_err[*] = -9999.0d   ; Individual gas velocity disperison errors
 
-                sol[7] = !VALUES.D_NAN          ; Mean Gas velocity
-                err[6] = 99.0d          ; Mean Gas velocity error
+                sol[7] = -9999.0d           ; Mean Gas velocity
+                err[6] = -9999.0d           ; Mean Gas velocity error
 
-                sol[8] = !VALUES.D_NAN          ; Mean Gas velocity dispersion
-                err[7] = 99.0d          ; Mean Gas velocity dispersion error
+                sol[8] = -9999.0d           ; Mean Gas velocity dispersion
+                err[7] = -9999.0d           ; Mean Gas velocity dispersion error
             endif             
 
             ; plots for checks... remove these lines when running on remote server
@@ -838,14 +845,10 @@ PRO MDAP_SPECTRAL_FITTING, $
 ;           if n_elements(fitted_pixels) ne 0 then $
 ;               oplot, obj_wave[fitted_pixels], bestfit[fitted_pixels], color=200
     
-            ; TODO: Just found out that the indexing of arrays in IDL is
-            ; super-fucked.  Will need to check that this hasn't messed me
-            ; up somewhere...
-
             ; Store output stellar kinematics
             if keyword_set(fix_star_kin) then begin
                 stellar_kinematics[i,0:1] = start[0:1]
-                stellar_kinematics_err[i,*] = 0
+                stellar_kinematics_err[i,*] = -9999.0d
             endif else begin
                 stellar_kinematics[i,*]=sol[0:moments-1]
                 stellar_kinematics_err[i,*]=err[0:moments-1]
@@ -877,11 +880,11 @@ PRO MDAP_SPECTRAL_FITTING, $
                     reddening_output[i,*]= ebv
                     reddening_output_err[i,*]= err_reddening
                 endif else if n_elements(ebv) eq 1 then begin
-                    reddening_output[i,*]= [ebv[0],0.0d]
-                    reddening_output_err[i,*]= [err_reddening[0],99.0d]
+                    reddening_output[i,*]= [ebv[0],-9999.0d]
+                    reddening_output_err[i,*]= [err_reddening[0],-9999.0d]
                 endif else begin
-                    reddening_output[i,*]= [0.0d,0.0d]
-                    reddening_output_err[i,*]= [99.0d,99.0d]
+                    reddening_output[i,*]= [-9999.0d,-9999.0d]
+                    reddening_output_err[i,*]= [-9999.0d,-9999.0d]
                 endelse
 
             endif
@@ -918,24 +921,23 @@ PRO MDAP_SPECTRAL_FITTING, $
             if fitted_pixels_gndf[0] ne -1 then $
                 obj_fit_mask_gndf[i,fit_indx[fitted_pixels_gndf]] = 0.0d
 
-            weights_ppxf[i,*] = weights_ppxf_i                          ; Set the weights
-            chi2_ppxf[i] = chi2_ppxf_i
+            weights_ppxf[i,*] = weights_ppxf_i                          ; Save pPXF weights
+            chi2_ppxf[i] = chi2_ppxf_i                                  ; Save pPXF chi^2
             if n_elements(degree) ne 0 then begin
                 if degree gt 0 then $
-                    add_poly_coeff_ppxf[i,*] = add_poly_coeff_ppxf_i
+                    add_poly_coeff_ppxf[i,*] = add_poly_coeff_ppxf_i    ; Save additive poly
             endif
             if n_elements(mdegree) ne 0 then begin
                 if mdegree gt 0 then $
-                    mult_poly_coeff_ppxf[i,*] = mult_poly_coeff_ppxf_i
+                    mult_poly_coeff_ppxf[i,*] = mult_poly_coeff_ppxf_i  ; Save multiplicative poly
             endif
 
             if ppxf_only eq 0 then begin
-                weights_gndf[i,*] = weights_gndf_i[0:ntpl-1]
-                chi2_gndf[i] = chi2_gndf_i
-;               if analysis_par.reddening_order eq 0 and n_elements(mdegree) ne 0 then begin
+                weights_gndf[i,*] = weights_gndf_i[0:ntpl-1]            ; Save GANDALF weights
+                chi2_gndf[i] = chi2_gndf_i                              ; Save GANDALF chi^2
                 if analysis_par.reddening_order eq 0 && n_elements(mdegree) ne 0 then begin
                     if mdegree gt 0 then $
-                        mult_poly_coeff_gndf[i,*] = mult_poly_coeff_gndf_i
+                        mult_poly_coeff_gndf[i,*] = mult_poly_coeff_gndf_i  ; Save multiplicative
                 endif
             endif
 
@@ -963,7 +965,6 @@ PRO MDAP_SPECTRAL_FITTING, $
 ;                                                               moments=moments, $
 ;                                                               oversample=oversample)
             ;--------------------
-
             ; TODO: Put this all in a procedure!
 
             ; Output/input wavelengths are the same; copy the spectra and go to next spectrum

@@ -61,8 +61,8 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       10 Dec 2014: (KBW) Pulled from MDAP_GANDALF_WRAP for use with
-;                          other procedures.
+;       10 Dec 2014: Pulled from MDAP_GANDALF_WRAP for use with other
+;                    procedures by K. Westfall (KBW).
 ;-
 ;------------------------------------------------------------------------------
 

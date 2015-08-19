@@ -3,23 +3,41 @@
 ;       MDAP_SPECTRAL_INDEX_MEASUREMENTS
 ;
 ; PURPOSE:
-;       Measure absorption-line indices.
+;       Measure absorption-line indices using MDAP_GET_SPECTRAL_INDEX.
+;       The indices are measured for the data, as well as the broadened
+;       and unbroadened version of the optimal template determined by
+;       the stellar continuum fit.  When the spectral range of the
+;       templates are sufficient, these template-based measurements are
+;       used to correct the index measurement from the galaxy spectrum
+;       for the velocity dispersion.  The corrections are different if
+;       the index is measured in angstroms or magnitudes.  For
+;       magnitudes:
 ;
-;       TODO: Improve this description.
+;           losvd_correction = otpl_index - botpl_index
+;           spectral_index = spectral_index_raw + losvd_correction
+;
+;       For angstroms:
+;
+;           losvd_correction = otpl_index / botpl_index
+;           spectral_index = spectral_index_raw * losvd_correction
+;
 ;
 ; CALLING SEQUENCE:
-;       MDAP_SPECTRAL_INDEX_MEASUREMENTS, tpl_lib_fits, weights, stellar_kinematics, abs_par, $
-;                                         obj_wave, obj_flux, obj_ivar, obj_mask, $
-;                                         abs_line_indx_omitted, abs_line_indx, abs_line_indx_err, $
-;                                         abs_line_indx_otpl, abs_line_indx_botpl, $
-;                                         moments=moments, version=version, oversample=oversample, $
-;                                         dbg=dbg
-;
+;       MDAP_SPECTRAL_INDEX_MEASUREMENTS, abs_par, wave, flux, ivar, mask, otpl_flux, otpl_mask, $
+;                                         botpl_flux, botpl_mask, stellar_kinematics, $
+;                                         spectral_index_omitted, spectral_index_blue_cont, $
+;                                         spectral_index_blue_cerr, spectral_index_red_cont, $
+;                                         spectral_index_red_cerr, spectral_index_raw, $
+;                                         spectral_index_rerr, spectral_index_rperr, $
+;                                         spectral_index_otpl_blue_cont, $
+;                                         spectral_index_otpl_red_cont, spectral_index_otpl_index, $
+;                                         spectral_index_botpl_blue_cont, $
+;                                         spectral_index_botpl_red_cont, $
+;                                         spectral_index_botpl_index, spectral_index_corr, $
+;                                         spectral_index_cerr, spectral_index_cperr, $
+;                                         version=version, /dbg, /quiet
+; 
 ; INPUTS:
-;       stellar_kinematics dblarr[B][M]
-;               Best-fitting stellar kinematics with M moments for each of the B
-;               object spectra.
-;
 ;       abs_par SpectralIndex[I]
 ;               Array of SpectralIndex structures.  See
 ;               MDAP_READ_ABSORPTION_LINE_PARAMETERS.
@@ -40,38 +58,77 @@
 ;       mask dblarr[B][C]
 ;               Bad pixel mask (0-good, 1-bad) for the object spectra.
 ;
+;       otpl_flux dblarr[B][C]
+;       otpl_mask dblarr[B][C]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and mask.
+;
+;       botpl_flux dblarr[B][C]
+;       botpl_mask dblarr[B][C]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and broadened by the best-fitting
+;               LOSVD for each of the B spectra, and its bad pixel mask.
+;
+;       stellar_kinematics dblarr[B][M]
+;               Best-fitting stellar kinematics with M moments for each of the B
+;               object spectra.
+;
 ; OPTIONAL INPUTS:
 ;
-;       (REMOVED!) output_file_root string
-;               Root name for PS file output.
-;
 ; OPTIONAL KEYWORDS:
-;       (REMOVED!) /plot
-;               Create the output PS plots.
-;
 ;       /dbg
 ;               Only fit the set of indices to the first spectrum as a debugging
 ;               test.
 ;
+;       /quiet
+;               Suppress output to STDOUT
+;
 ; OUTPUT:
-;       abs_line_omitted intarr[B][I]
+;       spectral_index_omitted intarr[B][I]
 ;               Flag that the index was (1) or was not (0) omitted because it
 ;               fell outside the spectral range of the observations.
 ;
-;       abs_line_indx dblarr[B][I]
-;               Absorption-line-index measurements for the I absorption lines in
-;               the B *object* spectra, corrected for intrinsic broadening.
+;       spectral_index_blue_cont dblarr[B][I]
+;       spectral_index_blue_cerr dblarr[B][I]
+;       spectral_index_red_cont dblarr[B][I]
+;       spectral_index_red_cerr dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and their
+;               propagated error for each of the B binned spectra and
+;               each of the I spectral indices.
 ;
-;       abs_line_indx_err dblarr[B][I]
-;               Error in each of the index measurements.
+;       spectral_index_raw dblarr[B][I]
+;       spectral_index_rerr dblarr[B][I]
+;       spectral_index_rperr dblarr[B][I]
+;               Spectral index measured directly from the galaxy spectra
+;               following Worthey et al. (1994), the nominal error
+;               following Cardiel et al. (1998) (err), and an estimate
+;               of error from nominal error propagation (perr).  The
+;               index is defined either in angstroms or magnitudes as
+;               specified by abs_par.
 ;
-;       abs_line_indx_otpl dblarr[B][I]
-;               Absorption-line-index measurements based on the B
-;               optimal_template spectra.
-;               
-;       abs_line_indx_botpl dblarr[B][I]
-;               Absorption-line-index measurements based on the B
-;               losvd_optimal_template spectra.
+;       spectral_index_otpl_blue_cont dblarr[B][I]
+;       spectral_index_otpl_red_cont dblarr[B][I]
+;       spectral_index_otpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the (unbroadened) optimal template for
+;               each of the B binned spectra and each of the I spectral
+;               indices.
+;
+;       spectral_index_botpl_blue_cont dblarr[B][I]
+;       spectral_index_botpl_red_cont dblarr[B][I]
+;       spectral_index_botpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the broadened optimal template for each
+;               of the B binned spectra and each of the I spectral
+;               indices.
+;
+;       spectral_index_corr dblarr[B][I]
+;       spectral_index_cerr dblarr[B][I]
+;       spectral_index_cperr dblarr[B][I]
+;               Spectral indices for the galaxy spectra after correcting
+;               for Doppler broadening using the correction derived by
+;               comparing the index measurements from the broadened and
+;               unbroadened versions of the optimal template.
 ;
 ; OPTIONAL OUTPUT:
 ;       version string
@@ -93,88 +150,91 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       31 Oct 2014: (KBW) Copied from L. Coccato's version (PDAP v0_8)
+;       31 Oct 2014: Copied from L. Coccato's version (PDAP v0_8) by K.
+;                    Westfall (KBW)
+;       12 Aug 2015: (KBW) Change default values in output arrays to
+;                          -9999.0.  Added a LARGE number of additional
+;                          outputs: pseudo-continua, raw indices,
+;                          propagated errors, and correction details.
 ;-
-;------------------------------------------------------------------------------
+;----------------------------------------------------------------------
 
 PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
-                abs_par, wave, flux, ivar, mask, otpl, botpl, stellar_kinematics, $
-                abs_line_indx_omitted, abs_line_indx, abs_line_indx_err, abs_line_indx_otpl, $
-                abs_line_indx_botpl, version=version, dbg=dbg
+                abs_par, wave, flux, ivar, mask, otpl_flux, otpl_mask, botpl_flux, botpl_mask, $
+                stellar_kinematics, spectral_index_omitted, spectral_index_blue_cont, $
+                spectral_index_blue_cerr, spectral_index_red_cont, spectral_index_red_cerr, $
+                spectral_index_raw, spectral_index_rerr, spectral_index_rperr, $
+                spectral_index_otpl_blue_cont, spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index, spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont, spectral_index_botpl_index, spectral_index_corr, $
+                spectral_index_cerr, spectral_index_cperr, version=version, dbg=dbg, quiet=quiet
 
-        ; On input, the mask expected to be directly applicable to flux and
-        ; botpl.  HOWEVER, it is expected to be applicable to the DEREDSHIFTED
-        ; wavelengths of otpl, the optimal template.
-
-        ; TODO: Plotting option has been removed.  There has to be a better way to create QA plots.
-        ;output_file_root=output_file_root, plot=plot, 
-        ; TODO: Do some checks of the input arrays?
-
-        version_module = '0.9'                  ; Version number
+        ; Just return the version if requested
+        version_module = '1.1'                  ; Version number
         if n_elements(version) ne 0 then begin  ; If version is defined
             version = version_module            ; ... set it to the module version
             return                              ; ... and return without doing anything
         endif
 
-        ;-----------------------------------------------------------------------
-        ; SETUP ----------------------------------------------------------------
+        ;---------------------------------------------------------------
+        ; SETUP --------------------------------------------------------
 
-        ; Set the inverse variance vectors to dummy values for use with otpl and
-        ; botpl
-        tpl_ivar = make_array((size(flux))[2], /double, value=1.0d)
+        ; On input, the mask expected to be directly applicable to flux
+        ; and botpl.  HOWEVER, it is expected to be applicable to the
+        ; DEREDSHIFTED wavelengths of otpl, the optimal template.
+
+        ; TODO: Do some checks of the input arrays?
 
         c=299792.458d                           ; Speed of light in km/s
         redshift = stellar_kinematics[*,0]/c    ; Redshift of each spectrum
 
-        ; Determine the minimum and maximum wavelength available to the index
-        ; measurements; force the index to be common to all spectra (flux, otpl,
-        ; botpl)
-
-;       min_wave = min(wave)            ; Grab the minimum
-;       if min_wave lt min(tpl_wave) then $     ; Adjust it if necessary
-;           min_wave = min(tpl_wave)
-;       max_wave = max(wave)            ; Grab the maximum
-;       if max_wave gt max(tpl_wave) then $     ; Adjust it if necessary
-;           max_wave = max(tpl_wave)
-
-        ; Allocate the output arrays
+        ; Allocate the output arrays, setting default values to -9999
         nspec = (size(flux))[1]                         ; Number of spectra
+        npix = (size(flux))[2]                          ; Number of wavelength channels
         nabs = n_elements(abs_par)                      ; Number of spectral indices
-        abs_line_indx_omitted = intarr(nspec, nabs)     ; Flag that index was omitted
-        abs_line_indx = dblarr(nspec, nabs)             ; Index measurements (object spectra)
-        abs_line_indx_err = dblarr(nspec, nabs)         ; ... error
-        abs_line_indx_otpl = dblarr(nspec, nabs)        ; Index measurements (optimal template)
-        abs_line_indx_botpl = dblarr(nspec, nabs)       ; Index measurements (broadened op template)
 
-;       if keyword_set(plot) and n_elements(output_file_root) eq 0 then begin
-;           print, 'No output root name provide for PS plots.  Using ./mdap_abs_line'
-;           output_file_root = './mdap_abs_line'
-;           set_plot,'ps'
-;       endif
-        ;-----------------------------------------------------------------------
+        ; Dummy errors for use with otpl and botpl
+        tpl_ivar = make_array((size(flux))[2], /double, value=1.0d)
 
+        spectral_index_omitted = intarr(nspec, nabs)    ; Flag that index was omitted
 
-        ;-----------------------------------------------------------------------
-        ; Measure all spectral indices for all spectra -------------------------
+        spectral_index_blue_cont = make_array(nspec, nabs, /double, value=-9999.0d)  ; Blue contin
+        spectral_index_blue_cerr = make_array(nspec, nabs, /double, value=-9999.0d)  ; and error
+        spectral_index_red_cont = make_array(nspec, nabs, /double, value=-9999.0d)   ; Red continuum
+        spectral_index_red_cerr = make_array(nspec, nabs, /double, value=-9999.0d)   ; and error
+
+        spectral_index_raw = make_array(nspec, nabs, /double, value=-9999.0d)    ; Raw measurement
+        spectral_index_rerr = make_array(nspec, nabs, /double, value=-9999.0d)    ; error formula
+        spectral_index_rperr = make_array(nspec, nabs, /double, value=-9999.0d)   ; propagated
+
+        spectral_index_otpl_blue_cont = make_array(nspec, nabs, /double, value=-9999.0d)
+        spectral_index_otpl_red_cont = make_array(nspec, nabs, /double, value=-9999.0d)
+        spectral_index_otpl_index = make_array(nspec, nabs, /double, value=-9999.0d)
+
+        spectral_index_botpl_blue_cont = make_array(nspec, nabs, /double, value=-9999.0d)
+        spectral_index_botpl_red_cont = make_array(nspec, nabs, /double, value=-9999.0d)
+        spectral_index_botpl_index = make_array(nspec, nabs, /double, value=-9999.0d)
+
+        spectral_index_corr = make_array(nspec, nabs, /double, value=-9999.0d)  ; Corrected index
+        spectral_index_cerr = make_array(nspec, nabs, /double, value=-9999.0d)  ; error formula
+        spectral_index_cperr = make_array(nspec, nabs, /double, value=-9999.0d) ; propaged error
+
+        ;---------------------------------------------------------------
+
+        ;---------------------------------------------------------------
+        ; Measure all spectral indices for all spectra -----------------
         if keyword_set(dbg) then $              ; Only analyze the first spectrum
             nspec = 1
         for i=0,nspec-1 do begin
 
-;           ; Initialize the plot file
-;           if keyword_set(plot) then begin
-;               device, filename=output_file_root+'indx_'+mdap_stc(i+1,/integer)+'.ps', /color, $
-;                       xsize=15, ysize=12
-;           endif
-
-            ; Set the mask for otpl to be the DEREDSHIFTED version of the input
-            ; mask
-            otpl_mask = interpol(reform(mask[i,*]), wave, wave/(redshift[i]+1.0d))
-            indx = where(otpl_mask gt 0.5, count, complement=nindx, ncomplement=ncount)
-;           if indx[0] ne -1 then $
-            if count ne 0 then $
-                otpl_mask[indx] = 1.0d
-            if ncount ne 0 then $
-                otpl_mask[nindx] = 0.0d
+;            ; Set the mask for otpl to be the DEREDSHIFTED version of the input
+;            ; mask
+;            otpl_mask = interpol(reform(mask[i,*]), wave, wave/(redshift[i]+1.0d))
+;            indx = where(otpl_mask gt 0.5, count, complement=nindx, ncomplement=ncount)
+;            if count ne 0 then $
+;                otpl_mask[indx] = 1.0d
+;            if ncount ne 0 then $
+;                otpl_mask[nindx] = 0.0d
 
             ; Get the REDSHIFTED passbands for getting the index measurements of
             ; the object data
@@ -192,65 +252,95 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
 ;               print, abs_par_z[j].blue_cont
 ;               print, abs_par_z[j].red_cont
 
-;               ; Check if the index can be measured
-;               if abs_par[j].red_cont[1] lt min_wave or $
-;                  abs_par[j].blue_cont[0] gt max_wave or $
-;                  abs_par_z[j].red_cont[1] lt min_wave or $
-;                  abs_par_z[j].blue_cont[0] gt max_wave then begin
-;                   abs_line_indx_omitted[i,j] = 1      ; Flag the index as omitted
-;                   print, 'OMITTED!'
-;                   continue                            ; Index not in wavelength range, go to next
-;               endif
-
                 ; Measure the index based on the object data (use redshifted windows)
                 err = 0
                 MDAP_GET_SPECTRAL_INDEX, wave, reform(flux[i,*]), reform(ivar[i,*]), $
-                                         reform(mask[i,*]), abs_par_z[j], obj_equiv_width, $
-                                         obj_equiv_width_err, obj_index_mag, obj_index_mag_err, $
-                                         err=err, /geometric
-                if err eq 1 then begin                          ; Measurement returned error!
-                    abs_line_indx_omitted[i,j] = 1
-                    continue
+                                         reform(mask[i,*]), abs_par_z[j], blue_cont, $
+                                         blue_cont_err, red_cont, red_cont_err, $
+                                         equiv_width, equiv_width_err, equiv_width_perr, $
+                                         index_mag, index_mag_err, index_mag_perr, err=err, $
+                                         /geometric, /quiet; quiet=quiet
+
+                if err eq 1 then begin                  ; Measurement returned error!
+                    spectral_index_omitted[i,j] = 1
+                    continue                            ; Continue without saving anything
                 endif
+
+                ; Save the raw results
+                spectral_index_blue_cont[i,j] = blue_cont
+                spectral_index_blue_cerr[i,j] = blue_cont_err
+                spectral_index_red_cont[i,j] = red_cont
+                spectral_index_red_cerr[i,j] = red_cont_err
+                if abs_par[j].units eq 'ang' then begin
+                    spectral_index_raw[i,j] = equiv_width
+                    spectral_index_rerr[i,j] = equiv_width_err
+                    spectral_index_rperr[i,j] = equiv_width_perr
+                endif
+                if abs_par[j].units eq 'mag' then begin
+                    spectral_index_raw[i,j] = index_mag
+                    spectral_index_rerr[i,j] = index_mag_err
+                    spectral_index_rperr[i,j] = index_mag_perr
+                endif
+
                 ; Measure the index based on the optimal template (use rest-frame windows)
-                MDAP_GET_SPECTRAL_INDEX, wave, reform(otpl[i,*]), tpl_ivar, otpl_mask, $
-                                         abs_par[j], otpl_equiv_width, otpl_equiv_width_err, $
-                                         otpl_index_mag, otpl_index_mag_err, err=err, /geometric
-                if err eq 1 then begin                          ; Measurement returned error!
-                    abs_line_indx_omitted[i,j] = 1
-                    continue
-                endif
-                ; Measure the index based on the broadened template (use redshifted windows)
-                MDAP_GET_SPECTRAL_INDEX, wave, reform(botpl[i,*]), tpl_ivar, reform(mask[i,*]), $
-                                         abs_par_z[j], botpl_equiv_width, botpl_equiv_width_err, $
-                                         botpl_index_mag, botpl_index_mag_err, err=err, /geometric
-                if err eq 1 then begin                          ; Measurement returned error!
-                    abs_line_indx_omitted[i,j] = 1
-                    continue
+                MDAP_GET_SPECTRAL_INDEX, wave, reform(otpl_flux[i,*]), tpl_ivar, $
+                                         reform(otpl_mask[i,*]), abs_par[j], blue_cont, $
+                                         blue_cont_err, red_cont, red_cont_err, $
+                                         equiv_width, equiv_width_err, equiv_width_perr, $
+                                         index_mag, index_mag_err, index_mag_perr, err=err, $
+                                         /geometric, /quiet; quiet=quiet
+
+                if err eq 1 then begin                  ; Measurement returned error!
+                    spectral_index_omitted[i,j] = 1
+                    continue                            ; Continue without saving template results
                 endif
 
-                ; TODO: Instead of providing corrected values, provide direct
-                ; measurements and the corrections?
+                ; Save the raw results
+                spectral_index_otpl_blue_cont[i,j] = blue_cont
+                spectral_index_otpl_red_cont[i,j] = red_cont
+                if abs_par[j].units eq 'ang' then $
+                    spectral_index_otpl_index[i,j] = equiv_width
+                if abs_par[j].units eq 'mag' then $
+                    spectral_index_otpl_index[i,j] = index_mag
 
-                ; Correct the index measured using the difference between the
+                ; Measure the index based on the broadened optimal template (use redshifted windows)
+                MDAP_GET_SPECTRAL_INDEX, wave, reform(botpl_flux[i,*]), tpl_ivar, $
+                                         reform(botpl_mask[i,*]), abs_par_z[j], blue_cont, $
+                                         blue_cont_err, red_cont, red_cont_err, $
+                                         equiv_width, equiv_width_err, equiv_width_perr, $
+                                         index_mag, index_mag_err, index_mag_perr, err=err, $
+                                         /geometric, /quiet; quiet=quiet
+
+                if err eq 1 then begin                  ; Measurement returned error!
+                    spectral_index_omitted[i,j] = 1
+                    continue                            ; Continue without saving template results
+                endif
+
+                ; Save the raw results
+                spectral_index_botpl_blue_cont[i,j] = blue_cont
+                spectral_index_botpl_red_cont[i,j] = red_cont
+                if abs_par[j].units eq 'ang' then $
+                    spectral_index_botpl_index[i,j] = equiv_width
+                if abs_par[j].units eq 'mag' then $
+                    spectral_index_botpl_index[i,j] = index_mag
+
+                ; Correct the index measurements using the difference between the
                 ; measurements performed on the optimal template and its
                 ; broadened version.  The correction depends on the desired
-                ; units.  This also saves the results.
-                if abs_par[j].units eq 'mag' then begin
-                    losvd_correction = otpl_index_mag - botpl_index_mag
-                    abs_line_indx[i,j] = obj_index_mag + losvd_correction
-                    abs_line_indx_otpl[i,j] = otpl_index_mag
-                    abs_line_indx_botpl[i,j] = botpl_index_mag
-                    abs_line_indx_err[i,j] = obj_index_mag_err
-                endif
-
+                ; units.
                 if abs_par[j].units eq 'ang' then begin
-                    losvd_correction = otpl_equiv_width / botpl_equiv_width
-;                   abs_line_indx[i,j] = obj_equiv_width / losvd_correction
-                    abs_line_indx[i,j] = obj_equiv_width * losvd_correction
-                    abs_line_indx_otpl[i,j] = otpl_equiv_width
-                    abs_line_indx_botpl[i,j] = botpl_equiv_width
-                    abs_line_indx_err[i,j] = obj_equiv_width_err / abs(losvd_correction)
+                    losvd_correction = spectral_index_otpl_index[i,j] $
+                                       / spectral_index_botpl_index[i,j]
+                    spectral_index_corr[i,j] = spectral_index_raw[i,j] * losvd_correction
+                    spectral_index_cerr[i,j] = spectral_index_rerr[i,j] * abs(losvd_correction)
+                    spectral_index_cperr[i,j] = spectral_index_rperr[i,j] * abs(losvd_correction)
+                endif
+                if abs_par[j].units eq 'mag' then begin
+                    losvd_correction = spectral_index_otpl_index[i,j] $
+                                       - spectral_index_botpl_index[i,j]
+                    spectral_index_corr[i,j] = spectral_index_raw[i,j] + losvd_correction
+                    spectral_index_cerr[i,j] = spectral_index_rerr[i,j]
+                    spectral_index_cperr[i,j] = spectral_index_rperr[i,j]
                 endif
 
 ;               print, abs_line_indx[i,j], abs_line_indx_err[i,j], abs_line_indx_otpl[i,j], $
@@ -259,14 +349,8 @@ PRO MDAP_SPECTRAL_INDEX_MEASUREMENTS, $
 
             endfor ; End loop over indices
 
-;           if keyword_set(plot) then $
-;               device, /close
-
         endfor ; End loop over spectra
-        ;-----------------------------------------------------------------------
-
-;       if keyword_set(plot) then $
-;           set_plot, 'x'
+        ;---------------------------------------------------------------
 
 END
 

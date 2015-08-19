@@ -41,7 +41,8 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       09 Sep 2014: (KBW) Original Implementation
+;       09 Sep 2014: Original Implementation by K. Westfall (KBW)
+;       15 Jul 2015: (KBW) Fixed indexing error in coordinate system
 ;-
 ;------------------------------------------------------------------------------
 
@@ -57,8 +58,10 @@ PRO MDAP_CUBE_ONSKY_XY, $
         y = MAKE_ARRAY(nx*ny, /double)
         for i=0,nx-1 do begin
             for j=0,ny-1 do begin
-                x[i*ny+j] = i+1                         ; Set the pixel coordinates
-                y[i*ny+j] = j+1
+;               x[i*ny+j] = i+1                         ; Set the pixel coordinates
+;               y[i*ny+j] = j+1
+                x[i*ny+j] = double(i)       ; Set the pixel coordinates, XYAD uses IDL convention
+                y[i*ny+j] = double(j)
             endfor
         endfor
 

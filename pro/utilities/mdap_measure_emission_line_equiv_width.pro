@@ -67,8 +67,9 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       10 Dec 2014: (KBW) Pulled from MDAP_GANDALF_WRAP for use with
-;                          other procedures.
+;       10 Dec 2014: Pulled from MDAP_GANDALF_WRAP for use with other
+;                    procedures by K. Westfall (KBW).
+;       10 Jul 2015: (KBW) Changed dummy values to -9999.0d
 ;-
 ;------------------------------------------------------------------------------
 
@@ -91,16 +92,11 @@ PRO MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH, $
             el_range_lo = [ el_range_out[0], el_range_in[0] ]
             el_range_hi = [ el_range_in[1], el_range_out[1] ]
 
-            ; TODO: Do these tests outside of the loop?  Do something
-            ; else so it doesn't break the DAP 
             MDAP_SELECT_WAVE, wave, el_range_lo, indx_lo, count=count_lo
             MDAP_SELECT_WAVE, wave, el_range_hi, indx_hi, count=count_hi
-;           if indx_lo[0] eq -1 or indx_hi[0] eq -1 then begin
-;           if count_lo eq 0 or count_hi eq 0 then begin
             if count_lo eq 0 || count_hi eq 0 then begin
-                ; Set dummy values
-                equiv_width[i] = 0.0d
-                equiv_width_err[i] = 99.0d
+                equiv_width[i] = -9999.0d               ; Set dummy values
+                equiv_width_err[i] = -9999.0d
                 continue
             endif
 

@@ -42,8 +42,33 @@
 ;                           emission_line_EW_err=emission_line_EW_err, $
 ;                           reddening_val=reddening_val, reddening_err=reddening_err, $
 ;                           obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;                           eml_model=eml_model, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+;                           eml_model=eml_model, nonpar_eml_omitted=nonpar_eml_omitted, $
+;                           nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+;                           nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+;                           nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+;                           nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+;                           nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+;                           nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+;                           nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+;                           nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+;                           nonpar_eml_red_flux=nonpar_eml_red_flux, $
+;                           nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+;                           nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+;                           nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+;                           nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+;                           nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+;                           nonpar_eml_red_cont=nonpar_eml_red_cont, $
+;                           nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+;                           nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+;                           nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+;                           nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+;                           nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+;                           nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+;                           nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr, $
+;                           elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
 ;                           elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+;                           elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+;                           elo_ew_kinematics_n=elo_ew_kinematics_n, $
 ;                           elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
 ;                           elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
 ;                           elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
@@ -53,6 +78,8 @@
 ;                           elo_ew_eml_model=elo_ew_eml_model, $
 ;                           elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
 ;                           elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+;                           elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+;                           elo_fb_kinematics_n=elo_fb_kinematics_n, $
 ;                           elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
 ;                           elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
 ;                           elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
@@ -61,14 +88,27 @@
 ;                           elo_fb_EWidth=elo_fb_EWidth, elo_fb_EW_err=elo_fb_EW_err, $
 ;                           elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
 ;                           abs_line_key=abs_line_key, $
-;                           abs_line_indx_omitted=abs_line_indx_omitted, $
-;                           abs_line_indx_val=abs_line_indx_val, $
-;                           abs_line_indx_err=abs_line_indx_err, $
-;                           abs_line_indx_otpl=abs_line_indx_otpl, $
-;                           abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+;                           spectral_index_omitted=spectral_index_omitted, $
+;                           spectral_index_blue_cont=spectral_index_blue_cont, $
+;                           spectral_index_blue_cerr=spectral_index_blue_cerr, $
+;                           spectral_index_red_cont=spectral_index_red_cont, $
+;                           spectral_index_red_cerr=spectral_index_red_cerr, $
+;                           spectral_index_raw=spectral_index_raw, $
+;                           spectral_index_rerr=spectral_index_rerr, $
+;                           spectral_index_rperr=spectral_index_rperr, $
+;                           spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+;                           spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+;                           spectral_index_otpl_index=spectral_index_otpl_index, $
+;                           spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+;                           spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+;                           spectral_index_botpl_index=spectral_index_botpl_index, $
+;                           spectral_index_corr=spectral_index_corr, $
+;                           spectral_index_cerr=spectral_index_cerr, $
+;                           spectral_index_cperr=spectral_index_cperr, si_bin_wave=si_bin_wave, $
 ;                           si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
-;                           si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
-;                           si_broad_optimal_template=si_broad_optimal_template
+;                           si_bin_mask=si_bin_mask, si_otpl_flux=si_otpl_flux, $
+;                           si_otpl_mask=si_otpl_mask, si_botpl_flux=si_botpl_flux, $
+;                           si_botpl_mask=si_botpl_mask
 ;
 ; OPTIONAL INPUTS:
 ;       All optional outputs are set to string values ('0') simply to make sure
@@ -298,10 +338,71 @@
 ;               Best-fitting emission-line-only model for each of the N spectra
 ;               obtained by GANDALF.
 ;
-;       elo_ew_kinematics_avg dblarr[B][2]
-;       elo_ew_kinematics_aer dblarr[B][2]
-;               The mean kinematics (and errors) of the emission lines
-;               determined using Enci Wang's code.
+;
+;       nonpar_eml_omitted intarr[N][E]
+;               Flag setting whether or not a set of emission-line
+;               measurements should be omitted due to errors
+;               (0-good;1-bad).
+;
+;       nonpar_eml_flux_raw dblarr[N][E]
+;       nonpar_eml_flux_rerr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined passband and its error.  
+;       
+;       nonpar_eml_mom1_raw dblarr[N][E]
+;       nonpar_eml_mom1_rerr dblarr[N][E]
+;       nonpar_eml_mom2_raw dblarr[N][E]
+;       nonpar_eml_mom2_rerr dblarr[N][E]
+;               The first and second moments of the velocity over the
+;               defined passband and their errors.
+;
+;       nonpar_eml_blue_flux dblarr[N][E]
+;       nonpar_eml_blue_ferr dblarr[N][E]
+;       nonpar_eml_red_flux dblarr[N][E]
+;       nonpar_eml_red_ferr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined blue and red sidebands, and their
+;               errors.
+;
+;       nonpar_eml_blue_fcen dblarr[N][E]
+;       nonpar_eml_blue_cont dblarr[N][E]
+;       nonpar_eml_blue_cerr dblarr[N][E]
+;       nonpar_eml_red_fcen dblarr[N][E]
+;       nonpar_eml_red_cont dblarr[N][E]
+;       nonpar_eml_red_cerr dblarr[N][E]
+;               The flux-weighted centers and pseudo-continuum levels
+;               and errors in the blue and red sidebands used to define
+;               a linear continuum underneath the primary passband for
+;               the corrected fluxes and velocity moments.
+;
+;       nonpar_eml_flux_corr dblarr[N][E]
+;       nonpar_eml_flux_cerr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined passband and its error, including the
+;               adjusted continuum level based on the blue and red
+;               pseudo-continuum measurements.  
+;        
+;       nonpar_eml_mom1_corr dblarr[N][E]
+;       nonpar_eml_mom1_cerr dblarr[N][E]
+;       nonpar_eml_mom2_corr dblarr[N][E]
+;       nonpar_eml_mom2_cerr dblarr[N][E]
+;               The first and second moments of the velocity over the
+;               defined passband and their errors , including the
+;               adjusted continuum level based on the blue and red
+;               pseudo-continuum measurements.
+;
+;       elo_ew_kinematics_avg dblarr[B][8]
+;       elo_ew_kinematics_aer dblarr[B][8]
+;       elo_ew_kinematics_ase dblarr[B][8]
+;       elo_ew_kinematics_n intarr[B]
+;               The weighted-mean kinematics (avg), propagated error
+;               (aer), standard error (ase; based on the weighted
+;               standard deviation), and number of used emission lines,
+;               for the set of fitted emission lines determined using
+;               Enci Wang's code.  There are 8 elements, 2 kinematic
+;               measurements (v, sigma) for each of the 4 weighting
+;               types (flux, velocity error, both, unweighted); see
+;               MDAP_EMISSION_LINE_ONLY_FIT.
 ;
 ;       elo_ew_kinematics_ind dblarr[B][O][2]
 ;       elo_ew_kinematics_ierr dblarr[B][O][2]
@@ -340,10 +441,18 @@
 ;               The best-fitting emission-line-only spectrum determined
 ;               by Enci Wang's code.
 ;
-;       elo_fb_kinematics_avg dblarr[B][2]
-;       elo_fb_kinematics_aer dblarr[B][2]
-;               The mean kinematics (and errors) of the emission lines
-;               determined using Francesco Belfiore's code.
+;       elo_fb_kinematics_avg dblarr[B][8]
+;       elo_fb_kinematics_aer dblarr[B][8]
+;       elo_fb_kinematics_ase dblarr[B][8]
+;       elo_fb_kinematics_n intarr[B]
+;               The weighted-mean kinematics (avg), propagated error
+;               (aer), standard error (ase; based on the weighted
+;               standard deviation), and number of used emission lines,
+;               for the set of fitted emission lines determined using
+;               Francesco Belfiore's code.  There are 8 elements, 2
+;               kinematic measurements (v, sigma) for each of the 4
+;               weighting types (flux, velocity error, both,
+;               unweighted); see MDAP_EMISSION_LINE_ONLY_FIT.
 ;
 ;       elo_fb_kinematics_ind dblarr[B][O][2]
 ;       elo_fb_kinematics_ierr dblarr[B][O][2]
@@ -391,35 +500,51 @@
 ;       abs_line_key string
 ;               Keyword signifying the spectral index file.
 ;
-;       abs_line_indx_omitted intarr[B][I]
-;               Flag that the spectral index I has (1) or has not (0) been
-;               omitted from the measurements of binned spectrum B.  Spectral
-;               indices are omitted if any part of their definition occurs
-;               outside of the spectral range of the spectrum.
+;       spectral_index_omitted intarr[B][I]
+;               Flag that the index was (1) or was not (0) omitted because it
+;               fell outside the spectral range of the observations.
 ;
-;       abs_line_indx_val dblarr[B][I]
-;               Value of spectral index I for spectrum B.  These values have
-;               been corrected for the velocity dispersion using the factor
-;               derived from the measurements based on the broadened and
-;               unbroadened optimal template.
+;       spectral_index_blue_cont dblarr[B][I]
+;       spectral_index_blue_cerr dblarr[B][I]
+;       spectral_index_red_cont dblarr[B][I]
+;       spectral_index_red_cerr dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and their
+;               propagated error for each of the B binned spectra and
+;               each of the I spectral indices.
 ;
-;       abs_line_indx_err dblarr[B][I]
-;               Error in spectral index I for spectrum B.
+;       spectral_index_raw dblarr[B][I]
+;       spectral_index_rerr dblarr[B][I]
+;       spectral_index_rperr dblarr[B][I]
+;               Spectral index measured directly from the galaxy spectra
+;               following Worthey et al. (1994), the nominal error
+;               following Cardiel et al. (1998) (err), and an estimate
+;               of error from nominal error propagation (perr).  The
+;               index is defined either in angstroms or magnitudes as
+;               specified by abs_par.
 ;
-;       abs_line_indx_otpl dblarr[B][I]
-;               Spectral index I measured using the optimal template for
-;               spectrum B.
+;       spectral_index_otpl_blue_cont dblarr[B][I]
+;       spectral_index_otpl_red_cont dblarr[B][I]
+;       spectral_index_otpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the (unbroadened) optimal template for
+;               each of the B binned spectra and each of the I spectral
+;               indices.
 ;
-;       abs_line_indx_botpl dblarr[B][I]
-;               Spectral index I measured using the broadened optimal template
-;               for spectrum B.
+;       spectral_index_botpl_blue_cont dblarr[B][I]
+;       spectral_index_botpl_red_cont dblarr[B][I]
+;       spectral_index_botpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the broadened optimal template for each
+;               of the B binned spectra and each of the I spectral
+;               indices.
 ;
-;       si_bin_wave dblarr[D]
-;               Wavelengths of the pixels in the binned spectra that have had
-;               their resolution matched tot the spectral index system.  NOTE: D
-;               can be (and is likely) different from C because of how the
-;               resolution matching process censors the data.  See
-;               MDAP_MATCH_SPECTRAL_RESOLUTION.
+;       spectral_index_corr dblarr[B][I]
+;       spectral_index_cerr dblarr[B][I]
+;       spectral_index_cperr dblarr[B][I]
+;               Spectral indices for the galaxy spectra after correcting
+;               for Doppler broadening using the correction derived by
+;               comparing the index measurements from the broadened and
+;               unbroadened versions of the optimal template.
 ;
 ;       si_bin_flux dblarr[B][D]
 ;               Flux of the binned spectra that have had their resolution
@@ -433,20 +558,18 @@
 ;               Bad pixel mask (0-good, 1-bad) of the binned spectra that have
 ;               had their resolution matched tot the spectral index system.
 ;
-;       si_optimal_template dblarr[B][F]
-;               The best-fitting template (sum of the weighted template in the
-;               library) for each of the B galaxy spectra with the resolution
-;               matched to that of the spectral index system.  NOTE: F can be
-;               (and is likely) different from both D and C because of how the
-;               resolution matching process censors the data.  See
-;               MDAP_MATCH_SPECTRAL_RESOLUTION.
+;       si_otpl_flux dblarr[B][D]
+;       si_otpl_mask dblarr[B][D]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and its bad pixel mask.  The bad
+;               pixel mask is just a de-redshifted version of the
+;               broadened optimal template mask.
 ;
-;       si_broad_optimal_template dblarr[B][F]
-;               The best-fitting template (sum of the weighted template in the
-;               library) for each of the B galaxy spectra with the resolution
-;               matched to that of the spectral index system, and broadened by
-;               the best-fitting line-of-sight velocity distribution.  TODO:
-;               Does this include the velocity shift?
+;       si_botpl_flux dblarr[B][D]
+;       si_botpl_mask dblarr[B][D]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and broadened by the best-fitting
+;               LOSVD for each of the B spectra, and its bad pixel mask.
 ;
 ; OPTIONAL KEYWORDS:
 ;
@@ -473,6 +596,8 @@
 ;       09 Jan 2015: (KBW) Include instrumental dispersion for GANDALF fit
 ;       09 Feb 2015: (KBW) Include fraction of good pixels and min(flux)
 ;                          == max(flux) flag in DRPS extension.
+;       12 Aug 2015: (KBW) Adjusted for new parameters.
+;       18 Aug 2015: (KBW) Added non-parametric emission-line data
 ;-
 ;------------------------------------------------------------------------------
 
@@ -510,6 +635,8 @@ PRO MDAP_DEFINE_OUTPUT, $
                 obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
                 eml_model=eml_model, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -518,18 +645,32 @@ PRO MDAP_DEFINE_OUTPUT, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
                 elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
                 elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
                 elo_fb_EW_err=elo_fb_EW_err, elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
-                abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
-                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
-                si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
-                si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
-                si_broad_optimal_template=si_broad_optimal_template
+                abs_line_key=abs_line_key, spectral_index_omitted=spectral_index_omitted, $
+                spectral_index_blue_cont=spectral_index_blue_cont, $
+                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                spectral_index_red_cont=spectral_index_red_cont, $
+                spectral_index_red_cerr=spectral_index_red_cerr, $
+                spectral_index_raw=spectral_index_raw, spectral_index_rerr=spectral_index_rerr, $
+                spectral_index_rperr=spectral_index_rperr, $
+                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index=spectral_index_otpl_index, $
+                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                spectral_index_botpl_index=spectral_index_botpl_index, $
+                spectral_index_corr=spectral_index_corr, spectral_index_cerr=spectral_index_cerr, $
+                spectral_index_cperr=spectral_index_cperr, si_bin_wave=si_bin_wave, $
+                si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
+                si_otpl_flux=si_otpl_flux, si_otpl_mask=si_otpl_mask, si_botpl_flux=si_botpl_flux, $
+                si_botpl_mask=si_botpl_mask
 
         if n_elements(header) eq 0 then header = '0'
         if n_elements(dx) eq 0 then dx = '0'
@@ -591,8 +732,33 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(obj_fit_mask_gndf) eq 0 then obj_fit_mask_gndf = '0'
         if n_elements(bestfit_gndf) eq 0 then bestfit_gndf = '0'
         if n_elements(eml_model) eq 0 then eml_model = '0'
+        if n_elements(nonpar_eml_omitted) eq 0 then nonpar_eml_omitted = '0'
+        if n_elements(nonpar_eml_flux_raw) eq 0 then nonpar_eml_flux_raw = '0'
+        if n_elements(nonpar_eml_flux_rerr) eq 0 then nonpar_eml_flux_rerr = '0'
+        if n_elements(nonpar_eml_mom1_raw) eq 0 then nonpar_eml_mom1_raw = '0'
+        if n_elements(nonpar_eml_mom1_rerr) eq 0 then nonpar_eml_mom1_rerr = '0'
+        if n_elements(nonpar_eml_mom2_raw) eq 0 then nonpar_eml_mom2_raw = '0'
+        if n_elements(nonpar_eml_mom2_rerr) eq 0 then nonpar_eml_mom2_rerr = '0'
+        if n_elements(nonpar_eml_blue_flux) eq 0 then nonpar_eml_blue_flux = '0'
+        if n_elements(nonpar_eml_blue_ferr) eq 0 then nonpar_eml_blue_ferr = '0'
+        if n_elements(nonpar_eml_red_flux) eq 0 then nonpar_eml_red_flux = '0'
+        if n_elements(nonpar_eml_red_ferr) eq 0 then nonpar_eml_red_ferr = '0'
+        if n_elements(nonpar_eml_blue_fcen) eq 0 then nonpar_eml_blue_fcen = '0'
+        if n_elements(nonpar_eml_blue_cont) eq 0 then nonpar_eml_blue_cont = '0'
+        if n_elements(nonpar_eml_blue_cerr) eq 0 then nonpar_eml_blue_cerr = '0'
+        if n_elements(nonpar_eml_red_fcen) eq 0 then nonpar_eml_red_fcen = '0'
+        if n_elements(nonpar_eml_red_cont) eq 0 then nonpar_eml_red_cont = '0'
+        if n_elements(nonpar_eml_red_cerr) eq 0 then nonpar_eml_red_cerr = '0'
+        if n_elements(nonpar_eml_flux_corr) eq 0 then nonpar_eml_flux_corr = '0'
+        if n_elements(nonpar_eml_flux_cerr) eq 0 then nonpar_eml_flux_cerr = '0'
+        if n_elements(nonpar_eml_mom1_corr) eq 0 then nonpar_eml_mom1_corr = '0'
+        if n_elements(nonpar_eml_mom1_cerr) eq 0 then nonpar_eml_mom1_cerr = '0'
+        if n_elements(nonpar_eml_mom2_corr) eq 0 then nonpar_eml_mom2_corr = '0'
+        if n_elements(nonpar_eml_mom2_cerr) eq 0 then nonpar_eml_mom2_cerr = '0'
         if n_elements(elo_ew_kinematics_avg) eq 0 then elo_ew_kinematics_avg = '0'
         if n_elements(elo_ew_kinematics_aer) eq 0 then elo_ew_kinematics_aer = '0'
+        if n_elements(elo_ew_kinematics_ase) eq 0 then elo_ew_kinematics_ase = '0'
+        if n_elements(elo_ew_kinematics_n) eq 0 then elo_ew_kinematics_n = '0'
         if n_elements(elo_ew_kinematics_ind) eq 0 then elo_ew_kinematics_ind = '0'
         if n_elements(elo_ew_kinematics_ier) eq 0 then elo_ew_kinematics_ier = '0'
         if n_elements(elo_ew_sinst) eq 0 then elo_ew_sinst = '0'
@@ -606,6 +772,8 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(elo_ew_eml_model) eq 0 then elo_ew_eml_model = '0'
         if n_elements(elo_fb_kinematics_avg) eq 0 then elo_fb_kinematics_avg = '0'
         if n_elements(elo_fb_kinematics_aer) eq 0 then elo_fb_kinematics_aer = '0'
+        if n_elements(elo_fb_kinematics_ase) eq 0 then elo_fb_kinematics_ase = '0'
+        if n_elements(elo_fb_kinematics_n) eq 0 then elo_fb_kinematics_n = '0'
         if n_elements(elo_fb_kinematics_ind) eq 0 then elo_fb_kinematics_ind = '0'
         if n_elements(elo_fb_kinematics_ier) eq 0 then elo_fb_kinematics_ier = '0'
         if n_elements(elo_fb_sinst) eq 0 then elo_fb_sinst = '0'
@@ -619,17 +787,31 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(elo_fb_eml_model) eq 0 then elo_fb_eml_model = '0'
         if n_elements(abs_par) eq 0 then abs_par = '0'
         if n_elements(abs_line_key) eq 0 then abs_line_key = '0'
-        if n_elements(abs_line_indx_omitted) eq 0 then abs_line_indx_omitted = '0'
-        if n_elements(abs_line_indx_val) eq 0 then abs_line_indx_val = '0'
-        if n_elements(abs_line_indx_err) eq 0 then abs_line_indx_err = '0'
-        if n_elements(abs_line_indx_otpl) eq 0 then abs_line_indx_otpl = '0'
-        if n_elements(abs_line_indx_botpl) eq 0 then abs_line_indx_botpl = '0'
+        if n_elements(spectral_index_omitted) eq 0 then spectral_index_omitted = '0'
+        if n_elements(spectral_index_blue_cont) eq 0 then spectral_index_blue_cont = '0'
+        if n_elements(spectral_index_blue_cerr) eq 0 then spectral_index_blue_cerr = '0'
+        if n_elements(spectral_index_red_cont) eq 0 then spectral_index_red_cont = '0'
+        if n_elements(spectral_index_red_cerr) eq 0 then spectral_index_red_cerr = '0'
+        if n_elements(spectral_index_raw) eq 0 then spectral_index_raw = '0'
+        if n_elements(spectral_index_rerr) eq 0 then spectral_index_rerr = '0'
+        if n_elements(spectral_index_rperr) eq 0 then spectral_index_rperr = '0'
+        if n_elements(spectral_index_otpl_blue_cont) eq 0 then spectral_index_otpl_blue_cont = '0'
+        if n_elements(spectral_index_otpl_red_cont) eq 0 then spectral_index_otpl_red_cont = '0'
+        if n_elements(spectral_index_otpl_index) eq 0 then spectral_index_otpl_index = '0'
+        if n_elements(spectral_index_botpl_blue_cont) eq 0 then spectral_index_botpl_blue_cont = '0'
+        if n_elements(spectral_index_botpl_red_cont) eq 0 then spectral_index_botpl_red_cont = '0'
+        if n_elements(spectral_index_botpl_index) eq 0 then spectral_index_botpl_index = '0'
+        if n_elements(spectral_index_corr) eq 0 then spectral_index_corr = '0'
+        if n_elements(spectral_index_cerr) eq 0 then spectral_index_cerr = '0'
+        if n_elements(spectral_index_cperr) eq 0 then spectral_index_cperr = '0'
         if n_elements(si_bin_wave) eq 0 then si_bin_wave = '0'
         if n_elements(si_bin_flux) eq 0 then si_bin_flux = '0'
         if n_elements(si_bin_ivar) eq 0 then si_bin_ivar = '0'
         if n_elements(si_bin_mask) eq 0 then si_bin_mask = '0'
-        if n_elements(si_optimal_template) eq 0 then si_optimal_template = '0'
-        if n_elements(si_broad_optimal_template) eq 0 then si_broad_optimal_template  = '0'
+        if n_elements(si_otpl_flux) eq 0 then si_otpl_flux = '0'
+        if n_elements(si_otpl_mask) eq 0 then si_otpl_mask = '0'
+        if n_elements(si_botpl_flux) eq 0 then si_botpl_flux = '0'
+        if n_elements(si_botpl_mask) eq 0 then si_botpl_mask = '0'
 END
 
 

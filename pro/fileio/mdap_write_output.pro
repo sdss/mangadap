@@ -11,33 +11,37 @@
 ;
 ;       EXTENSIONS ARE HARD-CODED:
 ;               0  - Empty
-;               1  - DRPS    : BINTABLE
-;               2  - BINS    : BINTABLE
-;               3  - WAVE    : IMAGE
-;               4  - SRES    : IMAGE
-;               5  - FLUX    : IMAGE
-;               6  - IVAR    : IMAGE
-;               7  - MASK    : IMAGE
-;               8  - ELPAR   : BINTABLE
-;               9  - STFIT   : BINTABLE
-;               10 - SMSK    : IMAGE
-;               11 - SMOD    : IMAGE
-;               12 - SGFIT   : BINTABLE
-;               13 - SGMSK   : IMAGE
-;               14 - SGMOD   : IMAGE
-;               15 - ELMOD   : IMAGE
-;               16 - ELOPAR  : BINTABLE
-;               17 - ELOFIT  : BINTABLE
-;               18 - ELOMEW  : IMAGE
-;               19 - ELOMFB  : IMAGE
-;               20 - SIWAVE  : IMAGE
-;               21 - SIFLUX  : IMAGE
-;               22 - SIIVAR  : IMAGE
-;               23 - SIMASK  : IMAGE
-;               24 - SIOTPL  : IMAGE
-;               25 - SIBOTPL : IMAGE
-;               26 - SIPAR   : BINTABLE
-;               27 - SINDX   : BINTABLE
+;               1  - DRPS     : BINTABLE
+;               2  - BINS     : BINTABLE
+;               3  - WAVE     : IMAGE
+;               4  - SRES     : IMAGE
+;               5  - FLUX     : IMAGE
+;               6  - IVAR     : IMAGE
+;               7  - MASK     : IMAGE
+;               8  - ELPAR    : BINTABLE
+;               9  - STFIT    : BINTABLE
+;               10 - SMSK     : IMAGE
+;               11 - SMOD     : IMAGE
+;               12 - SGFIT    : BINTABLE
+;               13 - SGMSK    : IMAGE
+;               14 - SGMOD    : IMAGE
+;               15 - ELMOD    : IMAGE
+;               16 - ELBAND   : BINTABLE
+;               17 - ELMMNT   : BINTABLE
+;               18 - ELOPAR   : BINTABLE
+;               19 - ELOFIT   : BINTABLE
+;               20 - ELOMEW   : IMAGE
+;               21 - ELOMFB   : IMAGE
+;               22 - SIWAVE   : IMAGE
+;               23 - SIFLUX   : IMAGE
+;               24 - SIIVAR   : IMAGE
+;               25 - SIMASK   : IMAGE
+;               26 - SIOTPL   : IMAGE
+;               27 - SIOTPLM  : IMAGE
+;               28 - SIBOTPL  : IMAGE
+;               29 - SIBOTPLM : IMAGE
+;               30 - SIPAR    : BINTABLE
+;               31 - SINDX    : BINTABLE
 ;
 ;       ANALYSIS FLAGS:
 ;                0 - spectrum not analyzed
@@ -85,7 +89,7 @@
 ;                   - analysis flag(s)
 ;
 ;               - Gas emission-line structure (save this?): ELPAR
-;                 4 columns, neml rows
+;                 5 columns, neml rows
 ;                   - gas line name: NNNNNN-LLLL, e.g. Ha-----6562, ArIII--7136
 ;                   - rest wavelength (in vacuum)
 ;                   - tied to?, tied type(t,v,s,''), doublet with?
@@ -118,13 +122,36 @@
 ;                       - gas equivalent widths and errors (vectors)
 ;                       ;TODO: add gas reddening correction
 ;
+;               - Non-parametric emission-line band definitions: ELBAND
+;                 2 columns, 3 [2] columns; neml rows
+;                   - gas line name: NNNNNN-LLLL, e.g. Ha-----6562, ArIII--7136
+;                   - rest wavelength (in vacuum)
+;                   - main bandpass (vector)
+;                   - blue sideband (vector)
+;                   - red sideband (vector)
+;
+;               - Non-parametric emission-line flux moments for each binned spectrum: ELMMNT
+;                 23 [neml] columns; nbin rows
+;                   - For each emission line (only good fits):
+;                       - omission flag (vector)
+;                       - flux and error integrated over the 3 bands (vectors)
+;                       - 1st,2nd velocity moments and error integrated over main bandpass (vectors)
+;                       - flux-weighted center wavelength of blue and red sidebands (vectors)
+;                       - blue and red pseudo-continuum and errors (vectors)
+;                       - continuum-corrected flux and error integrated over main bandpass (vectors)
+;                       - continuum-corrected 1st,2nd velocity moments and error integrated over
+;                         main bandpass (vectors)
+;
 ;               - Emission-line-only line fit details(save this?): ELOPAR
 ;                 2 columns, nemlo rows
 ;                   - gas line name: NNNNNN-LLLL, e.g. Ha-----6562, ArIII--7136
 ;                   - rest wavelength (in vacuum)
 ;
 ;               - For the emission-line only fit of each binned spectrum: ELOFIT
-;                 4 [moments] columns, 16 [nemlo] columns, 4 [nemlo][moments] columns, nbin rows
+;                 6 [nwgt*moments] columns, 2 columns, 16 [nemlo] columns,
+;                 4 [nemlo][moments] columns, nbin rows
+;                   - mean gas kinematics, propagated errors, standard errors for each weighting
+;                     (flux, velocity error, both, uniform), EW and FB (vectors)
 ;                   - mean gas kinematics and errors, EW and FB (vectors)
 ;                   - For each emission line (only good fits):
 ;                       - gas line omission flag, EW and FB (vector)
@@ -143,13 +170,17 @@
 ;                   - Units
 ; 
 ;               - For spectral index meaurements of each binned spectrum: SINDX
-;                 5 [nabs] columns
+;                 17 [nabs] columns
 ;                   - For each spectral index
 ;                       - omission flag (vector)
-;                       - index value (vector)
-;                       - index error (vector)
-;                       - optimal template index value (vector)
-;                       - broadened optimal template index value (vector)
+;                       - blue pseudo-continuum and error (vectors)
+;                       - red pseudo-continuum and error (vectors)
+;                       - raw indices, nominal error, and propagated error (vectors)
+;                       - blue and red pseudo-continua of optimal template (vectors)
+;                       - indices from optimal template (vector)
+;                       - blue and red pseudo-continua of broadened optimal template (vectors)
+;                       - indices from broadened optimal template (vector)
+;                       - corrected index value, nominal error, and propagated error (vectors)
 ;
 ;           Image Extensions:
 ;               - For binned spectra:
@@ -173,9 +204,11 @@
 ;                       - spectral-index resolution matched wavelength (1D): SIWAVE
 ;                       -                                   flux (2D): SIFLUX
 ;                       -                                   ivar (2D): SIIVAR
-;                       -                                   mask (2D): SIMASK
+;                       -                                   galaxy data mask (2D): SIMASK
 ;                       -                                   optimal template (2D): SIOTPL
+;                       -                                   optimal template mask (2D): SIOTPLM
 ;                       -                                   optimal broadened template (2D): SIBOTPL
+;                       -                                   opt broadened templ mask(2D): SIBOTPLM
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_WRITE_OUTPUT, file, header=header, dx=dx, dy=dy, w_range_sn=w_range_sn, xpos=xpos, $
@@ -211,9 +244,34 @@
 ;                          emission_line_EW_err=emission_line_EW_err, $
 ;                          reddening_val=reddening_val, reddening_err=reddening_err, $
 ;                          obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-;                          eml_model=eml_model, emlo_par=emlo_par, $
-;                          elo_ew_kinematics_fit=elo_ew_kinematics_fit, $
-;                          elo_ew_kinematics_err=elo_ew_kinematics_err, $
+;                          eml_model=eml_model, eml_bands=eml_bands, $
+;                          nonpar_eml_omitted=nonpar_eml_omitted, $
+;                          nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+;                          nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+;                          nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+;                          nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+;                          nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+;                          nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+;                          nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+;                          nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+;                          nonpar_eml_red_flux=nonpar_eml_red_flux, $
+;                          nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+;                          nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+;                          nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+;                          nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+;                          nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+;                          nonpar_eml_red_cont=nonpar_eml_red_cont, $
+;                          nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+;                          nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+;                          nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+;                          nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+;                          nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+;                          nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+;                          nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr, emlo_par=emlo_par, $
+;                          elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
+;                          elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+;                          elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+;                          elo_ew_kinematics_n=elo_ew_kinematics_n, $
 ;                          elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
 ;                          elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
 ;                          elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
@@ -223,6 +281,8 @@
 ;                          elo_ew_eml_model=elo_ew_eml_model, $
 ;                          elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
 ;                          elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+;                          elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+;                          elo_fb_kinematics_n=elo_fb_kinematics_n, $
 ;                          elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
 ;                          elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
 ;                          elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
@@ -230,15 +290,28 @@
 ;                          elo_fb_fluxes=elo_fb_fluxes, elo_fb_flxerr=elo_fb_flxerr, $
 ;                          elo_fb_EWidth=elo_fb_EWidth, elo_fb_EW_err=elo_fb_EW_err, $
 ;                          elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
-;                          abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
-;                          abs_line_indx_val=abs_line_indx_val, $
-;                          abs_line_indx_err=abs_line_indx_err, $
-;                          abs_line_indx_otpl=abs_line_indx_otpl, $
-;                          abs_line_indx_botpl=abs_line_indx_botpl, si_bin_wave=si_bin_wave, $
+;                          abs_line_key=abs_line_key, $
+;                          spectral_index_omitted=spectral_index_omitted, $
+;                          spectral_index_blue_cont=spectral_index_blue_cont, $
+;                          spectral_index_blue_cerr=spectral_index_blue_cerr, $
+;                          spectral_index_red_cont=spectral_index_red_cont, $
+;                          spectral_index_red_cerr=spectral_index_red_cerr, $
+;                          spectral_index_raw=spectral_index_raw, $
+;                          spectral_index_rerr=spectral_index_rerr, $
+;                          spectral_index_rperr=spectral_index_rperr, $
+;                          spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+;                          spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+;                          spectral_index_otpl_index=spectral_index_otpl_index, $
+;                          spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+;                          spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+;                          spectral_index_botpl_index=spectral_index_botpl_index, $
+;                          spectral_index_corr=spectral_index_corr, $
+;                          spectral_index_cerr=spectral_index_cerr, $
+;                          spectral_index_cperr=spectral_index_cperr, si_bin_wave=si_bin_wave, $
 ;                          si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
-;                          si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
-;                          si_broad_optimal_template= si_broad_optimal_template, $
-;                          /read_header, /quiet
+;                          si_bin_mask=si_bin_mask, si_otpl_flux=si_otpl_flux, $
+;                          si_otpl_mask=si_otpl_mask, si_botpl_flux=si_botpl_flux, $
+;                          si_botpl_mask=si_botpl_mask, /read_header, /quiet
 ;
 ; INPUTS:
 ;       file string
@@ -321,7 +394,8 @@
 ;               Written as a 2D image to the 'IVAR' extension.
 ;
 ;       bin_mask dblarr[B][C]
-;               Pixel mask of each channel C of each binned spectrum B.  Written
+;               Pixel mask of each channel C of each binned spectrum B.
+;               Converted to a byte value of 0 or 1 before being written
 ;               as a 2D image to the 'MASK' extension.
 ;
 ;       xbin_rlow dblarr[B]
@@ -486,6 +560,64 @@
 ;               Best-fitting emission-line-only model for each of the N spectra
 ;               obtained by GANDALF.
 ;
+;       eml_bands EmissionLineBand[E]
+;               Emission-line band parameter structure used to define
+;               the parameters of the non-parametric measurements.
+;               These are effectively the same as the SpectralIndex
+;               structure; see MDAP_ASSIGN_ABSORPTION_LINE_PARAMETERS.
+;
+;       nonpar_eml_omitted intarr[N][E]
+;               Flag setting whether or not a set of emission-line
+;               measurements should be omitted due to errors
+;               (0-good;1-bad).
+;
+;       nonpar_eml_flux_raw dblarr[N][E]
+;       nonpar_eml_flux_rerr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined passband and its error.  
+;       
+;       nonpar_eml_mom1_raw dblarr[N][E]
+;       nonpar_eml_mom1_rerr dblarr[N][E]
+;       nonpar_eml_mom2_raw dblarr[N][E]
+;       nonpar_eml_mom2_rerr dblarr[N][E]
+;               The first and second moments of the velocity over the
+;               defined passband and their errors.
+;
+;       nonpar_eml_blue_flux dblarr[N][E]
+;       nonpar_eml_blue_ferr dblarr[N][E]
+;       nonpar_eml_red_flux dblarr[N][E]
+;       nonpar_eml_red_ferr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined blue and red sidebands, and their
+;               errors.
+;
+;       nonpar_eml_blue_fcen dblarr[N][E]
+;       nonpar_eml_blue_cont dblarr[N][E]
+;       nonpar_eml_blue_cerr dblarr[N][E]
+;       nonpar_eml_red_fcen dblarr[N][E]
+;       nonpar_eml_red_cont dblarr[N][E]
+;       nonpar_eml_red_cerr dblarr[N][E]
+;               The flux-weighted centers and pseudo-continuum levels
+;               and errors in the blue and red sidebands used to define
+;               a linear continuum underneath the primary passband for
+;               the corrected fluxes and velocity moments.
+;
+;       nonpar_eml_flux_corr dblarr[N][E]
+;       nonpar_eml_flux_cerr dblarr[N][E]
+;               The integrated flux of the continuum-subtracted spectrum
+;               over the defined passband and its error, including the
+;               adjusted continuum level based on the blue and red
+;               pseudo-continuum measurements.  
+;        
+;       nonpar_eml_mom1_corr dblarr[N][E]
+;       nonpar_eml_mom1_cerr dblarr[N][E]
+;       nonpar_eml_mom2_corr dblarr[N][E]
+;       nonpar_eml_mom2_cerr dblarr[N][E]
+;               The first and second moments of the velocity over the
+;               defined passband and their errors , including the
+;               adjusted continuum level based on the blue and red
+;               pseudo-continuum measurements.
+;
 ;       emlo_par EmissionLine[O]
 ;               Structure with the emission-line parameters used during
 ;               the emission-line only fit.  The only things written to
@@ -495,10 +627,18 @@
 ;               only analysis are hard-coded (see
 ;               MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE).
 ;
-;       elo_ew_kinematics_avg dblarr[B][2]
-;       elo_ew_kinematics_aer dblarr[B][2]
-;               The mean kinematics (and errors) of the emission lines
-;               determined using Enci Wang's code.
+;       elo_ew_kinematics_avg dblarr[B][8]
+;       elo_ew_kinematics_aer dblarr[B][8]
+;       elo_ew_kinematics_ase dblarr[B][8]
+;       elo_ew_kinematics_n intarr[B]
+;               The weighted-mean kinematics (avg), propagated error
+;               (aer), standard error (ase; based on the weighted
+;               standard deviation), and number of used emission lines,
+;               for the set of fitted emission lines determined using
+;               Enci Wang's code.  There are 8 elements, 2 kinematic
+;               measurements (v, sigma) for each of the 4 weighting
+;               types (flux, velocity error, both, unweighted); see
+;               MDAP_EMISSION_LINE_ONLY_FIT.
 ;
 ;       elo_ew_kinematics_ind dblarr[B][O][2]
 ;       elo_ew_kinematics_ierr dblarr[B][O][2]
@@ -537,10 +677,18 @@
 ;               The best-fitting emission-line-only spectrum determined
 ;               by Enci Wang's code.
 ;
-;       elo_fb_kinematics_avg dblarr[B][2]
-;       elo_fb_kinematics_aer dblarr[B][2]
-;               The mean kinematics (and errors) of the emission lines
-;               determined using Francesco Belfiore's code.
+;       elo_fb_kinematics_avg dblarr[B][8]
+;       elo_fb_kinematics_aer dblarr[B][8]
+;       elo_fb_kinematics_ase dblarr[B][8]
+;       elo_fb_kinematics_n intarr[B]
+;               The weighted-mean kinematics (avg), propagated error
+;               (aer), standard error (ase; based on the weighted
+;               standard deviation), and number of used emission lines,
+;               for the set of fitted emission lines determined using
+;               Francesco Belfiore's code.  There are 8 elements, 2
+;               kinematic measurements (v, sigma) for each of the 4
+;               weighting types (flux, velocity error, both,
+;               unweighted); see MDAP_EMISSION_LINE_ONLY_FIT.
 ;
 ;       elo_fb_kinematics_ind dblarr[B][O][2]
 ;       elo_fb_kinematics_ierr dblarr[B][O][2]
@@ -588,28 +736,51 @@
 ;       abs_line_key string
 ;               Keyword signifying the spectral index file.
 ;
-;       abs_line_indx_omitted intarr[B][I]
-;               Flag that the spectral index I has (1) or has not (0) been
-;               omitted from the measurements of binned spectrum B.  Spectral
-;               indices are omitted if any part of their definition occurs
-;               outside of the spectral range of the spectrum.
+;       spectral_index_omitted intarr[B][I]
+;               Flag that the index was (1) or was not (0) omitted because it
+;               fell outside the spectral range of the observations.
 ;
-;       abs_line_indx_val dblarr[B][I]
-;               Value of spectral index I for spectrum B.  These values have
-;               been corrected for the velocity dispersion using the factor
-;               derived from the measurements based on the broadened and
-;               unbroadened optimal template.
+;       spectral_index_blue_cont dblarr[B][I]
+;       spectral_index_blue_cerr dblarr[B][I]
+;       spectral_index_red_cont dblarr[B][I]
+;       spectral_index_red_cerr dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and their
+;               propagated error for each of the B binned spectra and
+;               each of the I spectral indices.
 ;
-;       abs_line_indx_err dblarr[B][I]
-;               Error in spectral index I for spectrum B.
+;       spectral_index_raw dblarr[B][I]
+;       spectral_index_rerr dblarr[B][I]
+;       spectral_index_rperr dblarr[B][I]
+;               Spectral index measured directly from the galaxy spectra
+;               following Worthey et al. (1994), the nominal error
+;               following Cardiel et al. (1998) (err), and an estimate
+;               of error from nominal error propagation (perr).  The
+;               index is defined either in angstroms or magnitudes as
+;               specified by abs_par.
 ;
-;       abs_line_indx_otpl dblarr[B][I]
-;               Spectral index I measured using the optimal template for
-;               spectrum B.
+;       spectral_index_otpl_blue_cont dblarr[B][I]
+;       spectral_index_otpl_red_cont dblarr[B][I]
+;       spectral_index_otpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the (unbroadened) optimal template for
+;               each of the B binned spectra and each of the I spectral
+;               indices.
 ;
-;       abs_line_indx_botpl dblarr[B][I]
-;               Spectral index I measured using the broadened optimal template
-;               for spectrum B.
+;       spectral_index_botpl_blue_cont dblarr[B][I]
+;       spectral_index_botpl_red_cont dblarr[B][I]
+;       spectral_index_botpl_index dblarr[B][I]
+;               The blue and red pseudo-continuum measurements and the
+;               index value for the broadened optimal template for each
+;               of the B binned spectra and each of the I spectral
+;               indices.
+;
+;       spectral_index_corr dblarr[B][I]
+;       spectral_index_cerr dblarr[B][I]
+;       spectral_index_cperr dblarr[B][I]
+;               Spectral indices for the galaxy spectra after correcting
+;               for Doppler broadening using the correction derived by
+;               comparing the index measurements from the broadened and
+;               unbroadened versions of the optimal template.
 ;
 ;       si_bin_wave dblarr[D]
 ;               Wavelengths of the pixels in the binned spectra that have had
@@ -629,21 +800,20 @@
 ;       si_bin_mask dblarr[B][D]
 ;               Bad pixel mask (0-good, 1-bad) of the binned spectra that have
 ;               had their resolution matched tot the spectral index system.
+;               Converted to a byte array before being written.
 ;
-;       si_optimal_template dblarr[B][F]
-;               The best-fitting template (sum of the weighted template in the
-;               library) for each of the B galaxy spectra with the resolution
-;               matched to that of the spectral index system.  NOTE: F can be
-;               (and is likely) different from both D and C because of how the
-;               resolution matching process censors the data.  See
-;               MDAP_MATCH_SPECTRAL_RESOLUTION.
+;       si_otpl_flux dblarr[B][D]
+;       si_otpl_mask dblarr[B][D]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and its bad pixel mask.  The bad
+;               pixel mask is just a de-redshifted version of the
+;               broadened optimal template mask.
 ;
-;       si_broad_optimal_template dblarr[B][F]
-;               The best-fitting template (sum of the weighted template in the
-;               library) for each of the B galaxy spectra with the resolution
-;               matched to that of the spectral index system, and broadened by
-;               the best-fitting line-of-sight velocity distribution.  TODO:
-;               Does this include the velocity shift?
+;       si_botpl_flux dblarr[B][D]
+;       si_botpl_mask dblarr[B][D]
+;               Optimal template spectrum, resolution-matched to the
+;               spectral-index system, and broadened by the best-fitting
+;               LOSVD for each of the B spectra, and its bad pixel mask.
 ;
 ; OPTIONAL KEYWORDS:
 ;       /read_header
@@ -662,6 +832,8 @@
 ; TODO:
 ;       - If string table elements change, the overwrite command in mdap_setup
 ;         will not work.  FXBWRITM will likely throw an error.
+;       - If header not provided, always read header (i.e. /read_header
+;         keyword should not be necessary).
 ;
 ; BUGS:
 ;
@@ -680,6 +852,16 @@
 ;                          == max(flux) flag in DRPS extension.
 ;       16 Mar 2015: (KBW) Include header keyword noting if noise vector
 ;                          calibration is applied.
+;       10 Jul 2015: (KBW) Convert mask arrays to byte type before
+;                          writing to disk.  Added /checksum to each
+;                          call of WRITEFITS
+;       13 Jul 2015: (KBW) Corrections for changes to emission-line-only
+;                          output columns.
+;       07 Aug 2015: (KBW) Fixed a bug when writing the omitted flags.
+;       12 Aug 2015: (KBW) Include extra columns for spectral index
+;                          measurements. Include optimal template mask.
+;       18 Aug 2015: (KBW) Added extensions for the non-parametric
+;                          emission-line data.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -907,7 +1089,7 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_HEADER, $
             MODFITS, file, 0, header, exten_no=0                ; Modify the header only
         endif else begin
             MDAP_FITS_HEADER_ADD_DATE, header                   ; Add parameter with original date
-            WRITEFITS, file, 0, header                          ; Write the header (no data)
+            WRITEFITS, file, 0, header, /checksum               ; Write the header (no data)
         endelse
 
 ;       bitpix = FXPAR(header, 'BITPIX')
@@ -925,11 +1107,11 @@ END
 PRO MDAP_FXBADDCOL_VALUE, $
                 indx, hdr, colname, comment, dbl=dbl, int=int, lng=lng, str=str, dummystr=dummystr
         if keyword_set(dbl) then begin
-            FXBADDCOL, indx, hdr, 1.0d, colname, comment                ; double
+            FXBADDCOL, indx, hdr, -9999.0d, colname, comment                ; double
         endif else if keyword_set(int) then begin
-            FXBADDCOL, indx, hdr, 0, colname, comment                   ; integer
+            FXBADDCOL, indx, hdr, -9999, colname, comment                   ; integer
         endif else if keyword_set(lng) then begin
-            FXBADDCOL, indx, hdr, 0L, colname, comment                  ; long
+            FXBADDCOL, indx, hdr, -9999L, colname, comment                  ; long
         endif else if keyword_set(str) then begin
             if n_elements(dummystr) eq 0 then $
                 dummystr = ' '
@@ -949,9 +1131,9 @@ PRO MDAP_FXBADDCOL_VECTOR, $
         
         if nn gt 0 then begin
             if keyword_set(dbl) then begin
-                FXBADDCOL, indx, hdr, dblarr(nn), colname, comment
+                FXBADDCOL, indx, hdr, make_array(nn, /double, value=-9999.0d), colname, comment
             endif else if keyword_set(int) then begin
-                FXBADDCOL, indx, hdr, intarr(nn), colname, comment
+                FXBADDCOL, indx, hdr, make_array(nn, /integer, value=-9999), colname, comment
             endif else if keyword_set(str) then begin
                 if n_elements(dummystr) eq 0 then $
                     dummystr = ' '
@@ -977,9 +1159,9 @@ PRO MDAP_FXBADDCOL_MATRIX, $
 ;       if nn gt 0 and mm gt 0 then begin
         if nn gt 0 && mm gt 0 then begin
             if keyword_set(dbl) then begin
-                FXBADDCOL, indx, hdr, dblarr(nn, mm), colname, comment
+                FXBADDCOL, indx, hdr, make_array(nn, mm, /double, value=-9999.0d), colname, comment
             endif else if keyword_set(int) then begin
-                FXBADDCOL, indx, hdr, intarr(nn, mm), colname, comment
+                FXBADDCOL, indx, hdr, make_array(nn, mm, /integer, value=-9999), colname, comment
             endif else if keyword_set(str) then begin
                 if n_elements(dummystr) eq 0 then $
                     dummystr = ' '
@@ -1388,6 +1570,226 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_INITIALIZE, $
 END
 
 ;-------------------------------------------------------------------------------
+; Initialize the ELBAND extension
+;       - If the file and extension exist, nothing is done
+;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;       - If the extension does not exist, the table is instantiated with all
+;         the columns and with a single row
+PRO MDAP_WRITE_OUTPUT_ELBAND_INITIALIZE, $
+                file
+
+        ; Initialize the file (does nothing if the file already exists)
+        MDAP_INITIALIZE_FITS_FILE, file
+
+        if MDAP_CHECK_EXTENSION_EXISTS(file, 'ELBAND') eq 0 then begin
+            ; Create a base level header; only one row for now!
+            FXBHMAKE, bth, 1, 'ELBAND', 'Binary table with non-parametric emission-line data'
+            MDAP_FITS_HEADER_ADD_DATE, bth, /modified           ; Add/change last date modified
+            
+            ; FROM mdap_set_output_file_cols.pro (included above)
+            ; TODO: Make this a loop, with a function that also provides the comments, column types
+            cols = MDAP_SET_ELBAND_COLS()
+            
+            ; Create the table columns using placeholders to define the column data type
+            MDAP_SET_EMISSION_LINE_NAME_DEFAULT, dstr
+            MDAP_FXBADDCOL_VALUE, 1, bth, cols[0], ' Emission-line identifier', /str, $
+                                  dummystr=dstr
+            MDAP_FXBADDCOL_VALUE, 2, bth, cols[1], ' Rest wavelength (ang)', /dbl
+            MDAP_FXBADDCOL_VECTOR, 3, bth, 2, cols[2], $
+                                   ' Wavelength limits of the primary bandpass (ang)', /dbl
+            MDAP_FXBADDCOL_VECTOR, 4, bth, 2, cols[3], $
+                                   ' Wavelength limits of the blue sideband (ang)', /dbl
+            MDAP_FXBADDCOL_VECTOR, 5, bth, 2, cols[4], $
+                                   ' Wavelength limits of the red sideband (ang)', /dbl
+
+            FXBCREATE, tbl, file, bth                   ; Create the binary table extension
+            FXBFINISH, tbl                              ; Close up
+            free_lun, tbl
+        endif
+END
+
+;-------------------------------------------------------------------------------
+; Initialize the ELMMNT extension
+;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
+;       - If the extension exists, check that the sizes match the input
+;       - If the size is the same as the existing extension, finish
+;       - Otherwise, modify the fits extension, either by creating it or
+;         modifying its column prperties
+PRO MDAP_WRITE_OUTPUT_NONPAR_EMISSION_LINE_DATA_INITIALIZE, $
+                file, eml_bands=eml_bands, nonpar_eml_omitted=nonpar_eml_omitted, $
+                nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                nonpar_eml_red_flux=nonpar_eml_red_flux, nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                nonpar_eml_red_fcen=nonpar_eml_red_fcen, nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr 
+
+        ; Initialize the file (does nothing if the file already exists)
+        MDAP_INITIALIZE_FITS_FILE, file
+
+        ; Check if the extension exists
+        extension_exists = MDAP_CHECK_EXTENSION_EXISTS(file, 'ELMMNT')
+
+        ; Determine the dimensions of the input vectors
+        inp_size = make_array(1, /int, value=-1)
+
+        ; Number of emission-lines
+        if n_elements(nonpar_eml_omitted) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_omitted))[2]
+        endif else if n_elements(nonpar_eml_flux_raw) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_flux_raw))[2]
+        endif else if n_elements(nonpar_eml_flux_rerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_flux_rerr))[2]
+        endif else if n_elements(nonpar_eml_mom1_raw) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom1_raw))[2]
+        endif else if n_elements(nonpar_eml_mom1_rerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom1_rerr))[2]
+        endif else if n_elements(nonpar_eml_mom2_raw) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom2_raw))[2]
+        endif else if n_elements(nonpar_eml_mom2_rerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom2_rerr))[2]
+        endif else if n_elements(nonpar_eml_blue_flux) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_blue_flux))[2]
+        endif else if n_elements(nonpar_eml_blue_ferr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_blue_ferr))[2]
+        endif else if n_elements(nonpar_eml_red_flux) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_red_flux))[2]
+        endif else if n_elements(nonpar_eml_red_ferr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_red_ferr))[2]
+        endif else if n_elements(nonpar_eml_blue_fcen) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_blue_fcen))[2]
+        endif else if n_elements(nonpar_eml_blue_cont) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_blue_cont))[2]
+        endif else if n_elements(nonpar_eml_blue_cerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_blue_cerr))[2]
+        endif else if n_elements(nonpar_eml_red_fcen) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_red_fcen))[2]
+        endif else if n_elements(nonpar_eml_red_cont) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_red_cont))[2]
+        endif else if n_elements(nonpar_eml_red_cerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_red_cerr))[2]
+        endif else if n_elements(nonpar_eml_flux_corr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_flux_corr))[2]
+        endif else if n_elements(nonpar_eml_flux_cerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_flux_cerr))[2]
+        endif else if n_elements(nonpar_eml_mom1_corr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom1_corr))[2]
+        endif else if n_elements(nonpar_eml_mom1_cerr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom1_cerr))[2]
+        endif else if n_elements(nonpar_eml_mom2_corr) ne 0 then begin
+            inp_size[0]=(size(nonpar_eml_mom2_corr))[2]
+        endif else if n_elements(nonpar_eml_mom2_cerr) ne 0 then $
+            inp_size[0]=(size(nonpar_eml_mom2_cerr))[2]
+
+        if n_elements(eml_bands) ne 0 && inp_size[0] gt 0 then $
+            if n_elements(eml_bands) ne inp_size[0] then $
+                message, 'Number of measurements does not match the number of defined bands!'
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELMMNT_COLS()
+            
+        modify = 0
+        nrows = 1                       ; TODO: Is nrows needed?
+        if extension_exists eq 1 then begin             ; If the extension exists...
+
+            ; Get the dimensions of the existing table
+            fxbopen, unit, file, 'ELMMNT', bth           ; Open the file
+            nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
+            cur_size = intarr(1)
+            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of emission lines
+            fxbclose, unit                              ; Close the file
+            free_lun, unit                              ; Free the LUN
+
+            ; Compare the current size to the existing size and decide if the
+            ; size needs to be modified
+            MDAP_WRITE_OUTPUT_COMPARE_TABLE_SIZE, cur_size, inp_size, modify
+        endif else begin                                ; If it does not exist ...
+            cur_size = inp_size                         ; Set the modified size to the input size
+            modify = 1
+        endelse
+
+        ; Extension exists and all the columns have the correct size, return
+        if modify eq 0 then $
+            return
+
+        ; Create the header
+        FXBHMAKE, bth, nrows, 'ELMMNT', 'Binary table with non-parametric emission-line data'
+        MDAP_FITS_HEADER_ADD_DATE, bth, /modified               ; Add/change last date modified
+            
+        ; Create the table columns using placeholders to define the column data type and size
+        MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], ' Omission flag', /int
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], $
+                               ' Main bandpass: Integrated flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], cols[2], $
+                               ' Main bandpass: Integrated flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[0], cols[3], $
+                               ' Main bandpass: First velocity moment', /dbl
+        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[0], cols[4], $
+                               ' Main bandpass: First velocity moment error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[0], cols[5], $
+                               ' Main bandpass: Second velocity moment', /dbl
+        MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[0], cols[6], $
+                               ' Main bandpass: Second velocity moment error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[0], cols[7], $
+                               ' Blue sideband: Integrated flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[0], cols[8], $
+                               ' Blue sideband: Integrated flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[0], cols[9], $
+                               ' Red sideband: Integrated flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[0], cols[10], $
+                               ' Red sideband: Integrated flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[0], cols[11], $
+                               ' Blue sideband: Flux-weighted central wavelength', /dbl
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[0], cols[12], $
+                               ' Blue sideband: Pseudo-continuum', /dbl
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[0], cols[13], $
+                               ' Blue sideband: Pseudo-continuum error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[0], cols[14], $
+                               ' Red sideband: Flux-weighted central wavelength', /dbl
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[0], cols[15], $
+                               ' Red sideband: Pseudo-continuum', /dbl
+        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[0], cols[16], $
+                               ' Red sideband: Pseudo-continuum error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 18, bth, cur_size[0], cols[17], $
+                               ' Main bandpass: Continuum-corrected integrated flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 19, bth, cur_size[0], cols[18], $
+                               ' Main bandpass: Continuum-corrected integrated flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[0], cols[19], $
+                               ' Main bandpass: Continuum-corrected first velocity moment', /dbl
+        MDAP_FXBADDCOL_VECTOR, 21, bth, cur_size[0], cols[20], $
+                               ' Main bandpass: Continuum-corrected first velocity moment error', $
+                               /dbl
+        MDAP_FXBADDCOL_VECTOR, 22, bth, cur_size[0], cols[21], $
+                               ' Main bandpass: Continuum-corrected second velocity moment', /dbl
+        MDAP_FXBADDCOL_VECTOR, 23, bth, cur_size[0], cols[22], $
+                               ' Main bandpass: Continuum-corrected second velocity moment error', $
+                               /dbl
+
+        if extension_exists eq 0 then begin             ; If the extension does not exist...
+            FXBCREATE, tbl, file, bth                   ; Create the binary table extension
+            FXBFINISH, tbl                              ; Close up
+            free_lun, tbl
+        endif else begin                                ; If the extension does exist...
+            bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
+            MODFITS, file, bytdb, bth, extname='ELMMNT' ; Modify the header and allocate the data
+        endelse
+END
+
+;-------------------------------------------------------------------------------
 ; Initialize the ELOPAR extension
 ;       - If the file and extension exist, nothing is done
 ;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
@@ -1421,8 +1823,9 @@ PRO MDAP_WRITE_OUTPUT_ELOPAR_INITIALIZE, $
         endif
 END
 
+
 ;-------------------------------------------------------------------------------
-; Initialize the SGFIT extension
+; Initialize the ELOFIT extension
 ;       - If the file does not exist, MDAP_INITIALIZE_FITS_FILE will create it
 ;       - If the extension exists, check that the sizes match the input
 ;       - If the size is the same as the existing extension, finish
@@ -1431,6 +1834,8 @@ END
 PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
                 file, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -1438,6 +1843,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
                 elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -1452,72 +1859,82 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         extension_exists = MDAP_CHECK_EXTENSION_EXISTS(file, 'ELOFIT')
 
         ; Determine the dimensions of the input vectors
-        inp_size = make_array(2, /int, value=-1)
+        inp_size = make_array(3, /int, value=-1)
 
-        ; Number of kinematic moments
+        ; Number of moments * number of weights
         if n_elements(elo_ew_kinematics_avg) ne 0 then begin
             inp_size[0]=(size(elo_ew_kinematics_avg))[2]
         endif else if n_elements(elo_ew_kinematics_aer) ne 0 then begin
             inp_size[0]=(size(elo_ew_kinematics_aer))[2]
-        endif else if n_elements(elo_ew_kinematics_ind) ne 0 then begin
-            inp_size[0]=(size(elo_ew_kinematics_ind))[3]
-        endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
-            inp_size[0]=(size(elo_ew_kinematics_ier))[3]
+        endif else if n_elements(elo_ew_kinematics_ase) ne 0 then begin
+            inp_size[0]=(size(elo_ew_kinematics_ase))[2]
         endif else if n_elements(elo_fb_kinematics_avg) ne 0 then begin
             inp_size[0]=(size(elo_fb_kinematics_avg))[2]
         endif else if n_elements(elo_fb_kinematics_aer) ne 0 then begin
             inp_size[0]=(size(elo_fb_kinematics_aer))[2]
+        endif else if n_elements(elo_fb_kinematics_ase) ne 0 then $
+            inp_size[0]=(size(elo_fb_kinematics_ase))[2]
+
+        ; Number of kinematic moments
+        if n_elements(elo_ew_kinematics_ind) ne 0 then begin
+            inp_size[1]=(size(elo_ew_kinematics_ind))[3]
+        endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
+            inp_size[1]=(size(elo_ew_kinematics_ier))[3]
         endif else if n_elements(elo_fb_kinematics_ind) ne 0 then begin
-            inp_size[0]=(size(elo_fb_kinematics_ind))[3]
+            inp_size[1]=(size(elo_fb_kinematics_ind))[3]
         endif else if n_elements(elo_fb_kinematics_ier) ne 0 then $
-            inp_size[0]=(size(elo_fb_kinematics_ier))[3]
+            inp_size[1]=(size(elo_fb_kinematics_ier))[3]
+
+        ; Number of weights is the number of elements in the average
+        ; kinematics div by number of moments
+        nwgts = inp_size[0]/inp_size[1]
 
         ; Number of emission-lines
         if n_elements(elo_ew_kinematics_ind) ne 0 then begin
-            inp_size[1]=(size(elo_ew_kinematics_ind))[2]
+            inp_size[2]=(size(elo_ew_kinematics_ind))[2]
         endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
-            inp_size[1]=(size(elo_ew_kinematics_ier))[2]
+            inp_size[2]=(size(elo_ew_kinematics_ier))[2]
         endif else if n_elements(elo_ew_sinst) ne 0 then begin
-            inp_size[1]=(size(elo_ew_sinst))[2]
+            inp_size[2]=(size(elo_ew_sinst))[2]
         endif else if n_elements(elo_ew_omitted) ne 0 then begin
-            inp_size[1]=(size(elo_ew_omitted))[2]
+            inp_size[2]=(size(elo_ew_omitted))[2]
         endif else if n_elements(elo_ew_intens) ne 0 then begin
-            inp_size[1]=(size(elo_ew_intens))[2]
+            inp_size[2]=(size(elo_ew_intens))[2]
         endif else if n_elements(elo_ew_interr) ne 0 then begin
-            inp_size[1]=(size(elo_ew_interr))[2]
+            inp_size[2]=(size(elo_ew_interr))[2]
         endif else if n_elements(elo_ew_fluxes) ne 0 then begin
-            inp_size[1]=(size(elo_ew_fluxes))[2]
+            inp_size[2]=(size(elo_ew_fluxes))[2]
         endif else if n_elements(elo_ew_flxerr) ne 0 then begin
-            inp_size[1]=(size(elo_ew_flxerr))[2]
+            inp_size[2]=(size(elo_ew_flxerr))[2]
         endif else if n_elements(elo_ew_EWidth) ne 0 then begin
-            inp_size[1]=(size(elo_ew_EWidth))[2]
+            inp_size[2]=(size(elo_ew_EWidth))[2]
         endif else if n_elements(elo_ew_EW_err) ne 0 then begin
-            inp_size[1]=(size(elo_ew_EW_err))[2]
+            inp_size[2]=(size(elo_ew_EW_err))[2]
         endif else if n_elements(elo_fb_kinematics_ind) ne 0 then begin
-            inp_size[1]=(size(elo_fb_kinematics_ind))[2]
+            inp_size[2]=(size(elo_fb_kinematics_ind))[2]
         endif else if n_elements(elo_fb_kinematics_ier) ne 0 then begin
-            inp_size[1]=(size(elo_fb_kinematics_ier))[2]
+            inp_size[2]=(size(elo_fb_kinematics_ier))[2]
         endif else if n_elements(elo_fb_sinst) ne 0 then begin
-            inp_size[1]=(size(elo_fb_sinst))[2]
+            inp_size[2]=(size(elo_fb_sinst))[2]
         endif else if n_elements(elo_fb_omitted) ne 0 then begin
-            inp_size[1]=(size(elo_fb_omitted))[2]
+            inp_size[2]=(size(elo_fb_omitted))[2]
         endif else if n_elements(elo_fb_intens) ne 0 then begin
-            inp_size[1]=(size(elo_fb_intens))[2]
+            inp_size[2]=(size(elo_fb_intens))[2]
         endif else if n_elements(elo_fb_interr) ne 0 then begin
-            inp_size[1]=(size(elo_fb_interr))[2]
+            inp_size[2]=(size(elo_fb_interr))[2]
         endif else if n_elements(elo_fb_fluxes) ne 0 then begin
-            inp_size[1]=(size(elo_fb_fluxes))[2]
+            inp_size[2]=(size(elo_fb_fluxes))[2]
         endif else if n_elements(elo_fb_flxerr) ne 0 then begin
-            inp_size[1]=(size(elo_fb_flxerr))[2]
+            inp_size[2]=(size(elo_fb_flxerr))[2]
         endif else if n_elements(elo_fb_EWidth) ne 0 then begin
-            inp_size[1]=(size(elo_fb_EWidth))[2]
+            inp_size[2]=(size(elo_fb_EWidth))[2]
         endif else if n_elements(elo_fb_EW_err) ne 0 then $
-            inp_size[1]=(size(elo_fb_EW_err))[2]
+            inp_size[2]=(size(elo_fb_EW_err))[2]
 
         ; TODO: Check the number of emission lines against the ELOPAR extension?
 ;       if n_elements(emlo_par) ne 0 and inp_size[1] gt 0 then $
-        if n_elements(emlo_par) ne 0 && inp_size[1] gt 0 then $
-            if n_elements(emlo_par) ne inp_size[1] then $
+        if n_elements(emlo_par) ne 0 && inp_size[2] gt 0 then $
+            if n_elements(emlo_par) ne inp_size[2] then $
                 message, 'Number of line structures does not match the number of line results!'
 
         ; FROM mdap_set_output_file_cols.pro (included above)
@@ -1531,9 +1948,10 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             ; Get the dimensions of the existing table
             fxbopen, unit, file, 'ELOFIT', bth           ; Open the file
             nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
-            cur_size = intarr(2)
-            cur_size[0] = fxbdimen(unit, cols[0])       ; Number of EW_KIN elements (num of moments)
-            cur_size[1] = fxbdimen(unit, cols[2])       ; Number of emission lines
+            cur_size = intarr(3)
+            cur_size[0] = fxbdimen(unit, cols[0])       ; KIN elements (num of wgts*moments)
+            cur_size[1] = cur_size[0]/nwgts             ; Number of moments
+            cur_size[2] = fxbdimen(unit, cols[3])       ; Number of emission lines
             fxbclose, unit                              ; Close the file
 ;           print, unit
             free_lun, unit                              ; Free the LUN
@@ -1556,59 +1974,66 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             
         ; Create the table columns using placeholders to define the column data type and size
         MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], $
-                               ' Enci: Average emission-line kinematics', /dbl
+                               ' Enci: Average emission-line kinematics (4 wgts)', /dbl
         MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], $
-                               ' Enci: Average emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[1], cols[2], $
+                               ' Enci: Average emission-line kinematic prop errors (4 wgts)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], cols[2], $
+                               ' Enci: Average emission-line kinematic std errors (4 wgts)', /dbl
+        MDAP_FXBADDCOL_VALUE,  4, bth, cols[3], ' Enci: Number of emission-lines in average', /int
+        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[2], cols[4], $
                                ' Enci: Emission-line omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[1], cols[3], $
+        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[2], cols[5], $
                                ' Enci: Emission-line amplitude', /dbl
-        MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[1], cols[4], $
+        MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[2], cols[6], $
                                ' Enci: Emission-line amplitude error', /dbl
-        MDAP_FXBADDCOL_MATRIX, 6, bth, cur_size[1], cur_size[0], cols[5], $
+        MDAP_FXBADDCOL_MATRIX, 8, bth, cur_size[2], cur_size[1], cols[7], $
                                ' Enci: Individual emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_MATRIX, 7, bth, cur_size[1], cur_size[0], cols[6], $
+        MDAP_FXBADDCOL_MATRIX, 9, bth, cur_size[2], cur_size[1], cols[8], $
                                ' Enci: Individual emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[1], cols[7], $
+        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[2], cols[9], $
                                ' Enci: Instrumental dispersion at fitted centroid', /dbl
-        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[1], cols[8], $
+        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[2], cols[10], $
                                ' Enci: Emission-line flux', /dbl
-        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[1], cols[9], $
+        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[2], cols[11], $
                                ' Enci: Emission-line flux error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[1], cols[10], $
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[2], cols[12], $
                                ' Enci: Emission-line equivalent width', /dbl
-        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[1], cols[11], $
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[2], cols[13], $
                                ' Enci: Emission-line equivalent width error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[0], cols[12], $
-                               ' Belfiore: Average emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[0], cols[13], $
-                               ' Belfiore: Average emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[1], cols[14], $
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[0], cols[14], $
+                               ' Belfiore: Average emission-line kinematics (4 wgts)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[0], cols[15], $
+                               ' Belfiore: Average emission-line kinematic prop errors (4 wgts)', $
+                               /dbl
+        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[0], cols[16], $
+                               ' Belfiore: Average emission-line kinematic std errors (4 wgts)', $
+                               /dbl
+        MDAP_FXBADDCOL_VALUE,  18, bth, cols[17], $
+                               ' Belfiore: Number of emission-lines in average', /int
+        MDAP_FXBADDCOL_VECTOR, 19, bth, cur_size[2], cols[18], $
                                ' Belfiore: Emission-line omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[1], cols[15], $
+        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[2], cols[19], $
                                ' Belfiore: Emission-line amplitude', /dbl
-        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[1], cols[16], $
+        MDAP_FXBADDCOL_VECTOR, 21, bth, cur_size[2], cols[20], $
                                ' Belfiore: Emission-line amplitude error', /dbl
-        MDAP_FXBADDCOL_MATRIX, 18, bth, cur_size[1], cur_size[0], cols[17], $
+        MDAP_FXBADDCOL_MATRIX, 22, bth, cur_size[2], cur_size[1], cols[21], $
                                ' Belfiore: Individual emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_MATRIX, 19, bth, cur_size[1], cur_size[0], cols[18], $
+        MDAP_FXBADDCOL_MATRIX, 23, bth, cur_size[2], cur_size[1], cols[22], $
                                ' Belfiore: Individual emission-line kinematic errors', /dbl
-        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[1], cols[19], $
+        MDAP_FXBADDCOL_VECTOR, 24, bth, cur_size[2], cols[23], $
                                ' Belfiore: Instrumental dispersion at fitted centroid', /dbl
-        MDAP_FXBADDCOL_VECTOR, 21, bth, cur_size[1], cols[20], $
+        MDAP_FXBADDCOL_VECTOR, 25, bth, cur_size[2], cols[24], $
                                ' Belfiore: Emission-line flux', /dbl
-        MDAP_FXBADDCOL_VECTOR, 22, bth, cur_size[1], cols[21], $
+        MDAP_FXBADDCOL_VECTOR, 26, bth, cur_size[2], cols[25], $
                                ' Belfiore: Emission-line flux error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 23, bth, cur_size[1], cols[22], $
+        MDAP_FXBADDCOL_VECTOR, 27, bth, cur_size[2], cols[26], $
                                ' Belfiore: Emission-line equivalent width', /dbl
-        MDAP_FXBADDCOL_VECTOR, 24, bth, cur_size[1], cols[23], $
+        MDAP_FXBADDCOL_VECTOR, 28, bth, cur_size[2], cols[27], $
                                ' Belfiore: Emission-line equivalent width error', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
-                                                        ; TODO: Write fake data to it?
             FXBFINISH, tbl                              ; Close up
-;           print, tbl
             free_lun, tbl
         endif else begin                                ; If the extension does exist...
             bytdb = bytarr(fxpar(bth, 'NAXIS1'), fxpar(bth, 'NAXIS2'))
@@ -1681,9 +2106,22 @@ END
 ;       - Otherwise, modify the fits extension, either by creating it or
 ;         modifying its column prperties
 PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
-                file, abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
-                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+                file, abs_par=abs_par, spectral_index_omitted=spectral_index_omitted, $
+                spectral_index_blue_cont=spectral_index_blue_cont,  $
+                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                spectral_index_red_cont=spectral_index_red_cont, $
+                spectral_index_red_cerr=spectral_index_red_cerr, $
+                spectral_index_raw=spectral_index_raw, $
+                spectral_index_rerr=spectral_index_rerr, $
+                spectral_index_rperr=spectral_index_rperr, $
+                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index=spectral_index_otpl_index, $
+                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                spectral_index_botpl_index=spectral_index_botpl_index, $
+                spectral_index_corr=spectral_index_corr, $
+                spectral_index_cerr=spectral_index_cerr, spectral_index_cperr=spectral_index_cperr
 
         ; Initialize the file (does nothing if the file already exists)
         MDAP_INITIALIZE_FITS_FILE, file
@@ -1695,16 +2133,40 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
         inp_size = make_array(1, /int, value=-1)
 
         ; Number of spectral indices
-        if n_elements(abs_line_indx_omitted) ne 0 then begin
-            inp_size[0]=(size(abs_line_indx_omitted))[2]
-        endif else if n_elements(abs_line_indx_val) ne 0 then begin
-            inp_size[0]=(size(abs_line_indx_val))[2]
-        endif else if n_elements(abs_line_indx_err) ne 0 then begin
-            inp_size[0]=(size(abs_line_indx_err))[2]
-        endif else if n_elements(abs_line_indx_otpl) ne 0 then begin
-            inp_size[0]=(size(abs_line_indx_otpl))[2]
-        endif else if n_elements(abs_line_indx_botpl) ne 0 then $
-            inp_size[0]=(size(abs_line_indx_botpl))[2]
+        if n_elements(spectral_index_omitted) ne 0 then begin
+            inp_size[0]=(size(spectral_index_omitted))[2]
+        endif else if n_elements(spectral_index_blue_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_blue_cont))[2]
+        endif else if n_elements(spectral_index_blue_cerr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_blue_cerr))[2]
+        endif else if n_elements(spectral_index_red_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_red_cont))[2]
+        endif else if n_elements(spectral_index_red_cerr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_red_cerr))[2]
+        endif else if n_elements(spectral_index_raw) ne 0 then begin
+            inp_size[0]=(size(spectral_index_raw))[2]
+        endif else if n_elements(spectral_index_rerr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_rerr))[2]
+        endif else if n_elements(spectral_index_rperr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_rperr))[2]
+        endif else if n_elements(spectral_index_otpl_blue_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_otpl_blue_cont))[2]
+        endif else if n_elements(spectral_index_otpl_red_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_otpl_red_cont))[2]
+        endif else if n_elements(spectral_index_otpl_index) ne 0 then begin
+            inp_size[0]=(size(spectral_index_otpl_index))[2]
+        endif else if n_elements(spectral_index_botpl_blue_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_botpl_blue_cont))[2]
+        endif else if n_elements(spectral_index_botpl_red_cont) ne 0 then begin
+            inp_size[0]=(size(spectral_index_botpl_red_cont))[2]
+        endif else if n_elements(spectral_index_botpl_index) ne 0 then begin
+            inp_size[0]=(size(spectral_index_botpl_index))[2]
+        endif else if n_elements(spectral_index_corr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_corr))[2]
+        endif else if n_elements(spectral_index_cerr) ne 0 then begin
+            inp_size[0]=(size(spectral_index_cerr))[2]
+        endif else if n_elements(spectral_index_cperr) ne 0 then $
+            inp_size[0]=(size(spectral_index_cperr))[2]
 
         ; TODO: Check the number of spectral indices against the SIPAR extension?
 ;       if n_elements(abs_par) ne 0 and inp_size[0] gt 0 then $
@@ -1747,12 +2209,37 @@ PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, $
             
         ; Create the table columns using placeholders to define the column data type and size
         MDAP_FXBADDCOL_VECTOR, 1, bth, cur_size[0], cols[0], ' Spectral index omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], ' Spectral index value', /dbl
-        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], cols[2], ' Spectral index error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 2, bth, cur_size[0], cols[1], $
+                               ' Spectral index blue pseudo-continuum', /dbl
+        MDAP_FXBADDCOL_VECTOR, 3, bth, cur_size[0], cols[2], $
+                               ' Spectral index blue pseudo-continuum error', /dbl
         MDAP_FXBADDCOL_VECTOR, 4, bth, cur_size[0], cols[3], $
-                               ' Spectral index based on the optimal template', /dbl
+                               ' Spectral index red pseudo-continuum', /dbl
         MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[0], cols[4], $
-                               ' Spectral index based on the broadened optimal template', /dbl
+                               ' Spectral index red pseudo-continuum error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[0], cols[5], ' Raw spectral-index measurement', /dbl
+        MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[0], cols[6], $
+                               ' Raw spectral-index measurement error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[0], cols[7], $
+                               ' Raw spectral-index measurement error (propagated)', /dbl
+        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[0], cols[8], $
+                               ' Blue pseudo-continuum for optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[0], cols[9], $
+                               ' Red pseudo-continuum for optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[0], cols[10], $
+                               ' Spectral index for optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[0], cols[11], $
+                               ' Blue pseudo-continuum for broadened optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[0], cols[12], $
+                               ' Red pseudo-continuum for broadened optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[0], cols[13], $
+                               ' Spectral index for broadened optimal template', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[0], cols[14], $
+                               ' Corrected spectral-index measurement', /dbl
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[0], cols[15], $
+                               ' Corrected spectral-index measurement error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[0], cols[16], $
+                               ' Corrected spectral-index measurement error (propagated)', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
             FXBCREATE, tbl, file, bth                   ; Create the binary table extension
@@ -2026,12 +2513,78 @@ PRO MDAP_WRITE_OUTPUT_STAR_AND_GAS_FIT_CHECK_INPUTS, $
 END
 
 ;-------------------------------------------------------------------------------
-; Check the input vectors to write to the STFIT extension.  Returns a flag that
+; Check the input vectors to write to the ELOFIT extension.  Returns a flag that
+; there is something to write, and the size of the vectors to write.  Will throw
+; an error if the input vectors are not the same size
+PRO MDAP_WRITE_OUTPUT_NONPAR_EMISSION_LINE_DATA_CHECK_INPUTS, $
+                something_to_write, ninp, nonpar_eml_omitted=nonpar_eml_omitted, $
+                nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                nonpar_eml_red_flux=nonpar_eml_red_flux, nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                nonpar_eml_red_fcen=nonpar_eml_red_fcen, nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr
+
+        ; Check that ndrp matches the size of one of the existing inputs
+        ; TODO: Assumes all input vectors have the same length!
+        ncol = 23
+        nel = intarr(ncol)
+        nel[0] = n_elements(nonpar_eml_omitted) eq 0 ? 0 : (size(nonpar_eml_omitted))[1]
+        nel[1] = n_elements(nonpar_eml_flux_raw) eq 0 ? 0 : (size(nonpar_eml_flux_raw))[1]
+        nel[2] = n_elements(nonpar_eml_flux_rerr) eq 0 ? 0 : (size(nonpar_eml_flux_rerr))[1]
+        nel[3] = n_elements(nonpar_eml_mom1_raw) eq 0 ? 0 : (size(nonpar_eml_mom1_raw))[1]
+        nel[4] = n_elements(nonpar_eml_mom1_rerr) eq 0 ? 0 : (size(nonpar_eml_mom1_rerr))[1]
+        nel[5] = n_elements(nonpar_eml_mom2_raw) eq 0 ? 0 : (size(nonpar_eml_mom2_raw))[1]
+        nel[6] = n_elements(nonpar_eml_mom2_rerr) eq 0 ? 0 : (size(nonpar_eml_mom2_rerr))[1]
+        nel[7] = n_elements(nonpar_eml_blue_flux) eq 0 ? 0 : (size(nonpar_eml_blue_flux))[1]
+        nel[8] = n_elements(nonpar_eml_blue_ferr) eq 0 ? 0 : (size(nonpar_eml_blue_ferr))[1]
+        nel[9] = n_elements(nonpar_eml_red_flux) eq 0 ? 0 : (size(nonpar_eml_red_flux))[1]
+        nel[10] = n_elements(nonpar_eml_red_ferr) eq 0 ? 0 : (size(nonpar_eml_red_ferr))[1]
+        nel[11] = n_elements(nonpar_eml_blue_fcen) eq 0 ? 0 : (size(nonpar_eml_blue_fcen))[1]
+        nel[12] = n_elements(nonpar_eml_blue_cont) eq 0 ? 0 : (size(nonpar_eml_blue_cont))[1]
+        nel[13] = n_elements(nonpar_eml_blue_cerr) eq 0 ? 0 : (size(nonpar_eml_blue_cerr))[1]
+        nel[14] = n_elements(nonpar_eml_red_fcen) eq 0 ? 0 : (size(nonpar_eml_red_fcen))[1]
+        nel[15] = n_elements(nonpar_eml_red_cont) eq 0 ? 0 : (size(nonpar_eml_red_cont))[1]
+        nel[16] = n_elements(nonpar_eml_red_cerr) eq 0 ? 0 : (size(nonpar_eml_red_cerr))[1]
+        nel[17] = n_elements(nonpar_eml_flux_corr) eq 0 ? 0 : (size(nonpar_eml_flux_corr))[1]
+        nel[18] = n_elements(nonpar_eml_flux_cerr) eq 0 ? 0 : (size(nonpar_eml_flux_cerr))[1]
+        nel[19] = n_elements(nonpar_eml_mom1_corr) eq 0 ? 0 : (size(nonpar_eml_mom1_corr))[1]
+        nel[20] = n_elements(nonpar_eml_mom1_cerr) eq 0 ? 0 : (size(nonpar_eml_mom1_cerr))[1]
+        nel[21] = n_elements(nonpar_eml_mom2_corr) eq 0 ? 0 : (size(nonpar_eml_mom2_corr))[1]
+        nel[22] = n_elements(nonpar_eml_mom2_cerr) eq 0 ? 0 : (size(nonpar_eml_mom2_cerr))[1]
+        ninp = max(nel)
+
+        for i=0,ncol-1 do begin
+            if nel[i] gt 0 && nel[i] ne ninp then $
+                message, 'Input vectors for ELMMNT have different lengths!'
+        endfor
+
+        something_to_write = ninp ne 0
+END
+
+;-------------------------------------------------------------------------------
+; Check the input vectors to write to the ELOFIT extension.  Returns a flag that
 ; there is something to write, and the size of the vectors to write.  Will throw
 ; an error if the input vectors are not the same size
 PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
                 something_to_write, ninp, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2039,6 +2592,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
                 elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -2048,35 +2603,39 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(24)
+        ncol = 28
+        nel = intarr(ncol)
         nel[0] = n_elements(elo_ew_kinematics_avg) eq 0 ? 0 : (size(elo_ew_kinematics_avg))[1]
         nel[1] = n_elements(elo_ew_kinematics_aer) eq 0 ? 0 : (size(elo_ew_kinematics_aer))[1]
-        nel[2] = n_elements(elo_ew_kinematics_ind) eq 0 ? 0 : (size(elo_ew_kinematics_ind))[1]
-        nel[3] = n_elements(elo_ew_kinematics_ier) eq 0 ? 0 : (size(elo_ew_kinematics_ier))[1]
-        nel[4] = n_elements(elo_ew_sinst) eq 0 ? 0 : (size(elo_ew_sinst))[1]
-        nel[5] = n_elements(elo_ew_omitted) eq 0 ? 0 : (size(elo_ew_omitted))[1]
-        nel[6] = n_elements(elo_ew_intens) eq 0 ? 0 : (size(elo_ew_intens))[1]
-        nel[7] = n_elements(elo_ew_interr) eq 0 ? 0 : (size(elo_ew_interr))[1]
-        nel[8] = n_elements(elo_ew_fluxes) eq 0 ? 0 : (size(elo_ew_fluxes))[1]
-        nel[9] = n_elements(elo_ew_flxerr) eq 0 ? 0 : (size(elo_ew_flxerr))[1]
-        nel[10] = n_elements(elo_ew_EWidth) eq 0 ? 0 : (size(elo_ew_EWidth))[1]
-        nel[11] = n_elements(elo_ew_EW_err) eq 0 ? 0 : (size(elo_ew_EW_err))[1]
-        nel[12] = n_elements(elo_fb_kinematics_avg) eq 0 ? 0 : (size(elo_fb_kinematics_avg))[1]
-        nel[13] = n_elements(elo_fb_kinematics_aer) eq 0 ? 0 : (size(elo_fb_kinematics_aer))[1]
-        nel[14] = n_elements(elo_fb_kinematics_ind) eq 0 ? 0 : (size(elo_fb_kinematics_ind))[1]
-        nel[15] = n_elements(elo_fb_kinematics_ier) eq 0 ? 0 : (size(elo_fb_kinematics_ier))[1]
-        nel[16] = n_elements(elo_fb_sinst) eq 0 ? 0 : (size(elo_fb_sinst))[1]
-        nel[17] = n_elements(elo_fb_omitted) eq 0 ? 0 : (size(elo_fb_omitted))[1]
-        nel[18] = n_elements(elo_fb_intens) eq 0 ? 0 : (size(elo_fb_intens))[1]
-        nel[19] = n_elements(elo_fb_interr) eq 0 ? 0 : (size(elo_fb_interr))[1]
-        nel[20] = n_elements(elo_fb_fluxes) eq 0 ? 0 : (size(elo_fb_fluxes))[1]
-        nel[21] = n_elements(elo_fb_flxerr) eq 0 ? 0 : (size(elo_fb_flxerr))[1]
-        nel[22] = n_elements(elo_fb_EWidth) eq 0 ? 0 : (size(elo_fb_EWidth))[1]
-        nel[23] = n_elements(elo_fb_EW_err) eq 0 ? 0 : (size(elo_fb_EW_err))[1]
+        nel[2] = n_elements(elo_ew_kinematics_ase) eq 0 ? 0 : (size(elo_ew_kinematics_ase))[1]
+        nel[3] = n_elements(elo_ew_kinematics_n) eq 0 ? 0 : (size(elo_ew_kinematics_n))[1]
+        nel[4] = n_elements(elo_ew_kinematics_ind) eq 0 ? 0 : (size(elo_ew_kinematics_ind))[1]
+        nel[5] = n_elements(elo_ew_kinematics_ier) eq 0 ? 0 : (size(elo_ew_kinematics_ier))[1]
+        nel[6] = n_elements(elo_ew_sinst) eq 0 ? 0 : (size(elo_ew_sinst))[1]
+        nel[7] = n_elements(elo_ew_omitted) eq 0 ? 0 : (size(elo_ew_omitted))[1]
+        nel[8] = n_elements(elo_ew_intens) eq 0 ? 0 : (size(elo_ew_intens))[1]
+        nel[9] = n_elements(elo_ew_interr) eq 0 ? 0 : (size(elo_ew_interr))[1]
+        nel[10] = n_elements(elo_ew_fluxes) eq 0 ? 0 : (size(elo_ew_fluxes))[1]
+        nel[11] = n_elements(elo_ew_flxerr) eq 0 ? 0 : (size(elo_ew_flxerr))[1]
+        nel[12] = n_elements(elo_ew_EWidth) eq 0 ? 0 : (size(elo_ew_EWidth))[1]
+        nel[13] = n_elements(elo_ew_EW_err) eq 0 ? 0 : (size(elo_ew_EW_err))[1]
+        nel[14] = n_elements(elo_fb_kinematics_avg) eq 0 ? 0 : (size(elo_fb_kinematics_avg))[1]
+        nel[15] = n_elements(elo_fb_kinematics_aer) eq 0 ? 0 : (size(elo_fb_kinematics_aer))[1]
+        nel[16] = n_elements(elo_fb_kinematics_ase) eq 0 ? 0 : (size(elo_fb_kinematics_ase))[1]
+        nel[17] = n_elements(elo_fb_kinematics_n) eq 0 ? 0 : (size(elo_fb_kinematics_n))[1]
+        nel[18] = n_elements(elo_fb_kinematics_ind) eq 0 ? 0 : (size(elo_fb_kinematics_ind))[1]
+        nel[19] = n_elements(elo_fb_kinematics_ier) eq 0 ? 0 : (size(elo_fb_kinematics_ier))[1]
+        nel[20] = n_elements(elo_fb_sinst) eq 0 ? 0 : (size(elo_fb_sinst))[1]
+        nel[21] = n_elements(elo_fb_omitted) eq 0 ? 0 : (size(elo_fb_omitted))[1]
+        nel[22] = n_elements(elo_fb_intens) eq 0 ? 0 : (size(elo_fb_intens))[1]
+        nel[23] = n_elements(elo_fb_interr) eq 0 ? 0 : (size(elo_fb_interr))[1]
+        nel[24] = n_elements(elo_fb_fluxes) eq 0 ? 0 : (size(elo_fb_fluxes))[1]
+        nel[25] = n_elements(elo_fb_flxerr) eq 0 ? 0 : (size(elo_fb_flxerr))[1]
+        nel[26] = n_elements(elo_fb_EWidth) eq 0 ? 0 : (size(elo_fb_EWidth))[1]
+        nel[27] = n_elements(elo_fb_EW_err) eq 0 ? 0 : (size(elo_fb_EW_err))[1]
         ninp = max(nel)
 
-        for i=0,23 do begin
-;           if nel[i] gt 0 and nel[i] ne ninp then $
+        for i=0,ncol-1 do begin
             if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for ELOFIT have different lengths!'
         endfor
@@ -2089,22 +2648,53 @@ END
 ; there is something to write, and the size of the vectors to write.  Will throw
 ; an error if the input vectors are not the same size
 PRO MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_CHECK_INPUTS, $
-                something_to_write, ninp, abs_line_indx_omitted=abs_line_indx_omitted, $
-                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+                something_to_write, ninp, spectral_index_omitted=spectral_index_omitted, $
+                spectral_index_blue_cont=spectral_index_blue_cont,  $
+                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                spectral_index_red_cont=spectral_index_red_cont, $
+                spectral_index_red_cerr=spectral_index_red_cerr, $
+                spectral_index_raw=spectral_index_raw, $
+                spectral_index_rerr=spectral_index_rerr, $
+                spectral_index_rperr=spectral_index_rperr, $
+                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index=spectral_index_otpl_index, $
+                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                spectral_index_botpl_index=spectral_index_botpl_index, $
+                spectral_index_corr=spectral_index_corr, $
+                spectral_index_cerr=spectral_index_cerr, spectral_index_cperr=spectral_index_cperr
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        nel = intarr(5)
-        nel[0] = n_elements(abs_line_indx_omitted) eq 0 ? 0 : (size(abs_line_indx_omitted))[1]
-        nel[1] = n_elements(abs_line_indx_val) eq 0 ? 0 : (size(abs_line_indx_val))[1]
-        nel[2] = n_elements(abs_line_indx_err) eq 0 ? 0 : (size(abs_line_indx_err))[1]
-        nel[3] = n_elements(abs_line_indx_otpl) eq 0 ? 0 : (size(abs_line_indx_otpl))[1]
-        nel[4] = n_elements(abs_line_indx_botpl) eq 0 ? 0 : (size(abs_line_indx_botpl))[1]
+        ncol = 17
+        nel = intarr(ncol)
+        nel[0] = n_elements(spectral_index_omitted) eq 0 ? 0 : (size(spectral_index_omitted))[1]
+        nel[1] = n_elements(spectral_index_blue_cont) eq 0 ? 0 : (size(spectral_index_blue_cont))[1]
+        nel[2] = n_elements(spectral_index_blue_cerr) eq 0 ? 0 : (size(spectral_index_blue_cerr))[1]
+        nel[3] = n_elements(spectral_index_red_cont) eq 0 ? 0 : (size(spectral_index_red_cont))[1]
+        nel[4] = n_elements(spectral_index_red_cerr) eq 0 ? 0 : (size(spectral_index_red_cerr))[1]
+        nel[5] = n_elements(spectral_index_raw) eq 0 ? 0 : (size(spectral_index_raw))[1]
+        nel[6] = n_elements(spectral_index_rerr) eq 0 ? 0 : (size(spectral_index_rerr))[1]
+        nel[7] = n_elements(spectral_index_rperr) eq 0 ? 0 : (size(spectral_index_rperr))[1]
+        nel[8] = n_elements(spectral_index_otpl_blue_cont) eq 0 ? $
+                    0 : (size(spectral_index_otpl_blue_cont))[1]
+        nel[9] = n_elements(spectral_index_otpl_red_cont) eq 0 ? $
+                    0 : (size(spectral_index_otpl_red_cont))[1]
+        nel[10] = n_elements(spectral_index_otpl_index) eq 0 ? $
+                    0 : (size(spectral_index_otpl_index))[1]
+        nel[11] = n_elements(spectral_index_botpl_blue_cont) eq 0 ? $
+                    0 : (size(spectral_index_botpl_blue_cont))[1]
+        nel[12] = n_elements(spectral_index_botpl_red_cont) eq 0 ? $
+                    0 : (size(spectral_index_botpl_red_cont))[1]
+        nel[13] = n_elements(spectral_index_botpl_index) eq 0 ? $
+                    0 : (size(spectral_index_botpl_index))[1]
+        nel[14] = n_elements(spectral_index_corr) eq 0 ? 0 : (size(spectral_index_corr))[1]
+        nel[15] = n_elements(spectral_index_cerr) eq 0 ? 0 : (size(spectral_index_cerr))[1]
+        nel[16] = n_elements(spectral_index_cperr) eq 0 ? 0 : (size(spectral_index_cperr))[1]
         ninp = max(nel)
 
-        for i=0,4 do begin
-;           if nel[i] gt 0 and nel[i] ne ninp then $
+        for i=0,ncol-1 do begin
             if nel[i] gt 0 && nel[i] ne ninp then $
                 message, 'Input vectors for SINDX have different lengths!'
         endfor
@@ -2534,6 +3124,204 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_STAR_AND_GAS_FIT, $
 END
 
 ;-------------------------------------------------------------------------------
+; Write/update the ELBAND extension
+;       - Initialize the extension
+;       - Check that there are inputs to write
+;       - Write/update the data
+PRO MDAP_WRITE_OUTPUT_UPDATE_ELBAND, $
+                file, eml_bands=eml_bands, quiet=quiet
+
+        MDAP_WRITE_OUTPUT_ELBAND_INITIALIZE, file       ; Initialize the extension
+
+        ; Check that there is something to write
+        neml = n_elements(eml_bands)                    ; Number of elements to output
+        if neml eq 0 then begin
+            if ~keyword_set(quiet) then $
+                print, 'MDAP_WRITE_OUTPUT_UPDATE_ELBAND: Nothing to update'
+            return
+        endif
+
+        ; Ensure the table has the correct number of rows
+        MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, neml, 'ELBAND'
+
+        ; Set the output columns
+        elname = MDAP_SET_EMISSION_LINE_NAME(eml_bands)     ; Set the emission-line identifiers
+        elwave = eml_bands[*].lambda                        ; Copy the wavelengths
+        bandpass = dblarr(2,neml)                           ; Initialize the bandpass array
+        blueside = dblarr(2,neml)                           ; Initialize the blue sideband array
+        redside = dblarr(2,neml)                            ; Initialize the red sideband array
+        for i=0,neml-1 do begin
+            bandpass[*,i] = eml_bands[i].bandpass           ; Copy the bandpass
+            blueside[*,i] = eml_bands[i].blueside           ; Copy the blue sideband
+            redside[*,i] = eml_bands[i].redside             ; Copy the red sideband
+        endfor
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELBAND_COLS()
+        FXBOPEN, tbl, file, 'ELBAND', hdr, access='RW'      ; Open the extension
+        FXBWRITM, tbl, [ cols[0], cols[1], cols[2], cols[3], cols[4] ], elname, elwave, bandpass, $
+                  blueside, redside                         ; Write ALL the columns simultaneously
+        FXBFINISH, tbl                                      ; Close the file
+;       print, tbl
+        free_lun, tbl
+END
+
+;-------------------------------------------------------------------------------
+; Write/update the ELMMNT extension
+PRO MDAP_WRITE_OUTPUT_UPDATE_NONPAR_EMISSION_LINE_DATA, $
+                file, nbin=nbin, eml_bands=eml_bands, nonpar_eml_omitted=nonpar_eml_omitted, $
+                nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                nonpar_eml_red_flux=nonpar_eml_red_flux, nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                nonpar_eml_red_fcen=nonpar_eml_red_fcen, nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr, quiet=quiet
+
+        ; Initialize the extension
+        MDAP_WRITE_OUTPUT_NONPAR_EMISSION_LINE_DATA_INITIALIZE, file, eml_bands=eml_bands, $
+                                                    nonpar_eml_omitted=nonpar_eml_omitted, $
+                                                    nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                                                    nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                                                    nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                                                    nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                                                    nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                                                    nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                                                    nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                                                    nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                                                    nonpar_eml_red_flux=nonpar_eml_red_flux, $
+                                                    nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                                                    nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                                                    nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                                                    nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                                                    nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+                                                    nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                                                    nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                                                    nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                                                    nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                                                    nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                                                    nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                                                    nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                                                    nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr
+
+        ; Check that one of the vectors are input and that they have the same length
+        MDAP_WRITE_OUTPUT_NONPAR_EMISSION_LINE_DATA_CHECK_INPUTS, something_to_write, ninp, $
+                                                    nonpar_eml_omitted=nonpar_eml_omitted, $
+                                                    nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                                                    nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                                                    nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                                                    nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                                                    nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                                                    nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                                                    nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                                                    nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                                                    nonpar_eml_red_flux=nonpar_eml_red_flux, $
+                                                    nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                                                    nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                                                    nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                                                    nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                                                    nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+                                                    nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                                                    nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                                                    nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                                                    nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                                                    nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                                                    nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                                                    nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                                                    nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr
+
+        ; If there is nothing to write, return
+        if something_to_write eq 0 then begin
+            if ~keyword_set(quiet) then $
+                print, 'MDAP_WRITE_OUTPUT_UPDATE_NONPAR_EMISSION_LINE_DATA: Nothing to update'
+            return
+        endif
+
+        ; Check that the length of the vectors matched the expected value, if input
+        if n_elements(nbin) ne 0 then begin
+            if nbin ne ninp then $
+                message, 'Input vectors do not have the expected size!'
+        endif else $
+            nbin = ninp
+
+;       fits_info,file
+;       stop
+
+        ; Ensure the table has the correct number of rows
+        MDAP_WRITE_OUTPUT_TBL_MATCH_SIZE, file, nbin, 'ELMMNT'
+
+        ; FROM mdap_set_output_file_cols.pro (included above)
+        cols = MDAP_SET_ELMMNT_COLS()
+            
+        FXBOPEN, tbl, file, 'ELMMNT', bth, access='RW'   ; Open the file
+
+        if n_elements(nonpar_eml_omitted) ne 0 then $
+            FXBWRITM, tbl, [cols[0]], transpose(nonpar_eml_omitted)
+        if n_elements(nonpar_eml_flux_raw) ne 0 then $
+            FXBWRITM, tbl, [cols[1]], transpose(nonpar_eml_flux_raw)
+        if n_elements(nonpar_eml_flux_rerr) ne 0 then $
+            FXBWRITM, tbl, [cols[2]], transpose(nonpar_eml_flux_rerr)
+        if n_elements(nonpar_eml_mom1_raw) ne 0 then $
+            FXBWRITM, tbl, [cols[3]], transpose(nonpar_eml_mom1_raw)
+        if n_elements(nonpar_eml_mom1_rerr) ne 0 then $
+            FXBWRITM, tbl, [cols[4]], transpose(nonpar_eml_mom1_rerr)
+        if n_elements(nonpar_eml_mom2_raw) ne 0 then $
+            FXBWRITM, tbl, [cols[5]], transpose(nonpar_eml_mom2_raw)
+        if n_elements(nonpar_eml_mom2_rerr) ne 0 then $
+            FXBWRITM, tbl, [cols[6]], transpose(nonpar_eml_mom2_rerr)
+        if n_elements(nonpar_eml_blue_flux) ne 0 then $
+            FXBWRITM, tbl, [cols[7]], transpose(nonpar_eml_blue_flux)
+        if n_elements(nonpar_eml_blue_ferr) ne 0 then $
+            FXBWRITM, tbl, [cols[8]], transpose(nonpar_eml_blue_ferr)
+        if n_elements(nonpar_eml_red_flux) ne 0 then $
+            FXBWRITM, tbl, [cols[9]], transpose(nonpar_eml_red_flux)
+        if n_elements(nonpar_eml_red_ferr) ne 0 then $
+            FXBWRITM, tbl, [cols[10]], transpose(nonpar_eml_red_ferr)
+        if n_elements(nonpar_eml_blue_fcen) ne 0 then $
+            FXBWRITM, tbl, [cols[11]], transpose(nonpar_eml_blue_fcen)
+        if n_elements(nonpar_eml_blue_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[12]], transpose(nonpar_eml_blue_cont)
+        if n_elements(nonpar_eml_blue_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[13]], transpose(nonpar_eml_blue_cerr)
+        if n_elements(nonpar_eml_red_fcen) ne 0 then $
+            FXBWRITM, tbl, [cols[14]], transpose(nonpar_eml_red_fcen)
+        if n_elements(nonpar_eml_red_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[15]], transpose(nonpar_eml_red_cont)
+        if n_elements(nonpar_eml_red_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[16]], transpose(nonpar_eml_red_cerr)
+        if n_elements(nonpar_eml_flux_corr) ne 0 then $
+            FXBWRITM, tbl, [cols[17]], transpose(nonpar_eml_flux_corr)
+        if n_elements(nonpar_eml_flux_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[18]], transpose(nonpar_eml_flux_cerr)
+        if n_elements(nonpar_eml_mom1_corr) ne 0 then $
+            FXBWRITM, tbl, [cols[19]], transpose(nonpar_eml_mom1_corr)
+        if n_elements(nonpar_eml_mom1_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[20]], transpose(nonpar_eml_mom1_cerr)
+        if n_elements(nonpar_eml_mom2_corr) ne 0 then $
+            FXBWRITM, tbl, [cols[21]], transpose(nonpar_eml_mom2_corr)
+        if n_elements(nonpar_eml_mom2_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[22]], transpose(nonpar_eml_mom2_cerr)
+
+        FXBFINISH, tbl                                  ; Close the file
+;       print, tbl
+        free_lun, tbl
+
+END
+
+;-------------------------------------------------------------------------------
 ; Write/update the ELOPAR extension
 ;       - Initialize the extension
 ;       - Check that there are inputs to write
@@ -2577,6 +3365,8 @@ END
 PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                 file, nbin=nbin, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2585,17 +3375,21 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
                 elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
                 elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
-                elo_fb_EW_err=elo_fb_EW_err
+                elo_fb_EW_err=elo_fb_EW_err, quiet=quiet
 
         ; Initialize the extension
         MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, file, emlo_par=emlo_par, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2603,6 +3397,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -2614,6 +3410,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
         MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, something_to_write, ninp, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2621,6 +3419,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -2664,50 +3464,59 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
             FXBWRITM, tbl, [cols[0]], transpose(elo_ew_kinematics_avg)
         if n_elements(elo_ew_kinematics_aer) ne 0 then $
             FXBWRITM, tbl, [cols[1]], transpose(elo_ew_kinematics_aer)
+        if n_elements(elo_ew_kinematics_ase) ne 0 then $
+            FXBWRITM, tbl, [cols[2]], transpose(elo_ew_kinematics_ase)
+        if n_elements(elo_ew_kinematics_n) ne 0 then $
+            FXBWRITM, tbl, [cols[3]], elo_ew_kinematics_n
         if n_elements(elo_ew_omitted) ne 0 then $
-            FXBWRITM, tbl, [cols[2]], elo_ew_omitted
+            FXBWRITM, tbl, [cols[4]], transpose(elo_ew_omitted)
         if n_elements(elo_ew_intens) ne 0 then $
-            FXBWRITM, tbl, [cols[3]], transpose(elo_ew_intens)
+            FXBWRITM, tbl, [cols[5]], transpose(elo_ew_intens)
         if n_elements(elo_ew_interr) ne 0 then $
-            FXBWRITM, tbl, [cols[4]], transpose(elo_ew_interr)
+            FXBWRITM, tbl, [cols[6]], transpose(elo_ew_interr)
         if n_elements(elo_ew_kinematics_ind) ne 0 then $
-            FXBWRITM, tbl, [cols[5]], transpose(elo_ew_kinematics_ind, [1, 2, 0])
+            FXBWRITM, tbl, [cols[7]], transpose(elo_ew_kinematics_ind, [1, 2, 0])
         if n_elements(elo_ew_kinematics_ier) ne 0 then $
-            FXBWRITM, tbl, [cols[6]], transpose(elo_ew_kinematics_ier, [1, 2, 0])
+            FXBWRITM, tbl, [cols[8]], transpose(elo_ew_kinematics_ier, [1, 2, 0])
         if n_elements(elo_ew_sinst) ne 0 then $
-            FXBWRITM, tbl, [cols[7]], transpose(elo_ew_sinst)
+            FXBWRITM, tbl, [cols[9]], transpose(elo_ew_sinst)
         if n_elements(elo_ew_fluxes) ne 0 then $
-            FXBWRITM, tbl, [cols[8]], transpose(elo_ew_fluxes)
+            FXBWRITM, tbl, [cols[10]], transpose(elo_ew_fluxes)
         if n_elements(elo_ew_flxerr) ne 0 then $
-            FXBWRITM, tbl, [cols[9]], transpose(elo_ew_flxerr)
+            FXBWRITM, tbl, [cols[11]], transpose(elo_ew_flxerr)
         if n_elements(elo_ew_EWidth) ne 0 then $
-            FXBWRITM, tbl, [cols[10]], transpose(elo_ew_EWidth)
+            FXBWRITM, tbl, [cols[12]], transpose(elo_ew_EWidth)
         if n_elements(elo_ew_EW_err) ne 0 then $
-            FXBWRITM, tbl, [cols[11]], transpose(elo_ew_EW_err)
+            FXBWRITM, tbl, [cols[13]], transpose(elo_ew_EW_err)
+
         if n_elements(elo_fb_kinematics_avg) ne 0 then $
-            FXBWRITM, tbl, [cols[12]], transpose(elo_fb_kinematics_avg)
+            FXBWRITM, tbl, [cols[14]], transpose(elo_fb_kinematics_avg)
         if n_elements(elo_fb_kinematics_aer) ne 0 then $
-            FXBWRITM, tbl, [cols[13]], transpose(elo_fb_kinematics_aer)
+            FXBWRITM, tbl, [cols[15]], transpose(elo_fb_kinematics_aer)
+        if n_elements(elo_fb_kinematics_ase) ne 0 then $
+            FXBWRITM, tbl, [cols[16]], transpose(elo_fb_kinematics_ase)
+        if n_elements(elo_fb_kinematics_n) ne 0 then $
+            FXBWRITM, tbl, [cols[17]], elo_fb_kinematics_n
         if n_elements(elo_fb_omitted) ne 0 then $
-            FXBWRITM, tbl, [cols[14]], elo_fb_omitted
+            FXBWRITM, tbl, [cols[18]], transpose(elo_fb_omitted)
         if n_elements(elo_fb_intens) ne 0 then $
-            FXBWRITM, tbl, [cols[15]], transpose(elo_fb_intens)
+            FXBWRITM, tbl, [cols[19]], transpose(elo_fb_intens)
         if n_elements(elo_fb_interr) ne 0 then $
-            FXBWRITM, tbl, [cols[16]], transpose(elo_fb_interr)
+            FXBWRITM, tbl, [cols[20]], transpose(elo_fb_interr)
         if n_elements(elo_fb_kinematics_ind) ne 0 then $
-            FXBWRITM, tbl, [cols[17]], transpose(elo_fb_kinematics_ind, [1, 2, 0])
+            FXBWRITM, tbl, [cols[21]], transpose(elo_fb_kinematics_ind, [1, 2, 0])
         if n_elements(elo_fb_kinematics_ier) ne 0 then $
-            FXBWRITM, tbl, [cols[18]], transpose(elo_fb_kinematics_ier, [1, 2, 0])
+            FXBWRITM, tbl, [cols[22]], transpose(elo_fb_kinematics_ier, [1, 2, 0])
         if n_elements(elo_fb_sinst) ne 0 then $
-            FXBWRITM, tbl, [cols[19]], transpose(elo_fb_sinst)
+            FXBWRITM, tbl, [cols[23]], transpose(elo_fb_sinst)
         if n_elements(elo_fb_fluxes) ne 0 then $
-            FXBWRITM, tbl, [cols[20]], transpose(elo_fb_fluxes)
+            FXBWRITM, tbl, [cols[24]], transpose(elo_fb_fluxes)
         if n_elements(elo_fb_flxerr) ne 0 then $
-            FXBWRITM, tbl, [cols[21]], transpose(elo_fb_flxerr)
+            FXBWRITM, tbl, [cols[25]], transpose(elo_fb_flxerr)
         if n_elements(elo_fb_EWidth) ne 0 then $
-            FXBWRITM, tbl, [cols[22]], transpose(elo_fb_EWidth)
+            FXBWRITM, tbl, [cols[26]], transpose(elo_fb_EWidth)
         if n_elements(elo_fb_EW_err) ne 0 then $
-            FXBWRITM, tbl, [cols[23]], transpose(elo_fb_EW_err)
+            FXBWRITM, tbl, [cols[27]], transpose(elo_fb_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
 ;       print, tbl
@@ -2769,25 +3578,61 @@ END
 ;-------------------------------------------------------------------------------
 ; Write/update the SINDX extension
 PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
-                file, nbin=nbin, abs_par=abs_par, abs_line_indx_omitted=abs_line_indx_omitted, $
-                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl
+                file, nbin=nbin, abs_par=abs_par, spectral_index_omitted=spectral_index_omitted, $
+                spectral_index_blue_cont=spectral_index_blue_cont,  $
+                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                spectral_index_red_cont=spectral_index_red_cont, $
+                spectral_index_red_cerr=spectral_index_red_cerr, $
+                spectral_index_raw=spectral_index_raw, spectral_index_rerr=spectral_index_rerr, $
+                spectral_index_rperr=spectral_index_rperr, $
+                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index=spectral_index_otpl_index, $
+                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                spectral_index_botpl_index=spectral_index_botpl_index, $
+                spectral_index_corr=spectral_index_corr, spectral_index_cerr=spectral_index_cerr, $
+                spectral_index_cperr=spectral_index_cperr, quiet=quiet
 
         ; Initialize the extension
         MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_INITIALIZE, file, abs_par=abs_par, $
-                                                      abs_line_indx_omitted=abs_line_indx_omitted, $
-                                                      abs_line_indx_val=abs_line_indx_val, $
-                                                      abs_line_indx_err=abs_line_indx_err, $
-                                                      abs_line_indx_otpl=abs_line_indx_otpl, $
-                                                      abs_line_indx_botpl=abs_line_indx_botpl
+                                    spectral_index_omitted=spectral_index_omitted, $
+                                    spectral_index_blue_cont=spectral_index_blue_cont,  $
+                                    spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                                    spectral_index_red_cont=spectral_index_red_cont, $
+                                    spectral_index_red_cerr=spectral_index_red_cerr, $
+                                    spectral_index_raw=spectral_index_raw, $
+                                    spectral_index_rerr=spectral_index_rerr, $
+                                    spectral_index_rperr=spectral_index_rperr, $
+                                    spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                                    spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                                    spectral_index_otpl_index=spectral_index_otpl_index, $
+                                    spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                                    spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                                    spectral_index_botpl_index=spectral_index_botpl_index, $
+                                    spectral_index_corr=spectral_index_corr, $
+                                    spectral_index_cerr=spectral_index_cerr, $
+                                    spectral_index_cperr=spectral_index_cperr
 
         ; Check that one of the vectors are input and that they have the same length
         MDAP_WRITE_OUTPUT_SPECTRAL_INDICES_CHECK_INPUTS, something_to_write, ninp, $
-                                                      abs_line_indx_omitted=abs_line_indx_omitted, $
-                                                      abs_line_indx_val=abs_line_indx_val, $
-                                                      abs_line_indx_err=abs_line_indx_err, $
-                                                      abs_line_indx_otpl=abs_line_indx_otpl, $
-                                                      abs_line_indx_botpl=abs_line_indx_botpl
+                                    spectral_index_omitted=spectral_index_omitted, $
+                                    spectral_index_blue_cont=spectral_index_blue_cont,  $
+                                    spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                                    spectral_index_red_cont=spectral_index_red_cont, $
+                                    spectral_index_red_cerr=spectral_index_red_cerr, $
+                                    spectral_index_raw=spectral_index_raw, $
+                                    spectral_index_rerr=spectral_index_rerr, $
+                                    spectral_index_rperr=spectral_index_rperr, $
+                                    spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                                    spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                                    spectral_index_otpl_index=spectral_index_otpl_index, $
+                                    spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                                    spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                                    spectral_index_botpl_index=spectral_index_botpl_index, $
+                                    spectral_index_corr=spectral_index_corr, $
+                                    spectral_index_cerr=spectral_index_cerr, $
+                                    spectral_index_cperr=spectral_index_cperr
 
         ; If there is nothing to write, return
         if something_to_write eq 0 then begin
@@ -2819,18 +3664,40 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, $
         FXBOPEN, tbl, file, 'SINDX', bth, access='RW'   ; Open the file
 
         ; Write columns if they were provided; column/row ordering has to be adjusted
-        ; TODO: Is this too inefficient?
-        ; TODO: Need to redo column/row reordering
-        if n_elements(abs_line_indx_omitted) ne 0 then $
-            FXBWRITM, tbl, [cols[0]], transpose(abs_line_indx_omitted)
-        if n_elements(abs_line_indx_val) ne 0 then $
-            FXBWRITM, tbl, [cols[1]], transpose(abs_line_indx_val)
-        if n_elements(abs_line_indx_err) ne 0 then $
-            FXBWRITM, tbl, [cols[2]], transpose(abs_line_indx_err)
-        if n_elements(abs_line_indx_otpl) ne 0 then $
-            FXBWRITM, tbl, [cols[3]], transpose(abs_line_indx_otpl)
-        if n_elements(abs_line_indx_botpl) ne 0 then $
-            FXBWRITM, tbl, [cols[4]], transpose(abs_line_indx_botpl)
+        if n_elements(spectral_index_omitted) ne 0 then $
+            FXBWRITM, tbl, [cols[0]], transpose(spectral_index_omitted)
+        if n_elements(spectral_index_blue_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[1]], transpose(spectral_index_blue_cont)
+        if n_elements(spectral_index_blue_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[2]], transpose(spectral_index_blue_cerr)
+        if n_elements(spectral_index_red_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[3]], transpose(spectral_index_red_cont)
+        if n_elements(spectral_index_red_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[4]], transpose(spectral_index_red_cerr)
+        if n_elements(spectral_index_raw) ne 0 then $
+            FXBWRITM, tbl, [cols[5]], transpose(spectral_index_raw)
+        if n_elements(spectral_index_rerr) ne 0 then $
+            FXBWRITM, tbl, [cols[6]], transpose(spectral_index_rerr)
+        if n_elements(spectral_index_rperr) ne 0 then $
+            FXBWRITM, tbl, [cols[7]], transpose(spectral_index_rperr)
+        if n_elements(spectral_index_otpl_blue_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[8]], transpose(spectral_index_otpl_blue_cont)
+        if n_elements(spectral_index_otpl_red_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[9]], transpose(spectral_index_otpl_red_cont)
+        if n_elements(spectral_index_otpl_index) ne 0 then $
+            FXBWRITM, tbl, [cols[10]], transpose(spectral_index_otpl_index)
+        if n_elements(spectral_index_botpl_blue_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[11]], transpose(spectral_index_botpl_blue_cont)
+        if n_elements(spectral_index_botpl_red_cont) ne 0 then $
+            FXBWRITM, tbl, [cols[12]], transpose(spectral_index_botpl_red_cont)
+        if n_elements(spectral_index_botpl_index) ne 0 then $
+            FXBWRITM, tbl, [cols[13]], transpose(spectral_index_botpl_index)
+        if n_elements(spectral_index_corr) ne 0 then $
+            FXBWRITM, tbl, [cols[14]], transpose(spectral_index_corr)
+        if n_elements(spectral_index_cerr) ne 0 then $
+            FXBWRITM, tbl, [cols[15]], transpose(spectral_index_cerr)
+        if n_elements(spectral_index_cperr) ne 0 then $
+            FXBWRITM, tbl, [cols[16]], transpose(spectral_index_cperr)
 
         FXBFINISH, tbl                                  ; Close the file
 ;       print, tbl
@@ -2846,7 +3713,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_IMAGE, $
         if MDAP_CHECK_EXTENSION_EXISTS(file, exten) eq 0 then begin
             MKHDR, hdr, data, /image                    ; Make a minimal image extension header
             SXADDPAR, hdr, 'EXTNAME', exten, comment    ; Set the extension name
-            WRITEFITS, file, data, hdr, /append         ; Write the data to an appended extension
+            ; Write the data to an appended extension
+            WRITEFITS, file, data, hdr, /append, /checksum
         endif else begin
             MKHDR, hdr, data, /image                    ; Make a minimal image extension header
             SXADDPAR, hdr, 'EXTNAME', exten, comment    ; Set the extension name
@@ -2862,7 +3730,8 @@ PRO MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, $
             dummy = dblarr(1)                           ; Set a dummy array
             MKHDR, hdr, dummy, /image                   ; Make a minimal image extension header
             SXADDPAR, hdr, 'EXTNAME', exten, comment    ; Set the extension name
-            WRITEFITS, file, dummy, hdr, /append        ; Write the data to an appended extension
+            ; Write the data to an appended extension
+            WRITEFITS, file, dummy, hdr, /append, /checksum
         endif 
 END
 
@@ -2898,9 +3767,33 @@ PRO MDAP_WRITE_OUTPUT, $
                 emission_line_EW_err=emission_line_EW_err, $
                 reddening_val=reddening_val, reddening_err=reddening_err, $
                 obj_fit_mask_gndf=obj_fit_mask_gndf, bestfit_gndf=bestfit_gndf, $
-                eml_model=eml_model, emlo_par=emlo_par, $
+                eml_model=eml_model, eml_bands=eml_bands, nonpar_eml_omitted=nonpar_eml_omitted, $
+                nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                nonpar_eml_red_flux=nonpar_eml_red_flux, $
+                nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+                nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr, emlo_par=emlo_par, $
                 elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2909,19 +3802,32 @@ PRO MDAP_WRITE_OUTPUT, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_ew_eml_model=elo_ew_eml_model, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
                 elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
                 elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
                 elo_fb_EW_err=elo_fb_EW_err, elo_fb_eml_model=elo_fb_eml_model, abs_par=abs_par, $
-                abs_line_key=abs_line_key, abs_line_indx_omitted=abs_line_indx_omitted, $
-                abs_line_indx_val=abs_line_indx_val, abs_line_indx_err=abs_line_indx_err, $
-                abs_line_indx_otpl=abs_line_indx_otpl, abs_line_indx_botpl=abs_line_indx_botpl, $
-                si_bin_wave=si_bin_wave, si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, $
-                si_bin_mask=si_bin_mask, si_optimal_template=si_optimal_template, $
-                si_broad_optimal_template=si_broad_optimal_template, read_header=read_header, $
-                quiet=quiet
+                abs_line_key=abs_line_key, spectral_index_omitted=spectral_index_omitted, $
+                spectral_index_blue_cont=spectral_index_blue_cont, $
+                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                spectral_index_red_cont=spectral_index_red_cont, $
+                spectral_index_red_cerr=spectral_index_red_cerr, $
+                spectral_index_raw=spectral_index_raw, spectral_index_rerr=spectral_index_rerr, $
+                spectral_index_rperr=spectral_index_rperr, $
+                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                spectral_index_otpl_index=spectral_index_otpl_index, $
+                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                spectral_index_botpl_index=spectral_index_botpl_index, $
+                spectral_index_corr=spectral_index_corr, spectral_index_cerr=spectral_index_cerr, $
+                spectral_index_cperr=spectral_index_cperr, si_bin_wave=si_bin_wave, $
+                si_bin_flux=si_bin_flux, si_bin_ivar=si_bin_ivar, si_bin_mask=si_bin_mask, $
+                si_otpl_flux=si_otpl_flux, si_otpl_mask=si_otpl_mask, si_botpl_flux=si_botpl_flux, $
+                si_botpl_mask=si_botpl_mask, read_header=read_header, quiet=quiet
 
 ;           uu = 1
 ;           print, uu
@@ -2990,7 +3896,8 @@ PRO MDAP_WRITE_OUTPUT, $
         MDAP_WRITE_OUTPUT_UPDATE_DRPS, file, ndrp=ndrp, xpos=xpos, ypos=ypos, $
                                        fraction_good=fraction_good, min_eq_max=min_eq_max, $
                                        signal=signal, noise=noise, bin_vreg=bin_vreg, $
-                                       bin_indx=bin_indx, bin_weights=bin_weights, quiet=quiet
+                                       bin_indx=bin_indx, bin_weights=bin_weights, /quiet
+                                       ;, quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3002,7 +3909,7 @@ PRO MDAP_WRITE_OUTPUT, $
         ; Update properties of binned spectra
         MDAP_WRITE_OUTPUT_UPDATE_BINS, file, nbin=nbin, xbin_rlow=xbin_rlow, ybin_rupp=ybin_rupp, $
                                        rbin=rbin, bin_area=bin_area, bin_ston=bin_ston, $
-                                       bin_n=bin_n, bin_flag=bin_flag, quiet=quiet
+                                       bin_n=bin_n, bin_flag=bin_flag, /quiet;, quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3074,7 +3981,8 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Update the bad pixel mask of the binned spectra
         if n_elements(bin_mask) ne 0 then begin
-            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'MASK', bin_mask, 'Bad pixel mask (0/1=good/bad)'
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'MASK', byte(bin_mask), $
+                                            'Bad pixel mask (0/1=good/bad)'
         endif else $
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'MASK', 'Bad pixel mask (0/1=good/bad)'
 
@@ -3089,7 +3997,7 @@ PRO MDAP_WRITE_OUTPUT, $
 ;       stop
 
         ; Update the emission-line parameters
-        MDAP_WRITE_OUTPUT_UPDATE_ELPAR, file, eml_par=eml_par, quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_ELPAR, file, eml_par=eml_par, /quiet; quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3104,7 +4012,7 @@ PRO MDAP_WRITE_OUTPUT, $
                                               mult_poly_coeff_ppxf=mult_poly_coeff_ppxf, $
                                               stellar_kinematics_fit=stellar_kinematics_fit, $
                                               stellar_kinematics_err=stellar_kinematics_err, $
-                                              chi2_ppxf=chi2_ppxf, quiet=quiet
+                                              chi2_ppxf=chi2_ppxf, /quiet; quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3163,7 +4071,7 @@ PRO MDAP_WRITE_OUTPUT, $
                                                     emission_line_EWidth=emission_line_EWidth, $
                                                     emission_line_EW_err=emission_line_EW_err, $
                                                     reddening_val=reddening_val, $
-                                                    reddening_err=reddening_err, quiet=quiet
+                                                    reddening_err=reddening_err, /quiet; quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3220,8 +4128,39 @@ PRO MDAP_WRITE_OUTPUT, $
 ;           if unit ne 100 then stop
 ;           free_lun, unit
 
+        ; Update the non-parametric emission-line bands
+        MDAP_WRITE_OUTPUT_UPDATE_ELBAND, file, eml_bands=eml_bands, /quiet; quiet=quiet
+
+
+        ; Update the emission-line fitting results
+        MDAP_WRITE_OUTPUT_UPDATE_NONPAR_EMISSION_LINE_DATA, file, nbin=nbin, eml_bands=eml_bands, $
+                                                    nonpar_eml_omitted=nonpar_eml_omitted, $
+                                                    nonpar_eml_flux_raw=nonpar_eml_flux_raw, $
+                                                    nonpar_eml_flux_rerr=nonpar_eml_flux_rerr, $
+                                                    nonpar_eml_mom1_raw=nonpar_eml_mom1_raw, $
+                                                    nonpar_eml_mom1_rerr=nonpar_eml_mom1_rerr, $
+                                                    nonpar_eml_mom2_raw=nonpar_eml_mom2_raw, $
+                                                    nonpar_eml_mom2_rerr=nonpar_eml_mom2_rerr, $
+                                                    nonpar_eml_blue_flux=nonpar_eml_blue_flux, $
+                                                    nonpar_eml_blue_ferr=nonpar_eml_blue_ferr, $
+                                                    nonpar_eml_red_flux=nonpar_eml_red_flux, $
+                                                    nonpar_eml_red_ferr=nonpar_eml_red_ferr, $
+                                                    nonpar_eml_blue_fcen=nonpar_eml_blue_fcen, $
+                                                    nonpar_eml_blue_cont=nonpar_eml_blue_cont, $
+                                                    nonpar_eml_blue_cerr=nonpar_eml_blue_cerr, $
+                                                    nonpar_eml_red_fcen=nonpar_eml_red_fcen, $
+                                                    nonpar_eml_red_cont=nonpar_eml_red_cont, $
+                                                    nonpar_eml_red_cerr=nonpar_eml_red_cerr, $
+                                                    nonpar_eml_flux_corr=nonpar_eml_flux_corr, $
+                                                    nonpar_eml_flux_cerr=nonpar_eml_flux_cerr, $
+                                                    nonpar_eml_mom1_corr=nonpar_eml_mom1_corr, $
+                                                    nonpar_eml_mom1_cerr=nonpar_eml_mom1_cerr, $
+                                                    nonpar_eml_mom2_corr=nonpar_eml_mom2_corr, $
+                                                    nonpar_eml_mom2_cerr=nonpar_eml_mom2_cerr, $
+                                                    /quiet; quiet=quiet
+
         ; Update the emission-line parameters
-        MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, file, emlo_par=emlo_par, quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_ELOPAR, file, emlo_par=emlo_par, /quiet; quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3234,6 +4173,8 @@ PRO MDAP_WRITE_OUTPUT, $
         MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, file, nbin=nbin, emlo_par=emlo_par, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
+                        elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -3241,12 +4182,14 @@ PRO MDAP_WRITE_OUTPUT, $
                         elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
+                        elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
                         elo_fb_interr=elo_fb_interr, elo_fb_fluxes=elo_fb_fluxes, $
                         elo_fb_flxerr=elo_fb_flxerr, elo_fb_EWidth=elo_fb_EWidth, $
-                        elo_fb_EW_err=elo_fb_EW_err
+                        elo_fb_EW_err=elo_fb_EW_err, /quiet; quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3343,7 +4286,7 @@ PRO MDAP_WRITE_OUTPUT, $
         ; Bad pixel mask of the binned spectra that have been resolution matched
         ; to the spectral index system.
         if n_elements(si_bin_mask) ne 0 then begin
-            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIMASK', si_bin_mask, $
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIMASK', byte(si_bin_mask), $
                                             'Spectral-index resolution matched: bad pixel mask'
         endif else begin
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIMASK', $
@@ -3359,12 +4302,21 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Optimal template fit to each binned spectrum and resolution matched to
         ; the spectral index system.
-        if n_elements(si_optimal_template) ne 0 then begin
-            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIOTPL', si_optimal_template, $
+        if n_elements(si_otpl_flux) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIOTPL', si_otpl_flux, $
                                         'Spectral-index resolution matched: optimal template'
         endif else begin
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIOTPL', $
                                         'Spectral-index resolution matched: optimal template'
+        endelse
+
+        ; Optimal template mask
+        if n_elements(si_otpl_mask) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIOTPLM', byte(si_otpl_mask), $
+                                        'Spectral-index resolution matched: optimal template mask'
+        endif else begin
+            MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIOTPLM', $
+                                        'Spectral-index resolution matched: optimal template mask'
         endelse
 
 ;           uu += 1
@@ -3376,12 +4328,21 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Broadened optimal template fit to each binned spectrum and resolution
         ; matched to the spectral index system.
-        if n_elements(si_broad_optimal_template) ne 0 then begin
-            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIBOTPL', si_broad_optimal_template, $
+        if n_elements(si_botpl_flux) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIBOTPL', si_botpl_flux, $
                                 'Spectral-index resolution matched: broadened optimal template'
         endif else begin
             MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIBOTPL', $
                                 'Spectral-index resolution matched: broadened optimal template'
+        endelse
+
+        ; Broadened optimal template mask
+        if n_elements(si_botpl_mask) ne 0 then begin
+            MDAP_WRITE_OUTPUT_UPDATE_IMAGE, file, 'SIBOTPLM', byte(si_botpl_mask), $
+                                'Spectral-index resolution matched: broadened optimal template mask'
+        endif else begin
+            MDAP_WRITE_OUTPUT_BLANK_IMAGE_EXTENSION, file, 'SIBOTPLM', $
+                                'Spectral-index resolution matched: broadened optimal template mask'
         endelse
 
 ;           uu += 1
@@ -3392,7 +4353,7 @@ PRO MDAP_WRITE_OUTPUT, $
 ;           free_lun, unit
 
         ; Update the spectral index parameters
-        MDAP_WRITE_OUTPUT_UPDATE_SIPAR, file, abs_par=abs_par, quiet=quiet
+        MDAP_WRITE_OUTPUT_UPDATE_SIPAR, file, abs_par=abs_par, /quiet ;quiet=quiet
 
 ;           uu += 1
 ;           print, uu
@@ -3403,18 +4364,30 @@ PRO MDAP_WRITE_OUTPUT, $
 
         ; Update the spectral index measurements
         MDAP_WRITE_OUTPUT_UPDATE_SPECTRAL_INDICES, file, nbin=nbin, abs_par=abs_par, $
-                                                   abs_line_indx_omitted=abs_line_indx_omitted, $
-                                                   abs_line_indx_val=abs_line_indx_val, $
-                                                   abs_line_indx_err=abs_line_indx_err, $
-                                                   abs_line_indx_otpl=abs_line_indx_otpl, $
-                                                   abs_line_indx_botpl=abs_line_indx_botpl
+                                spectral_index_omitted=spectral_index_omitted, $
+                                spectral_index_blue_cont=spectral_index_blue_cont, $
+                                spectral_index_blue_cerr=spectral_index_blue_cerr, $
+                                spectral_index_red_cont=spectral_index_red_cont, $
+                                spectral_index_red_cerr=spectral_index_red_cerr, $
+                                spectral_index_raw=spectral_index_raw, $
+                                spectral_index_rerr=spectral_index_rerr, $
+                                spectral_index_rperr=spectral_index_rperr, $
+                                spectral_index_otpl_blue_cont=spectral_index_otpl_blue_cont, $
+                                spectral_index_otpl_red_cont=spectral_index_otpl_red_cont, $
+                                spectral_index_otpl_index=spectral_index_otpl_index, $
+                                spectral_index_botpl_blue_cont=spectral_index_botpl_blue_cont, $
+                                spectral_index_botpl_red_cont=spectral_index_botpl_red_cont, $
+                                spectral_index_botpl_index=spectral_index_botpl_index, $
+                                spectral_index_corr=spectral_index_corr, $
+                                spectral_index_cerr=spectral_index_cerr, $
+                                spectral_index_cperr=spectral_index_cperr, /quiet ;quiet=quiet
 
 ;           uu += 1
 ;           print, uu
-            get_lun, unit
-            print, unit
+;           get_lun, unit
+;           print, unit
 ;           if unit ne 100 then stop
-            free_lun, unit
+;           free_lun, unit
 
 ;       fits_info, file
 ;       stop

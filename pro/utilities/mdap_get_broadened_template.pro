@@ -58,8 +58,8 @@
 ; EXAMPLES:
 ;
 ; TODO:
-;       - This does not include the multiplicative (or additive) polynomials if
-;         included!
+;       - May be different from best fit returned by pPXF because this
+;         does not include the multiplicative (or additive) polynomials.
 ;
 ; BUGS:
 ;
@@ -68,7 +68,11 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;        8 Oct 2014: (KBW) Original Implementation
+;        8 Oct 2014: Original Implementation by K. Westfall (KBW)
+;       14 Aug 2015: (KBW) Convolution performed over pixels with given
+;                          velocity width, so needed to change the
+;                          normalization accordingly.  Now return
+;                          template * velscale, not just template.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -125,17 +129,6 @@ FUNCTION MDAP_GET_BROADENED_TEMPLATE, $
             broadened_template = rebin(mdap_ppxf_convol_fft(tpl,losvd),sz[1])
         endelse
 
-        return, broadened_template
+        return, broadened_template*velscale
 end
-
-;   dx = ceil(5d*sol[1]/velscale) 
-;   n = 2*dx + 1
-;   x = mdap_range(dx,-dx,n)          ; Evaluate the Gaussian using steps of 1/factor pixel
-;   losvd = dblarr(n)
-;   w = (x )/(sol[1]/velscale)
-;   w2 = w*w
-;   losvd = exp(-0.5d*w2)/(sqrt(2d*!dpi)*sol[1]/velscale) ; Normalized total(Gaussian)=1
-;   poly = 1d + sol[2]/Sqrt(3d)*(w*(2d*w2-3d)) $          ; H3
-;          + sol[3]/Sqrt(24d)*(w2*(4d*w2-12d)+3d)         ; H4
-;   losvd = losvd*poly
 

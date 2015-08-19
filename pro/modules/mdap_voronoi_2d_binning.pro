@@ -285,7 +285,7 @@ sn_total_eval = MDAP_CALCULATE_BIN_SN(signal[w], noise[w], noise_calib=noise_cal
                                       optimal_weighting=optimal_weighting)
 ; maxnum = round(total((signal[w]/noise[w])^2)/targetSN^2) + nc
 maxnum = round(sn_total_eval^2/targetSN^2) + nc
-print, 'maxnum: ', maxnum
+;print, 'maxnum: ', maxnum
 ;stop
 
 ; The first bin will be assigned CLASS = 1
@@ -293,7 +293,7 @@ print, 'maxnum: ', maxnum
 ;
 for ind=1,n do begin
 
-    if not keyword_set(quiet) then print, ind, maxnum, FORMAT='(%"Bin:  %d / %d")'
+;    if not keyword_set(quiet) then print, ind, maxnum, FORMAT='(%"Bin:  %d / %d")'
 
     class[currentBin] = ind ; Here currentBin is still made of one pixel
     xbar = x[currentBin]
@@ -460,8 +460,8 @@ FOR iter=1,n_elements(xnode) DO BEGIN
     if keyword_set(wvt) then scale = sqrt(area/sn) ; Eq. (4) of Diehl & Statler (2006)
     diff = TOTAL((xnode-xnodeOld)^2+(ynode-ynodeOld)^2)
 
-    if not keyword_set(quiet) then $
-        print, iter, diff, FORMAT='(%"Iter:  %d,  Diff:  %f")'
+;    if not keyword_set(quiet) then $
+;        print, iter, diff, FORMAT='(%"Iter:  %d,  Diff:  %f")'
         
     if diff eq 0 then break
 
@@ -647,9 +647,9 @@ if not keyword_set(quiet) then $
     print, 'Bin-accretion...'
 bin2d_accretion, x, y, signal, noise, targetSN, class, pixelSize, noise_calib=noise_calib, $
                  optimal_weighting=optimal_weighting, QUIET=quiet
-print, 'class: ', class
+;print, 'class: ', class
 indx = where(ston gt 0. and finite(ston), count)
-print, count, n_elements(class) 
+;print, count, n_elements(class) 
 if not keyword_set(quiet) then begin
     print, strtrim(max(class)+1,2), ' initial bins.'
 endif

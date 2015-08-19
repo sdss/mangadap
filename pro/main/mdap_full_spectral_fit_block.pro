@@ -173,7 +173,11 @@
 ;       MDAP_READ_OUTPUT
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       19 Aug 2015: (KBW) Header passed to procedure, so no need to
+;                          read it from the existing file when writing
+;                          the output.  Corrected in calls to
+;                          MDAP_WRITE_OUTPUT.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -251,12 +255,12 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
             MDAP_WRITE_OUTPUT, execution_plan.ofile, header=header, $
                                w_range_analysis=execution_plan.wave_range_analysis, $
                                threshold_ston_analysis=execution_plan.threshold_ston_analysis, $
-                               /read_header, quiet=quiet
+                               quiet=quiet;, /read_header
             
             ;-----------------------------------------------------------
             ; Write the emission line parameters
             if n_elements(eml_par) ne 0 then $
-                MDAP_WRITE_OUTPUT, execution_plan.ofile, eml_par=eml_par, quiet=quiet
+                MDAP_WRITE_OUTPUT, execution_plan.ofile, header=header, eml_par=eml_par, quiet=quiet
 
             ;-----------------------------------------------------------
             ; Write the stellar kinematics results
@@ -268,7 +272,7 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
                                bestfit_ppxf=bestfit_ppxf, chi2_ppxf=chi2_ppxf, $
                                stellar_kinematics_fit=stellar_kinematics, $
                                stellar_kinematics_err=stellar_kinematics_err, $
-                               analysis_par=execution_plan.analysis_par, /read_header, quiet=quiet
+                               analysis_par=execution_plan.analysis_par, quiet=quiet;, /read_header
 
 
             ;-----------------------------------------------------------
@@ -304,8 +308,8 @@ PRO MDAP_FULL_SPECTRAL_FIT_BLOCK, $
                                    emission_line_EWidth=emission_line_EW, $
                                    emission_line_EW_err=emission_line_EW_err, $
                                    reddening_val=reddening, reddening_err=reddening_err, $
-                                   bestfit_gndf=bestfit_gndf, eml_model=eml_model, quiet=quiet, $
-                                   /read_header
+                                   bestfit_gndf=bestfit_gndf, eml_model=eml_model, quiet=quiet
+                                   ;, /read_header
             endif
 
         ;---------------------------------------------------------------

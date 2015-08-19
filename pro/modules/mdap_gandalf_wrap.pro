@@ -347,8 +347,12 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       29 Sep 2014: Copied from v0_8 by L. Coccato (last edited 16 Apr 2014)
-;       29 Sep 2014: (KBW) Formatting and edits
+;       29 Sep 2014: Copied from v0_8 by L. Coccato (last edited 16 Apr
+;                    2014)
+;       29 Sep 2014: Formatting and edits by K. Westfall (KBW)
+;       10 Jul 2015: (KBW) Converted default values to -9999.0d
+;       13 Jul 2015: (KBW) Adjust for changes in
+;                          MDAP_MEAN_GAS_KINEMATICS
 ;-
 ;------------------------------------------------------------------------------
 
@@ -520,38 +524,40 @@ PRO MDAP_GANDALFW_DEFAULT, $
                 gas_flux, gas_flux_err, gas_ew, gas_ew_err, mdegree=mdegree, $
                 reddening=reddening, err_reddening=err_reddening
 
-        sol = MDAP_GANDALFW_SOL(sol_star, !VALUES.D_NAN, !VALUES.D_NAN)
-        err = MDAP_GANDALFW_SOL(err_star, 99.0d, 99.0d) ; TODO: Set errors ton NaN?
+        ; TODO: Need a variable to hold the placeholder value(s)!
+
+        sol = MDAP_GANDALFW_SOL(sol_star, -9999.0d, -9999.0d) ; !VALUES.D_NAN, !VALUES.D_NAN)
+        err = MDAP_GANDALFW_SOL(err_star, -9999.0d, -9999.0d)
 
         fitted_pixels_gndf=-1                           ; No pixels fitted by GANDALF
         weights_gndf = dblarr(ntpl)                     ; No template weights
         if n_elements(mdegree) ne 0 && mdegree gt 0 then begin
             mult_poly_coeff_gndf = dblarr(mdegree)      ; No polynomial weights
         endif else $
-            MDAP_ERASEVAR, mult_poly_coeff_gndf         ; Remove variable
-        bestfit_gndf = dblarr(nc)                       ; No GANDALF fit
-        chi2_gndf = -1                                  ; No chi^2
-        eml_model = dblarr(nc)                          ; No emission-line model
+            MDAP_ERASEVAR, mult_poly_coeff_gndf                 ; Remove variable
+        bestfit_gndf = make_array(nc, /double, value=-9999.0d)  ; No GANDALF fit
+        chi2_gndf = -9999.0d                                    ; No chi^2
+        eml_model = make_array(nc, /double, value=-9999.0d)     ; No emission-line model
 
-        gas_intens = neml_f gt 0 ? dblarr(neml_f) : -1
-        gas_intens_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+        gas_intens = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
+        gas_intens_err = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
 
-        gas_vel = neml_f gt 0 ? make_array(neml_f, /double, value=!VALUES.D_NAN) : -1
-        gas_vel_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+        gas_vel = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
+        gas_vel_err = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
 
-        gas_sig = neml_f gt 0 ? make_array(neml_f, /double, value=!VALUES.D_NAN) : -1
-        gas_sig_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+        gas_sig = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
+        gas_sig_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -9999.0d
 
-        gas_flux = neml_f gt 0 ? dblarr(neml_f) : -1
-        gas_flux_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+        gas_flux = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
+        gas_flux_err = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
             
-        gas_ew = neml_f gt 0 ? dblarr(neml_f) : -1
-        gas_ew_err = neml_f gt 0 ? make_array(neml_f, /double, value=99.0d) : -1
+        gas_ew = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
+        gas_ew_err = neml_f gt 0 ? make_array(neml_f, /double, value=-9999.0d) : -9999.0d
 
         if n_elements(reddening) ne 0 then begin
             nred = n_elements(reddening)
-            reddening = dblarr(nred)                    ; Set reddening to 0 with def error
-            err_reddening = make_array(nred, /double, value=99.0d)
+            reddening = make_array(nred, /double, value=-9999.0d)       ; Set placeholder reddening
+            err_reddening = make_array(nred, /double, value=-9999.0d)   ; ... and error
         endif
 END
 ;---------------------------------------------------------------------------------------------------
@@ -677,9 +683,8 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
                 el_range = MDAP_EMISSION_LINE_WINDOW(eml_par[i_l[i]], velocity=velocity, $
                                                      sigma=sigma)
                 MDAP_SELECT_WAVE, wave, el_range, indx, count=count     ; Get the indices
-;               if indx[0] eq -1 then begin
                 if count eq 0 then begin
-                    fit_noise[i] = 99.0d
+                    fit_noise[i] = -9999.0d
                     continue
                 endif
 
@@ -700,7 +705,7 @@ FUNCTION MDAP_GANDALFW_EMISSION_LINE_NOISE, $
                 if n_elements(goodpixels) ne 0 then begin
                     indx = MDAP_SET_INTERSECTION(temporary(indx), goodpixels, count=count)
                     if count eq 0 then begin
-                        fit_noise[i] = 99.0d
+                        fit_noise[i] = -9999.0d
                         continue
                     endif 
                 endif 
@@ -726,15 +731,13 @@ FUNCTION MDAP_GANDALFW_REMOVE_DETECTED_EMISSION, $
 ;       print, n_elements(AoN_thresholds)
 
         indx = where(sol_gas_N lt 0, count)     ; Remove values with negative errors
-;       if indx[0] ne -1 then $
         if count ne 0 then $
-            AoN[indx] = 0.0d
+            AoN[indx] = -9999.0d
 
         if keyword_set(positive) then begin     ; Remove emission lines with negative amplitudes
             indx = where(sol_gas_A lt 0, count)
-;           if indx[0] ne -1 then $
             if count ne 0 then $
-                AoN[indx] = 0.0d
+                AoN[indx] = -9999.0d
         endif
 
         ; Remove the model emission lines from the galaxy spectrum
@@ -979,12 +982,13 @@ PRO MDAP_GANDALF_WRAP, $
         if ppxf_status ne 0 then begin
 
             ; Mimic the pPXF using the starting guesses
-            MDAP_MIMIC_PPXF_KIN, start[0:1], sol_ppxf, 99.0, mdegree=mdegree
+            MDAP_MIMIC_PPXF_KIN, start[0:1], sol_ppxf, -9999.0d, mdegree=mdegree
             max_ppxf_moments=6
-            err_ppxf = make_array(max_ppxf_moments, /double, value=99.0d)   ; Set place-holder error
+            ; Set place-holder error
+            err_ppxf = make_array(max_ppxf_moments, /double, value=-9999.0d)
 
-            weights_ppxf = dblarr(ntpl)                                 ; No template weights
-            bestfit_ppxf = dblarr(nc)                                   ; No fit
+            weights_ppxf = make_array(ntpl, /double, value=-9999.0d)    ; No template weights
+            bestfit_ppxf = make_array(nc, /double, value=-9999.0d)      ; No fit
 
             fitted_pixels_ppxf=-1                                       ; No pixels fit
             add_poly_coeff_ppxf=-1                                      ; No additive continuum
@@ -1158,12 +1162,12 @@ PRO MDAP_GANDALF_WRAP, $
         if n_elements(reddening) ne 0 then begin        ; Reddening
             sol_EBmV = sol_gas[neml_l*4:*]
         endif else $
-            sol_EBmV =-999.0d                           ; Default value; TODO: Why not -99?
+            sol_EBmV =-9999.0d                          ; Default value
         if keyword_set(for_errors) then begin
             if n_elements(reddening) ne 0 then begin
                 esol_EBmV  = esol_gas[n_elements(i_l)*4:*]
             endif else $
-                esol_EBmV  = -999.0d                    ; Default value; TODO: Why not -99?
+                esol_EBmV  = -9999.0d                   ; Default value
         endif
 
         ; Get the noise in the amplitude either using the residual or the error
@@ -1209,13 +1213,15 @@ PRO MDAP_GANDALF_WRAP, $
             fw_vel = start[2]
             fw_sig = start[3]
 
-            fw_vel_err = 99.0d
-            fw_sig_err = 99.0d
+            fw_vel_err = -9999.0d
+            fw_sig_err = -9999.0d
 
         endif else begin
+            fw_vel_serr = 0             ; Standard error is ignored for now
+            fw_sig_serr = 0             ; Standard error is ignored for now
             MDAP_MEAN_GAS_KINEMATICS, sol_gas_F[indx], sol_gas_V[indx], esol_gas_V[indx], $
                                       sol_gas_S[indx], esol_gas_S[indx], fw_vel, fw_vel_err, $
-                                      fw_sig, fw_sig_err
+                                      fw_vel_serr, fw_sig, fw_sig_err, fw_sig_serr, /flux_weighted
         endelse
 
 ;       print, fw_vel, fw_sig

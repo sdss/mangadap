@@ -1,0 +1,41 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+MILES-THIN STELLAR LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+This library is based on the MILES template library.  For a description
+of the MILES library, see:
+
+../miles/README
+
+This library was created as follows:
+
+    - Remove any templates with placeholder logT, logg, and [Fe/H]
+      values in ../miles/MILES_params.db.
+
+    - Ignore spectrum m0970.
+
+    - Divide the full range in logT, logg, and [Fe/H] into a 12x12x12 3D
+      grid and determine which templates fall in which grid cell.
+
+    - For each grid cell with >1 templates, randomly select one of the
+      templates as a representative example for that grid cell.
+
+The library then consists of these representative templates, and any
+template that was the sole occupant of its logT, logg, [Fe/H] grid cell.
+Information is provided in the header of each fits file giving the
+wavelength solution, the (logT,logg,[Fe/H]) coordinate of the template,
+the definition of the bin edges, and the original file name of the MILES
+spectrum used for each template.
+
+This library consists of 219 templates spanning the full range of
+stellar parameters provided by the MILES library.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall, 26 Apr 2015
+               19 Jun 2015 - New selection that ignores spectrum m0970
+               24 Jun 2015 - Redo of 19 Jun edits
+------------------------------------------------------------------------
+
