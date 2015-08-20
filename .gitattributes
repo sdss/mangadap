@@ -11,6 +11,7 @@ bin/matched_template_library.py -text
 bin/rundap -text
 bin/rundap3 -text
 bin/write_dap_par.py -text
+etc/config.ini -text
 etc/mangadap.module -text
 examples/README.execution_plans -text
 examples/Test_LR_MaNGA.py -text
