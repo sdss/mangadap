@@ -2617,9 +2617,7 @@ python/mangadap/__init__.py -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/dapfile.py -text
-python/mangadap/drpcomplete.py -text
 python/mangadap/drpfile.py -text
-python/mangadap/mangampl.py -text
 python/mangadap/plot/Linear_L_0-1.csv -text
 python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
@@ -2636,6 +2634,8 @@ python/mangadap/proc/ppxf.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
 python/mangadap/survey/__init__.py -text
+python/mangadap/survey/drpcomplete.py -text
+python/mangadap/survey/mangampl.py -text
 python/mangadap/survey/rundap.py -text
 python/mangadap/survey/util.py -text
 python/mangadap/util/AnalysisPlan.py -text

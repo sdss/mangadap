@@ -16,7 +16,7 @@ from os import environ, makedirs
 from argparse import ArgumentParser
 
 # DAP imports
-from mangadap.drpcomplete import drpcomplete
+from mangadap.survey.drpcomplete import drpcomplete
 from mangadap.drpfile import drpfile
 from mangadap.util.defaults import default_redux_path, default_drp_directory_path
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
@@ -24,7 +24,7 @@ from mangadap.util.defaults import default_dap_plan_file, default_dap_file_name
 from mangadap.util.defaults import default_dap_source
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
-from mangadap.mangampl import mangampl
+from mangadap.survey.mangampl import mangampl
 from mangadap.survey import util
 
 __author__ = 'Kyle Westfall'

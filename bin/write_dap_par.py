@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------
 import sys
 import os.path
-from mangadap.drpcomplete import drpcomplete
+from mangadap.survey.drpcomplete import drpcomplete
 #-----------------------------------------------------------------------
 
 def write_dap_par():
