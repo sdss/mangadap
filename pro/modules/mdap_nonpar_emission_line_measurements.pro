@@ -140,7 +140,9 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       18 Aug 2014: Original implementation by K. Westfall (KBW)
+;       18 Aug 2015: Original implementation by K. Westfall (KBW)
+;       20 Aug 2015 (KBW): Include redshift factor in flux-weighted
+;                          centers of sidebands.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -311,6 +313,10 @@ PRO MDAP_EMISSION_LINES_SAVE_NONPARAMETRIC_RESULT, $
                 red_ferr, blue_fcen, blue_cont, blue_cerr, red_fcen, red_cont, red_cerr, $
                 flux_corr, flux_cerr, mom1_corr, mom1_cerr, mom2_corr, mom2_cerr
 
+
+        c=299792.458d                           ; Speed of light in km/s
+        z = (1.0d + voff/c)                     ; So as to offset the flux-weighted band centers
+
         flux_raw[i,j] = result.flux_raw[0]
         flux_rerr[i,j] = result.flux_raw[1]
         mom1_raw[i,j] = result.mom1_raw[0] + voff
@@ -321,10 +327,10 @@ PRO MDAP_EMISSION_LINES_SAVE_NONPARAMETRIC_RESULT, $
         blue_ferr[i,j] = result.blue_flux[1]
         red_flux[i,j] = result.red_flux[0]
         red_ferr[i,j] = result.red_flux[1]
-        blue_fcen[i,j] = result.blue_fcen
+        blue_fcen[i,j] = result.blue_fcen*z
         blue_cont[i,j] = result.blue_cont[0]
         blue_cerr[i,j] = result.blue_cont[1]
-        red_fcen[i,j] = result.red_fcen
+        red_fcen[i,j] = result.red_fcen*z
         red_cont[i,j] = result.red_cont[0]
         red_cerr[i,j] = result.red_cont[1]
         flux_corr[i,j] = result.flux_corr[0]
