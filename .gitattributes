@@ -2612,6 +2612,7 @@ pro/utilities/mdap_velocity_register.pro -text
 pro/utilities/mdap_velocity_scale.pro -text
 pro/utilities/mdap_wcs_units.pro -text
 pro/utilities/mdap_wcsunit2arcsec.pro -text
+python/LICENSE.rst -text
 python/README -text
 python/mangadap/__init__.py -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text

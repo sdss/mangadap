@@ -248,15 +248,22 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         result.red_cont[0] = fr
         result.red_cont[1] = fre
 
+        ; TODO: Set some threshold for using this vs. using the center of the band
         ; Get the flux-weighted centers
         integrand = wave*flux
         integrand_err = wave*flux_err
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.blueside, $
                                         num, nume, err=err, geometric=geometric
-        result.blue_fcen = num/result.blue_flux[0]
+        if abs(result.blue_flux[0]) lt 1e-6 then begin
+            result.blue_fcen = total(eml_band.blueside)/2.
+        endif else $
+            result.blue_fcen = num/result.blue_flux[0]
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.redside, $
                                         num, nume, err=err, geometric=geometric
-        result.red_fcen = num/result.red_flux[0]
+        if abs(result.red_flux[0]) lt 1e-6 then begin
+            result.red_fcen = total(eml_band.redside)/2.
+        endif else $
+            result.red_fcen = num/result.red_flux[0]
 
         ;---------------------------------------------------------------
         ; Calculate the slope and intercept of the continuum line
