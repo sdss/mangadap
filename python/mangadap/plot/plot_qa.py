@@ -21,31 +21,11 @@ from matplotlib.ticker import MaxNLocator
 import warnings
 try:
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter('ignore')
         import seaborn as sns
     seaborn_installed = True
 except ImportError:
     seaborn_installed = False
-
-
-dict_tmp = {}
-try:
-    dict_tmp.iteritems
-except AttributeError:
-    def iterkeys(d):
-        return iter(d.keys())
-    def itervalues(d):
-        return iter(d.values())
-    def iteritems(d):
-        return iter(d.items())
-else:
-    def iterkeys(d):
-        return d.iterkeys()
-    def itervalues(d):
-        return d.itervalues()
-    def iteritems(d):
-        return d.iteritems()
-
 
 class FitError(Exception):
     pass
@@ -481,7 +461,7 @@ class PlotQA(object):
     def define_custom_cubehelix(self, rot=-1.5, start=0.5, gamma=1):
         cdict = mpl._cm.cubehelix(gamma=gamma, s=start, r=rot)
         c_r_dict = {}
-        for k in iterkeys(cdict):
+        for k in cdict:
             c_r_dict[k] = self.reverse_cmap(cdict[k])
         cmap = LinearSegmentedColormap('cubehelix_cust', cdict)
         cmap_r = LinearSegmentedColormap('cubehelix_cust_r', c_r_dict)
@@ -524,7 +504,7 @@ class PlotQA(object):
         LinearL = dict(zip(k, rgb)) # makes a dictionary from 2 lists
 
         LinearL_r = {}
-        for k in iterkeys(LinearL):
+        for k in LinearL:
             LinearL_r[k] = self.reverse_cmap(LinearL[k])
 
         cmap = LinearSegmentedColormap('linearL', LinearL)
