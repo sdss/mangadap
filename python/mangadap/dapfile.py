@@ -230,6 +230,28 @@ class dapfile:
         self.hdu = fits.open(inp, mode=permissions, checksum=True)
 
 
+    def read_hdu_data(self, index=None):
+        """Read HDU data.
+
+        Args:
+            index (str): index of HDU to read.
+
+        Returns:
+            Data from HDU.
+        """
+        return self.hdu[self.hdu.index_of(index)].data
+
+    def read_hdu_header(self, index=None):
+        """Read HDU header.
+
+        Args:
+            index (str): index of HDU to read.
+
+        Returns:
+            Header from HDU.
+        """
+        return self.hdu[self.hdu.index_of(index)].header
+
     def read_par(self, quiet=True):
         """
         Open the parameter file and save it to :attr:`par`; if
@@ -249,7 +271,7 @@ class dapfile:
             return
 
         if not os.path.exists(self.par_file):
-            raise Exception('Cannot open file: {0}'.format(inp))
+            raise Exception('Cannot open file: {0}'.format(self.par_file))
             
         self.par = yanny(filename=self.par_file, np=True)
 

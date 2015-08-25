@@ -1,10 +1,10 @@
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import os
-import numpy as np
+from os.path import join
 import copy
+
+import numpy as np
 
 from astropy.io import fits
 from astropy.stats import sigma_clip
@@ -27,6 +27,8 @@ try:
 except ImportError:
     seaborn_installed = False
 
+from sdss.files import base_path
+
 class FitError(Exception):
     pass
 
@@ -39,11 +41,13 @@ class PlotQA(object):
         chisq_bin (array): chisq for each binned spectrum.
     """
 
-    def __init__(self, filename):
-        self.dap_file = filename
-        self.manga_pid = ('-').join(self.dap_file.split('-')[1:3])
-        self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
-        self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
+    def __init__(self, fin_kws):
+        home = os.path.expanduser('~')
+        bp = base_path(join(home, 'Dropbox', 'data', 'sdss_paths.ini'))
+        self.dap_file = bp.full('dap', **fin_kws)
+        self.manga_pid = '-'.join((fin_kws['plate'], fin_kws['ifudesign']))
+        self.dap_mode = fin_kws['mode']
+        self.exec_num = fin_kws['execnum']
         self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
                             os.getenv('MANGADRP_VER')) +
                             '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
@@ -598,7 +602,7 @@ class PlotQA(object):
         bigAxes.set_ylabel('arcsec', fontsize=20)
         bigAxes.set_title(
             'pid-ifu %s     manga-id %s     %s     %s' % (
-            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
+            self.manga_pid, self.manga_id, self.dap_mode, self.exec_num),
             fontsize=20)
 
         for i in range(n_ax):
@@ -902,7 +906,7 @@ class PlotQA(object):
         bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
         bigAxes.set_title(
             'pid-ifu %s     manga-id %s     %s     %s' % (
-            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
+            self.manga_pid, self.manga_id, self.dap_mode, self.exec_num),
             fontsize=20)
         
         bin_edges = np.concatenate((self.binxrl,
@@ -1042,7 +1046,7 @@ class PlotQA(object):
 #         #bigAxes.set_ylabel(ylabel, fontsize=20)
 #         bigAxes.set_title(
 #             'pid-ifu %s     manga-id %s     %s     %s' % (
-#             self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id),
+#             self.manga_pid, self.manga_id, self.dap_mode, self.exec_num),
 #             fontsize=20)
 #         
 #         bin_edges = np.concatenate((self.binxrl,
@@ -1366,7 +1370,7 @@ class PlotQA(object):
         bigAxes.set_ylabel(r'Flux [10$^{-17}$ erg/s/cm$^2$]', fontsize=28)
         bigAxes.set_title(
             'pid-ifu %s     manga-id %s     %s     %s    bin %s' % (
-            self.manga_pid, self.manga_id, self.dap_mode, self.analysis_id, bin),
+            self.manga_pid, self.manga_id, self.dap_mode, self.exec_num, bin),
             fontsize=20)
         fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
                             right=0.95, top=0.95)

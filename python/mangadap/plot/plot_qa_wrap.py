@@ -38,9 +38,7 @@ REVISION HISTORY:
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import os
 from os.path import join
@@ -64,24 +62,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 from plot_qa import PlotQA
 from plot_qa import FitError
 
-dict_tmp = {}
-try:
-    dict_tmp.iteritems
-except AttributeError:
-    def iterkeys(d):
-        return iter(d.keys())
-    def itervalues(d):
-        return iter(d.values())
-    def iteritems(d):
-        return iter(d.items())
-else:
-    def iterkeys(d):
-        return d.iterkeys()
-    def itervalues(d):
-        return d.itervalues()
-    def iteritems(d):
-        return d.iteritems()
-
 
 #----- Read in command line arguments -----
 try:    
@@ -95,9 +75,9 @@ try:
     if sys.argv[2][0] is not '-':
         file_list = sys.argv[2]
     else:
-        file_list = 'qa_file_list.txt'
+        file_list = 'CUBE_files_to_plot.txt'
 except IndexError:
-    file_list = 'qa_file_list.txt'
+    file_list = 'CUBE_files_to_plot.txt'
 
 
 if '-overwrite' in sys.argv:
@@ -170,14 +150,16 @@ win_names = ['oii', 'hbeta', 'oiii', 'nii', 'halpha', 'sii']
 for dap_file in files:
     
     #----- Read in galaxy ID and DAP parameters -----
-    
+
     stem_file = dap_file.strip('.fits')
-    done_file = join(stem_file, '.done')
+    done_file = ''.join((stem_file, '.done'))
     
-    ig1, pid, ifudesign, mode_in, binning_type, exec_num = stem_file.split('-')
-    
-    manga_pid = '-'.join([pid, ifudesign])
-    mode = mode_in.split('_')[0]
+    ig1, plate, ifudesign, mode_in, binning_type, niter = stem_file.split('-')
+    manga_pid = '-'.join([plate, ifudesign])
+    mode = mode_in.split('_')[0].strip('LOG')
+
+    fin_kws = dict(plate=plate, ifudesign=ifudesign, mode=mode,
+                   bintype=binning_type, niter=niter)
     
     path_gal_plots = join(path_gal, 'plots', '')
     path_gal_plots_spec = join(path_gal_plots, 'spectra')
@@ -220,7 +202,7 @@ for dap_file in files:
     
     
     #----- Plots for each binning type  ----- 
-    if mode == 'LOGCUBE':
+    if mode == 'CUBE':
         if binning_type == 'NONE':
             plot_map = True
             plot_indiv_map = True
@@ -257,7 +239,7 @@ for dap_file in files:
             plot_all_spec_as_pdf = True
             plot_all_spec_as_png = True
             plot_h3_h4 = False
-    elif mode == 'LOGRSS':
+    elif mode == 'RSS':
         if binning_type == 'RADIAL':
             plot_map = False
             plot_indiv_map = False
@@ -284,7 +266,7 @@ for dap_file in files:
     #reload(plot_qa)
     #from plot_qa import PlotQA
     try:
-        qa = PlotQA(join(path_gal, dap_file))
+        qa = PlotQA(fin_kws)
         print('pid-ifu: {}, binning: {}'.format(manga_pid, binning_type))
         print('Template Library:', qa.tpl_lib)
         qa.select_wave_range()
@@ -399,7 +381,7 @@ for dap_file in files:
     #                       resid=resid_args,)
     # 
     # kin_map_kwargs_interp = copy.deepcopy(kin_map_kwargs)
-    # for v in itervalues(kin_map_kwargs_interp):
+    # for v in kin_map_kwargs_interp.values():
     #     v['kwargs']['interpolated'] = True
     # 
     # bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
@@ -447,7 +429,7 @@ for dap_file in files:
                              nii6583=nii6583_args,
                              sii6717=sii6717_args)
     
-    for v in itervalues(emflux_map_kwargs):
+    for v in emflux_map_kwargs.values():
         v['kwargs']['cblabel'] = r'Flux [10$^{-17}$ erg/s/cm$^2$]'
         v['kwargs']['cmap'] = qa.linearL
         v['kwargs']['nodots'] = True
@@ -458,13 +440,13 @@ for dap_file in files:
     emflux_ew_map_kwargs = copy.deepcopy(emflux_map_kwargs)
     emflux_fb_map_kwargs = copy.deepcopy(emflux_map_kwargs)
     
-    for v in itervalues(emflux_fb_map_kwargs):
+    for v in emflux_fb_map_kwargs.values():
         v['val'] = v['val2']
         v['val_err'] = v['val2_err']
 
     for dd, nm in zip([emflux_ew_map_kwargs, emflux_fb_map_kwargs],
                       ['Wang', 'Belfiore']):
-        for vv in itervalues(dd):
+        for vv in dd.values():
             vv['kwargs']['title_text'] += ' (%s)' % nm
             del vv['val2']
             del vv['val2_err']
@@ -477,59 +459,59 @@ for dap_file in files:
     # STOPPED HERE
 
 
-spec_ind_mapname = [
-  'D4000',
-  'HDeltaA',
-  'Hb',
-  'Mgb'
-  'Fe5270_5335'
-  'CaII0p86']
-# need name of spectal index (not a combination of indices) to get units
-spec_ind_name = [
-  'D4000',
-  'HDeltaA',
-  'Hb',
-  'Mgb',
-  'Fe5270',
-  'CaII0p86A']
-D4000_args = dict(val=qa.D4000, val_err=qa.D4000err,
-                  kwargs=dict(title_text=r'D4000'))
-HDeltaA_args = dict(val=qa.hbeta_ew, val_err=qa.hbetaerr_ew,
-                    kwargs=dict(title_text=r'H$\delta$A'))
-Hb_args = dict(val=qa.Hb, val_err=qa.Hberr,
-               kwargs=dict(title_text=r'H$\beta$'))
-Mgb_args = dict(val=qa.Mgb, val_err=qa.Mgberr,
-                kwargs=dict(title_text=r'Mg $b$'))
-Fe5270_5335_args = dict(val=qa.Fe5270_5335, val_err=qa.Fe5270_5335err,
-                        kwargs=dict(title_text=r'0.72$\cdot$Fe5270 + ' +
-                                    r'0.28$\cdot$Fe5335'))
-CaII0p86_args = dict(val=qa.CaII0p86, val_err=qa.CaII0p86,
-                     kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
-                                 'CaII0p86C)/3.'))
-
-spec_ind_map_kwargs = dict(D4000=D4000_args,
-                           HDeltaA=HDeltaA_args,
-                           Hb=Hb_args,
-                           Mgb=Mgb_args,
-                           Fe5270_5335=Fe5270_5335_args,
-                           CaII0p86=CaII0p86_args)
-
-for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
-    spec_ind_units = qa.get_spec_ind_units(name, qa.sipar.SINAME, qa.sipar.UNIT)
-    if spec_ind_units == 'ang':
-        si_cblabel = r'$\AA$'
-    elif spec_ind_units == 'mag':
-        si_cblabel = 'Mag'
-    else:
-        raise('Unknown spectral index units.')
-        si_cblabel = None
-    v['kwargs']['cblabel'] = si_cblabel
-    v['kwargs']['cmap'] = qa.linearL
-    v['kwargs']['cbrange_symmetric'] = True
-    v['kwargs']['nodots'] = True
-    v['kwargs']['val_no_measure'] = 0.
-    v['kwargs']['cbrange_clip'] = True
-    v['kwargs']['show_flux_contours'] = False
+    spec_ind_mapname = [
+      'D4000',
+      'HDeltaA',
+      'Hb',
+      'Mgb'
+      'Fe5270_5335'
+      'CaII0p86']
+    # need name of spectal index (not a combination of indices) to get units
+    spec_ind_name = [
+      'D4000',
+      'HDeltaA',
+      'Hb',
+      'Mgb',
+      'Fe5270',
+      'CaII0p86A']
+    D4000_args = dict(val=qa.D4000, val_err=qa.D4000err,
+                      kwargs=dict(title_text=r'D4000'))
+    HDeltaA_args = dict(val=qa.hbeta_ew, val_err=qa.hbetaerr_ew,
+                        kwargs=dict(title_text=r'H$\delta$A'))
+    Hb_args = dict(val=qa.Hb, val_err=qa.Hberr,
+                   kwargs=dict(title_text=r'H$\beta$'))
+    Mgb_args = dict(val=qa.Mgb, val_err=qa.Mgberr,
+                    kwargs=dict(title_text=r'Mg $b$'))
+    Fe5270_5335_args = dict(val=qa.Fe5270_5335, val_err=qa.Fe5270_5335err,
+                            kwargs=dict(title_text=r'0.72$\cdot$Fe5270 + ' +
+                                        r'0.28$\cdot$Fe5335'))
+    CaII0p86_args = dict(val=qa.CaII0p86, val_err=qa.CaII0p86,
+                         kwargs=dict(title_text=r'(CaII0p86A + CaII0p86B + ' + 
+                                     'CaII0p86C)/3.'))
+    
+    spec_ind_map_kwargs = dict(D4000=D4000_args,
+                               HDeltaA=HDeltaA_args,
+                               Hb=Hb_args,
+                               Mgb=Mgb_args,
+                               Fe5270_5335=Fe5270_5335_args,
+                               CaII0p86=CaII0p86_args)
+    
+    for name, v in zip(spec_ind_name, spec_ind_map_kwargs.values()):
+        spec_ind_units = qa.get_spec_ind_units(name, qa.sipar.SINAME, qa.sipar.UNIT)
+        if spec_ind_units == 'ang':
+            si_cblabel = r'$\AA$'
+        elif spec_ind_units == 'mag':
+            si_cblabel = 'Mag'
+        else:
+            raise('Unknown spectral index units.')
+            si_cblabel = None
+        v['kwargs']['cblabel'] = si_cblabel
+        v['kwargs']['cmap'] = qa.linearL
+        v['kwargs']['cbrange_symmetric'] = True
+        v['kwargs']['nodots'] = True
+        v['kwargs']['val_no_measure'] = 0.
+        v['kwargs']['cbrange_clip'] = True
+        v['kwargs']['show_flux_contours'] = False
     
         
     #---------------------------------
@@ -675,71 +657,74 @@ for name, v in zip(spec_ind_name, itervalues(spec_ind_map_kwargs)):
         print('Wrote: %s' % fout)
     
     
-    plot_indiv_map = False
+    # plot_indiv_map = False
     if plot_indiv_map:
     
-        for k, v in iteritems(kin_map_kwargs):
-            val_err = None
-            if 'val_err' in v:
-                val_err = v['val_err']
-            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-            fout =  ('_').join([stem_file, k, 'map']) + '.png'
-            plt.savefig(path_gal_plots_maps + fout)
-        print('Wrote: individual kin maps')
-    
-        if stkin_interp:
-            for k, v in iteritems(kin_map_kwargs_interp):
-                val_err = None
-                if 'val_err' in v:
-                    val_err = v['val_err']
-                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-                fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
-                plt.savefig(path_gal_plots_maps + fout)
-            print('Wrote: individual kin interp maps')
-    
-        for k, v in iteritems(emflux_ew_map_kwargs):
-            val_err = None
-            if 'val_err' in v:
-                val_err = v['val_err']
-            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-            fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
-            plt.savefig(path_gal_plots_maps + fout)
-        print('Wrote: individual emflux_ew maps')
-    
-        for k, v in iteritems(emflux_fb_map_kwargs):
-            val_err = None
-            if 'val_err' in v:
-                val_err = v['val_err']
-            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-            fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
-            plt.savefig(path_gal_plots_maps + fout)
-        print('Wrote: individual emflux_fb maps')
+        #---UNCOMMENT
+        #
+        # for k, v in kin_map_kwargs.items():
+        #     val_err = None
+        #     if 'val_err' in v:
+        #         val_err = v['val_err']
+        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+        #     fout =  ('_').join([stem_file, k, 'map']) + '.png'
+        #     plt.savefig(path_gal_plots_maps + fout)
+        # print('Wrote: individual kin maps')
+        # 
+        # if stkin_interp:
+        #     for k, v in kin_map_kwargs_interp.items():
+        #         val_err = None
+        #         if 'val_err' in v:
+        #             val_err = v['val_err']
+        #         qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+        #         fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
+        #         plt.savefig(path_gal_plots_maps + fout)
+        #     print('Wrote: individual kin interp maps')
+        # 
+        # for k, v in emflux_ew_map_kwargs.items():
+        #     val_err = None
+        #     if 'val_err' in v:
+        #         val_err = v['val_err']
+        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+        #     fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
+        #     plt.savefig(path_gal_plots_maps + fout)
+        # print('Wrote: individual emflux_ew maps')
+        # 
+        # for k, v in emflux_fb_map_kwargs.items():
+        #     val_err = None
+        #     if 'val_err' in v:
+        #         val_err = v['val_err']
+        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+        #     fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
+        #     plt.savefig(path_gal_plots_maps + fout)
+        # print('Wrote: individual emflux_fb maps')
         
         #--------
         #
         # Spectral Index Plots
         #
         #--------
-for k, v in iteritems(spec_ind_map_kwargs):
-    val_err = None
-    if 'val_err' in v:
-        val_err = v['val_err']
-    qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-    fout =  ('_').join([stem_file, k, 'map']) + '.png'
-    plt.savefig(path_gal_plots_maps + fout)
-print('Wrote: individual spectral index maps')
+        for k, v in spec_ind_map_kwargs.items():
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'map']) + '.png'
+            plt.savefig(join(path_gal_plots_maps, fout))
+        print('Wrote: individual spectral index maps')
 
-        for k, v in iteritems(snr_map_kwargs):
-            if k is 'halpha':
-                pass
-            else:
-                val_err = None
-                if 'val_err' in v:
-                    val_err = v['val_err']
-                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-                fout =  ('_').join([stem_file, k, 'map']) + '.png'
-                plt.savefig(path_gal_plots_maps + fout)
-        print('Wrote: individual snr maps')
+        #---UNCOMMENT
+        # for k, v in snr_map_kwargs.items():
+        #     if k is 'halpha':
+        #         pass
+        #     else:
+        #         val_err = None
+        #         if 'val_err' in v:
+        #             val_err = v['val_err']
+        #         qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+        #         fout =  ('_').join([stem_file, k, 'map']) + '.png'
+        #         plt.savefig(path_gal_plots_maps + fout)
+        # print('Wrote: individual snr maps')
     
     
     plot_gradients = False
@@ -753,7 +738,7 @@ print('Wrote: individual spectral index maps')
     
     if plot_indiv_gradients:
     
-        for k, v in iteritems(emflux_map_kwargs):
+        for k, v in emflux_map_kwargs.items():
             qa.plot_radial_gradients(k, emflux_map_kwargs, c_ind=[2, 0],
                                      leglabels=['F. Belfiore', 'E. Wang'])
             fout =  ('_').join([stem_file, k, 'gradient']) + '.png'
@@ -838,8 +823,7 @@ print('Wrote: individual spectral index maps')
             print('Wrote: %s' % fout)
 
 
-    # plot_emline_windows = False
-    plot_emline_windows = True
+    plot_emline_windows = False
     if plot_emline_windows:
 
         # Plot spectra in individually files
