@@ -23,6 +23,7 @@ class DAP():
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
         drps (DataFrame): Contents of 'DRPS' extension.
+        bins (DataFrame): Contents of 'BINS' extension.
 
         n_bins (int): Number of bins.
         n_spaxels (int): Number of spaxels.
@@ -50,10 +51,14 @@ class DAP():
         self.fits.read_par()
 
     def get_drps(self):
-        """Read in DRPS extension.
-        """
+        """Read in DRPS extension."""
         drps_in = self.fits.read_hdu_data('DRPS')
         self.drps = util.fitsrec_to_dataframe(drps_in)
+
+    def get_bins(self):
+        """Read in BINS extension"""
+        bins_in = self.fits.read_hdu_data('BINS')
+        self.bins = util.fitsrec_to_dataframe(bins_in)
 
     def calc_n(self):
         self.n_bins, self.n_pix = self.galaxy.shape
@@ -119,7 +124,7 @@ class DAP():
 
     def get_elofit(self):
         """Read results from emission line fits into DataFrames."""
-        self.elofit = self.fits.read_hdu_data('ELOFIT')
+        elofit = self.fits.read_hdu_data('ELOFIT')
 
         elovel_kws = dict(dapf=self.fits, hdu='ELOFIT',
                           columns=['vel', 'vdisp'])
@@ -139,13 +144,13 @@ class DAP():
         self.ewerr_ew = util.read_vals(ext='EWERR_EW', **elonames_kws)
         
         # split 3D arrays into two 2D DataFrames
-        ikin_ew_tmp = self.elofit['IKIN_EW'].byteswap().newbyteorder()
-        self.ivel_ew = pd.DataFrame(ikin_ew_tmp[:, 0], columns=self.elnames)
-        self.ivdisp_ew = pd.DataFrame(ikin_ew_tmp[:, 1], columns=self.elnames)
+        ikin_ew = elofit['IKIN_EW'].byteswap().newbyteorder()
+        self.ivel_ew = pd.DataFrame(ikin_ew[:, 0], columns=self.elnames)
+        self.ivdisp_ew = pd.DataFrame(ikin_ew[:, 1], columns=self.elnames)
         
-        ikinerr_ew_tmp = self.elofit['IKINERR_EW'].byteswap().newbyteorder()
-        self.ivelerr_ew = pd.DataFrame(ikinerr_ew_tmp[:, 0], columns=self.elnames)
-        self.ivdisperr_ew = pd.DataFrame(ikinerr_ew_tmp[:, 1], columns=self.elnames)
+        ikinerr_ew = elofit['IKINERR_EW'].byteswap().newbyteorder()
+        self.ivelerr_ew = pd.DataFrame(ikinerr_ew[:, 0], columns=self.elnames)
+        self.ivdisperr_ew = pd.DataFrame(ikinerr_ew[:, 1], columns=self.elnames)
         
         # FB: Francesco Belfiore's fitting code
         self.kin_fb = util.read_vals(ext='KIN_FB', **elovel_kws)
@@ -160,11 +165,11 @@ class DAP():
         self.ewerr_fb = util.read_vals(ext='EWERR_FB', **elonames_kws)
         
         # split 3D arrays into two 2D DataFrames
-        ikin_fb_tmp = self.elofit['IKIN_FB'].byteswap().newbyteorder()
-        self.ivel_fb = pd.DataFrame(ikin_fb_tmp[:, 0], columns=self.elnames)
-        self.ivdisp_fb = pd.DataFrame(ikin_fb_tmp[:, 1], columns=self.elnames)
+        ikin_fb = elofit['IKIN_FB'].byteswap().newbyteorder()
+        self.ivel_fb = pd.DataFrame(ikin_fb[:, 0], columns=self.elnames)
+        self.ivdisp_fb = pd.DataFrame(ikin_fb[:, 1], columns=self.elnames)
         
-        ikinerr_fb_tmp = self.elofit['IKINERR_FB'].byteswap().newbyteorder()
-        self.ivelerr_fb = pd.DataFrame(ikinerr_fb_tmp[:, 0], columns=self.elnames)
-        self.ivdisperr_fb = pd.DataFrame(ikinerr_fb_tmp[:, 1], columns=self.elnames)
+        ikinerr_fb = elofit['IKINERR_FB'].byteswap().newbyteorder()
+        self.ivelerr_fb = pd.DataFrame(ikinerr_fb[:, 0], columns=self.elnames)
+        self.ivdisperr_fb = pd.DataFrame(ikinerr_fb[:, 1], columns=self.elnames)
 
