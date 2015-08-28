@@ -43,15 +43,15 @@ class PlotQA(object):
 
     def __init__(self, fin_kws):
         home = os.path.expanduser('~')
-        bp = base_path(join(home, 'Dropbox', 'data', 'sdss_paths.ini'))
-        self.dap_file = bp.full('dap', **fin_kws)
-        self.manga_pid = '-'.join((fin_kws['plate'], fin_kws['ifudesign']))
-        self.dap_mode = fin_kws['mode']
-        self.exec_num = fin_kws['execnum']
-        self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
-                            os.getenv('MANGADRP_VER')) +
-                            '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
-        self.setup()
+        #bp = base_path(join(home, 'Dropbox', 'data', 'sdss_paths.ini'))
+        #self.dap_file = bp.full('dap', **fin_kws)
+        #self.manga_pid = '-'.join((fin_kws['plate'], fin_kws['ifudesign']))
+        #self.dap_mode = fin_kws['mode']
+        #self.niter = fin_kws['niter']
+        #self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
+        #                    os.getenv('MANGADRP_VER')) +
+        #                    '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
+        #self.setup()
 
     def setup(self):
         self.read_fits()
@@ -602,7 +602,7 @@ class PlotQA(object):
         bigAxes.set_ylabel('arcsec', fontsize=20)
         bigAxes.set_title(
             'pid-ifu %s     manga-id %s     %s     %s' % (
-            self.manga_pid, self.manga_id, self.dap_mode, self.exec_num),
+            self.manga_pid, self.manga_id, self.dap_mode, self.niter),
             fontsize=20)
 
         for i in range(n_ax):

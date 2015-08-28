@@ -2623,11 +2623,13 @@ python/mangadap/plot/Linear_L_0-1.csv -text
 python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
 python/mangadap/plot/conf.py -text
+python/mangadap/plot/dap.py -text
 python/mangadap/plot/index.rst -text
 python/mangadap/plot/make_qa_file_list.py -text
 python/mangadap/plot/plot_map_wrap.py -text
 python/mangadap/plot/plot_qa.py -text
 python/mangadap/plot/plot_qa_wrap.py -text
+python/mangadap/plot/util.py -text
 python/mangadap/proc/SpatiallyBinnedSpectra.py -text
 python/mangadap/proc/TemplateLibrary.py -text
 python/mangadap/proc/__init__.py -text
