@@ -71,6 +71,18 @@ def read_vals(dapf, hdu, ext, columns):
     df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
     return df
 
+def swap_byte(arr, columns=None):
+    """Swap byte order from big-endian (FITS) to little-endian (pandas).
+
+    Args:
+        arr (array): Array read in from FITS files.
+        columns (list): Column names.
+
+    Returns:
+        DataFrame
+    """
+    return pd.DataFrame(arr.byteswap().newbyteorder(), columns=columns)
+
 def make_mask_no_measurement(data, err=None, val_no_measure=0.,
                              snr_thresh=1.):
     """Mask invalid measurements within a data array.
