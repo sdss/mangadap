@@ -26,6 +26,8 @@ examples/manga_dap_sn_strgaskin_miles.pro -text
 examples/mdap_mpl3_cube.pro -text
 examples/mdap_mpl3_rss.pro -text
 examples/mdap_mpl3beta_cube_p1.pro -text
+examples/mdap_mpl4_cube.pro -text
+examples/mdap_mpl4_rss.pro -text
 examples/mdap_velocity_field.pro -text
 examples/test_base_class.py -text
 examples/test_log_rebin.py -text
