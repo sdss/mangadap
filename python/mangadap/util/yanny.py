@@ -21,6 +21,17 @@ were only ever intended to be supported for type ``char``.
 
 .. _specifications: http://www.sdss3.org/dr8/software/par.php
 """
+#
+# 28 Jan 2015: K. Westfall: Python 3 edit
+# Convert long to int for Python 3
+#
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from __future__ import unicode_literals
+import sys
+if sys.version > '3':
+    long = int
 
 __author__ = 'Benjamin Weaver <benjamin.weaver@nyu.edu>'
 
@@ -38,13 +49,6 @@ import os
 import os.path
 import datetime
 import numpy
-#
-# 28 Jan 2015: K. Westfall: Python 3 edit
-# Convert long to int for Python 3
-#
-import sys
-if sys.version > '3':
-    long = int
 #
 # Classes
 #

@@ -10,6 +10,7 @@ Provides a set of parsing utility functions.
     from __future__ import division
     from __future__ import print_function
     from __future__ import absolute_import
+    from __future__ import unicode_literals
     
     import sys
     if sys.version > '3':
@@ -18,6 +19,10 @@ Provides a set of parsing utility functions.
 *Imports*::
 
     from mangadap.util.exception_tools import print_frame
+
+*TODO*:
+    - Add function that will parse the default MaNGA fits file name (see
+      :func:`mangadap.util.defaults.default_manga_fits_root`.
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
@@ -29,6 +34,7 @@ Provides a set of parsing utility functions.
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import sys
 if sys.version > '3':

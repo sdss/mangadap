@@ -2639,6 +2639,7 @@ python/mangadap/proc/ppxf.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
 python/mangadap/survey/__init__.py -text
+python/mangadap/survey/build_map_files.py -text
 python/mangadap/survey/drpcomplete.py -text
 python/mangadap/survey/mangampl.py -text
 python/mangadap/survey/rundap.py -text

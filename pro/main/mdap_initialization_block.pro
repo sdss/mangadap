@@ -205,6 +205,9 @@
 ;                          removed from MDAP_SURVEY_EXECUTION_SETUP; now
 ;                          hard-wired as the name of the written plan
 ;                          file.
+;       28 Aug 2015: (KBW) Changed the name of the plan file to reflect
+;                          the changes in the python components of the
+;                          DAP.
 ;-
 ;------------------------------------------------------------------------
 
@@ -280,8 +283,8 @@ PRO MDAP_INITIALIZATION_BLOCK, $
                                          tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
                                          analysis_par, analysis_prior, overwrite_flag
 
-            plan = output_dir + '/manga-' + MDAP_STC(plate, /integer) + '-' $
-                   + MDAP_STC(ifudesign, /integer) + '-LOG' + mode + '-dapplan.par'
+            plan = output_dir + '/mangadap-' + MDAP_STC(plate, /integer) + '-' $
+                   + MDAP_STC(ifudesign, /integer) + '-LOG' + mode + '-plan.par'
 
             MDAP_WRITE_EXECUTION_PLANS, plan, bin_par, w_range_sn, threshold_ston_bin, $
                                         w_range_analysis, threshold_ston_analysis, analysis, $

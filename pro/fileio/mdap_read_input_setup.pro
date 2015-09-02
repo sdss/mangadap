@@ -107,24 +107,23 @@
 ; REVISION HISTORY:
 ;       28 Nov 2014: Original implementation by K. Westfall (KBW)
 ;       29 Apr 2015: (KBW) Change output DAP path to include DRP version
+;       27 Aug 2015: (KBW) An invalid guess velocity will now cause the
+;                          code to return an error message.  Invalid ell
+;                          or pa will set their values to 0 and
+;                          continue.  Invalid Reff will set its value to
+;                          1 and continue.
 ;-
 ;-----------------------------------------------------------------------
-
 PRO MDAP_READ_INPUT_SETUP, $
         inptbl=inptbl, index=index, par=par, drppath=drppath, dappath=dappath, plate, ifudesign, $
         mode, velocity_initial_guess, velocity_dispersion_initial_guess, ell, pa, Reff, $
         root_name, output_root_dir
 
         ; Check the argument input
-;       if n_elements(inptbl) eq 0 and n_elements(par) eq 0 then $
         if n_elements(inptbl) eq 0 && n_elements(par) eq 0 then $
             message, 'Must provide either inptbl or par!'
-
-;       if n_elements(inptbl) ne 0 and n_elements(index) eq 0 then $
         if n_elements(inptbl) ne 0 && n_elements(index) eq 0 then $
             message, 'Must provide index of line number to use in '+inptbl+'!'
-
-;       if n_elements(inptbl) ne 0 and n_elements(par) ne 0 then $
         if n_elements(inptbl) ne 0 && n_elements(par) ne 0 then $
             message, 'Cannot provide both an input table and a parameter file.  Pick one!'
 
@@ -164,6 +163,29 @@ PRO MDAP_READ_INPUT_SETUP, $
             Reff = params.reff
         endif
 
+        ;---------------------------------------------------------------
+        ; Check input parameters
+        ; Cannot perform analysis if input redshift if not valid
+        if velocity_initial_guess le 0 then $
+            message, 'Must provided a valid (positive) initial velocity!'
+        if velocity_dispersion_initial_guess le 0 then begin
+            velocity_dispersion_initial_guess = 100.0d
+            print, 'WARNING: Input velocity dispersion invalid.  Replacing with 100.0'
+        endif
+        ; Use circular apertures if either of the input geometry
+        ; parameters are invalid
+        if ell lt 0 || pa lt 0 then begin
+            ell = 0
+            pa = 0
+            print, 'WARNING: Input ellipticity and/or position angle invalid. Replacing with zero.'
+        endif
+        ; Set the effective radius to unity if input value is invalid
+        if Reff le 0 then begin
+            Reff = 1.0d
+            print, 'WARNING: Input effective radius invalid!  Replacing with unity.'
+        endif
+        ;---------------------------------------------------------------
+
         ; Define the DRP input path
         if n_elements(drppath) eq 0 then $
             drppath = getenv('MANGA_SPECTRO_REDUX') + '/' + getenv('MANGADRP_VER') + '/' $
@@ -174,7 +196,8 @@ PRO MDAP_READ_INPUT_SETUP, $
             dappath = getenv('MANGA_SPECTRO_ANALYSIS') + '/' + getenv('MANGADRP_VER') + '/' $
                       + getenv('MANGADAP_VER')
 
-        
+        ; WARNING: Make sure these are the same as what are used by the
+        ;          python components
         root_name = drppath + '/manga-' + MDAP_STC(plate, /integer) + '-' + $
                     MDAP_STC(ifudesign, /integer) + '-LOG' + mode
 

@@ -3,6 +3,7 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import sys
 if sys.version > '3':
@@ -19,6 +20,14 @@ from mangadap.dapfile import dapfile
 #-----------------------------------------------------------------------------
 
 def place_values_in_map(x, y, z, xs, dx, ys, dy, plane):
+    """
+    Given a grid with the bottom corner of the first pixel at (xs, ys)
+    and pixels of size dxdy, place the z values at locations x, y in
+    plane, where plane is expected to have the correct size upon input.
+    The x and y coordinates are expected to be sampled at the same rate
+    as the grid!
+    """
+    
     nx = plane.shape[0]
     ny = plane.shape[1]
 
@@ -36,6 +45,17 @@ def place_values_in_map(x, y, z, xs, dx, ys, dy, plane):
 
 
 def place_values_in_bins(binid, zz):
+    """
+    Given a set of bin values zz and a set of bin assignments, return a
+    vector with the bin values assigned to the appropriate element of
+    the prebinned data.
+
+    - Allow for an input default (non-zero) value?
+    """
+#    z = numpy.zeros(binid.size, dtype=numpy.float64)
+#    valid = numpy.invert(binid < 0)
+#    z[valid] = zz[binid[valid]]
+#    return z
     nspax = binid.size
     z = numpy.zeros(nspax, dtype=numpy.float64)
     for i in range(nspax):
@@ -46,6 +66,8 @@ def place_values_in_bins(binid, zz):
 
 
 def create_dap_fits_cube(plate, ifudesign, bintype, ofits, directory_path):
+
+    # TODO: ADD MPL-4!
 
     # Check the binning type and set the iteration number
     # !! MPL-3 SPECIFIC !!

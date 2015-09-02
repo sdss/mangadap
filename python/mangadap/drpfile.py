@@ -36,6 +36,7 @@ matrix for the DRP 'CUBE' files.
     from mangadap.util.defaults import default_cube_pixelscale, default_cube_width_buffer
     from mangadap.util.defaults import default_cube_recenter, default_regrid_rlim
     from mangadap.util.defaults import default_regrid_sigma
+    from mangadap.util.defaults import default_manga_fits_root
 
 *Class usage examples*:
 
@@ -66,6 +67,8 @@ matrix for the DRP 'CUBE' files.
         directly.  **May need to add checks to other code to make sure
         drpver and redux_path are not None when directory_path has been
         directly defined.**
+    | **28 Aug 2015**: (KBW) Added usage of
+        :func:`mangadap.util.defaults.default_manga_fits_root`
 
 .. todo::
 
@@ -104,6 +107,7 @@ from mangadap.util.defaults import default_redux_path, default_drp_directory_pat
 from mangadap.util.defaults import default_cube_pixelscale, default_cube_width_buffer
 from mangadap.util.defaults import default_cube_recenter, default_regrid_rlim
 from mangadap.util.defaults import default_regrid_sigma
+from mangadap.util.defaults import default_manga_fits_root
 
 __author__ = 'Kyle B. Westfall'
 
@@ -810,7 +814,8 @@ class drpfile:
 
     def file_name(self):
         """Return the name of the DRP file"""
-        return 'manga-{0}-{1}-LOG{2}.fits.gz'.format(self.plate, self.ifudesign, self.mode)
+        root = default_manga_fits_root(self.plate, self.ifudesign, self.mode)
+        return ('{0}.fits.gz'.format(root))
 
 
 #    def directory_path(self):

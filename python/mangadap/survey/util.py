@@ -1,33 +1,64 @@
-# List of provided functions:
-#
-#       product_version - system call to $product_version, parses output
-#       module_version  - determines version of loaded module
+"""
+Provides a set of utility function that should **only be used for the
+survey-level execution of the DAP**.
 
-# Force Python 3 behavior
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews, Joel Brownstein
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
+*Source location*:
+    $MANGADAP_DIR/python/mangadap/survey/util.py
+
+*Python2/3 compliance*::
+
+    from __future__ import division
+    from __future__ import print_function
+    from __future__ import absolute_import
+    from __future__ import unicode_literals
+    
+    import sys
+    if sys.version > '3':
+        long = int
+
+*Imports*::
+
+    import subprocess
+    from os import environ
+    from mangadap.util.exception_tools import print_frame
+
+*Revision history*:
+    | **?? ??? 2014**: Original implementation by K. Westfall (KBW).
+        Functions pulled (unedited) from file provided by J. Brownstein.
+    | **27 Aug 2015**: (KBW) Sphinx documentation.
+"""
+# Python 2/3 compliance
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
-# Check long/int definition
 import sys
 if sys.version > '3':
     long = int
 
-# Additional imports
+# Main imports
 import subprocess
 from os import environ
 from mangadap.util.exception_tools import print_frame
 
 def product_version(product='mangadap', simple=False):
     """
-    Gets the version for the SDSS-III or SDSS-IV product.  The
-    default product is mangadap.
-    """
+    Get currently loaded SDSS product version by parsing the output of
+    the system call to {$product}_version.
 
-    # Expects to find an executable called {$product}_version that
-    # reports the SDSS-III/SDSS-IV product version.  If simple=True,
-    # only the first element of the reported version is set to
-    # 'version'
+    Args:
+        product (str): (Optional) The name of the product
+        simple (bool): (Optional) If True, only the first element of the
+            reported version is returned.
+
+    Returns:
+        str : Version identifier
+    """
     try:
         version = subprocess.check_output('%s_version' % product, shell=True)
         if type(version) is bytes:
@@ -43,10 +74,15 @@ def product_version(product='mangadap', simple=False):
 
 def module_version(product='mangadap'):
     """
-    Return the module version for the specified product.  The
-    default product is mangadap.
+    Return the version of the specified product among the currently
+    loaded modules.
+
+    Args:
+        product (str): (Optional) The name of the product
+
+    Returns:
+        str : Version identifier
     """
-    
     try:
         modules = environ['LOADEDMODULES']
     except:

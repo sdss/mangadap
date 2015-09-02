@@ -11,6 +11,7 @@ MaNGA DAP, such as paths and file names.
     from __future__ import division
     from __future__ import print_function
     from __future__ import absolute_import
+    from __future__ import unicode_literals
     
     import sys
     if sys.version > '3':
@@ -20,6 +21,7 @@ MaNGA DAP, such as paths and file names.
 
     import os.path
     from os import environ
+    import glob
     import numpy
     from mangadap.util.par import TemplateLibraryParSet
 
@@ -35,12 +37,19 @@ MaNGA DAP, such as paths and file names.
     | **17 Jun 2015**: (KBW) Moved declarations of template library keys
         to its own function: :func:`default_template_library_keys', and
         edited :func:`available_template_libraries` accordingly
+    | **27 Aug 2015**: (KBW) Changed the name of the plan file; added
+        :func:`default_dap_file_root` based on file_root() from
+        :class:`mangadap.survey.rundap`.
+    | **28 Aug 2015**: (KBW) Added
+        :func:`mangadap.util.defaults.default_manga_fits_root` and
+        :func:`mangadap.util.defaults.default_cube_covariance_file`
 
 """
 
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import sys
 if sys.version > '3':
@@ -48,6 +57,7 @@ if sys.version > '3':
 
 import os.path
 from os import environ
+import glob
 import numpy
 from mangadap.util.par import TemplateLibraryParSet
 
@@ -101,6 +111,7 @@ def default_drp_directory_path(drpver, redux_path, plate):
     return os.path.join(redux_path, str(plate), 'stack')
 
 
+# TODO: Are these values kept in MANGACORE somewhere?
 def default_cube_pixelscale():
     """
     Return the default pixel scale of the DRP CUBE files in arcsec.
@@ -138,6 +149,23 @@ def default_regrid_sigma():
     when regridding the DRP RSS spectra into the CUBE format.
     """
     return 0.7
+
+
+def default_cube_covariance_file(plate, ifudesign):
+    """
+    Return the default name for the covariance calculated for a 'CUBE'
+    fits file.
+
+    Args:
+        plate (int): Plate number
+        ifudesign (int): IFU design number
+    
+    Returns:
+        str : The default name of the covariance file.
+    
+    """
+    root = default_manga_fits_root(plate, ifudesign, 'CUBE')
+    return ('{0}_COVAR.fits'.format(root))
 
 
 def default_dap_source():
@@ -203,6 +231,44 @@ def default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign):
     return os.path.join(analysis_path, str(plate), str(ifudesign))
 
 
+def default_manga_fits_root(plate, ifudesign, mode):
+    """
+    Generate the main root name for the output MaNGA fits files for a
+    given plate/ifudesign/mode.
+
+    .. todo::
+        - Include a "sampling mode" (LIN vs. LOG)?
+
+    Args:
+        plate (int): Plate number
+        ifudesign (int): IFU design number
+        mode (str): Mode of the DRP reduction; either RSS or CUBE
+
+    Returns:
+        str : Root name for a MaNGA fits file:
+            manga-[PLATE]-[IFUDESIGN]-LOG[MODE]
+    """
+    return 'manga-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
+
+
+def default_dap_file_root(plate, ifudesign, mode):
+    """
+    Generate the root name of the MaNGA DAP parameter and script files
+    for a given plate/ifudesign/mode.
+    
+    Args:
+        plate (int): Plate number
+        ifudesign (int): IFU design number
+        mode (str): Mode of the DRP reduction; either RSS or CUBE
+
+    Returns:
+        str : Root name for the DAP file:
+            mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]
+
+    """
+    return 'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
+
+
 def default_dap_par_file(drpver, dapver, analysis_path, directory_path, plate, ifudesign, mode):
     """
     Return the full path to the DAP par file.
@@ -225,7 +291,8 @@ def default_dap_par_file(drpver, dapver, analysis_path, directory_path, plate, i
     if directory_path is None:
         directory_path = default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign)
     # Set the name of the par file; put this in its own function?
-    par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(plate, ifudesign, mode)
+    par_file = '{0}.par'.format(default_dap_file_root(plate, ifudesign, mode))
+#    par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(plate, ifudesign, mode)
     return os.path.join(directory_path, par_file)
 
     
@@ -251,9 +318,8 @@ def default_dap_plan_file(drpver, dapver, analysis_path, directory_path, plate, 
     if directory_path is None:
         directory_path = default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign)
     # Set the name of the plan file; put this in its own function?
-    # TODO: Change to:
-#   plan_file = 'mangadap-{0}-{1}-LOG{2}-plan.par'.format(plate, ifudesign, mode)
-    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
+#    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
+    plan_file = '{0}-plan.par'.format(default_dap_file_root(plate, ifudesign, mode))
     return os.path.join(directory_path, plan_file)
 
 
@@ -274,9 +340,10 @@ def default_dap_file_name(plate, ifudesign, mode, bintype, niter):
     """
     # Number of spaces provided for iteration number is 3
     siter = str(niter).zfill(3)
-    # TODO: Change to:
+    root = default_manga_fits_root(plate, ifudesign, mode)
+    # TODO: ? Use default_dap_file_root() or change to:
 #   return 'manga-{0}-{1}-LOG{2}_{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
-    return 'manga-{0}-{1}-LOG{2}_BIN-{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
+    return '{0}_BIN-{1}-{2}.fits'.format(root, bintype, siter)
 
 
 def default_template_library_file(plate, ifudesign, mode, library_key, spindex_key=None):
@@ -298,10 +365,11 @@ def default_template_library_file(plate, ifudesign, mode, library_key, spindex_k
         - Add a docstring link to the default template libraries
 
     """
+    # TODO: Use default_dap_file_root()?
+    root = default_manga_fits_root(plate, ifudesign, mode)
     if spindex_key is not None:
-        return 'manga-{0}-{1}-LOG{2}_{3}_{4}.fits'.format(plate, ifudesign, mode, library_key,
-                                                          spindex_key)
-    return 'manga-{0}-{1}-LOG{2}_{3}.fits'.format(plate, ifudesign, mode, library_key)
+        return '{0}_{1}_{2}.fits'.format(root, library_key, spindex_key)
+    return '{0}_{1}.fits'.format(root, library_key)
 
 
 def default_template_libraries(dapsrc=None):
@@ -471,5 +539,32 @@ def default_template_libraries(dapsrc=None):
         ]
 
     return template_libraries
+
+
+def default_plate_target_files():
+        """
+        Return the default plateTarget files in mangacore and their
+        associated catalog indices.  The catalog indices are determined
+        assuming the file names are of the form::
+
+            'plateTargets-{0}.par'.format(catalog_id)
+
+        Returns:
+            numpy.array : Two arrays: the first contains the identified
+                plateTargets files found using the default search
+                string, the second provides the integer catalog index
+                determined for each file.
+        """
+        # Default search string
+        search_str = os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                                  'plateTargets*.par')
+        file_list = glob.glob(search_str)                       # List of files
+        nfiles = len(file_list)
+        trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices
+        for i in range(nfiles):
+            suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
+            trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
+        
+        return numpy.array(file_list), trgid
 
 
