@@ -279,12 +279,14 @@ class DAP():
     def get_drps(self):
         """Read in DRPS extension."""
         drps_in = self.fits.read_hdu_data('DRPS')
-        self.drps = util.fitsrec_to_dataframe(drps_in)
+        drps = util.fitsrec_to_dataframe(drps_in)
+        self.drps = self.lowercase_colnames(drps)
 
     def get_bins(self):
         """Read in BINS extension"""
         bins_in = self.fits.read_hdu_data('BINS')
-        self.bins = util.fitsrec_to_dataframe(bins_in)
+        bins = util.fitsrec_to_dataframe(bins_in)
+        self.bins = self.lowercase_colnames(bins)
 
     def get_spectra(self):
         """Read in spectra.
@@ -301,8 +303,9 @@ class DAP():
     def get_elpar(self):
         """Read in emission line parameters."""
         elpar_in = self.fits.read_hdu_data('ELPAR')
-        self.elpar = util.fitsrec_to_dataframe(elpar_in)
-        self.elpar.ELNAME = self.remove_hyphen(self.elpar.ELNAME.values)
+        elpar = util.fitsrec_to_dataframe(elpar_in)
+        self.elpar = self.lowercase_colnames(elpar)
+        self.elpar.elname = self.remove_hyphen(self.elpar.elname.values)
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
@@ -432,13 +435,13 @@ class DAP():
         """Spectral index parameters."""
         sipar_in = self.fits.read_hdu_data('SIPAR')
         self.sinames = list(sipar_in['SINAME'])
-        sipar_tmp = dict(UNIT=sipar_in['UNIT'])
-        for band in ['PASSBAND', 'BLUEBAND', 'REDBAND']:
-            for i, bedge in enumerate(['START', 'END']):
+        sipar_tmp = dict(unit=sipar_in['UNIT'])
+        for band in ['passband', 'blueband', 'redband']:
+            for i, bedge in enumerate(['start', 'end']):
                 sipar_tmp['_'.join((band, bedge))] = sipar_in[band][:, i]
 
-        cols = ['PASSBAND_START', 'PASSBAND_END', 'BLUEBAND_START',
-            'BLUEBAND_END', 'REDBAND_START', 'REDBAND_END', 'UNIT']
+        cols = ['passband_start', 'passband_end', 'blueband_start',
+            'blueband_end', 'redband_start', 'redband_end', 'unit']
         self.sipar = pd.DataFrame(sipar_tmp, columns=cols, index=self.sinames)
         
 
@@ -489,4 +492,9 @@ class DAP():
     def remove_hyphen(self, names):
         """Remove hyphens from emission line names."""
         return [name.replace('-', '').strip() for name in names]
+
+    def lowercase_colnames(self, df):
+        """Convert column names of a DataFrame to lowercase."""
+        df.columns = [item.lower() for item in df.columns]
+        return df
 

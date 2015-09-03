@@ -804,6 +804,7 @@ class PlotQA(object):
                               self.ypos.max() + delta])
 
             if len(ind_no_measure[0]) > 0:
+                # x is negative because east is left on sky
                 for i0, i1 in zip(ind_no_measure[0], ind_no_measure[1]):
                     ax.add_patch(mpl.patches.Rectangle(
                         (-(xpos2[i0, i1] + delta), ypos2[i0, i1] - delta),
