@@ -27,7 +27,8 @@ try:
 except ImportError:
     seaborn_installed = False
 
-from sdss.files import base_path
+# UNCOMMENT
+# from sdss.files import base_path
 
 class FitError(Exception):
     pass
@@ -41,17 +42,30 @@ class PlotQA(object):
         chisq_bin (array): chisq for each binned spectrum.
     """
 
-    def __init__(self, fin_kws):
-        home = os.path.expanduser('~')
-        #bp = base_path(join(home, 'Dropbox', 'data', 'sdss_paths.ini'))
-        #self.dap_file = bp.full('dap', **fin_kws)
-        #self.manga_pid = '-'.join((fin_kws['plate'], fin_kws['ifudesign']))
-        #self.dap_mode = fin_kws['mode']
-        #self.niter = fin_kws['niter']
-        #self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
-        #                    os.getenv('MANGADRP_VER')) +
-        #                    '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
-        #self.setup()
+    def __init__(self, filename): 
+        self.dap_file = filename 
+        self.manga_pid = ('-').join(self.dap_file.split('-')[1:3]) 
+        self.dap_mode = self.dap_file.split('LOG')[1].split('_')[0]
+        self.analysis_id = self.dap_file.split('BIN-')[1].strip('.fits')
+        self.niter = self.analysis_id.split('-')[1]
+        self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'), 
+                            os.getenv('MANGADRP_VER')) + 
+                            '/drpall-%s.fits' % os.getenv('MANGADRP_VER')) 
+        self.setup() 
+
+    # SWITCH TO THIS
+    #
+    # def __init__(self, fin_kws):
+    #     home = os.path.expanduser('~')
+    #     bp = base_path('sdss_paths.ini') # CORRECT?
+    #     self.dap_file = bp.full('dap', **fin_kws)
+    #     self.manga_pid = '-'.join((fin_kws['plate'], fin_kws['ifudesign']))
+    #     self.dap_mode = fin_kws['mode']
+    #     self.niter = fin_kws['niter']
+    #     self.drpall_file = (os.path.join(os.getenv('MANGA_SPECTRO_REDUX'),
+    #                         os.getenv('MANGADRP_VER')) +
+    #                         '/drpall-%s.fits' % os.getenv('MANGADRP_VER'))
+    #     self.setup()
 
     def setup(self):
         self.read_fits()

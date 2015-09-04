@@ -266,14 +266,17 @@ for dap_file in files:
     #reload(plot_qa)
     #from plot_qa import PlotQA
     try:
-        qa = PlotQA(fin_kws)
+        qa = PlotQA(join(path_gal, dap_file))
+        
+        # UNCOMMENT
+        # qa = PlotQA(fin_kws)
         print('pid-ifu: {}, binning: {}'.format(manga_pid, binning_type))
         print('Template Library:', qa.tpl_lib)
         qa.select_wave_range()
         qa.set_axis_lims()
-        #qa.calc_chisq()
-        #qa.calc_resid()
-        #qa.calc_resid_data()
+        qa.calc_chisq()
+        qa.calc_resid()
+        qa.calc_resid_data()
         #qa.ch1, qa.ch1_r = qa.define_custom_cubehelix(rot=-2, start=1, gamma=1)
         #qa.ch4, qa.ch4_r = qa.define_custom_cubehelix(rot=1.5, start=0.5, gamma=1)
     except FitError:
@@ -286,112 +289,110 @@ for dap_file in files:
     
     
     #----- Plot Parameters -----
+        
+    #--- Kinematics Map Parameters ---
     
-    # UNCOMMENT
+    if plot_h3_h4:
+        kin_mapname = [
+          'stvel',
+          'stvdisp',
+          'sth3',
+          'emvel',
+          'emvdisp',
+          'sth4',]
+    else:
+        kin_mapname = [
+          'stvel',
+          'stvdisp',
+          'chisq',
+          'emvel',
+          'emvdisp',
+          'resid',]
     
-    # #--- Kinematics Map Parameters ---
-    # 
-    # if plot_h3_h4:
-    #     kin_mapname = [
-    #       'stvel',
-    #       'stvdisp',
-    #       'sth3',
-    #       'emvel',
-    #       'emvdisp',
-    #       'sth4',]
-    # else:
-    #     kin_mapname = [
-    #       'stvel',
-    #       'stvdisp',
-    #       'chisq',
-    #       'emvel',
-    #       'emvdisp',
-    #       'resid',]
-    # 
-    # # plot sigma_star and sigma_gas on same scale
-    # ind_stvdisp = np.where((qa.stvdisp / qa.stvdisperr >= 3.) & (qa.stvdisperr > 0.))
-    # # qa.emvdisp is 0 or 99 for all spaxels
-    # # ind_emvdisp = np.where(qa.emvdisp_ew / qa.emvdisperr_ew >= 3. & (qa.stvdisperr > 0.))
-    # vdisp_range = sigma_clip(np.concatenate((qa.stvdisp[ind_stvdisp],
-    #                          qa.emvdisp_ew)), sig=3)
-    # cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
-    # 
-    # stvel_args = dict(val=qa.stvel_rest, val_err=qa.stvelerr_rest,
-    #                   kwargs=dict(cblabel=r'v$_\star$ [km/s]',
-    #                               cmap=cm.coolwarm,
-    #                               cbrange_symmetric=True,
-    #                               title_text=r'v_star',
-    #                               nodots=True))
-    # stvdisp_args = dict(val=qa.stvdisp, val_err=qa.stvdisperr,
-    #                     kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
-    #                                 #cbrange=cbrange_vdisp,
-    #                                 #cbrange_clip=False,
-    #                                 cbrange_clip=True,
-    #                                 snr_thresh=3.,
-    #                                 cmap=qa.linearL, 
-    #                                 title_text=r'$\sigma$_star',
-    #                                 nodots=True))
-    # sth3_args = dict(val=qa.sth3, val_err=qa.sth3err,
-    #                  kwargs=dict(cblabel='h3',
-    #                              cbrange_symmetric=True,
-    #                              cmap=cm.coolwarm,
-    #                              title_text='h3',
-    #                              nodots=True))
-    # sth4_args = dict(val=qa.sth4, val_err=qa.sth4err,
-    #                  kwargs=dict(cblabel='h4',
-    #                              cbrange_symmetric=False,
-    #                              cmap=qa.linearL,
-    #                              title_text='h4',
-    #                              nodots=True))
-    # 
-    # emvel_args = dict(val=qa.emvel_rest_ew, val_err=qa.emvelerr_rest_ew,
-    #                   kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
-    #                               cmap=cm.coolwarm,
-    #                               cbrange_symmetric=True,
-    #                               title_text=r'v_gas (Wang)',
-    #                               nodots=True))
-    # emvdisp_args = dict(val=qa.emvdisp_ew,
-    #                  kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
-    #                              #cbrange=cbrange_vdisp,
-    #                              #cbrange_clip=False,
-    #                              cbrange_clip=True,
-    #                              cmap=qa.linearL,
-    #                              title_text=r'$\sigma$_gas (Wang)',
-    #                              nodots=True))
-    # 
-    # chisq_args = dict(val=qa.chisq_bin,
-    #              kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
-    #                          cmap=qa.linearL,
-    #                          title_text=r'$\chi_{\rm red}^2$',
-    #                          nodots=True))
-    # resid_args = dict(val=qa.resid_data_bin_percent99,
-    #              kwargs=dict(cblabel='99th percentile |resid| / galaxy',
-    #                          cmap=qa.linearL,
-    #                          title_text='99th percentile |resid| / galaxy',
-    #                          nodots=True))
-    # 
-    # 
-    # kin_map_kwargs = dict(stvel=stvel_args,
-    #                       stvdisp=stvdisp_args,
-    #                       sth3=sth3_args,
-    #                       sth4=sth4_args,
-    #                       emvel=emvel_args,
-    #                       emvdisp=emvdisp_args,
-    #                       chisq=chisq_args,
-    #                       resid=resid_args,)
-    # 
-    # kin_map_kwargs_interp = copy.deepcopy(kin_map_kwargs)
-    # for v in kin_map_kwargs_interp.values():
-    #     v['kwargs']['interpolated'] = True
-    # 
-    # bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
-    #                           cmap=qa.linearL,
-    #                           title_text=r'$\chi_{\rm red}^2$',
-    #                           nodots=True,
-    #                           spaxel_num=True,
-    #                           figsize=(15, 12))
-    # 
-    # #----------------------------------------
+    # plot sigma_star and sigma_gas on same scale
+    ind_stvdisp = np.where((qa.stvdisp / qa.stvdisperr >= 3.) & (qa.stvdisperr > 0.))
+    # qa.emvdisp is 0 or 99 for all spaxels
+    # ind_emvdisp = np.where(qa.emvdisp_ew / qa.emvdisperr_ew >= 3. & (qa.stvdisperr > 0.))
+    vdisp_range = sigma_clip(np.concatenate((qa.stvdisp[ind_stvdisp],
+                             qa.emvdisp_ew)), sig=3)
+    cbrange_vdisp = [vdisp_range.min(), vdisp_range.max()]
+    
+    stvel_args = dict(val=qa.stvel_rest, val_err=qa.stvelerr_rest,
+                      kwargs=dict(cblabel=r'v$_\star$ [km/s]',
+                                  cmap=cm.coolwarm,
+                                  cbrange_symmetric=True,
+                                  title_text=r'v_star',
+                                  nodots=True))
+    stvdisp_args = dict(val=qa.stvdisp, val_err=qa.stvdisperr,
+                        kwargs=dict(cblabel=r'$\sigma_\star$ [km/s]',
+                                    #cbrange=cbrange_vdisp,
+                                    #cbrange_clip=False,
+                                    cbrange_clip=True,
+                                    snr_thresh=3.,
+                                    cmap=qa.linearL, 
+                                    title_text=r'$\sigma$_star',
+                                    nodots=True))
+    sth3_args = dict(val=qa.sth3, val_err=qa.sth3err,
+                     kwargs=dict(cblabel='h3',
+                                 cbrange_symmetric=True,
+                                 cmap=cm.coolwarm,
+                                 title_text='h3',
+                                 nodots=True))
+    sth4_args = dict(val=qa.sth4, val_err=qa.sth4err,
+                     kwargs=dict(cblabel='h4',
+                                 cbrange_symmetric=False,
+                                 cmap=qa.linearL,
+                                 title_text='h4',
+                                 nodots=True))
+    
+    emvel_args = dict(val=qa.emvel_rest_ew, val_err=qa.emvelerr_rest_ew,
+                      kwargs=dict(cblabel=r'v$_{\rm gas}$ [km/s]',
+                                  cmap=cm.coolwarm,
+                                  cbrange_symmetric=True,
+                                  title_text=r'v_gas (Wang)',
+                                  nodots=True))
+    emvdisp_args = dict(val=qa.emvdisp_ew,
+                     kwargs=dict(cblabel=r'$\sigma_{\rm gas}$ [km/s]',
+                                 #cbrange=cbrange_vdisp,
+                                 #cbrange_clip=False,
+                                 cbrange_clip=True,
+                                 cmap=qa.linearL,
+                                 title_text=r'$\sigma$_gas (Wang)',
+                                 nodots=True))
+    
+    chisq_args = dict(val=qa.chisq_bin,
+                 kwargs=dict(cblabel=r'$\chi_{\rm red}^2$',
+                             cmap=qa.linearL,
+                             title_text=r'$\chi_{\rm red}^2$',
+                             nodots=True))
+    resid_args = dict(val=qa.resid_data_bin_percent99,
+                 kwargs=dict(cblabel='99th percentile |resid| / galaxy',
+                             cmap=qa.linearL,
+                             title_text='99th percentile |resid| / galaxy',
+                             nodots=True))
+    
+    
+    kin_map_kwargs = dict(stvel=stvel_args,
+                          stvdisp=stvdisp_args,
+                          sth3=sth3_args,
+                          sth4=sth4_args,
+                          emvel=emvel_args,
+                          emvdisp=emvdisp_args,
+                          chisq=chisq_args,
+                          resid=resid_args,)
+    
+    kin_map_kwargs_interp = copy.deepcopy(kin_map_kwargs)
+    for v in kin_map_kwargs_interp.values():
+        v['kwargs']['interpolated'] = True
+    
+    bin_num_map_kwargs = dict(cblabel=r'$\chi_{\rm red}^2$',
+                              cmap=qa.linearL,
+                              title_text=r'$\chi_{\rm red}^2$',
+                              nodots=True,
+                              spaxel_num=True,
+                              figsize=(15, 12))
+    
+    #----------------------------------------
     
     
     #--- Emission Line Fluxes Map Parameters ---
@@ -514,42 +515,41 @@ for dap_file in files:
         
     #---------------------------------
 
-    # UNCOMMENT
 
-    # #--- SNR Map Parameters ---
-    # snr_mapname = [
-    #   'signal',
-    #   'noise',
-    #   'snr',
-    #   'halpha',
-    #   'resid',
-    #   'chisq',]
-    # 
-    # 
-    # signal_args = dict(val=qa.signal,
-    #                   kwargs=dict(cblabel=r'signal',
-    #                               cmap=qa.linearL,
-    #                               title_text=r'DRPS signal',
-    #                               nodots=True))
-    # noise_args = dict(val=qa.noise,
-    #                   kwargs=dict(cblabel=r'noise',
-    #                               cmap=qa.linearL,
-    #                               title_text='DRPS noise',
-    #                               nodots=True))
-    # snr_args = dict(val=qa.snr,
-    #                     kwargs=dict(cblabel=r'S/N',
-    #                                 cmap=qa.linearL, 
-    #                                 title_text=r'DRPS S/N',
-    #                                 nodots=True))
-    # 
-    # 
-    # snr_map_kwargs = dict(signal=signal_args,
-    #                       noise=noise_args,
-    #                       snr=snr_args,
-    #                       chisq=chisq_args,
-    #                       resid=resid_args,
-    #                       halpha=halpha_args)
-    # #---------------------------------
+    #--- SNR Map Parameters ---
+    snr_mapname = [
+      'signal',
+      'noise',
+      'snr',
+      'halpha',
+      'resid',
+      'chisq',]
+    
+    
+    signal_args = dict(val=qa.signal,
+                      kwargs=dict(cblabel=r'signal',
+                                  cmap=qa.linearL,
+                                  title_text=r'DRPS signal',
+                                  nodots=True))
+    noise_args = dict(val=qa.noise,
+                      kwargs=dict(cblabel=r'noise',
+                                  cmap=qa.linearL,
+                                  title_text='DRPS noise',
+                                  nodots=True))
+    snr_args = dict(val=qa.snr,
+                        kwargs=dict(cblabel=r'S/N',
+                                    cmap=qa.linearL, 
+                                    title_text=r'DRPS S/N',
+                                    nodots=True))
+    
+    
+    snr_map_kwargs = dict(signal=signal_args,
+                          noise=noise_args,
+                          snr=snr_args,
+                          chisq=chisq_args,
+                          resid=resid_args,
+                          halpha=halpha_args)
+    #---------------------------------
     
     
     
@@ -611,7 +611,7 @@ for dap_file in files:
     #qa.calc_resid_data()
     #qa.plot_multi_map(emflux_mapname, emflux_map_kwargs)
     
-    plot_map = False
+    # plot_map = False
     if plot_map:
     
         # Plot bin numbers on top of chisq map
@@ -657,45 +657,43 @@ for dap_file in files:
     
     # plot_indiv_map = False
     if plot_indiv_map:
-    
-        #---UNCOMMENT
-        #
-        # for k, v in kin_map_kwargs.items():
-        #     val_err = None
-        #     if 'val_err' in v:
-        #         val_err = v['val_err']
-        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-        #     fout =  ('_').join([stem_file, k, 'map']) + '.png'
-        #     plt.savefig(path_gal_plots_maps + fout)
-        # print('Wrote: individual kin maps')
-        # 
-        # if stkin_interp:
-        #     for k, v in kin_map_kwargs_interp.items():
-        #         val_err = None
-        #         if 'val_err' in v:
-        #             val_err = v['val_err']
-        #         qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-        #         fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
-        #         plt.savefig(path_gal_plots_maps + fout)
-        #     print('Wrote: individual kin interp maps')
-        # 
-        # for k, v in emflux_ew_map_kwargs.items():
-        #     val_err = None
-        #     if 'val_err' in v:
-        #         val_err = v['val_err']
-        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-        #     fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
-        #     plt.savefig(path_gal_plots_maps + fout)
-        # print('Wrote: individual emflux_ew maps')
-        # 
-        # for k, v in emflux_fb_map_kwargs.items():
-        #     val_err = None
-        #     if 'val_err' in v:
-        #         val_err = v['val_err']
-        #     qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-        #     fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
-        #     plt.savefig(path_gal_plots_maps + fout)
-        # print('Wrote: individual emflux_fb maps')
+            
+        for k, v in kin_map_kwargs.items():
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual kin maps')
+        
+        if stkin_interp:
+            for k, v in kin_map_kwargs_interp.items():
+                val_err = None
+                if 'val_err' in v:
+                    val_err = v['val_err']
+                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+                fout =  ('_').join([stem_file, k, 'map', 'interp']) + '.png'
+                plt.savefig(path_gal_plots_maps + fout)
+            print('Wrote: individual kin interp maps')
+        
+        for k, v in emflux_ew_map_kwargs.items():
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'ew', 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual emflux_ew maps')
+        
+        for k, v in emflux_fb_map_kwargs.items():
+            val_err = None
+            if 'val_err' in v:
+                val_err = v['val_err']
+            qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+            fout =  ('_').join([stem_file, k, 'fb', 'map']) + '.png'
+            plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual emflux_fb maps')
         
         #--------
         #
@@ -711,18 +709,17 @@ for dap_file in files:
             plt.savefig(join(path_gal_plots_maps, fout))
         print('Wrote: individual spectral index maps')
 
-        #---UNCOMMENT
-        # for k, v in snr_map_kwargs.items():
-        #     if k is 'halpha':
-        #         pass
-        #     else:
-        #         val_err = None
-        #         if 'val_err' in v:
-        #             val_err = v['val_err']
-        #         qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
-        #         fout =  ('_').join([stem_file, k, 'map']) + '.png'
-        #         plt.savefig(path_gal_plots_maps + fout)
-        # print('Wrote: individual snr maps')
+        for k, v in snr_map_kwargs.items():
+            if k is 'halpha':
+                pass
+            else:
+                val_err = None
+                if 'val_err' in v:
+                    val_err = v['val_err']
+                qa.plot_map(v['val'], z_err=val_err, **v['kwargs'])
+                fout =  ('_').join([stem_file, k, 'map']) + '.png'
+                plt.savefig(path_gal_plots_maps + fout)
+        print('Wrote: individual snr maps')
     
     
     plot_gradients = False
