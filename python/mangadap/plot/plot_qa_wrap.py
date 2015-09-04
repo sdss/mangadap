@@ -456,8 +456,6 @@ for dap_file in files:
     #--- Spectral Index Map Parameters ---
 
 
-    # STOPPED HERE
-
 
     spec_ind_mapname = [
       'D4000',

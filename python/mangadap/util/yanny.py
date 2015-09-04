@@ -485,6 +485,8 @@ class yanny(dict):
         dtmap = {'short':'i2', 'int':'i4', 'long':'i8', 'float':'f',
             'double':'d' }
         for c in self.columns(structure):
+            if sys.version < '3':
+                c = c.encode('ascii')
             typ = self.basetype(structure,c)
             if typ == 'char':
                 d = "S{0:d}".format(self.char_length(structure,c))
