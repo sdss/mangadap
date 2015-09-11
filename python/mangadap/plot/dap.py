@@ -434,16 +434,16 @@ class DAP():
     def get_sipar(self):
         """Spectral index parameters."""
         sipar_in = self.fits.read_hdu_data('SIPAR')
-        self.sinames = list(sipar_in['SINAME'])
-        sipar_tmp = dict(unit=sipar_in['UNIT'])
+        self.sinames = list(sipar_in['SINAME'].byteswap().newbyteorder())
+        sipar_tmp = dict(unit=sipar_in['UNIT'].byteswap().newbyteorder())
         for band in ['passband', 'blueband', 'redband']:
             for i, bedge in enumerate(['start', 'end']):
-                sipar_tmp['_'.join((band, bedge))] = sipar_in[band][:, i]
+                sipar_tmp['_'.join((band, bedge))] = sipar_in[band][:, i].byteswap().newbyteorder()
 
         cols = ['passband_start', 'passband_end', 'blueband_start',
             'blueband_end', 'redband_start', 'redband_end', 'unit']
         self.sipar = pd.DataFrame(sipar_tmp, columns=cols, index=self.sinames)
-        
+        #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
 
     def get_sindx(self):
         """Read in spectral index info."""
@@ -459,7 +459,6 @@ class DAP():
         self.calc_Fe5270_5335()
         self.calc_CalII0p86()
         
-
     def calc_Fe5270_5335(self):
         """Combine Fe5270 and Fe5335 spectral indices."""
         columns = ['Fe5270', 'Fe5335']
@@ -468,6 +467,7 @@ class DAP():
                                                            coeffs)
         self.indxerr['Fe5270_5335'] = util.linear_combination_err(
                                         self.indxerr, columns, coeffs)
+        self.sipar.loc['Fe5270_5335', 'unit'] = self.sipar.loc['Fe5270', 'unit']
 
     def calc_CalII0p86(self):
         """Combine CaII0p86A, CaII0p86B, and CaII0p86C spectral indices."""
@@ -477,6 +477,7 @@ class DAP():
                                                         coeffs)
         self.indxerr['CaII0p86'] = util.linear_combination_err(
                                         self.indxerr, columns, coeffs)
+        self.sipar.loc['CaII0p86', 'unit'] = self.sipar.loc['CaII0p86A', 'unit']
 
     def count_res_elements(self):
         """Count bins, spaxels, and pixels."""
