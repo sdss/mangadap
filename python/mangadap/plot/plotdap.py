@@ -1,10 +1,10 @@
 """Methods for plotting DAP output.
 """
 
-
 from __future__ import division, print_function, absolute_import
 
 import sys
+import copy
 
 import numpy as np
 
@@ -545,3 +545,74 @@ def plot_multi_map(all_panel_kws, patch_kws={}, fig_kws={}, mg_kws={}):
                            fig_kws=fig_kws, **panel_kws)
 
     return fig, ax
+
+def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
+               binyru, nbin, spaxel_size, delta, dapdata=None,
+               val_no_measure=0, snr_thresh=1, mg_kws={}, patch_kws={},
+               titles=None, cblabels=None, show_binnum=False,
+               show_bindot=False):
+    """Make plot.
+
+    Add options to save to file.
+    """
+    if type(values) is str:
+        values = getattr(dapdata, values)
+    
+    if type(errors) is str:
+        errors = getattr(dapdata, errors)
+
+    images = []
+    xy_nomeasures = []
+    for col in columns:
+        im, xy = make_image(val=values[col].values, err=errors[col].values,
+                            xpos=xpos, ypos=ypos, binid=binid, delta=delta,
+                            val_no_measure=val_no_measure, snr_thresh=snr_thresh)
+        images.append(im)
+        xy_nomeasures.append(xy)
+    
+    fig_kws, ax_kws, title_kws, imshow_kws, cb_kws = set_multi_panel_par()
+    all_panel_kws = []
+    for i, (im, xy, col) in enumerate(zip(images, xy_nomeasures, columns)):
+
+        plot_title = titles[col]
+
+        try:
+            cblabel = cblabels[col]
+        except TypeError:
+            cblabel = cblabels
+        
+        if show_binnum:
+            binnum_kws = dict(binxrl=binxrl, binyru=binyru, nbin=nbin,
+                              val=values[col].values, spaxel_size=spaxel_size,
+                              imshow_kws=imshow_kws, fontsize=6)
+        else:
+            binnum_kws = {}
+    
+        if show_bindot:
+            bindot_args = (-binxrl, binyru)
+        else:
+            bindot_args = ()
+    
+        # DEBUGGING: only plot one map
+        if i == 0:
+            # plot single panel maps
+            fg, axs, tt, iw, cb = set_single_panel_par()
+            tt['label'] = plot_title
+            cb['label_kws']['label'] = cblabel
+            ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
+                          title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
+                          cb_kws=cb, binnum_kws=binnum_kws,
+                          bindot_args=bindot_args)
+    
+        # create dictionaries for multi-panel maps
+        kwdicts = (title_kws, imshow_kws, cb_kws)
+        t_kws, i_kws, c_kws = [copy.deepcopy(it) for it in kwdicts]
+        t_kws['label'] = plot_title
+        c_kws['label_kws']['label'] = cblabel
+        all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
+                             title_kws=t_kws, imshow_kws=i_kws, cb_kws=c_kws))
+    
+    # plot multi-panel maps
+    ig = plot_multi_map(all_panel_kws=all_panel_kws, patch_kws=patch_kws,
+                        fig_kws=fig_kws, mg_kws=mg_kws)
+

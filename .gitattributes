@@ -2624,6 +2624,7 @@ python/mangadap/drpfile.py -text
 python/mangadap/plot/Linear_L_0-1.csv -text
 python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
+python/mangadap/plot/cfg_io.py -text
 python/mangadap/plot/conf.py -text
 python/mangadap/plot/dap.py -text
 python/mangadap/plot/index.rst -text
