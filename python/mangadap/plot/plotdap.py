@@ -24,6 +24,66 @@ except ImportError:
     print('Seaborn could not be imported. Continuing...')
 
 
+def set_extent(xpos, ypos, delta):
+    """Set extent of map."""
+    return np.array([-xpos.max() - delta, -xpos.min() + delta,
+                    ypos.min() - delta, ypos.max() + delta])
+
+def reorient(x):
+    """Reorient XPOS and YPOS.
+
+    XPOS and YPOS are oriented to start in the lower left and go up then
+    right. Re-orient data so that it starts in the upper left and goes right
+    then down.
+
+    Args:
+        x (array): Positional values.
+        sqrtn (int): Square root of the number of spaxels.
+
+    Returns:
+        array: Square 2-D array of size (sqrtn, sqrtn).
+    """
+    sqrtn = int(np.sqrt(len(x)))
+    x_sq = np.reshape(x, (sqrtn, sqrtn))
+    return x_sq.T[::-1]
+
+def make_image(val, err, xpos, ypos, binid, delta=0.25, val_no_measure=0,
+               snr_thresh=1):
+    """Make masked array of image.
+
+    Args:
+        val (array): Values.
+        err (array): Errors.
+        xpos (array): x-coordinates of bins.
+        ypos (array): y-coordinates of bins.
+        binid (array): Bin ID numbers.
+        delta (float): Half of the spaxel size in arcsec.
+        val_no_measure (float): Value that corresponds to no measurement.
+        snr_thresh (float): Signal-to-noise theshold below which is not
+           considered a measurement.
+
+    Returns:
+        tuple: (masked array of image,
+                tuple of (x, y) coordinates of bins with no measurement)
+    """
+    # create a masked array of the data
+    im = val[binid]
+    im[binid == -1] = np.nan
+
+    im_err = err[binid]
+    im_err[binid == -1] = np.nan
+    
+    no_measure = make_mask_no_measurement(im, im_err)
+    no_data = make_mask_no_data(im, no_measure)
+    image = np.ma.array(im, mask=no_data)
+    
+    # spaxels with data but no measurement
+    xpos_re = reorient(xpos)
+    ypos_re = reorient(ypos)
+    xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
+
+    return image, xy_nomeasure
+
 def make_mask_no_measurement(data, err=None, val_no_measure=0.,
                              snr_thresh=1.):
     """Mask invalid measurements within a data array.
@@ -61,29 +121,6 @@ def make_mask_no_data(data, mask_no_measurement):
     no_data = np.isnan(data)
     no_data[mask_no_measurement] = True
     return no_data
-
-def reorient(x):
-    """Reorient XPOS and YPOS.
-
-    XPOS and YPOS are oriented to start in the lower left and go up then
-    right. Re-orient data so that it starts in the upper left and goes right
-    then down.
-
-    Args:
-        x (array): Positional values.
-        sqrtn (int): Square root of the number of spaxels.
-
-    Returns:
-        array: Square 2-D array of size (sqrtn, sqrtn).
-    """
-    sqrtn = int(np.sqrt(len(x)))
-    x_sq = np.reshape(x, (sqrtn, sqrtn))
-    return x_sq.T[::-1]
-
-def set_extent(xpos, ypos, delta):
-    """Set extent of map."""
-    return np.array([-xpos.max() - delta, -xpos.min() + delta,
-                    ypos.min() - delta, ypos.max() + delta])
 
 def set_vmin_vmax(d, cbrange):
     """Set minimum and maximum values of the color map."""
@@ -156,7 +193,8 @@ def set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
     return cbr
 
 def make_draw_colorbar_kws(image, cb_kws):
-    """
+    """Make keyword args dictionary to pass to draw_colorbar.
+
     Args:
         image (masked array): Image to display.
         cb_kws (dict): Keyword args to set and draw colorbar.
@@ -169,9 +207,23 @@ def make_draw_colorbar_kws(image, cb_kws):
     cb_kws['cbrange'] = set_cbrange(image, **cbrange_kws)
     return cb_kws
 
-def draw_colorbar(fig, p, axloc=None, cbrange=None, n_ticks=7, label_kws={},
+def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7, label_kws={},
                   tick_params_kws={}):
+    """
 
+    Args:
+        fig: plt.figure object.
+        mappable: Plotting element to map to colorbar.
+        axloc (list): Specify [left, bottom, width, height] of colorbar axis.
+            Defaults to None.
+        cbrange (list): Colorbar min and max.
+        n_ticks (int): Number of ticks on colorbar.
+        label_kws (dict): Keyword args to set colorbar label.
+        tick_params_kws (dict): Keyword args to set colorbar tick parameters.
+
+    Returns:
+        tuple: (plt.figure object, plt.figure axis object)
+    """
     if axloc is not None:
         cax = fig.add_axes(axloc)
     else:
@@ -182,9 +234,9 @@ def draw_colorbar(fig, p, axloc=None, cbrange=None, n_ticks=7, label_kws={},
     except AttributeError:
         print('AttributeError: MaxNLocator instance has no attribute' +
               ' "tick_values" ')
-        cb = fig.colorbar(p, cax)
+        cb = fig.colorbar(mappable, cax)
     else:
-        cb = fig.colorbar(p, cax, ticks=ticks)
+        cb = fig.colorbar(mappable, cax, ticks=ticks)
     
     if label_kws['label'] is not None:
         cb.set_label(**label_kws)
@@ -213,12 +265,18 @@ def pretty_specind_units(units):
     return cblabel
 
 def set_panel_par():
+    """Set default plot parameters."""
     ax_kws = dict(facecolor='#A8A8A8')
     imshow_kws = dict(cmap=cm.Blues_r) # cm.RdBu
     return ax_kws, imshow_kws
 
 def set_single_panel_par():
-    """Set default parameters for a single panel plot."""
+    """Set default parameters for a single panel plot.
+
+    Returns:
+        tuple: (figure keyword args, axes keyword args, title keyword args,
+                imshow keyword args, colorbar keyword args)
+    """
     ax_kws, imshow_kws = set_panel_par()
     fig_kws = dict(figsize=(10, 8))
     title_kws = dict(fontsize=28)
@@ -230,7 +288,12 @@ def set_single_panel_par():
     return fig_kws, ax_kws, title_kws, imshow_kws, cb_kws
 
 def set_multi_panel_par():
-    """Set default parameters for a multi panel plot."""
+    """Set default parameters for a multi panel plot.
+
+    Returns:
+        tuple: (figure keyword args, axes keyword args, title keyword args,
+                imshow keyword args, colorbar keyword args)
+    """
     ax_kws, imshow_kws = set_panel_par()
     fig_kws = dict(figsize=(20, 12))
     title_kws = dict(fontsize=20)
@@ -240,48 +303,9 @@ def set_multi_panel_par():
                   tick_params_kws=dict(labelsize=16))
     return fig_kws, ax_kws, title_kws, imshow_kws, cb_kws
 
-
-def make_image(val, err, xpos, ypos, binid, delta=0.25, val_no_measure=0,
-               snr_thresh=1):
-    """Make masked array of image.
-
-    Args:
-        val (array): Values.
-        err (array): Errors.
-        xpos (array): x-coordinates of bins.
-        ypos (array): y-coordinates of bins.
-        binid (array): Bin ID numbers.
-        delta (float): Half of the spaxel size in arcsec.
-        val_no_measure (float): Value that corresponds to no measurement.
-        snr_thresh (float): Signal-to-noise theshold below which is not
-           considered a measurement.
-
-    Returns:
-        tuple: (masked array of image,
-                tuple of (x, y) coordinates of bins with no measurement)
-    """
-    # create a masked array of the data
-    im = val[binid]
-    im[binid == -1] = np.nan
-
-    im_err = err[binid]
-    im_err[binid == -1] = np.nan
-    
-    no_measure = make_mask_no_measurement(im, im_err)
-    no_data = make_mask_no_data(im, no_measure)
-    image = np.ma.array(im, mask=no_data)
-    
-    # spaxels with data but no measurement
-    xpos_re = reorient(xpos)
-    ypos_re = reorient(ypos)
-    xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
-
-    return image, xy_nomeasure
-
-
-
 def ax_setup(fig=None, ax=None, fig_kws={}, facecolor='#EAEAF2'):
-    """
+    """Basic axes setup.
+
     Args:
         fig: Matplotlib plt.figure object. Use if creating subplot of a
             multi-panel plot. Defaults to None.
@@ -291,8 +315,7 @@ def ax_setup(fig=None, ax=None, fig_kws={}, facecolor='#EAEAF2'):
         facecolor (str): Axis facecolor. Defaults to '#EAEAF2'.
 
     Returns:
-        fig: Matplotlib plt.figure object.
-        ax: Matplotlib plt.figure axis object.
+        tuple: (plt.figure object, plt.figure axis object)
     """
     if 'seaborn' in sys.modules:
         if ax is None:
@@ -313,10 +336,58 @@ def ax_setup(fig=None, ax=None, fig_kws={}, facecolor='#EAEAF2'):
     ax.grid(False, which='both', axis='both')
     return fig, ax
 
+def make_map_title(analysis_id):
+    """Make a map title to identify galaxy and analysis run.
+
+    Args:
+        analysis_id (dict): Identifying info about galaxy and analysis run.
+
+    Returns:
+        str: Map title.
+    """
+    return '     '.join(('pid-ifu {plate}-{ifudesign}', 'manga-id {mangaid}',
+                        '{bintype}-{niter}')).format(**analysis_id)
+
+
+def make_big_axes(fig, axloc=[0.04, 0.05, 0.9, 0.88], xlabel=None, ylabel=None,
+                  labelsize=20, title_kws={}, mg_kws={}):
+    """Make a big axes for x- and y-labels and a large plot title.
+
+    Args:
+        fig: Matplotlib plt.figure object.
+        axloc (list): Specify [left, bottom, width, height] of axis. Defaults
+            to [0.04, 0.05, 0.9, 0.88].
+        xlabel: x-axis label. Defaults to None.
+        ylabel: y-axis label. Defaults to None.
+        labelsize (int): x- and y-axis labelsize. Defaults to 20.
+        title_kws (dict): Keyword args to pass to ax.set_title.
+        mg_kws (dict): MaNGA analysis ID keyword args to pass to
+            make_map_title.
+
+    Returns:
+        plt.figure axis object
+    """
+    # make axis without a frame or x and y ticks
+    bigAxes = fig.add_axes(axloc, frameon=False)
+    bigAxes.set_xticks([])
+    bigAxes.set_yticks([])
+
+    if xlabel:
+        bigAxes.set_xlabel(xlabel, fontsize=labelsize)
+    if ylabel:
+        bigAxes.set_ylabel(ylabel, fontsize=labelsize)
+
+    # set title
+    if mg_kws:
+        title_kws['label'] = make_map_title(mg_kws)
+    if 'label' in title_kws:
+        bigAxes.set_title(**title_kws)
+    return bigAxes
 
 def show_bin_num(binxrl, binyru, nbin, val, spaxel_size, ax, imshow_kws,
                  fontsize=6):
-    """
+    """Display bin number on map.
+
     Args:
         binxrl (array):
         binyru (array):
@@ -328,7 +399,7 @@ def show_bin_num(binxrl, binyru, nbin, val, spaxel_size, ax, imshow_kws,
         fontsize (int): Nominal font size. Defaults to 6.
     
     Returns:
-        axis object
+        plt.figure axis object
     """
     for i, (x, y, nb, v) in enumerate(zip(binxrl, binyru, nbin, val)):
         fontsize_tmp = set_bin_num_fontsize(fontsize, i, nb)
@@ -339,7 +410,7 @@ def show_bin_num(binxrl, binyru, nbin, val, spaxel_size, ax, imshow_kws,
     return ax
 
 def set_bin_num_color(value, imshow_kws):
-    """
+    """Set color of bin numbers to be inverse of bin color.
 
     Args:
         value (float): Map value for a bin.
@@ -361,6 +432,9 @@ def set_bin_num_fontsize(fontsize, number, nbin):
         fontsize (int): Nominal font size. Defaults to 7.
         number (int): Bin number.
         nbin (int): Number of bins 
+    
+    Returns:
+        int: fontsize
     """
     if (number >= 10) and (number < 100) and (nbin <= 2):
         fontsize_out = fontsize - 2
@@ -374,11 +448,10 @@ def set_bin_num_fontsize(fontsize, number, nbin):
         fontsize_out = fontsize + 2
     return fontsize_out
 
-
 def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
              fig_kws={}, ax_kws={}, title_kws={}, patch_kws={}, imshow_kws={},
              cb_kws={}, binnum_kws={}, bindot_args=()):
-    """Plot map.
+    """Make map.
 
     Args:
         image (masked array): Image to display.
@@ -399,8 +472,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
         bindot_args (tuple): x- and y-coordinates of bins.
 
     Returns:
-        tuple: (Matplotlib plt.figure object,
-                Matplotlib plt.figure axis object)
+        tuple: (plt.figure object, plt.figure axis object)
     """
     
     fig, ax = ax_setup(fig, ax, fig_kws=fig_kws, **ax_kws)
@@ -429,34 +501,26 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
 
     return fig, ax
 
-
-def make_map_title(file_kws):
-    return '     '.join(('pid-ifu {plate}-{ifudesign}', 'manga-id {mangaid}',
-                        '{bintype}-{niter}')).format(**file_kws)
-
-
-def make_big_axes(fig, axloc=[0.04, 0.05, 0.9, 0.88], xlabel=None, ylabel=None,
-                  labelsize=20, title_kws={}):
-    bigAxes = fig.add_axes(axloc, frameon=False)
-    bigAxes.set_xticks([])
-    bigAxes.set_yticks([])
-    bigAxes.set_xlabel(xlabel, fontsize=labelsize)
-    bigAxes.set_ylabel(ylabel, fontsize=labelsize)
-    if title_kws:
-        bigAxes.set_title(**title_kws)
-
 def plot_multi_map(all_panel_kws, patch_kws={}, fig_kws={}, mg_kws={}):
-    """
-    Plot multiple maps at once.
+    """Make multi-panel map plot.
+
+    Args:
+        all_panel_kws (dict): Collection of keyword args for each panel
+        patch_kws (dict): Keyword args to pass to ax.add_patch.
+        fig_kws (dict): Keyword args to pass to plt.figure.
+        mg_kws (dict): MaNGA analysis ID keyword args to pass to
+            make_map_title.
+
+    Returns:
+        tuple: (plt.figure object, plt.figure axis object)
     """
     fig = plt.figure(**fig_kws)
     if 'seaborn' in sys.modules:
         sns.set_context('poster', rc={'lines.linewidth': 2})
 
-    bigtitle_kws = dict(fontsize=20)
-    bigtitle_kws['label'] = make_map_title(mg_kws)
-    bigAxes = make_big_axes(fig, xlabel='arcsec', ylabel='arcsec',
-                            title_kws=bigtitle_kws)
+    bigax_kws = dict(xlabel='arcsec', ylabel='arcsec',
+                     title_kws=dict(fontsize=20), mg_kws=mg_kws)
+    bigAxes = make_big_axes(fig, **bigax_kws)
 
     n_ax = len(all_panel_kws)
     for i, panel_kws in enumerate(all_panel_kws):
@@ -480,4 +544,4 @@ def plot_multi_map(all_panel_kws, patch_kws={}, fig_kws={}, mg_kws={}):
         fig, ax = plot_map(fig=fig, ax=ax, patch_kws=patch_kws,
                            fig_kws=fig_kws, **panel_kws)
 
-
+    return fig, ax

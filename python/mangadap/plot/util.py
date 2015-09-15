@@ -18,7 +18,6 @@ def fitsrec_to_dataframe(recarr):
         dtmp[col] = recarr[col].byteswap().newbyteorder()
     return pd.DataFrame(dtmp, columns=cols)
 
-
 def read_line_names(dapf, ltype='emission'):
     """Read emission line or spectral index names.
     
@@ -66,7 +65,6 @@ def swap_byte(arr, columns=None):
     """
     return pd.DataFrame(arr.byteswap().newbyteorder(), columns=columns)
 
-
 def linear_combination(df, columns, coeffs):
     """Do a linear combination of columns in a DataFrame.
 
@@ -80,7 +78,6 @@ def linear_combination(df, columns, coeffs):
 
     """
     return (df[columns] * coeffs).sum(axis=1)
-
 
 def linear_combination_err(df, columns, coeffs):
     """Error propogation for a linear combination of columns in a DataFrame.
