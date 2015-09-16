@@ -1,3 +1,6 @@
+"""Methods for reading and manipulating config files.
+"""
+
 from __future__ import division, print_function, absolute_import
 
 import copy
@@ -11,6 +14,16 @@ except ImportError:
     from configparser import RawConfigParser
 
 def read_config(filename):
+    """Read in config file.
+
+    Parses comma-separated strings or multi-line strings as lists.
+
+    Args:
+        filename (str): Full path to file.
+
+    Returns:
+        dict
+    """
     config = RawConfigParser()
     config.read(filename)
     d = {}
@@ -32,11 +45,29 @@ def string_to_float(d):
     return d
 
 def specind_units(dapdata, si):
+    """Get units for spectral index measurements.
+
+    Args:
+        dapdata: dap.DAP object.
+        si (list): Spectral indices.
+    Returns:
+        Series
+    """
     si_tex = [plotdap.pretty_specind_units(dapdata.sipar.unit[s]) for s in si]
     return pd.Series(si_tex, index=si)
 
 def merge_dicts(d1, d2, sections=None):
-    """Append keys and values ."""
+    """Append keys and values from one dictionary into another.
+
+    Args:
+        d1 (dict): All keys and values from this dictionary will be in output.
+        d2 (dict): Config parser output dictionary (two-level dictionary)
+        sections (list): Top-level keys from d2 to merge into d1. Defaults to
+            None.
+
+    Returns:
+       dict
+    """
     out = copy.deepcopy(d1)
     if sections is None:
         sections = d2.keys()
@@ -46,9 +77,16 @@ def merge_dicts(d1, d2, sections=None):
     return out
 
 def cblabels_to_series(d):
-    """
+    """Convert colorbar labels to Series.
+
     If cblabels is a string, first convert it to a list of length
     len(columns). Then convert the list to a Series.
+    
+    Args:
+        d (dict): Config parser output dictionary.
+
+    Returns:
+        Series
     """
     if type(d['colorbar']['cblabels']) is str:
         labels = [d['colorbar']['cblabels'] for _ in d['data']['columns']]
@@ -58,6 +96,17 @@ def cblabels_to_series(d):
 
 
 def convert_config_dtypes(mp_kws, d, plottype=None, dapdata=None):
+    """Convert dtypes of config parser dictionary to useful forms.
+
+    Args:
+        mp_kws (dict): Generic make_plot keyword args dictionary.
+        d (dict): Config parser output dictionary.
+        plottype (str): Type of plot. Defaults to None.
+        dapdata: dap.DAP object. Defaults to None.
+
+    Returns:
+        dict
+    """
     columns = d['data']['columns']
     d['snr'] = string_to_float(d['snr'])
     d['data']['titles'] = pd.Series(d['data']['titles'], index=columns)
