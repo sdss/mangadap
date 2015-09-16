@@ -11,16 +11,20 @@ if sys.version > '3':
 
 #-----------------------------------------------------------------------
 from os import remove, environ
+import os.path
+import glob
+from subprocess import call
 from time import clock
 from mangadap.util.defaults import default_drp_version, default_dap_version
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
+from mangadap.util.defaults import default_dap_source, default_manga_fits_root
 #-----------------------------------------------------------------------
 
 def build_map_files(plt, ifu, mpl, output_path):
     dap_source = default_dap_source()
-    file_root = default_dap_file_root(plate, ifudesign, mode)
+    file_root = default_manga_fits_root(plt, ifu, 'CUBE')
         
-    scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_dube.py')
+    scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_cube.py')
 
     bintype = [ 'NONE', 'STON' ]
 
@@ -29,24 +33,35 @@ def build_map_files(plt, ifu, mpl, output_path):
         file_list = glob.glob(file_search_str)
         for f in file_list:
             bintype_index = f.find(bt)
-            ofile = '{0}_MAP-{1}'.format(f[:f.find('BIN')],f[bintype_index:])
-            indx = int(f[bintype_indx+4:bintype_indx+7])
-            # TODO: Make this a system call
-            print('{0} {1} {2} {3} {4} {5} {6} {7}\n\n'.format(scr, plate, ifudesign, bt, mpl,
-                                                               ofile, output_path, indx))
-
+            ofile = '{0}MAP-{1}'.format(f[:f.find('BIN')],f[bintype_index:])
+            indx = int(f[bintype_index+5:bintype_index+8])
+            print('CALLING:')
+            print('{0} {1} {2} {3} {4} -b {5} -i {6} -d {7}\n\n'.format(scr, plt, ifu, mpl, ofile,
+                                                                        bt, indx, output_path))
+            call([ scr, str(plt), str(ifu), str(mpl), ofile, '-b', bt, '-i', str(indx), '-d',
+                   output_path])
+            
 
 #-----------------------------------------------------------------------
 if __name__ == '__main__':
     t = clock()
 
-    if len(sys.argv) != 5:
-        print('Usage: build_map_files.py <plate> <ifudesign> <MPL-3 or MPL-4> <directory path>')
+    if len(sys.argv) != 4 and len(sys.argv) != 5:
+        print('Usage: build_map_files.py <plate> <ifudesign> <MPL-3 or MPL-4>')
+        print(' or')
+        print('       build_map_files.py <plate> <ifudesign> <MPL-3 or MPL-4> <directory path>')
         exit(1)
 
     plt = str(sys.argv[1])
     ifu = str(sys.argv[2])
     mpl = str(sys.argv[3])
+    if mpl == 'MPL-3':
+        mpl = 3
+    elif mpl == 'MPL-4':
+        mpl = 4
+    else:
+        raise KeyError('Must select MPL-3 or MPL-4')
+
     if len(sys.argv) == 5:
         output_path = str(sys.argv[4])
     else :

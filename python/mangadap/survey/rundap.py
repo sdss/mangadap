@@ -670,6 +670,11 @@ class rundap:
         :attr:`submit` is False, this is essentially a wrapper for
         :func:`prepare_for_analysis`.
 
+        .. todo::
+            - This algorithm is slow because it has to search through
+              the drpcomplete file each time to find the plate/ifudesign
+              combo.  Should make this more efficient.
+
         Args:
             drpfiles (list): The list of DRP file objects that define
                 the DRP fits files to analyze.
@@ -1176,14 +1181,13 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            pylist_path = os.path.join(dap_source, 'python', 'mangadap', 'plotting',
+            pylist_path = os.path.join(dap_source, 'python', 'mangadap', 'plot',
                                        'make_qa_file_list.py')
             file.write('python3 {0} {1} {2} {3}_files_to_plot.txt -overwrite \n'.format(pylist_path,
                        output_path, mode, mode))
             file.write('\n')
 
-            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plotting',
-                                       'plot_qa_wrap.py')
+            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
             file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
                        '-overwrite \n'.format(pyplot_path, output_path, mode))
             file.write('\n')

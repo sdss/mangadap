@@ -70,7 +70,7 @@ FUNCTION MDAP_SET_ELOFIT_COLS
                   'EW_EW', 'EWERR_EW', $
                   'KIN_FB', 'KINERR_FB', 'KINSTDE_FB', 'NKIN_FB', 'ELOMIT_FB', 'AMPL_FB', $
                   'AMPLERR_FB', 'IKIN_FB', 'IKINERR_FB', 'SINST_FB', 'FLUX_FB', 'FLUXERR_FB', $
-                  'FB_FB', 'FBERR_FB']
+                  'EW_FB', 'EWERR_FB']
 END
 FUNCTION MDAP_SET_SIPAR_COLS
         return, [ 'SINAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT' ]
