@@ -551,13 +551,42 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                val_no_measure=0, snr_thresh=1, mg_kws={}, patch_kws={},
                titles=None, cblabels=None, show_binnum=False,
                show_bindot=False):
-    """Make plot.
+    """Make single panel plots and multi-panel plot for set of measurements.
 
     Add options to save to file.
+
+    Args:
+       columns (list): Columns of values and errors DataFrames to plot. 
+       values: Either string that references an attribute from dapdata or an
+           array of values.
+       errors: Either string that references an attribute from dapdata or an
+           array of values.
+       extent (array): Extent (xmin, xmax, ymin, ymax) of map in arcsec.
+       xpos (array): x-coordinates of bins.
+       ypos (array): y-coordinates of bins.
+       binid (array): Bin ID numbers.
+       binxrl (array): Luminosity-weighted on-sky x-coordinates of the binned
+           spectra in arcsec.  
+       binyru (array): Luminosity-weighted on-sky y-coordinates of the binned
+           spectra in arcsec.  
+       nbin (array): Number of DRP-produced spectra in each bin. 
+       spaxel_size (float): Spaxel size in arcsec.
+       delta (float): Half of the spaxel size in arcsec.
+       dapdata: dap.DAP object. Defaults to None.
+       val_no_measure (float): Value that corresponds to no measurement.
+           Defaults to 0.
+       snr_thresh (float): Signal-to-noise threshold for displaying a bin on a
+           map. Defaults to 1.
+       mg_kws (dict): Keyword args with identifying information about the
+           galaxy and analysis run.
+       patch_kws (dict): Keyword args for drawing hatched regions.
+       titles (list): Plot title for each map. Defaults to None.
+       cblabels (list): Colorbar labels. Defaults to None.
+       show_binnum (bool): Show bin numbers. Defaults to False.
+       show_bindot (bool): Show bin dots. Defaults to False.
     """
     if type(values) is str:
-        values = getattr(dapdata, values)
-    
+        values = getattr(dapdata, values)    
     if type(errors) is str:
         errors = getattr(dapdata, errors)
 
@@ -573,25 +602,16 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     fig_kws, ax_kws, title_kws, imshow_kws, cb_kws = set_multi_panel_par()
     all_panel_kws = []
     for i, (im, xy, col) in enumerate(zip(images, xy_nomeasures, columns)):
-
         plot_title = titles[col]
-
-        try:
-            cblabel = cblabels[col]
-        except TypeError:
-            cblabel = cblabels
-        
+        cblabel = cblabels[col]
+        binnum_kws = {}
+        bindot_args = ()
         if show_binnum:
             binnum_kws = dict(binxrl=binxrl, binyru=binyru, nbin=nbin,
                               val=values[col].values, spaxel_size=spaxel_size,
                               imshow_kws=imshow_kws, fontsize=6)
-        else:
-            binnum_kws = {}
-    
         if show_bindot:
             bindot_args = (-binxrl, binyru)
-        else:
-            bindot_args = ()
     
         # DEBUGGING: only plot one map
         if i == 0:
