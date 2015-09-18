@@ -3,6 +3,7 @@
 
 from __future__ import division, print_function, absolute_import
 
+from os.path import join
 import sys
 import copy
 
@@ -236,7 +237,7 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
     try:
         ticks = MaxNLocator(n_ticks).tick_values(*cbrange)
     except AttributeError:
-        print('AttributeError: MaxNLocator instance has no attribute' +
+        print('AttributeError: MaxNLocator instance has no attribute'
               ' "tick_values" ')
         cb = fig.colorbar(mappable, cax)
     else:
@@ -371,20 +372,20 @@ def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
         plt.figure axis object
     """
     title_kws = util.none_to_empty_dict(title_kws)
-    mg_kws = util.none_to_empty_dict(title_kws)
+    mg_kws = util.none_to_empty_dict(mg_kws)
 
     # make axis without a frame or x and y ticks
     bigAxes = fig.add_axes(axloc, frameon=False)
     bigAxes.set_xticks([])
     bigAxes.set_yticks([])
 
-    if xlabel:
+    if xlabel is not None:
         bigAxes.set_xlabel(xlabel, fontsize=labelsize)
-    if ylabel:
+    if ylabel is not None:
         bigAxes.set_ylabel(ylabel, fontsize=labelsize)
 
     # set title
-    if mg_kws:
+    if mg_kws is not None:
         title_kws['label'] = make_map_title(mg_kws)
     if 'label' in title_kws:
         bigAxes.set_title(**title_kws)
@@ -600,9 +601,12 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
        show_binnum (bool): Show bin numbers. Defaults to False.
        show_bindot (bool): Show bin dots. Defaults to False.
     """
-    for item in (values, errors):
-        if isinstance(item, str):
-            item = getattr(dapdata, item)
+    if isinstance(values, str):
+        multiplot_name = copy.deepcopy(values)
+        values = getattr(dapdata, values)
+
+    if isinstance(errors, str):
+        errors = getattr(dapdata, errors)
 
     for item in (patch_kws, mg_kws):
         item = util.none_to_empty_dict(item)
@@ -641,6 +645,9 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                           title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
                           cb_kws=cb, binnum_kws=binnum_kws,
                           bindot_args=bindot_args)
+            path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+            plt.savefig(path, dpi=200)
+            print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         kwdicts = (ax_kws, title_kws, imshow_kws, cb_kws)
@@ -655,4 +662,9 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     # plot multi-panel maps
     ig = plot_multi_map(all_panel_kws=all_panel_kws, fig_kws=fig_kws,
                         patch_kws=patch_kws, mg_kws=mg_kws)
+    path = util.output_path(multiplot_name, dapdata.path_data, 'maps', mg_kws)
+    plt.savefig(path, dpi=200)
+    print(path.split('/')[-1])
+
+
 

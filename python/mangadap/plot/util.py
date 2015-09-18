@@ -1,5 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
+from os.path import join
+
 import numpy as np
 import pandas as pd
 
@@ -114,3 +116,20 @@ def none_to_empty_dict(x):
     if x is None:
         x = {}
     return x
+
+def output_path(name, path_data, plottype, mg_kws):
+    """Make plot output path and file name.
+
+    Args:
+        name (str): Plot name.
+        path_data (str): Path to parent directory of *plots/*.
+        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        mg_kws (dict): MaNGA galaxy and analysis information.
+
+    Returns:
+        str: Plot output path and file name.
+    """
+    filename = ('manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
+                '_{0}.png'.format(name, **mg_kws))
+    fullpath = join(path_data, 'plots', plottype, filename)
+    return fullpath

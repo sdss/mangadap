@@ -10,6 +10,8 @@ class DAP():
     """Container for information from DAP FITS file.
 
     Attributes:
+        path_data (str): Path to FITS file.
+
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
         header (astropy.io.fits.header.Header): Header of primary HDU.
@@ -221,6 +223,7 @@ class DAP():
     """
 
     def __init__(self, path_data, file_kws):
+        self.path_data = path_data
         self.read_fits(path_data, file_kws)
 
     def read_fits(self, path_data, file_kws):
