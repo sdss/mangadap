@@ -1,28 +1,15 @@
 #!/usr/bin/env python -W ignore::DeprecationWarning
 
-"""
-FILE
-    make_qa_file_list.py
-
-DESCRIPTION
-
-    Make a list of files that plot_qa_wrap.py will process.
+"""Make a list of files that plot_qa_wrap.py will process.
 
     Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]
 
-    ARGUMENTS:
-        path
-            Path to search for completed DAP files
-
-        mode
-            Mode ('CUBE' or 'RSS') of reductions to search for.
-
-        [output file name] 
-            File name with the list of DAP files; default is
-            qa_file_list.txt.  Written to 'path'.
-
-        [-overwrite]
-            Overwrite any existing output file.
+    Args:
+    path (str): Path to search for completed DAP files
+    mode (str): Mode ('CUBE' or 'RSS') of reductions to search for.
+    [output file name]: File name with the list of DAP files. Default is
+        'qa_file_list.txt'.  Written to *path*.
+    [-overwrite]: Overwrite any existing output file.
 
 REVISION HISTORY:
     26 Mar 2015 - Original implementation by B. Andrews
@@ -30,9 +17,7 @@ REVISION HISTORY:
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import division, print_function, absolute_import
 
 import os
 import sys
@@ -43,19 +28,21 @@ import numpy as np
 print()
 
 #----- Read in command line arguments -----
-try:    
+try:
     path_out = sys.argv[1]
 except:
-    raise Exception('Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]')
+    raise ValueError('Usage: python make_qa_file_list.py path mode [output ' +
+                     'file name] [-overwrite]')
 
 try:
     mode = sys.argv[2]
 except:
-    raise Exception('Usage: python make_qa_file_list.py path mode [output file name] [-overwrite]')
+    raise ValueError('Usage: python make_qa_file_list.py path mode [output ' +
+                     'file name] [-overwrite]')
 
 if mode != 'RSS' and mode != 'CUBE':
-    raise Exception('mode must be RSS or CUBE')
-    
+    raise ValueError('Mode must be RSS or CUBE.')
+
 try:
     if sys.argv[3][0] is not '-':
         file_list = sys.argv[3]
@@ -84,18 +71,18 @@ print('Path: %s\n' % path_out)
 #----- Read the file names -----
 search_string = path_out + '*LOG' + mode + '*BIN*fits'
 files_tmp = glob.glob(search_string)
-files_out = [ f.split('/')[-1] for f in files_tmp ]
+files_out = [f.split('/')[-1] for f in files_tmp]
 #------------------------------
 
 
 # #----- Read the file names -----
 # pid, ifudesign = path_out.split('/')[-3:-1]
 # file_stem = '-'.join(['manga', pid, ifudesign, 'LOG'])
-# 
+#
 # files_tmp0 = os.listdir(path_out)
 # files_tmp1 = np.array([it for it in files_tmp0 if file_stem in it])
-# 
-# 
+#
+#
 # exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp1])
 # ind_sort1 = np.argsort(exec_num)
 # files_tmp2 = files_tmp1[ind_sort1]
@@ -108,10 +95,10 @@ files_out = [ f.split('/')[-1] for f in files_tmp ]
 # #----- Read the file names -----
 # files_out = []
 # manga_pids = []
-# 
+#
 # pids_in = os.listdir(path_out)
 # pids = [it for it in pids_in if os.path.isdir(path_out + it)]
-# 
+#
 # # get the IFUs from each plate
 # for pid in pids:
 #     ifudesigns_in = os.listdir('/'.join([path_out, pid]))
@@ -119,14 +106,14 @@ files_out = [ f.split('/')[-1] for f in files_tmp ]
 #         if os.path.isdir('/'.join([path_out, pid, it]))]
 #     for ifudesign in ifudesigns:
 #         manga_pids.append('-'.join([pid, ifudesign]))
-# 
+#
 # # get the DAP output file names from each galaxy
 # for manga_pid in manga_pids:
 #     file_stem = '-'.join(['manga', manga_pid, 'LOG'])
 #     path_tmp = path_out + '/'.join(manga_pid.split('-') + [''])
 #     files_in_tmp = os.listdir(path_tmp)
 #     files_in = [it for it in files_in_tmp if os.path.isfile(path_tmp + it)]
-#     files_tmp0 = np.array([it for it in files_in 
+#     files_tmp0 = np.array([it for it in files_in
 #                           if it[:len(file_stem)] == file_stem])
 #     exec_num = np.array([it.split('.fits')[0][-3:] for it in files_tmp0])
 #     ind_sort1 = np.argsort(exec_num)
@@ -136,7 +123,7 @@ files_out = [ f.split('/')[-1] for f in files_tmp ]
 #     files = files_tmp1[ind_sort2]
 #     for it in files:
 #         files_out.append(it)
-# 
+#
 # #------------------------------
 
 
@@ -147,7 +134,6 @@ try:
 except OSError as e:
     if e.errno != errno.EEXIST:
         raise e
-    pass
 #-------------------------------------------
 
 

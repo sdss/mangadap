@@ -1,20 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
-import os
-from os.path import join
-import sys
-
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from astropy.io import fits
-
-from sdss.files import base_path
 
 from mangadap import dapfile
-
 import util
-
 
 class DAP():
     """Container for information from DAP FITS file.
@@ -30,7 +20,7 @@ class DAP():
             assignment, and bin weighting of each input spectrum from the DRP
             product being analyzed.
         bins (DataFrame): Location, area, S/N, number of spectra per bin, and
-            analysis flags of each bin. 
+            analysis flags of each bin.
 
         wave_obs (array): Observed wavelengths (in Angstroms) of binned
             spectra.
@@ -62,7 +52,7 @@ class DAP():
             (velocity and velocity dispersion in km/s) determined by the
             stellar-continuum (pPXF) analysis.
         stfit_rchi2 (array): Chi-square per degree of freedom for the best-fit
-            obtained by the stellar-continuum (pPXF) analysis. 
+            obtained by the stellar-continuum (pPXF) analysis.
 
         smsk (array): Flag that pixel was/was not (0/1) included in the
             stellar continuum fit.
@@ -92,11 +82,11 @@ class DAP():
         ivel_ew (DataFrame): Best-fitting velocity (in km/s) of individual
             lines determined from the emission-line-only fits obtained using
             Enci Wang's code. Any omitted lines (ELOMIT_EW=1) should be
-            ignored! 
+            ignored!
         ivelerr_ew (DataFrame): Best-fitting velocity errors (in km/s) of
             individual lines determined from the emission-line-only fits
             obtained using Enci Wang's code. Any omitted lines (ELOMIT_EW=1)
-            should be ignored! 
+            should be ignored!
         ivdisp_ew (DataFrame): Best-fitting velocity dispersion (in km/s) of
             individual lines determined from the emission-line-only fits
             obtained using Enci Wang's code. Any omitted lines (ELOMIT_EW=1)
@@ -104,26 +94,26 @@ class DAP():
         ivdisperr_ew (DataFrame): Best-fitting velocity dispersion errors (in
             km/s) of individual lines determined from the emission-line-only
             fits obtained using Enci Wang's code. Any omitted lines
-            (ELOMIT_EW=1) should be ignored! 
+            (ELOMIT_EW=1) should be ignored!
         sinst_ew (DataFrame): Interpolated spectral resolution (sigma in km/s)
             at the centroids of the fitted emission lines obtained using
             Enci Wang's code. Any omitted lines (ELOMIT_EW=1) should be
-            ignored! 
+            ignored!
         flux_ew (DataFrame): Best-fitting fluxes of the emission lines
             obtained by Enci Wang's code in the same flux units as the DRP
             spectra, integrated over wavelength. Any omitted lines
-            (ELOMIT_EW=1) should be ignored! 
+            (ELOMIT_EW=1) should be ignored!
         fluxerr_ew (DataFrame): Best-fitting flux errors of the emission lines
             obtained by Enci Wang's code in the same flux units as the DRP
             spectra, integrated over wavelength. Any omitted lines
-            (ELOMIT_EW=1) should be ignored! 
+            (ELOMIT_EW=1) should be ignored!
         ew_ew (DataFrame): Best-fitting equivalent widths (in angstroms) of
             the emission lines obtained by Enci Wang's code. Any omitted
             lines (ELOMIT_EW=1) should be ignored!
         ewerr_ew (DataFrame): Best-fitting equivalent width errors (in
             angstroms) of the emission lines obtained by Enci Wang's code. Any
             omitted lines (ELOMIT_EW=1) should be ignored!
-        
+
         kin_fb (DataFrame): Gas kinematics (velocity and velocity dispersion
             in km/s) based on Francesco Belfiore's code averaged over the valid
             individual measurements. Right now, the gas kinematics are only
@@ -147,11 +137,11 @@ class DAP():
         ivel_fb (DataFrame): Best-fitting velocity (in km/s) of individual
             lines determined from the emission-line-only fits obtained using
             Francesco Belfiore's code. Any omitted lines (ELOMIT_FB=1) should
-            be ignored! 
+            be ignored!
         ivelerr_fb (DataFrame): Best-fitting velocity errors (in km/s) of
             individual lines determined from the emission-line-only fits
             obtained using Francesco Belfiore's code. Any omitted lines
-            (ELOMIT_FB=1) should be ignored! 
+            (ELOMIT_FB=1) should be ignored!
         ivdisp_fb (DataFrame): Best-fitting velocity dispersion (in km/s) of
             individual lines determined from the emission-line-only fits
             obtained using Francesco Belfiore's code. Any omitted lines
@@ -159,30 +149,30 @@ class DAP():
         ivdisperr_fb (DataFrame): Best-fitting velocity dispersion errors (in
             km/s) of individual lines determined from the emission-line-only
             fits obtained using Francesco Belfiore's code. Any omitted lines
-            (ELOMIT_FB=1) should be ignored! 
+            (ELOMIT_FB=1) should be ignored!
         sinst_fb (DataFrame): Interpolated spectral resolution (sigma in km/s)
             at the centroids of the fitted emission lines obtained using
             Francesco Belfiore's code. Any omitted lines (ELOMIT_FB=1) should
-            be ignored! 
+            be ignored!
         flux_fb (DataFrame): Best-fitting fluxes of the emission lines
             obtained by Francesco Belfiore's code in the same flux units as
             the DRP spectra, integrated over wavelength. Any omitted lines
-            (ELOMIT_FB=1) should be ignored! 
+            (ELOMIT_FB=1) should be ignored!
         fluxerr_fb (DataFrame): Best-fitting flux errors of the emission lines
             obtained by Francesco Belfiore's code in the same flux units as
             the DRP spectra, integrated over wavelength. Any omitted lines
-            (ELOMIT_FB=1) should be ignored! 
+            (ELOMIT_FB=1) should be ignored!
         ew_fb (DataFrame): Best-fitting equivalent widths (in angstroms) of
             the emission lines obtained by Francesco Belfiore's code. Any
             omitted lines (ELOMIT_FB=1) should be ignored!
         ewerr_fb (DataFrame): Best-fitting equivalent width errors (in
             angstroms) of the emission lines obtained by Francesco Belfiore's
             code. Any omitted lines (ELOMIT_FB=1) should be ignored!
-        
+
         elomew (array): Best-fitting emission-line-only spectrum using
-            Enci Wang's code. 
+            Enci Wang's code.
         elomfb (array): Best-fitting emission-line-only spectrum using
-            Francesco Belfiore's code. 
+            Francesco Belfiore's code.
 
         siwave (array): Wavelength in angstrom of D spectral channels in the
             spectra that have had their resolution matched to the
@@ -212,7 +202,7 @@ class DAP():
             omitted from the analysis. The index will be omitted if any part
             of its unmasked wavelength range or that of the (unbroadened or
             broadened) optimal template (blueband start to redband end) falls
-            outside of the observed spectral range. 
+            outside of the observed spectral range.
         indx (DataFrame): The "corrected" spectral indices, where the
             corrections are for the LOSVD based on the difference between the
             indices measured using the unbroadened and broadened optimal
@@ -280,13 +270,13 @@ class DAP():
         """Read in DRPS extension."""
         drps_in = self.fits.read_hdu_data('DRPS')
         drps = util.fitsrec_to_dataframe(drps_in)
-        self.drps = self.lowercase_colnames(drps)
+        self.drps = util.lowercase_colnames(drps)
 
     def get_bins(self):
         """Read in BINS extension"""
         bins_in = self.fits.read_hdu_data('BINS')
         bins = util.fitsrec_to_dataframe(bins_in)
-        self.bins = self.lowercase_colnames(bins)
+        self.bins = util.lowercase_colnames(bins)
 
     def get_spectra(self):
         """Read in spectra.
@@ -304,8 +294,8 @@ class DAP():
         """Read in emission line parameters."""
         elpar_in = self.fits.read_hdu_data('ELPAR')
         elpar = util.fitsrec_to_dataframe(elpar_in)
-        self.elpar = self.lowercase_colnames(elpar)
-        self.elpar.elname = self.remove_hyphen(self.elpar.elname.values)
+        self.elpar = util.lowercase_colnames(elpar)
+        self.elpar.elname = util.remove_hyphen(self.elpar.elname.values)
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
@@ -333,8 +323,8 @@ class DAP():
         # Read in spectral index names
         elopar_in = self.fits.read_hdu_data('ELOPAR')
         self.elopar = util.fitsrec_to_dataframe(elopar_in)
-        self.elopar.ELNAME = self.remove_hyphen(self.elopar.ELNAME)
-        
+        self.elopar.ELNAME = util.remove_hyphen(self.elopar.ELNAME)
+
         self.get_elofit()
         self.get_elomew()
         self.get_elomfb()
@@ -342,12 +332,12 @@ class DAP():
     def get_elofit(self):
         """Read results from emission line fits into DataFrames."""
         elofit = self.fits.read_hdu_data('ELOFIT')
-    
+
         elonames = self.elopar.ELNAME.values
         elovel_kws = dict(dapf=self.fits, hdu='ELOFIT',
                           columns=['vel', 'vdisp'])
         elonames_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=elonames)
-        
+
         # EW: Enci Wang's fitting code
         self.kin_ew = util.read_vals(ext='KIN_EW', **elovel_kws)
         self.kinerr_ew = util.read_vals(ext='KINERR_EW', **elovel_kws)
@@ -359,16 +349,16 @@ class DAP():
         self.fluxerr_ew = util.read_vals(ext='FLUXERR_EW', **elonames_kws)
         self.ew_ew = util.read_vals(ext='EW_EW', **elonames_kws)
         self.ewerr_ew = util.read_vals(ext='EWERR_EW', **elonames_kws)
-        
+
         # split 3D arrays into two 2D DataFrames
         ikin_ew = elofit['IKIN_EW'].byteswap().newbyteorder()
         self.ivel_ew = pd.DataFrame(ikin_ew[:, 0], columns=elonames)
         self.ivdisp_ew = pd.DataFrame(ikin_ew[:, 1], columns=elonames)
-        
+
         ikinerr_ew = elofit['IKINERR_EW'].byteswap().newbyteorder()
         self.ivelerr_ew = pd.DataFrame(ikinerr_ew[:, 0], columns=elonames)
         self.ivdisperr_ew = pd.DataFrame(ikinerr_ew[:, 1], columns=elonames)
-        
+
         # FB: Francesco Belfiore's fitting code
         self.kin_fb = util.read_vals(ext='KIN_FB', **elovel_kws)
         self.kinerr_fb = util.read_vals(ext='KINERR_FB', **elovel_kws)
@@ -380,12 +370,12 @@ class DAP():
         self.fluxerr_fb = util.read_vals(ext='FLUXERR_FB', **elonames_kws)
         self.ew_fb = util.read_vals(ext='EW_FB', **elonames_kws)
         self.ewerr_fb = util.read_vals(ext='EWERR_FB', **elonames_kws)
-        
+
         # split 3D arrays into two 2D DataFrames
         ikin_fb = elofit['IKIN_FB'].byteswap().newbyteorder()
         self.ivel_fb = pd.DataFrame(ikin_fb[:, 0], columns=elonames)
         self.ivdisp_fb = pd.DataFrame(ikin_fb[:, 1], columns=elonames)
-        
+
         ikinerr_fb = elofit['IKINERR_FB'].byteswap().newbyteorder()
         self.ivelerr_fb = pd.DataFrame(ikinerr_fb[:, 0], columns=elonames)
         self.ivdisperr_fb = pd.DataFrame(ikinerr_fb[:, 1], columns=elonames)
@@ -438,10 +428,11 @@ class DAP():
         sipar_tmp = dict(unit=sipar_in['UNIT'].byteswap().newbyteorder())
         for band in ['passband', 'blueband', 'redband']:
             for i, bedge in enumerate(['start', 'end']):
-                sipar_tmp['_'.join((band, bedge))] = sipar_in[band][:, i].byteswap().newbyteorder()
+                sipar_tmp['_'.join((band, bedge))] = \
+                    sipar_in[band][:, i].byteswap().newbyteorder()
 
         cols = ['passband_start', 'passband_end', 'blueband_start',
-            'blueband_end', 'redband_start', 'redband_end', 'unit']
+                'blueband_end', 'redband_start', 'redband_end', 'unit']
         self.sipar = pd.DataFrame(sipar_tmp, columns=cols, index=self.sinames)
         #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
 
@@ -449,34 +440,34 @@ class DAP():
         """Read in spectral index info."""
         nm = self.sinames
         self.sindx = self.fits.read_hdu_data('SINDX')
-        self.siomit = util.swap_byte(self.sindx['SIOMIT'], columns=nm)
-        self.indx = util.swap_byte(self.sindx['INDX'], columns=nm)
-        self.indxerr = util.swap_byte(self.sindx['INDXERR'], columns=nm)
-        self.indx_otpl = util.swap_byte(self.sindx['INDX_OTPL'], columns=nm)
-        self.indx_botpl = util.swap_byte(self.sindx['INDX_BOTPL'], columns=nm)
-        
+        self.siomit = util.swap_byte_df(self.sindx['SIOMIT'], columns=nm)
+        self.indx = util.swap_byte_df(self.sindx['INDX'], columns=nm)
+        self.indxerr = util.swap_byte_df(self.sindx['INDXERR'], columns=nm)
+        self.indx_otpl = util.swap_byte_df(self.sindx['INDX_OTPL'],
+                                           columns=nm)
+        self.indx_botpl = util.swap_byte_df(self.sindx['INDX_BOTPL'],
+                                            columns=nm)
+
         # calculate combination indices
         self.calc_Fe5270_5335()
         self.calc_CalII0p86()
-        
+
     def calc_Fe5270_5335(self):
         """Combine Fe5270 and Fe5335 spectral indices."""
         columns = ['Fe5270', 'Fe5335']
         coeffs = np.array([0.72, 0.28])
-        self.indx['Fe5270_5335'] = util.linear_combination(self.indx, columns,
-                                                           coeffs)
-        self.indxerr['Fe5270_5335'] = util.linear_combination_err(
-                                        self.indxerr, columns, coeffs)
+        self.indx['Fe5270_5335'] = util.lin_comb(self.indx, columns, coeffs)
+        self.indxerr['Fe5270_5335'] = util.lin_comb_err(self.indxerr, columns,
+                                                        coeffs)
         self.sipar.loc['Fe5270_5335', 'unit'] = self.sipar.loc['Fe5270', 'unit']
 
     def calc_CalII0p86(self):
         """Combine CaII0p86A, CaII0p86B, and CaII0p86C spectral indices."""
         columns = ['CaII0p86A', 'CaII0p86B', 'CaII0p86C']
         coeffs = np.array([1/3., 1/3., 1/3.])
-        self.indx['CaII0p86'] = util.linear_combination(self.indx, columns,
-                                                        coeffs)
-        self.indxerr['CaII0p86'] = util.linear_combination_err(
-                                        self.indxerr, columns, coeffs)
+        self.indx['CaII0p86'] = util.lin_comb(self.indx, columns, coeffs)
+        self.indxerr['CaII0p86'] = util.lin_comb_err(self.indxerr, columns,
+                                                     coeffs)
         self.sipar.loc['CaII0p86', 'unit'] = self.sipar.loc['CaII0p86A', 'unit']
 
     def count_res_elements(self):
@@ -489,13 +480,3 @@ class DAP():
                 print('Sqrt of number of bins in cube is not an integer.')
             else:
                 self.sqrt_n_spaxels = int(self.sqrt_n_spaxels)
-
-    def remove_hyphen(self, names):
-        """Remove hyphens from emission line names."""
-        return [name.replace('-', '').strip() for name in names]
-
-    def lowercase_colnames(self, df):
-        """Convert column names of a DataFrame to lowercase."""
-        df.columns = [item.lower() for item in df.columns]
-        return df
-

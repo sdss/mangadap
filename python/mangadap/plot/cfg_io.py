@@ -81,7 +81,7 @@ def cblabels_to_series(d):
 
     If cblabels is a string, first convert it to a list of length
     len(columns). Then convert the list to a Series.
-    
+
     Args:
         d (dict): Config parser output dictionary.
 

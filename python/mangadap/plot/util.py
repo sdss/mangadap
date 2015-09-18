@@ -20,7 +20,7 @@ def fitsrec_to_dataframe(recarr):
 
 def read_line_names(dapf, ltype='emission'):
     """Read emission line or spectral index names.
-    
+
     Args:
         dapf (dapfile): dapfile instance.
         ltype (str): 'emission' or 'specind'
@@ -53,8 +53,13 @@ def read_vals(dapf, hdu, ext, columns):
     df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
     return df
 
-def swap_byte(arr, columns=None):
-    """Swap byte order from big-endian (FITS) to little-endian (pandas).
+def swap_byte(arr):
+    """Swap byte order from big-endian (FITS) to little-endian (pandas)."""
+    return arr.byteswap().newbyteorder()
+
+
+def swap_byte_df(arr, columns=None):
+    """Swap byte order and convert from array to DataFrame.
 
     Args:
         arr (array): Array read in from FITS files.
@@ -63,9 +68,10 @@ def swap_byte(arr, columns=None):
     Returns:
         DataFrame
     """
-    return pd.DataFrame(arr.byteswap().newbyteorder(), columns=columns)
+    arr_swapped = swap_byte(arr)
+    return pd.DataFrame(arr_swapped, columns=columns)
 
-def linear_combination(df, columns, coeffs):
+def lin_comb(df, columns, coeffs):
     """Do a linear combination of columns in a DataFrame.
 
     Args:
@@ -79,7 +85,7 @@ def linear_combination(df, columns, coeffs):
     """
     return (df[columns] * coeffs).sum(axis=1)
 
-def linear_combination_err(df, columns, coeffs):
+def lin_comb_err(df, columns, coeffs):
     """Error propogation for a linear combination of columns in a DataFrame.
 
     Args:
@@ -93,3 +99,18 @@ def linear_combination_err(df, columns, coeffs):
 
     """
     return np.sqrt((df[columns]**2. * coeffs**2.).sum(axis=1))
+
+def remove_hyphen(names):
+    """Remove hyphens from list of strings."""
+    return [name.replace('-', '').strip() for name in names]
+
+def lowercase_colnames(df):
+    """Convert column names of a DataFrame to lowercase."""
+    df.columns = [item.lower() for item in df.columns]
+    return df
+
+def none_to_empty_dict(x):
+    """If a variable is None, return an empty dictionary."""
+    if x is None:
+        x = {}
+    return x
