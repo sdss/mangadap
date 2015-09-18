@@ -39,9 +39,9 @@ def read_config(filename):
     return d
 
 def string_to_float(d):
-    """Convert values in a dictionary from strings to floats.""" 
+    """Convert values in a dictionary from strings to floats."""
     for k, v in d.items():
-        d[k]= float(v)
+        d[k] = float(v)
     return d
 
 def specind_units(dapdata, si):
@@ -88,12 +88,11 @@ def cblabels_to_series(d):
     Returns:
         Series
     """
-    if type(d['colorbar']['cblabels']) is str:
+    if isinstance(d['colorbar']['cblabels'], str):
         labels = [d['colorbar']['cblabels'] for _ in d['data']['columns']]
     else:
         labels = d['colorbar']['cblabels']
     return pd.Series(labels, index=d['data']['columns'])
-
 
 def convert_config_dtypes(mp_kws, d, plottype=None, dapdata=None):
     """Convert dtypes of config parser dictionary to useful forms.
