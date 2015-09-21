@@ -1,9 +1,12 @@
 from __future__ import division, print_function, absolute_import
 
+import os
 from os.path import join
 
 import numpy as np
 import pandas as pd
+
+from sdss.files import base_path
 
 def fitsrec_to_dataframe(recarr):
     """Convert astropy FITS_rec to pandas DataFrame.
@@ -133,3 +136,52 @@ def output_path(name, path_data, plottype, mg_kws):
                 '_{0}.png'.format(name, **mg_kws))
     fullpath = join(path_data, 'plots', plottype, filename)
     return fullpath
+
+
+
+# TODO read drp3qual from drpall file
+# drp class?
+
+import os
+from os.path import join
+from astropy.io import fits
+from sdss.files import base_path
+home = os.path.expanduser('~')
+bp = base_path(join(home, 'Dropbox', 'data', 'sdss_paths.ini'))
+drpall_file = bp.full('drpall')
+fin = fits.open(drpall_file)
+tbl = fin[1]
+plate = tbl.data['plate'].astype(str)
+ifudesign = tbl.data['ifudsgn']
+plateifu = 
+drp3qual = tbl.data['drp3qual']
+
+    def read_drpall(self):
+        """
+        Read in drpall FITS file.
+        """
+        try:
+            fin = fits.open(self.drpall_file)
+        except IOError:
+            raise Exception('Cannot find drpall file: %s' % self.drpall_file)
+        else:
+            tbl = fin[1]
+            plate = tbl.data['plate'].astype(str)
+            if 'ifudsgn' in tbl.data.names:
+                ifudesign = tbl.data['ifudsgn']
+            elif 'ifudesign' in tbl.data.names:
+                ifudesign = tbl.data['ifudesign']
+            else:
+                raise KeyError
+            manga_id = tbl.data['mangaid']
+            nsa_redshift = tbl.data['nsa_redshift']
+            nsa_vdisp = tbl.data['nsa_vdisp']
+
+            pid, ifu = self.manga_pid.split('-')
+
+            ind_tbl = np.where((plate == pid) & (ifudesign == ifu))[0]
+            if self.manga_id == 'n/a':
+                self.manga_id = manga_id[ind_tbl][0]
+            self.nsa_redshift = nsa_redshift[ind_tbl][0]
+            self.nsa_vdisp = nsa_vdisp[ind_tbl][0]
+
