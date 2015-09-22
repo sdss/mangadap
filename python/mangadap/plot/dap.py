@@ -260,6 +260,9 @@ class DAP():
         self.get_sipar()
         self.get_sindx()
 
+        self.calc_snr()
+        self.make_drpqa()
+
     def get_header(self):
         """Read header info"""
         self.header = self.fits.hdu[0].header
@@ -483,3 +486,146 @@ class DAP():
                 print('Sqrt of number of bins in cube is not an integer.')
             else:
                 self.sqrt_n_spaxels = int(self.sqrt_n_spaxels)
+
+
+
+
+
+
+# Undocumented below here -------------------------------------------------------------
+
+    def select_wave_range(self, lam_good=None):
+        """
+        Select wavelength range for calculating goodness-of-fit metrics.
+
+        Args:
+            lam_good (array, optional): Ranges of wavelengths over which to
+                evaluate goodness-of-fit. Default is::
+                    np.array([[3650, 4200],  # ends at 4230 sky line
+                              [4250, 5400],  # ends at 5575 sky line
+                              [5450, 6732]]) # ends at [SII]
+
+        """
+        if lam_good is None:
+            self.lam_good = np.array([[3650., 4200.],  # ends at 4230 sky line
+                                      [4250., 5400.],  # ends at 5575 sky line
+                                      [5450., 6732.]]) # ends at [SII]
+                                      #[8470., 8770.]]) # CaT
+        else:
+            self.lam_good = lam_good
+
+        n_regions = len(self.lam_good)
+        ind = []
+        for i in range(n_regions):
+            ind.append(np.where(
+                       (self.wave_rest > self.lam_good[i, 0]) & 
+                       (self.wave_rest < self.lam_good[i, 1])))
+        
+        ind0 = np.concatenate([ind[i][0] for i in range(n_regions)])
+        ind1 = np.concatenate([ind[i][1] for i in range(n_regions)])
+        ind_lexsort = np.lexsort((ind1, ind0))
+        self.ind_lam = (ind0[ind_lexsort], ind1[ind_lexsort])
+
+    def calc_metric_per_bin(self, metric_pix):
+        """
+        Calculate average goodness-of-fit metric (e.g., chisq or residuals) for
+        each binned spectrum while masking bad pixels.
+
+        Args:
+            metric_pix (array): goodness-of-fit metric at each spectral pixel
+
+        """
+        metric_bin = np.ones(self.n_bins) * np.nan
+        for i in range(self.n_bins):
+            indt = np.where(self.ind_lam[0] == i)[0]
+            metric_bin[i] = np.nanmean(metric_pix[i][self.ind_lam[1][indt]])
+        return metric_bin
+
+
+    def calc_chisq(self):
+        """
+        Calculate chisq at each spectral pixel and for each binned spectrum.
+        """
+        self.chisq_pix = (self.galaxy - self.smod)**2. * self.ivar
+        self.chisq_pix[np.where(self.smsk==1)] = np.nan
+        self.chisq_bin = self.calc_metric_per_bin(self.chisq_pix)
+
+
+    def calc_resid(self):
+        """
+        resid_pix: residual at every pixel
+        resid_bin: residual for each binned spectrum
+        """
+        self.resid_pix = self.galaxy - self.smod
+        self.resid_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_bin = self.calc_metric_per_bin(self.resid_pix)
+        
+
+    def calc_resid_mod(self):
+        """
+        resid_mod_pix: residual / model at every pixel
+        resid_mod_bin: residual / model for each binned spectrum
+        """
+        self.resid_mod_pix = (self.galaxy - self.smod) / self.smod
+        self.resid_mod_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_mod_bin = self.calc_metric_per_bin(self.resid_mod_pix)
+        
+
+    def calc_resid_err(self):
+        """
+        resid_err_pix: residual / error at every pixel
+        resid_err_bin: residual / error for each binned spectrum
+        """
+        self.resid_err_pix = (self.galaxy - self.smod) * np.sqrt(self.ivar)
+        self.resid_err_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_err_bin = self.calc_metric_per_bin(self.resid_err_pix)
+
+    def calc_resid_data(self):
+        """
+        resid_data_pix: residual / data at every pixel
+        resid_data_bin: residual / data for each binned spectrum
+        resid_data_bin_percent99: 99th percentile of resid_data_bin
+        resid_data_bin_percent68: 68th percentile of resid_data_bin
+        """
+        with np.errstate(divide='ignore', invalid='ignore'):
+            self.resid_data_pix = np.abs(self.galaxy - self.smod) / self.galaxy
+        self.resid_data_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_data_bin = self.calc_metric_per_bin(self.resid_data_pix)
+        self.resid_data_bin_percent99 = np.array(
+            [np.percentile(self.resid_data_pix[i][np.where(self.smsk[i]==0)], 99.)
+            for i in range(self.n_bins)])
+        self.resid_data_bin_percent68 = np.array(
+            [np.percentile(self.resid_data_pix[i][np.where(self.smsk[i]==0)], 68.)
+            for i in range(self.n_bins)])
+
+#------------------------------------------------------------------------------
+    def calc_snr(self):
+        """Calculate DRP signal-to-noise ratio."""
+        self.signal = np.zeros(self.n_bins)
+        self.noise = np.zeros(self.n_bins)
+        for i, b in enumerate(self.drps.binid.values):
+            if b > -1:
+                self.signal[b] = self.drps.signal.values[i]
+                self.noise[b] = self.drps.noise.values[i]
+        self.snr = self.signal / self.noise
+
+    def make_drpqa(self):
+        """Create DRP QA DataFrame."""
+        vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
+                    Ha6564=self.flux_ew.Ha6564.values,
+                    Hb4862=self.flux_ew.Hb4862.values,
+                    NII6585=self.flux_ew.NII6585.values)
+        errs = dict(signal=None, noise=None, snr=None,
+                    Ha6564=self.fluxerr_ew.Ha6564.values,
+                    Hb4862=self.fluxerr_ew.Hb4862.values,
+                    NII6585=self.fluxerr_ew.NII6585.values)
+        # Switch out the last two columns for 'resid99' & 'chisq'
+        columns=['signal', 'noise', 'snr', 'Ha6564', 'Hb4862', 'NII6585']
+        self.drpqa = pd.DataFrame(vals, columns=columns)
+        self.drpqa_err = pd.DataFrame(errs, columns=columns)
+
+
+# TODO
+# 1. deredshift (to calculate self.wave_rest)
+# 2. calculate resid99, chisq
+

@@ -1,4 +1,4 @@
-"""Methods for plotting DAP output.
+"""Functions for plotting DAP output.
 """
 
 from __future__ import division, print_function, absolute_import
@@ -102,11 +102,13 @@ def make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
             masked out).
     """
     no_measure = (data == val_no_measure)
+    print(err.shape)
+    if all([[i is None for i in x] for x in err]):
+        err = None
     if err is not None:
         no_measure[(err == 0.)] = True
         no_measure[(np.abs(data / err) < snr_thresh)] = True
     return no_measure
-
 
 def make_mask_no_data(data, mask_no_measurement):
     """Mask entries with no data or invalid measurements.
@@ -565,7 +567,7 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                binyru, nbin, spaxel_size, delta, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, patch_kws=None,
                titles=None, cblabels=None, show_binnum=False,
-               show_bindot=False):
+               show_bindot=False, savefig_single=True, savefig_multi=True):
     """Make single panel plots and multi-panel plot for set of measurements.
 
     Add options to save to file.
@@ -587,19 +589,21 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
        nbin (array): Number of DRP-produced spectra in each bin.
        spaxel_size (float): Spaxel size in arcsec.
        delta (float): Half of the spaxel size in arcsec.
-       dapdata: dap.DAP object. Defaults to None.
+       dapdata: dap.DAP object. Default is None.
        val_no_measure (float): Value that corresponds to no measurement.
-           Defaults to 0.
+           Default is 0.
        snr_thresh (float): Signal-to-noise threshold for displaying a bin on a
-           map. Defaults to 1.
+           map. Default is 1.
        mg_kws (dict): Keyword args with identifying information about the
            galaxy and analysis run. Default is None.
        patch_kws (dict): Keyword args for drawing hatched regions. Default is
            None.
-       titles (list): Plot title for each map. Defaults to None.
-       cblabels (list): Colorbar labels. Defaults to None.
-       show_binnum (bool): Show bin numbers. Defaults to False.
-       show_bindot (bool): Show bin dots. Defaults to False.
+       titles (list): Plot title for each map. Default is None.
+       cblabels (list): Colorbar labels. Default is None.
+       show_binnum (bool): Show bin numbers. Default is False.
+       show_bindot (bool): Show bin dots. Default is False.
+       savefig_single (bool): Save single panel plots. Default is True.
+       savefig_multi (bool): Save multi-panel plot. Default is True.
     """
     if isinstance(values, str):
         multiplot_name = copy.deepcopy(values)
@@ -614,6 +618,7 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     images = []
     xy_nomeasures = []
     for col in columns:
+        print(col)
         im, xy = make_image(val=values[col].values, err=errors[col].values,
                             xpos=xpos, ypos=ypos, binid=binid, delta=delta,
                             val_no_measure=val_no_measure,
@@ -645,9 +650,10 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                           title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
                           cb_kws=cb, binnum_kws=binnum_kws,
                           bindot_args=bindot_args)
-            path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
-            plt.savefig(path, dpi=200)
-            print(path.split('/')[-1])
+            if savefig_single:
+                path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+                plt.savefig(path, dpi=200)
+                print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         kwdicts = (ax_kws, title_kws, imshow_kws, cb_kws)
@@ -662,9 +668,8 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     # plot multi-panel maps
     ig = plot_multi_map(all_panel_kws=all_panel_kws, fig_kws=fig_kws,
                         patch_kws=patch_kws, mg_kws=mg_kws)
-    path = util.output_path(multiplot_name, dapdata.path_data, 'maps', mg_kws)
-    plt.savefig(path, dpi=200)
-    print(path.split('/')[-1])
-
-
+    if savefig_multi:
+        path = util.output_path(multiplot_name, dapdata.path_data, 'maps', mg_kws)
+        plt.savefig(path, dpi=200)
+        print(path.split('/')[-1])
 
