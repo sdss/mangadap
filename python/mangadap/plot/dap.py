@@ -28,10 +28,19 @@ class DAP():
             spectra.
         sres (array): Spectral resolution (lambda/delta lambda) in each
             wavelength channel.
-        flux_obs (array): Flux (same as DRP units) of the binned spectra.
-        ivar_obs (array): Inverse variance of the Nbins binned spectra.
+        flux_obs (array): Observed flux (same as DRP units) of the binned
+            spectra.
+        ivar_obs (array): Observed inverse variance of the binned spectra.
         mask (array): Bad pixel mask of the binned spectra (0 = good,
             1 = bad).
+        wave_rest (array): Rest frame wavelengths (in Angstroms) of binned
+            spectra.
+        wave_rest_med (array): Median rest frame wavelengths (in Angstroms).
+        dlam (array): Size of wavelength bins divided by wavelength (inverse
+            of resolution).
+        flux_rest (array): Rest frame flux of the binned spectra.
+        ivar_rest (array): Rest frame inverse variance of the binned spectra.
+        smod_rest (array): Rest frame stellar continuum fit.
 
         n_pix (int): Number of spectral channels.
         n_bins (int): Number of bins.
@@ -115,6 +124,13 @@ class DAP():
         ewerr_ew (DataFrame): Best-fitting equivalent width errors (in
             angstroms) of the emission lines obtained by Enci Wang's code. Any
             omitted lines (ELOMIT_EW=1) should be ignored!
+        elomew (array): Best-fitting emission-line-only spectrum using
+            Enci Wang's code.
+        fullfit_ew (array): Emission line fit from Enci Wang's code plus
+            stellar continuum fit to provide a full spectral fit.
+        fullfit_ew_rest (array): Emission line fit from Enci Wang's code plus
+            stellar continuum fit to provide a full spectral fit that has been
+            shifted into the rest frame.
 
         kin_fb (DataFrame): Gas kinematics (velocity and velocity dispersion
             in km/s) based on Francesco Belfiore's code averaged over the valid
@@ -170,9 +186,11 @@ class DAP():
         ewerr_fb (DataFrame): Best-fitting equivalent width errors (in
             angstroms) of the emission lines obtained by Francesco Belfiore's
             code. Any omitted lines (ELOMIT_FB=1) should be ignored!
-
-        elomew (array): Best-fitting emission-line-only spectrum using
-            Enci Wang's code.
+        fullfit_fb (array): Emission line fit from Francesco Belfiore's code
+            plus stellar continuum fit to provide a full spectral fit.
+        fullfit_fb_rest (array): Emission line fit from Francesco Belfiore's
+            code plus stellar continuum fit to provide a full spectral fit
+            that has been shifted into the rest frame.
         elomfb (array): Best-fitting emission-line-only spectrum using
             Francesco Belfiore's code.
 
@@ -220,6 +238,49 @@ class DAP():
             correct the indices measured for the object spectra for the effect
             of the LOSVD.
 
+        redshift (array): Redshift (stellar velocity / speed of light) for
+            each bin.
+        median_redshift (array): Median redshift for bins.
+
+        ind_lam_good (list): indices of wavelength array within each good
+            window for each bin
+
+        chisq_pix (array): Chisq of stellar continuum fit at every pixel.
+        chisq_bin (array): Average chisq of stellar continuum fit for each
+            binned spectrum.
+        resid_pix (array): Difference between observed flux and stellar
+            continuum fit at every pixel.
+        resid_bin (array): Average difference between observed flux and
+            stellar continuum fit for each binned spectrum.
+        resid_mod_pix: Difference between observed flux and stellar
+            continuum fit normalized to stellar continnum fit at every pixel.
+        resid_mod_bin: Average difference between observed flux and stellar
+            continuum fit normalized to stellar continnum fit for each binned
+            spectrum.
+        resid_err_pix: Difference between observed flux and stellar
+            continuum fit normalized to error in stellar continnum fit at
+            every pixel.
+        resid_err_bin: Average difference between observed flux and stellar
+            continuum fit normalized to error in stellar continnum fit for
+            each binned spectrum.
+
+        resid_data_pix (array): Difference between observed flux and stellar
+            continuum fit normalized to observed flux at every pixel.
+        resid_data_bin (array): Average difference between observed flux and
+            stellar continuum fit normalized to observed flux for each binned
+            spectrum.
+        resid_data_bin99 (array): 99th percentile of difference between
+            observed flux and stellar continuum fit normalized to observed
+            flux for each binned spectrum.
+        resid_data_bin68 (array): 68th percentile of difference between
+            observed flux and stellar continuum fit normalized to observed
+            flux for each binned spectrum.
+
+        signal (array): DRP signal but only for bins with signal.
+        noise (array): DRP noise but only for bins with signal.
+        snr (array): DRP signal-to-noise ratio for bins with non-zero signal.
+        drpqa (DataFrame): Values to display in DRP QA plots.
+        drpqa_err (DataFrame): Values to display in DRP QA plots.
     """
 
     def __init__(self, path_data, file_kws):
@@ -260,8 +321,17 @@ class DAP():
         self.get_sipar()
         self.get_sindx()
 
+        self.calc_fullfit()
+        self.deredshift_spectra()
+
+        self.select_wave_range()
+        self.calc_chisq()
+        self.calc_resid_data()
+
         self.calc_snr()
         self.make_drpqa()
+
+
 
     def get_header(self):
         """Read header info"""
@@ -292,9 +362,9 @@ class DAP():
         """
         self.wave_obs = self.fits.read_hdu_data('WAVE')
         self.sres = self.fits.read_hdu_data('SRES')
-        self.flux_obs = self.fits.read_hdu_data('FLUX')
-        self.ivar_obs = self.fits.read_hdu_data('IVAR')
-        self.mask = self.fits.read_hdu_data('MASK')
+        self.flux_obs = np.transpose(self.fits.read_hdu_data('FLUX'))
+        self.ivar_obs = np.transpose(self.fits.read_hdu_data('IVAR'))
+        self.mask = np.transpose(self.fits.read_hdu_data('MASK'))
 
     def get_elpar(self):
         """Read in emission line parameters."""
@@ -313,8 +383,8 @@ class DAP():
         self.stfit_kin = pd.DataFrame(stfit_in['KIN'], columns=kincols)
         self.stfit_kinerr = pd.DataFrame(stfit_in['KINERR'], columns=kincols)
         self.stfit_rchi2 = stfit_in['RCHI2']
-        self.smsk = self.fits.read_hdu_data('SMSK')
-        self.smod = self.fits.read_hdu_data('SMOD')
+        self.smsk = np.transpose(self.fits.read_hdu_data('SMSK'))
+        self.smod = np.transpose(self.fits.read_hdu_data('SMOD'))
 
     def get_stellar_gas_fit(self):
         """Read in star + gas fitting analysis."""
@@ -388,11 +458,11 @@ class DAP():
 
     def get_elomew(self):
         """Best fit emission-line-only spectrum (Enci Wang code)."""
-        self.elomew = self.fits.read_hdu_data('ELOMEW')
+        self.elomew = np.transpose(self.fits.read_hdu_data('ELOMEW'))
 
     def get_elomfb(self):
         """Best fit emission-line-only spectrum (Francesco Belfiore code)."""
-        self.elomfb = self.fits.read_hdu_data('ELOMFB')
+        self.elomfb = np.transpose(self.fits.read_hdu_data('ELOMFB'))
 
     def get_siwave(self):
         """Resolution matched wavelengths to spectral-index system."""
@@ -478,7 +548,7 @@ class DAP():
 
     def count_res_elements(self):
         """Count bins, spaxels, and pixels."""
-        self.n_pix, self.n_bins = self.flux_obs.shape
+        self.n_bins, self.n_pix = self.flux_obs.shape
         self.n_spaxels = len(self.drps)
         if self.fits.mode == 'CUBE':
             self.sqrt_n_spaxels = np.sqrt(self.n_spaxels)
@@ -492,8 +562,47 @@ class DAP():
 
 
 
-# Undocumented below here -------------------------------------------------------------
 
+    def calc_fullfit(self):
+        """Add emission line only and stellar continuum fits."""
+        self.fullfit_ew = self.elomew + self.smod
+        self.fullfit_fb = self.elomfb + self.smod
+
+    def deredshift_spectra(self):
+        """Deredshift spectra while conserving flux."""
+        v_light = 299792.458
+        self.redshift = self.stfit_kin['vel'].values / v_light
+        self.median_redshift = np.median(self.redshift)
+
+        # de-redshift spectra
+        wave_obs_grid = np.ones((self.n_bins, self.n_pix)) * self.wave_obs
+        self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
+        # FIX: what do we need dlam for?
+        self.wave_rest_med = self.wave_obs / (1. + self.median_redshift)
+        self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
+                     self.wave_rest_med[0])
+
+        # conserve flux by multiplying by (1+z)
+        self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
+        self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
+        self.smod_rest = (self.smod.T * (1. + self.redshift)).T
+        self.fullfit_ew_rest = (self.fullfit_ew.T * (1. + self.redshift)).T
+        self.fullfit_fb_rest = (self.fullfit_fb.T * (1. + self.redshift)).T
+
+    # FIX: read in nsa_redshift from DRPall file
+    #
+    # def deredshift_velocities(self):
+    #     """Shift velocities to systemic frame."""
+    # # put stellar velocity in systemic frame
+    # stvel_out = self.deredshift_velocities(self.stvel, self.stvelerr)
+    # self.stvel_rest, self.stvelerr_rest = stvel_out
+    # 
+    # # put emission line velocity in systemic frame
+    # emvel_ew_out = self.deredshift_velocities(self.emvel_ew, self.emvelerr_ew)
+    # self.emvel_rest_ew, self.emvelerr_rest_ew = emvel_ew_out
+
+
+    # FIX: make lam_good a kwarg param to pass into dap.DAP
     def select_wave_range(self, lam_good=None):
         """
         Select wavelength range for calculating goodness-of-fit metrics.
@@ -507,98 +616,98 @@ class DAP():
 
         """
         if lam_good is None:
-            self.lam_good = np.array([[3650., 4200.],  # ends at 4230 sky line
-                                      [4250., 5400.],  # ends at 5575 sky line
-                                      [5450., 6732.]]) # ends at [SII]
-                                      #[8470., 8770.]]) # CaT
-        else:
-            self.lam_good = lam_good
+            lam_good = np.array([[3650., 4200.],   # ends at 4230 sky line
+                                 [4250., 5400.],   # ends at 5575 sky line
+                                 [5450., 6732.]])  # ends at [SII]
+                                 #[8470., 8770.]]) # CaT
 
-        n_regions = len(self.lam_good)
-        ind = []
-        for i in range(n_regions):
-            ind.append(np.where(
-                       (self.wave_rest > self.lam_good[i, 0]) & 
-                       (self.wave_rest < self.lam_good[i, 1])))
-        
-        ind0 = np.concatenate([ind[i][0] for i in range(n_regions)])
-        ind1 = np.concatenate([ind[i][1] for i in range(n_regions)])
-        ind_lexsort = np.lexsort((ind1, ind0))
-        self.ind_lam = (ind0[ind_lexsort], ind1[ind_lexsort])
+        n_regions = len(lam_good)
+        self.ind_lam_good = []
+        for b in range(self.n_bins):
+            # find indices of wave_rest within each good window
+            tmp = []
+            for i in range(n_regions):
+                tmp.append(np.where((self.wave_rest[b] > lam_good[i, 0]) &
+                                    (self.wave_rest[b] < lam_good[i, 1]))[0])
+            ind_wave_tmp = np.concatenate([tmp[i] for i in range(n_regions)])
+            self.ind_lam_good.append(ind_wave_tmp)
 
     def calc_metric_per_bin(self, metric_pix):
-        """
-        Calculate average goodness-of-fit metric (e.g., chisq or residuals) for
-        each binned spectrum while masking bad pixels.
+        """Calculate average goodness-of-fit metric for binned spectra.
 
         Args:
-            metric_pix (array): goodness-of-fit metric at each spectral pixel
+            metric_pix (array): Goodness-of-fit metric at each spectral pixel.
 
+        Returns:
+            array: Average goodness-of-fit metric for each binned spectrum.
         """
         metric_bin = np.ones(self.n_bins) * np.nan
         for i in range(self.n_bins):
-            indt = np.where(self.ind_lam[0] == i)[0]
-            metric_bin[i] = np.nanmean(metric_pix[i][self.ind_lam[1][indt]])
+            metric_bin[i] = np.nanmean(metric_pix[i][self.ind_lam_good[i]])
         return metric_bin
 
-
     def calc_chisq(self):
-        """
+        """Calculate chisq of stellar continuum fit.
+
         Calculate chisq at each spectral pixel and for each binned spectrum.
         """
-        self.chisq_pix = (self.galaxy - self.smod)**2. * self.ivar
-        self.chisq_pix[np.where(self.smsk==1)] = np.nan
+        self.chisq_pix = (self.flux_obs - self.smod)**2. * self.ivar_obs
+        self.chisq_pix[self.smsk == 1] = np.nan
         self.chisq_bin = self.calc_metric_per_bin(self.chisq_pix)
 
-
     def calc_resid(self):
+        """Calculate residual of stellar continuum fit.
+
+        Calculate difference between observed flux and stellar continuum fit
+        at each spectral pixel and for each binned spectrum.
         """
-        resid_pix: residual at every pixel
-        resid_bin: residual for each binned spectrum
-        """
-        self.resid_pix = self.galaxy - self.smod
-        self.resid_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_pix = self.flux_obs - self.smod
+        self.resid_pix[self.smsk == 1] = np.nan
         self.resid_bin = self.calc_metric_per_bin(self.resid_pix)
-        
 
     def calc_resid_mod(self):
+        """Calculate residual of stellar continuum fit normalized to fit.
+
+        Calculate difference between observed flux and stellar continuum fit
+        normalized to stellar continnum fit at each spectral pixel and for
+        each binned spectrum.
         """
-        resid_mod_pix: residual / model at every pixel
-        resid_mod_bin: residual / model for each binned spectrum
-        """
-        self.resid_mod_pix = (self.galaxy - self.smod) / self.smod
-        self.resid_mod_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_mod_pix = (self.flux_obs - self.smod) / self.smod
+        self.resid_mod_pix[self.smsk == 1] = np.nan
         self.resid_mod_bin = self.calc_metric_per_bin(self.resid_mod_pix)
-        
 
     def calc_resid_err(self):
+        """Calculate residual of stellar continuum fit normalized to fit error.
+
+        Calculate difference between observed flux and stellar continuum fit
+        normalized to error in stellar continnum fit at each spectral pixel
+        and for each binned spectrum.
         """
-        resid_err_pix: residual / error at every pixel
-        resid_err_bin: residual / error for each binned spectrum
-        """
-        self.resid_err_pix = (self.galaxy - self.smod) * np.sqrt(self.ivar)
-        self.resid_err_pix[np.where(self.smsk==1)] = np.nan
+        self.resid_err_pix = (self.flux_obs - self.smod) * np.sqrt(self.ivar)
+        self.resid_err_pix[self.smsk == 1] = np.nan
         self.resid_err_bin = self.calc_metric_per_bin(self.resid_err_pix)
 
     def calc_resid_data(self):
-        """
-        resid_data_pix: residual / data at every pixel
-        resid_data_bin: residual / data for each binned spectrum
-        resid_data_bin_percent99: 99th percentile of resid_data_bin
-        resid_data_bin_percent68: 68th percentile of resid_data_bin
+        """Calculate residual of stellar cont fit normalized to observed flux.
+
+
+        Calculate difference between observed flux and stellar continuum fit
+        normalized to eobserve flux at each spectral pixel and for each binned
+        spectrum. Also calculate the 99th and 68th percentiles of the residual
+        relative to the observed flux.
         """
         with np.errstate(divide='ignore', invalid='ignore'):
-            self.resid_data_pix = np.abs(self.galaxy - self.smod) / self.galaxy
-        self.resid_data_pix[np.where(self.smsk==1)] = np.nan
+            self.resid_data_pix = (np.abs(self.flux_obs - self.smod) /
+                                   self.flux_obs)
+        self.resid_data_pix[self.smsk == 1] = np.nan
         self.resid_data_bin = self.calc_metric_per_bin(self.resid_data_pix)
-        self.resid_data_bin_percent99 = np.array(
-            [np.percentile(self.resid_data_pix[i][np.where(self.smsk[i]==0)], 99.)
-            for i in range(self.n_bins)])
-        self.resid_data_bin_percent68 = np.array(
-            [np.percentile(self.resid_data_pix[i][np.where(self.smsk[i]==0)], 68.)
-            for i in range(self.n_bins)])
+        self.resid_data_bin99 = np.array(
+            [np.percentile(self.resid_data_pix[i][self.smsk[i] == 0], 99.)
+             for i in range(self.n_bins)])
+        self.resid_data_bin68 = np.array(
+            [np.percentile(self.resid_data_pix[i][self.smsk[i] == 0], 68.)
+             for i in range(self.n_bins)])
 
-#------------------------------------------------------------------------------
     def calc_snr(self):
         """Calculate DRP signal-to-noise ratio."""
         self.signal = np.zeros(self.n_bins)
@@ -613,19 +722,16 @@ class DAP():
         """Create DRP QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
-                    Hb4862=self.flux_ew.Hb4862.values,
-                    NII6585=self.flux_ew.NII6585.values)
+                    resid_data_bin99=self.resid_data_bin99,
+                    chisq_bin=self.chisq_bin)
         errs = dict(signal=None, noise=None, snr=None,
                     Ha6564=self.fluxerr_ew.Ha6564.values,
-                    Hb4862=self.fluxerr_ew.Hb4862.values,
-                    NII6585=self.fluxerr_ew.NII6585.values)
-        # Switch out the last two columns for 'resid99' & 'chisq'
-        columns=['signal', 'noise', 'snr', 'Ha6564', 'Hb4862', 'NII6585']
+                    resid_data_bin99=None, chisq_bin=None)
+        columns = ['signal', 'noise', 'snr', 'Ha6564', 'resid_data_bin99',
+                   'chisq_bin']
         self.drpqa = pd.DataFrame(vals, columns=columns)
         self.drpqa_err = pd.DataFrame(errs, columns=columns)
 
 
 # TODO
-# 1. deredshift (to calculate self.wave_rest)
-# 2. calculate resid99, chisq
-
+# 1. create DRPQA web page

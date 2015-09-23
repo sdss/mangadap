@@ -102,7 +102,6 @@ def make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
             masked out).
     """
     no_measure = (data == val_no_measure)
-    print(err.shape)
     if all([[i is None for i in x] for x in err]):
         err = None
     if err is not None:
@@ -618,7 +617,6 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     images = []
     xy_nomeasures = []
     for col in columns:
-        print(col)
         im, xy = make_image(val=values[col].values, err=errors[col].values,
                             xpos=xpos, ypos=ypos, binid=binid, delta=delta,
                             val_no_measure=val_no_measure,
@@ -641,19 +639,20 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
             bindot_args = (-binxrl, binyru)
 
         # DEBUGGING: only plot one map
-        if i == 0:
-            # plot single panel maps
-            fg, axs, tt, iw, cb = set_single_panel_par()
-            tt['label'] = plot_title
-            cb['label_kws']['label'] = cblabel
-            ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
-                          title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
-                          cb_kws=cb, binnum_kws=binnum_kws,
-                          bindot_args=bindot_args)
-            if savefig_single:
-                path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
-                plt.savefig(path, dpi=200)
-                print(path.split('/')[-1])
+        # if i == 0:
+
+        # plot single panel maps
+        fg, axs, tt, iw, cb = set_single_panel_par()
+        tt['label'] = plot_title
+        cb['label_kws']['label'] = cblabel
+        ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
+                      title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
+                      cb_kws=cb, binnum_kws=binnum_kws,
+                      bindot_args=bindot_args)
+        if savefig_single:
+            path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+            plt.savefig(path, dpi=200)
+            print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         kwdicts = (ax_kws, title_kws, imshow_kws, cb_kws)
@@ -669,7 +668,8 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     ig = plot_multi_map(all_panel_kws=all_panel_kws, fig_kws=fig_kws,
                         patch_kws=patch_kws, mg_kws=mg_kws)
     if savefig_multi:
-        path = util.output_path(multiplot_name, dapdata.path_data, 'maps', mg_kws)
+        path = util.output_path(multiplot_name, dapdata.path_data, 'maps',
+                                mg_kws)
         plt.savefig(path, dpi=200)
         print(path.split('/')[-1])
 
