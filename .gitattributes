@@ -2627,6 +2627,7 @@ python/mangadap/plot/__init__.py -text
 python/mangadap/plot/cfg_io.py -text
 python/mangadap/plot/conf.py -text
 python/mangadap/plot/dap.py -text
+python/mangadap/plot/drp3qual.py -text
 python/mangadap/plot/index.rst -text
 python/mangadap/plot/make_qa_file_list.py -text
 python/mangadap/plot/plot_map_wrap.py -text
