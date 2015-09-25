@@ -1,10 +1,14 @@
 from __future__ import division, print_function, absolute_import
 
+import os
 from os.path import join
 
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
 
 from sdss.files import base_path
 
@@ -137,6 +141,57 @@ def output_path(name, path_data, plottype, mg_kws):
     fullpath = join(path_data, 'plots', plottype, filename)
     return fullpath
 
+def reverse_cmap(x):
+    """Reverse colormap."""
+    def out(y):
+        return x(1. - y)
+    return out
+
+def linear_Lab():
+    """Make linear Lab color map.
+
+    Returns:
+        tuple: colormap and reversed colormap
+    """
+    LinL_file = join(os.environ['MANGADAP_DIR'], 'python', 'mangadap',
+                 'plot', 'Linear_L_0-1.csv')
+    LinL = np.loadtxt(LinL_file, delimiter=',')
+
+    b3 = LinL[:, 2] # value of blue at sample n
+    b2 = LinL[:, 2] # value of blue at sample n
+    b1 = np.linspace(0, 1, len(b2)) # position of sample n - ranges from 0 to 1
+    
+    # setting up columns for list
+    g3 = LinL[:, 1]
+    g2 = LinL[:, 1]
+    g1 = np.linspace(0, 1, len(g2))
+    
+    r3 = LinL[:, 0]
+    r2 = LinL[:, 0]
+    r1 = np.linspace(0, 1, len(r2))
+    
+    # creating list
+    R = zip(r1, r2, r3)
+    G = zip(g1, g2, g3)
+    B = zip(b1, b2, b3)
+    
+    # transposing list
+    RGB = zip(R, G, B)
+    rgb = zip(*RGB)
+    
+    # creating dictionary
+    k = ['red', 'green', 'blue']
+    LinearL = dict(zip(k, rgb)) # makes a dictionary from 2 lists
+
+    LinearL_r = {}
+    for k in LinearL:
+        LinearL_r[k] = reverse_cmap(LinearL[k])
+
+    cmap = LinearSegmentedColormap('linearL', LinearL)
+    cmap_r = LinearSegmentedColormap('linearL_r', LinearL_r)
+
+    return (cmap, cmap_r)
+
 def read_drpall(paths_cfg):
     """Read DRPall file.
 
@@ -152,4 +207,6 @@ def read_drpall(paths_cfg):
     drpall = fin[1].data
     fin.close()
     return drpall
+
+
 

@@ -269,20 +269,32 @@ def pretty_specind_units(units):
         raise ValueError('Unknown spectral index units.')
     return cblabel
 
-def set_panel_par():
-    """Set default plot parameters."""
-    ax_kws = dict(facecolor='#A8A8A8')
-    imshow_kws = dict(cmap=cm.Blues_r) # cm.RdBu
-    return ax_kws, imshow_kws
+def set_cmaps(cmaps, n_plots):
+    if cmaps is None:
+        try:
+            cmap, cmap_r = util.linear_Lab() 
+        except IOError:
+            cmap = cm.Blues_r
+        cmaps = [cmap for _ in range(n_plots)]
 
-def set_single_panel_par():
+    if len(cmaps) == 1:
+        print('here3')
+        cmaps = [cmaps[0] for _ in range(n_plots)]
+
+    return cmaps
+
+def set_single_panel_par(cmap):
     """Set default parameters for a single panel plot.
+
+    Args:
+        cmap (list): Colormap.
 
     Returns:
         tuple: (figure keyword args, axes keyword args, title keyword args,
                 imshow keyword args, colorbar keyword args)
     """
-    ax_kws, imshow_kws = set_panel_par()
+    ax_kws = dict(facecolor='#A8A8A8')
+    imshow_kws = dict(cmap=set_cmap(cmap))
     fig_kws = dict(figsize=(10, 8))
     title_kws = dict(fontsize=28)
     cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
@@ -296,15 +308,15 @@ def set_multi_panel_par():
 
     Returns:
         tuple: (figure keyword args, axes keyword args, title keyword args,
-                imshow keyword args, colorbar keyword args)
+                colorbar keyword args)
     """
-    ax_kws, imshow_kws = set_panel_par()
+    ax_kws = dict(facecolor='#A8A8A8')
     fig_kws = dict(figsize=(20, 12))
     title_kws = dict(fontsize=20)
     cb_kws = dict(cbrange=None, sigclip=3, symmetric=False,
                   label_kws=dict(label=None, size=16),
                   tick_params_kws=dict(labelsize=16))
-    return fig_kws, ax_kws, title_kws, imshow_kws, cb_kws
+    return fig_kws, ax_kws, title_kws, cb_kws
 
 def ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
     """Basic axes setup.
@@ -565,7 +577,7 @@ def plot_multi_map(all_panel_kws, patch_kws=None, fig_kws=None, mg_kws=None):
 def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                binyru, nbin, spaxel_size, delta, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, patch_kws=None,
-               titles=None, cblabels=None, show_binnum=False,
+               titles=None, cblabels=None, cmaps=None, show_binnum=False,
                show_bindot=False, savefig_single=True, savefig_multi=True):
     """Make single panel plots and multi-panel plot for set of measurements.
 
@@ -599,6 +611,7 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
            None.
        titles (list): Plot title for each map. Default is None.
        cblabels (list): Colorbar labels. Default is None.
+       cmaps (list): Colormaps. Default is None.
        show_binnum (bool): Show bin numbers. Default is False.
        show_bindot (bool): Show bin dots. Default is False.
        savefig_single (bool): Save single panel plots. Default is True.
@@ -624,9 +637,12 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
         images.append(im)
         xy_nomeasures.append(xy)
 
-    fig_kws, ax_kws, title_kws, imshow_kws, cb_kws = set_multi_panel_par()
+    cmaps = set_cmaps(cmaps, len(columns))
+
+    fig_kws, ax_kws, title_kws, cb_kws = set_multi_panel_par()
     all_panel_kws = []
-    for i, (im, xy, col) in enumerate(zip(images, xy_nomeasures, columns)):
+    for i, (im, xy, col, cmap) in enumerate(zip(images, xy_nomeasures,
+                                                columns, cmaps)):
         plot_title = titles[col]
         cblabel = cblabels[col]
         binnum_kws = {}
@@ -639,20 +655,19 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
             bindot_args = (-binxrl, binyru)
 
         # DEBUGGING: only plot one map
-        # if i == 0:
-
-        # plot single panel maps
-        fg, axs, tt, iw, cb = set_single_panel_par()
-        tt['label'] = plot_title
-        cb['label_kws']['label'] = cblabel
-        ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
-                      title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
-                      cb_kws=cb, binnum_kws=binnum_kws,
-                      bindot_args=bindot_args)
-        if savefig_single:
-            path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
-            plt.savefig(path, dpi=200)
-            print(path.split('/')[-1])
+        if i == 0:
+            # plot single panel maps
+            fg, axs, tt, iw, cb = set_single_panel_par(cmap=cmap)
+            tt['label'] = plot_title
+            cb['label_kws']['label'] = cblabel
+            ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
+                          title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
+                          cb_kws=cb, binnum_kws=binnum_kws,
+                          bindot_args=bindot_args)
+            if savefig_single:
+                path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+                plt.savefig(path, dpi=200)
+                print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         kwdicts = (ax_kws, title_kws, imshow_kws, cb_kws)

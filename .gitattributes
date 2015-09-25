@@ -2627,6 +2627,11 @@ python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
 python/mangadap/plot/cfg_io.py -text
 python/mangadap/plot/conf.py -text
+python/mangadap/plot/config/flux_ew.ini -text
+python/mangadap/plot/config/flux_fb.ini -text
+python/mangadap/plot/config/sdss_paths.ini -text
+python/mangadap/plot/config/snr.ini -text
+python/mangadap/plot/config/specind.ini -text
 python/mangadap/plot/dap.py -text
 python/mangadap/plot/drp3qual.py -text
 python/mangadap/plot/index.rst -text
@@ -2669,8 +2674,10 @@ python/mangadap/util/par.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
+python/mangadap/www/__init__.py -text
 python/mangadap/www/make_dapqa.py -text
 python/mangadap/www/table_data.py -text
+python/mangadap/www/table_drpqa_mpl4.py -text
 python/mangadap/www/templates/maps.jinja2 -text
 scripts/mdap_environment.bash -text
 scripts/mdap_minimal_bashrc.bash -text
