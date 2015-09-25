@@ -178,6 +178,9 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
     if zmax is None:
         zmax = numpy.max(z)
 
+    if cmap is None:
+        cmap = 'coolwarm'
+
 #    print('raveling')
 
     x, y, z = map(numpy.ravel, [x, y, z])
@@ -191,14 +194,14 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
                                           fill_value=fill_value, imshow_prep=True)
 
 #        print('made pixelized image')
-        cs = ax.imshow(img, interpolation='nearest', cmap='coolwarm', vmin=zmin,
+        cs = ax.imshow(img, interpolation='nearest', cmap=cmap, vmin=zmin,
                        vmax=zmax, extent=ext, origin='lower')
 #        print('output imshow')
        
     # Provide an interpolated map
     else:
         levels = numpy.linspace(zmin, zmax, ncolors) 
-        cs = ax.tricontourf(x, y, z.clip(zmin, zmax), levels=levels, cmap='coolwarm')
+        cs = ax.tricontourf(x, y, z.clip(zmin, zmax), levels=levels, cmap=cmap)
 
     ax.axis('image')  # Equal axes and no rescaling
     ax.minorticks_on()
@@ -220,7 +223,7 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
 
     if fixpdf:  # remove white contour lines in PDF at expense of larger file size
         ax.tricontour(x, y, z.clip(zmin, zmax), levels=levels, zorder=0,
-                      cmap='coolwarm')
+                      cmap=cmap)
 
     if dots:
         ax.plot(x, y, '.k', markersize=kwargs.get("markersize", 3))

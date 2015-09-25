@@ -65,12 +65,12 @@ FUNCTION MDAP_SET_ELOPAR_COLS
         return, [ 'ELNAME', 'RESTWAVE' ]
 END
 FUNCTION MDAP_SET_ELOFIT_COLS
-        return, [ 'KIN_EW', 'KINERR_EW', 'KINSTDE_EW', 'NKIN_EW', 'ELOMIT_EW', 'AMPL_EW', $
-                  'AMPLERR_EW', 'IKIN_EW', 'IKINERR_EW', 'SINST_EW', 'FLUX_EW', 'FLUXERR_EW', $
-                  'EW_EW', 'EWERR_EW', $
-                  'KIN_FB', 'KINERR_FB', 'KINSTDE_FB', 'NKIN_FB', 'ELOMIT_FB', 'AMPL_FB', $
-                  'AMPLERR_FB', 'IKIN_FB', 'IKINERR_FB', 'SINST_FB', 'FLUX_FB', 'FLUXERR_FB', $
-                  'EW_FB', 'EWERR_FB']
+        return, [ 'KIN_EW', 'KINERR_EW', 'KINSTDE_EW', 'NKIN_EW', 'ELOMIT_EW', 'WIN_EW', $
+                  'BASE_EW', 'BASEERR_EW', 'AMPL_EW', 'AMPLERR_EW', 'IKIN_EW', 'IKINERR_EW', $
+                  'SINST_EW', 'FLUX_EW', 'FLUXERR_EW', 'EW_EW', 'EWERR_EW', $
+                  'KIN_FB', 'KINERR_FB', 'KINSTDE_FB', 'NKIN_FB', 'ELOMIT_FB', 'WIN_FB', $
+                  'BASE_FB', 'BASEERR_FB', 'AMPL_FB', 'AMPLERR_FB', 'IKIN_FB', 'IKINERR_FB', $
+                  'SINST_FB', 'FLUX_FB', 'FLUXERR_FB', 'EW_FB', 'EWERR_FB']
 END
 FUNCTION MDAP_SET_SIPAR_COLS
         return, [ 'SINAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT' ]

@@ -216,7 +216,8 @@ PRO MANGA_DAP, $
                              sres, spaxel_dx, spaxel_dy, bskyx, bskyy, type=mode, $
                              nolog=nolog, log_file_unit=log_file_unit
 ;                            instrumental_fwhm_file=instrumental_fwhm_file, $
-        
+
+
 ;       get_lun, unit
 ;       print, unit
 ;       free_lun, unit
@@ -328,6 +329,14 @@ PRO MANGA_DAP, $
             MDAP_DRP_SNR_BLOCK, manga_dap_version, execution_plan[i], perform_block, header, wave, $
                                 flux, ivar, mask, gflag, signal, noise, nolog=nolog, $
                                 log_file_unit=log_file_unit, quiet=quiet
+
+
+;            ston = signal/noise
+;            srt = sort(ston)
+;            plot, wave, flux[srt[n_elements(srt)-1],*]
+;            oplot, wave, 1.0/sqrt(ivar[srt[n_elements(srt)-1],*]), color=200
+;            stop
+
 ;           get_lun, unit
 ;           print, unit
 ;           free_lun, unit
@@ -354,6 +363,12 @@ PRO MANGA_DAP, $
                                 bin_indx, bin_flux, bin_ivar, bin_mask, xbin, ybin, bin_rad, $
                                 bin_area, bin_ston, nbin, plot=plot, nolog=nolog, $
                                 log_file_unit=log_file_unit, quiet=quiet, /to_surface_brightness
+
+;            srt = sort(bin_ston)
+;            plot, wave, bin_flux[srt[n_elements(srt)-1],*]
+;            oplot, wave, 1.0/sqrt(bin_ivar[srt[n_elements(srt)-1],*]), color=200
+;            plot, wave, 1.0/sqrt(bin_ivar[srt[n_elements(srt)-1],*])
+;            stop
 
 ;           get_lun, unit
 ;           print, unit
@@ -388,11 +403,13 @@ PRO MANGA_DAP, $
 
             ; TODO: What happens if only the emission-line-only analysis
             ; is selected?
-            tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
+            if execution_plan[i].tpl_lib ge 0 then begin
+                tpl_out_fits = MDAP_SET_TPL_LIB_OUTPUT_FILE(output_file_root, $
                                                         tpl_library_keys[execution_plan[i].tpl_lib])
            
-            MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, tpl_mask, $
-                                           tpl_sres, tpl_soff
+                MDAP_READ_RESAMPLED_TEMPLATES, tpl_out_fits, tpl_wave, tpl_flux, tpl_ivar, $
+                                               tpl_mask, tpl_sres, tpl_soff
+            endif
 
 ;           get_lun, unit
 ;           print, unit

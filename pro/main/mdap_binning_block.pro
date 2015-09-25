@@ -190,6 +190,9 @@
 ;                          spaxel dx and dy.  This is assumed to be
 ;                          appropriate for both the CUBE and RSS
 ;                          spectra.
+;       22 Sep 2015: (KBW) Fixed bug in propagation of error for flux
+;                          per unit area (calculated error, not inverse
+;                          variance!)
 ;-
 ;------------------------------------------------------------------------------
 
@@ -270,7 +273,7 @@ PRO MDAP_BINNING_BLOCK, $
                 aperture_area = spaxel_dx*spaxel_dy
                 bin_flux = bin_flux / aperture_area
                 indx = where(bin_ivar gt 0.0)
-                bin_ivar[indx] = 1.0 / bin_ivar[indx] / aperture_area / aperture_area
+                bin_ivar[indx] = bin_ivar[indx] * aperture_area * aperture_area
 
                 ; Change the units in the header
                 SXADDPAR, header, 'BUNIT', '1E-17 erg/s/cm^2/Ang/arcsec^2', $

@@ -118,6 +118,7 @@
 ; TODO:
 ;       - Use the non-parametric results to constrain the fits in the
 ;         parametric case?  And vice versa?
+;       - Add zero baseline flag to the execution plan structure?
 ;
 ; PROCEDURES CALLED:
 ;       MDAP_EMISSION_LINE_ONLY_FIT
@@ -157,6 +158,10 @@
 ;                          stellar continuum fit because of the fitted
 ;                          template.
 ;       18 Aug 2015: (KBW) Included call to non-parametric analysis.
+;       17 Sep 2015: (KBW) Edited to allow for non-zero baseline in
+;                          Gaussian fitting; also now returns the
+;                          wavelength limits of the window used in the
+;                          fit.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -209,13 +214,17 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                 inp_kin = star_kin_guesses[*,0:1]
             endelse
 
-            ; Get the mask that excludes regions where the fitted template is not valid
-            velScale=MDAP_VELOCITY_SCALE(wave, /log10)  ; km/s/pixel of the input spectra
-            fit_indx = MDAP_SPECTRAL_FITTING_MASK(wave, tpl_wave, velScale, $
-                                                  execution_plan.wave_range_analysis, $
-                                                  star_kin_guesses)
-            bestfit_mask = make_array(sz[1], sz[2], /double, value=1.0d)
-            bestfit_mask[*,fit_indx] = 0.0d
+            if n_elements(tpl_wave) ne 0 then begin
+                ; Get the mask that excludes regions where the fitted template is not valid
+                velScale=MDAP_VELOCITY_SCALE(wave, /log10)  ; km/s/pixel of the input spectra
+                fit_indx = MDAP_SPECTRAL_FITTING_MASK(wave, tpl_wave, velScale, $
+                                                      execution_plan.wave_range_analysis, $
+                                                      star_kin_guesses)
+                bestfit_mask = make_array(sz[1], sz[2], /double, value=1.0d)
+                bestfit_mask[*,fit_indx] = 0.0d
+            endif else $
+                bestfit_mask = make_array(sz[1], sz[2], /double, value=0.0d)
+
             ; Include any intrinsically masked pixels
             indx = where(bin_mask > 0, count)
             if count ne 0 then $
@@ -270,12 +279,13 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                                          bestfit_continuum, bestfit_mask, inp_kin, $
                                          elo_ew_eml_model, elo_ew_kinematics, $
                                          elo_ew_kinematics_perr, elo_ew_kinematics_serr, $
-                                         elo_ew_kinematics_n, elo_ew_omitted, $
+                                         elo_ew_kinematics_n, elo_ew_omitted, elo_ew_window, $
+                                         elo_ew_baseline, elo_ew_base_err, $
                                          elo_ew_kinematics_ind, elo_ew_kinematics_ier, $
                                          elo_ew_sinst, elo_ew_intens, elo_ew_interr, $
                                          elo_ew_fluxes, elo_ew_flxerr, elo_ew_EWidth, $
                                          elo_ew_EW_err, eml_par=emlo_par, quiet=quiet, $
-                                         dbg=dbg, /enci
+                                         dbg=dbg, /enci;, /zero_base
 
 ;           ; Get the instrumental dispersion at the fitted line center
 ;           MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, emlo_par, elo_ew_omitted, $
@@ -287,11 +297,12 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                                          bestfit_continuum, bestfit_mask, inp_kin, $
                                          elo_fb_eml_model, elo_fb_kinematics, $
                                          elo_fb_kinematics_perr, elo_fb_kinematics_serr, $
-                                         elo_fb_kinematics_n, elo_fb_omitted, $
+                                         elo_fb_kinematics_n, elo_fb_omitted, elo_fb_window, $
+                                         elo_fb_baseline, elo_fb_base_err, $
                                          elo_fb_kinematics_ind, elo_fb_kinematics_ier, $
                                          elo_fb_sinst, elo_fb_intens, elo_fb_interr, $
                                          elo_fb_fluxes, elo_fb_flxerr, elo_fb_EWidth, $
-                                         elo_fb_EW_err, quiet=quiet, dbg=dbg, /belfiore
+                                         elo_fb_EW_err, quiet=quiet, dbg=dbg, /belfiore;, /zero_base
 
 ;           ; Get the instrumental dispersion at the fitted line center
 ;           MDAP_INSTR_DISPERSION_AT_EMISSION_LINE, wave, sres, emlo_par, elo_fb_omitted, $
@@ -304,6 +315,8 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                                elo_ew_kinematics_aer=elo_ew_kinematics_perr, $
                                elo_ew_kinematics_ase=elo_ew_kinematics_serr, $
                                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                               elo_ew_window=elo_ew_window, elo_ew_baseline=elo_ew_baseline, $
+                               elo_ew_base_err=elo_ew_base_err, $
                                elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                                elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
                                elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
@@ -315,6 +328,8 @@ PRO MDAP_EMISSION_LINE_FIT_BLOCK, $
                                elo_fb_kinematics_aer=elo_fb_kinematics_perr, $
                                elo_fb_kinematics_ase=elo_fb_kinematics_serr, $
                                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                               elo_fb_window=elo_fb_window, elo_fb_baseline=elo_fb_baseline, $
+                               elo_fb_base_err=elo_fb_base_err, $
                                elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                                elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
                                elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $

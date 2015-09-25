@@ -48,7 +48,7 @@ FUNCTION MDAP_SELECTED_KEYWORD_INDEX, $
                 keys, selected_key
 
         nkeys = n_elements(keys)                    ; Number of available keys
-        nselected = n_elements(selected_key)        ; NUmber to select
+        nselected = n_elements(selected_key)        ; Number to select
 
         ; Make sure there's something to do!
         if nkeys eq 0 || nselected eq 0 then $

@@ -26,12 +26,14 @@
 ;                                    best_fit_mask, stellar_kinematics, eml_model, $
 ;                                    emission_line_kinematics, emission_line_kinematics_perr, $
 ;                                    emission_line_kinematics_serr, emission_line_kineamtics_n, $
-;                                    emission_line_omitted, emission_line_kinematics_individual, $
+;                                    emission_line_omitted, emission_line_window, $
+;                                    emission_line_kinematics_individual, $
 ;                                    emission_line_kinematics_individual_err, emission_line_sinst, $
 ;                                    emission_line_intens, emission_line_intens_err, $
 ;                                    emission_line_fluxes, emission_line_fluxes_err, $
 ;                                    emission_line_EW, emission_line_EW_err, $
-;                                    eml_par=eml_par, version=version, /enci, /quiet, /dbg 
+;                                    eml_par=eml_par, version=version, /enci, /zero_base, /quiet, $
+;                                    /dbg 
 ;
 ; INPUTS:
 ;       wave dblarr[C]
@@ -76,6 +78,9 @@
 ;       /belfiore
 ;           Use Francesco Belfiore's fitting code
 ;
+;       /zero_base
+;           Impose a zero baseline during the fit
+;
 ;       /quiet
 ;           Suppress output to the terminal
 ;
@@ -108,6 +113,15 @@
 ;       emission_line_omitted intarr[N][E]
 ;               Flag setting whether or not an emission-line was fit for
 ;               all E lines fit by Enci's code (0-fit;1-omitted).
+;
+;       emission_line_window intarr[N][E][2]
+;               Wavelength limits used in the fit of each (set of)
+;               emission line(s).
+;
+;       emission_line_baseline intarr[N][E]
+;       emission_line_base_err intarr[N][E]
+;               Constant baseline fit beneath each (group of) emission
+;               line(s) and its error.
 ;
 ;       emission_line_kinematics_individual dblarr[N][E][2]
 ;       emission_line_kinematics_individual_err dblarr[N][E][2]
@@ -196,6 +210,10 @@
 ;                          OII lines as a doublet (instead of a single
 ;                          ine, and include fits of the OI doublet at
 ;                          6300 A.  Edited this code accordingly.
+;       16 Sep 2015: (KBW) Edited both contributed codes to allow for a
+;                          non-zero background; edited this code
+;                          accordingly.
+;       17 Sep 2015: (KBW) Return the window limits used for the fit.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -210,40 +228,73 @@ FUNCTION MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT, $
         return, 1
 END
 
-PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, lambda, voff, result, kinematics, kinematics_err, $
+FUNCTION MDAP_SAVE_EMISSION_LINE_FIT_ENCI_RESC
+        np = 4
+        cols = { base:0, base_e:0+np, $
+                  cen:1,  cen_e:1+np, $
+                  sig:2,  sig_e:2+np, $
+                 area:3, area_e:3+np }
+        return, cols
+END
+
+PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, lambda, voff, fitwin, result, cols, fitwindow, $
+                                             baseline, baseline_err, kinematics, kinematics_err, $
                                              intens, intens_err, fluxes, fluxes_err, i, j
 
         c=299792.458d                           ; Speed of light in km/s
-        kinematics[i,j,0] = (result[0]/lambda - 1.0d)*c + voff
-        kinematics_err[i,j,0] = result[3]*c/lambda
-        kinematics[i,j,1] = result[1]*c/result[0]
-        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( (result[3]/result[0])^2 + $
-                                                        (result[4]/result[1])^2 )
-        intens[i,j] = result[2]/sqrt(2.0*!pi)/result[1]
-        intens_err[i,j] = intens[i,j]*sqrt( (result[5]/result[2])^2 + (result[4]/result[1])^2 )
-        fluxes[i,j] = result[2]
-        fluxes_err[i,j] = result[5]
+;        kinematics[i,j,0] = (result[0]/lambda - 1.0d)*c + voff
+;        kinematics_err[i,j,0] = result[3]*c/lambda
+;        kinematics[i,j,1] = result[1]*c/result[0]
+;        kinematics_err[i,j,1] = kinematics[i,j,1]*sqrt( (result[3]/result[0])^2 + $
+;                                                        (result[4]/result[1])^2 )
+;        intens[i,j] = result[2]/sqrt(2.0*!pi)/result[1]
+;        intens_err[i,j] = intens[i,j]*sqrt( (result[5]/result[2])^2 + (result[4]/result[1])^2 )
+;        fluxes[i,j] = result[2]
+;        fluxes_err[i,j] = result[5]
+
+        fitwindow[i,j,0] = fitwin[0]*(1.0d + voff/c)
+        fitwindow[i,j,1] = fitwin[1]*(1.0d + voff/c)
+
+        baseline[i,j] = result[cols.base]
+        baseline_err[i,j] = result[cols.base_e]
+
+        kinematics[i,j,0] = (result[cols.cen]/lambda - 1.0d)*c + voff
+        kinematics_err[i,j,0] = result[cols.cen_e]*c/lambda
+        kinematics[i,j,1] = result[cols.sig]*c/result[cols.cen]
+        kinematics_err[i,j,1] = abs(kinematics[i,j,1]) $
+                                        * sqrt( (result[cols.cen_e]/result[cols.cen])^2 $
+                                              + (result[cols.sig_e]/result[cols.sig])^2 )
+
+        intens[i,j] = result[cols.area]/sqrt(2.0*!pi)/result[cols.sig]
+        intens_err[i,j] = abs(intens[i,j]) $
+                                        * sqrt( (result[cols.area_e]/result[cols.area])^2 $
+                                              + (result[cols.sig_e]/result[cols.sig])^2 )
+        fluxes[i,j] = result[cols.area]
+        fluxes_err[i,j] = result[cols.area_e]
 END
 
-PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, result, omitted, $
-                                      kinematics, kinematics_err, intens, intens_err, fluxes, $
-                                      fluxes_err, i
+PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, fitwin, result, $
+                                      omitted, fitwindow, baseline, baseline_err, kinematics, $
+                                      kinematics_err, intens, intens_err, fluxes, fluxes_err, i
+
+        cols = MDAP_SAVE_EMISSION_LINE_FIT_ENCI_RESC()
 
         j = 0
 
         ;---------------------------------------------------------------
         ; OII 3727
 ;        omitted[i,j] = result.OII3727[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OII3727[2], $
-                                                              result.OII3727[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OII3727[cols.area], $
+                                                              result.OII3727[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OII3727, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OII3727, $
+                                                     result.OII3727, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -251,16 +302,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; OII 3729
 ;        omitted[i,j] = result.OII3727[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OII3729[2], $
-                                                              result.OII3729[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OII3729[cols.area], $
+                                                              result.OII3729[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OII3729, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OII3729, $
+                                                     result.OII3729, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -268,15 +320,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; H-beta
 ;        omitted[i,j] = result.Hb4861[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.Hb4861[2], result.Hb4861[0], $
-                                                              rest_wave, galaxy_mask)
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.Hb4861[cols.area], $
+                                                              result.Hb4861[cols.cen], rest_wave, $
+                                                              galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.Hb4861, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.Hb4861, $
+                                                     result.Hb4861, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -284,16 +338,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; OIII 4959
 ;       omitted[i,j] = result.OIII4959[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OIII4959[2], $
-                                                              result.OIII4959[0], rest_wave, $
-                                                              galaxy_mask)
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OIII4959[cols.area], $
+                                                              result.OIII4959[cols.cen], $
+                                                              rest_wave, galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OIII4959, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OIII4959, $
+                                                     result.OIII4959, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -301,39 +356,42 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; OIII 5007
 ;        omitted[i,j] = result.OIII5007[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OIII5007[2], $
-                                                              result.OIII5007[0], rest_wave, $
-                                                              galaxy_mask)
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OIII5007[cols.area], $
+                                                              result.OIII5007[cols.cen], $
+                                                              rest_wave, galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OIII5007, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OIII5007, $
+                                                     result.OIII5007, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
 
         ;---------------------------------------------------------------
         ; OI 6300
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OI6300[2], $
-                                                              result.OI6300[0], rest_wave, $
-                                                              galaxy_mask)
-        MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OI6300, $
-                                                 kinematics, kinematics_err, intens, intens_err, $
-                                                 fluxes, fluxes_err, i, j
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OI6300[cols.area], $
+                                                              result.OI6300[cols.cen], $
+                                                              rest_wave, galaxy_mask)
+        MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OI6300, $
+                                                 result.OI6300, cols, fitwindow, baseline, $
+                                                 baseline_err, kinematics, kinematics_err, intens, $
+                                                 intens_err, fluxes, fluxes_err, i, j
         j = j+1
         ;---------------------------------------------------------------
         
         ;---------------------------------------------------------------
         ; OI 6363
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OI6363[2], $
-                                                              result.OI6363[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OI6363[cols.area], $
+                                                              result.OI6363[cols.cen], rest_wave, $
                                                               galaxy_mask)
-        MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.OI6363, $
-                                                 kinematics, kinematics_err, intens, intens_err, $
-                                                 fluxes, fluxes_err, i, j
+        MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OI6363, $
+                                                 result.OI6363, cols, fitwindow, baseline, $
+                                                 baseline_err, kinematics, kinematics_err, intens, $
+                                                 intens_err, fluxes, fluxes_err, i, j
         j = j+1
         ;---------------------------------------------------------------
         
@@ -341,16 +399,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; NII 6548
 ;        omitted[i,j] = result.NII6548[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.NII6548[2], $
-                                                              result.NII6548[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.NII6548[cols.area], $
+                                                              result.NII6548[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.NII6548, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.NII6548, $
+                                                     result.NII6548, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -358,15 +417,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; H-alpha
 ;        omitted[i,j] = result.Ha6563[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.Ha6563[2], result.Ha6563[0], $
-                                                              rest_wave, galaxy_mask)
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.Ha6563[cols.area], $
+                                                              result.Ha6563[cols.cen], rest_wave, $
+                                                              galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.Ha6563, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.Ha6563, $
+                                                     result.Ha6563, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -374,16 +435,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; NII 6583
 ;        omitted[i,j] = result.NII6583[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.NII6583[2], $
-                                                              result.NII6583[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.NII6583[cols.area], $
+                                                              result.NII6583[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.NII6583, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.NII6583, $
+                                                     result.NII6583, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -391,16 +453,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; SII 6717
 ;        omitted[i,j] = result.SII6717[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.SII6717[2], $
-                                                              result.SII6717[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.SII6717[cols.area], $
+                                                              result.SII6717[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.SII6717, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.SII6717, $
+                                                     result.SII6717, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -408,16 +471,17 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, res
         ;---------------------------------------------------------------
         ; SII 6731
 ;        omitted[i,j] = result.SII6731[2] gt 0.0 ? 0 : 1
-        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.SII6731[2], $
-                                                              result.SII6731[0], rest_wave, $
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.SII6731[cols.area], $
+                                                              result.SII6731[cols.cen], rest_wave, $
                                                               galaxy_mask)
 ;       if omitted[i,j] eq 1 then begin
 ;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
 ;                                                fluxes, fluxes_err, i, j
 ;       endif else begin
-            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, result.SII6731, $
-                                                     kinematics, kinematics_err, intens, $
-                                                     intens_err, fluxes, fluxes_err, i, j
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.SII6731, $
+                                                     result.SII6731, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
         j = j+1
         ;---------------------------------------------------------------
@@ -436,8 +500,8 @@ END
 
 ; CERTAIN ORDER EXPECTED FOR BELFIORE RESULT
 PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, rest_wave, galaxy_mask, omitted, $
-                                          kinematics, kinematics_err, intens, intens_err, fluxes, $
-                                          fluxes_err, i
+                                          fitwindow, baseline, baseline_err, kinematics, $
+                                          kinematics_err, intens, intens_err, fluxes, fluxes_err, i
 
         c=299792.458d                           ; Speed of light in km/s
         neml = n_elements(eml_par)              ; Number of emission lines fitted
@@ -456,13 +520,19 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, rest_wave, gala
 ;               continue
 ;           endif
 
+            fitwindow[i,j,0] = result.Lmin[j] * (1.0d + (result.Vel[j]+voff)/c)
+            fitwindow[i,j,1] = result.Lmax[j] * (1.0d + (result.Vel[j]+voff)/c)
+
+            baseline[i,j] = result.Base[j]
+            baseline_err[i,j] = result.eBase[j]
+
             kinematics[i,j,0] = result.Vel[j]+voff
             kinematics_err[i,j,0] = result.eVel[j]
             kinematics[i,j,1] = result.Sigma[j]
             kinematics_err[i,j,1] = result.eSigma[j]
+
             intens[i,j] = result.Ampl[j]
             intens_err[i,j] = result.eAmpl[j]
-
 
             fluxes[i,j] = result.Ampl[j] * sqrt(2*!pi) * result.Sigma[j] * eml_par[j].lambda $
                           * (1+(result.Vel[j]+voff)/c)/c
@@ -479,12 +549,13 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 wave, sres, flux, ivar, mask, best_fit_continuum, best_fit_mask, $
                 stellar_kinematics, eml_model, emission_line_kinematics, $
                 emission_line_kinematics_perr, emission_line_kinematics_serr, $
-                emission_line_kinematics_n, emission_line_omitted, $
+                emission_line_kinematics_n, emission_line_omitted, emission_line_window, $
+                emission_line_baseline, emission_line_base_err, $
                 emission_line_kinematics_individual, emission_line_kinematics_individual_err, $
                 emission_line_sinst, emission_line_intens, emission_line_intens_err, $
                 emission_line_fluxes, emission_line_fluxes_err, emission_line_EW, $
                 emission_line_EW_err, eml_par=eml_par, version=version, enci=enci, $
-                belfiore=belfiore, quiet=quiet, dbg=dbg
+                belfiore=belfiore, zero_base=zero_base, quiet=quiet, dbg=dbg
 
         version_module = '1.1'                  ; Version number
         if n_elements(version) ne 0 then begin  ; If version is defined
@@ -532,6 +603,9 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
         emission_line_kinematics_serr = dblarr(nobj, 2*nstat)
         emission_line_kinematics_n = intarr(nobj)
         emission_line_omitted = make_array(nobj, neml, /int, value=1)       ; 0/1 -> fit/omitted
+        emission_line_window = dblarr(nobj, neml, 2)
+        emission_line_baseline = dblarr(nobj, neml)
+        emission_line_base_err = dblarr(nobj, neml)
         emission_line_kinematics_individual = dblarr(nobj, neml, 2)
         emission_line_kinematics_individual_err = dblarr(nobj, neml, 2)
         emission_line_sinst = dblarr(nobj, neml)
@@ -564,12 +638,15 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                                                           reform(flux_err[i,*]), $
                                                           reform(mask[i,*]), $
                                                           stellar_kinematics[i,1], 0.0d, result, $
-                                                          emfit, /quiet; quiet=quiet
+                                                          emfit, zero_base=zero_base, /quiet
+                                                          ; quiet=quiet
 
                 ; Save the fitted parameters
                 MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, stellar_kinematics[i,0], result, $
                                                       rest_wave, galaxy_mask, $
-                                                      emission_line_omitted, $
+                                                      emission_line_omitted, emission_line_window, $
+                                                      emission_line_baseline, $
+                                                      emission_line_base_err, $
                                                       emission_line_kinematics_individual, $
                                                       emission_line_kinematics_individual_err, $
                                                       emission_line_intens, $
@@ -580,13 +657,16 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 ; Fit the emission lines
                 MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, 0.0d, rest_wave, galaxy_eml_only, $
                                                       reform(flux_err[i,*]), reform(mask[i,*]), $
-                                                      result, emfit, /OII3727, /Hb4861, /OIII5007, $
-                                                      /OI6300, /Ha6563, /SII6717
+                                                      fitwin, result, emfit, /OII3727, /Hb4861, $
+                                                      /OIII5007, /OI6300, /Ha6563, /SII6717, $
+                                                      zero_base=zero_base
 
                 ; Save the fitted parameters
                 MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, $
-                                                  stellar_kinematics[i,0], result, $
-                                                  emission_line_omitted, $
+                                                  stellar_kinematics[i,0], fitwin, result, $
+                                                  emission_line_omitted, emission_line_window, $
+                                                  emission_line_baseline, $
+                                                  emission_line_base_err, $
                                                   emission_line_kinematics_individual, $
                                                   emission_line_kinematics_individual_err, $
                                                   emission_line_intens, emission_line_intens_err, $

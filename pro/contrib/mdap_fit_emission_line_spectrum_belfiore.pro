@@ -6,7 +6,8 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, wave, galaxy_eml_only, flux_err, mask, $
-;                                                 star_sigma, redshift, El, eml_model, /quiet
+;                                                 star_sigma, redshift, El, eml_model, /zero_base, $
+;                                                 /quiet
 ;
 ; INPUTS:
 ;       wave dblarr[C]
@@ -34,6 +35,9 @@
 ; OPTIONAL INPUTS:
 ;
 ; OPTIONAL KEYWORDS:
+;       /zero_base
+;           Force the baseline to be zero
+;        
 ;       /quiet
 ;           Suppress output written to stdout.
 ;
@@ -86,7 +90,7 @@
 ;                    aspects for inclusion in the DAP by K. Westfall
 ;                    (KBW).
 ;       19 Feb 2015: (KBW) Fixed an error in where counting (line 184)
-;       13 Aug 2014: (KBW) Fit OII as a doublet, and add the fit to the
+;       13 Aug 2015: (KBW) Fit OII as a doublet, and add the fit to the
 ;                          OI doublet.  The velocities of the OI, OII,
 ;                          OIII, NII, and SII lines are now tied; the
 ;                          SII lines were NOT tied in the previous
@@ -95,6 +99,16 @@
 ;                          Documentation changes.  Added warning if
 ;                          MPFIT() reaches the maximum number of
 ;                          iterations.
+;       16 Sep 2015: (KBW) Allow for a *local* non-zero baseline.
+;                          Implementing this required moving away from
+;                          Francesco's original implementation a bit.
+;                          PEAK_FITTING used to fit the full spectrum;
+;                          now it only fits in a window around the (set
+;                          of) emission line(s) to be fit.  The window
+;                          is hard-wired (as in Enci's code) to be +/-
+;                          25 angstroms about the range in rest
+;                          wavelength of the fitted lines.  Add a
+;                          keyword to fix the baseline to zero.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -122,7 +136,7 @@ END
 function gausfit, p, x=x, y=y, err=err, nlines2=nlines2, wl=wl, redshift=redshift
 
   c=299792.458d  ; speed of light in KM/s
-  g_tot=0.0
+  g_tot=make_array(n_elements(x), /double, value=p[3*nlines2])            ; background
   for i=0, nlines2-1 do begin
   g_p= p[3*i+2]*exp( -( (  x - wl[i]*(1+p[3*i]/c+redshift) )^2 )/ (2.*p[3*i+1]^2)  )
   g_tot=g_tot+g_p
@@ -135,22 +149,37 @@ end
 
 ;----------------------------------------------------------------------------
 ; procedure performing the actual line fitting using MPFIT
-PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, eflg=eflg, $
-                  quiet=quiet
+PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, $
+                  zero_base=zero_base, eflg=eflg, quiet=quiet
   c=299792.458d
   
+  ; Build the output structure
+  L=REPLICATE({n:' ', wl:0.0, ws:0.0, we:0.0,  b:0.0,  s:0.0,  a:0.0,  v:0.0, $
+                                              eb:0.0, es:0.0, ea:0.0, ev:0.0}, nlines2)
+  ; The spectral range to fit:
+  bin = 25.
+  wave_min = min(w_l)-bin
+  wave_max = max(w_l)+bin
+  fit_indx = where( wave gt wave_min and wave lt wave_max, count)
+  eflg = 0
+  if count eq 0 then begin
+    print, 'No relevant wavelengths in spectrum!'
+    eflg = 1
+    return
+  endif
+  
   ; **** Set Parameters for MPFIT
-  err=noise_
+  err=noise_[fit_indx]
   ;x = exp(loglam_gal)
-  x = wave
-  y = resid
+  x = wave[fit_indx]
+  y = resid[fit_indx]
   
-  ; *** Declare Emission Lines
-  
-  L=REPLICATE({n:' ', wl:0.0, s:0.0, a:0.0, v:0.0, es:0.0, ea:0.0, ev:0.0}, nlines2)
+  ; *** Initialize the output structure values
   l.n=N_L
   l.wl=W_L
-  
+  l[*].ws = wave_min
+  l[*].we = wave_max
+
   ; *** Set emission lines starting parameters
   ;
   ;emission lines sigma and velocity are set equal to those of the stars
@@ -196,7 +225,9 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
 
   endfor
 
-  p_start=fltarr(3*nlines2)
+  np_total = 3*nlines2+1
+; p_start=fltarr(3*nlines2)
+  p_start=fltarr(np_total)           ; Last element is the baseline
   for i=0, nlines2-1 do begin
     ;subscripts of the wav range withing the mask
     wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
@@ -220,9 +251,8 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
 
     ;print, p_start
     ; *** Constrain parameters
-    
-    n_parameters = 3*nlines2
-    parinfo=replicate({fixed:0,limited:[0,0],limits:[0.,0.], tied:''},n_parameters)
+
+    parinfo=replicate({fixed:0,limited:[0,0],limits:[0.,0.], tied:''},np_total)
     
     ;all amplitudes need to be positive!
     for i=0, nlines2-1 do begin
@@ -277,6 +307,9 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       endfor
     endif
     
+    ; Force the baseline to be zero if requested
+    if keyword_set(zero_base) then $
+        parinfo[np_total-1].fixed=1
     
     ; *** Fit function
     p = mpfit('gausfit',p_start, functargs={x:x,y:y,err:err, nlines2:nlines2, wl:l.wl, redshift:redshift}, bestnorm=chi2, parinfo=parinfo, perror=perror, status=status, errmsg=errmsg, quiet=1)
@@ -302,13 +335,13 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     
     
     ; *** Calculate the reduced chi^2
-    n_data = n_elements(lambda)
-    n_pars = n_elements(p)
-    chi2_reduced = chi2/(n_data-n_pars-1)
-    
+    n_data = n_elements(x);lambda)          ; Number of fitted data points
+    np_free = np_total
+    if keyword_set(zero_base) then $
+        np_free -= 1                        ; Baseline was fixed during fit
+    chi2_reduced = chi2/(n_data-np_free-1)  ; !! NEVER USED !!
     
     ; *** Save Output
-    
     for i=0, nlines2-1 do begin
       l[i].s=p[1+3*i]/l[i].wl*c
       l[i].es = perror[3*i+1]/l[i].wl*c
@@ -316,6 +349,12 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
       l[i].ev = perror[3*i]
       l[i].a=p[2+3*i]
       l[i].ea=perror[2+3*i]
+
+      ; Same baseline saved for all lines
+      if ~keyword_set(zero_base) then begin
+        l[i].b=p[np_total-1]
+        l[i].eb=perror[np_total-1]
+      endif
       
     endfor
 
@@ -330,19 +369,19 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
 ; spectrum
 PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
                 wave, galaxy_eml_only, flux_err, mask, star_sigma, redshift, El, eml_model, $
-                quiet=quiet
+                zero_base=zero_base, quiet=quiet
 
     ; Define the lines to fit; !! HARD-CODED !!
     MDAP_DEFINE_EMISSION_LINES_BELFIORE, n_l, w_l, fit_l, con_l
     nlines2 = n_elements(n_l)                       ; Number of lines
   
     ; Output structure
-    El = { name:strarr(nlines2), lambda:fltarr(nlines2), Ampl:fltarr(nlines2), $
-           Vel:fltarr(nlines2), Sigma:fltarr(nlines2), eAmpl:fltarr(nlines2), $
-           eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
+    El = {  name:strarr(nlines2), lambda:fltarr(nlines2),   Lmin:fltarr(nlines2), $
+            Lmax:fltarr(nlines2),   Base:fltarr(nlines2),   Ampl:fltarr(nlines2), $
+             Vel:fltarr(nlines2),  Sigma:fltarr(nlines2),  eBase:fltarr(nlines2), $
+           eAmpl:fltarr(nlines2),   eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
 
     indx = where(mask lt 1., count)
-;   if indx[0] eq -1 then $
     if count eq 0 then $
         message, 'Entire spectrum masked!'
 
@@ -375,22 +414,30 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
       ; *** if the line is strong (fit_l = 1) then always fit it ***
     
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
-                      wl_m, nl_m, 1, l, eflg=eflg, quiet=quiet
+                      wl_m, nl_m, 1, l, zero_base=zero_base, eflg=eflg, quiet=quiet
         if eflg eq 1 then begin
             El.name[s_l]=l[0].n
             El.lambda[s_l]=l[0].wl
+            El.Lmin[s_l]=l[0].ws
+            El.Lmax[s_l]=l[0].we
+            El.base[s_l]=0.
             El.ampl[s_l]=0.
             El.vel[s_l]=0.
             El.sigma[s_l]=0.
+            El.ebase[s_l]=0.
             El.eampl[s_l]=1.
             El.evel[s_l]=1.
             El.esigma[s_l]=1.
         endif else begin
             El.name[s_l]=l[0].n
             El.lambda[s_l]=l[0].wl
+            El.Lmin[s_l]=l[0].ws
+            El.Lmax[s_l]=l[0].we
+            El.base[s_l]=l[0].b
             El.ampl[s_l]=l[0].a
             El.vel[s_l]=l[0].v
             El.sigma[s_l]=l[0].s
+            El.ebase[s_l]=l[0].eb
             El.eampl[s_l]=l[0].ea
             El.evel[s_l]=l[0].ev
             El.esigma[s_l]=l[0].es
@@ -408,7 +455,6 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
         print, 'Number of tied lines:', n_tied
     for kl=1, n_tied do begin
       wgroup=where(con_l eq kl, count)
-;     while wgroup[0] eq -1 do begin
       while count eq 0 do begin
         if ~keyword_set(quiet) then $
             print, 'Error in your input emission line file!'
@@ -421,23 +467,31 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
       n_m=N_elements(wgroup)
       
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
-                      wl_m, nl_m, n_m, l, eflg=eflg, quiet=quiet
+                      wl_m, nl_m, n_m, l, zero_base=zero_base, eflg=eflg, quiet=quiet
         
         if eflg eq 1 then begin
             El.name[wgroup]=l.n
             El.lambda[wgroup]=l.wl
+            El.Lmin[wgroup]=l.ws
+            El.Lmax[wgroup]=l.we
+            El.base[wgroup]=0.
             El.ampl[wgroup]=0.
             El.vel[wgroup]=0.
             El.sigma[wgroup]=0.
+            El.ebase[wgroup]=1.
             El.eampl[wgroup]=1.
             El.evel[wgroup]=1.
             El.esigma[wgroup]=1.
         endif else begin
             El.name[wgroup]=l.n
             El.lambda[wgroup]=l.wl
+            El.Lmin[wgroup]=l.ws
+            El.Lmax[wgroup]=l.we
+            El.base[wgroup]=l.b
             El.ampl[wgroup]=l.a
             El.vel[wgroup]=l.v
             El.sigma[wgroup]=l.s
+            El.ebase[wgroup]=l.eb
             El.eampl[wgroup]=l.ea
             El.evel[wgroup]=l.ev
             El.esigma[wgroup]=l.es
@@ -446,7 +500,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
         endelse
     endfor
    
-   ; Get the full model of the emission-line spectrum (ignoring masks)
+   ; Get the full model of the emission-line spectrum (ignoring masks and the baseline)
    c=299792.458d  ; speed of light in KM/s
     eml_model=wave*0.0
    for kk=0, nlines2-1 do begin

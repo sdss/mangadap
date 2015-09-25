@@ -69,6 +69,8 @@
 ;                           elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
 ;                           elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
 ;                           elo_ew_kinematics_n=elo_ew_kinematics_n, $
+;                           elo_ew_window=elo_ew_window, elo_ew_baseline=elo_ew_baseline, $
+;                           elo_ew_base_err=elo_ew_base_err, $
 ;                           elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
 ;                           elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
 ;                           elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
@@ -80,6 +82,8 @@
 ;                           elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
 ;                           elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
 ;                           elo_fb_kinematics_n=elo_fb_kinematics_n, $
+;                           elo_fb_window=elo_fb_window, elo_fb_baseline=elo_fb_baseline, $
+;                           elo_fb_base_err=elo_fb_base_err, $
 ;                           elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
 ;                           elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
 ;                           elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
@@ -404,6 +408,15 @@
 ;               types (flux, velocity error, both, unweighted); see
 ;               MDAP_EMISSION_LINE_ONLY_FIT.
 ;
+;       elo_ew_window intarr[N][E][2]
+;               Wavelength limits used in the fit of each (set of)
+;               emission line(s) for Enci Wang's code.
+;
+;       elo_ew_baseline intarr[N][E]
+;       elo_ew_base_err intarr[N][E]
+;               Constant baseline fit beneath each (group of) emission
+;               line(s) and its error determined using Enci Wang's code.
+;
 ;       elo_ew_kinematics_ind dblarr[B][O][2]
 ;       elo_ew_kinematics_ierr dblarr[B][O][2]
 ;               Kinematics of the individual lines (and errors)
@@ -453,6 +466,16 @@
 ;               kinematic measurements (v, sigma) for each of the 4
 ;               weighting types (flux, velocity error, both,
 ;               unweighted); see MDAP_EMISSION_LINE_ONLY_FIT.
+;
+;       elo_fb_window intarr[N][E][2]
+;               Wavelength limits used in the fit of each (set of)
+;               emission line(s) for Francesco Belfiore's code.
+;
+;       elo_fb_baseline intarr[N][E]
+;       elo_fb_base_err intarr[N][E]
+;               Constant baseline fit beneath each (group of) emission
+;               line(s) and its error determined using Francesco
+;               Belfiore's code.
 ;
 ;       elo_fb_kinematics_ind dblarr[B][O][2]
 ;       elo_fb_kinematics_ierr dblarr[B][O][2]
@@ -598,6 +621,7 @@
 ;                          == max(flux) flag in DRPS extension.
 ;       12 Aug 2015: (KBW) Adjusted for new parameters.
 ;       18 Aug 2015: (KBW) Added non-parametric emission-line data
+;       17 Sep 2015: (KBW) Added emission-line window and baseline data
 ;-
 ;------------------------------------------------------------------------------
 
@@ -636,7 +660,8 @@ PRO MDAP_DEFINE_OUTPUT, $
                 eml_model=eml_model, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                 elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -646,7 +671,8 @@ PRO MDAP_DEFINE_OUTPUT, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                 elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -759,6 +785,9 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(elo_ew_kinematics_aer) eq 0 then elo_ew_kinematics_aer = '0'
         if n_elements(elo_ew_kinematics_ase) eq 0 then elo_ew_kinematics_ase = '0'
         if n_elements(elo_ew_kinematics_n) eq 0 then elo_ew_kinematics_n = '0'
+        if n_elements(elo_ew_window) eq 0 then elo_ew_window = '0'
+        if n_elements(elo_ew_baseline) eq 0 then elo_ew_baseline = '0'
+        if n_elements(elo_ew_base_err) eq 0 then elo_ew_base_err = '0'
         if n_elements(elo_ew_kinematics_ind) eq 0 then elo_ew_kinematics_ind = '0'
         if n_elements(elo_ew_kinematics_ier) eq 0 then elo_ew_kinematics_ier = '0'
         if n_elements(elo_ew_sinst) eq 0 then elo_ew_sinst = '0'
@@ -774,6 +803,9 @@ PRO MDAP_DEFINE_OUTPUT, $
         if n_elements(elo_fb_kinematics_aer) eq 0 then elo_fb_kinematics_aer = '0'
         if n_elements(elo_fb_kinematics_ase) eq 0 then elo_fb_kinematics_ase = '0'
         if n_elements(elo_fb_kinematics_n) eq 0 then elo_fb_kinematics_n = '0'
+        if n_elements(elo_fb_window) eq 0 then elo_fb_window = '0'
+        if n_elements(elo_fb_baseline) eq 0 then elo_fb_baseline = '0'
+        if n_elements(elo_fb_base_err) eq 0 then elo_fb_base_err = '0'
         if n_elements(elo_fb_kinematics_ind) eq 0 then elo_fb_kinematics_ind = '0'
         if n_elements(elo_fb_kinematics_ier) eq 0 then elo_fb_kinematics_ier = '0'
         if n_elements(elo_fb_sinst) eq 0 then elo_fb_sinst = '0'

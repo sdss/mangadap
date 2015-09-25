@@ -167,7 +167,7 @@ PRO MDAP_READ_EXECUTION_PLANS, $
         n_plans = n_elements(data)                  ; Number of plans
 
         ; Allocate the needed arrays
-        MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, n_plans,  bin_par, w_range_sn, threshold_ston_bin, $
+        MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, n_plans, bin_par, w_range_sn, threshold_ston_bin, $
                                                 w_range_analysis, threshold_ston_analysis, $
                                                 analysis, tpl_lib_analysis, ems_par_analysis, $
                                                 abs_par_analysis, analysis_par, analysis_prior, $

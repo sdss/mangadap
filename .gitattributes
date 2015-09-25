@@ -23,6 +23,7 @@ examples/manga_dap_highsn_twotpl_plan.pro -text
 examples/manga_dap_radial_binonly_plan.pro -text
 examples/manga_dap_radial_plan.pro -text
 examples/manga_dap_sn_strgaskin_miles.pro -text
+examples/mdap_dr13qa_cube.pro -text
 examples/mdap_mpl3_cube.pro -text
 examples/mdap_mpl3_rss.pro -text
 examples/mdap_mpl3beta_cube_p1.pro -text

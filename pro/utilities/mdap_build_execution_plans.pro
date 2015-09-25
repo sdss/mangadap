@@ -208,6 +208,9 @@
 ;       22 Mar 2015: (KBW) Include a check of the number of pPXF
 ;                          moments.  Automatically set the number of
 ;                          moments to 2 if input is set to 0.
+;       23 Sep 2015: (KBW) Changed logic of when to turn off the tpl_lib
+;                          flag; no longer require that the
+;                          emission-line-only analysis also be off.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -268,6 +271,8 @@ FUNCTION MDAP_SET_EXECUTION_PLAN_ANALYSIS, $
                 message, 'Unknown analysis step: ', analysis[i]
         endfor
 
+        ; Analysis logic is in utilities/mdap_analysis_block_logic.pro
+
         ; TODO: So far all steps must occur serially.  True?  Can
         ;       abs-indices be done without doing star+gas?
 
@@ -297,8 +302,6 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
                 n_tpl, n_ems, n_abs, execution_plan
 
         ; Check bin type
-;       if execution_plan.bin_par.type ne 'NONE' and execution_plan.bin_par.type ne 'ALL' and $
-;          execution_plan.bin_par.type ne 'STON' and execution_plan.bin_par.type ne 'RADIAL' $
         if execution_plan.bin_par.type ne 'NONE' && execution_plan.bin_par.type ne 'ALL' && $
            execution_plan.bin_par.type ne 'STON' && execution_plan.bin_par.type ne 'RADIAL' $
            then begin 
@@ -306,20 +309,10 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         endif
 
         ; If there is no prior, cannot velocity register the spectra
-;       if execution_plan.bin_par.v_register eq 1 $
-;          and strlen(execution_plan.analysis_prior) eq 0 then begin
         if execution_plan.bin_par.v_register eq 1 $
            && strlen(execution_plan.analysis_prior) eq 0 then begin
             message, 'Cannot velocity register spectra for binning without an analysis prior!'
         endif
-
-;       ; Check bin parameters
-;       if (execution_plan.bin_type eq 'STON' and n_elements(execution_plan.bin_par) ne 1) or $
-;          (execution_plan.bin_type eq 'RAD' and n_elements(execution_plan.bin_par) ne 1) then begin
-;           message, 'STON and RAD bin types must have one binning parameter (S/N and Bin width,'+ $
-;                  ' respectively)'
-;           
-;       endif
 
         ; Check the noise_calib and optimal_weighting parameters are compatible
         if execution_plan.bin_par.optimal_weighting eq 1 $
@@ -329,7 +322,7 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
             execution_plan.bin_par.optimal_weighting = 0
         endif
 
-        ; Analysis steps are check using MDAP_SET_EXECUTION_PLAN_ANALYSIS
+        ; Analysis steps are checked using MDAP_SET_EXECUTION_PLAN_ANALYSIS
 
         ; Same check as is done in pPXF
         if execution_plan.analysis[0] eq 1 $
@@ -361,11 +354,18 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
         ; Emission-line parameters used for both stellar-continuum and star+gas analysis
         if execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then $
             execution_plan.ems_par = -1
-        ; Template spectra can be used for all analyses (what to do with [2]?)
-        if execution_plan.analysis[3] eq 0 && execution_plan.analysis[2] eq 0 && $
-           execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then begin
+        ; Template spectra can be turned off if all but the
+        ; emission-line-only analysis is turned off
+        if execution_plan.analysis[3] eq 0 && execution_plan.analysis[1] eq 0 $
+           && execution_plan.analysis[0] eq 0 then begin
             execution_plan.tpl_lib = -1
         endif
+
+; OLD LOGIC
+;        ; Template spectra can be used for all analyses (what to do with [2]?)
+;        if execution_plan.analysis[3] eq 0 && execution_plan.analysis[2] eq 0 && $
+;           execution_plan.analysis[1] eq 0 && execution_plan.analysis[0] eq 0 then begin
+;            execution_plan.tpl_lib = -1
 
 END
 
@@ -459,7 +459,6 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
             endif
 
             indx = where(execution_plan[i].analysis eq 1, count)
-;           if indx[0] eq -1 then begin; No analysis to perform
             if count eq 0 then begin; No analysis to perform
                 execution_plan[i].tpl_lib = -1          ; No template library needed
                 execution_plan[i].ems_par = -1          ; No emission-line parameters needed

@@ -100,7 +100,8 @@
 ; INTERNAL SUPPORT ROUTINES:
 ;
 ; REVISION HISTORY:
-;       09 Sep 2014: (KBW) Original implementation. Adapted from mdap_read_datacube
+;       09 Sep 2014: Original implementation by K. Westfall (KBW).
+;                    Adapted from mdap_read_datacube
 ;       09 Sep 2014: (KBW) Include mask and instrumental resolution
 ;       12 Sep 2014: (KBW) New version of MDAP_DRP_FILETYPE
 ;       12 Sep 2014: (KBW) Remove cdelt? as parameters.  Pixel scale is now
@@ -110,10 +111,12 @@
 ;       15 Sep 2014: (KBW) Added unit as an optional output
 ;       10 Oct 2014: (KBW) Automatically set unit, does not need to check that
 ;                          it exists
-;       01 Feb 2014: (KBW) Changed reading of extensions to be based on
+;       01 Feb 2015: (KBW) Changed reading of extensions to be based on
 ;                          extension name, not extension number.  Less
 ;                          efficient, but more robust against DRP
 ;                          version changes.
+;       22 Sep 2015: (KBW) Added hard-wired mask of poorly subtracted
+;                          sky-line at roughly 5578 ang
 ;-
 ;-----------------------------------------------------------------------
 
@@ -152,8 +155,6 @@ PRO MDAP_READ_DRP_FITS,$
 
 ;        return
 
-;        mask = mask*0.                      ; TODO: Unmask everything
-
         MDAP_CONVERT_DRP_MASK, mask
 
         if type eq 'CUBE' then begin
@@ -174,6 +175,13 @@ PRO MDAP_READ_DRP_FITS,$
             ; XY coordinates of RSS data are already in arcsec offset from IFU center
 
         endelse
+
+        ; TODO: I don't like this because it's hard-wired, but...
+        ; Always mask the region near the poorly subtracted sky-line at
+        ; roughly 5578 ang
+        indx = where(wave gt 5570 and wave lt 5586, count)
+        if count gt 0 then $
+            mask[*,indx] = 1.0d
 
         ; These operations are not necessary for the RSS cubes!
 ;       MDAP_OFFSET_XY_CENTER, header, skyx, skyy       ; Offset xy center to target RA/DEC

@@ -687,6 +687,11 @@ PRO MDAP_SPECTRAL_FITTING, $
         obj_ivar_lim = obj_ivar[*,fit_indx]
         obj_mask_lim = obj_mask[*,fit_indx]
 
+;        print, n_elements(tpl_wave), n_elements(obj_wave_lim)
+;        plot, obj_wave, obj_flux[0,*]
+;        oplot, obj_wave_lim, obj_flux_lim[0,*], color=200
+;        stop
+
         ; Set to ignore emission lines that are not within the fitted wavelength range
         eml_par_lim = eml_par
         if n_elements(eml_par) ne 0 && ppxf_only eq 0 then begin

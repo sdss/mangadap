@@ -148,14 +148,16 @@
 ;                   - rest wavelength (in vacuum)
 ;
 ;               - For the emission-line only fit of each binned spectrum: ELOFIT
-;                 6 [nwgt*moments] columns, 2 columns, 16 [nemlo] columns,
-;                 4 [nemlo][moments] columns, nbin rows
+;                 6 [nwgt*moments] columns, 2 columns, 20 [nemlo] columns,
+;                 2 [nemlo][2] column, 4 [nemlo][moments] columns, nbin rows
 ;                   - mean gas kinematics, propagated errors, standard errors for each weighting
 ;                     (flux, velocity error, both, uniform), EW and FB (vectors)
-;                   - mean gas kinematics and errors, EW and FB (vectors)
+;                   - number of measurements in the mean gas kinematics, EW and FB
 ;                   - For each emission line (only good fits):
 ;                       - gas line omission flag, EW and FB (vector)
-;                       - gas kinematics and errors, EW and FB (vector)
+;                       - window limits, EW and FB (matrix)
+;                       - fitted baseline and error, EW and FB (vector)
+;                       - gas kinematics and errors, EW and FB (matrix)
 ;                       - instrumental dispersion at the fitted wavelength, EW and FB (vector)
 ;                       - gas intensities and errors, EW and FB (vector)
 ;                       - gas fluxes and errors, EW and FB (vector)
@@ -271,7 +273,8 @@
 ;                          elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
 ;                          elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
 ;                          elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-;                          elo_ew_kinematics_n=elo_ew_kinematics_n, $
+;                          elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+;                          elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
 ;                          elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
 ;                          elo_ew_kinematics_ier=elo_ew_kinematics_ier, $
 ;                          elo_ew_sinst=elo_ew_sinst, elo_ew_omitted=elo_ew_omitted, $
@@ -282,7 +285,8 @@
 ;                          elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
 ;                          elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
 ;                          elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-;                          elo_fb_kinematics_n=elo_fb_kinematics_n, $
+;                          elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+;                          elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
 ;                          elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
 ;                          elo_fb_kinematics_ier=elo_fb_kinematics_ier, $
 ;                          elo_fb_sinst=elo_fb_sinst, elo_fb_omitted=elo_fb_omitted, $
@@ -640,6 +644,15 @@
 ;               types (flux, velocity error, both, unweighted); see
 ;               MDAP_EMISSION_LINE_ONLY_FIT.
 ;
+;       elo_ew_window intarr[B][O][2]
+;               Wavelength limits used in the fit of each (set of)
+;               emission line(s) for Enci Wang's code.
+;
+;       elo_ew_baseline intarr[B][O]
+;       elo_ew_base_err intarr[B][O]
+;               Constant baseline fit beneath each (group of) emission
+;               line(s) and its error determined using Enci Wang's code.
+;
 ;       elo_ew_kinematics_ind dblarr[B][O][2]
 ;       elo_ew_kinematics_ierr dblarr[B][O][2]
 ;               Kinematics of the individual lines (and errors)
@@ -689,6 +702,16 @@
 ;               kinematic measurements (v, sigma) for each of the 4
 ;               weighting types (flux, velocity error, both,
 ;               unweighted); see MDAP_EMISSION_LINE_ONLY_FIT.
+;
+;       elo_fb_window intarr[B][O][2]
+;               Wavelength limits used in the fit of each (set of)
+;               emission line(s) for Francesco Belfiore's code.
+;
+;       elo_fb_baseline intarr[B][O]
+;       elo_fb_base_err intarr[B][O]
+;               Constant baseline fit beneath each (group of) emission
+;               line(s) and its error determined using Francesco
+;               Belfiore's code.
 ;
 ;       elo_fb_kinematics_ind dblarr[B][O][2]
 ;       elo_fb_kinematics_ierr dblarr[B][O][2]
@@ -862,6 +885,7 @@
 ;                          measurements. Include optimal template mask.
 ;       18 Aug 2015: (KBW) Added extensions for the non-parametric
 ;                          emission-line data.
+;       17 Sep 2015: (KBW) Added emission-line window and baseline data
 ;-
 ;------------------------------------------------------------------------------
 
@@ -1835,7 +1859,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
                 file, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                 elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -1844,7 +1869,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                 elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -1859,7 +1885,7 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         extension_exists = MDAP_CHECK_EXTENSION_EXISTS(file, 'ELOFIT')
 
         ; Determine the dimensions of the input vectors
-        inp_size = make_array(3, /int, value=-1)
+        inp_size = make_array(4, /int, value=-1)
 
         ; Number of moments * number of weights
         if n_elements(elo_ew_kinematics_avg) ne 0 then begin
@@ -1894,6 +1920,12 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             inp_size[2]=(size(elo_ew_kinematics_ind))[2]
         endif else if n_elements(elo_ew_kinematics_ier) ne 0 then begin
             inp_size[2]=(size(elo_ew_kinematics_ier))[2]
+        endif else if n_elements(elo_ew_window) ne 0 then begin
+            inp_size[2]=(size(elo_ew_window))[2]
+        endif else if n_elements(elo_ew_baseline) ne 0 then begin
+            inp_size[2]=(size(elo_ew_baseline))[2]
+        endif else if n_elements(elo_ew_base_err) ne 0 then begin
+            inp_size[2]=(size(elo_ew_base_err))[2]
         endif else if n_elements(elo_ew_sinst) ne 0 then begin
             inp_size[2]=(size(elo_ew_sinst))[2]
         endif else if n_elements(elo_ew_omitted) ne 0 then begin
@@ -1914,6 +1946,12 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             inp_size[2]=(size(elo_fb_kinematics_ind))[2]
         endif else if n_elements(elo_fb_kinematics_ier) ne 0 then begin
             inp_size[2]=(size(elo_fb_kinematics_ier))[2]
+        endif else if n_elements(elo_fb_window) ne 0 then begin
+            inp_size[2]=(size(elo_fb_window))[2]
+        endif else if n_elements(elo_fb_baseline) ne 0 then begin
+            inp_size[2]=(size(elo_fb_baseline))[2]
+        endif else if n_elements(elo_fb_base_err) ne 0 then begin
+            inp_size[2]=(size(elo_fb_base_err))[2]
         endif else if n_elements(elo_fb_sinst) ne 0 then begin
             inp_size[2]=(size(elo_fb_sinst))[2]
         endif else if n_elements(elo_fb_omitted) ne 0 then begin
@@ -1931,8 +1969,10 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         endif else if n_elements(elo_fb_EW_err) ne 0 then $
             inp_size[2]=(size(elo_fb_EW_err))[2]
 
+        ; Number of window elements
+        inp_size[3]=2
+
         ; TODO: Check the number of emission lines against the ELOPAR extension?
-;       if n_elements(emlo_par) ne 0 and inp_size[1] gt 0 then $
         if n_elements(emlo_par) ne 0 && inp_size[2] gt 0 then $
             if n_elements(emlo_par) ne inp_size[2] then $
                 message, 'Number of line structures does not match the number of line results!'
@@ -1948,10 +1988,11 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
             ; Get the dimensions of the existing table
             fxbopen, unit, file, 'ELOFIT', bth           ; Open the file
             nrows = fxpar(bth, 'NAXIS2')                ; Number of rows
-            cur_size = intarr(3)
+            cur_size = intarr(4)
             cur_size[0] = fxbdimen(unit, cols[0])       ; KIN elements (num of wgts*moments)
             cur_size[1] = cur_size[0]/nwgts             ; Number of moments
-            cur_size[2] = fxbdimen(unit, cols[3])       ; Number of emission lines
+            cur_size[2] = fxbdimen(unit, cols[4])       ; Number of emission lines
+            cur_size[3] = 2;fxbdimen(unit, cols[5])       ; Number of window elements
             fxbclose, unit                              ; Close the file
 ;           print, unit
             free_lun, unit                              ; Free the LUN
@@ -1982,53 +2023,65 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_INITIALIZE, $
         MDAP_FXBADDCOL_VALUE,  4, bth, cols[3], ' Enci: Number of emission-lines in average', /int
         MDAP_FXBADDCOL_VECTOR, 5, bth, cur_size[2], cols[4], $
                                ' Enci: Emission-line omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 6, bth, cur_size[2], cols[5], $
-                               ' Enci: Emission-line amplitude', /dbl
+        MDAP_FXBADDCOL_MATRIX, 6, bth, cur_size[2], cur_size[3], cols[5], $
+                               ' Enci: Window limits for line(s) fit', /dbl
         MDAP_FXBADDCOL_VECTOR, 7, bth, cur_size[2], cols[6], $
-                               ' Enci: Emission-line amplitude error', /dbl
-        MDAP_FXBADDCOL_MATRIX, 8, bth, cur_size[2], cur_size[1], cols[7], $
-                               ' Enci: Individual emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_MATRIX, 9, bth, cur_size[2], cur_size[1], cols[8], $
-                               ' Enci: Individual emission-line kinematic errors', /dbl
+                               ' Enci: Baseline', /dbl
+        MDAP_FXBADDCOL_VECTOR, 8, bth, cur_size[2], cols[7], $
+                               ' Enci: Baseline error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 9, bth, cur_size[2], cols[8], $
+                               ' Enci: Emission-line amplitude', /dbl
         MDAP_FXBADDCOL_VECTOR, 10, bth, cur_size[2], cols[9], $
-                               ' Enci: Instrumental dispersion at fitted centroid', /dbl
-        MDAP_FXBADDCOL_VECTOR, 11, bth, cur_size[2], cols[10], $
-                               ' Enci: Emission-line flux', /dbl
-        MDAP_FXBADDCOL_VECTOR, 12, bth, cur_size[2], cols[11], $
-                               ' Enci: Emission-line flux error', /dbl
+                               ' Enci: Emission-line amplitude error', /dbl
+        MDAP_FXBADDCOL_MATRIX, 11, bth, cur_size[2], cur_size[1], cols[10], $
+                               ' Enci: Individual emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_MATRIX, 12, bth, cur_size[2], cur_size[1], cols[11], $
+                               ' Enci: Individual emission-line kinematic errors', /dbl
         MDAP_FXBADDCOL_VECTOR, 13, bth, cur_size[2], cols[12], $
-                               ' Enci: Emission-line equivalent width', /dbl
+                               ' Enci: Instrumental dispersion at fitted centroid', /dbl
         MDAP_FXBADDCOL_VECTOR, 14, bth, cur_size[2], cols[13], $
+                               ' Enci: Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[2], cols[14], $
+                               ' Enci: Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[2], cols[15], $
+                               ' Enci: Emission-line equivalent width', /dbl
+        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[2], cols[16], $
                                ' Enci: Emission-line equivalent width error', /dbl
-        MDAP_FXBADDCOL_VECTOR, 15, bth, cur_size[0], cols[14], $
+        MDAP_FXBADDCOL_VECTOR, 18, bth, cur_size[0], cols[17], $
                                ' Belfiore: Average emission-line kinematics (4 wgts)', /dbl
-        MDAP_FXBADDCOL_VECTOR, 16, bth, cur_size[0], cols[15], $
+        MDAP_FXBADDCOL_VECTOR, 19, bth, cur_size[0], cols[18], $
                                ' Belfiore: Average emission-line kinematic prop errors (4 wgts)', $
                                /dbl
-        MDAP_FXBADDCOL_VECTOR, 17, bth, cur_size[0], cols[16], $
+        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[0], cols[19], $
                                ' Belfiore: Average emission-line kinematic std errors (4 wgts)', $
                                /dbl
-        MDAP_FXBADDCOL_VALUE,  18, bth, cols[17], $
+        MDAP_FXBADDCOL_VALUE,  21, bth, cols[20], $
                                ' Belfiore: Number of emission-lines in average', /int
-        MDAP_FXBADDCOL_VECTOR, 19, bth, cur_size[2], cols[18], $
+        MDAP_FXBADDCOL_VECTOR, 22, bth, cur_size[2], cols[21], $
                                ' Belfiore: Emission-line omission flag', /int
-        MDAP_FXBADDCOL_VECTOR, 20, bth, cur_size[2], cols[19], $
-                               ' Belfiore: Emission-line amplitude', /dbl
-        MDAP_FXBADDCOL_VECTOR, 21, bth, cur_size[2], cols[20], $
-                               ' Belfiore: Emission-line amplitude error', /dbl
-        MDAP_FXBADDCOL_MATRIX, 22, bth, cur_size[2], cur_size[1], cols[21], $
-                               ' Belfiore: Individual emission-line kinematics', /dbl
-        MDAP_FXBADDCOL_MATRIX, 23, bth, cur_size[2], cur_size[1], cols[22], $
-                               ' Belfiore: Individual emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_MATRIX, 23, bth, cur_size[2], cur_size[3], cols[22], $
+                               ' Belfiore: Window limits for line(s) fit', /dbl
         MDAP_FXBADDCOL_VECTOR, 24, bth, cur_size[2], cols[23], $
-                               ' Belfiore: Instrumental dispersion at fitted centroid', /dbl
+                               ' Belfiore: Baseline', /dbl
         MDAP_FXBADDCOL_VECTOR, 25, bth, cur_size[2], cols[24], $
-                               ' Belfiore: Emission-line flux', /dbl
+                               ' Belfiore: Baseline error', /dbl
         MDAP_FXBADDCOL_VECTOR, 26, bth, cur_size[2], cols[25], $
-                               ' Belfiore: Emission-line flux error', /dbl
+                               ' Belfiore: Emission-line amplitude', /dbl
         MDAP_FXBADDCOL_VECTOR, 27, bth, cur_size[2], cols[26], $
+                               ' Belfiore: Emission-line amplitude error', /dbl
+        MDAP_FXBADDCOL_MATRIX, 28, bth, cur_size[2], cur_size[1], cols[27], $
+                               ' Belfiore: Individual emission-line kinematics', /dbl
+        MDAP_FXBADDCOL_MATRIX, 29, bth, cur_size[2], cur_size[1], cols[28], $
+                               ' Belfiore: Individual emission-line kinematic errors', /dbl
+        MDAP_FXBADDCOL_VECTOR, 30, bth, cur_size[2], cols[29], $
+                               ' Belfiore: Instrumental dispersion at fitted centroid', /dbl
+        MDAP_FXBADDCOL_VECTOR, 31, bth, cur_size[2], cols[30], $
+                               ' Belfiore: Emission-line flux', /dbl
+        MDAP_FXBADDCOL_VECTOR, 32, bth, cur_size[2], cols[31], $
+                               ' Belfiore: Emission-line flux error', /dbl
+        MDAP_FXBADDCOL_VECTOR, 33, bth, cur_size[2], cols[32], $
                                ' Belfiore: Emission-line equivalent width', /dbl
-        MDAP_FXBADDCOL_VECTOR, 28, bth, cur_size[2], cols[27], $
+        MDAP_FXBADDCOL_VECTOR, 34, bth, cur_size[2], cols[33], $
                                ' Belfiore: Emission-line equivalent width error', /dbl
 
         if extension_exists eq 0 then begin             ; If the extension does not exist...
@@ -2584,7 +2637,8 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
                 something_to_write, ninp, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                 elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -2592,8 +2646,9 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
                 elo_ew_flxerr=elo_ew_flxerr, elo_ew_EWidth=elo_ew_EWidth, $
                 elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
-                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                elo_fb_kinematics_ase=elo_fb_kinematics_ase, $ 
+                elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -2603,36 +2658,42 @@ PRO MDAP_WRITE_OUTPUT_EMISSION_LINE_FIT_CHECK_INPUTS, $
 
         ; Check that ndrp matches the size of one of the existing inputs
         ; TODO: Assumes all input vectors have the same length!
-        ncol = 28
+        ncol = 34
         nel = intarr(ncol)
         nel[0] = n_elements(elo_ew_kinematics_avg) eq 0 ? 0 : (size(elo_ew_kinematics_avg))[1]
         nel[1] = n_elements(elo_ew_kinematics_aer) eq 0 ? 0 : (size(elo_ew_kinematics_aer))[1]
         nel[2] = n_elements(elo_ew_kinematics_ase) eq 0 ? 0 : (size(elo_ew_kinematics_ase))[1]
         nel[3] = n_elements(elo_ew_kinematics_n) eq 0 ? 0 : (size(elo_ew_kinematics_n))[1]
-        nel[4] = n_elements(elo_ew_kinematics_ind) eq 0 ? 0 : (size(elo_ew_kinematics_ind))[1]
-        nel[5] = n_elements(elo_ew_kinematics_ier) eq 0 ? 0 : (size(elo_ew_kinematics_ier))[1]
-        nel[6] = n_elements(elo_ew_sinst) eq 0 ? 0 : (size(elo_ew_sinst))[1]
-        nel[7] = n_elements(elo_ew_omitted) eq 0 ? 0 : (size(elo_ew_omitted))[1]
-        nel[8] = n_elements(elo_ew_intens) eq 0 ? 0 : (size(elo_ew_intens))[1]
-        nel[9] = n_elements(elo_ew_interr) eq 0 ? 0 : (size(elo_ew_interr))[1]
-        nel[10] = n_elements(elo_ew_fluxes) eq 0 ? 0 : (size(elo_ew_fluxes))[1]
-        nel[11] = n_elements(elo_ew_flxerr) eq 0 ? 0 : (size(elo_ew_flxerr))[1]
-        nel[12] = n_elements(elo_ew_EWidth) eq 0 ? 0 : (size(elo_ew_EWidth))[1]
-        nel[13] = n_elements(elo_ew_EW_err) eq 0 ? 0 : (size(elo_ew_EW_err))[1]
-        nel[14] = n_elements(elo_fb_kinematics_avg) eq 0 ? 0 : (size(elo_fb_kinematics_avg))[1]
-        nel[15] = n_elements(elo_fb_kinematics_aer) eq 0 ? 0 : (size(elo_fb_kinematics_aer))[1]
-        nel[16] = n_elements(elo_fb_kinematics_ase) eq 0 ? 0 : (size(elo_fb_kinematics_ase))[1]
-        nel[17] = n_elements(elo_fb_kinematics_n) eq 0 ? 0 : (size(elo_fb_kinematics_n))[1]
-        nel[18] = n_elements(elo_fb_kinematics_ind) eq 0 ? 0 : (size(elo_fb_kinematics_ind))[1]
-        nel[19] = n_elements(elo_fb_kinematics_ier) eq 0 ? 0 : (size(elo_fb_kinematics_ier))[1]
-        nel[20] = n_elements(elo_fb_sinst) eq 0 ? 0 : (size(elo_fb_sinst))[1]
-        nel[21] = n_elements(elo_fb_omitted) eq 0 ? 0 : (size(elo_fb_omitted))[1]
-        nel[22] = n_elements(elo_fb_intens) eq 0 ? 0 : (size(elo_fb_intens))[1]
-        nel[23] = n_elements(elo_fb_interr) eq 0 ? 0 : (size(elo_fb_interr))[1]
-        nel[24] = n_elements(elo_fb_fluxes) eq 0 ? 0 : (size(elo_fb_fluxes))[1]
-        nel[25] = n_elements(elo_fb_flxerr) eq 0 ? 0 : (size(elo_fb_flxerr))[1]
-        nel[26] = n_elements(elo_fb_EWidth) eq 0 ? 0 : (size(elo_fb_EWidth))[1]
-        nel[27] = n_elements(elo_fb_EW_err) eq 0 ? 0 : (size(elo_fb_EW_err))[1]
+        nel[4] = n_elements(elo_ew_window) eq 0 ? 0 : (size(elo_ew_window))[1]
+        nel[5] = n_elements(elo_ew_baseline) eq 0 ? 0 : (size(elo_ew_baseline))[1]
+        nel[6] = n_elements(elo_ew_base_err) eq 0 ? 0 : (size(elo_ew_base_err))[1]
+        nel[7] = n_elements(elo_ew_kinematics_ind) eq 0 ? 0 : (size(elo_ew_kinematics_ind))[1]
+        nel[8] = n_elements(elo_ew_kinematics_ier) eq 0 ? 0 : (size(elo_ew_kinematics_ier))[1]
+        nel[9] = n_elements(elo_ew_sinst) eq 0 ? 0 : (size(elo_ew_sinst))[1]
+        nel[10] = n_elements(elo_ew_omitted) eq 0 ? 0 : (size(elo_ew_omitted))[1]
+        nel[11] = n_elements(elo_ew_intens) eq 0 ? 0 : (size(elo_ew_intens))[1]
+        nel[12] = n_elements(elo_ew_interr) eq 0 ? 0 : (size(elo_ew_interr))[1]
+        nel[13] = n_elements(elo_ew_fluxes) eq 0 ? 0 : (size(elo_ew_fluxes))[1]
+        nel[14] = n_elements(elo_ew_flxerr) eq 0 ? 0 : (size(elo_ew_flxerr))[1]
+        nel[15] = n_elements(elo_ew_EWidth) eq 0 ? 0 : (size(elo_ew_EWidth))[1]
+        nel[16] = n_elements(elo_ew_EW_err) eq 0 ? 0 : (size(elo_ew_EW_err))[1]
+        nel[17] = n_elements(elo_fb_kinematics_avg) eq 0 ? 0 : (size(elo_fb_kinematics_avg))[1]
+        nel[18] = n_elements(elo_fb_kinematics_aer) eq 0 ? 0 : (size(elo_fb_kinematics_aer))[1]
+        nel[19] = n_elements(elo_fb_kinematics_ase) eq 0 ? 0 : (size(elo_fb_kinematics_ase))[1]
+        nel[20] = n_elements(elo_fb_kinematics_n) eq 0 ? 0 : (size(elo_fb_kinematics_n))[1]
+        nel[21] = n_elements(elo_fb_window) eq 0 ? 0 : (size(elo_fb_window))[1]
+        nel[22] = n_elements(elo_fb_baseline) eq 0 ? 0 : (size(elo_fb_baseline))[1]
+        nel[23] = n_elements(elo_fb_base_err) eq 0 ? 0 : (size(elo_fb_base_err))[1]
+        nel[24] = n_elements(elo_fb_kinematics_ind) eq 0 ? 0 : (size(elo_fb_kinematics_ind))[1]
+        nel[25] = n_elements(elo_fb_kinematics_ier) eq 0 ? 0 : (size(elo_fb_kinematics_ier))[1]
+        nel[26] = n_elements(elo_fb_sinst) eq 0 ? 0 : (size(elo_fb_sinst))[1]
+        nel[27] = n_elements(elo_fb_omitted) eq 0 ? 0 : (size(elo_fb_omitted))[1]
+        nel[28] = n_elements(elo_fb_intens) eq 0 ? 0 : (size(elo_fb_intens))[1]
+        nel[29] = n_elements(elo_fb_interr) eq 0 ? 0 : (size(elo_fb_interr))[1]
+        nel[30] = n_elements(elo_fb_fluxes) eq 0 ? 0 : (size(elo_fb_fluxes))[1]
+        nel[31] = n_elements(elo_fb_flxerr) eq 0 ? 0 : (size(elo_fb_flxerr))[1]
+        nel[32] = n_elements(elo_fb_EWidth) eq 0 ? 0 : (size(elo_fb_EWidth))[1]
+        nel[33] = n_elements(elo_fb_EW_err) eq 0 ? 0 : (size(elo_fb_EW_err))[1]
         ninp = max(nel)
 
         for i=0,ncol-1 do begin
@@ -3366,7 +3427,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                 file, nbin=nbin, emlo_par=emlo_par, elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                 elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -3376,7 +3438,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                 elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -3389,7 +3452,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                         elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                        elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -3398,7 +3462,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                         elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                        elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -3411,7 +3476,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                         elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                        elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -3420,7 +3486,8 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                         elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                        elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -3470,53 +3537,64 @@ PRO MDAP_WRITE_OUTPUT_UPDATE_EMISSION_LINE_FIT, $
             FXBWRITM, tbl, [cols[3]], elo_ew_kinematics_n
         if n_elements(elo_ew_omitted) ne 0 then $
             FXBWRITM, tbl, [cols[4]], transpose(elo_ew_omitted)
+        if n_elements(elo_ew_window) ne 0 then $
+            FXBWRITM, tbl, [cols[5]], transpose(elo_ew_window, [1, 2, 0])
+        if n_elements(elo_ew_baseline) ne 0 then $
+            FXBWRITM, tbl, [cols[6]], transpose(elo_ew_baseline)
+        if n_elements(elo_ew_base_err) ne 0 then $
+            FXBWRITM, tbl, [cols[7]], transpose(elo_ew_base_err)
         if n_elements(elo_ew_intens) ne 0 then $
-            FXBWRITM, tbl, [cols[5]], transpose(elo_ew_intens)
+            FXBWRITM, tbl, [cols[8]], transpose(elo_ew_intens)
         if n_elements(elo_ew_interr) ne 0 then $
-            FXBWRITM, tbl, [cols[6]], transpose(elo_ew_interr)
+            FXBWRITM, tbl, [cols[9]], transpose(elo_ew_interr)
         if n_elements(elo_ew_kinematics_ind) ne 0 then $
-            FXBWRITM, tbl, [cols[7]], transpose(elo_ew_kinematics_ind, [1, 2, 0])
+            FXBWRITM, tbl, [cols[10]], transpose(elo_ew_kinematics_ind, [1, 2, 0])
         if n_elements(elo_ew_kinematics_ier) ne 0 then $
-            FXBWRITM, tbl, [cols[8]], transpose(elo_ew_kinematics_ier, [1, 2, 0])
+            FXBWRITM, tbl, [cols[11]], transpose(elo_ew_kinematics_ier, [1, 2, 0])
         if n_elements(elo_ew_sinst) ne 0 then $
-            FXBWRITM, tbl, [cols[9]], transpose(elo_ew_sinst)
+            FXBWRITM, tbl, [cols[12]], transpose(elo_ew_sinst)
         if n_elements(elo_ew_fluxes) ne 0 then $
-            FXBWRITM, tbl, [cols[10]], transpose(elo_ew_fluxes)
+            FXBWRITM, tbl, [cols[13]], transpose(elo_ew_fluxes)
         if n_elements(elo_ew_flxerr) ne 0 then $
-            FXBWRITM, tbl, [cols[11]], transpose(elo_ew_flxerr)
+            FXBWRITM, tbl, [cols[14]], transpose(elo_ew_flxerr)
         if n_elements(elo_ew_EWidth) ne 0 then $
-            FXBWRITM, tbl, [cols[12]], transpose(elo_ew_EWidth)
+            FXBWRITM, tbl, [cols[15]], transpose(elo_ew_EWidth)
         if n_elements(elo_ew_EW_err) ne 0 then $
-            FXBWRITM, tbl, [cols[13]], transpose(elo_ew_EW_err)
-
+            FXBWRITM, tbl, [cols[16]], transpose(elo_ew_EW_err)
         if n_elements(elo_fb_kinematics_avg) ne 0 then $
-            FXBWRITM, tbl, [cols[14]], transpose(elo_fb_kinematics_avg)
+            FXBWRITM, tbl, [cols[17]], transpose(elo_fb_kinematics_avg)
         if n_elements(elo_fb_kinematics_aer) ne 0 then $
-            FXBWRITM, tbl, [cols[15]], transpose(elo_fb_kinematics_aer)
+            FXBWRITM, tbl, [cols[18]], transpose(elo_fb_kinematics_aer)
         if n_elements(elo_fb_kinematics_ase) ne 0 then $
-            FXBWRITM, tbl, [cols[16]], transpose(elo_fb_kinematics_ase)
+            FXBWRITM, tbl, [cols[19]], transpose(elo_fb_kinematics_ase)
         if n_elements(elo_fb_kinematics_n) ne 0 then $
-            FXBWRITM, tbl, [cols[17]], elo_fb_kinematics_n
+            FXBWRITM, tbl, [cols[20]], elo_fb_kinematics_n
         if n_elements(elo_fb_omitted) ne 0 then $
-            FXBWRITM, tbl, [cols[18]], transpose(elo_fb_omitted)
+            FXBWRITM, tbl, [cols[21]], transpose(elo_fb_omitted)
+        if n_elements(elo_fb_window) ne 0 then $
+            FXBWRITM, tbl, [cols[22]], transpose(elo_fb_window, [1, 2, 0])
+        if n_elements(elo_fb_baseline) ne 0 then $
+            FXBWRITM, tbl, [cols[23]], transpose(elo_fb_baseline)
+        if n_elements(elo_fb_base_err) ne 0 then $
+            FXBWRITM, tbl, [cols[24]], transpose(elo_fb_base_err)
         if n_elements(elo_fb_intens) ne 0 then $
-            FXBWRITM, tbl, [cols[19]], transpose(elo_fb_intens)
+            FXBWRITM, tbl, [cols[25]], transpose(elo_fb_intens)
         if n_elements(elo_fb_interr) ne 0 then $
-            FXBWRITM, tbl, [cols[20]], transpose(elo_fb_interr)
+            FXBWRITM, tbl, [cols[26]], transpose(elo_fb_interr)
         if n_elements(elo_fb_kinematics_ind) ne 0 then $
-            FXBWRITM, tbl, [cols[21]], transpose(elo_fb_kinematics_ind, [1, 2, 0])
+            FXBWRITM, tbl, [cols[27]], transpose(elo_fb_kinematics_ind, [1, 2, 0])
         if n_elements(elo_fb_kinematics_ier) ne 0 then $
-            FXBWRITM, tbl, [cols[22]], transpose(elo_fb_kinematics_ier, [1, 2, 0])
+            FXBWRITM, tbl, [cols[28]], transpose(elo_fb_kinematics_ier, [1, 2, 0])
         if n_elements(elo_fb_sinst) ne 0 then $
-            FXBWRITM, tbl, [cols[23]], transpose(elo_fb_sinst)
+            FXBWRITM, tbl, [cols[29]], transpose(elo_fb_sinst)
         if n_elements(elo_fb_fluxes) ne 0 then $
-            FXBWRITM, tbl, [cols[24]], transpose(elo_fb_fluxes)
+            FXBWRITM, tbl, [cols[30]], transpose(elo_fb_fluxes)
         if n_elements(elo_fb_flxerr) ne 0 then $
-            FXBWRITM, tbl, [cols[25]], transpose(elo_fb_flxerr)
+            FXBWRITM, tbl, [cols[31]], transpose(elo_fb_flxerr)
         if n_elements(elo_fb_EWidth) ne 0 then $
-            FXBWRITM, tbl, [cols[26]], transpose(elo_fb_EWidth)
+            FXBWRITM, tbl, [cols[32]], transpose(elo_fb_EWidth)
         if n_elements(elo_fb_EW_err) ne 0 then $
-            FXBWRITM, tbl, [cols[27]], transpose(elo_fb_EW_err)
+            FXBWRITM, tbl, [cols[33]], transpose(elo_fb_EW_err)
 
         FXBFINISH, tbl                                  ; Close the file
 ;       print, tbl
@@ -3793,7 +3871,8 @@ PRO MDAP_WRITE_OUTPUT, $
                 elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                 elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                 elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                 elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                 elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                 elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -3803,7 +3882,8 @@ PRO MDAP_WRITE_OUTPUT, $
                 elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                 elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                 elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                 elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                 elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                 elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $
@@ -4174,7 +4254,8 @@ PRO MDAP_WRITE_OUTPUT, $
                         elo_ew_kinematics_avg=elo_ew_kinematics_avg, $
                         elo_ew_kinematics_aer=elo_ew_kinematics_aer, $
                         elo_ew_kinematics_ase=elo_ew_kinematics_ase, $
-                        elo_ew_kinematics_n=elo_ew_kinematics_n, $
+                        elo_ew_kinematics_n=elo_ew_kinematics_n, elo_ew_window=elo_ew_window, $
+                        elo_ew_baseline=elo_ew_baseline, elo_ew_base_err=elo_ew_base_err, $
                         elo_ew_kinematics_ind=elo_ew_kinematics_ind, $
                         elo_ew_kinematics_ier=elo_ew_kinematics_ier, elo_ew_sinst=elo_ew_sinst, $
                         elo_ew_omitted=elo_ew_omitted, elo_ew_intens=elo_ew_intens, $
@@ -4183,7 +4264,8 @@ PRO MDAP_WRITE_OUTPUT, $
                         elo_ew_EW_err=elo_ew_EW_err, elo_fb_kinematics_avg=elo_fb_kinematics_avg, $
                         elo_fb_kinematics_aer=elo_fb_kinematics_aer, $
                         elo_fb_kinematics_ase=elo_fb_kinematics_ase, $
-                        elo_fb_kinematics_n=elo_fb_kinematics_n, $
+                        elo_fb_kinematics_n=elo_fb_kinematics_n, elo_fb_window=elo_fb_window, $
+                        elo_fb_baseline=elo_fb_baseline, elo_fb_base_err=elo_fb_base_err, $
                         elo_fb_kinematics_ind=elo_fb_kinematics_ind, $
                         elo_fb_kinematics_ier=elo_fb_kinematics_ier, elo_fb_sinst=elo_fb_sinst, $
                         elo_fb_omitted=elo_fb_omitted, elo_fb_intens=elo_fb_intens, $

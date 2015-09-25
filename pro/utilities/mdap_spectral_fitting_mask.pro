@@ -56,6 +56,8 @@
 ;
 ; REVISION HISTORY:
 ;       10 Aug 2015: Pulled from MDAP_SPECTRAL_FITTING by K. Westfall (KBW)
+;       23 Sep 2015: (KBW) Fixed major issues with the masked
+;                          wavelengths; original approach was wrong.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -64,6 +66,7 @@ FUNCTION MDAP_SPECTRAL_FITTING_MASK, $
 
         ; 1. Apply the wavelength range limit, if provided
         now=(size(obj_wave))[1]                             ; Number of object wavelengths
+        print, 'Original number of galaxy pixels: ', now
         if n_elements(wave_range_analysis) then begin
             MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
             if count eq 0 then $
@@ -81,38 +84,44 @@ FUNCTION MDAP_SPECTRAL_FITTING_MASK, $
         ;    further limit the blue and red edges of the galaxy spectra
         now=(size(obj_wave[fit_indx]))[1]               ; Number of good object pixels
         ntw=(size(tpl_wave))[1]                         ; Number of template pixels
+        print, 'After selecting the wavelength range to analyze: ', now
+        print, 'Number of template pixels: ', ntw
         if ntw lt now then begin
 
             ; Indices of wavelengths redward of the redshifted template
-            indx=where(obj_wave gt tpl_wave[0]*(1. + z_min), count)
+            indx=where(obj_wave gt (tpl_wave[0]*(1. + z_min)), count)
             if count eq 0 then $
                 message, 'No overlapping wavelengths between galaxy and template!'
-
-            ; New number of good object pixels
-            now_=(size(obj_wave[indx]))[1]
-            if ntw lt now_ then $
-                indx=indx[0:ntw-1]                      ; Truncate the red edge as well
+            print, 'Pixels blueward of redshifted template: ', n_elements(obj_wave)-n_elements(indx)
 
             ; Merge with current index
             fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
             if count eq 0 then $
                 message, 'No overlapping wavelengths between galaxy and template!'
+            now_=(size(obj_wave[indx]))[1]
+            print, 'Object pixels after merging with the specified wavelength range: ', now_
+
+            ; New number of good object pixels
+            if ntw lt now_ then begin
+                fit_indx=fit_indx[0:ntw-1]                      ; Truncate the red edge as well
+                print, 'Impose same as number of template pixels: ', n_elements(fit_indx), ntw
+            endif
         endif
-        now=(size(obj_wave[fit_indx]))[1]               ; Update number of good object pixels
 
         ; 3. Limit wavelength range to avoid aliasing problems in the template convolution
         sigomit = 6.                                    ; Number of sigma to mask (+/- 3)
         nalias = fix(sigomit*maxvel/velScale)           ; Number of pixels to mask (maxvel~maxsig)
-        print, 'Masking '+MDAP_STC(nalias,/integer)+' pixels at either end of the spectrum to' $
-               + ' avoid convolution aliasing.'
         ; Mask to the range that should be unaffected by alias errors
-        wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]/(1+z_min) ]
-        MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias*(1. + z_min), indx
+        wave_range_tpl_unalias = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]*(1+z_min) ]
+        print, 'Mask to these wavelengths to avoid convolution aliasing: ', wave_range_tpl_unalias
+        MDAP_SELECT_WAVE, obj_wave, wave_range_tpl_unalias, indx
         ; Merge with current index
         fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
         if count eq 0 then $
             message, 'No intersection between wave_range_tpl_unalias and fit_indx!'
 
+        print, 'Final wavelength range to fit: ', obj_wave[fit_indx[0]], $
+               obj_wave[fit_indx[n_elements(fit_indx)-1]]
         return, fit_indx
 END
 
