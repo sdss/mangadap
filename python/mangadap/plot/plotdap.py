@@ -283,40 +283,31 @@ def set_cmaps(cmaps, n_plots):
 
     return cmaps
 
-def set_single_panel_par(cmap):
+def set_single_panel_par(cmap, title, cblabel, titlefontsize=28,
+                         cbfontsize=20):
     """Set default parameters for a single panel plot.
 
     Args:
         cmap (list): Colormap.
+        title (str): Plot title.
+        cblabel (str): Color bar label.
+        titlefontsize (int): Title font size. Default is 28.
+        cbfontsize (int): Colorbar label and tick param font size. Default is
+            20.
 
     Returns:
         tuple: (figure keyword args, axes keyword args, title keyword args,
                 imshow keyword args, colorbar keyword args)
     """
     ax_kws = dict(facecolor='#A8A8A8')
-    imshow_kws = dict(cmap=set_cmap(cmap))
+    imshow_kws = dict(cmap=cmap)
     fig_kws = dict(figsize=(10, 8))
-    title_kws = dict(fontsize=28)
+    title_kws = dict(fontsize=titlefontsize, label=title)
     cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
                   cbrange=None, sigclip=3, symmetric=False,
-                  label_kws=dict(label=None, size=20),
-                  tick_params_kws=dict(labelsize=20))
+                  label_kws=dict(label=cblabel, size=cbfontsize),
+                  tick_params_kws=dict(labelsize=cbfontsize))
     return fig_kws, ax_kws, title_kws, imshow_kws, cb_kws
-
-def set_multi_panel_par():
-    """Set default parameters for a multi panel plot.
-
-    Returns:
-        tuple: (figure keyword args, axes keyword args, title keyword args,
-                colorbar keyword args)
-    """
-    ax_kws = dict(facecolor='#A8A8A8')
-    fig_kws = dict(figsize=(20, 12))
-    title_kws = dict(fontsize=20)
-    cb_kws = dict(cbrange=None, sigclip=3, symmetric=False,
-                  label_kws=dict(label=None, size=16),
-                  tick_params_kws=dict(labelsize=16))
-    return fig_kws, ax_kws, title_kws, cb_kws
 
 def ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
     """Basic axes setup.
@@ -466,6 +457,31 @@ def set_bin_num_fontsize(fontsize, number, nbin):
         fontsize_out = fontsize + 2
     return fontsize_out
 
+
+def binnum_plot():
+    """SNIPPETS ONLY
+    
+    show_binnum (bool): Show bin numbers. Default is False.
+    show_bindot (bool): Show bin dots. Default is False.
+    """
+    binnum_kws = {}
+    bindot_args = ()
+    if show_binnum:
+        binnum_kws = dict(binxrl=binxrl, binyru=binyru, nbin=nbin,
+                          val=values[col].values, spaxel_size=spaxel_size,
+                          imshow_kws=imshow_kws, fontsize=6)
+    if show_bindot:
+        bindot_args = (-binxrl, binyru)
+
+    ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
+                          title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
+                          cb_kws=cb, binnum_kws=binnum_kws, bindot_args=bindot_args)
+    if savefig:
+        path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+        plt.savefig(path, dpi=200)
+        print(path.split('/')[-1])
+
+
 def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
              fig_kws=None, ax_kws=None, title_kws=None, patch_kws=None,
              imshow_kws=None, cb_kws=None, binnum_kws=None, bindot_args=()):
@@ -495,9 +511,13 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     Returns:
         tuple: (plt.figure object, plt.figure axis object)
     """
-    for item in (fig_kws, ax_kws, title_kws, patch_kws, imshow_kws, cb_kws,
-                 binnum_kws):
-        item = util.none_to_empty_dict(item)
+    fig_kws = util.none_to_empty_dict(fig_kws)
+    ax_kws = util.none_to_empty_dict(ax_kws)
+    title_kws = util.none_to_empty_dict(title_kws)
+    patch_kws = util.none_to_empty_dict(patch_kws)
+    imshow_kws = util.none_to_empty_dict(imshow_kws)
+    cb_kws = util.none_to_empty_dict(cb_kws)
+    binnum_kws = util.none_to_empty_dict(binnum_kws)
 
     fig, ax = ax_setup(fig, ax, fig_kws=fig_kws, **ax_kws)
 
@@ -525,22 +545,23 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
 
     return fig, ax
 
-def plot_multi_map(all_panel_kws, patch_kws=None, fig_kws=None, mg_kws=None):
+def plot_multi_map(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
     """Make multi-panel map plot.
 
     Args:
         all_panel_kws (dict): Collection of keyword args for each panel
+        fig_kws (dict): Keyword args to pass to plt.figure. Default is None.
         patch_kws (dict): Keyword args to pass to ax.add_patch. Default is
             None.
-        fig_kws (dict): Keyword args to pass to plt.figure. Default is None.
         mg_kws (dict): MaNGA analysis ID keyword args to pass to
             make_map_title. Default is None.
 
     Returns:
         tuple: (plt.figure object, plt.figure axis object)
     """
-    for item in (patch_kws, fig_kws, mg_kws):
-        item = util.none_to_empty_dict(item)
+    fig_kws = util.none_to_empty_dict(fig_kws)
+    mg_kws = util.none_to_empty_dict(mg_kws)
+    patch_kws = util.none_to_empty_dict(patch_kws)
 
     fig = plt.figure(**fig_kws)
     if 'seaborn' in sys.modules:
@@ -577,8 +598,8 @@ def plot_multi_map(all_panel_kws, patch_kws=None, fig_kws=None, mg_kws=None):
 def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                binyru, nbin, spaxel_size, delta, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, patch_kws=None,
-               titles=None, cblabels=None, cmaps=None, show_binnum=False,
-               show_bindot=False, savefig_single=True, savefig_multi=True):
+               titles=None, cblabels=None, cmaps=None, savefig_single=True,
+               savefig_multi=True):
     """Make single panel plots and multi-panel plot for set of measurements.
 
     Add options to save to file.
@@ -612,11 +633,10 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
        titles (list): Plot title for each map. Default is None.
        cblabels (list): Colorbar labels. Default is None.
        cmaps (list): Colormaps. Default is None.
-       show_binnum (bool): Show bin numbers. Default is False.
-       show_bindot (bool): Show bin dots. Default is False.
        savefig_single (bool): Save single panel plots. Default is True.
        savefig_multi (bool): Save multi-panel plot. Default is True.
     """
+    # Adjust arguments
     if isinstance(values, str):
         multiplot_name = copy.deepcopy(values)
         values = getattr(dapdata, values)
@@ -624,62 +644,47 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
     if isinstance(errors, str):
         errors = getattr(dapdata, errors)
 
-    for item in (patch_kws, mg_kws):
-        item = util.none_to_empty_dict(item)
+    patch_kws = util.none_to_empty_dict(patch_kws)
+    mg_kws = util.none_to_empty_dict(mg_kws)
+    cmaps = set_cmaps(cmaps, len(columns))
 
-    images = []
-    xy_nomeasures = []
+    # Create images
+    ims = []
+    xys = []
     for col in columns:
         im, xy = make_image(val=values[col].values, err=errors[col].values,
                             xpos=xpos, ypos=ypos, binid=binid, delta=delta,
                             val_no_measure=val_no_measure,
                             snr_thresh=snr_thresh)
-        images.append(im)
-        xy_nomeasures.append(xy)
+        ims.append(im)
+        xys.append(xy)
 
-    cmaps = set_cmaps(cmaps, len(columns))
-
-    fig_kws, ax_kws, title_kws, cb_kws = set_multi_panel_par()
+    # Make plots
     all_panel_kws = []
-    for i, (im, xy, col, cmap) in enumerate(zip(images, xy_nomeasures,
-                                                columns, cmaps)):
-        plot_title = titles[col]
-        cblabel = cblabels[col]
-        binnum_kws = {}
-        bindot_args = ()
-        if show_binnum:
-            binnum_kws = dict(binxrl=binxrl, binyru=binyru, nbin=nbin,
-                              val=values[col].values, spaxel_size=spaxel_size,
-                              imshow_kws=imshow_kws, fontsize=6)
-        if show_bindot:
-            bindot_args = (-binxrl, binyru)
-
-        # DEBUGGING: only plot one map
-        if i == 0:
+    for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
+        if i == 0:  # DEBUGGING: only plot one map
             # plot single panel maps
-            fg, axs, tt, iw, cb = set_single_panel_par(cmap=cmap)
-            tt['label'] = plot_title
-            cb['label_kws']['label'] = cblabel
+            fg, axs, tt, iw, cb = set_single_panel_par(
+                cmap=cmap, title=titles[col], cblabel=cblabels[col],
+                titlefontsize=28, cbfontsize=20)
             ig = plot_map(im, extent, xy_nomeasure=xy, fig_kws=fg, ax_kws=axs,
                           title_kws=tt, patch_kws=patch_kws, imshow_kws=iw,
-                          cb_kws=cb, binnum_kws=binnum_kws,
-                          bindot_args=bindot_args)
+                          cb_kws=cb)
             if savefig_single:
                 path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
                 plt.savefig(path, dpi=200)
                 print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
-        kwdicts = (ax_kws, title_kws, imshow_kws, cb_kws)
-        # ADD: allow for different color maps in multi-panel plot
-        a_kws, t_kws, i_kws, c_kws = [copy.deepcopy(it) for it in kwdicts]
-        t_kws['label'] = plot_title
-        c_kws['label_kws']['label'] = cblabel
+        ig, a_kws, t_kws, i_kws, c_kws = set_single_panel_par(
+            cmap=cmap, title=titles[col], cblabel=cblabels[col],
+            titlefontsize=20, cbfontsize=16)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
                                   ax_kws=a_kws, title_kws=t_kws,
                                   imshow_kws=i_kws, cb_kws=c_kws))
 
     # plot multi-panel maps
+    fig_kws = dict(figsize=(20, 12))
     ig = plot_multi_map(all_panel_kws=all_panel_kws, fig_kws=fig_kws,
                         patch_kws=patch_kws, mg_kws=mg_kws)
     if savefig_multi:
@@ -687,4 +692,6 @@ def make_plots(columns, values, errors, extent, xpos, ypos, binid, binxrl,
                                 mg_kws)
         plt.savefig(path, dpi=200)
         print(path.split('/')[-1])
+
+# TODO
 
