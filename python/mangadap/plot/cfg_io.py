@@ -44,6 +44,12 @@ def string_to_float(d):
         d[k] = float(v)
     return d
 
+def string_to_bool(d):
+    """Convert values in a dictionary from strings to booleans."""
+    for k, v in d.items():
+        d[k] = v.lower() in ('True', 'true')
+    return d
+
 def specind_units(dapdata, si):
     """Get units for spectral index measurements.
 
@@ -94,11 +100,10 @@ def cblabels_to_series(d):
         labels = d['colorbar']['cblabels']
     return pd.Series(labels, index=d['data']['columns'])
 
-def convert_config_dtypes(mp_kws, d, plottype=None, dapdata=None):
+def convert_config_dtypes(d, plottype=None, dapdata=None):
     """Convert dtypes of config parser dictionary to useful forms.
 
     Args:
-        mp_kws (dict): Generic make_plot keyword args dictionary.
         d (dict): Config parser output dictionary.
         plottype (str): Type of plot. Defaults to None.
         dapdata: dap.DAP object. Defaults to None.
@@ -109,8 +114,14 @@ def convert_config_dtypes(mp_kws, d, plottype=None, dapdata=None):
     columns = d['data']['columns']
     d['snr'] = string_to_float(d['snr'])
     d['data']['titles'] = pd.Series(d['data']['titles'], index=columns)
+    d['show'] = string_to_bool(d['show'])
+    d['save'] = string_to_bool(d['save'])
     if plottype is 'specind':
         d['colorbar']['cblabels'] = specind_units(dapdata, columns)
     else:
         d['colorbar']['cblabels'] = cblabels_to_series(d)
-    return merge_dicts(mp_kws, d)
+    dout = {}
+    for section in d:
+        for k, v in d[section].items():
+            dout[k] = v
+    return dout
