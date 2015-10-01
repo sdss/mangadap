@@ -7,12 +7,10 @@ import copy
 
 from imp import reload
 
-from sdss.files import base_path
 import dap
 import plotdap
 import cfg_io
 import util
-
 
 if hasattr('__main__', '__file__'):
     # run as script
@@ -41,7 +39,7 @@ for file_kws in file_kws_all:
     gal.get_all_ext()
     mg_kws = copy.deepcopy(file_kws)
     mg_kws['mangaid'] = gal.mangaid
-    
+
     # plottypes = ['snr', 'flux_ew', 'specind']
     # plottypes = ['drpqa']
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
