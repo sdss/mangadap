@@ -23,7 +23,7 @@ if hasattr('__main__', '__file__'):
         raise IndexError('Usage: python plotqa.py file_list plottypes_list')
 else:
     # interactive session
-    file_list = join(os.getenv('$MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3',
+    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3',
                      '7443', '12701', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
