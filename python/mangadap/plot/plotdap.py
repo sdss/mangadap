@@ -3,6 +3,7 @@
 
 from __future__ import division, print_function, absolute_import
 
+import os
 import sys
 import copy
 
@@ -609,7 +610,7 @@ def plot_multi_map(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
                cblabels=None, cmaps=None, make_single=True, make_multi=True,
-               savefig_single=True, savefig_multi=True):
+               savefig_single=True, savefig_multi=True, overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
 
     Args:
@@ -633,6 +634,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
        make_multi (bool): Make multi-panel plot. Default is True.
        savefig_single (bool): Save single panel plots. Default is True.
        savefig_multi (bool): Save multi-panel plot. Default is True.
+       overwrite (bool): Overwrite plot if it exists. Default is False.
     """
     # Adjust arguments
     if isinstance(values, str):
@@ -677,8 +679,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                           patch_kws=patch_kws, imshow_kws=iw, cb_kws=cb)
             if savefig_single:
                 path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
-                plt.savefig(path, dpi=200)
-                print(path.split('/')[-1])
+                if overwrite or not os.path.isfile(path):
+                    plt.savefig(path, dpi=200)
+                    print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = set_par(cmap=cmap, title=titles[col],
@@ -695,8 +698,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
         if savefig_multi:
             path = util.output_path(multi_name, dapdata.path_data, 'maps',
                                     mg_kws)
-            plt.savefig(path, dpi=200)
-            print(path.split('/')[-1])
+            if overwrite or not os.path.isfile(path):
+                plt.savefig(path, dpi=200)
+                print(path.split('/')[-1])
 
 # TODO
 

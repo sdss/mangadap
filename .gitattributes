@@ -2627,6 +2627,8 @@ python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
 python/mangadap/plot/cfg_io.py -text
 python/mangadap/plot/conf.py -text
+python/mangadap/plot/config/drpqa.ini -text
+python/mangadap/plot/config/drpqa_plottypes.ini -text
 python/mangadap/plot/config/flux_ew.ini -text
 python/mangadap/plot/config/flux_fb.ini -text
 python/mangadap/plot/config/sdss_paths.ini -text
@@ -2640,6 +2642,7 @@ python/mangadap/plot/plot_map_wrap.py -text
 python/mangadap/plot/plot_qa.py -text
 python/mangadap/plot/plot_qa_wrap.py -text
 python/mangadap/plot/plotdap.py -text
+python/mangadap/plot/plotqa.py -text
 python/mangadap/plot/tests/__init__.py -text
 python/mangadap/plot/tests/test_cfg_io.py -text
 python/mangadap/plot/util.py -text

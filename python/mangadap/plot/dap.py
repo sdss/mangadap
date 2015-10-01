@@ -733,5 +733,8 @@ class DAP():
         self.drpqa_err = pd.DataFrame(errs, columns=columns)
 
 
-# TODO
-# 1. create DRPQA web page
+# # FIX: deredshift velocities
+# drpall = util.read_drpall(path_cfg)
+# ind_tbl = (drpall['plateifu'] == '{plate}-{ifudesign}'.format(**file_kws))
+# gal.nsa_redshift = drpall['nsa_redshift'][ind_tbl][0]
+

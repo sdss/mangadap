@@ -208,5 +208,55 @@ def read_drpall(paths_cfg):
     fin.close()
     return drpall
 
+def read_file_list(file_list):
+    """Read file list.
 
+    Args:
+        file_list (str): Full path to file with list of FITS files to plot.
 
+    Returns:
+        dict: FITS file specifications parsed from file name.
+    """
+    files = np.genfromtxt(file_list, dtype='str')
+    files = np.atleast_1d(files)
+    f_kws = []
+    for item in files:
+        stem_file = item.strip('.fits')
+        ig, plate, ifudesign, mode_in, bintype, niter = stem_file.split('-')
+        mode = mode_in.split('_')[0].strip('LOG')
+        f_kws.append(dict(plate=plate, ifudesign=ifudesign, mode=mode,
+                     bintype=bintype, niter=niter))
+    return f_kws
+
+def make_data_path(file_kws):
+    """Make path to data files.
+
+    Args:
+        file_kws (dict): Parameters that specify DAP FITS file.
+    
+    Returns:
+        str: Path to data.
+    """
+    cfg_dir = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap', 'plot',
+                   'config')
+    paths_cfg = join(cfg_dir, 'sdss_paths.ini')
+    bp = base_path(paths_cfg)
+    return bp.dir('dap', **file_kws)
+
+def make_config_path(filename):
+    """Make path to config files.
+
+    Args:
+        filename (str): Plot types config file name. If it does not include
+            the full path, assume that the path points to the the config
+            directory in MANGADAP.
+
+    Returns:
+        str: Config file directory.
+    """
+    if os.path.isfile(filename):
+        cfg_dir = os.path.dirname(filename)
+    else:
+        cfg_dir = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap', 'plot',
+                       'config')
+    return cfg_dir

@@ -38,6 +38,21 @@ def read_config(filename):
             d[section][k] = tmp
     return d
 
+def read_plottypes_config(filename):
+    """Read in plottypes config file.
+
+    Args:
+        filename (str): Full path to file.
+
+    Returns:
+        list
+    """
+    ptypes = read_config(filename)
+    plottypes = ptypes['general']['plottypes']
+    if isinstance(plottypes, str):
+        plottypes = [plottypes]
+    return plottypes
+
 def string_to_float(d):
     """Convert values in a dictionary from strings to floats."""
     for k, v in d.items():
