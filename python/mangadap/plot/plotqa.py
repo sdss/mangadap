@@ -12,7 +12,9 @@ import plotdap
 import cfg_io
 import util
 
-if hasattr('__main__', '__file__'):
+import __main__ as main
+
+if hasattr(main, '__file__'):
     # run as script
     try:
         file_list = sys.argv[1]
@@ -21,8 +23,8 @@ if hasattr('__main__', '__file__'):
         raise IndexError('Usage: python plotqa.py file_list plottypes_list')
 else:
     # interactive session
-    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'trunk_mpl3',
-                     '7443', '12701', 'CUBE_files_to_plot.txt')
+    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), '7443', '1901',
+                     'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
 
@@ -54,5 +56,12 @@ for file_kws in file_kws_all:
 
 
 # TO DO
+# kinematics
+# binnum
+# specind
+
+# gradients (emflux, specind)
+# spectra
+# emline zoomins
 
 # python plotqa.py $MANGA_SPECTRO_ANALYSIS/trunk_mpl3/7443/12701/CUBE_files_to_plot.txt drpqa_plottypes.ini

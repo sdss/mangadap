@@ -678,7 +678,8 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                           title_kws=tt, fig_kws=dict(figsize=(10, 8)),
                           patch_kws=patch_kws, imshow_kws=iw, cb_kws=cb)
             if savefig_single:
-                path = util.output_path(col, dapdata.path_data, 'maps', mg_kws)
+                path = util.output_path(col, dapdata.path_data, 'maps',
+                                        mg_kws, mkdir=True)
                 if overwrite or not os.path.isfile(path):
                     plt.savefig(path, dpi=200)
                     print(path.split('/')[-1])
@@ -697,7 +698,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                             mg_kws=mg_kws, fig_kws=dict(figsize=(20, 12)))
         if savefig_multi:
             path = util.output_path(multi_name, dapdata.path_data, 'maps',
-                                    mg_kws)
+                                    mg_kws, mkdir=True)
             if overwrite or not os.path.isfile(path):
                 plt.savefig(path, dpi=200)
                 print(path.split('/')[-1])

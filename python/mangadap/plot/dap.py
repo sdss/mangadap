@@ -70,6 +70,12 @@ class DAP():
         smod (array): Best-fitting model returned by the stellar continuum
             fit.
 
+        elband (DataFrame): Definition of the emission-line bandpasses used
+            for the non-parametric moments of the flux. 
+
+        elmmnt (DataFrame): Non-parametric moments of the binned spectra over
+            the defined emission-line bands.
+
         kin_ew (DataFrame): Gas kinematics (velocity and velocity dispersion
             in km/s) based on Enci Wang's code averaged over the valid
             individual measurements. Right now, the gas kinematics are only
@@ -90,22 +96,14 @@ class DAP():
             lines obtained using Enci Wang's code in the same flux density
             units as the DRP spectra. Any omitted lines (ELOMIT_EW=1) should
             be ignored!
-        ivel_ew (DataFrame): Best-fitting velocity (in km/s) of individual
-            lines determined from the emission-line-only fits obtained using
-            Enci Wang's code. Any omitted lines (ELOMIT_EW=1) should be
-            ignored!
-        ivelerr_ew (DataFrame): Best-fitting velocity errors (in km/s) of
-            individual lines determined from the emission-line-only fits
-            obtained using Enci Wang's code. Any omitted lines (ELOMIT_EW=1)
-            should be ignored!
-        ivdisp_ew (DataFrame): Best-fitting velocity dispersion (in km/s) of
-            individual lines determined from the emission-line-only fits
-            obtained using Enci Wang's code. Any omitted lines (ELOMIT_EW=1)
-            should be ignored!
-        ivdisperr_ew (DataFrame): Best-fitting velocity dispersion errors (in
+        ikin_ew (DataFrame): Best-fitting velocity and velocity dispersion (in
             km/s) of individual lines determined from the emission-line-only
             fits obtained using Enci Wang's code. Any omitted lines
             (ELOMIT_EW=1) should be ignored!
+        ikinerr_ew (DataFrame): Best-fitting velocity and velocity dispersion
+            errors (in km/s) of individual lines determined from the
+            emission-line-only fits obtained using Enci Wang's code. Any
+            omitted lines (ELOMIT_EW=1) should be ignored!
         sinst_ew (DataFrame): Interpolated spectral resolution (sigma in km/s)
             at the centroids of the fitted emission lines obtained using
             Enci Wang's code. Any omitted lines (ELOMIT_EW=1) should be
@@ -152,22 +150,14 @@ class DAP():
             lines obtained using Francesco Belfiore's code in the same flux
             density units as the DRP spectra. Any omitted lines (ELOMIT_FB=1)
             should be ignored!
-        ivel_fb (DataFrame): Best-fitting velocity (in km/s) of individual
-            lines determined from the emission-line-only fits obtained using
-            Francesco Belfiore's code. Any omitted lines (ELOMIT_FB=1) should
-            be ignored!
-        ivelerr_fb (DataFrame): Best-fitting velocity errors (in km/s) of
-            individual lines determined from the emission-line-only fits
-            obtained using Francesco Belfiore's code. Any omitted lines
-            (ELOMIT_FB=1) should be ignored!
-        ivdisp_fb (DataFrame): Best-fitting velocity dispersion (in km/s) of
-            individual lines determined from the emission-line-only fits
-            obtained using Francesco Belfiore's code. Any omitted lines
-            (ELOMIT_FB=1) should be ignored!
-        ivdisperr_fb (DataFrame): Best-fitting velocity dispersion errors (in
+        ikin_fb (DataFrame): Best-fitting velocity and velocity dispersion (in
             km/s) of individual lines determined from the emission-line-only
             fits obtained using Francesco Belfiore's code. Any omitted lines
-            (ELOMIT_FB=1) should be ignored!
+            (ELOMIT_EW=1) should be ignored!
+        ikinerr_fb (DataFrame): Best-fitting velocity and velocity dispersion
+            errors (in km/s) of individual lines determined from the
+            emission-line-only fits obtained using Francesco Belfiore's code.
+            Any omitted lines (ELOMIT_EW=1) should be ignored!
         sinst_fb (DataFrame): Interpolated spectral resolution (sigma in km/s)
             at the centroids of the fitted emission lines obtained using
             Francesco Belfiore's code. Any omitted lines (ELOMIT_FB=1) should
@@ -302,22 +292,26 @@ class DAP():
         self.count_res_elements()
         self.get_elpar()
         self.get_stellar_cont_fit()
-        # self.get_stellar_gas_fit()
-        # self.get_elmod()
+        self.get_stellar_gas_fit()
 
-        self.get_emline_fit()
+        self.get_elmod()
+        self.get_elband()
+        self.get_elmmnt()
+
+        self.get_elopar()
+
         self.get_elofit()
-
         self.get_elomew()
         self.get_elomfb()
+
         self.get_siwave()
         self.get_siflux()
         self.get_siivar()
         self.get_simask()
         self.get_siotpl()
-        #self.get_siotplm()
+        self.get_siotplm()
         self.get_sibotpl()
-        #self.get_sibotplm()
+        self.get_sibotplm()
         self.get_sipar()
         self.get_sindx()
 
@@ -388,35 +382,63 @@ class DAP():
 
     def get_stellar_gas_fit(self):
         """Read in star + gas fitting analysis."""
+        #self.sgmsk = np.transpose(self.fits.read_hdu_data('SGMSK'))
+        #self.sgmod = np.transpose(self.fits.read_hdu_data('SGMOD'))
         pass
 
     def get_elmod(self):
         """Read in best-fitting emission-line only model."""
         pass
 
-    def get_emline_fit(self):
-        """Get emission line only fits."""
-        # Read in spectral index names
-        elopar_in = self.fits.read_hdu_data('ELOPAR')
-        self.elopar = util.fitsrec_to_dataframe(elopar_in)
-        self.elopar.ELNAME = util.remove_hyphen(self.elopar.ELNAME)
+    def get_elband(self):
+        """Get bandpasses used for non-parametric fits of emission lines."""
+        elband_in = self.fits.read_hdu_data('ELBAND')
+        elnames_in = list(elband_in['ELNAME'].byteswap().newbyteorder())
+        elnames = util.remove_hyphen(elnames_in)
+        elband_tmp = {}
+        for band in ['bandpass', 'blueside', 'redside']:
+            for i, bedge in enumerate(['start', 'end']):
+                elband_tmp['_'.join((band, bedge))] = \
+                    elband_in[band][:, i].byteswap().newbyteorder()
 
-        self.get_elofit()
-        self.get_elomew()
-        self.get_elomfb()
+        cols = ['bandpass_start', 'bandpass_end', 'blueside_start',
+                'blueside_end', 'redside_start', 'redside_end']
+        self.elband = pd.DataFrame(elband_tmp, columns=cols, index=elnames)
+
+    def get_elmmnt(self):
+        """Get moments of non-parametric fits of emission lines."""
+        elmmnt_in = self.fits.read_hdu_data('ELMMNT')
+        cols = [it.lower() for it in elmmnt_in.columns.names]
+        self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
+                                                     self.elband.index)
+
+    def get_elopar(self):
+        """Get emission line only fit parameters."""
+        elopar_in = self.fits.read_hdu_data('ELOPAR')
+        elopar = util.fitsrec_to_dataframe(elopar_in)
+        self.elopar = util.lowercase_colnames(elopar)
+        self.elopar.elname = util.remove_hyphen(self.elopar.elname)
 
     def get_elofit(self):
         """Read results from emission line fits into DataFrames."""
         elofit = self.fits.read_hdu_data('ELOFIT')
 
-        elonames = self.elopar.ELNAME.values
-        elovel_kws = dict(dapf=self.fits, hdu='ELOFIT',
-                          columns=['vel', 'vdisp'])
+        if elofit['KIN_EW'].shape[1] == 2:
+            kincols = ['vel', 'vdisp']
+        else:
+            kincols = ['vel_flux_wt', 'vdisp_flux_wt', 'vel_verr_wt',
+                           'vdisp_verr_wt', 'vel_flux_verr_wt',
+                           'vdisp_flux_verr_wt', 'vel_uni_wt', 'vdisp_uni_wt']
+        ikincols = ['vel', 'vdisp']
+        elonames = self.elopar.elname.values
+        elovel_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=kincols)
         elonames_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=elonames)
 
         # EW: Enci Wang's fitting code
         self.kin_ew = util.read_vals(ext='KIN_EW', **elovel_kws)
         self.kinerr_ew = util.read_vals(ext='KINERR_EW', **elovel_kws)
+        self.kinstde_ew = util.read_vals(ext='KINSTDE_EW', **elovel_kws)
+        self.nkin_ew = elofit['NKIN_EW']
         self.elomit_ew = util.read_vals(ext='ELOMIT_EW', **elonames_kws)
         self.ampl_ew = util.read_vals(ext='AMPL_EW', **elonames_kws)
         self.amplerr_ew = util.read_vals(ext='AMPLERR_EW', **elonames_kws)
@@ -426,14 +448,14 @@ class DAP():
         self.ew_ew = util.read_vals(ext='EW_EW', **elonames_kws)
         self.ewerr_ew = util.read_vals(ext='EWERR_EW', **elonames_kws)
 
-        # split 3D arrays into two 2D DataFrames
-        ikin_ew = elofit['IKIN_EW'].byteswap().newbyteorder()
-        self.ivel_ew = pd.DataFrame(ikin_ew[:, 0], columns=elonames)
-        self.ivdisp_ew = pd.DataFrame(ikin_ew[:, 1], columns=elonames)
+        ikin_ew_in = elofit['IKIN_EW'].byteswap().newbyteorder()
+        ikin_ew = np.transpose(ikin_ew_in, (1, 2, 0))
+        self.ikin_ew = util.arr_to_multiindex_df(ikin_ew, ikincols, elonames)
 
-        ikinerr_ew = elofit['IKINERR_EW'].byteswap().newbyteorder()
-        self.ivelerr_ew = pd.DataFrame(ikinerr_ew[:, 0], columns=elonames)
-        self.ivdisperr_ew = pd.DataFrame(ikinerr_ew[:, 1], columns=elonames)
+        ikinerr_ew_in = elofit['IKINERR_EW'].byteswap().newbyteorder()
+        ikinerr_ew = np.transpose(ikin_ew_in, (1, 2, 0))
+        self.ikinerr_ew = util.arr_to_multiindex_df(ikinerr_ew, ikincols,
+                                                    elonames)
 
         # FB: Francesco Belfiore's fitting code
         self.kin_fb = util.read_vals(ext='KIN_FB', **elovel_kws)
@@ -447,14 +469,14 @@ class DAP():
         self.ew_fb = util.read_vals(ext='EW_FB', **elonames_kws)
         self.ewerr_fb = util.read_vals(ext='EWERR_FB', **elonames_kws)
 
-        # split 3D arrays into two 2D DataFrames
-        ikin_fb = elofit['IKIN_FB'].byteswap().newbyteorder()
-        self.ivel_fb = pd.DataFrame(ikin_fb[:, 0], columns=elonames)
-        self.ivdisp_fb = pd.DataFrame(ikin_fb[:, 1], columns=elonames)
+        ikin_fb_in = elofit['IKIN_FB'].byteswap().newbyteorder()
+        ikin_fb = np.transpose(ikin_fb_in, (1, 2, 0))
+        self.ikin_fb = util.arr_to_multiindex_df(ikin_fb, ikincols, elonames)
 
-        ikinerr_fb = elofit['IKINERR_FB'].byteswap().newbyteorder()
-        self.ivelerr_fb = pd.DataFrame(ikinerr_fb[:, 0], columns=elonames)
-        self.ivdisperr_fb = pd.DataFrame(ikinerr_fb[:, 1], columns=elonames)
+        ikinerr_fb_in = elofit['IKINERR_FB'].byteswap().newbyteorder()
+        ikinerr_fb = np.transpose(ikin_fb_in, (1, 2, 0))
+        self.ikinerr_fb = util.arr_to_multiindex_df(ikinerr_fb, ikincols,
+                                                    elonames)
 
     def get_elomew(self):
         """Best fit emission-line-only spectrum (Enci Wang code)."""
@@ -514,17 +536,25 @@ class DAP():
 
     def get_sindx(self):
         """Read in spectral index info."""
-        nm = self.sinames
-        self.sindx = self.fits.read_hdu_data('SINDX')
-        self.siomit = util.swap_byte_df(self.sindx['SIOMIT'], columns=nm)
-        self.indx = util.swap_byte_df(self.sindx['INDX'], columns=nm)
-        self.indxerr = util.swap_byte_df(self.sindx['INDXERR'], columns=nm)
-        self.indx_otpl = util.swap_byte_df(self.sindx['INDX_OTPL'],
-                                           columns=nm)
-        self.indx_botpl = util.swap_byte_df(self.sindx['INDX_BOTPL'],
-                                            columns=nm)
+        
+        # REMOVE THIS BLOCK
+        # nm = self.sinames
+        # self.sindx = self.fits.read_hdu_data('SINDX')
+        # self.siomit = util.swap_byte_df(self.sindx['SIOMIT'], columns=nm)
+        # self.indx = util.swap_byte_df(self.sindx['INDX'], columns=nm)
+        # self.indxerr = util.swap_byte_df(self.sindx['INDXERR'], columns=nm)
+        # self.indx_otpl = util.swap_byte_df(self.sindx['INDX_OTPL'],
+        #                                    columns=nm)
+        # self.indx_botpl = util.swap_byte_df(self.sindx['INDX_BOTPL'],
+        #                                     columns=nm)
+        #------------------------------------------------------------------------------
+
+        sindx = self.fits.read_hdu_data('SINDX')
+        cols = [it.lower() for it in sindx.columns.names]
+        self.sindx = util.fitsrec_to_multiindex_df(sindx, cols, self.sinames)
 
         # calculate combination indices
+        # GET THIS TO WORK WITH MULTIINDEXED DATAFRAMES
         self.calc_Fe5270_5335()
         self.calc_CalII0p86()
 
@@ -532,19 +562,39 @@ class DAP():
         """Combine Fe5270 and Fe5335 spectral indices."""
         columns = ['Fe5270', 'Fe5335']
         coeffs = np.array([0.72, 0.28])
-        self.indx['Fe5270_5335'] = util.lin_comb(self.indx, columns, coeffs)
-        self.indxerr['Fe5270_5335'] = util.lin_comb_err(self.indxerr, columns,
-                                                        coeffs)
-        self.sipar.loc['Fe5270_5335', 'unit'] = self.sipar.loc['Fe5270', 'unit']
+        #self.indx['Fe5270_5335'] = util.lin_comb(self.indx, columns, coeffs)
+        #self.indxerr['Fe5270_5335'] = util.lin_comb_err(self.indxerr, columns,
+        #                                                coeffs)
+        #self.sipar.loc['Fe5270_5335', 'unit'] = self.sipar.loc['Fe5270', 'unit']
+
+
+        # Adding columns to a multiindex dataframe does not keep it cubic (i.e.,
+        # it does not populate NaNs for other columns). This could be a problem
+        # if I want to slice by sindx name, which will be different for columns
+        # with derived specinds.
+        # HOW SHOULD I FIX THIS?
+        self.sindx['indx', 'Fe5270_5335'] = util.lin_comb(self.sindx.indx,
+                                                          columns,
+                                                          coeffs)
+        self.sindx['indxerr', 'Fe5270_5335'] = util.lin_comb_err(
+            self.sindx.indxerr, columns, coeffs)
+        #gal.sindx2.xs('D4000', level=1, axis=1)
+        #gal.sindx2.xs('Fe5270_5335', level=1, axis=1)
+
 
     def calc_CalII0p86(self):
         """Combine CaII0p86A, CaII0p86B, and CaII0p86C spectral indices."""
         columns = ['CaII0p86A', 'CaII0p86B', 'CaII0p86C']
         coeffs = np.array([1/3., 1/3., 1/3.])
-        self.indx['CaII0p86'] = util.lin_comb(self.indx, columns, coeffs)
-        self.indxerr['CaII0p86'] = util.lin_comb_err(self.indxerr, columns,
-                                                     coeffs)
-        self.sipar.loc['CaII0p86', 'unit'] = self.sipar.loc['CaII0p86A', 'unit']
+        # self.indx['CaII0p86'] = util.lin_comb(self.indx, columns, coeffs)
+        # self.indxerr['CaII0p86'] = util.lin_comb_err(self.indxerr, columns,
+        #                                              coeffs)
+        # self.sipar.loc['CaII0p86', 'unit'] = self.sipar.loc['CaII0p86A', 'unit']
+        # 
+        self.sindx['indx', 'CaII0p86'] = util.lin_comb(self.sindx.indx, columns,
+                                                       coeffs)
+        self.sindx['indxerr', 'CaII0p86'] = util.lin_comb_err(
+            self.sindx.indxerr, columns, coeffs)
 
     def count_res_elements(self):
         """Count bins, spaxels, and pixels."""

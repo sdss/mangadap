@@ -124,7 +124,7 @@ def none_to_empty_dict(x):
         x = {}
     return x
 
-def output_path(name, path_data, plottype, mg_kws):
+def output_path(name, path_data, plottype, mg_kws, mkdir=False):
     """Make plot output path and file name.
 
     Args:
@@ -132,13 +132,19 @@ def output_path(name, path_data, plottype, mg_kws):
         path_data (str): Path to parent directory of *plots/*.
         plottype (str): Type of plot ('map', 'spectra', or 'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
+        mkdir (bool): Make directory if it does not exist. Default is False.
 
     Returns:
         str: Plot output path and file name.
     """
     filename = ('manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
                 '_{0}.png'.format(name, **mg_kws))
-    fullpath = join(path_data, 'plots', plottype, filename)
+    path_plottype = join(path_data, 'plots', plottype)
+    fullpath = join(path_plottype, filename)
+    if mkdir:
+        if not os.path.isdir(path_plottype):
+            os.makedirs(path_plottype)
+            print('\nCreated directory: {}\n'.format(path_plottype))
     return fullpath
 
 def reverse_cmap(x):
@@ -260,3 +266,15 @@ def make_config_path(filename):
         cfg_dir = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap', 'plot',
                        'config')
     return cfg_dir
+
+def fitsrec_to_multiindex_df(rec, cols1, cols2):
+    """Convert a FITS recarray into a MultiIndex DataFrame."""
+    dt = np.concatenate([rec[c].byteswap().newbyteorder().T for c in cols1]).T
+    cols_out = pd.MultiIndex.from_product([cols1, cols2])
+    return pd.DataFrame(dt, columns=cols_out))
+
+def arr_to_multiindex_df(arr, cols1, cols2):
+    """Convert a 3D array into a MultiIndex DataFrame."""
+    data = np.concatenate([arr[i] for i in range(cols1)]).T
+    cols_out = pd.MultiIndex.from_product([colnames1, colnames2])
+    return pd.DataFrame(data, columns=cols_out)
