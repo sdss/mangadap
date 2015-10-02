@@ -208,25 +208,8 @@ class DAP():
         sibotplm (array): Mask for the broadened optimal templates.
 
         sinames (list): Spectral index names.
-        siomit (DataFrame): A flag giving if the index was (1) or was not (0)
-            omitted from the analysis. The index will be omitted if any part
-            of its unmasked wavelength range or that of the (unbroadened or
-            broadened) optimal template (blueband start to redband end) falls
-            outside of the observed spectral range.
-        indx (DataFrame): The "corrected" spectral indices, where the
-            corrections are for the LOSVD based on the difference between the
-            indices measured using the unbroadened and broadened optimal
-            template spectra.
-        indxerr (DataFrame): Spectral index measurement errors.
-        indx_otpl (DataFrame): The measured spectral index using the optimal
-            template with units given by the UNIT parameter in the SIPAR
-            extension. These measurements are used to correct the indices
-            measured for the object spectra for the effect of the LOSVD.
-        indx_botpl (DataFrame): The measured spectral index using the
-            broadened optimal template with units given by the UNIT
-            parameter in the SIPAR extension. These measurements are used to
-            correct the indices measured for the object spectra for the effect
-            of the LOSVD.
+        sindx (DataFrame): Results of the I spectral index measurements for
+            each of the binned spectra.
 
         redshift (array): Redshift (stellar velocity / speed of light) for
             each bin.
@@ -536,25 +519,11 @@ class DAP():
 
     def get_sindx(self):
         """Read in spectral index info."""
-        
-        # REMOVE THIS BLOCK
-        # nm = self.sinames
-        # self.sindx = self.fits.read_hdu_data('SINDX')
-        # self.siomit = util.swap_byte_df(self.sindx['SIOMIT'], columns=nm)
-        # self.indx = util.swap_byte_df(self.sindx['INDX'], columns=nm)
-        # self.indxerr = util.swap_byte_df(self.sindx['INDXERR'], columns=nm)
-        # self.indx_otpl = util.swap_byte_df(self.sindx['INDX_OTPL'],
-        #                                    columns=nm)
-        # self.indx_botpl = util.swap_byte_df(self.sindx['INDX_BOTPL'],
-        #                                     columns=nm)
-        #------------------------------------------------------------------------------
-
         sindx = self.fits.read_hdu_data('SINDX')
         cols = [it.lower() for it in sindx.columns.names]
         self.sindx = util.fitsrec_to_multiindex_df(sindx, cols, self.sinames)
 
         # calculate combination indices
-        # GET THIS TO WORK WITH MULTIINDEXED DATAFRAMES
         self.calc_Fe5270_5335()
         self.calc_CalII0p86()
 
@@ -562,37 +531,22 @@ class DAP():
         """Combine Fe5270 and Fe5335 spectral indices."""
         columns = ['Fe5270', 'Fe5335']
         coeffs = np.array([0.72, 0.28])
-        #self.indx['Fe5270_5335'] = util.lin_comb(self.indx, columns, coeffs)
-        #self.indxerr['Fe5270_5335'] = util.lin_comb_err(self.indxerr, columns,
-        #                                                coeffs)
-        #self.sipar.loc['Fe5270_5335', 'unit'] = self.sipar.loc['Fe5270', 'unit']
-
-
         # Adding columns to a multiindex dataframe does not keep it cubic (i.e.,
         # it does not populate NaNs for other columns). This could be a problem
         # if I want to slice by sindx name, which will be different for columns
         # with derived specinds.
         # HOW SHOULD I FIX THIS?
-        self.sindx['indx', 'Fe5270_5335'] = util.lin_comb(self.sindx.indx,
-                                                          columns,
-                                                          coeffs)
+        self.sindx['indx', 'Fe5270_5335'] = util.lin_comb(
+            self.sindx.indx, columns, coeffs)
         self.sindx['indxerr', 'Fe5270_5335'] = util.lin_comb_err(
             self.sindx.indxerr, columns, coeffs)
-        #gal.sindx2.xs('D4000', level=1, axis=1)
-        #gal.sindx2.xs('Fe5270_5335', level=1, axis=1)
-
 
     def calc_CalII0p86(self):
         """Combine CaII0p86A, CaII0p86B, and CaII0p86C spectral indices."""
         columns = ['CaII0p86A', 'CaII0p86B', 'CaII0p86C']
         coeffs = np.array([1/3., 1/3., 1/3.])
-        # self.indx['CaII0p86'] = util.lin_comb(self.indx, columns, coeffs)
-        # self.indxerr['CaII0p86'] = util.lin_comb_err(self.indxerr, columns,
-        #                                              coeffs)
-        # self.sipar.loc['CaII0p86', 'unit'] = self.sipar.loc['CaII0p86A', 'unit']
-        # 
-        self.sindx['indx', 'CaII0p86'] = util.lin_comb(self.sindx.indx, columns,
-                                                       coeffs)
+        self.sindx['indx', 'CaII0p86'] = util.lin_comb(
+            self.sindx.indx, columns, coeffs)
         self.sindx['indxerr', 'CaII0p86'] = util.lin_comb_err(
             self.sindx.indxerr, columns, coeffs)
 
