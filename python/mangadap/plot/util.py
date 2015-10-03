@@ -271,10 +271,10 @@ def fitsrec_to_multiindex_df(rec, cols1, cols2):
     """Convert a FITS recarray into a MultiIndex DataFrame."""
     dt = np.concatenate([rec[c].byteswap().newbyteorder().T for c in cols1]).T
     cols_out = pd.MultiIndex.from_product([cols1, cols2])
-    return pd.DataFrame(dt, columns=cols_out))
+    return pd.DataFrame(dt, columns=cols_out)
 
 def arr_to_multiindex_df(arr, cols1, cols2):
     """Convert a 3D array into a MultiIndex DataFrame."""
-    data = np.concatenate([arr[i] for i in range(cols1)]).T
-    cols_out = pd.MultiIndex.from_product([colnames1, colnames2])
+    data = np.concatenate([arr[i] for i in range(len(cols1))]).T
+    cols_out = pd.MultiIndex.from_product([cols1, cols2])
     return pd.DataFrame(data, columns=cols_out)
