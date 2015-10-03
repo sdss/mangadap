@@ -1,6 +1,1 @@
-python/mangadap/plot/Makefile
-python/mangadap/plot/_build
-python/mangadap/plot/_static
-python/mangadap/plot/_templates
-python/mangadap/plot/make.bat
-python/mangadap/plot/tmp.py
+python/mangadap/plot/tmp_emline.py

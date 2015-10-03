@@ -10,13 +10,21 @@ class DAP():
     """Container for information from DAP FITS file.
 
     Attributes:
-        path_data (str): Path to FITS file.
+        path_data (str): Path to DAP FITS file.
+        paths_cfg (str): Full path to sdss_paths.ini file.
+        plate (str): Plate ID.
+        ifudesign (str): IFU design.
+        plateifu (str): Plate ID and IFU design.
+        mode (str): Binning mode (i.e., 'CUBE' or 'RSS').
+        bintype (str): Binning type (e.g., 'NONE' or 'ALL')
+        niter (str): Analysis iteration number.
 
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
         header (astropy.io.fits.header.Header): Header of primary HDU.
         tplkey (str): Stellar templates used.
         mangaid (str): MaNGA ID.
+        nsa_redshift (float): NSA redshift.
 
         drps (DataFrame): Position, signal, noise, de-redshifting, bin
             assignment, and bin weighting of each input spectrum from the DRP
@@ -218,34 +226,35 @@ class DAP():
         ind_lam_good (list): indices of wavelength array within each good
             window for each bin
 
-        chisq_pix (array): Chisq of stellar continuum fit at every pixel.
-        chisq_bin (array): Average chisq of stellar continuum fit for each
-            binned spectrum.
-        resid_pix (array): Difference between observed flux and stellar
+        stfit_chisq_pix (array): Chisq of stellar continuum fit at every
+            pixel.
+        stfit_chisq_bin (array): Average chisq of stellar continuum fit for
+            each binned spectrum.
+        stfit_resid_pix (array): Difference between observed flux and stellar
             continuum fit at every pixel.
-        resid_bin (array): Average difference between observed flux and
+        stfit_resid_bin (array): Average difference between observed flux and
             stellar continuum fit for each binned spectrum.
-        resid_mod_pix: Difference between observed flux and stellar
+        stfit_resid_mod_pix: Difference between observed flux and stellar
             continuum fit normalized to stellar continnum fit at every pixel.
-        resid_mod_bin: Average difference between observed flux and stellar
-            continuum fit normalized to stellar continnum fit for each binned
-            spectrum.
-        resid_err_pix: Difference between observed flux and stellar
+        stfit_resid_mod_bin: Average difference between observed flux and
+            stellar continuum fit normalized to stellar continnum fit for each
+            binned spectrum.
+        stfit_resid_err_pix: Difference between observed flux and stellar
             continuum fit normalized to error in stellar continnum fit at
             every pixel.
-        resid_err_bin: Average difference between observed flux and stellar
-            continuum fit normalized to error in stellar continnum fit for
-            each binned spectrum.
+        stfit_resid_err_bin: Average difference between observed flux and
+            stellar continuum fit normalized to error in stellar continnum fit
+            for each binned spectrum.
 
-        resid_data_pix (array): Difference between observed flux and stellar
-            continuum fit normalized to observed flux at every pixel.
-        resid_data_bin (array): Average difference between observed flux and
-            stellar continuum fit normalized to observed flux for each binned
-            spectrum.
-        resid_data_bin99 (array): 99th percentile of difference between
+        stfit_resid_data_pix (array): Difference between observed flux and
+            stellar continuum fit normalized to observed flux at every pixel.
+        stfit_resid_data_bin (array): Average difference between observed flux
+            and stellar continuum fit normalized to observed flux for each
+            binned spectrum.
+        stfit_resid_data_bin99 (array): 99th percentile of difference between
             observed flux and stellar continuum fit normalized to observed
             flux for each binned spectrum.
-        resid_data_bin68 (array): 68th percentile of difference between
+        stfit_resid_data_bin68 (array): 68th percentile of difference between
             observed flux and stellar continuum fit normalized to observed
             flux for each binned spectrum.
 
@@ -253,14 +262,23 @@ class DAP():
         noise (array): DRP noise but only for bins with signal.
         snr (array): DRP signal-to-noise ratio for bins with non-zero signal.
         drpqa (DataFrame): Values to display in DRP QA plots.
-        drpqa_err (DataFrame): Values to display in DRP QA plots.
+        drpqa_err (DataFrame): Errors for DRP QA plots.
+        kinematics (DataFrame): Values to display in kinematics plots.
+        kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
-    def __init__(self, path_data, file_kws):
+    def __init__(self, path_data, paths_cfg, file_kws):
         self.path_data = path_data
-        self.read_fits(path_data, file_kws)
+        self.paths_cfg = paths_cfg
+        self.plate = file_kws['plate']
+        self.ifudesign = file_kws['ifudesign']
+        self.plateifu = '{plate}-{ifudesign}'.format(**file_kws)
+        self.mode = file_kws['mode']
+        self.bintype = file_kws['bintype']
+        self.niter = file_kws['niter']
+        self.read_dap_fits(path_data, file_kws)
 
-    def read_fits(self, path_data, file_kws):
+    def read_dap_fits(self, path_data, file_kws):
         """Read in DAP FITS file."""
         self.fits = dapfile.dapfile(directory_path=path_data, **file_kws)
         self.fits.open_hdu()
@@ -299,15 +317,20 @@ class DAP():
         self.get_sindx()
 
         self.calc_fullfit()
+        self.get_nsa_redshift()
         self.deredshift_spectra()
+        self.deredshift_velocities()
 
         self.select_wave_range()
-        self.calc_chisq()
-        self.calc_resid_data()
+        self.calc_stfit_chisq()
+        self.calc_stfit_resid_data()
+        #self.calc_stfit_resid_mod()
+        #self.calc_stfit_resid_err()
+        #self.calc_stfit_resid()
 
         self.calc_snr()
         self.make_drpqa()
-
+        self.make_kinematics()
 
 
     def get_header(self):
@@ -593,17 +616,47 @@ class DAP():
         self.fullfit_ew_rest = (self.fullfit_ew.T * (1. + self.redshift)).T
         self.fullfit_fb_rest = (self.fullfit_fb.T * (1. + self.redshift)).T
 
-    # FIX: read in nsa_redshift from DRPall file
-    #
-    # def deredshift_velocities(self):
-    #     """Shift velocities to systemic frame."""
-    # # put stellar velocity in systemic frame
-    # stvel_out = self.deredshift_velocities(self.stvel, self.stvelerr)
-    # self.stvel_rest, self.stvelerr_rest = stvel_out
-    #
-    # # put emission line velocity in systemic frame
-    # emvel_ew_out = self.deredshift_velocities(self.emvel_ew, self.emvelerr_ew)
-    # self.emvel_rest_ew, self.emvelerr_rest_ew = emvel_ew_out
+    def get_nsa_redshift(self):
+        """Get NSA redshift from drpall file."""
+        try:
+            drpall = util.read_drpall(self.paths_cfg)
+            mask = (drpall['plateifu'] == self.plateifu)
+            self.nsa_redshift = drpall['nsa_redshift'][mask][0]
+        except ValueError:
+            print('\nCould not read NSA redshift from drpall file.\n')
+
+
+    def deredshift_velocities(self):
+        """Deredshift stellar and emission line velocities."""
+        
+        # NEED to deredshift velocity dispersions, too!
+
+        if hasattr(self, 'nsa_redshift'):
+            stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
+                vel=self.stfit_kin['vel'].values,
+                velerr=self.stfit_kinerr['vel'].values)
+            # stvdisp, stvdisperr = util.deredshift_velocities(self.nsa_redshift,
+            #     vel=self.stfit_kin['vdisp'].values,
+            #     velerr=self.stfit_kinerr['vdisp'].values)
+            elvel, elvelerr = util.deredshift_velocities(self.nsa_redshift,
+                vel=self.kin_ew['vel_flux_wt'].values,
+                velerr=self.kinerr_ew['vel_flux_wt'].values)
+            # elvdisp, elvdisp_err = util.deredshift_velocities(
+            #     self.nsa_redshift, vel=self.kin_ew['vdisp_flux_wt'].values,
+            #     velerr=self.kinerr_ew['vdisp_flux_wt'].values)
+
+            stkin = dict(vel=stvel)#, vdisp=stvdisp)
+            stkinerr = dict(vel=stvelerr)#, vdisp=stvdisperr)
+            elkin = dict(vel_flux_wt=elvel)#, vdisp_flux_wt=elvdisp)
+            elkinerr = dict(vel_flux_wt=elvelerr)#, vdisp_flux_wt=elvdisperr)
+
+            self.stfit_kin_rest = pd.DataFrame(stkin)
+            self.stfit_kinerr_rest = pd.DataFrame(stkinerr)
+            self.kin_rest_ew = pd.DataFrame(elkin)
+            self.kinerr_rest_ew = pd.DataFrame(elkinerr)
+
+        else:
+            print('Could not deredshift velocities.\n')
 
 
     # FIX: make lam_good a kwarg param to pass into dap.DAP
@@ -650,50 +703,52 @@ class DAP():
             metric_bin[i] = np.nanmean(metric_pix[i][self.ind_lam_good[i]])
         return metric_bin
 
-    def calc_chisq(self):
+    def calc_stfit_chisq(self):
         """Calculate chisq of stellar continuum fit.
 
         Calculate chisq at each spectral pixel and for each binned spectrum.
         """
-        self.chisq_pix = (self.flux_obs - self.smod)**2. * self.ivar_obs
-        self.chisq_pix[self.smsk == 1] = np.nan
-        self.chisq_bin = self.calc_metric_per_bin(self.chisq_pix)
+        self.stfit_chisq_pix = (self.flux_obs - self.smod)**2. * self.ivar_obs
+        self.stfit_chisq_pix[self.smsk == 1] = np.nan
+        self.stfit_chisq_bin = self.calc_metric_per_bin(self.stfit_chisq_pix)
 
-    def calc_resid(self):
+    def calc_stfit_resid(self):
         """Calculate residual of stellar continuum fit.
 
         Calculate difference between observed flux and stellar continuum fit
         at each spectral pixel and for each binned spectrum.
         """
-        self.resid_pix = self.flux_obs - self.smod
-        self.resid_pix[self.smsk == 1] = np.nan
-        self.resid_bin = self.calc_metric_per_bin(self.resid_pix)
+        self.stfit_resid_pix = self.flux_obs - self.smod
+        self.stfit_resid_pix[self.smsk == 1] = np.nan
+        self.stfit_resid_bin = self.calc_metric_per_bin(self.stfit_resid_pix)
 
-    def calc_resid_mod(self):
+    def calc_stfit_resid_mod(self):
         """Calculate residual of stellar continuum fit normalized to fit.
 
         Calculate difference between observed flux and stellar continuum fit
         normalized to stellar continnum fit at each spectral pixel and for
         each binned spectrum.
         """
-        self.resid_mod_pix = (self.flux_obs - self.smod) / self.smod
-        self.resid_mod_pix[self.smsk == 1] = np.nan
-        self.resid_mod_bin = self.calc_metric_per_bin(self.resid_mod_pix)
+        self.stfit_resid_mod_pix = (self.flux_obs - self.smod) / self.smod
+        self.stfit_resid_mod_pix[self.smsk == 1] = np.nan
+        self.stfit_resid_mod_bin = self.calc_metric_per_bin(
+                                        self.stfit_resid_mod_pix)
 
-    def calc_resid_err(self):
+    def calc_stfit_resid_err(self):
         """Calculate residual of stellar continuum fit normalized to fit error.
 
         Calculate difference between observed flux and stellar continuum fit
         normalized to error in stellar continnum fit at each spectral pixel
         and for each binned spectrum.
         """
-        self.resid_err_pix = (self.flux_obs - self.smod) * np.sqrt(self.ivar)
-        self.resid_err_pix[self.smsk == 1] = np.nan
-        self.resid_err_bin = self.calc_metric_per_bin(self.resid_err_pix)
+        self.stfit_resid_err_pix = ((self.flux_obs - self.smod) *
+                                    np.sqrt(self.ivar))
+        self.stfit_resid_err_pix[self.smsk == 1] = np.nan
+        self.stfit_resid_err_bin = self.calc_metric_per_bin(
+                                        self.stfit_resid_err_pix)
 
-    def calc_resid_data(self):
+    def calc_stfit_resid_data(self):
         """Calculate residual of stellar cont fit normalized to observed flux.
-
 
         Calculate difference between observed flux and stellar continuum fit
         normalized to eobserve flux at each spectral pixel and for each binned
@@ -701,16 +756,17 @@ class DAP():
         relative to the observed flux.
         """
         with np.errstate(divide='ignore', invalid='ignore'):
-            self.resid_data_pix = (np.abs(self.flux_obs - self.smod) /
-                                   self.flux_obs)
-        self.resid_data_pix[self.smsk == 1] = np.nan
-        self.resid_data_bin = self.calc_metric_per_bin(self.resid_data_pix)
-        self.resid_data_bin99 = np.array(
-            [np.percentile(self.resid_data_pix[i][self.smsk[i] == 0], 99.)
-             for i in range(self.n_bins)])
-        self.resid_data_bin68 = np.array(
-            [np.percentile(self.resid_data_pix[i][self.smsk[i] == 0], 68.)
-             for i in range(self.n_bins)])
+            self.stfit_resid_data_pix = (np.abs(self.flux_obs - self.smod) /
+                                         self.flux_obs)
+        self.stfit_resid_data_pix[self.smsk == 1] = np.nan
+        self.stfit_resid_data_bin = self.calc_metric_per_bin(
+                                        self.stfit_resid_data_pix)
+        self.stfit_resid_data_bin99 = np.array(
+            [np.percentile(self.stfit_resid_data_pix[i][self.smsk[i] == 0],
+                           99.) for i in range(self.n_bins)])
+        self.stfit_resid_data_bin68 = np.array(
+            [np.percentile(self.stfit_resid_data_pix[i][self.smsk[i] == 0],
+                           68.) for i in range(self.n_bins)])
 
     def calc_snr(self):
         """Calculate DRP signal-to-noise ratio."""
@@ -726,15 +782,34 @@ class DAP():
         """Create DRP QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
-                    resid_data_bin99=self.resid_data_bin99,
-                    chisq_bin=self.chisq_bin)
+                    resid_data_bin99=self.stfit_resid_data_bin99,
+                    stfit_chisq=self.stfit_chisq_bin)
         errs = dict(signal=None, noise=None, snr=None,
                     Ha6564=self.fluxerr_ew.Ha6564.values,
-                    resid_data_bin99=None, chisq_bin=None)
+                    resid_data_bin99=None, stfit_chisq=None)
         columns = ['signal', 'noise', 'snr', 'Ha6564', 'resid_data_bin99',
-                   'chisq_bin']
+                   'stfit_chisq']
         self.drpqa = pd.DataFrame(vals, columns=columns)
         self.drpqa_err = pd.DataFrame(errs, columns=columns)
+
+    def make_kinematics(self):
+        """Create kinematics DataFrame."""
+        vals = dict(stvel=self.stfit_kin_rest['vel'].values,
+                    stvdisp=self.stfit_kin['vdisp'].values,
+                    stfit_chisq=self.stfit_chisq_bin,
+                    elvel=self.kin_rest_ew['vel_flux_wt'].values,
+                    elvdisp=self.kin_ew['vdisp_flux_wt'].values,
+                    resid_data_bin99=self.stfit_resid_data_bin99)
+        errs = dict(stvel=self.stfit_kinerr_rest['vel'].values,
+                    stvdisp=self.stfit_kinerr['vdisp'].values,
+                    stfit_chisq=None,
+                    elvel=self.kinerr_rest_ew['vel_flux_wt'],
+                    elvdisp=self.kinerr_ew['vdisp_flux_wt'],
+                    resid_data_bin99=None)
+        columns = ['stvel', 'stvdisp', 'stfit_chisq', 'elvel', 'elvdisp',
+                   'stfit_resid99']
+        self.kinematics = pd.DataFrame(vals, columns=columns)
+        self.kinematics_err = pd.DataFrame(errs, columns=columns)
 
 
 # # FIX: deredshift velocities

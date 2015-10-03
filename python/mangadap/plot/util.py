@@ -232,18 +232,16 @@ def read_file_list(file_list):
                           bintype=bintype, niter=niter))
     return f_kws
 
-def make_data_path(file_kws):
+def make_data_path(paths_cfg, file_kws):
     """Make path to data files.
 
     Args:
+        paths_cfg (str): Full path and file name for sdss_paths.ini file.
         file_kws (dict): Parameters that specify DAP FITS file.
 
     Returns:
         str: Path to data.
     """
-    cfg_dir = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap', 'plot',
-                   'config')
-    paths_cfg = join(cfg_dir, 'sdss_paths.ini')
     bp = base_path(paths_cfg)
     return bp.dir('dap', **file_kws)
 
@@ -266,13 +264,50 @@ def make_config_path(filename):
     return cfg_dir
 
 def fitsrec_to_multiindex_df(rec, cols1, cols2):
-    """Convert a FITS recarray into a MultiIndex DataFrame."""
+    """Convert a FITS recarray into a MultiIndex DataFrame.
+
+    Args:
+        rec (FITS recarray)
+        cols1 (list): First level column names.
+        cols2 (list): Second level column names.
+
+    Returns:
+        DataFrame
+    """
     dt = np.concatenate([rec[c].byteswap().newbyteorder().T for c in cols1]).T
     cols_out = pd.MultiIndex.from_product([cols1, cols2])
     return pd.DataFrame(dt, columns=cols_out)
 
 def arr_to_multiindex_df(arr, cols1, cols2):
-    """Convert a 3D array into a MultiIndex DataFrame."""
+    """Convert a 3D array into a MultiIndex DataFrame.
+
+    Args:
+        arr (array): 3D array.
+        cols1 (list): First level column names.
+        cols2 (list): Second level column names.
+
+    Returns:
+        DataFrame
+    """
     data = np.concatenate([arr[i] for i in range(len(cols1))]).T
     cols_out = pd.MultiIndex.from_product([cols1, cols2])
     return pd.DataFrame(data, columns=cols_out)
+
+def deredshift_velocities(redshift, vel, velerr):
+    """Shift velocities to systemic frame.
+
+    Args:
+        redshift (float)
+        vel (array): Velocities.
+        velerr (array): Velocity errors.
+
+    Returns:
+        tuple: (rest-frame velocities, rest-frame velocity errors)
+    """
+    v_light = 299792.458
+    vel_rest = vel - (redshift * v_light)
+    # WHY IS IT SETTING ERRORS TO ZERO?
+    velerr_rest = velerr * 0. + 1e-6
+    mask = ((np.abs(vel_rest) > 250.) | (velerr > 250.) | (velerr == 0.))
+    velerr_rest[mask] = 1e8
+    return vel_rest, velerr_rest

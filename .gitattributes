@@ -2627,10 +2627,12 @@ python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
 python/mangadap/plot/cfg_io.py -text
 python/mangadap/plot/conf.py -text
+python/mangadap/plot/config/dapqa_plottypes.ini -text
 python/mangadap/plot/config/drpqa.ini -text
 python/mangadap/plot/config/drpqa_plottypes.ini -text
 python/mangadap/plot/config/flux_ew.ini -text
 python/mangadap/plot/config/flux_fb.ini -text
+python/mangadap/plot/config/kinematics.ini -text
 python/mangadap/plot/config/sdss_paths.ini -text
 python/mangadap/plot/config/snr.ini -text
 python/mangadap/plot/config/specind.ini -text
