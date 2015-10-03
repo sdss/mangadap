@@ -71,7 +71,7 @@ class DAP():
             fit.
 
         elband (DataFrame): Definition of the emission-line bandpasses used
-            for the non-parametric moments of the flux. 
+            for the non-parametric moments of the flux.
 
         elmmnt (DataFrame): Non-parametric moments of the binned spectra over
             the defined emission-line bands.
@@ -393,7 +393,7 @@ class DAP():
         elmmnt_in = self.fits.read_hdu_data('ELMMNT')
         cols = [it.lower() for it in elmmnt_in.columns.names]
         self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
-                                                     self.elband.index)
+                                                    self.elband.index)
 
     def get_elopar(self):
         """Get emission line only fit parameters."""
@@ -410,8 +410,8 @@ class DAP():
             kincols = ['vel', 'vdisp']
         else:
             kincols = ['vel_flux_wt', 'vdisp_flux_wt', 'vel_verr_wt',
-                           'vdisp_verr_wt', 'vel_flux_verr_wt',
-                           'vdisp_flux_verr_wt', 'vel_uni_wt', 'vdisp_uni_wt']
+                       'vdisp_verr_wt', 'vel_flux_verr_wt',
+                       'vdisp_flux_verr_wt', 'vel_uni_wt', 'vdisp_uni_wt']
         ikincols = ['vel', 'vdisp']
         elonames = self.elopar.elname.values
         elovel_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=kincols)
@@ -436,7 +436,7 @@ class DAP():
         self.ikin_ew = util.arr_to_multiindex_df(ikin_ew, ikincols, elonames)
 
         ikinerr_ew_in = elofit['IKINERR_EW'].byteswap().newbyteorder()
-        ikinerr_ew = np.transpose(ikin_ew_in, (1, 2, 0))
+        ikinerr_ew = np.transpose(ikinerr_ew_in, (1, 2, 0))
         self.ikinerr_ew = util.arr_to_multiindex_df(ikinerr_ew, ikincols,
                                                     elonames)
 
@@ -457,7 +457,7 @@ class DAP():
         self.ikin_fb = util.arr_to_multiindex_df(ikin_fb, ikincols, elonames)
 
         ikinerr_fb_in = elofit['IKINERR_FB'].byteswap().newbyteorder()
-        ikinerr_fb = np.transpose(ikin_fb_in, (1, 2, 0))
+        ikinerr_fb = np.transpose(ikinerr_fb_in, (1, 2, 0))
         self.ikinerr_fb = util.arr_to_multiindex_df(ikinerr_fb, ikincols,
                                                     elonames)
 
@@ -600,7 +600,7 @@ class DAP():
     # # put stellar velocity in systemic frame
     # stvel_out = self.deredshift_velocities(self.stvel, self.stvelerr)
     # self.stvel_rest, self.stvelerr_rest = stvel_out
-    # 
+    #
     # # put emission line velocity in systemic frame
     # emvel_ew_out = self.deredshift_velocities(self.emvel_ew, self.emvelerr_ew)
     # self.emvel_rest_ew, self.emvelerr_rest_ew = emvel_ew_out
