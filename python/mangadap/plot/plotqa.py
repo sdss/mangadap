@@ -53,7 +53,6 @@ for file_kws in file_kws_all:
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-        print(plot_kws)
         plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
 
@@ -61,8 +60,6 @@ for file_kws in file_kws_all:
 
 
 # TO DO
-# kinematics (barfing on val_no_measure=0)
-# specind
 # binnum
 
 # gradients (emflux, specind)

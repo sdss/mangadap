@@ -264,7 +264,7 @@ class DAP():
         drpqa (DataFrame): Values to display in DRP QA plots.
         drpqa_err (DataFrame): Errors for DRP QA plots.
         kinematics (DataFrame): Values to display in kinematics plots.
-        kinematics_err (DataFrame): Errors for kinematics plots.
+        kinematics_err (DataFrame): Errors for kinematics plots.        
     """
 
     def __init__(self, path_data, paths_cfg, file_kws):
@@ -799,21 +799,14 @@ class DAP():
                     stfit_chisq=self.stfit_chisq_bin,
                     elvel=self.kin_rest_ew['vel_flux_wt'].values,
                     elvdisp=self.kin_ew['vdisp_flux_wt'].values,
-                    resid_data_bin99=self.stfit_resid_data_bin99)
+                    stfit_resid99=self.stfit_resid_data_bin99)
         errs = dict(stvel=self.stfit_kinerr_rest['vel'].values,
                     stvdisp=self.stfit_kinerr['vdisp'].values,
                     stfit_chisq=None,
                     elvel=self.kinerr_rest_ew['vel_flux_wt'],
                     elvdisp=self.kinerr_ew['vdisp_flux_wt'],
-                    resid_data_bin99=None)
+                    stfit_resid99=None)
         columns = ['stvel', 'stvdisp', 'stfit_chisq', 'elvel', 'elvdisp',
                    'stfit_resid99']
         self.kinematics = pd.DataFrame(vals, columns=columns)
         self.kinematics_err = pd.DataFrame(errs, columns=columns)
-
-
-# # FIX: deredshift velocities
-# drpall = util.read_drpall(path_cfg)
-# ind_tbl = (drpall['plateifu'] == '{plate}-{ifudesign}'.format(**file_kws))
-# gal.nsa_redshift = drpall['nsa_redshift'][ind_tbl][0]
-

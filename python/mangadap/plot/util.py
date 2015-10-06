@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 from os.path import join
+import copy
 
 import numpy as np
 import pandas as pd
@@ -292,6 +293,21 @@ def arr_to_multiindex_df(arr, cols1, cols2):
     data = np.concatenate([arr[i] for i in range(len(cols1))]).T
     cols_out = pd.MultiIndex.from_product([cols1, cols2])
     return pd.DataFrame(data, columns=cols_out)
+
+def string_slice_multiindex_df(dapdata, colnames):
+    """Use dot notation to access a multi-indexed DataFrame.
+
+    Args:
+        dapdata: dap.DAP class instance.
+        colnames (str): Column names with each level separated by a period.
+
+    Returns:
+        DataFrame
+    """
+    out = dapdata
+    for level in colnames.split('.'):
+        out = getattr(out, level)
+    return out
 
 def deredshift_velocities(redshift, vel, velerr):
     """Shift velocities to systemic frame.

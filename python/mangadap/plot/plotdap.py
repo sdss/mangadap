@@ -120,6 +120,7 @@ def make_mask_no_data(data, mask_no_measurement):
         array: Boolean array for mask (i.e., True corresponds to value to be
             masked out).
     """
+    data = data.astype(float)
     no_data = np.isnan(data)
     no_data[mask_no_measurement] = True
     return no_data
@@ -278,7 +279,6 @@ def set_cmaps(cmaps, n_plots):
         cmaps = [cmap for _ in range(n_plots)]
 
     if len(cmaps) == 1:
-        print('here3')
         cmaps = [cmaps[0] for _ in range(n_plots)]
 
     return cmaps
@@ -607,6 +607,7 @@ def plot_multi_map(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
     return fig, ax
 
+
 def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
                cblabels=None, cmaps=None, make_single=True, make_multi=True,
@@ -639,10 +640,10 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
     # Adjust arguments
     if isinstance(values, str):
         multi_name = copy.deepcopy(values)
-        values = getattr(dapdata, values)
+        values = util.string_slice_multiindex_df(dapdata, values)
 
     if isinstance(errors, str):
-        errors = getattr(dapdata, errors)
+        errors = util.string_slice_multiindex_df(dapdata, errors)
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cmaps = set_cmaps(cmaps, len(columns))
