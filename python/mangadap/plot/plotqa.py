@@ -1,3 +1,7 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Plot DAP QA."""
+
 from __future__ import division, print_function, absolute_import
 
 import os
@@ -7,10 +11,10 @@ import copy
 
 from imp import reload
 
-import dap
-import plotdap
-import cfg_io
-import util
+from mangadap.plot import dap
+from mangadap.plot import plotdap
+from mangadap.plot import cfg_io
+from mangadap.plot import util
 
 import __main__ as main
 
@@ -67,17 +71,4 @@ for file_kws in file_kws_all:
 # emline zoomins
 
 # python plotqa.py $MANGA_SPECTRO_ANALYSIS/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
-
-"""
-Traceback (most recent call last):
-  File "plotqa.py", line 57, in <module>
-    plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
-  File "/Users/andrews/manga/mangadap/trunk/python/mangadap/plot/plotdap.py", line 665, in make_plots
-    snr_thresh=snr_thresh)
-  File "/Users/andrews/manga/mangadap/trunk/python/mangadap/plot/plotdap.py", line 80, in make_image
-    no_data = make_mask_no_data(im, no_measure)
-  File "/Users/andrews/manga/mangadap/trunk/python/mangadap/plot/plotdap.py", line 123, in make_mask_no_data
-    no_data = np.isnan(data)
-TypeError: ufunc 'isnan' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
-"""
 

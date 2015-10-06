@@ -1,10 +1,14 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Read DAP FITS file into a python object."""
+
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import pandas as pd
 
 from mangadap import dapfile
-import util
+from mangadap.plot import util
 
 class DAP():
     """Container for information from DAP FITS file.

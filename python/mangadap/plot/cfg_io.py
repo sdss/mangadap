@@ -1,5 +1,6 @@
-"""Methods for reading and manipulating config files.
-"""
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Methods for reading and manipulating config files."""
 
 from __future__ import division, print_function, absolute_import
 

@@ -1,5 +1,6 @@
-"""Functions for plotting DAP output.
-"""
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
+"""Functions for plotting DAP output."""
 
 from __future__ import division, print_function, absolute_import
 
@@ -16,7 +17,7 @@ from matplotlib.ticker import MaxNLocator
 
 from astropy.stats import sigma_clip
 
-import util
+from mangadap.plot import util
 
 import warnings
 try:
@@ -212,7 +213,7 @@ def make_draw_colorbar_kws(image, cb_kws):
 
 def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
                   label_kws=None, tick_params_kws=None):
-    """
+    """Make colorbar.
 
     Args:
         fig: plt.figure object.
@@ -282,7 +283,6 @@ def set_cmaps(cmaps, n_plots):
         cmaps = [cmaps[0] for _ in range(n_plots)]
 
     return cmaps
-
 
 def set_background_color(spaxel_size, color='#A8A8A8'):
     """Set default parameters for a single panel plot.
@@ -703,6 +703,3 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
             if overwrite or not os.path.isfile(path):
                 plt.savefig(path, dpi=200)
                 print(path.split('/')[-1])
-
-# TODO
-
