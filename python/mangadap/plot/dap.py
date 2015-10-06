@@ -267,6 +267,8 @@ class DAP():
         snr (array): DRP signal-to-noise ratio for bins with non-zero signal.
         drpqa (DataFrame): Values to display in DRP QA plots.
         drpqa_err (DataFrame): Errors for DRP QA plots.
+        basic_qa (DataFrame): Values to display in basic QA plots.
+        basic_qa_err (DataFrame): Errors for basic QA plots.
         kinematics (DataFrame): Values to display in kinematics plots.
         kinematics_err (DataFrame): Errors for kinematics plots.        
     """
@@ -794,12 +796,16 @@ class DAP():
 
     def make_drpqa(self):
         """Create DRP QA DataFrame."""
-        # FIX (DAP files for DRPQA don't contain all of the extensions, so the
-        # code fails.)
-        self.stfit_resid_data_bin99 = None
-        self.stfit_chisq_bin = None
-        #
+        vals = dict(signal=self.signal, noise=self.noise,
+                    Ha6564=self.flux_ew.Ha6564.values)
+        errs = dict(signal=None, noise=None,
+                    Ha6564=self.fluxerr_ew.Ha6564.values)
+        columns = ['signal', 'noise', 'Ha6564']
+        self.drpqa = pd.DataFrame(vals, columns=columns)
+        self.drpqa_err = pd.DataFrame(errs, columns=columns)
 
+    def make_basic_qa(self):
+        """Create basic QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
                     resid_data_bin99=self.stfit_resid_data_bin99,
@@ -809,8 +815,8 @@ class DAP():
                     resid_data_bin99=None, stfit_chisq=None)
         columns = ['signal', 'noise', 'snr', 'Ha6564', 'resid_data_bin99',
                    'stfit_chisq']
-        self.drpqa = pd.DataFrame(vals, columns=columns)
-        self.drpqa_err = pd.DataFrame(errs, columns=columns)
+        self.basic_qa = pd.DataFrame(vals, columns=columns)
+        self.basic_qa_err = pd.DataFrame(errs, columns=columns)
 
     def make_kinematics(self):
         """Create kinematics DataFrame."""

@@ -11,9 +11,6 @@ import copy
 
 from imp import reload
 
-#import matplotlib as mpl
-#mpl.use('Agg')
-
 from mangadap.plot import dap
 from mangadap.plot import plotdap
 from mangadap.plot import cfg_io
