@@ -296,8 +296,10 @@ class DAP():
         self.get_spectra()
         self.count_res_elements()
         self.get_elpar()
-        self.get_stellar_cont_fit()
-        self.get_stellar_gas_fit()
+
+        # COMMENTED OUT FOR DRPQA
+        # self.get_stellar_cont_fit()
+        # self.get_stellar_gas_fit()
 
         self.get_elmod()
         self.get_elband()
@@ -309,32 +311,37 @@ class DAP():
         self.get_elomew()
         self.get_elomfb()
 
-        self.get_siwave()
-        self.get_siflux()
-        self.get_siivar()
-        self.get_simask()
-        self.get_siotpl()
-        self.get_siotplm()
-        self.get_sibotpl()
-        self.get_sibotplm()
-        self.get_sipar()
-        self.get_sindx()
+        # COMMENTED OUT FOR DRPQA
+        # self.get_siwave()
+        # self.get_siflux()
+        # self.get_siivar()
+        # self.get_simask()
+        # self.get_siotpl()
+        # self.get_siotplm()
+        # self.get_sibotpl()
+        # self.get_sibotplm()
+        # self.get_sipar()
+        # self.get_sindx()
 
-        self.calc_fullfit()
-        self.get_nsa_redshift()
-        self.deredshift_spectra()
-        self.deredshift_velocities()
+        # COMMENTED OUT FOR DRPQA
+        # self.calc_fullfit()
+        # self.get_nsa_redshift()
+        # self.deredshift_spectra()
+        # self.deredshift_velocities()
 
-        self.select_wave_range()
-        self.calc_stfit_chisq()
-        self.calc_stfit_resid_data()
+        # COMMENTED OUT FOR DRPQA
+        # self.select_wave_range()
+        # self.calc_stfit_chisq()
+        # self.calc_stfit_resid_data()
+
         #self.calc_stfit_resid_mod()
         #self.calc_stfit_resid_err()
         #self.calc_stfit_resid()
 
         self.calc_snr()
         self.make_drpqa()
-        self.make_kinematics()
+        # COMMENTED OUT FOR DRPQA
+        # self.make_kinematics()
 
 
     def get_header(self):
