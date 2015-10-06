@@ -794,6 +794,10 @@ class DAP():
 
     def make_drpqa(self):
         """Create DRP QA DataFrame."""
+        # FIX
+        self.stfit_resid_data_bin99 = None
+        self.stfit_chisq_bin = None
+        #
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
                     resid_data_bin99=self.stfit_resid_data_bin99,

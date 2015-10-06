@@ -71,4 +71,5 @@ for file_kws in file_kws_all:
 # emline zoomins
 
 # python plotqa.py $MANGA_SPECTRO_ANALYSIS/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
+# python plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
 
