@@ -74,6 +74,8 @@ Utah.
         time-being; removed file_root() and parameter_file() functions
         in favor of adding/using functions from
         :mod:`mangadap.util.defaults`; version number set to 1_1_0.
+    | **06 Oct 2015**: (KBW) Added functionality to select the types of
+        additional output.  Minor changes to allow for DR13 QA plots.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -273,6 +275,9 @@ class rundap:
             constructed using the other "prior_*" attributes.
         platetargets (list): List of platetargets files to search
             through to find any given plate-ifudesign combination.
+        plots (bool): Create the QA plots
+        covar (bool): Calculate and output the covariance matrix
+        maps (bool): Create the MAP fits file
         label (str): Label to use in cluster queue.
         nodes (int): Number of cluster nodes to use.
         qos (str): Specific processor to use. 
@@ -299,7 +304,9 @@ class rundap:
                 combinatorics=False,
                 prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
                 # Databases with input parameter information
-                platetargets=None, nsa_cat=None, nsa_catid=None,
+                platetargets=None,
+                # Flags to create additional output files
+                plots=True, covar=True, maps=True,
                 # Cluster options
                 label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
@@ -334,6 +341,11 @@ class rundap:
         # plateTargets file(s) to be used by the drpcomplete class,
         # which can be None
         self.platetargets = arginp_to_list(platetargets)
+
+        # Set the options for output
+        self.plots = plots
+        self.covar = covar
+        self.maps = maps
 
         # Cluster queue keywords
         self.label = label
@@ -540,6 +552,13 @@ class rundap:
 #        parser.add_argument("--nsa_catid", type=str, help="path to NSA catalog ID(s); if "
 #                            "provided will force update to drpcomplete file", default=None)
 
+        parser.add_argument("--no_plots", help="Do not create QA plots", action="store_true",
+                            default=False)
+        parser.add_argument("--no_covar", help="Do not calculate covariance", action="store_true",
+                            default=False)
+        parser.add_argument("--no_maps", help="Do not create the MAP fits files",
+                            action="store_true", default=False)
+
         # Read arguments specific to the cluster submission behavior
         parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
         parser.add_argument("--nodes", type=int, help='number of nodes to use in cluster',
@@ -616,6 +635,11 @@ class rundap:
 #            self.nsa_cat = arginp_to_list(arg.nsa_cat)
 #        if arg.nsa_catid is not None:
 #            self.nsa_catid = arginp_to_list(arg.nsa_catid)
+
+        # Overwrite any existing output options
+        self.plots = not arg.no_plots
+        self.covar = not arg.no_covar
+        self.maps = not arg.no_maps
 
         # Set queue keywords
         if arg.umask is not None:
@@ -1173,9 +1197,9 @@ class rundap:
                            self.prior_old, prior_file))
                 file.write('\n')
 
-            file.write('echo \" manga_dap, par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', ' \
-                       'dappath=\'{3}\', /nolog \" | idl \n'.format(parfile, default_plan_file, \
-                       drppath, self.analysis_path))
+            file.write('echo \" resolve_all, resolve_procedure=\'manga_dap\' & manga_dap, ' \
+                       'par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', dappath=\'{3}\', /nolog \"'
+                       ' | idl \n'.format(parfile, default_plan_file, drppath, self.analysis_path))
 
         file.write('\n')
 
@@ -1187,10 +1211,11 @@ class rundap:
                        output_path, mode, mode))
             file.write('\n')
 
-            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
+#            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
 #            file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
 #                       '-overwrite \n'.format(pyplot_path, output_path, mode))
-            file.write('python3 {0} {1} {2}_files_to_plot.txt drpqa_plottypes.ini \n'.format(
+            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plotqa.py')
+            file.write('python3 {0} {1}/{2}_files_to_plot.txt drpqa_plottypes.ini \n'.format(
                                     pyplot_path, output_path, mode))
             file.write('\n')
 
@@ -1261,8 +1286,10 @@ class rundap:
         # path exists!)
         try:
             sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign,
-                                                   drpf.mode, covar=True, plots=True, mapcube=True,
-                                                   clobber=clobber)
+                                                   drpf.mode,
+                                                   covar=self.covar, plots=self.plots,
+                                                   mapcube=self.maps, clobber=clobber)
+#                                                   covar=True, plots=True, mapcube=True,
         except Exception as e:
             print_frame('Exception')
             print("Exception: %s" % str(e))
