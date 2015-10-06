@@ -49,7 +49,8 @@
 PRO MDAP_WCSUNIT2ARCSEC, $
         unit, x, y
 
-        if unit eq 'degrees' then begin                 ; Convert from degrees to arcseconds
+        if unit eq 'degrees' or unit eq 'deg' then begin
+            ; Convert from degrees to arcseconds
             x = x*3600.
             y = y*3600.
         endif else $

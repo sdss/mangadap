@@ -1188,8 +1188,10 @@ class rundap:
             file.write('\n')
 
             pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
-            file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
-                       '-overwrite \n'.format(pyplot_path, output_path, mode))
+#            file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
+#                       '-overwrite \n'.format(pyplot_path, output_path, mode))
+            file.write('python3 {0} {1} {2}_files_to_plot.txt drpqa_plottypes.ini \n'.format(
+                                    pyplot_path, output_path, mode))
             file.write('\n')
 
         # Generate the fits file with the quantity maps, if the mode is

@@ -79,6 +79,8 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         structure, pulled from plateTargets files; NSAID v1_0_0 removed;
         changed from returning Sersic parameters to elliptical Petrosian
         parameters.
+    | **06 Oct 2015**: Changed to reading 'object_ra' and 'object_dec',
+        instead of target counter parts due to changes in MaNGA core
 
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
@@ -332,7 +334,7 @@ class drpcomplete:
 
         If the plate-ifudesign combination is found, the columns in the
         plateTargets files that the code expects to find are 'plate',
-        'ifudesign', 'mangaid', 'target_ra', and 'target_dec'; the
+        'ifudesign', 'mangaid', 'object_ra', and 'object_dec'; the
         values that will be replaced with 'NULL' (str) or -9999 (int or
         float) if they do not exist are 'nsa_version', 'nsa_id',
         'manga_target1', 'manga_target3', 'nsa_redshift',
@@ -411,8 +413,8 @@ class drpcomplete:
                 mangaid = mangaid + ['NULL']
                 continue
             mangaid.append(plttrg_data[plttrg_j]['PLTTRGT']['mangaid'][indx][0].decode("ascii"))
-            objra[i] = plttrg_data[plttrg_j]['PLTTRGT']['target_ra'][indx][0]
-            objdec[i] = plttrg_data[plttrg_j]['PLTTRGT']['target_dec'][indx][0]
+            objra[i] = plttrg_data[plttrg_j]['PLTTRGT']['object_ra'][indx][0]
+            objdec[i] = plttrg_data[plttrg_j]['PLTTRGT']['object_dec'][indx][0]
 
             # From David Wake:
             #

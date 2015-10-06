@@ -40,6 +40,7 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     | **20 May 2015**: (KBW) Documentation and Sphinx tests. Change
         default to MPL-3
     | **27 Aug 2015**: (KBW) Added (temporary) MPL-4 dependencies
+    | **06 Oct 2015**: (KBW) Changed DRP versio for MPL-4 to v1_5_0
 """
 
 from __future__ import division
@@ -72,7 +73,7 @@ class mangampl:
     +--------+------------+--------+
     | MPL-3  | v5_5_22    | v1_3_3 |
     +--------+------------+--------+
-    | MPL-4  | v5_5_22    | v1_4_0 |
+    | MPL-4  | v5_5_22    | v1_5_0 |
     +--------+------------+--------+
 
     .. warning::
@@ -128,7 +129,8 @@ class mangampl:
                                 ['MPL-2', 'v5_5_17', 'v1_1_2'],
                                 ['v1_2_0', 'v5_5_19', 'v1_2_0'],
                                 ['MPL-3', 'v5_5_22', 'v1_3_3'],
-                                ['MPL-4', 'v5_5_22', 'v1_4_0']
+#                                ['MPL-4', 'v5_5_22', 'v1_4_0']
+                                ['MPL-4', 'v5_5_23', 'v1_5_0']
                               ])
 
         if write:
