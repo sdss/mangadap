@@ -340,7 +340,10 @@ class DAP():
     def get_header(self):
         """Read header info"""
         self.header = self.fits.hdu[0].header
-        self.tplkey = self.header['TPLKEY']
+        try:
+            self.tplkey = self.header['TPLKEY']
+        except KeyError:
+            self.tplkey = None
         try:
             self.mangaid = self.header['MANGAID']
         except KeyError:
