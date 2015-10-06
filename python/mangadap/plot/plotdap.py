@@ -11,10 +11,10 @@ import copy
 import numpy as np
 
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
-mpl.use('Agg')
 
 from astropy.stats import sigma_clip
 
