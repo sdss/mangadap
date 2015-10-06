@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Read DAP FITS file into a python object."""
 
-from __future__ import division, print_function, absolute_import
+from __future__ import division, print_function, absolute_import, unicode_literals
 
 import numpy as np
 import pandas as pd
@@ -794,10 +794,12 @@ class DAP():
 
     def make_drpqa(self):
         """Create DRP QA DataFrame."""
-        # FIX
+        # FIX (DAP files for DRPQA don't contain all of the extensions, so the
+        # code fails.)
         self.stfit_resid_data_bin99 = None
         self.stfit_chisq_bin = None
         #
+
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
                     resid_data_bin99=self.stfit_resid_data_bin99,

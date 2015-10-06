@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Utility functions for DAP plotting."""
 
-from __future__ import division, print_function, absolute_import
+from __future__ import division, print_function, absolute_import, unicode_literals
 
 import os
 from os.path import join
@@ -27,7 +27,7 @@ def fitsrec_to_dataframe(recarr):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        dtmp[col] = recarr[col].byteswap().newbyteorder()
+        dtmp[col] = recarr[col]#.byteswap().newbyteorder()
     return pd.DataFrame(dtmp, columns=cols)
 
 def read_line_names(dapf, ltype='emission'):
@@ -63,6 +63,7 @@ def read_vals(dapf, hdu, ext, columns):
     """
     recarr = dapf.read_hdu_data(hdu)
     df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
+    #df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
     return df
 
 def swap_byte(arr):
