@@ -138,6 +138,7 @@ class TemplateLibraryParSet(ParSet):
     Options and defaults in ParSet base class are set to None.
     """
     def __init__(self, key, file_search, fwhm, in_vacuum, wave_limit, lower_flux_limit): 
+        # Perform some checks of the input
         in_fl = [ int, float ]
         
         pars =   [ 'key', 'file_search', 'fwhm', 'in_vacuum',  'wave_limit', 'lower_flux_limit' ]
