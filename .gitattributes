@@ -503,6 +503,46 @@ external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.04.fit
 external/templates/m11_stelib/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.04_s.fits -text svneol=unset#unset
 external/templates/m11_stelib/README -text
 external/templates/m11_stelib/rebin_stelib.pro -text
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.030000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.035000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.040000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.045000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.050000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.055000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.060000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.065000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.070000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.075000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.080000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.085000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.090000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.095000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.10000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.20000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.30000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.40000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.50000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.60000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.70000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.80000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_0.90000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_1.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_1.5000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_10.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_11.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_12.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_13.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_14.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_15.000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_2.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_3.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_4.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_5.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_6.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_7.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_8.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/M11_STELIB_res3.40_imf_ss_age_9.0000000_z_0.02_s.fits -text svneol=unset#unset
+external/templates/m11_stelib_zsol/README -text
 external/templates/miles/MILES_params.db -text
 external/templates/miles/MILES_res2.50_star_m0001V.fits -text svneol=unset#unset
 external/templates/miles/MILES_res2.50_star_m0002V.fits -text svneol=unset#unset
@@ -2622,6 +2662,8 @@ python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/dapfile.py -text
 python/mangadap/drpfile.py -text
+python/mangadap/par/AnalysisPlan.py -text
+python/mangadap/par/ParSet.py -text
 python/mangadap/plot/Linear_L_0-1.csv -text
 python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text
@@ -2651,6 +2693,7 @@ python/mangadap/plot/util.py -text
 python/mangadap/proc/SpatiallyBinnedSpectra.py -text
 python/mangadap/proc/TemplateLibrary.py -text
 python/mangadap/proc/__init__.py -text
+python/mangadap/proc/options.py -text
 python/mangadap/proc/ppxf.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
@@ -2660,7 +2703,6 @@ python/mangadap/survey/drpcomplete.py -text
 python/mangadap/survey/mangampl.py -text
 python/mangadap/survey/rundap.py -text
 python/mangadap/survey/util.py -text
-python/mangadap/util/AnalysisPlan.py -text
 python/mangadap/util/__init__.py -text
 python/mangadap/util/bitmasks.py -text
 python/mangadap/util/constants.py -text
@@ -2674,8 +2716,6 @@ python/mangadap/util/idlutils.py -text
 python/mangadap/util/instrument.py -text
 python/mangadap/util/mapping.py -text
 python/mangadap/util/misc.py -text
-python/mangadap/util/options.py -text
-python/mangadap/util/par.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/projected_disk_plane.py -text
 python/mangadap/util/yanny.py -text
