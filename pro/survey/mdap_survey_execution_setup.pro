@@ -512,7 +512,7 @@ PRO MDAP_SURVEY_EXECUTION_SETUP, $
         analysis[*,2] = 'emission-line'
         analysis[*,3] = 'abs-indices'
 
-        tpl_lib_analysis[*] = 'M11-STELIB'                 ; Always use the STELIB library
+        tpl_lib_analysis[*] = 'M11-STELIB'                 ; Always use the M11-STELIB library
         ems_par_analysis[*] = 'STANDARD'
         abs_par_analysis[*] = 'LICK'
 

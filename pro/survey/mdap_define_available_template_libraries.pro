@@ -9,6 +9,7 @@
 ;       -------------    ----------------
 ;           M11-MARCS                2.73
 ;          M11-STELIB                3.40
+;     M11-STELIB-ZSOL                3.40
 ;          M11-ELODIE                0.55
 ;           M11-MILES                2.54
 ;               MILES                2.50
@@ -44,6 +45,7 @@
 ; REVISION HISTORY:
 ;       ?? ??? 2015: Original implementation by K. Westfall (KBW)
 ;       24 Mar 2015: (KBW) Added MIUSCAT library
+;       07 Oct 2015: (KBW) Added M11-STELIB-ZSOL library
 ;
 ; dapsrc is an optional input to define the DAP source path instead of
 ; using environmental varaibles.
@@ -58,56 +60,72 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
         ;-----------------------------------------------------------------------
         ; Define the set of template libraries.  The format expected for these
         ; files is described above.
-        ntpl_libraries = 10
+        ntpl_libraries = 11
         tpl_library_keys = strarr(ntpl_libraries)
         template_libraries = strarr(ntpl_libraries)
         tpl_vacuum_wave = intarr(ntpl_libraries)
 
-        tpl_library_keys[0] = 'M11-MARCS'
-        template_libraries[0] = dapsrc+'/external/templates/m11_marcs/*_s.fits'
-        tpl_vacuum_wave[0] = 0
+        i = 0
+        tpl_library_keys[i] = 'M11-MARCS'
+        template_libraries[i] = dapsrc+'/external/templates/m11_marcs/*_s.fits'
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[1] = 'M11-STELIB'
-        template_libraries[1] = dapsrc+'/external/templates/m11_stelib/*_s.fits'
-        tpl_vacuum_wave[1] = 0
+        tpl_library_keys[i] = 'M11-STELIB'
+        template_libraries[i] = dapsrc+'/external/templates/m11_stelib/*_s.fits'
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[2] = 'M11-ELODIE'
-        template_libraries[2] = dapsrc+'/external/templates/m11_elodie/*.fits'
-        tpl_vacuum_wave[2] = 0
+        tpl_library_keys[i] = 'M11-STELIB-ZSOL'
+        template_libraries[i] = dapsrc+'/external/templates/m11_stelib_zsol/*_s.fits'
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[3] = 'M11-MILES'
-        template_libraries[3] = dapsrc+'/external/templates/m11_miles/*.fits'
-        tpl_vacuum_wave[3] = 0
+        tpl_library_keys[i] = 'M11-ELODIE'
+        template_libraries[i] = dapsrc+'/external/templates/m11_elodie/*.fits'
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[4] = 'MILES'
-        template_libraries[4] = dapsrc+'/external/templates/miles/*.fits'
+        tpl_library_keys[i] = 'M11-MILES'
+        template_libraries[i] = dapsrc+'/external/templates/m11_miles/*.fits'
+        tpl_vacuum_wave[i] = 0
+        i++
+
+        tpl_library_keys[i] = 'MILES'
+        template_libraries[i] = dapsrc+'/external/templates/miles/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[4] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[5] = 'MILES-AVG'
-        template_libraries[5] = dapsrc+'/external/templates/miles_avg/*.fits'
+        tpl_library_keys[i] = 'MILES-AVG'
+        template_libraries[i] = dapsrc+'/external/templates/miles_avg/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[5] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[6] = 'MILES-THIN'
-        template_libraries[6] = dapsrc+'/external/templates/miles_thin/*.fits'
+        tpl_library_keys[i] = 'MILES-THIN'
+        template_libraries[i] = dapsrc+'/external/templates/miles_thin/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[6] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[7] = 'STELIB'
-        template_libraries[7] = dapsrc+'/external/templates/stelib/*.fits'
+        tpl_library_keys[i] = 'STELIB'
+        template_libraries[i] = dapsrc+'/external/templates/stelib/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[7] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[8] = 'MIUSCAT'
-        template_libraries[8] = dapsrc+'/external/templates/miuscat/*.fits'
+        tpl_library_keys[i] = 'MIUSCAT'
+        template_libraries[i] = dapsrc+'/external/templates/miuscat/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[8] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
-        tpl_library_keys[9] = 'MIUSCAT-THIN'
-        template_libraries[9] = dapsrc+'/external/templates/miuscat_thin/*.fits'
+        tpl_library_keys[i] = 'MIUSCAT-THIN'
+        template_libraries[i] = dapsrc+'/external/templates/miuscat_thin/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
-        tpl_vacuum_wave[9] = 0
+        tpl_vacuum_wave[i] = 0
+        i++
 
 END
 

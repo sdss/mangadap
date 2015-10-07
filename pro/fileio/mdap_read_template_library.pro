@@ -70,6 +70,7 @@
 ;                          Strombach (2011) Table 1
 ;       10 Feb 2015: (KBW) Added M11-MILES, MILES, and STELIB
 ;       27 Apr 2015: (KBW) Added MILES-AVG, MILES-THIN, MIUSCAT-THIN
+;       07 Oct 2015: (KBW) Added resolution for M11-STELIB-ZSOL
 ;-
 ;------------------------------------------------------------------------------
 
@@ -138,6 +139,8 @@ FUNCTION MDAP_GET_TEMPLATE_RESOLUTION, $
             ; Table 1
             return, 3.40
 ;           return, 3.10
+        endif else if library_key eq 'M11-STELIB-ZSOL' then begin
+            return, 3.40
         endif else if library_key eq 'M11-ELODIE' then begin
             ; Resolution taken from Maraston & Strombach (2011, MNRAS,
             ; 418, 2785)
