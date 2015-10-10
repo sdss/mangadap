@@ -11,7 +11,7 @@ import copy
 import numpy as np
 
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
@@ -107,7 +107,7 @@ def make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
     if all([[i is None for i in x] for x in err]):
         err = None
     if err is not None:
-        no_measure[(err == 0.)] = True
+        no_measure[err == 0.] = True
         no_measure[(np.abs(data / err) < snr_thresh)] = True
     return no_measure
 
@@ -296,7 +296,7 @@ def set_background_color(spaxel_size, color='#A8A8A8'):
         tuple: axes keyword args, patch keyword args
     """
     ax_kws = dict(facecolor=color)
-    patch_kws = dict(width=spaxel_size, height=spaxel_size, hatch='////',
+    patch_kws = dict(width=spaxel_size, height=spaxel_size, hatch='xx',
                      linewidth=0, fill=True, fc=color, ec='w', zorder=10)
     return ax_kws, patch_kws
 
@@ -317,7 +317,7 @@ def set_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
     imshow_kws = dict(cmap=cmap)
     title_kws = dict(fontsize=titlefontsize, label=title)
     cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                  cbrange=None, sigclip=3, symmetric=False,
+                  cbrange=None, sigclip=3, symmetric=True,
                   label_kws=dict(label=cblabel, size=cbfontsize),
                   tick_params_kws=dict(labelsize=cbfontsize))
     return title_kws, imshow_kws, cb_kws

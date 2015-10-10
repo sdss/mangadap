@@ -29,7 +29,7 @@ else:
     # interactive session
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7443', '1901', 'CUBE_files_to_plot.txt')
+                     '7443', '6104', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
 
@@ -67,9 +67,10 @@ for file_kws in file_kws_all:
 # TO DO
 # binnum
 
-# gradients (emflux, specind)
 # spectra
 # emline zoomins
+# gradients (emflux, specind)
+
 
 # python plotqa.py $MANGA_SPECTRO_ANALYSIS/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 # python plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini

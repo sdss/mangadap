@@ -202,6 +202,38 @@ def linear_Lab():
 
     return (cmap, cmap_r)
 
+def get_cmap_rgb(cmap, n_colors=256):
+    """Return RGB values of a colormap.
+
+    Args:
+        cmap: Colormap.
+        n_colors: Number of color tuples in colormap. Default is 256.
+
+    Returns:
+        array
+    """
+    rgb = np.zeros((n_colors, 3))
+    for i in range(n_colors):
+        rgb[i] = cmap(i)[:3]
+    return rgb
+
+def output_cmap_rgb(cmap, path=None, n_colors=256):
+    """Print RGB values of a colormap to a file.
+
+    Args:
+        cmap: Colormap.
+        path: Path to generate output file.
+        n_colors: Number of color tuples in colormap. Default is 256.
+    """
+    rgb = get_cmap_rgb(cmap, n_colors)
+    if path is None:
+        home = os.path.expanduser('~')
+        path = join(home, 'Downloads') 
+    filename = join(path, '{}.txt'.format(cmap.name))
+    header = '{:22} {:24} {:22}'.format('Red', 'Green', 'Blue')
+    np.savetxt(filename, rgb, header=header)
+    print('Wrote: {}'.format(filename))
+
 def read_drpall(paths_cfg):
     """Read DRPall file.
 
@@ -216,6 +248,7 @@ def read_drpall(paths_cfg):
     fin = fits.open(drpall_file)
     drpall = fin[1].data
     fin.close()
+    print('Read {}'.format(drpall_file))
     return drpall
 
 def read_file_list(file_list):

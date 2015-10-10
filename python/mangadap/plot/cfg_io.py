@@ -66,6 +66,11 @@ def string_to_bool(d):
         d[k] = v.lower() in ('True', 'true')
     return d
 
+def check_bool(item):
+    if item in ('True', 'true', 'False', 'false'):
+        item = item.lower() in ('True', 'true')
+    return item
+
 def specind_units(dapdata, si):
     """Get units for spectral index measurements.
 
@@ -139,5 +144,10 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
     dout = {}
     for section in d:
         for k, v in d[section].items():
+            # FIX: Make this robust
+            if type(v) is pd.Series:
+                pass
+            else:
+                v = check_bool(v)
             dout[k] = v
     return dout
