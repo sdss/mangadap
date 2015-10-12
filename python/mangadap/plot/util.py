@@ -11,6 +11,7 @@ import copy
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 from sdss.files import base_path
@@ -27,7 +28,9 @@ def fitsrec_to_dataframe(recarr):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        dtmp[col] = recarr[col]#.byteswap().newbyteorder()
+        # Commented out ".byteswap().newbyteorder()" below for MPL-4 DRPQA run
+        # Not sure why this is necessary sometimes but not always.
+        dtmp[col] = recarr[col].byteswap().newbyteorder()
     return pd.DataFrame(dtmp, columns=cols)
 
 def read_line_names(dapf, ltype='emission'):
@@ -128,7 +131,7 @@ def none_to_empty_dict(x):
         x = {}
     return x
 
-def output_path(name, path_data, plottype, mg_kws, mkdir=False):
+def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
     """Make plot output path and file name.
 
     Args:
@@ -142,7 +145,7 @@ def output_path(name, path_data, plottype, mg_kws, mkdir=False):
         str: Plot output path and file name.
     """
     filename = ('manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
-                '_{0}.png'.format(name, **mg_kws))
+                '_{0}.{1}'.format(name, ext, **mg_kws))
     path_plottype = join(path_data, 'plots', plottype)
     fullpath = join(path_plottype, filename)
     if mkdir:
@@ -150,6 +153,24 @@ def output_path(name, path_data, plottype, mg_kws, mkdir=False):
             os.makedirs(path_plottype)
             print('\nCreated directory: {}\n'.format(path_plottype))
     return fullpath
+
+def saveplot(name, path_data, plottype, mg_kws, ext='png', mkdir=False,
+             overwrite=False, dpi=200):
+    """Save a figure.
+
+    Args:
+        name (str): Plot name.
+        path_data (str): Path to parent directory of *plots/*.
+        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        mg_kws (dict): MaNGA galaxy and analysis information.
+        mkdir (bool): Make directory if it does not exist. Default is False.
+    """
+    path = output_path(name=name, path_data=path_data, plottype=plottype,
+                       mg_kws=mg_kws, ext=ext, mkdir=mkdir)
+    if overwrite or not os.path.isfile(path):
+        plt.savefig(path, dpi=dpi)
+        print(path.split('/')[-1])
+
 
 def reverse_cmap(x):
     """Reverse colormap."""
