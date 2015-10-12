@@ -6,7 +6,6 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 
 import os
 from os.path import join
-import copy
 
 import numpy as np
 import pandas as pd
@@ -249,7 +248,7 @@ def output_cmap_rgb(cmap, path=None, n_colors=256):
     rgb = get_cmap_rgb(cmap, n_colors)
     if path is None:
         home = os.path.expanduser('~')
-        path = join(home, 'Downloads') 
+        path = join(home, 'Downloads')
     filename = join(path, '{}.txt'.format(cmap.name))
     header = '{:22} {:24} {:22}'.format('Red', 'Green', 'Blue')
     np.savetxt(filename, rgb, header=header)

@@ -4,7 +4,6 @@
 
 from __future__ import division, print_function, absolute_import
 
-import os
 import sys
 import copy
 
@@ -663,24 +662,19 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
     # Make plots
     all_panel_kws = []
     for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
-        #if i == 0:  # DEBUGGING: only plot one map
         tt, iw, cb = set_par(cmap=cmap, title=titles[col],
                              cblabel=cblabels[col])
         sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
                       imshow_kws=iw, cb_kws=cb)
         # Make single panel maps
-        if make_single:    
+        if make_single:
             ig = plot_map(im, extent, **sp_kws)
             if savefig_single:
                 util.saveplot(col, dapdata.path_data, 'maps', mg_kws,
                               mkdir=True, overwrite=overwrite)
-                # path = util.output_path(col, dapdata.path_data, 'maps',
-                #                         mg_kws, mkdir=True)
-                # if overwrite or not os.path.isfile(path):
-                #     plt.savefig(path, dpi=200)
-                #     print(path.split('/')[-1])
 
+        # Make single panel maps with bin numbers
         if make_binnum:
             binnum_kws = dict(val=values[col].values)
             ig = plot_map(im, extent, dapdata=dapdata, binnum_kws=binnum_kws,
@@ -689,11 +683,6 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                 pname = '_'.join([col, 'binnum'])
                 util.saveplot(pname, dapdata.path_data, 'maps', mg_kws,
                               ext='pdf', mkdir=True, overwrite=overwrite)
-                # path = util.output_path(pname, dapdata.path_data, 'maps',
-                #                         mg_kws, ext='pdf', mkdir=True)
-                # if overwrite or not os.path.isfile(path):
-                #     plt.savefig(path, dpi=200)
-                #     print(path.split('/')[-1])
 
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = set_par(cmap=cmap, title=titles[col],
@@ -710,8 +699,4 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
         if savefig_multi:
             util.saveplot(multi_name, dapdata.path_data, 'maps', mg_kws,
                           mkdir=True, overwrite=overwrite)
-            # path = util.output_path(multi_name, dapdata.path_data, 'maps',
-            #                         mg_kws, mkdir=True)
-            # if overwrite or not os.path.isfile(path):
-            #     plt.savefig(path, dpi=200)
-            #     print(path.split('/')[-1])
+

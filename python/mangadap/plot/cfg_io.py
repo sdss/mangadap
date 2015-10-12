@@ -145,7 +145,7 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
     for section in d:
         for k, v in d[section].items():
             # FIX: Make this robust
-            if type(v) is pd.Series:
+            if isinstance(v, pd.Series):
                 pass
             else:
                 v = check_bool(v)

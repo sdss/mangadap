@@ -270,7 +270,7 @@ class DAP():
         basic_qa (DataFrame): Values to display in basic QA plots.
         basic_qa_err (DataFrame): Errors for basic QA plots.
         kinematics (DataFrame): Values to display in kinematics plots.
-        kinematics_err (DataFrame): Errors for kinematics plots.        
+        kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
     def __init__(self, path_data, paths_cfg, file_kws):
@@ -644,27 +644,22 @@ class DAP():
 
     def deredshift_velocities(self):
         """Deredshift stellar and emission line velocities."""
-        
-        # NEED to deredshift velocity dispersions, too!
 
         if hasattr(self, 'nsa_redshift'):
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
                 velerr=self.stfit_kinerr['vel'].values)
-            # stvdisp, stvdisperr = util.deredshift_velocities(self.nsa_redshift,
-            #     vel=self.stfit_kin['vdisp'].values,
-            #     velerr=self.stfit_kinerr['vdisp'].values)
             elvel, elvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.kin_ew['vel_flux_wt'].values,
                 velerr=self.kinerr_ew['vel_flux_wt'].values)
-            # elvdisp, elvdisp_err = util.deredshift_velocities(
-            #     self.nsa_redshift, vel=self.kin_ew['vdisp_flux_wt'].values,
-            #     velerr=self.kinerr_ew['vdisp_flux_wt'].values)
 
-            stkin = dict(vel=stvel)#, vdisp=stvdisp)
-            stkinerr = dict(vel=stvelerr)#, vdisp=stvdisperr)
-            elkin = dict(vel_flux_wt=elvel)#, vdisp_flux_wt=elvdisp)
-            elkinerr = dict(vel_flux_wt=elvelerr)#, vdisp_flux_wt=elvdisperr)
+            stkin = dict(vel=stvel, vdisp=self.stfit_kin['vdisp'].values)
+            stkinerr = dict(vel=stvelerr,
+                            vdisp=self.stfit_kinerr['vdisp'].values))
+            elkin = dict(vel_flux_wt=elvel,
+                         vdisp_flux_wt=self.kin_ew['vdisp_flux_wt'].values)
+            elkinerr = dict(vel_flux_wt=elvelerr,
+                        vdisp_flux_wt=self.kinerr_ew['vdisp_flux_wt'].values)
 
             self.stfit_kin_rest = pd.DataFrame(stkin)
             self.stfit_kinerr_rest = pd.DataFrame(stkinerr)
