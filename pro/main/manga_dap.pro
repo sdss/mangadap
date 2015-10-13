@@ -151,6 +151,8 @@
 ;                          emission-line-only fitting.
 ;       12 Aug 2015: (KBW) Adjusted for changes to
 ;                          MDAP_SPECTRAL_INDEX_BLOCK.
+;       07 Oct 2015: (KBW) Now reports the execution time for each
+;                          block.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -247,6 +249,7 @@ PRO MANGA_DAP, $
         ;     galaxy spectra (as best as possible).
         ;   - Resample the templates to match the object sampling
         ;---------------------------------------------------------------
+        block_t=systime(/seconds)/60.           ; start time of block
         if ~keyword_set(quiet) then $
             print, 'BLOCK 2 ... '
 
@@ -257,8 +260,11 @@ PRO MANGA_DAP, $
                                      log_file_unit=log_file_unit, datacube_name=datacube_name, $
                                      quiet=quiet
 
-        if ~keyword_set(quiet) then $
+        if ~keyword_set(quiet) then begin
             print, 'BLOCK 2 ... DONE.'
+            print, 'Block 2 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                   format='(f7.3)')+' min'
+        endif
         ; END BLOCK 2 --------------------------------------------------
 
         ;---------------------------------------------------------------
@@ -323,6 +329,7 @@ PRO MANGA_DAP, $
             ; if the block is not performed, the signal and noise are
             ; read from the existing file (execution_plan[i].ofile)
             ;-----------------------------------------------------------
+            block_t=systime(/seconds)/60.           ; start time of block
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ...'
 
@@ -342,8 +349,12 @@ PRO MANGA_DAP, $
 ;           free_lun, unit
             ;stop
 
-            if ~keyword_set(quiet) then $
+            if ~keyword_set(quiet) then begin
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 3 ... DONE.'
+                print, 'Block 3 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                       format='(f7.3)')+' min'
+            endif
+
             ; END BLOCK 3 ----------------------------------------------
 
             ; Check if there is a need to continue to the next block
@@ -353,6 +364,7 @@ PRO MANGA_DAP, $
             ; BLOCK 4 --------------------------------------------------
             ; Spatial binning
             ;-----------------------------------------------------------
+            block_t=systime(/seconds)/60.           ; start time of block
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ...'
 
@@ -375,8 +387,12 @@ PRO MANGA_DAP, $
 ;           free_lun, unit
             ;stop
 
-            if ~keyword_set(quiet) then $
+            if ~keyword_set(quiet) then begin
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 4 ... DONE.'
+                print, 'Block 4 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                       format='(f7.3)')+' min'
+            endif
+
             ; END BLOCK 4 ----------------------------------------------
             ;-----------------------------------------------------------
 
@@ -423,6 +439,7 @@ PRO MANGA_DAP, $
             ; Run a full spectral fit including stellar population, gas
             ; and stellar kinematics
             ;-----------------------------------------------------------
+            block_t=systime(/seconds)/60.           ; start time of block
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ...'
 
@@ -443,8 +460,11 @@ PRO MANGA_DAP, $
 ;           free_lun, unit
             ;stop
 
-            if ~keyword_set(quiet) then $
+            if ~keyword_set(quiet) then begin
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 5 ... DONE.'
+                print, 'Block 5 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                       format='(f7.3)')+' min'
+            endif
 
             ; END BLOCK 5 ----------------------------------------------
             ;-----------------------------------------------------------
@@ -456,6 +476,7 @@ PRO MANGA_DAP, $
             ; BLOCK 6 --------------------------------------------------
             ;   Fit the emission-line only spectrum
             ;-----------------------------------------------------------
+            block_t=systime(/seconds)/60.           ; start time of block
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ...'
 
@@ -473,8 +494,11 @@ PRO MANGA_DAP, $
 ;           free_lun, unit
             ;stop
 
-            if ~keyword_set(quiet) then $
+            if ~keyword_set(quiet) then begin
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 6 ... DONE.'
+                print, 'Block 6 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                       format='(f7.3)')+' min'
+            endif
 
             ; END BLOCK 6 ------------------------------------------------------
             ;-------------------------------------------------------------------
@@ -487,6 +511,7 @@ PRO MANGA_DAP, $
             ;   Perform the spectral-index measurements
             ;-------------------------------------------------------------------
 
+            block_t=systime(/seconds)/60.           ; start time of block
             if ~keyword_set(quiet) then $
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 7 ...'
 
@@ -511,8 +536,11 @@ PRO MANGA_DAP, $
 ;           free_lun, unit
             ;stop
 
-            if ~keyword_set(quiet) then $
+            if ~keyword_set(quiet) then begin
                 print, 'PLAN '+MDAP_STC(i+1,/integer)+': BLOCK 7 ... DONE.'
+                print, 'Block 7 execution time = ' + string(systime(/seconds)/60.-block_t, $
+                       format='(f7.3)')+' min'
+            endif
 
             ; END computation of "model-independent" data products #############
             ; ##################################################################

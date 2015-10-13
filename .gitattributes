@@ -2664,6 +2664,10 @@ python/mangadap/dapfile.py -text
 python/mangadap/drpfile.py -text
 python/mangadap/par/AnalysisPlan.py -text
 python/mangadap/par/ParSet.py -text
+python/mangadap/par/database_definitions.py -text
+python/mangadap/par/snr.py -text
+python/mangadap/par/spatial_binning.py -text
+python/mangadap/par/spectral_analysis.py -text
 python/mangadap/plot/Linear_L_0-1.csv -text
 python/mangadap/plot/README -text
 python/mangadap/plot/__init__.py -text

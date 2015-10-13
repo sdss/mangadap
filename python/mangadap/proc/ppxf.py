@@ -712,6 +712,9 @@ class ppxf(object):
             if not np.equal(s2, s3):
                 raise ValueError('GALAXY and NOISE must have the same size/type')
             if not np.all((noise > 0) & np.isfinite(noise)):
+                indx = np.where( np.invert( (noise > 0) & (np.isfinite(noise)) ) )[0]
+                print(indx)
+                print(noise[indx])
                 raise ValueError('NOISE must be a positive vector')
 
         if (s1[0] < s2[0]):

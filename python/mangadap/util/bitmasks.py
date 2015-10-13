@@ -22,12 +22,41 @@ Bitmask class
 
 *Class usage examples*:
 
-    .. todo::
+    Here is an example of reading/creating a TemplateLibrary, then
+    creating a plot that shows the full spectrum (blue) and the unmasked
+    spectrum (green)::
 
-        Add some usage comments here!
+        # Imports
+        import numpy
+        from mangadap.drpfile import drpfile
+        from mangadap.proc.TemplateLibrary import TemplateLibrary
+        from mangadap.util.bitmasks import TemplateLibraryBitMask
+        from matplotlib import pyplot
+
+        # Define the DRP file
+        drpf = drpfile(7495, 12703, 'CUBE')
+
+        # Build the template library
+        tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
+        # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
+
+        # Initialize the mask object
+        tplbm = TemplateLibraryBitMask()
+
+        # Refactor the mask for the first template spectrum using the bitmask
+        unmasked = numpy.invert(tplbm.flagged(tpl_lib.hdu['MASK'].data[0,:]))
+
+        # Plot the full spectrum (blue)
+        pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
+        # Plot the unmasked pixels (green; points are connected even if there are gaps
+        pyplot.plot(tpl_lib.hdu['WAVE'].data[unmasked], tpl_lib.hdu['FLUX'].data[0,unmasked])
+        # Show the plot
+        pyplot.show()
+
 
 *Revision history*:
     | **01 Jun 2015**: Original implementation by K. Westfall (KBW)
+    | **07 Oct 2015**: (KBW) Added a usage case
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 

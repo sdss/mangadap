@@ -98,7 +98,7 @@ FUNCTION MDAP_SPECTRAL_FITTING_MASK, $
             fit_indx = MDAP_SET_INTERSECTION(indx, temporary(fit_indx), count=count)
             if count eq 0 then $
                 message, 'No overlapping wavelengths between galaxy and template!'
-            now_=(size(obj_wave[indx]))[1]
+            now_=(size(obj_wave[fit_indx]))[1]
             print, 'Object pixels after merging with the specified wavelength range: ', now_
 
             ; New number of good object pixels
