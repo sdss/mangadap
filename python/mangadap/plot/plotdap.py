@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Functions for plotting DAP output."""
 
-from __future__ import division, print_function, absolute_import
+from __future__ import (division, print_function, absolute_import,
+                        unicode_literals)
 
 import sys
 import copy
@@ -594,7 +595,6 @@ def plot_multi_map(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
     return fig, ax
 
-
 def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
                cblabels=None, cmaps=None, make_single=True, make_multi=True,
@@ -631,7 +631,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
     """
     # Adjust arguments
     if isinstance(values, str):
-        multi_name = copy.deepcopy(values)
+        pname_base = copy.deepcopy(values)
         values = util.string_slice_multiindex_df(dapdata, values)
 
     if isinstance(errors, str):
@@ -671,7 +671,8 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
         if make_single:
             ig = plot_map(im, extent, **sp_kws)
             if savefig_single:
-                util.saveplot(col, dapdata.path_data, 'maps', mg_kws,
+                pname = '_'.join([pname_base, col])
+                util.saveplot(pname, dapdata.path_data, 'maps', mg_kws,
                               mkdir=True, overwrite=overwrite)
 
         # Make single panel maps with bin numbers
@@ -680,7 +681,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
             ig = plot_map(im, extent, dapdata=dapdata, binnum_kws=binnum_kws,
                           **sp_kws)
             if savefig_binnum:
-                pname = '_'.join([col, 'binnum'])
+                pname = '_'.join([pname_base, col, 'binnum'])
                 util.saveplot(pname, dapdata.path_data, 'maps', mg_kws,
                               ext='pdf', mkdir=True, overwrite=overwrite)
 
@@ -697,6 +698,148 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
         ig = plot_multi_map(all_panel_kws=all_panel_kws, patch_kws=patch_kws,
                             mg_kws=mg_kws, fig_kws=dict(figsize=(20, 12)))
         if savefig_multi:
-            util.saveplot(multi_name, dapdata.path_data, 'maps', mg_kws,
+            util.saveplot(pname_base, dapdata.path_data, 'maps', mg_kws,
                           mkdir=True, overwrite=overwrite)
+
+
+
+
+def plot_spec(bin=0, rest_frame=True, kwargs={'alpha':0.75}, lw=1, xlim=None,
+              ylim=None, masks=True, figsize=(20, 12)):
+    """Plot spectrum and residuals.
+
+    Args:
+
+    Returns:
+        plt.figure object
+    """
+
+    if 'seaborn' in sys.modules:
+        c = sns.color_palette('bright', 5)
+        sns.set_context('poster', rc={"lines.linewidth": lw})
+    else:
+        c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
+
+    n_ax = 2
+
+    if rest_frame:
+        wave = self.wave_rest[bin]
+        gal = self.galaxy_rest[bin]
+        ivar = self.ivar_rest[bin]
+        stmodel = self.smod_rest[bin]
+        fullfitew = self.fullfitew_rest[bin]
+        fullfitfb = self.fullfitfb_rest[bin]
+    else:
+        wave = self.wave_obs
+        gal = self.galaxy[bin]
+        ivar = self.ivar[bin]
+        stmodel = self.smod[bin]
+        fullfitfb = self.fullfitfb[bin]
+    
+    residew = gal - fullfitew
+    residfb = gal - fullfitfb
+
+    ind_stmodel = np.where(stmodel > 0.)[0]
+    ind = np.where((wave >= xlim[0]) & (wave <= xlim[1]))[0]
+
+    ylim_tmp = copy.deepcopy(ylim)
+    if ylim_tmp[0] is not None:
+        if ylim_tmp[0][1] is None:
+            p50 = np.percentile(gal[ind], 50)
+            ylim_tmp[0][1] = p50 * 3.
+            if ylim_tmp[1] is None:
+                ymax_tmp = 0.1 + p50 * 0.2
+                ylim_tmp[1] = [-ymax_tmp, ymax_tmp]
+
+    if masks:
+        ind_split = np.where(np.diff(self.smsk[bin]) != 0)[0]
+        smsk_vals = np.array_split(self.smsk[bin], ind_split + 1)
+        smsk_val = np.array([item[0] for item in smsk_vals], dtype=int)
+        if 0 not in ind_split:
+            ind_split = np.append([0], ind_split)
+        if self.smsk.shape[1] not in ind_split:
+            ind_split = np.append(ind_split, [self.smsk.shape[1] - 1])
+
+
+    fig = plt.figure(figsize=figsize)
+
+    for i in range(n_ax):
+        if i == 0:
+            bottom = 0.32
+            height = 0.63
+        else:
+            bottom = 0.1
+            height = 0.2
+        ax = fig.add_axes([0.1, bottom, 0.85, height])
+
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        if ylim_tmp is not None:
+            ax.set_ylim(ylim_tmp[i])
+
+        if i in np.arange(n_ax-1):
+            plt.setp(ax.get_xticklabels(), visible=False)
+
+        if i == n_ax-1:
+            ax.set_xlabel(r'$\lambda_{\rm rest} [\AA]$')
+            ax.set_ylabel(r'$\Delta / \sigma$')
+
+        if i != 0:
+            ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75, 
+                    lw=2, zorder=1)
+
+        p = []
+        labels = []
+
+        # spectrum
+        if i == 0:
+            ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (
+                         self.manga_pid, self.manga_id, bin))
+            flux_units = 'Flux'
+            if self.dap_mode == 'CUBE':
+                flux_units += ' / spaxel'
+            elif self.dap_mode == 'RSS':
+                flux_units += ' / fiber'
+            ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units)
+            p.append(ax.plot(wave[ind], gal[ind], color='#808080')[0])
+            labels.append('galaxy')
+
+            # stellar continuum fit
+            p.append(ax.plot(wave[ind_stmodel], stmodel[ind_stmodel],
+                     color=c[1])[0])
+            labels.append('stellar continuum fit')
+
+            y = [fullfitfb, fullfitew]
+            fit_labels = ['F. Belfiore emline + cont fit', 
+                          'E. Wang emline + cont fit']
+
+        #  residuals
+        elif i == 1:
+            ax.set_ylabel(r'$\Delta$')
+            y = [residfb, residew]
+
+        # emission line + stellar continuum fits
+        for j in range(len(y)):
+            p.append(ax.plot(wave[ind_stmodel], y[j][ind_stmodel],
+                     color=c[2-2*j])[0])
+            if i == 0:
+                labels.append(fit_labels[j])
+
+        if i == 0:
+            plt.legend(p, labels, loc=2)
+
+        # plot masks
+        if masks:
+            mskargs = dict(facecolor='gray', alpha=0.25)
+            lglam = np.log10(wave)
+            dlglam = (lglam[1] - lglam[0]) / 2.
+            ylower, yupper = ylim_tmp[i]
+            for m in range(len(smsk_val)):
+                x = np.array([10**(lglam[ind_split[m]+1] - dlglam),
+                             10**(lglam[ind_split[m+1]] + dlglam)])
+                if smsk_val[m]:
+                    ax.fill_between(x, ylower, yupper, **mskargs)
+
+    return fig
+
 

@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Utility functions for DAP plotting."""
 
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import (division, print_function, absolute_import,
+                        unicode_literals)
 
 import os
 from os.path import join
@@ -28,9 +29,16 @@ def fitsrec_to_dataframe(recarr):
     dtmp = {}
     for col in cols:
         # Commented out ".byteswap().newbyteorder()" below for MPL-4 DRPQA run
-        # Not sure why this is necessary sometimes but not always.
+        # Could be a Python2/Python3 difference
         dtmp[col] = recarr[col].byteswap().newbyteorder()
     return pd.DataFrame(dtmp, columns=cols)
+
+def make_df(data, columns):
+    """Try to put data into a DataFrame."""
+    try:
+        return pd.DataFrame(data, columns=columns)
+    except ValueError:
+        return data
 
 def read_line_names(dapf, ltype='emission'):
     """Read emission line or spectral index names.
@@ -168,7 +176,7 @@ def saveplot(name, path_data, plottype, mg_kws, ext='png', mkdir=False,
                        mg_kws=mg_kws, ext=ext, mkdir=mkdir)
     if overwrite or not os.path.isfile(path):
         plt.savefig(path, dpi=dpi)
-        print(path.split('/')[-1])
+        print('\n', path.split('/')[-1], '\n')
 
 
 def reverse_cmap(x):

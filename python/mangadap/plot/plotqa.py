@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Plot DAP QA."""
 
-from __future__ import division, print_function, absolute_import
+from __future__ import (division, print_function, absolute_import,
+                        unicode_literals)
 
 import os
 from os.path import join
@@ -27,9 +28,13 @@ if hasattr(main, '__file__'):
         raise IndexError('Usage: python plotqa.py file_list plottypes_list')
 else:
     # interactive session
-    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
-                     os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7443', '6104', 'CUBE_files_to_plot.txt')
+
+    # DRPQA file
+    file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
+                     os.getenv('MANGADAP_VER'),
+                     '7443', '1901', 'CUBE_files_to_plot.txt')
+    #file_list = join(os.getenv('MANGA_MPL3'),
+    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
 
@@ -44,9 +49,13 @@ reload(dap)
 reload(plotdap)
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
+    gal_kws = {}
+    gal_kws['drpqa_file'] = True
+    if os.getenv('MANGA_MPL3') in file_list:
+        gal_kws['mpl4'] = False
 
     # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws)
+    gal = dap.DAP(path_data, paths_cfg, file_kws, **gal_kws)
     gal.get_all_ext()
     mg_kws = copy.deepcopy(file_kws)
     mg_kws['mangaid'] = gal.mangaid
@@ -58,18 +67,30 @@ for file_kws in file_kws_all:
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
+
         plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
 
+from mangadap import dapfile
+fin = dapfile.dapfile(directory_path=path_data, **file_kws)
+fin.hdu.info()
+elofit = fin.hdu['ELOFIT'].data
+elofit.columns.names
 
-
+extnames = [hdu._summary()[0] for hdu in fin.hdu]
+cols = fin.hdu['STFIT'].data.columns.names
 
 # TO DO
-# file naming conventions
+# read in version of DAP file
 
 # spectra
 # emline zoomins
 # gradients (emflux, specind)
 
+# DRPQA file
 # python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/6104/CUBE_files_to_plot.txt drpqa_plottypes.ini
+
+# Normal DAP file
+# python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
+
 

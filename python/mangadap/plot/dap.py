@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """Read DAP FITS file into a python object."""
 
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import (division, print_function, absolute_import,
+                        unicode_literals)
+
+import copy
 
 import numpy as np
 import pandas as pd
@@ -11,7 +14,15 @@ from mangadap import dapfile
 from mangadap.plot import util
 
 class DAP():
-    """Container for information from DAP FITS file.
+    """Convenience class for information from DAP FITS file.
+
+    Args:
+        path_data (str): Path to DAP FITS file.
+        paths_cfg (str): Full path to sdss_paths.ini file.
+        file_kws (dict): DAP FITS file specifications.
+        mpl4 (bool): True if version is MPL-4. Default is True.
+        drpqa_file (bool): True if FITS file was produced for DRPQA. Default
+            is False.
 
     Attributes:
         path_data (str): Path to DAP FITS file.
@@ -22,6 +33,9 @@ class DAP():
         mode (str): Binning mode (i.e., 'CUBE' or 'RSS').
         bintype (str): Binning type (e.g., 'NONE' or 'ALL')
         niter (str): Analysis iteration number.
+        mpl4 (bool): True if version is MPL-4. Default is True.
+        drpqa_file (bool): True if FITS file was produced for DRPQA. Default
+            is False.
 
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
@@ -273,7 +287,8 @@ class DAP():
         kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
-    def __init__(self, path_data, paths_cfg, file_kws):
+    def __init__(self, path_data, paths_cfg, file_kws, mpl4=True,
+                 drpqa_file=False):
         self.path_data = path_data
         self.paths_cfg = paths_cfg
         self.plate = file_kws['plate']
@@ -282,6 +297,8 @@ class DAP():
         self.mode = file_kws['mode']
         self.bintype = file_kws['bintype']
         self.niter = file_kws['niter']
+        self.mpl4 = mpl4
+        self.drpqa_file = drpqa_file
         self.read_dap_fits(path_data, file_kws)
 
     def read_dap_fits(self, path_data, file_kws):
@@ -289,23 +306,25 @@ class DAP():
         self.fits = dapfile.dapfile(directory_path=path_data, **file_kws)
         self.fits.open_hdu()
         self.fits.read_par()
+        self.extnames = [hdu._summary()[0] for hdu in self.fits.hdu]
 
     def get_all_ext(self):
         """Read in all extensions from FITS file."""
         self.get_header()
+        #for ext in self.extnames:
         self.get_drps()
         self.get_bins()
         self.get_spectra()
         self.count_res_elements()
         self.get_elpar()
 
-        # COMMENTED OUT FOR DRPQA
-        # self.get_stellar_cont_fit()
-        # self.get_stellar_gas_fit()
+        self.get_stellar_cont_fit()
+        self.get_stellar_gas_fit()
 
         self.get_elmod()
-        self.get_elband()
-        self.get_elmmnt()
+        if self.mpl4:
+            self.get_elband()
+            self.get_elmmnt()
 
         self.get_elopar()
 
@@ -313,38 +332,45 @@ class DAP():
         self.get_elomew()
         self.get_elomfb()
 
-        # COMMENTED OUT FOR DRPQA
-        # self.get_siwave()
-        # self.get_siflux()
-        # self.get_siivar()
-        # self.get_simask()
-        # self.get_siotpl()
-        # self.get_siotplm()
-        # self.get_sibotpl()
-        # self.get_sibotplm()
-        # self.get_sipar()
-        # self.get_sindx()
+        if not self.drpqa_file:
+            self.get_siwave()
+            self.get_siflux()
+            self.get_siivar()
+            self.get_simask()
+            self.get_siotpl()
+            if self.mpl4:
+                self.get_siotplm()
+            self.get_sibotpl()
+            if self.mpl4:
+                self.get_sibotplm()
+            self.get_sipar()
+            self.get_sindx()
 
-        # COMMENTED OUT FOR DRPQA
-        # self.calc_fullfit()
-        # self.get_nsa_redshift()
-        # self.deredshift_spectra()
-        # self.deredshift_velocities()
+        if not self.drpqa_file:
+            self.calc_fullfit()
+            self.get_nsa_redshift()
+            self.deredshift_spectra()
+            self.deredshift_velocities()
 
-        # COMMENTED OUT FOR DRPQA
-        # self.select_wave_range()
-        # self.calc_stfit_chisq()
-        # self.calc_stfit_resid_data()
-
-        #self.calc_stfit_resid_mod()
-        #self.calc_stfit_resid_err()
-        #self.calc_stfit_resid()
+        if not self.drpqa_file:
+            self.select_wave_range()
+            self.calc_stfit_chisq()
+            self.calc_stfit_resid_data()
+            self.calc_stfit_resid_mod()
+            self.calc_stfit_resid_err()
+            self.calc_stfit_resid()
 
         self.calc_snr()
         self.make_drpqa()
-        # COMMENTED OUT FOR DRPQA
-        # self.make_kinematics()
+        if not self.drpqa_file:
+            self.make_kinematics()
 
+    def read_hdu(self, extname):
+        try:
+            return self.fits.read_hdu_data(extname)
+        except KeyError:
+            print('Extension {} not found.'.format(extname))
+            return None
 
     def get_header(self):
         """Read header info"""
@@ -360,15 +386,17 @@ class DAP():
 
     def get_drps(self):
         """Read in DRPS extension."""
-        drps_in = self.fits.read_hdu_data('DRPS')
-        drps = util.fitsrec_to_dataframe(drps_in)
-        self.drps = util.lowercase_colnames(drps)
+        drps_in = self.read_hdu('DRPS')
+        if drps_in is not None:
+            drps = util.fitsrec_to_dataframe(drps_in)
+            self.drps = util.lowercase_colnames(drps)
 
     def get_bins(self):
         """Read in BINS extension"""
-        bins_in = self.fits.read_hdu_data('BINS')
-        bins = util.fitsrec_to_dataframe(bins_in)
-        self.bins = util.lowercase_colnames(bins)
+        bins_in = self.read_hdu('BINS')
+        if bins_in is not None:
+            bins = util.fitsrec_to_dataframe(bins_in)
+            self.bins = util.lowercase_colnames(bins)
 
     def get_spectra(self):
         """Read in spectra.
@@ -376,31 +404,56 @@ class DAP():
         Read in observed wavelengths, fluxes, and inverse variances. Also read
         in spectral resolution and mask.
         """
-        self.wave_obs = self.fits.read_hdu_data('WAVE')
-        self.sres = self.fits.read_hdu_data('SRES')
-        self.flux_obs = np.transpose(self.fits.read_hdu_data('FLUX'))
-        self.ivar_obs = np.transpose(self.fits.read_hdu_data('IVAR'))
-        self.mask = np.transpose(self.fits.read_hdu_data('MASK'))
+        self.wave_obs = self.read_hdu('WAVE')
+        self.sres = self.read_hdu('SRES')
+
+        self.flux_obs = self.read_hdu('FLUX')
+        if self.flux_obs is not None:
+            self.flux_obs = np.transpose(self.flux_obs)
+
+
+        self.ivar_obs = self.read_hdu('IVAR')
+        if self.ivar_obs is not None:
+            self.ivar_obs = np.transpose(self.ivar_obs)
+
+        self.mask = self.read_hdu('MASK')
+        if self.mask is not None:
+            self.mask = np.transpose(self.mask)
 
     def get_elpar(self):
         """Read in emission line parameters."""
-        elpar_in = self.fits.read_hdu_data('ELPAR')
-        elpar = util.fitsrec_to_dataframe(elpar_in)
-        self.elpar = util.lowercase_colnames(elpar)
-        self.elpar.elname = util.remove_hyphen(self.elpar.elname.values)
+        elpar_in = self.read_hdu('ELPAR')
+        if elpar_in is not None:
+            elpar = util.fitsrec_to_dataframe(elpar_in)
+            self.elpar = util.lowercase_colnames(elpar)
+            self.elpar.elname = util.remove_hyphen(self.elpar.elname.values)
+        else:
+            self.elpar = None
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
         kincols = ['vel', 'vdisp']
-        stfit_in = self.fits.read_hdu_data('STFIT')
-        self.stfit_tplw = stfit_in['TPLW']
-        self.stfit_addpoly = stfit_in['ADDPOLY']
-        self.stfit_multpoly = stfit_in['MULTPOLY']
-        self.stfit_kin = pd.DataFrame(stfit_in['KIN'], columns=kincols)
-        self.stfit_kinerr = pd.DataFrame(stfit_in['KINERR'], columns=kincols)
-        self.stfit_rchi2 = stfit_in['RCHI2']
-        self.smsk = np.transpose(self.fits.read_hdu_data('SMSK'))
-        self.smod = np.transpose(self.fits.read_hdu_data('SMOD'))
+        stfit_in = self.read_hdu('STFIT')
+        if stfit_in is not None:
+            self.stfit_tplw = stfit_in['TPLW']
+            self.stfit_addpoly = stfit_in['ADDPOLY']
+            self.stfit_multpoly = stfit_in['MULTPOLY']
+            self.stfit_kin = util.make_df(stfit_in['KIN'], columns=kincols)
+            self.stfit_kinerr = util.make_df(stfit_in['KINERR'],
+                                             columns=kincols)
+            self.stfit_rchi2 = stfit_in['RCHI2']
+        else:
+            for it in ['stfit_tplw', 'stfit_addpoly', 'stfit_multpoly',
+                       'stfit_kin', 'stfit_kinerr', 'stfit_rchi2']:
+                self.__dict__[it] = None            
+
+        self.smsk = self.read_hdu('SMSK')
+        if self.smsk is not None:
+            self.smsk = np.transpose(self.smsk)
+
+        self.smod = self.read_hdu('SMOD')
+        if self.smod is not None:
+            self.smod = np.transpose(self.smod)
 
     def get_stellar_gas_fit(self):
         """Read in star + gas fitting analysis."""
@@ -459,8 +512,9 @@ class DAP():
         # EW: Enci Wang's fitting code
         self.kin_ew = util.read_vals(ext='KIN_EW', **elovel_kws)
         self.kinerr_ew = util.read_vals(ext='KINERR_EW', **elovel_kws)
-        self.kinstde_ew = util.read_vals(ext='KINSTDE_EW', **elovel_kws)
-        self.nkin_ew = elofit['NKIN_EW']
+        if self.mpl4:
+            self.kinstde_ew = util.read_vals(ext='KINSTDE_EW', **elovel_kws)
+            self.nkin_ew = elofit['NKIN_EW']
         self.elomit_ew = util.read_vals(ext='ELOMIT_EW', **elonames_kws)
         self.ampl_ew = util.read_vals(ext='AMPL_EW', **elonames_kws)
         self.amplerr_ew = util.read_vals(ext='AMPLERR_EW', **elonames_kws)
@@ -482,6 +536,9 @@ class DAP():
         # FB: Francesco Belfiore's fitting code
         self.kin_fb = util.read_vals(ext='KIN_FB', **elovel_kws)
         self.kinerr_fb = util.read_vals(ext='KINERR_FB', **elovel_kws)
+        if self.mpl4:
+            self.kinstde_fb = util.read_vals(ext='KINSTDE_FB', **elovel_kws)
+            self.nkin_fb = elofit['NKIN_FB']
         self.elomit_fb = util.read_vals(ext='ELOMIT_FB', **elonames_kws)
         self.ampl_fb = util.read_vals(ext='AMPL_FB', **elonames_kws)
         self.amplerr_fb = util.read_vals(ext='AMPLERR_FB', **elonames_kws)
@@ -644,27 +701,34 @@ class DAP():
 
     def deredshift_velocities(self):
         """Deredshift stellar and emission line velocities."""
+        stkincols = ['vel', 'vdisp']
+        elkincols = copy.deepcopy(stkincols)
+        # Emission line kinematics are calculated using several methods in
+        # MPL-4+. Select flux-weighted kinematics ("flux_wt") by default. 
+        if 'vel_flux_wt' in list(self.kin_ew.columns.values):
+            elkincols = [it + '_flux_wt' for it in elkincols]
 
         if hasattr(self, 'nsa_redshift'):
+
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
                 velerr=self.stfit_kinerr['vel'].values)
             elvel, elvelerr = util.deredshift_velocities(self.nsa_redshift,
-                vel=self.kin_ew['vel_flux_wt'].values,
-                velerr=self.kinerr_ew['vel_flux_wt'].values)
+                vel=self.kin_ew[elkincols[0]].values,
+                velerr=self.kinerr_ew[elkincols[0]].values)
 
             stkin = dict(vel=stvel, vdisp=self.stfit_kin['vdisp'].values)
             stkinerr = dict(vel=stvelerr,
-                            vdisp=self.stfit_kinerr['vdisp'].values))
-            elkin = dict(vel_flux_wt=elvel,
-                         vdisp_flux_wt=self.kin_ew['vdisp_flux_wt'].values)
-            elkinerr = dict(vel_flux_wt=elvelerr,
-                        vdisp_flux_wt=self.kinerr_ew['vdisp_flux_wt'].values)
+                            vdisp=self.stfit_kinerr['vdisp'].values)
+            elkin = {elkincols[0]: elvel,
+                     elkincols[1]: self.kin_ew[elkincols[1]].values}
+            elkinerr = {elkincols[0]: elvelerr,
+                        elkincols[1]: self.kinerr_ew[elkincols[1]].values}
 
-            self.stfit_kin_rest = pd.DataFrame(stkin)
-            self.stfit_kinerr_rest = pd.DataFrame(stkinerr)
-            self.kin_rest_ew = pd.DataFrame(elkin)
-            self.kinerr_rest_ew = pd.DataFrame(elkinerr)
+            self.stfit_kin_rest = pd.DataFrame(stkin, columns=stkincols)
+            self.stfit_kinerr_rest = pd.DataFrame(stkinerr, columns=stkincols)
+            self.kin_rest_ew = pd.DataFrame(elkin, columns=elkincols)
+            self.kinerr_rest_ew = pd.DataFrame(elkinerr, columns=elkincols)
 
         else:
             print('Could not deredshift velocities.\n')
@@ -753,7 +817,7 @@ class DAP():
         and for each binned spectrum.
         """
         self.stfit_resid_err_pix = ((self.flux_obs - self.smod) *
-                                    np.sqrt(self.ivar))
+                                    np.sqrt(self.ivar_obs))
         self.stfit_resid_err_pix[self.smsk == 1] = np.nan
         self.stfit_resid_err_bin = self.calc_metric_per_bin(
                                         self.stfit_resid_err_pix)
@@ -815,17 +879,18 @@ class DAP():
 
     def make_kinematics(self):
         """Create kinematics DataFrame."""
+        elkincols = list(self.kin_ew.columns.values)
         vals = dict(stvel=self.stfit_kin_rest['vel'].values,
                     stvdisp=self.stfit_kin['vdisp'].values,
                     stfit_chisq=self.stfit_chisq_bin,
-                    elvel=self.kin_rest_ew['vel_flux_wt'].values,
-                    elvdisp=self.kin_ew['vdisp_flux_wt'].values,
+                    elvel=self.kin_rest_ew[elkincols[0]].values,
+                    elvdisp=self.kin_ew[elkincols[1]].values,
                     stfit_resid99=self.stfit_resid_data_bin99)
         errs = dict(stvel=self.stfit_kinerr_rest['vel'].values,
                     stvdisp=self.stfit_kinerr['vdisp'].values,
                     stfit_chisq=None,
-                    elvel=self.kinerr_rest_ew['vel_flux_wt'],
-                    elvdisp=self.kinerr_ew['vdisp_flux_wt'],
+                    elvel=self.kinerr_rest_ew[elkincols[0]],
+                    elvdisp=self.kinerr_ew[elkincols[1]],
                     stfit_resid99=None)
         columns = ['stvel', 'stvdisp', 'stfit_chisq', 'elvel', 'elvdisp',
                    'stfit_resid99']

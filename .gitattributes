@@ -2684,12 +2684,12 @@ python/mangadap/plot/config/sdss_paths.ini -text
 python/mangadap/plot/config/snr.ini -text
 python/mangadap/plot/config/specind.ini -text
 python/mangadap/plot/dap.py -text
+python/mangadap/plot/deprecated/plot_map_wrap.py -text
+python/mangadap/plot/deprecated/plot_qa.py -text
+python/mangadap/plot/deprecated/plot_qa_wrap.py -text
 python/mangadap/plot/drp3qual.py -text
 python/mangadap/plot/index.rst -text
 python/mangadap/plot/make_qa_file_list.py -text
-python/mangadap/plot/plot_map_wrap.py -text
-python/mangadap/plot/plot_qa.py -text
-python/mangadap/plot/plot_qa_wrap.py -text
 python/mangadap/plot/plotdap.py -text
 python/mangadap/plot/plotqa.py -text
 python/mangadap/plot/tests/__init__.py -text
