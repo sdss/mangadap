@@ -322,9 +322,8 @@ class DAP():
         self.get_stellar_gas_fit()
 
         self.get_elmod()
-        if self.mpl4:
-            self.get_elband()
-            self.get_elmmnt()
+        self.get_elband()
+        self.get_elmmnt()
 
         self.get_elopar()
 
@@ -467,25 +466,28 @@ class DAP():
 
     def get_elband(self):
         """Get bandpasses used for non-parametric fits of emission lines."""
-        elband_in = self.fits.read_hdu_data('ELBAND')
-        elnames_in = list(elband_in['ELNAME'].byteswap().newbyteorder())
-        elnames = util.remove_hyphen(elnames_in)
-        elband_tmp = {}
-        for band in ['bandpass', 'blueside', 'redside']:
-            for i, bedge in enumerate(['start', 'end']):
-                elband_tmp['_'.join((band, bedge))] = \
-                    elband_in[band][:, i].byteswap().newbyteorder()
+        elband_in = self.read_hdu('ELBAND')
+        if elband_in is not None:
+            elnames_in = list(elband_in['ELNAME'].byteswap().newbyteorder())
+            elnames = util.remove_hyphen(elnames_in)
+            elband_tmp = {}
+            for band in ['bandpass', 'blueside', 'redside']:
+                for i, bedge in enumerate(['start', 'end']):
+                    elband_tmp['_'.join((band, bedge))] = \
+                        elband_in[band][:, i].byteswap().newbyteorder()
 
-        cols = ['bandpass_start', 'bandpass_end', 'blueside_start',
-                'blueside_end', 'redside_start', 'redside_end']
-        self.elband = pd.DataFrame(elband_tmp, columns=cols, index=elnames)
+            cols = ['bandpass_start', 'bandpass_end', 'blueside_start',
+                    'blueside_end', 'redside_start', 'redside_end']
+            self.elband = pd.DataFrame(elband_tmp, columns=cols,
+                                       index=elnames)
 
     def get_elmmnt(self):
         """Get moments of non-parametric fits of emission lines."""
-        elmmnt_in = self.fits.read_hdu_data('ELMMNT')
-        cols = [it.lower() for it in elmmnt_in.columns.names]
-        self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
-                                                    self.elband.index)
+        elmmnt_in = self.read_hdu('ELMMNT')
+        if elmmnt_in is not None:
+            cols = [it.lower() for it in elmmnt_in.columns.names]
+            self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
+                                                        self.elband.index)
 
     def get_elopar(self):
         """Get emission line only fit parameters."""
