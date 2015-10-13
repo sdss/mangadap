@@ -311,7 +311,6 @@ class DAP():
     def get_all_ext(self):
         """Read in all extensions from FITS file."""
         self.get_header()
-        #for ext in self.extnames:
         self.get_drps()
         self.get_bins()
         self.get_spectra()
@@ -337,11 +336,10 @@ class DAP():
             self.get_siivar()
             self.get_simask()
             self.get_siotpl()
-            if self.mpl4:
-                self.get_siotplm()
+            self.get_siotplm()
             self.get_sibotpl()
-            if self.mpl4:
-                self.get_sibotplm()
+            self.get_sibotplm()
+            # STOPPED HERE
             self.get_sipar()
             self.get_sindx()
 
@@ -569,36 +567,36 @@ class DAP():
 
     def get_siwave(self):
         """Resolution matched wavelengths to spectral-index system."""
-        self.siwave = self.fits.read_hdu_data('SIWAVE')
+        self.siwave = self.read_hdu('SIWAVE')
 
     def get_siflux(self):
         """Resolution matched fluxes to spectral-index system."""
-        self.siflux = self.fits.read_hdu_data('SIFLUX')
+        self.siflux = self.read_hdu('SIFLUX')
 
     def get_siivar(self):
         """Resolution matched inverse variances to spectral-index system."""
-        self.siivar = self.fits.read_hdu_data('SIIVAR')
+        self.siivar = self.read_hdu('SIIVAR')
 
     def get_simask(self):
         """Bad pixel mask (0 = good, 1 = bad) for siflux."""
-        self.simask = self.fits.read_hdu_data('SIMASK')
+        self.simask = self.read_hdu('SIMASK')
 
     def get_siotpl(self):
         """Optimal templates resolution matched to spectral index system."""
-        self.siotpl = self.fits.read_hdu_data('SIOTPL')
+        self.siotpl = self.read_hdu('SIOTPL')
 
     def get_siotplm(self):
         """Mask for the unbroadened optimal templates."""
-        self.siotplm = self.fits.read_hdu_data('SIOTPLM')
+        self.siotplm = self.read_hdu('SIOTPLM')
 
     def get_sibotpl(self):
         """Broadened optimal templates resolution matched to spectral index
         system."""
-        self.sibotpl = self.fits.read_hdu_data('SIBOTPL')
+        self.sibotpl = self.read_hdu('SIBOTPL')
 
     def get_sibotplm(self):
         """Mask for the broadened optimal templates."""
-        self.sibotplm = self.fits.read_hdu_data('SIBOTPLM')
+        self.sibotplm = self.read_hdu('SIBOTPLM')
 
     def get_sipar(self):
         """Spectral index parameters."""

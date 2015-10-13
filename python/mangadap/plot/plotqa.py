@@ -50,7 +50,7 @@ reload(plotdap)
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
     gal_kws = {}
-    gal_kws['drpqa_file'] = True
+    #gal_kws['drpqa_file'] = True
     if os.getenv('MANGA_MPL3') in file_list:
         gal_kws['mpl4'] = False
 
