@@ -330,7 +330,6 @@ class DAP():
         self.get_elomew()
         self.get_elomfb()
 
-        #if not self.drpqa_file:
         self.get_siwave()
         self.get_siflux()
         self.get_siivar()
@@ -348,8 +347,10 @@ class DAP():
         self.deredshift_spectra()
         self.deredshift_velocities()
 
-        if not self.drpqa_file:
+        if hasattr(self, 'wave_rest'):
             self.select_wave_range()
+
+        if len(self.smod) == self.n_bins:
             self.calc_stfit_chisq()
             self.calc_stfit_resid_data()
             self.calc_stfit_resid_mod()
@@ -358,12 +359,15 @@ class DAP():
 
         self.calc_snr()
         self.make_drpqa()
-        if not self.drpqa_file:
+        if len(self.stfit_kin) == self.n_bins:
             self.make_kinematics()
 
-    def read_hdu(self, extname):
+    def read_hdu(self, extname, transpose=False):
         try:
-            return self.fits.read_hdu_data(extname)
+            ext = self.fits.read_hdu_data(extname)
+            if transpose:
+                ext = np.transpose(ext)
+            return ext
         except KeyError:
             print('Extension {} not found.'.format(extname))
             return None
@@ -402,19 +406,9 @@ class DAP():
         """
         self.wave_obs = self.read_hdu('WAVE')
         self.sres = self.read_hdu('SRES')
-
-        self.flux_obs = self.read_hdu('FLUX')
-        if self.flux_obs is not None:
-            self.flux_obs = np.transpose(self.flux_obs)
-
-
-        self.ivar_obs = self.read_hdu('IVAR')
-        if self.ivar_obs is not None:
-            self.ivar_obs = np.transpose(self.ivar_obs)
-
-        self.mask = self.read_hdu('MASK')
-        if self.mask is not None:
-            self.mask = np.transpose(self.mask)
+        self.flux_obs = self.read_hdu('FLUX', transpose=True)
+        self.ivar_obs = self.read_hdu('IVAR', transpose=True)
+        self.mask = self.read_hdu('MASK', transpose=True)
 
     def get_elpar(self):
         """Read in emission line parameters."""
@@ -443,18 +437,13 @@ class DAP():
                        'stfit_kin', 'stfit_kinerr', 'stfit_rchi2']:
                 self.__dict__[it] = None            
 
-        self.smsk = self.read_hdu('SMSK')
-        if self.smsk is not None:
-            self.smsk = np.transpose(self.smsk)
-
-        self.smod = self.read_hdu('SMOD')
-        if self.smod is not None:
-            self.smod = np.transpose(self.smod)
+        self.smsk = self.read_hdu('SMSK', transpose=True)
+        self.smod = self.read_hdu('SMOD', transpose=True)
 
     def get_stellar_gas_fit(self):
         """Read in star + gas fitting analysis."""
-        #self.sgmsk = np.transpose(self.fits.read_hdu_data('SGMSK'))
-        #self.sgmod = np.transpose(self.fits.read_hdu_data('SGMOD'))
+        #self.sgmsk = self.read_hdu('SGMSK', transpose=True)
+        #self.sgmod = self.read_hdu('SGMOD', transpose=True)
         pass
 
     def get_elmod(self):
@@ -495,74 +484,62 @@ class DAP():
 
     def get_elofit(self):
         """Read results from emission line fits into DataFrames."""
-        elofit = self.fits.read_hdu_data('ELOFIT')
-
-        if elofit['KIN_EW'].shape[1] == 2:
-            kincols = ['vel', 'vdisp']
-        else:
-            kincols = ['vel_flux_wt', 'vdisp_flux_wt', 'vel_verr_wt',
-                       'vdisp_verr_wt', 'vel_flux_verr_wt',
-                       'vdisp_flux_verr_wt', 'vel_uni_wt', 'vdisp_uni_wt']
+        elofit = self.read_hdu('ELOFIT')
+        
+        kincols = ['vel', 'vdisp']
+        if elofit['KIN_EW'].shape[1] == 8:
+            wtnames = ['flux', 'verr', 'flux_verr', 'uni']
+            kincols = ['_'.join([kc, wt, 'wt']) for wt in wtnames
+                       for kc in kincols]
         ikincols = ['vel', 'vdisp']
         elonames = self.elopar.elname.values
-        elovel_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=kincols)
-        elonames_kws = dict(dapf=self.fits, hdu='ELOFIT', columns=elonames)
 
-        # EW: Enci Wang's fitting code
-        self.kin_ew = util.read_vals(ext='KIN_EW', **elovel_kws)
-        self.kinerr_ew = util.read_vals(ext='KINERR_EW', **elovel_kws)
-        if self.mpl4:
-            self.kinstde_ew = util.read_vals(ext='KINSTDE_EW', **elovel_kws)
-            self.nkin_ew = elofit['NKIN_EW']
-        self.elomit_ew = util.read_vals(ext='ELOMIT_EW', **elonames_kws)
-        self.ampl_ew = util.read_vals(ext='AMPL_EW', **elonames_kws)
-        self.amplerr_ew = util.read_vals(ext='AMPLERR_EW', **elonames_kws)
-        self.sinst_ew = util.read_vals(ext='SINST_EW', **elonames_kws)
-        self.flux_ew = util.read_vals(ext='FLUX_EW', **elonames_kws)
-        self.fluxerr_ew = util.read_vals(ext='FLUXERR_EW', **elonames_kws)
-        self.ew_ew = util.read_vals(ext='EW_EW', **elonames_kws)
-        self.ewerr_ew = util.read_vals(ext='EWERR_EW', **elonames_kws)
+        kinexts = ['KIN', 'KINERR', 'KINSTDE']
+        eloexts = ['ELOMIT', 'AMPL', 'AMPLERR', 'SINST', 'FLUX', 'FLUXERR',
+                   'EW', 'EWERR']
+        ikinexts = ['IKIN', 'IKINERR']
 
-        ikin_ew_in = elofit['IKIN_EW'].byteswap().newbyteorder()
-        ikin_ew = np.transpose(ikin_ew_in, (1, 2, 0))
-        self.ikin_ew = util.arr_to_multiindex_df(ikin_ew, ikincols, elonames)
+        for fitcode in ['EW', 'FB']:
+            # Read in kinematics and emission line measurements
+            kinexts_fit = ['_'.join([it, fitcode]) for it in kinexts]
+            eloexts_fit = ['_'.join([it, fitcode]) for it in eloexts]
+            exts = kinexts_fit + eloexts_fit
+            extcols = [kincols for _ in kinexts] + [elonames for _ in eloexts]
+            for ext, cols in zip(exts, extcols):
+                try:
+                    self.__dict__[ext.lower()] = util.read_vals(
+                        ext=ext, dapf=self.fits, hdu='ELOFIT', columns=cols)
+                except KeyError:
+                    print('Column {} not found in ELOFIT extension.'
+                          ''.format(ext))
 
-        ikinerr_ew_in = elofit['IKINERR_EW'].byteswap().newbyteorder()
-        ikinerr_ew = np.transpose(ikinerr_ew_in, (1, 2, 0))
-        self.ikinerr_ew = util.arr_to_multiindex_df(ikinerr_ew, ikincols,
-                                                    elonames)
+            # Read in NKIN column
+            try:
+                ext = '_'.join(['NKIN', fitcode])
+                self.__dict__[ext.lower()] = elofit[ext]
+            except KeyError:
+                print('Column {} not found in ELOFIT extension.'.format(ext))
 
-        # FB: Francesco Belfiore's fitting code
-        self.kin_fb = util.read_vals(ext='KIN_FB', **elovel_kws)
-        self.kinerr_fb = util.read_vals(ext='KINERR_FB', **elovel_kws)
-        if self.mpl4:
-            self.kinstde_fb = util.read_vals(ext='KINSTDE_FB', **elovel_kws)
-            self.nkin_fb = elofit['NKIN_FB']
-        self.elomit_fb = util.read_vals(ext='ELOMIT_FB', **elonames_kws)
-        self.ampl_fb = util.read_vals(ext='AMPL_FB', **elonames_kws)
-        self.amplerr_fb = util.read_vals(ext='AMPLERR_FB', **elonames_kws)
-        self.sinst_fb = util.read_vals(ext='SINST_FB', **elonames_kws)
-        self.flux_fb = util.read_vals(ext='FLUX_FB', **elonames_kws)
-        self.fluxerr_fb = util.read_vals(ext='FLUXERR_FB', **elonames_kws)
-        self.ew_fb = util.read_vals(ext='EW_FB', **elonames_kws)
-        self.ewerr_fb = util.read_vals(ext='EWERR_FB', **elonames_kws)
-
-        ikin_fb_in = elofit['IKIN_FB'].byteswap().newbyteorder()
-        ikin_fb = np.transpose(ikin_fb_in, (1, 2, 0))
-        self.ikin_fb = util.arr_to_multiindex_df(ikin_fb, ikincols, elonames)
-
-        ikinerr_fb_in = elofit['IKINERR_FB'].byteswap().newbyteorder()
-        ikinerr_fb = np.transpose(ikinerr_fb_in, (1, 2, 0))
-        self.ikinerr_fb = util.arr_to_multiindex_df(ikinerr_fb, ikincols,
-                                                    elonames)
+            # Read in kinematics from individual lines
+            ikinexts_fit = ['_'.join([it, fitcode]) for it in ikinexts]
+            for exts in ikinexts_fit:
+                try:
+                    val_in = elofit[ext].byteswap().newbyteorder()
+                except KeyError:
+                    print('Column {} not found in ELOFIT extension.'
+                          ''.format(ext))
+                else:
+                    val = np.transpose(val_in, (1, 2, 0))
+                    self.__dict__[ext.lower()] = util.arr_to_multiindex_df(
+                        val, ikincols, elonames)
 
     def get_elomew(self):
         """Best fit emission-line-only spectrum (Enci Wang code)."""
-        self.elomew = np.transpose(self.fits.read_hdu_data('ELOMEW'))
+        self.elomew = self.read_hdu('ELOMEW', transpose=True)
 
     def get_elomfb(self):
         """Best fit emission-line-only spectrum (Francesco Belfiore code)."""
-        self.elomfb = np.transpose(self.fits.read_hdu_data('ELOMFB'))
+        self.elomfb = self.read_hdu('ELOMFB', transpose=True)
 
     def get_siwave(self):
         """Resolution matched wavelengths to spectral-index system."""
@@ -678,7 +655,7 @@ class DAP():
         """Deredshift spectra while conserving flux."""
         v_light = 299792.458
         try:
-            if self.stfit_kin['vel'].values == self.n_bins:
+            if len(self.stfit_kin['vel'].values) == self.n_bins:
                 self.redshift = self.stfit_kin['vel'].values / v_light
                 self.median_redshift = np.median(self.redshift)
     
@@ -702,7 +679,7 @@ class DAP():
                 self.fullfit_fb_rest = (self.fullfit_fb.T *
                                         (1. + self.redshift)).T
         except AttributeError:
-            print('Could not deredshift spectra. Check stellar velocities.\n')
+            print('\nCould not deredshift spectra. Check stellar velocities.\n')
 
     def get_nsa_redshift(self):
         """Get NSA redshift from drpall file."""
@@ -724,7 +701,7 @@ class DAP():
             elkincols = [it + '_flux_wt' for it in elkincols]
 
         if (hasattr(self, 'nsa_redshift') &
-            (self.stfit_kin['vel'].values == self.n_bins)):
+            (len(self.stfit_kin['vel'].values) == self.n_bins)):
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
                 velerr=self.stfit_kinerr['vel'].values)
