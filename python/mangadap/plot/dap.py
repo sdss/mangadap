@@ -47,13 +47,11 @@ class DAP():
         bins (DataFrame): Location, area, S/N, number of spectra per bin, and
             analysis flags of each bin.
 
-        wave_obs (array): Observed wavelengths (in Angstroms) of binned
-            spectra.
+        wave (array): Observed wavelengths (in Angstroms) of binned spectra.
         sres (array): Spectral resolution (lambda/delta lambda) in each
             wavelength channel.
-        flux_obs (array): Observed flux (same as DRP units) of the binned
-            spectra.
-        ivar_obs (array): Observed inverse variance of the binned spectra.
+        flux (array): Observed flux (same as DRP units) of the binned spectra.
+        ivar (array): Observed inverse variance of the binned spectra.
         mask (array): Bad pixel mask of the binned spectra (0 = good,
             1 = bad).
         wave_rest (array): Rest frame wavelengths (in Angstroms) of binned
@@ -399,10 +397,10 @@ class DAP():
         Read in observed wavelengths, fluxes, and inverse variances. Also read
         in spectral resolution and mask.
         """
-        self.wave_obs = self.read_hdu('WAVE')
+        self.wave = self.read_hdu('WAVE')
         self.sres = self.read_hdu('SRES')
-        self.flux_obs = self.read_hdu('FLUX', transpose=True)
-        self.ivar_obs = self.read_hdu('IVAR', transpose=True)
+        self.flux = self.read_hdu('FLUX', transpose=True)
+        self.ivar = self.read_hdu('IVAR', transpose=True)
         self.mask = self.read_hdu('MASK', transpose=True)
 
     def get_elpar(self):
@@ -597,8 +595,6 @@ class DAP():
 
             cols = ['passband_start', 'passband_end', 'blueband_start',
                     'blueband_end', 'redband_start', 'redband_end', 'unit']
-            print('cols', len(cols))
-            print('sinames', self.sinames)
             self.sipar = pd.DataFrame(sipar_tmp, columns=cols,
                                       index=self.sinames)
             #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
@@ -648,7 +644,7 @@ class DAP():
 
     def count_res_elements(self):
         """Count bins, spaxels, and pixels."""
-        self.n_bins, self.n_pix = self.flux_obs.shape
+        self.n_bins, self.n_pix = self.flux.shape
         self.n_spaxels = len(self.drps)
         if self.fits.mode == 'CUBE':
             self.sqrt_n_spaxels = np.sqrt(self.n_spaxels)
@@ -672,21 +668,21 @@ class DAP():
         """Deredshift spectra while conserving flux."""
         v_light = 299792.458
         try:
+            self.redshift = self.stfit_kin['vel'].values / v_light
             self.median_redshift = np.median(self.redshift)
 
             # de-redshift spectra
-            wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) * self.wave_obs)
+            wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) * self.wave)
             self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
 
             # FIX: what do we need dlam for?
-            self.wave_rest_med = (self.wave_obs / 
-                                  (1. + self.median_redshift))
+            self.wave_rest_med = self.wave / (1. + self.median_redshift)
             self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
                          self.wave_rest_med[0])
 
             # conserve flux by multiplying by (1+z)
-            self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
-            self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
+            self.flux_rest = (self.flux.T * (1. + self.redshift)).T
+            self.ivar_rest = (self.ivar.T * (1. + self.redshift)).T
             self.smod_rest = (self.smod.T * (1. + self.redshift)).T
             self.fullfit_ew_rest = (self.fullfit_ew.T * (1. + self.redshift)).T
             self.fullfit_fb_rest = (self.fullfit_fb.T * (1. + self.redshift)).T
@@ -798,7 +794,7 @@ class DAP():
 
         Calculate chisq at each spectral pixel and for each binned spectrum.
         """
-        self.stfit_chisq_pix = (self.flux_obs - self.smod)**2. * self.ivar_obs
+        self.stfit_chisq_pix = (self.flux - self.smod)**2. * self.ivar
         self.stfit_chisq_pix[self.smsk == 1] = np.nan
         self.stfit_chisq_bin = self.calc_metric_per_bin(self.stfit_chisq_pix)
 
@@ -808,7 +804,7 @@ class DAP():
         Calculate difference between observed flux and stellar continuum fit
         at each spectral pixel and for each binned spectrum.
         """
-        self.stfit_resid_pix = self.flux_obs - self.smod
+        self.stfit_resid_pix = self.flux - self.smod
         self.stfit_resid_pix[self.smsk == 1] = np.nan
         self.stfit_resid_bin = self.calc_metric_per_bin(self.stfit_resid_pix)
 
@@ -819,7 +815,7 @@ class DAP():
         normalized to stellar continnum fit at each spectral pixel and for
         each binned spectrum.
         """
-        self.stfit_resid_mod_pix = (self.flux_obs - self.smod) / self.smod
+        self.stfit_resid_mod_pix = (self.flux - self.smod) / self.smod
         self.stfit_resid_mod_pix[self.smsk == 1] = np.nan
         self.stfit_resid_mod_bin = self.calc_metric_per_bin(
                                         self.stfit_resid_mod_pix)
@@ -831,8 +827,7 @@ class DAP():
         normalized to error in stellar continnum fit at each spectral pixel
         and for each binned spectrum.
         """
-        self.stfit_resid_err_pix = ((self.flux_obs - self.smod) *
-                                    np.sqrt(self.ivar_obs))
+        self.stfit_resid_err_pix = (self.flux - self.smod) * np.sqrt(self.ivar)
         self.stfit_resid_err_pix[self.smsk == 1] = np.nan
         self.stfit_resid_err_bin = self.calc_metric_per_bin(
                                         self.stfit_resid_err_pix)
@@ -846,8 +841,8 @@ class DAP():
         relative to the observed flux.
         """
         with np.errstate(divide='ignore', invalid='ignore'):
-            self.stfit_resid_data_pix = (np.abs(self.flux_obs - self.smod) /
-                                         self.flux_obs)
+            self.stfit_resid_data_pix = (np.abs(self.flux - self.smod) /
+                                         self.flux)
         self.stfit_resid_data_pix[self.smsk == 1] = np.nan
         self.stfit_resid_data_bin = self.calc_metric_per_bin(
                                         self.stfit_resid_data_pix)
@@ -897,10 +892,10 @@ class DAP():
         elkincols = list(self.kin_ew.columns.values)
         vals = dict(stvel=self.stfit_kin_rest['vel'].values,
                     stvdisp=self.stfit_kin['vdisp'].values,
-                    stfit_chisq=self.stfit_chisq_bin.values,
+                    stfit_chisq=self.stfit_chisq_bin,
                     elvel=self.kin_rest_ew[elkincols[0]].values,
                     elvdisp=self.kin_ew[elkincols[1]].values,
-                    stfit_resid99=self.stfit_resid_data_bin99.values)
+                    stfit_resid99=self.stfit_resid_data_bin99)
         errs = dict(stvel=self.stfit_kinerr_rest['vel'].values,
                     stvdisp=self.stfit_kinerr['vdisp'].values,
                     stfit_chisq=None,

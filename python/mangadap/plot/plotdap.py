@@ -9,6 +9,7 @@ import sys
 import copy
 
 import numpy as np
+import pandas as pd
 
 import matplotlib as mpl
 #mpl.use('Agg')
@@ -704,87 +705,87 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
 
 
-def plot_spec(bin=0, rest_frame=True, kwargs={'alpha':0.75}, lw=1, xlim=None,
-              ylim=None, masks=True, figsize=(20, 12)):
+def plot_spectrum(dapdata, bin=0, rest_frame=True, xlim=None, ylim=None,
+                  masks=True, lw=1, figsize=(20, 12)):
     """Plot spectrum and residuals.
 
     Args:
+        dapdata:
+        bin (int): Bin number. Default is 0.
+        rest_frame (bool): If True, show spectrum in rest frame, otherwise show
+            spectrum in observed frame. Default is True.
+        xlim (tuple): Limits of x-axis. Default is None.
+        ylim (tuple): Limits of y-axes for spectrum and residuals plots. Default
+            is None.
+        masks (bool): Show masks used in stellar continuum fitting. Default is
+            True.
+        figsize (tuple): Figure size in inches. Default is (20, 12).
 
     Returns:
         plt.figure object
     """
-
     if 'seaborn' in sys.modules:
         c = sns.color_palette('bright', 5)
         sns.set_context('poster', rc={"lines.linewidth": lw})
     else:
         c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
 
-    n_ax = 2
+    cols = ['wave', 'flux', 'ivar', 'smod', 'fullfit_ew', 'fullfit_fb']
+    data = {}
+    for col in cols:
+        attr = copy.deepcopy(col)
+        if rest_frame:
+            attr += '_rest'
+        if attr is 'wave':
+            data[col] = dapdata.__dict__[attr]
+        else:
+            data[col] = dapdata.__dict__[attr][bin]
 
-    if rest_frame:
-        wave = self.wave_rest[bin]
-        gal = self.galaxy_rest[bin]
-        ivar = self.ivar_rest[bin]
-        stmodel = self.smod_rest[bin]
-        fullfitew = self.fullfitew_rest[bin]
-        fullfitfb = self.fullfitfb_rest[bin]
-    else:
-        wave = self.wave_obs
-        gal = self.galaxy[bin]
-        ivar = self.ivar[bin]
-        stmodel = self.smod[bin]
-        fullfitfb = self.fullfitfb[bin]
+    spec = pd.DataFrame(data, columns=cols)
+    spec['resid_ew'] = spec['flux'] - spec['fullfit_ew']
+    spec['resid_fb'] = spec['flux'] - spec['fullfit_fb']
+
+    # axis limits
+    if xlim is None:
+        xlim = [3600, 9300]
     
-    residew = gal - fullfitew
-    residfb = gal - fullfitfb
+    ind = (spec.wave >= xlim[0]) & (spec.wave <= xlim[1])
 
-    ind_stmodel = np.where(stmodel > 0.)[0]
-    ind = np.where((wave >= xlim[0]) & (wave <= xlim[1]))[0]
-
-    ylim_tmp = copy.deepcopy(ylim)
-    if ylim_tmp[0] is not None:
-        if ylim_tmp[0][1] is None:
-            p50 = np.percentile(gal[ind], 50)
-            ylim_tmp[0][1] = p50 * 3.
-            if ylim_tmp[1] is None:
-                ymax_tmp = 0.1 + p50 * 0.2
-                ylim_tmp[1] = [-ymax_tmp, ymax_tmp]
+    if ylim is None:
+        p50 = np.percentile(spec.flux[ind], 50)
+        ylim_resid_max = 0.1 + p50 * 0.2
+        ylim = [[0., p50 * 3.], [-ylim_resid_max, ylim_resid_max]]
 
     if masks:
-        ind_split = np.where(np.diff(self.smsk[bin]) != 0)[0]
-        smsk_vals = np.array_split(self.smsk[bin], ind_split + 1)
+        ind_split = np.where(np.diff(dapdata.smsk[bin]) != 0)[0]
+        smsk_vals = np.array_split(dapdata.smsk[bin], ind_split + 1)
         smsk_val = np.array([item[0] for item in smsk_vals], dtype=int)
         if 0 not in ind_split:
             ind_split = np.append([0], ind_split)
-        if self.smsk.shape[1] not in ind_split:
-            ind_split = np.append(ind_split, [self.smsk.shape[1] - 1])
+        if dapdata.smsk.shape[1] not in ind_split:
+            ind_split = np.append(ind_split, [dapdata.smsk.shape[1] - 1])
 
 
     fig = plt.figure(figsize=figsize)
 
-    for i in range(n_ax):
-        if i == 0:
-            bottom = 0.32
-            height = 0.63
-        else:
-            bottom = 0.1
-            height = 0.2
-        ax = fig.add_axes([0.1, bottom, 0.85, height])
+    pnames = ['spectrum', 'residuals']
+    axpar = pd.DataFrame(np.array([[0.32, 0.63], [0.1, 0.2]]), index=pnames,
+                         columns=['bottom', 'height'])
+
+    for i, pname in enumerate(pnames):
+        ax = fig.add_axes([0.1, axpar.bottom[pname], 0.85, axpar.height[pname]])
 
         if xlim is not None:
             ax.set_xlim(xlim)
-        if ylim_tmp is not None:
-            ax.set_ylim(ylim_tmp[i])
+        if ylim is not None:
+            ax.set_ylim(ylim[i])
 
-        if i in np.arange(n_ax-1):
+        if pname is 'spectrum':
             plt.setp(ax.get_xticklabels(), visible=False)
 
-        if i == n_ax-1:
+        if pname is 'residuals':
             ax.set_xlabel(r'$\lambda_{\rm rest} [\AA]$')
-            ax.set_ylabel(r'$\Delta / \sigma$')
-
-        if i != 0:
+            ax.set_ylabel(r'$\Delta$')
             ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75, 
                     lw=2, zorder=1)
 
@@ -792,51 +793,51 @@ def plot_spec(bin=0, rest_frame=True, kwargs={'alpha':0.75}, lw=1, xlim=None,
         labels = []
 
         # spectrum
-        if i == 0:
-            ax.set_title('pid-ifu %s     manga-id %s     bin %i' % (
-                         self.manga_pid, self.manga_id, bin))
+        if pname is 'spectrum':
+            ax.set_title('pid-ifu {}     manga-id {}     bin {}'
+                         ''.format(dapdata.plateifu, dapdata.mangaid, bin))
             flux_units = 'Flux'
-            if self.dap_mode == 'CUBE':
+            if dapdata.mode == 'CUBE':
                 flux_units += ' / spaxel'
-            elif self.dap_mode == 'RSS':
+            elif dapdata.mode == 'RSS':
                 flux_units += ' / fiber'
-            ax.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units)
-            p.append(ax.plot(wave[ind], gal[ind], color='#808080')[0])
+            ax.set_ylabel('{} [10$^{{-17}}$ erg/s/cm$^2$]'.format(flux_units))
+            p.append(ax.plot(spec.wave[ind], spec.flux[ind],
+                     color='#808080')[0])
             labels.append('galaxy')
 
             # stellar continuum fit
-            p.append(ax.plot(wave[ind_stmodel], stmodel[ind_stmodel],
-                     color=c[1])[0])
+            p.append(ax.plot(spec.wave[spec.smod > 0.],
+                             spec.smod[spec.smod > 0.], color=c[1])[0])
             labels.append('stellar continuum fit')
 
-            y = [fullfitfb, fullfitew]
+            emfits = [spec.fullfit_fb, spec.fullfit_ew]
             fit_labels = ['F. Belfiore emline + cont fit', 
                           'E. Wang emline + cont fit']
 
         #  residuals
-        elif i == 1:
-            ax.set_ylabel(r'$\Delta$')
-            y = [residfb, residew]
+        if pname is 'residuals':
+            emfits = [spec.resid_fb, spec.resid_ew]
 
         # emission line + stellar continuum fits
-        for j in range(len(y)):
-            p.append(ax.plot(wave[ind_stmodel], y[j][ind_stmodel],
-                     color=c[2-2*j])[0])
-            if i == 0:
+        for j in range(len(emfits)):
+            p.append(ax.plot(spec.wave[spec.smod > 0.],
+                             emfits[j][spec.smod > 0.], color=c[2-2*j])[0])
+            if pname is 'spectrum':
                 labels.append(fit_labels[j])
 
-        if i == 0:
+        if pname is 'spectrum':
             plt.legend(p, labels, loc=2)
 
         # plot masks
         if masks:
             mskargs = dict(facecolor='gray', alpha=0.25)
-            lglam = np.log10(wave)
+            lglam = np.log10(spec.wave)
             dlglam = (lglam[1] - lglam[0]) / 2.
-            ylower, yupper = ylim_tmp[i]
+            ylower, yupper = ylim[i]
             for m in range(len(smsk_val)):
-                x = np.array([10**(lglam[ind_split[m]+1] - dlglam),
-                             10**(lglam[ind_split[m+1]] + dlglam)])
+                x = np.array([10**(lglam[ind_split[m] + 1] - dlglam),
+                              10**(lglam[ind_split[m+1]] + dlglam)])
                 if smsk_val[m]:
                     ax.fill_between(x, ylower, yupper, **mskargs)
 
