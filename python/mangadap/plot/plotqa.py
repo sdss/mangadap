@@ -30,11 +30,11 @@ else:
     # interactive session
 
     # DRPQA file
-    #file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
-    #                 os.getenv('MANGADAP_VER'),
-    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
-    file_list = join(os.getenv('MANGA_MPL3'),
+    file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
+                     os.getenv('MANGADAP_VER'),
                      '7443', '1901', 'CUBE_files_to_plot.txt')
+    #file_list = join(os.getenv('MANGA_MPL3'),
+    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
 
@@ -50,7 +50,7 @@ reload(plotdap)
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
     # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws)
+    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
     gal.get_all_ext()
     mg_kws = copy.deepcopy(file_kws)
     mg_kws['mangaid'] = gal.mangaid
@@ -77,8 +77,6 @@ cols = fin.hdu['STFIT'].data.columns.names
 
 
 # TO DO
-# read in version of DAP file
-
 # spectra
 # emline zoomins
 # gradients (emflux, specind)

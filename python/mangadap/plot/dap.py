@@ -5,6 +5,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
+import traceback
 import copy
 
 import numpy as np
@@ -30,6 +31,8 @@ class DAP():
         mode (str): Binning mode (i.e., 'CUBE' or 'RSS').
         bintype (str): Binning type (e.g., 'NONE' or 'ALL')
         niter (str): Analysis iteration number.
+        verbose (bool): Return verbose output (i.e., full tracebacks of
+            exceptions). Default is False.
 
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
@@ -281,7 +284,7 @@ class DAP():
         kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
-    def __init__(self, path_data, paths_cfg, file_kws):
+    def __init__(self, path_data, paths_cfg, file_kws, verbose=False):
         self.path_data = path_data
         self.paths_cfg = paths_cfg
         self.plate = file_kws['plate']
@@ -290,6 +293,7 @@ class DAP():
         self.mode = file_kws['mode']
         self.bintype = file_kws['bintype']
         self.niter = file_kws['niter']
+        self.verbose = verbose
         self.read_dap_fits(path_data, file_kws)
 
     def read_dap_fits(self, path_data, file_kws):
@@ -511,6 +515,8 @@ class DAP():
                 except KeyError:
                     print('Column {} not found in ELOFIT extension.'
                           ''.format(ext))
+                    if self.verbose:
+                        print('\n', traceback.format_exc(), '\n')
                     self.__dict__[ext.lower()] = None
 
             # Read in NKIN column
@@ -523,12 +529,14 @@ class DAP():
 
             # Read in kinematics from individual lines
             ikinexts_fit = ['_'.join([it, fitcode]) for it in ikinexts]
-            for exts in ikinexts_fit:
+            for ext in ikinexts_fit:
                 try:
                     val_in = elofit[ext].byteswap().newbyteorder()
                 except KeyError:
                     print('Column {} not found in ELOFIT extension.'
                           ''.format(ext))
+                    if self.verbose:
+                        print('\n', traceback.format_exc(), '\n')
                     self.__dict__[ext.lower()] = None
                 else:
                     val = np.transpose(val_in, (1, 2, 0))
@@ -589,6 +597,8 @@ class DAP():
 
             cols = ['passband_start', 'passband_end', 'blueband_start',
                     'blueband_end', 'redband_start', 'redband_end', 'unit']
+            print('cols', len(cols))
+            print('sinames', self.sinames)
             self.sipar = pd.DataFrame(sipar_tmp, columns=cols,
                                       index=self.sinames)
             #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
@@ -602,10 +612,14 @@ class DAP():
         sindx = self.read_hdu('SINDX')
         if sindx is not None:
             cols = [it.lower() for it in sindx.columns.names]
-            self.sindx = util.fitsrec_to_multiindex_df(sindx, cols, self.sinames)
-            # calculate combination indices
-            self.calc_Fe5270_5335()
-            self.calc_CalII0p86()
+            if len(sindx[sindx.columns.names[0]]) == self.n_bins:
+                self.sindx = util.fitsrec_to_multiindex_df(sindx, cols,
+                                                           self.sinames)
+                # calculate combination indices
+                self.calc_Fe5270_5335()
+                self.calc_CalII0p86()
+            else:
+                self.sindx = sindx
         else:
             self.sindx = None
 
@@ -658,31 +672,28 @@ class DAP():
         """Deredshift spectra while conserving flux."""
         v_light = 299792.458
         try:
-            if len(self.stfit_kin['vel'].values) == self.n_bins:
-                self.redshift = self.stfit_kin['vel'].values / v_light
-                self.median_redshift = np.median(self.redshift)
-    
-                # de-redshift spectra
-                wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) *
-                                 self.wave_obs)
-                self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
-    
-                # FIX: what do we need dlam for?
-                self.wave_rest_med = (self.wave_obs / 
-                                      (1. + self.median_redshift))
-                self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
-                             self.wave_rest_med[0])
-    
-                # conserve flux by multiplying by (1+z)
-                self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
-                self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
-                self.smod_rest = (self.smod.T * (1. + self.redshift)).T
-                self.fullfit_ew_rest = (self.fullfit_ew.T *
-                                        (1. + self.redshift)).T
-                self.fullfit_fb_rest = (self.fullfit_fb.T *
-                                        (1. + self.redshift)).T
-        except AttributeError:
-            print('\nCould not deredshift spectra. Check stellar velocities.\n')
+            self.median_redshift = np.median(self.redshift)
+
+            # de-redshift spectra
+            wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) * self.wave_obs)
+            self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
+
+            # FIX: what do we need dlam for?
+            self.wave_rest_med = (self.wave_obs / 
+                                  (1. + self.median_redshift))
+            self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
+                         self.wave_rest_med[0])
+
+            # conserve flux by multiplying by (1+z)
+            self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
+            self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
+            self.smod_rest = (self.smod.T * (1. + self.redshift)).T
+            self.fullfit_ew_rest = (self.fullfit_ew.T * (1. + self.redshift)).T
+            self.fullfit_fb_rest = (self.fullfit_fb.T * (1. + self.redshift)).T
+        except (IndexError, AttributeError):
+            print('Could not deredshift spectra.')
+            if self.verbose:
+                print('\n', traceback.format_exc(), '\n')
             for it in ['redshift', 'median_redshift', 'wave_rest',
                        'wave_rest_med', 'dlam', 'flux_rest', 'ivar_rest',
                        'smod_rest', 'fullfit_ew_rest', 'fullfit_fb_rest']:
@@ -695,7 +706,9 @@ class DAP():
             mask = (drpall['plateifu'] == self.plateifu)
             self.nsa_redshift = drpall['nsa_redshift'][mask][0]
         except ValueError:
-            print('\nCould not read NSA redshift from drpall file.\n')
+            print('Could not read NSA redshift from drpall file:')
+            if self.verbose:
+                print('\n', traceback.format_exc(), '\n')
             self.nsa_redshift = None
 
 
@@ -708,8 +721,7 @@ class DAP():
         if 'vel_flux_wt' in list(self.kin_ew.columns.values):
             elkincols = [it + '_flux_wt' for it in elkincols]
 
-        if ((self.nsa_redshift is not None) &
-            (len(self.stfit_kin['vel'].values) == self.n_bins)):
+        try:
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
                 velerr=self.stfit_kinerr['vel'].values)
@@ -729,9 +741,10 @@ class DAP():
             self.stfit_kinerr_rest = pd.DataFrame(stkinerr, columns=stkincols)
             self.kin_rest_ew = pd.DataFrame(elkin, columns=elkincols)
             self.kinerr_rest_ew = pd.DataFrame(elkinerr, columns=elkincols)
-
-        else:
-            print('Could not deredshift velocities.\n')
+        except IndexError as e:
+            print('Could not deredshift velocities.')
+            if self.verbose:
+                print('\n', traceback.format_exc(), '\n')
             for it in ['stfit_kin_rest', 'stfit_kinerr_rest', 'kin_rest_ew', 
                        'kinerr_rest_ew']:
                 self.__dict__[it] = None
