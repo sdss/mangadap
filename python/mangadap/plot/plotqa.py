@@ -49,13 +49,8 @@ reload(dap)
 reload(plotdap)
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
-    gal_kws = {}
-    #gal_kws['drpqa_file'] = True
-    if os.getenv('MANGA_MPL3') in file_list:
-        gal_kws['mpl4'] = False
-
     # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws, **gal_kws)
+    gal = dap.DAP(path_data, paths_cfg, file_kws)
     gal.get_all_ext()
     mg_kws = copy.deepcopy(file_kws)
     mg_kws['mangaid'] = gal.mangaid
@@ -79,6 +74,7 @@ elofit.columns.names
 
 extnames = [hdu._summary()[0] for hdu in fin.hdu]
 cols = fin.hdu['STFIT'].data.columns.names
+
 
 # TO DO
 # read in version of DAP file

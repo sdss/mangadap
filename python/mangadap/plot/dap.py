@@ -20,9 +20,6 @@ class DAP():
         path_data (str): Path to DAP FITS file.
         paths_cfg (str): Full path to sdss_paths.ini file.
         file_kws (dict): DAP FITS file specifications.
-        mpl4 (bool): True if version is MPL-4. Default is True.
-        drpqa_file (bool): True if FITS file was produced for DRPQA. Default
-            is False.
 
     Attributes:
         path_data (str): Path to DAP FITS file.
@@ -33,9 +30,6 @@ class DAP():
         mode (str): Binning mode (i.e., 'CUBE' or 'RSS').
         bintype (str): Binning type (e.g., 'NONE' or 'ALL')
         niter (str): Analysis iteration number.
-        mpl4 (bool): True if version is MPL-4. Default is True.
-        drpqa_file (bool): True if FITS file was produced for DRPQA. Default
-            is False.
 
         fits (DAPFile instance): Instance of the mangadap.dapfile.DAPFile
             class.
@@ -287,8 +281,7 @@ class DAP():
         kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
-    def __init__(self, path_data, paths_cfg, file_kws, mpl4=True,
-                 drpqa_file=False):
+    def __init__(self, path_data, paths_cfg, file_kws):
         self.path_data = path_data
         self.paths_cfg = paths_cfg
         self.plate = file_kws['plate']
@@ -297,8 +290,6 @@ class DAP():
         self.mode = file_kws['mode']
         self.bintype = file_kws['bintype']
         self.niter = file_kws['niter']
-        self.mpl4 = mpl4
-        self.drpqa_file = drpqa_file
         self.read_dap_fits(path_data, file_kws)
 
     def read_dap_fits(self, path_data, file_kws):
@@ -347,7 +338,7 @@ class DAP():
         self.deredshift_spectra()
         self.deredshift_velocities()
 
-        if hasattr(self, 'wave_rest'):
+        if self.wave_rest is not None:
             self.select_wave_range()
 
         if len(self.smod) == self.n_bins:
@@ -466,6 +457,8 @@ class DAP():
                     'blueside_end', 'redside_start', 'redside_end']
             self.elband = pd.DataFrame(elband_tmp, columns=cols,
                                        index=elnames)
+        else:
+            self.elband = None
 
     def get_elmmnt(self):
         """Get moments of non-parametric fits of emission lines."""
@@ -474,19 +467,25 @@ class DAP():
             cols = [it.lower() for it in elmmnt_in.columns.names]
             self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
                                                         self.elband.index)
+        else:
+            self.elmmnt = None
 
     def get_elopar(self):
         """Get emission line only fit parameters."""
-        elopar_in = self.fits.read_hdu_data('ELOPAR')
-        elopar = util.fitsrec_to_dataframe(elopar_in)
-        self.elopar = util.lowercase_colnames(elopar)
-        self.elopar.elname = util.remove_hyphen(self.elopar.elname)
+        elopar_in = self.read_hdu('ELOPAR')
+        if elopar_in is not None:
+            elopar = util.fitsrec_to_dataframe(elopar_in)
+            self.elopar = util.lowercase_colnames(elopar)
+            self.elopar.elname = util.remove_hyphen(self.elopar.elname)
+        else:
+            self.elopar = None
 
     def get_elofit(self):
         """Read results from emission line fits into DataFrames."""
         elofit = self.read_hdu('ELOFIT')
         
         kincols = ['vel', 'vdisp']
+        # Is is possible to read in these options from a .par file?
         if elofit['KIN_EW'].shape[1] == 8:
             wtnames = ['flux', 'verr', 'flux_verr', 'uni']
             kincols = ['_'.join([kc, wt, 'wt']) for wt in wtnames
@@ -512,6 +511,7 @@ class DAP():
                 except KeyError:
                     print('Column {} not found in ELOFIT extension.'
                           ''.format(ext))
+                    self.__dict__[ext.lower()] = None
 
             # Read in NKIN column
             try:
@@ -519,6 +519,7 @@ class DAP():
                 self.__dict__[ext.lower()] = elofit[ext]
             except KeyError:
                 print('Column {} not found in ELOFIT extension.'.format(ext))
+                self.__dict__[ext.lower()] = None
 
             # Read in kinematics from individual lines
             ikinexts_fit = ['_'.join([it, fitcode]) for it in ikinexts]
@@ -528,6 +529,7 @@ class DAP():
                 except KeyError:
                     print('Column {} not found in ELOFIT extension.'
                           ''.format(ext))
+                    self.__dict__[ext.lower()] = None
                 else:
                     val = np.transpose(val_in, (1, 2, 0))
                     self.__dict__[ext.lower()] = util.arr_to_multiindex_df(
@@ -584,6 +586,7 @@ class DAP():
                 for i, bedge in enumerate(['start', 'end']):
                     sipar_tmp['_'.join((band, bedge))] = \
                         sipar_in[band][:, i].byteswap().newbyteorder()
+
             cols = ['passband_start', 'passband_end', 'blueband_start',
                     'blueband_end', 'redband_start', 'redband_end', 'unit']
             self.sipar = pd.DataFrame(sipar_tmp, columns=cols,
@@ -680,6 +683,10 @@ class DAP():
                                         (1. + self.redshift)).T
         except AttributeError:
             print('\nCould not deredshift spectra. Check stellar velocities.\n')
+            for it in ['redshift', 'median_redshift', 'wave_rest',
+                       'wave_rest_med', 'dlam', 'flux_rest', 'ivar_rest',
+                       'smod_rest', 'fullfit_ew_rest', 'fullfit_fb_rest']:
+                self.__dict__[it] = None
 
     def get_nsa_redshift(self):
         """Get NSA redshift from drpall file."""
@@ -689,6 +696,7 @@ class DAP():
             self.nsa_redshift = drpall['nsa_redshift'][mask][0]
         except ValueError:
             print('\nCould not read NSA redshift from drpall file.\n')
+            self.nsa_redshift = None
 
 
     def deredshift_velocities(self):
@@ -700,7 +708,7 @@ class DAP():
         if 'vel_flux_wt' in list(self.kin_ew.columns.values):
             elkincols = [it + '_flux_wt' for it in elkincols]
 
-        if (hasattr(self, 'nsa_redshift') &
+        if ((self.nsa_redshift is not None) &
             (len(self.stfit_kin['vel'].values) == self.n_bins)):
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
@@ -861,8 +869,8 @@ class DAP():
         """Create basic QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
-                    resid_data_bin99=self.stfit_resid_data_bin99,
-                    stfit_chisq=self.stfit_chisq_bin)
+                    resid_data_bin99=self.stfit_resid_data_bin99.values,
+                    stfit_chisq=self.stfit_chisq_bin.values)
         errs = dict(signal=None, noise=None, snr=None,
                     Ha6564=self.fluxerr_ew.Ha6564.values,
                     resid_data_bin99=None, stfit_chisq=None)
@@ -876,10 +884,10 @@ class DAP():
         elkincols = list(self.kin_ew.columns.values)
         vals = dict(stvel=self.stfit_kin_rest['vel'].values,
                     stvdisp=self.stfit_kin['vdisp'].values,
-                    stfit_chisq=self.stfit_chisq_bin,
+                    stfit_chisq=self.stfit_chisq_bin.values,
                     elvel=self.kin_rest_ew[elkincols[0]].values,
                     elvdisp=self.kin_ew[elkincols[1]].values,
-                    stfit_resid99=self.stfit_resid_data_bin99)
+                    stfit_resid99=self.stfit_resid_data_bin99.values)
         errs = dict(stvel=self.stfit_kinerr_rest['vel'].values,
                     stvdisp=self.stfit_kinerr['vdisp'].values,
                     stfit_chisq=None,
