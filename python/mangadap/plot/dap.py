@@ -330,24 +330,23 @@ class DAP():
         self.get_elomew()
         self.get_elomfb()
 
-        if not self.drpqa_file:
-            self.get_siwave()
-            self.get_siflux()
-            self.get_siivar()
-            self.get_simask()
-            self.get_siotpl()
-            self.get_siotplm()
-            self.get_sibotpl()
-            self.get_sibotplm()
-            # STOPPED HERE
-            self.get_sipar()
-            self.get_sindx()
+        #if not self.drpqa_file:
+        self.get_siwave()
+        self.get_siflux()
+        self.get_siivar()
+        self.get_simask()
+        self.get_siotpl()
+        self.get_siotplm()
+        self.get_sibotpl()
+        self.get_sibotplm()
+        self.get_sipar()
+        self.get_sindx()
 
-        if not self.drpqa_file:
-            self.calc_fullfit()
-            self.get_nsa_redshift()
-            self.deredshift_spectra()
-            self.deredshift_velocities()
+        self.calc_fullfit()
+        self.get_nsa_redshift()
+
+        self.deredshift_spectra()
+        self.deredshift_velocities()
 
         if not self.drpqa_file:
             self.select_wave_range()
@@ -600,28 +599,35 @@ class DAP():
 
     def get_sipar(self):
         """Spectral index parameters."""
-        sipar_in = self.fits.read_hdu_data('SIPAR')
-        self.sinames = list(sipar_in['SINAME'].byteswap().newbyteorder())
-        sipar_tmp = dict(unit=sipar_in['UNIT'].byteswap().newbyteorder())
-        for band in ['passband', 'blueband', 'redband']:
-            for i, bedge in enumerate(['start', 'end']):
-                sipar_tmp['_'.join((band, bedge))] = \
-                    sipar_in[band][:, i].byteswap().newbyteorder()
+        sipar_in = self.read_hdu('SIPAR')
+        if sipar_in is not None:
+            self.sinames = list(sipar_in['SINAME'].byteswap().newbyteorder())
+            sipar_tmp = dict(unit=sipar_in['UNIT'].byteswap().newbyteorder())
+            for band in ['passband', 'blueband', 'redband']:
+                for i, bedge in enumerate(['start', 'end']):
+                    sipar_tmp['_'.join((band, bedge))] = \
+                        sipar_in[band][:, i].byteswap().newbyteorder()
+            cols = ['passband_start', 'passband_end', 'blueband_start',
+                    'blueband_end', 'redband_start', 'redband_end', 'unit']
+            self.sipar = pd.DataFrame(sipar_tmp, columns=cols,
+                                      index=self.sinames)
+            #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
+        else:
+            self.sinames = None
+            self.sipar = None   
 
-        cols = ['passband_start', 'passband_end', 'blueband_start',
-                'blueband_end', 'redband_start', 'redband_end', 'unit']
-        self.sipar = pd.DataFrame(sipar_tmp, columns=cols, index=self.sinames)
-        #self.siunits = pd.Series(unit_tmp_swap, index=self.sinames)
 
     def get_sindx(self):
         """Read in spectral index info."""
-        sindx = self.fits.read_hdu_data('SINDX')
-        cols = [it.lower() for it in sindx.columns.names]
-        self.sindx = util.fitsrec_to_multiindex_df(sindx, cols, self.sinames)
-
-        # calculate combination indices
-        self.calc_Fe5270_5335()
-        self.calc_CalII0p86()
+        sindx = self.read_hdu('SINDX')
+        if sindx is not None:
+            cols = [it.lower() for it in sindx.columns.names]
+            self.sindx = util.fitsrec_to_multiindex_df(sindx, cols, self.sinames)
+            # calculate combination indices
+            self.calc_Fe5270_5335()
+            self.calc_CalII0p86()
+        else:
+            self.sindx = None
 
     def calc_Fe5270_5335(self):
         """Combine Fe5270 and Fe5335 spectral indices."""
@@ -671,23 +677,32 @@ class DAP():
     def deredshift_spectra(self):
         """Deredshift spectra while conserving flux."""
         v_light = 299792.458
-        self.redshift = self.stfit_kin['vel'].values / v_light
-        self.median_redshift = np.median(self.redshift)
-
-        # de-redshift spectra
-        wave_obs_grid = np.ones((self.n_bins, self.n_pix)) * self.wave_obs
-        self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
-        # FIX: what do we need dlam for?
-        self.wave_rest_med = self.wave_obs / (1. + self.median_redshift)
-        self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
-                     self.wave_rest_med[0])
-
-        # conserve flux by multiplying by (1+z)
-        self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
-        self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
-        self.smod_rest = (self.smod.T * (1. + self.redshift)).T
-        self.fullfit_ew_rest = (self.fullfit_ew.T * (1. + self.redshift)).T
-        self.fullfit_fb_rest = (self.fullfit_fb.T * (1. + self.redshift)).T
+        try:
+            if self.stfit_kin['vel'].values == self.n_bins:
+                self.redshift = self.stfit_kin['vel'].values / v_light
+                self.median_redshift = np.median(self.redshift)
+    
+                # de-redshift spectra
+                wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) *
+                                 self.wave_obs)
+                self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
+    
+                # FIX: what do we need dlam for?
+                self.wave_rest_med = (self.wave_obs / 
+                                      (1. + self.median_redshift))
+                self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
+                             self.wave_rest_med[0])
+    
+                # conserve flux by multiplying by (1+z)
+                self.flux_rest = (self.flux_obs.T * (1. + self.redshift)).T
+                self.ivar_rest = (self.ivar_obs.T * (1. + self.redshift)).T
+                self.smod_rest = (self.smod.T * (1. + self.redshift)).T
+                self.fullfit_ew_rest = (self.fullfit_ew.T *
+                                        (1. + self.redshift)).T
+                self.fullfit_fb_rest = (self.fullfit_fb.T *
+                                        (1. + self.redshift)).T
+        except AttributeError:
+            print('Could not deredshift spectra. Check stellar velocities.\n')
 
     def get_nsa_redshift(self):
         """Get NSA redshift from drpall file."""
@@ -708,8 +723,8 @@ class DAP():
         if 'vel_flux_wt' in list(self.kin_ew.columns.values):
             elkincols = [it + '_flux_wt' for it in elkincols]
 
-        if hasattr(self, 'nsa_redshift'):
-
+        if (hasattr(self, 'nsa_redshift') &
+            (self.stfit_kin['vel'].values == self.n_bins)):
             stvel, stvelerr = util.deredshift_velocities(self.nsa_redshift,
                 vel=self.stfit_kin['vel'].values,
                 velerr=self.stfit_kinerr['vel'].values)
@@ -732,7 +747,9 @@ class DAP():
 
         else:
             print('Could not deredshift velocities.\n')
-
+            for it in ['stfit_kin_rest', 'stfit_kinerr_rest', 'kin_rest_ew', 
+                       'kinerr_rest_ew']:
+                self.__dict__[it] = None
 
     # FIX: make lam_good a kwarg param to pass into dap.DAP
     def select_wave_range(self, lam_good=None):
