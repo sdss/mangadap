@@ -368,14 +368,13 @@ class DAP():
     def get_header(self):
         """Read header info"""
         self.header = self.fits.hdu[0].header
+        self.mangaid = self.header['MANGAID']
+        self.flux_units = self.header['BUNIT']
         try:
             self.tplkey = self.header['TPLKEY']
         except KeyError:
             self.tplkey = None
-        try:
-            self.mangaid = self.header['MANGAID']
-        except KeyError:
-            self.mangaid = 'n/a'
+
 
     def get_drps(self):
         """Read in DRPS extension."""

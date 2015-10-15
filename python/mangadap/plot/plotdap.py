@@ -704,14 +704,19 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
 
 def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
-    """
-            dapdata: dap.DAP object.
+    """Create DataFrame with spectrum and fits.
+
+    Args:
+        dapdata: dap.DAP object.
         bin (int): Bin number. Default is 0.
         rest_frame (bool): If True, show spectrum in rest frame, otherwise show
             spectrum in observed frame. Default is True.
         fits_to_plot (tuple): Extension names of stellar continuum fits or
             stellar continuum plus emission line fits to plot. Default is
             ('smod', 'fullfit_ew', 'fullfit_fb').
+
+    Returns:
+        DataFrame
     """
     cols = ['wave', 'flux', 'ivar'] + list(fits_to_plot)
     data = {}
@@ -731,8 +736,6 @@ def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
             spec['resid_' + col.split('_')[1]] = spec.flux - spec[col]
 
     return spec
-
-
 
 def set_spec_lims(spec, xlim, ylim):
     """Set axis limits for spectrum.
@@ -758,7 +761,6 @@ def set_spec_lims(spec, xlim, ylim):
 
     return xlim, ylim, ind
 
-
 def set_spec_line_prop(lw):
     """Set line properties for spectrum.
 
@@ -775,11 +777,91 @@ def set_spec_line_prop(lw):
         c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
     return c
 
+def make_stfit_masks(dapdata, bin):
+    """Determine regions that were masked in the stellar continuum fit.
 
+    Args:
+        dapdata: dap.DAP object.
+        bin (int): Bin number.
+
+    Returns:
+        tuple: (indices of wavelength for mask edges, )
+    """
+    # Find mask edges
+    ind_split = np.where(np.diff(dapdata.smsk[bin]) != 0)[0]
+
+    # mask values within each region (all the same value)
+    smsk_vals = np.array_split(dapdata.smsk[bin], ind_split + 1)
+    # mask value for each region
+    smsk_val = np.array([item[0] for item in smsk_vals], dtype=int)
+
+    # include starting pixel
+    if 0 not in ind_split:
+        ind_split = np.append([0], ind_split)
+    # include ending pixel
+    if dapdata.smsk.shape[1] not in ind_split:
+        ind_split = np.append(ind_split, [dapdata.smsk.shape[1] - 1])
+
+    return ind_split, smsk_val
+
+def show_stfit_masks(ax, spec, ind_split, smsk_val, ylim):
+    """Display stellar continuum fitting masks.
+
+    Args:
+        ax: plt.figure axis object.
+        spec (DataFrame): Spectral data and fits.
+        ind_split (array): Indices of wavelength mask edges.
+        smsk_val (array): Mask value in each region.
+        ylim (list): Minimum and maximum values of y-axis.
+
+    Returns:
+        plt.figure axis object
+    """
+    mskkws = dict(facecolor='gray', alpha=0.25)
+    lglam = np.log10(spec.wave)
+    half_dlglam = (lglam[1] - lglam[0]) / 2.
+    for m in range(len(smsk_val)):
+        # ind_split give the pixel to the left of the masked region
+        # lglam gives the pixel center, hence the half pixel width shift
+        x = np.array([10**(lglam[ind_split[m] + 1] - half_dlglam),
+                      10**(lglam[ind_split[m+1]] + half_dlglam)])
+        if smsk_val[m]:
+            ax.fill_between(x, ylim[0], ylim[1], **mskkws)
+    return ax
+
+def make_spec_title(dapdata, bin):
+    """Make a spectrum title to identify galaxy, analysis run, and bin number.
+
+    Args:
+        dapdata: dap.DAP object.
+        bin (int): Bin number.
+
+    Returns:
+        str: Spectrum title.
+    """
+    d = dapdata.__dict__
+    return '     '.join(('pid-ifu {plateifu}', 'manga-id {mangaid}',
+                         '{bintype}-{niter}', 'bin {bin}')).format(bin=bin, **d)
+
+def set_flux_units(dapdata):
+    """Determine flux units for spectrum bases on analysis mode.
+    Args:
+        dapdata: dap.DAP object.
+
+    Returns:
+        string: Flux units for spectrum.
+    """
+    indiv_units = np.array(dapdata.flux_units.split(' ')[1].split('/'))
+    indiv_units[indiv_units == 'cm^2'] = 'cm$^2$'
+    indiv_units[indiv_units == 'Ang'] = '$\AA$'
+    units = '/'.join(indiv_units)
+    flux_units = 'Flux / {0} [10$^{{-17}}$ {1}]'.format(indiv_units[-1], units)
+    return flux_units
+            
 def plot_spectrum(dapdata, bin=0,
-                  fits_to_plot=('smod', 'fullfit_ew', 'fullfit_fb'),
-                  rest_frame=True, xlim=None, ylim=None, masks=True, lw=1,
-                  figsize=(20, 12)):
+                  fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
+                  rest_frame=True, xlim=None, ylim=None, stfit_masks=False,
+                  lw=1, figsize=(20, 12)):
     """Plot spectrum and residuals.
 
     Args:
@@ -793,8 +875,8 @@ def plot_spectrum(dapdata, bin=0,
         xlim (tuple): Limits of x-axis. Default is None.
         ylim (tuple): Limits of y-axes for spectrum and residuals plots. Default
             is None.
-        masks (bool): Show masks used in stellar continuum fitting. Default is
-            True.
+        stfit_masks (bool): Show masks used in stellar continuum fitting.
+            Default is False.
         figsize (tuple): Figure size in inches. Default is (20, 12).
 
     Returns:
@@ -805,54 +887,31 @@ def plot_spectrum(dapdata, bin=0,
                         rest_frame=rest_frame)
     xlim, ylim, ind = set_spec_lims(spec, xlim, ylim)
 
-    # STOPPED RE-FACTORING HERE
-    
-    if masks:
-        ind_split = np.where(np.diff(dapdata.smsk[bin]) != 0)[0]
-        smsk_vals = np.array_split(dapdata.smsk[bin], ind_split + 1)
-        smsk_val = np.array([item[0] for item in smsk_vals], dtype=int)
-        if 0 not in ind_split:
-            ind_split = np.append([0], ind_split)
-        if dapdata.smsk.shape[1] not in ind_split:
-            ind_split = np.append(ind_split, [dapdata.smsk.shape[1] - 1])
-
+    if stfit_masks:
+        ind_split, smsk_val = make_stfit_masks(dapdata, bin)
 
     fig = plt.figure(figsize=figsize)
 
-    pnames = ['spectrum', 'residuals']
-    axpar = pd.DataFrame(np.array([[0.32, 0.63], [0.1, 0.2]]), index=pnames,
+    panels = ['spectrum', 'residuals']
+    axpar = pd.DataFrame(np.array([[0.32, 0.63], [0.1, 0.2]]), index=panels,
                          columns=['bottom', 'height'])
-
-    for i, pname in enumerate(pnames):
-        ax = fig.add_axes([0.1, axpar.bottom[pname], 0.85, axpar.height[pname]])
+    fit_ids = [k.split('fullfit_')[1] for k in spec.columns if 'fullfit' in k]
+    for i, panel in enumerate(panels):
+        ax = fig.add_axes([0.1, axpar.bottom[panel], 0.85, axpar.height[panel]])
 
         if xlim is not None:
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim[i])
 
-        if pname is 'spectrum':
-            plt.setp(ax.get_xticklabels(), visible=False)
-
-        if pname is 'residuals':
-            ax.set_xlabel(r'$\lambda_{\rm rest} [\AA]$')
-            ax.set_ylabel(r'$\Delta$')
-            ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75, 
-                    lw=2, zorder=1)
-
         p = []
         labels = []
+        if panel is 'spectrum':
+            ax.set_title(make_spec_title(dapdata, bin))
+            plt.setp(ax.get_xticklabels(), visible=False)
+            ax.set_ylabel(set_flux_units(dapdata))
 
-        # spectrum
-        if pname is 'spectrum':
-            ax.set_title('pid-ifu {}     manga-id {}     bin {}'
-                         ''.format(dapdata.plateifu, dapdata.mangaid, bin))
-            flux_units = 'Flux'
-            if dapdata.mode == 'CUBE':
-                flux_units += ' / spaxel'
-            elif dapdata.mode == 'RSS':
-                flux_units += ' / fiber'
-            ax.set_ylabel('{} [10$^{{-17}}$ erg/s/cm$^2$]'.format(flux_units))
+            # spectrum
             p.append(ax.plot(spec.wave[ind], spec.flux[ind],
                      color='#808080')[0])
             labels.append('galaxy')
@@ -862,34 +921,28 @@ def plot_spectrum(dapdata, bin=0,
                              spec.smod[spec.smod > 0.], color=c[1])[0])
             labels.append('stellar continuum fit')
 
-            emfits = [spec.fullfit_fb, spec.fullfit_ew]
-            fit_labels = ['F. Belfiore emline + cont fit', 
-                          'E. Wang emline + cont fit']
+            emfits = [spec['fullfit_' + fit_id] for fit_id in fit_ids]
+            em_labels = [fit_id.upper() + ' emline + cont fit'
+                         for fit_id in fit_ids]
 
-        #  residuals
-        if pname is 'residuals':
-            emfits = [spec.resid_fb, spec.resid_ew]
+        elif panel is 'residuals':
+            ax.set_xlabel(r'$\lambda_{\rm rest} [\AA]$')
+            ax.set_ylabel(r'$\Delta$')
+            ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75, 
+                    lw=2, zorder=1)
+            emfits = [spec['resid_' + fit_id] for fit_id in fit_ids]
 
         # emission line + stellar continuum fits
-        for j in range(len(emfits)):
-            p.append(ax.plot(spec.wave[spec.smod > 0.],
-                             emfits[j][spec.smod > 0.], color=c[2-2*j])[0])
-            labels.append(fit_labels[j])
+        for j, (emfit, em_label) in enumerate(zip(emfits, em_labels)):
+            p.append(ax.plot(spec.wave[spec.smod > 0.], emfit[spec.smod > 0.],
+                     color=c[2-2*j])[0])
+            labels.append(em_label)
 
-        if pname is 'spectrum':
+        if panel is 'spectrum':
             plt.legend(p, labels, loc=2)
 
-        # plot masks
-        if masks:
-            mskargs = dict(facecolor='gray', alpha=0.25)
-            lglam = np.log10(spec.wave)
-            dlglam = (lglam[1] - lglam[0]) / 2.
-            ylower, yupper = ylim[i]
-            for m in range(len(smsk_val)):
-                x = np.array([10**(lglam[ind_split[m] + 1] - dlglam),
-                              10**(lglam[ind_split[m+1]] + dlglam)])
-                if smsk_val[m]:
-                    ax.fill_between(x, ylower, yupper, **mskargs)
+        if stfit_masks:
+            show_stfit_masks(ax, spec, ind_split, smsk_val, ylim[i])
 
     return fig
 
