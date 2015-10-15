@@ -8,7 +8,7 @@ from __future__ import (division, print_function, absolute_import,
 import copy
 
 import pandas as pd
-import plotdap
+from mangadap.plot import plotdap
 
 try:
     from ConfigParser import RawConfigParser
@@ -61,6 +61,28 @@ def string_to_float(d):
         d[k] = float(v)
     return d
 
+def convert_to_number(s):
+    try:
+        s = int(s)
+    except (TypeError, ValueError):
+        try:
+            s = float(s)
+        except (TypeError, ValueError):
+            pass
+    return s
+
+def convert_to_number_list(item):
+    try:
+        item = [int(it) for it in item]
+
+    except (TypeError, ValueError):
+        try:
+            item = [float(it) for it in item]
+        except (TypeError, ValueError):
+            pass
+    finally:
+        return item
+
 def convert_dtype(item):
     """Convert value from string to boolean or None."""
     try:
@@ -68,8 +90,14 @@ def convert_dtype(item):
             item = item.lower() in ('True', 'true')
         elif item in ('None', 'none'):
             item = None
+        item = convert_to_number(item)
     except (TypeError, ValueError):
-        pass
+        try:
+            item = convert_to_number_list(item)
+        except (TypeError, ValueError):
+            pass
+        finally:
+            return item
     finally:
         return item
 

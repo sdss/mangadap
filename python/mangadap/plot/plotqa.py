@@ -56,7 +56,6 @@ for file_kws in file_kws_all:
     mg_kws['plateifu'] = '{plate}-{ifudesign}'.format(**mg_kws)
 
 
-
 # Make one spectrum
 reload(plotdap)
 reload(cfg_io)
@@ -64,9 +63,9 @@ reload(util)
 plottype = 'spectra'
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-plotdap.plot_spectrum(dapdata=gal, figsize=(15, 9), mg_kws=mg_kws, **plot_kws)
+plotdap.plot_spectrum(dapdata=gal, , mg_kws=mg_kws, **plot_kws)
 
-
+figsize=(15, 9)
     # Make Maps
 
     # plottypes = ['snr', 'flux_ew', 'specind']
