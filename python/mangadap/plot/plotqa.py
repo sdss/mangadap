@@ -53,12 +53,18 @@ for file_kws in file_kws_all:
     gal.get_all_ext()
     mg_kws = copy.deepcopy(file_kws)
     mg_kws['mangaid'] = gal.mangaid
+    mg_kws['plateifu'] = '{plate}-{ifudesign}'.format(**mg_kws)
+
 
 
 # Make one spectrum
 reload(plotdap)
-plotdap.plot_spectrum(dapdata=gal, bin=0, figsize=(15, 9))
-
+reload(cfg_io)
+reload(util)
+plottype = 'spectra'
+cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
+plotdap.plot_spectrum(dapdata=gal, figsize=(15, 9), mg_kws=mg_kws, **plot_kws)
 
 
     # Make Maps
@@ -70,7 +76,6 @@ plotdap.plot_spectrum(dapdata=gal, bin=0, figsize=(15, 9))
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-
         plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
 

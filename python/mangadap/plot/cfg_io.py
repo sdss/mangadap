@@ -61,16 +61,17 @@ def string_to_float(d):
         d[k] = float(v)
     return d
 
-def string_to_bool(d):
-    """Convert values in a dictionary from strings to booleans."""
-    for k, v in d.items():
-        d[k] = v.lower() in ('True', 'true')
-    return d
-
-def check_bool(item):
-    if item in ('True', 'true', 'False', 'false'):
-        item = item.lower() in ('True', 'true')
-    return item
+def convert_dtype(item):
+    """Convert value from string to boolean or None."""
+    try:
+        if item in ('True', 'true', 'False', 'false'):
+            item = item.lower() in ('True', 'true')
+        elif item in ('None', 'none'):
+            item = None
+    except (TypeError, ValueError):
+        pass
+    finally:
+        return item
 
 def specind_units(dapdata, si):
     """Get units for spectral index measurements.
@@ -133,22 +134,23 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
     Returns:
         dict
     """
-    columns = d['data']['columns']
-    d['snr'] = string_to_float(d['snr'])
-    d['data']['titles'] = pd.Series(d['data']['titles'], index=columns)
-    d['show'] = string_to_bool(d['show'])
-    d['save'] = string_to_bool(d['save'])
-    if plottype is 'specind':
-        d['colorbar']['cblabels'] = specind_units(dapdata, columns)
-    else:
-        d['colorbar']['cblabels'] = cblabels_to_series(d)
+    if 'columns' in d['data']:
+        columns = d['data']['columns']
+
+    if 'titles' in d['data']:
+        d['data']['titles'] = pd.Series(d['data']['titles'], index=columns)
+    
+    if 'colorbar' in d['data']:
+        if plottype is 'specind':
+            d['colorbar']['cblabels'] = specind_units(dapdata, columns)
+        else:
+            d['colorbar']['cblabels'] = cblabels_to_series(d)
+
+    if 'snr' in d['data']:
+        d['snr'] = string_to_float(d['snr'])
+
     dout = {}
     for section in d:
         for k, v in d[section].items():
-            # FIX: Make this robust
-            if isinstance(v, pd.Series):
-                pass
-            else:
-                v = check_bool(v)
-            dout[k] = v
+            dout[k] = convert_dtype(v)
     return dout

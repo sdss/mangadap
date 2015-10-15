@@ -146,13 +146,17 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
         path_data (str): Path to parent directory of *plots/*.
         plottype (str): Type of plot ('map', 'spectra', or 'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
+        ext (str): File extension.
         mkdir (bool): Make directory if it does not exist. Default is False.
 
     Returns:
         str: Plot output path and file name.
     """
-    filename = ('manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
-                '_{0}.{1}'.format(name, ext, **mg_kws))
+    stem = 'manga-{plateifu}-LOG{mode}_BIN-{bintype}-{niter}'.format(**mg_kws)
+    if plottype == 'map':
+        filename = stem + '_{0}.{1}'.format(name, ext)
+    elif plottype == 'spec':
+        filename = stem + '_{0}-{bin:0>4}.png'.format(name, **mg_kws)
     path_plottype = join(path_data, 'plots', plottype)
     fullpath = join(path_plottype, filename)
     if mkdir:
@@ -161,8 +165,8 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
             print('\nCreated directory: {}\n'.format(path_plottype))
     return fullpath
 
-def saveplot(name, path_data, plottype, mg_kws, ext='png', mkdir=False,
-             overwrite=False, dpi=200):
+def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
+             overwrite=False):
     """Save a figure.
 
     Args:
@@ -170,12 +174,19 @@ def saveplot(name, path_data, plottype, mg_kws, ext='png', mkdir=False,
         path_data (str): Path to parent directory of *plots/*.
         plottype (str): Type of plot ('map', 'spectra', or 'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
+        ext (str): File extension.
+        dpi (int): If file is png, specify dots-per-inch. Default is 200.
         mkdir (bool): Make directory if it does not exist. Default is False.
+        overwrite (bool): Overwrite plot if it exists. Default is False.
+
     """
     path = output_path(name=name, path_data=path_data, plottype=plottype,
                        mg_kws=mg_kws, ext=ext, mkdir=mkdir)
     if overwrite or not os.path.isfile(path):
-        plt.savefig(path, dpi=dpi)
+        kws = {}
+        if ext == 'png':
+            kws['dpi'] = dpi
+        plt.savefig(path, **kws)
         print('\n', path.split('/')[-1], '\n')
 
 

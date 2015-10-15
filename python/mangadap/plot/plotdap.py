@@ -861,7 +861,8 @@ def set_flux_units(dapdata):
 def plot_spectrum(dapdata, bin=0,
                   fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
                   rest_frame=True, xlim=None, ylim=None, stfit_masks=False,
-                  lw=1, figsize=(20, 12)):
+                  lw=1, figsize=(20, 12), mg_kws=None, savefig=True,
+                  overwrite=False):
     """Plot spectrum and residuals.
 
     Args:
@@ -878,6 +879,10 @@ def plot_spectrum(dapdata, bin=0,
         stfit_masks (bool): Show masks used in stellar continuum fitting.
             Default is False.
         figsize (tuple): Figure size in inches. Default is (20, 12).
+        mg_kws (dict): Keyword args with identifying information about the
+           galaxy and analysis run. Default is None.
+        savefig (bool): Save plot. Default is True.
+        overwrite (bool): Overwrite plot if it exists. Default is False.
 
     Returns:
         plt.figure object
@@ -943,6 +948,11 @@ def plot_spectrum(dapdata, bin=0,
 
         if stfit_masks:
             show_stfit_masks(ax, spec, ind_split, smsk_val, ylim[i])
+
+    if savefig:
+        mg_kws['bin'] = bin
+        util.saveplot(name='spec', path_data=dapdata.path_data, plottype='spec',
+                      mg_kws=mg_kws, mkdir=True,overwrite=overwrite)
 
     return fig
 
