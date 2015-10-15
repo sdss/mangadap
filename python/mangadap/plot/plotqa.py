@@ -85,8 +85,7 @@ cols = fin.hdu['STFIT'].data.columns.names
 
 
 # TO DO
-# spectra
-# refactor plot_spectrum()
+# - refactor plot_spectrum()
 # - plot multiple spectra
 # - make/save/overwrite
 

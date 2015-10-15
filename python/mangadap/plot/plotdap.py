@@ -286,7 +286,7 @@ def set_cmaps(cmaps, n_plots):
 
     return cmaps
 
-def set_background_color(spaxel_size, color='#A8A8A8'):
+def set_map_background_color(spaxel_size, color='#A8A8A8'):
     """Set default parameters for a single panel plot.
 
     Args:
@@ -301,7 +301,7 @@ def set_background_color(spaxel_size, color='#A8A8A8'):
                      linewidth=0, fill=True, fc=color, ec='w', zorder=10)
     return ax_kws, patch_kws
 
-def set_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
+def set_map_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
     """Set default parameters for a single panel plot.
 
     Args:
@@ -323,8 +323,8 @@ def set_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
                   tick_params_kws=dict(labelsize=cbfontsize))
     return title_kws, imshow_kws, cb_kws
 
-def ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
-    """Basic axes setup.
+def map_ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
+    """Basic axes setup for maps.
 
     Args:
         fig: Matplotlib plt.figure object. Use if creating subplot of a
@@ -369,7 +369,6 @@ def make_map_title(analysis_id):
     """
     return '     '.join(('pid-ifu {plate}-{ifudesign}', 'manga-id {mangaid}',
                          '{bintype}-{niter}')).format(**analysis_id)
-
 
 def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
                   labelsize=20, title_kws=None, mg_kws=None):
@@ -519,7 +518,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     cb_kws = util.none_to_empty_dict(cb_kws)
     binnum_kws = util.none_to_empty_dict(binnum_kws)
 
-    fig, ax = ax_setup(fig, ax, fig_kws=fig_kws, **ax_kws)
+    fig, ax = map_ax_setup(fig, ax, fig_kws=fig_kws, **ax_kws)
 
     if title_kws['label'] is not None:
         ax.set_title(**title_kws)
@@ -647,7 +646,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
     binid = reorient(dapdata.drps.binid.values)
     delta = spaxel_size / 2.
     extent = set_extent(xpos=xpos, ypos=ypos, delta=delta)
-    ax_kws, patch_kws = set_background_color(spaxel_size=spaxel_size)
+    ax_kws, patch_kws = set_map_background_color(spaxel_size=spaxel_size)
 
     # Create images
     ims = []
@@ -663,8 +662,8 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
     # Make plots
     all_panel_kws = []
     for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
-        tt, iw, cb = set_par(cmap=cmap, title=titles[col],
-                             cblabel=cblabels[col])
+        tt, iw, cb = set_map_par(cmap=cmap, title=titles[col],
+                                 cblabel=cblabels[col])
         sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
                       imshow_kws=iw, cb_kws=cb)
@@ -687,9 +686,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                               ext='pdf', mkdir=True, overwrite=overwrite)
 
         # create dictionaries for multi-panel maps
-        t_kws, i_kws, c_kws = set_par(cmap=cmap, title=titles[col],
-                                      cblabel=cblabels[col], titlefontsize=20,
-                                      cbfontsize=16)
+        t_kws, i_kws, c_kws = set_map_par(cmap=cmap, title=titles[col],
+                                          cblabel=cblabels[col],
+                                          titlefontsize=20, cbfontsize=16)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
                                   ax_kws=ax_kws, title_kws=t_kws,
                                   imshow_kws=i_kws, cb_kws=c_kws))
@@ -704,33 +703,17 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
 
 
-
-def plot_spectrum(dapdata, bin=0, rest_frame=True, xlim=None, ylim=None,
-                  masks=True, lw=1, figsize=(20, 12)):
-    """Plot spectrum and residuals.
-
-    Args:
-        dapdata:
+def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
+    """
+            dapdata: dap.DAP object.
         bin (int): Bin number. Default is 0.
         rest_frame (bool): If True, show spectrum in rest frame, otherwise show
             spectrum in observed frame. Default is True.
-        xlim (tuple): Limits of x-axis. Default is None.
-        ylim (tuple): Limits of y-axes for spectrum and residuals plots. Default
-            is None.
-        masks (bool): Show masks used in stellar continuum fitting. Default is
-            True.
-        figsize (tuple): Figure size in inches. Default is (20, 12).
-
-    Returns:
-        plt.figure object
+        fits_to_plot (tuple): Extension names of stellar continuum fits or
+            stellar continuum plus emission line fits to plot. Default is
+            ('smod', 'fullfit_ew', 'fullfit_fb').
     """
-    if 'seaborn' in sys.modules:
-        c = sns.color_palette('bright', 5)
-        sns.set_context('poster', rc={"lines.linewidth": lw})
-    else:
-        c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
-
-    cols = ['wave', 'flux', 'ivar', 'smod', 'fullfit_ew', 'fullfit_fb']
+    cols = ['wave', 'flux', 'ivar'] + list(fits_to_plot)
     data = {}
     for col in cols:
         attr = copy.deepcopy(col)
@@ -742,10 +725,27 @@ def plot_spectrum(dapdata, bin=0, rest_frame=True, xlim=None, ylim=None,
             data[col] = dapdata.__dict__[attr][bin]
 
     spec = pd.DataFrame(data, columns=cols)
-    spec['resid_ew'] = spec['flux'] - spec['fullfit_ew']
-    spec['resid_fb'] = spec['flux'] - spec['fullfit_fb']
 
-    # axis limits
+    for col in cols:
+        if 'fullfit' in col:
+            spec['resid_' + col.split('_')[1]] = spec.flux - spec[col]
+
+    return spec
+
+
+
+def set_spec_lims(spec, xlim, ylim):
+    """Set axis limits for spectrum.
+
+    Args:
+        spec (DataFrame): Spectral data and fits.
+        xlim (list): Limits of x-axis.
+        ylim (list): Limits of y-axes for spectrum and residuals plots.
+
+    Returns:
+        tuple: (limits of x-axis, limits of y-axis, indices where wavelength is
+                within x-axis limits)
+    """
     if xlim is None:
         xlim = [3600, 9300]
     
@@ -756,6 +756,57 @@ def plot_spectrum(dapdata, bin=0, rest_frame=True, xlim=None, ylim=None,
         ylim_resid_max = 0.1 + p50 * 0.2
         ylim = [[0., p50 * 3.], [-ylim_resid_max, ylim_resid_max]]
 
+    return xlim, ylim, ind
+
+
+def set_spec_line_prop(lw):
+    """Set line properties for spectrum.
+
+    Args:
+        lw (int): Linewidth.
+
+    Returns:
+        list: Color palette.
+    """
+    if 'seaborn' in sys.modules:
+        c = sns.color_palette('bright', 5)
+        sns.set_context('poster', rc={'lines.linewidth': lw})
+    else:
+        c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
+    return c
+
+
+def plot_spectrum(dapdata, bin=0,
+                  fits_to_plot=('smod', 'fullfit_ew', 'fullfit_fb'),
+                  rest_frame=True, xlim=None, ylim=None, masks=True, lw=1,
+                  figsize=(20, 12)):
+    """Plot spectrum and residuals.
+
+    Args:
+        dapdata: dap.DAP object.
+        bin (int): Bin number. Default is 0.
+        rest_frame (bool): If True, show spectrum in rest frame, otherwise show
+            spectrum in observed frame. Default is True.
+        fits_to_plot (tuple): Extension names of stellar continuum fits or
+            stellar continuum plus emission line fits to plot. Default is
+            ('smod', 'fullfit_ew', 'fullfit_fb').
+        xlim (tuple): Limits of x-axis. Default is None.
+        ylim (tuple): Limits of y-axes for spectrum and residuals plots. Default
+            is None.
+        masks (bool): Show masks used in stellar continuum fitting. Default is
+            True.
+        figsize (tuple): Figure size in inches. Default is (20, 12).
+
+    Returns:
+        plt.figure object
+    """
+    c = set_spec_line_prop(lw=lw)
+    spec = make_spec_df(dapdata=dapdata, bin=bin, fits_to_plot=fits_to_plot,
+                        rest_frame=rest_frame)
+    xlim, ylim, ind = set_spec_lims(spec, xlim, ylim)
+
+    # STOPPED RE-FACTORING HERE
+    
     if masks:
         ind_split = np.where(np.diff(dapdata.smsk[bin]) != 0)[0]
         smsk_vals = np.array_split(dapdata.smsk[bin], ind_split + 1)
@@ -823,8 +874,7 @@ def plot_spectrum(dapdata, bin=0, rest_frame=True, xlim=None, ylim=None,
         for j in range(len(emfits)):
             p.append(ax.plot(spec.wave[spec.smod > 0.],
                              emfits[j][spec.smod > 0.], color=c[2-2*j])[0])
-            if pname is 'spectrum':
-                labels.append(fit_labels[j])
+            labels.append(fit_labels[j])
 
         if pname is 'spectrum':
             plt.legend(p, labels, loc=2)
