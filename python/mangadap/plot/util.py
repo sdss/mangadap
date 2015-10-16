@@ -7,6 +7,7 @@ from __future__ import (division, print_function, absolute_import,
 
 import os
 from os.path import join
+import sys
 import copy
 
 import numpy as np
@@ -29,9 +30,7 @@ def fitsrec_to_dataframe(recarr):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        # Commented out ".byteswap().newbyteorder()" below for MPL-4 DRPQA run
-        # Could be a Python2/Python3 difference
-        dtmp[col] = recarr[col].byteswap().newbyteorder()
+        dtmp[col] = swap_byte(recarr[col])
     return pd.DataFrame(dtmp, columns=cols)
 
 def make_df(data, columns):
@@ -72,14 +71,20 @@ def read_vals(dapf, hdu, ext, columns):
     Returns:
         DataFrame
     """
+
     recarr = dapf.read_hdu_data(hdu)
-    df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
-    #df = pd.DataFrame(recarr[ext].byteswap().newbyteorder(), columns=columns)
+    df = pd.DataFrame(swap_byte(recarr[ext]), columns=columns)
     return df
 
 def swap_byte(arr):
-    """Swap byte order from big-endian (FITS) to little-endian (pandas)."""
-    return arr.byteswap().newbyteorder()
+    """Swap byte order from big-endian (FITS) to little-endian (pandas).
+
+    Only do byte swap if using Python 2.
+    """
+    if sys.version_info[0] < 3:
+        return arr.byteswap().newbyteorder()
+    else:
+        return arr
 
 
 def swap_byte_df(arr, columns=None):
@@ -154,7 +159,7 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
         str: Plot output path and file name.
     """
     stem = 'manga-{plateifu}-LOG{mode}_BIN-{bintype}-{niter}'.format(**mg_kws)
-    if plottype == 'map':
+    if plottype == 'maps':
         filename = stem + '_{0}.{1}'.format(name, ext)
     elif plottype == 'spec':
         filename = stem + '_{0}-{bin:0>4}.png'.format(name, **mg_kws)
@@ -188,7 +193,8 @@ def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
         if ext == 'png':
             kws['dpi'] = dpi
         plt.savefig(path, **kws)
-        print('\n', path.split('/')[-1], '\n')
+        print(path)
+        #print('\n', path.split('/')[-1], '\n')
 
 
 def reverse_cmap(x):
@@ -353,7 +359,7 @@ def fitsrec_to_multiindex_df(rec, cols1, cols2):
     Returns:
         DataFrame
     """
-    dt = np.concatenate([rec[c].byteswap().newbyteorder().T for c in cols1]).T
+    dt = np.concatenate([swap_byte(rec[c]).T for c in cols1]).T
     cols_out = pd.MultiIndex.from_product([cols1, cols2])
     return pd.DataFrame(dt, columns=cols_out)
 

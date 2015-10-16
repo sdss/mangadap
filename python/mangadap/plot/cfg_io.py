@@ -171,12 +171,12 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
     if 'titles' in d['data']:
         d['data']['titles'] = pd.Series(d['data']['titles'], index=columns)
     
-    if 'colorbar' in d['data']:
+    if 'colorbar' in d:
         if plottype is 'specind':
             d['colorbar']['cblabels'] = specind_units(dapdata, columns)
         else:
             d['colorbar']['cblabels'] = cblabels_to_series(d)
-
+    
     if 'snr' in d['data']:
         d['snr'] = string_to_float(d['snr'])
 

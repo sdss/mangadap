@@ -446,13 +446,13 @@ class DAP():
         """Get bandpasses used for non-parametric fits of emission lines."""
         elband_in = self.read_hdu('ELBAND')
         if elband_in is not None:
-            elnames_in = list(elband_in['ELNAME'].byteswap().newbyteorder())
+            elnames_in = list(util.swap_byte(elband_in['ELNAME']))
             elnames = util.remove_hyphen(elnames_in)
             elband_tmp = {}
             for band in ['bandpass', 'blueside', 'redside']:
                 for i, bedge in enumerate(['start', 'end']):
                     elband_tmp['_'.join((band, bedge))] = \
-                        elband_in[band][:, i].byteswap().newbyteorder()
+                        util.swap_byte(elband_in[band][:, i])
 
             cols = ['bandpass_start', 'bandpass_end', 'blueside_start',
                     'blueside_end', 'redside_start', 'redside_end']
@@ -528,7 +528,7 @@ class DAP():
             ikinexts_fit = ['_'.join([it, fitcode]) for it in ikinexts]
             for ext in ikinexts_fit:
                 try:
-                    val_in = elofit[ext].byteswap().newbyteorder()
+                    val_in = util.swap_byte(elofit[ext])
                 except KeyError:
                     print('Column {} not found in ELOFIT extension.'
                           ''.format(ext))
@@ -585,12 +585,12 @@ class DAP():
         """Spectral index parameters."""
         sipar_in = self.read_hdu('SIPAR')
         if sipar_in is not None:
-            self.sinames = list(sipar_in['SINAME'].byteswap().newbyteorder())
-            sipar_tmp = dict(unit=sipar_in['UNIT'].byteswap().newbyteorder())
+            self.sinames = list(util.swap_byte(sipar_in['SINAME']))
+            sipar_tmp = dict(unit=util.swap_byte(sipar_in['UNIT']))
             for band in ['passband', 'blueband', 'redband']:
                 for i, bedge in enumerate(['start', 'end']):
                     sipar_tmp['_'.join((band, bedge))] = \
-                        sipar_in[band][:, i].byteswap().newbyteorder()
+                        util.swap_byte(sipar_in[band][:, i])
 
             cols = ['passband_start', 'passband_end', 'blueband_start',
                     'blueband_end', 'redband_start', 'redband_end', 'unit']

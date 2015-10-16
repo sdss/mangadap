@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 
 import matplotlib as mpl
-#mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
@@ -672,8 +671,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
             ig = plot_map(im, extent, **sp_kws)
             if savefig_single:
                 pname = '_'.join([pname_base, col])
-                util.saveplot(pname, dapdata.path_data, 'maps', mg_kws,
-                              mkdir=True, overwrite=overwrite)
+                util.saveplot(name=pname, path_data=dapdata.path_data,
+                              plottype='maps', mg_kws=mg_kws, mkdir=True,
+                              overwrite=overwrite)
 
         # Make single panel maps with bin numbers
         if make_binnum:
@@ -682,8 +682,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                           **sp_kws)
             if savefig_binnum:
                 pname = '_'.join([pname_base, col, 'binnum'])
-                util.saveplot(pname, dapdata.path_data, 'maps', mg_kws,
-                              ext='pdf', mkdir=True, overwrite=overwrite)
+                util.saveplot(name=pname, path_data=dapdata.path_data,
+                              plottype='maps', mg_kws=mg_kws, ext='pdf',
+                              mkdir=True, overwrite=overwrite)
 
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = set_map_par(cmap=cmap, title=titles[col],
@@ -698,8 +699,9 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
         ig = plot_multi_map(all_panel_kws=all_panel_kws, patch_kws=patch_kws,
                             mg_kws=mg_kws, fig_kws=dict(figsize=(20, 12)))
         if savefig_multi:
-            util.saveplot(pname_base, dapdata.path_data, 'maps', mg_kws,
-                          mkdir=True, overwrite=overwrite)
+            util.saveplot(name=pname_base, path_data=dapdata.path_data,
+                          plottype='maps', mg_kws=mg_kws, mkdir=True,
+                          overwrite=overwrite)
 
 
 
@@ -1030,7 +1032,6 @@ def plot_spectrum(dapdata, bin=0,
     if stfit_masks:
         ind_split, smsk_val = make_stfit_masks(dapdata, bin)
 
-    print(figsize)
     fig = plt.figure(figsize=figsize)
 
     panels = ['spectrum', 'residuals']
