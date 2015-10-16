@@ -193,8 +193,7 @@ def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
         if ext == 'png':
             kws['dpi'] = dpi
         plt.savefig(path, **kws)
-        print(path)
-        #print('\n', path.split('/')[-1], '\n')
+        print('\n', path.split('/')[-1], '\n')
 
 
 def reverse_cmap(x):
