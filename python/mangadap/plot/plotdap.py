@@ -1024,7 +1024,7 @@ def plot_spectrum(dapdata, bin=0,
     Returns:
         plt.figure object
     """
-    c = set_spec_line_prop(lw=lw)
+    colors = set_spec_line_prop(lw=lw)
     spec = make_spec_df(dapdata=dapdata, bin=bin, fits_to_plot=fits_to_plot,
                         rest_frame=rest_frame)
     xlim, ylim, ind = set_spec_lims(spec, xlim, ylim)
@@ -1060,7 +1060,7 @@ def plot_spectrum(dapdata, bin=0,
 
             # stellar continuum fit
             p.append(ax.plot(spec.wave[spec.smod > 0.],
-                             spec.smod[spec.smod > 0.], color=c[1])[0])
+                             spec.smod[spec.smod > 0.], color=colors[1])[0])
             labels.append('stellar continuum fit')
 
             emfits = [spec['fullfit_' + fit_id] for fit_id in fit_ids]
@@ -1077,7 +1077,7 @@ def plot_spectrum(dapdata, bin=0,
         # emission line + stellar continuum fits
         for j, (emfit, em_label) in enumerate(zip(emfits, em_labels)):
             p.append(ax.plot(spec.wave[spec.smod > 0.], emfit[spec.smod > 0.],
-                     color=c[2-2*j])[0])
+                     color=colors[2-2*j])[0])
             labels.append(em_label)
 
         if panel is 'spectrum':
@@ -1220,7 +1220,7 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, xlim=None, ylim=None,
     #ax.plot(wave[ind], flux[ind], 'gray', drawstyle='steps-mid', zorder=1)
     ax.scatter(wave[ind], flux[ind], c='gray', edgecolor='None', zorder=1)
     ax.errorbar(wave[ind], flux[ind], yerr=noise[ind], ecolor='gray',
-                fmt=None, zorder=1)
+                fmt='none', zorder=1)
     pst = ax.plot(wave[ind], stmodel[ind], color=colors[1], **kwargs)[0]
     pFB = ax.plot(wave[ind], fullfit_fb[ind], color=colors[2], **kwargs)[0]
     pEW = ax.plot(wave[ind], fullfit_ew[ind], color=colors[0], **kwargs)[0]
