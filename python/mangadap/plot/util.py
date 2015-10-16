@@ -7,6 +7,7 @@ from __future__ import (division, print_function, absolute_import,
 
 import os
 from os.path import join
+import copy
 
 import numpy as np
 import pandas as pd
@@ -404,3 +405,18 @@ def deredshift_velocities(redshift, vel, velerr):
     mask = ((np.abs(vel_rest) > 250.) | (velerr > 250.) | (velerr == 0.))
     velerr_rest[mask] = 1e8
     return vel_rest, velerr_rest
+
+def make_mg_kws(dapdata, file_kws):
+    """Create a MaNGA kws dictionary.
+
+    Args:
+        dapdata: dap.DAP class instance.
+        file_kws (dict): File description.
+
+    Returns:
+        dict
+    """
+    mg_kws = copy.deepcopy(file_kws)
+    mg_kws['mangaid'] = dapdata.mangaid
+    mg_kws['plateifu'] = '{plate}-{ifudesign}'.format(**mg_kws)
+    return mg_kws

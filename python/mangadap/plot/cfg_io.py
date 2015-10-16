@@ -55,6 +55,9 @@ def read_plottypes_config(filename):
         plottypes = [plottypes]
     return plottypes
 
+
+# FIX: is there a package to parse dtypes? (e.g., json.loads)
+
 def string_to_float(d):
     """Convert values in a dictionary from strings to floats."""
     for k, v in d.items():
@@ -68,7 +71,7 @@ def convert_to_number(s):
         try:
             s = float(s)
         except (TypeError, ValueError):
-            pass
+            raise TypeError
     return s
 
 def convert_to_number_list(item):

@@ -857,7 +857,17 @@ def set_flux_units(dapdata):
     units = '/'.join(indiv_units)
     flux_units = 'Flux / {0} [10$^{{-17}}$ {1}]'.format(indiv_units[-1], units)
     return flux_units
-            
+
+def plot_spectra(dapdata, bins=[0],
+                 fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
+                 rest_frame=True, xlim=None, ylim=None, stfit_masks=False, lw=1,
+                 figsize=(20, 12), mg_kws=None, savefig=True, overwrite=False):
+    for bin in bins:
+        ig = plot_spectrum(dapdata, bin=bin, fits_to_plot=fits_to_plot,
+                           rest_frame=rest_frame, xlim=xlim, ylim=ylim,
+                           stfit_masks=stfit_masks, lw=lw, figsize=figsize,
+                           mg_kws=mg_kws, savefig=savefig, overwrite=overwrite)
+
 def plot_spectrum(dapdata, bin=0,
                   fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
                   rest_frame=True, xlim=None, ylim=None, stfit_masks=False,
@@ -895,6 +905,7 @@ def plot_spectrum(dapdata, bin=0,
     if stfit_masks:
         ind_split, smsk_val = make_stfit_masks(dapdata, bin)
 
+    print(figsize)
     fig = plt.figure(figsize=figsize)
 
     panels = ['spectrum', 'residuals']

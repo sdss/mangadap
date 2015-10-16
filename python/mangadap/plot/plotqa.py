@@ -51,27 +51,16 @@ for file_kws in file_kws_all:
     # Read DAP file
     gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=False)
     gal.get_all_ext()
-    mg_kws = copy.deepcopy(file_kws)
-    mg_kws['mangaid'] = gal.mangaid
-    mg_kws['plateifu'] = '{plate}-{ifudesign}'.format(**mg_kws)
+    mg_kws = util.make_mg_kws(gal, file_kws)
 
-
-# Make one spectrum
 reload(plotdap)
-reload(cfg_io)
-reload(util)
-plottype = 'spectra'
+plottypes = ['spectra']
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-plotdap.plot_spectrum(dapdata=gal, , mg_kws=mg_kws, **plot_kws)
+plotdap.plot_spectra(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+    
 
-figsize=(15, 9)
-    # Make Maps
-
-    # plottypes = ['snr', 'flux_ew', 'specind']
-    # plottypes = ['drpqa']
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
-
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
@@ -90,7 +79,6 @@ cols = fin.hdu['STFIT'].data.columns.names
 
 # TO DO
 # - plot multiple spectra
-# - make/save/overwrite
 
 # emline zoomins
 # gradients (emflux, specind)
