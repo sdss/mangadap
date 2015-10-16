@@ -1166,7 +1166,7 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, xlim=None, ylim=None,
         figsize (tuple): figure width and height in inches
     
     """
-    c = set_spec_line_prop(lw=kwargs['lw'])
+    colors = set_spec_line_prop(lw=kwargs['lw'])
 
     if ax is None:
         fig = plt.figure(figsize=figsize)
@@ -1221,15 +1221,15 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, xlim=None, ylim=None,
     ax.scatter(wave[ind], flux[ind], c='gray', edgecolor='None', zorder=1)
     ax.errorbar(wave[ind], flux[ind], yerr=noise[ind], ecolor='gray',
                 fmt=None, zorder=1)
-    pst = ax.plot(wave[ind], stmodel[ind], c=c[1], **kwargs)[0]
-    pFB = ax.plot(wave[ind], fullfit_fb[ind], c=c[2], **kwargs)[0]
-    pEW = ax.plot(wave[ind], fullfit_ew[ind], c=c[0], **kwargs)[0]
+    pst = ax.plot(wave[ind], stmodel[ind], color=colors[1], **kwargs)[0]
+    pFB = ax.plot(wave[ind], fullfit_fb[ind], color=colors[2], **kwargs)[0]
+    pEW = ax.plot(wave[ind], fullfit_ew[ind], color=colors[0], **kwargs)[0]
 
     for name, w, x_off in zip(names, dapdata.elopar.restwave, x_offs):
         if (w > xmin) and (w < xmax):
             if (not nii) or (name is not r'H$\alpha$'):
                 ax.text(w + x_off, ymax-dy*0.08, name, color='k', fontsize=20)
-                ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], c='k')
+                ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], color='k')
 
     leg = plt.legend([pst, pFB, pEW],
                      ['Stellar Cont.', 'Belfiore', 'Wang'],

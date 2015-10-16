@@ -93,7 +93,8 @@ def convert_dtype(item):
             item = item.lower() in ('True', 'true')
         elif item in ('None', 'none'):
             item = None
-        item = convert_to_number(item)
+        else:
+            item = convert_to_number(item)
     except (TypeError, ValueError):
         try:
             item = convert_to_number_list(item)

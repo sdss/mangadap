@@ -13,7 +13,7 @@ import copy
 from imp import reload
 
 import matplotlib as mpl
-mpl.use('Agg')
+#mpl.use('Agg')
 
 from mangadap.plot import dap
 from mangadap.plot import plotdap
@@ -32,13 +32,12 @@ if hasattr(main, '__file__'):
 else:
     # interactive session
     # DRPQA file
-    file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
-                     os.getenv('MANGADAP_VER'),
-                     '7443', '6104', 'CUBE_files_to_plot.txt')
-    #file_list = join(os.getenv('MANGA_MPL3'),
-    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
+    #file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
+    #                 os.getenv('MANGADAP_VER'),
+    #                 '7443', '6104', 'CUBE_files_to_plot.txt')
+    file_list = join(os.getenv('MANGA_MPL3'),
+                     '7443', '1901', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
-
 
 file_kws_all = util.read_file_list(file_list)
 cfg_dir = util.make_config_path(plottypes_list)
@@ -50,6 +49,20 @@ for file_kws in file_kws_all:
     gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=False)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
+
+
+reload(cfg_io)
+plottype = 'emline'
+cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
+
+plotdap.plot_emlines(dapdata=gal, bin=0, mg_kws=mg_kws)
+
+plotdap.plot_emline_multi(dapdata=gal, bin=0, mg_kws=mg_kws)
+
+reload(plotdap)
+plotdap.plot_emline(dapdata=gal, bin=0, mg_kws=mg_kws, nii=False, win_cen=6565.)
+
 
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
     for plottype in plottypes:
