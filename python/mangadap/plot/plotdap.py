@@ -402,7 +402,7 @@ def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
         bigAxes.set_ylabel(ylabel, fontsize=labelsize)
 
     # set title
-    if mg_kws is not None:
+    if ('label' not in title_kws) and (mg_kws is not None):
         title_kws['label'] = make_map_title(mg_kws)
     if 'label' in title_kws:
         bigAxes.set_title(**title_kws)
@@ -703,6 +703,131 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
 
 
+
+
+# def plot_multi_radial_gradients(map_order,
+#                                 args,
+#                                 ylabel=r'Flux [10$^{-17}$ erg/s/cm$^2$]',
+#                                 n_ax=6,
+#                                 leg_kwargs=dict(handlelength=2, loc=1),
+#                                 figsize=(20, 12)):
+#     """
+#     Plot multiple radial gradients at once.
+#     """
+#     fig = plt.figure(figsize=figsize)
+#     if seaborn_installed:
+#         sns.set_context('poster', rc={'lines.linewidth': 2})
+# 
+#     flux_units = 'Flux'
+#     if self.dap_mode == 'CUBE':
+#         flux_units += ' / spaxel'
+#     elif self.dap_mode == 'RSS':
+#         flux_units += ' / fiber'
+# 
+#     bigAxes = fig.add_axes([0.04, 0.05, 0.9, 0.88], frameon=False)
+#     bigAxes.set_xticks([])
+#     bigAxes.set_yticks([])
+#     bigAxes.set_xlabel('R [arcsec]', fontsize=20)
+#     bigAxes.set_ylabel('%s [10$^{-17}$ erg/s/cm$^2$]' % flux_units, fontsize=20)
+#     bigAxes.set_title(
+#         'pid-ifu %s     manga-id %s     %s     %s' % (
+#         self.manga_pid, self.manga_id, self.dap_mode, self.exec_num),
+#         fontsize=20)
+#     
+#     bin_edges = np.concatenate((self.binxrl,
+#                                np.atleast_1d(self.binyru[-1])))
+# 
+#     for i, k in enumerate(map_order):
+#         dx = 0.31 * i
+#         dy = 0.45
+#         if i >= (n_ax / 2):
+#             dx = 0.31 * (i - n_ax / 2)
+#             dy = 0
+#         left, bottom = (0.08+dx, 0.1+dy)
+#         if seaborn_installed:
+#             sns.set_context('poster', rc={'lines.linewidth': 2})
+#     
+#         ax = fig.add_axes([left, bottom, 0.23, 0.33333])
+#         axtitle = args[k]['kwargs']['title_text'].split(' (')[0]
+#         ax.set_title(axtitle)
+#         
+#         if not seaborn_installed:
+#             ax.set_axis_bgcolor('#EAEAF2')
+#             ax.grid(False, which='both', axis='both')
+#     
+#         d = args[map_order[i]]
+#         p = []
+#         lab = []
+#         if not np.isnan(d['val']).all():
+#             self.plot_radial_gradients(k, args, c_ind=[2, 0],
+#                                        leglabels=['F. Belfiore', 'E. Wang'],
+#                                        fig=fig, ax=ax)
+# 
+# 
+# 
+# def plot_gradients(dapdata, gradname, args,
+#                    c_ind=[0], leglabels=None,
+#                    leg_kwargs=dict(handlelength=2, loc=1), fig=None, ax=None,
+#                    figsize=(10, 8)):
+#     """
+#     Plot radial gradients.
+#     """
+#     c = set_spec_line_prop(lw=lw)
+#     spec = make_spec_df(dapdata=dapdata, bin=bin, fits_to_plot=fits_to_plot,
+#                         rest_frame=rest_frame)
+#     if ax is None:
+#         fig = plt.figure(figsize=figsize)
+#         ax = fig.add_axes([0.17, 0.11, 2/3., 5/6.])
+#         ax.set_xlabel('R [arcsec]', fontsize=28)
+#         ax.set_ylabel(set_flux_units(dapdata), fontsize=28)
+#         for tick in ax.xaxis.get_major_ticks():
+#             tick.label.set_fontsize(20)
+#         for tick in ax.yaxis.get_major_ticks():
+#             tick.label.set_fontsize(20)
+#         axtitle = args[gradname]['kwargs']['title_text'].split(' (')[0]
+#         ax.set_title(axtitle, fontsize=28)
+# 
+#     if 'seaborn' not in sys.modules:
+#         ax.set_axis_bgcolor('#A8A8A8')
+#         ax.grid(False, which='both', axis='both')
+#         c = ['b', 'r', 'c']
+# 
+#     d = args[gradname]
+#     p = []
+#     lab = []
+#     if not np.isnan(d['val']).all():
+#         for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
+#                                         c_ind, leglabels):
+#             p.append(ax.hlines(args[gradname][kk], self.binxrl, self.binyru,
+#                      color=c[j]))
+#             #ytmp = np.concatenate((args[gradname][kk],
+#             #                      np.atleast_1d(args[gradname][kk][-1])))
+#             #p.append(ax.step(bin_edges, ytmp, c=c[j],
+#             #         where='post')[0])
+#             #p.append(ax.plot(self.binr, args[gradname][kk], c=c[j], zorder=8)[0])
+#             ax.plot(self.binr, args[gradname][kk], c=c[j], zorder=8, lw=0.5)
+#             ax.scatter(self.binr, args[gradname][kk], facecolor=c[j],
+#                        edgecolor='None', s=60, zorder=9)
+#             #ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
+#             #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
+#             label = args[gradname]['kwargs']['title_text'].split(' (')[0]
+#             lab.append(author)
+# 
+#     leg = plt.legend(p, lab, **leg_kwargs)
+#     plt.setp(leg.get_texts(), fontsize=24)
+#     ax.set_xlim(left=0)
+#     ax.set_ylim(bottom=0)
+#         
+#     if not np.isnan(d['val']).all():
+#         for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
+#             ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
+#                         ecolor=c[j], elinewidth=1, marker='None', ls='None')
+
+
+
+
+
+
 def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
     """Create DataFrame with spectrum and fits.
 
@@ -966,5 +1091,153 @@ def plot_spectrum(dapdata, bin=0,
                       mg_kws=mg_kws, mkdir=True,overwrite=overwrite)
 
     return fig
+
+
+
+
+
+
+
+
+def plot_emlines(dapdata, bin=0, mg_kws=None):
+    """
+    """
+    win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+
+    plot_emline_multi(dapdata=dapdata, bin=bin, mg_kws=mg_kws)
+    for i in range(6):
+        nii = False
+        if i == 3:
+            nii = True
+        plot_emline(dapdata=dapdata, bin=bin, mg_kws=mg_kws, nii=nii,
+                    win_cen=win_cen[i])
+
+
+
+
+def plot_emline_multi(dapdata, bin=0, mg_kws=None,
+                      kwargs={'alpha':0.75, 'lw':2}, figsize=(20, 12)):
+    """Plot multiple panel zoom-ins of spectra near strong emission lines.
+
+    Args:
+        bin (int): bin number
+        kwargs (dict): keyword args for ax.plot
+        figsize (tuple): figure width and height in inches
+    
+    """
+    win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+    
+    fig = plt.figure(figsize=figsize)
+    bigax_kws = dict(xlabel=r'$\lambda \, [\AA]$',
+                     ylabel=set_flux_units(dapdata), mg_kws=mg_kws,
+                     title_kws=dict(label=make_spec_title(dapdata, bin),
+                                    fontsize=20))
+    bigAxes = make_big_axes(fig, axloc=(.04, 0.06, 0.9, 0.9), **bigax_kws)
+    fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
+                         right=0.95, top=0.95)
+    for i in range(6):
+        ax = fig.add_subplot(2, 3, i+1)
+        nii = False
+        if i == 3:
+            nii = True
+        plot_emline(dapdata=dapdata, fig=fig, ax=ax, bin=bin, xlim=None,
+                    ylim=None, win_cen=win_cen[i], nii=nii,
+                    kwargs=kwargs, figsize=figsize)
+
+
+
+
+
+def plot_emline(dapdata, fig=None, ax=None, bin=0, xlim=None, ylim=None,
+                win_cen=None, nii=False, mg_kws=None,
+                kwargs={'alpha':0.75, 'lw':2}, figsize=(10, 8)):
+    """Plot data and model spectra near strong emission lines.
+
+    Args:
+        fig: figure object
+        ax: axis object
+        bin (int): bin number
+        xlim (list): minimum and maximum x-axis values
+        ylim (list): minimum and maximum y-axis values
+        nii (bool): If True, maximum y value is determined by the
+            [NII]6548,6583 lines (not Halpha)
+        kwargs (dict): keyword args for ax.plot
+        figsize (tuple): figure width and height in inches
+    
+    """
+    c = set_spec_line_prop(lw=kwargs['lw'])
+
+    if ax is None:
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
+        ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
+        ax.set_ylabel(set_flux_units(dapdata), fontsize=24)
+        x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+        indiv_ax = True
+    else:
+        x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
+        indiv_ax = False
+
+    wave = dapdata.wave_rest[bin]
+    flux = dapdata.flux_rest[bin]
+    ivar = dapdata.ivar_rest[bin]
+    noise = ivar**-0.5
+    stmodel = dapdata.smod_rest[bin]
+    fullfit_ew = dapdata.fullfit_ew_rest[bin]
+    fullfit_fb = dapdata.fullfit_fb_rest[bin]
+
+    names = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
+    '[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
+
+    if xlim is None:
+        xmin = win_cen - 50.
+        xmax = win_cen + 50.
+    else:
+        xmin, xmax = xlim
+    if ylim is None:
+        ind_w = np.where((wave > xmin) & (wave < xmax))
+        ymin_tmp = flux[ind_w] - noise[ind_w]
+        ymin_tmp = np.append(ymin_tmp, 1e6)
+        ymax_tmp = flux[ind_w] + noise[ind_w]
+        ymax_tmp = np.append(ymax_tmp, 1e-10)
+        ymin = np.min(ymin_tmp[np.isfinite(ymin_tmp)])
+        ymax = np.max(ymax_tmp[np.isfinite(ymax_tmp)])
+        if nii:
+            ind_w_nii = np.where((wave > 6575.) & (wave < 6591.))
+            ymax_tmp = flux[ind_w_nii] + noise[ind_w_nii]
+            ymax_tmp = np.append(ymax_tmp, 1e-10)
+            ymax = np.max(ymax_tmp[np.isfinite(ymax_tmp)])
+        dy = ymax - ymin
+        ymin = ymin - (dy * 0.2)
+        ymax = ymax + (dy * 0.2)
+    else:
+        ymin, ymax = ylim
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    ind = np.where((wave > xmin-5.) & (wave < xmax+5.))[0]
+    #ax.plot(wave[ind], flux[ind], 'gray', drawstyle='steps-mid', zorder=1)
+    ax.scatter(wave[ind], flux[ind], c='gray', edgecolor='None', zorder=1)
+    ax.errorbar(wave[ind], flux[ind], yerr=noise[ind], ecolor='gray',
+                fmt=None, zorder=1)
+    pst = ax.plot(wave[ind], stmodel[ind], c=c[1], **kwargs)[0]
+    pFB = ax.plot(wave[ind], fullfit_fb[ind], c=c[2], **kwargs)[0]
+    pEW = ax.plot(wave[ind], fullfit_ew[ind], c=c[0], **kwargs)[0]
+
+    for name, w, x_off in zip(names, dapdata.elopar.restwave, x_offs):
+        if (w > xmin) and (w < xmax):
+            if (not nii) or (name is not r'H$\alpha$'):
+                ax.text(w + x_off, ymax-dy*0.08, name, color='k', fontsize=20)
+                ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], c='k')
+
+    leg = plt.legend([pst, pFB, pEW],
+                     ['Stellar Cont.', 'Belfiore', 'Wang'],
+                     borderaxespad=0.1, handlelength=1.25,
+                     handletextpad=0.5, ncol=3, loc=8)
+    if indiv_ax:
+        plt.setp(leg.get_texts(), fontsize=24)
+    else:
+        plt.setp(leg.get_texts(), fontsize=16)
+
 
 

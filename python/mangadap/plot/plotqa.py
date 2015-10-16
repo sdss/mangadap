@@ -28,24 +28,19 @@ if hasattr(main, '__file__'):
         raise IndexError('Usage: python plotqa.py file_list plottypes_list')
 else:
     # interactive session
-
     # DRPQA file
-    #file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
-    #                 os.getenv('MANGADAP_VER'),
-    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
-    file_list = join(os.getenv('MANGA_MPL3'),
+    file_list = join(os.getenv('MANGA_MPL4'), os.getenv('MANGADRP_VER'),
+                     os.getenv('MANGADAP_VER'),
                      '7443', '1901', 'CUBE_files_to_plot.txt')
+    #file_list = join(os.getenv('MANGA_MPL3'),
+    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
 
 
 file_kws_all = util.read_file_list(file_list)
 cfg_dir = util.make_config_path(plottypes_list)
-
-#cfg_dir = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap', 'plot',
-#                   'config')
 paths_cfg = join(cfg_dir, 'sdss_paths.ini')
 
-reload(dap)
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
     # Read DAP file
@@ -53,18 +48,34 @@ for file_kws in file_kws_all:
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
 
-reload(plotdap)
-plottypes = ['spectra']
+plottypes = ['emline']
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-plotdap.plot_spectra(dapdata=gal, mg_kws=mg_kws, **plot_kws)
-    
+
+nii = False
+win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+
+reload(plotdap)
+plotdap.plot_emlines(dapdata=gal, bin=0, mg_kws=mg_kws)
+
+plotdap.plot_emline_multi(dapdata=gal, bin=0, mg_kws=mg_kws)
+
+
+plotdap.plot_emline(dapdata=gal, bin=0, mg_kws=mg_kws, nii=nii,
+                    win_cen=win_cen[0]) #, **plot_kws)
+
+
+
 
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
         plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        plotdap.plot_spectra(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        # rename make_plots to plot_maps
+        # create new function make_plots that can parse whether user wants to
+        # make a spectrum or a map
 
 
 from mangadap import dapfile
