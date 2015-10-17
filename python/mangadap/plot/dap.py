@@ -5,6 +5,7 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
+import sys
 import traceback
 import copy
 
@@ -380,7 +381,7 @@ class DAP():
         """Read in DRPS extension."""
         drps_in = self.read_hdu('DRPS')
         if drps_in is not None:
-            drps = util.fitsrec_to_dataframe(drps_in)
+            drps = util.fitsrec_to_dataframe(drps_in, forceswap=True)
             self.drps = util.lowercase_colnames(drps)
 
     def get_bins(self):
@@ -478,6 +479,7 @@ class DAP():
             elopar = util.fitsrec_to_dataframe(elopar_in)
             self.elopar = util.lowercase_colnames(elopar)
             self.elopar.elname = util.remove_hyphen(self.elopar.elname)
+            self.elopar['elname_tex'] = util.texify_elnames(self.elopar.elname)
         else:
             self.elopar = None
 

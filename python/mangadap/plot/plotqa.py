@@ -13,7 +13,7 @@ import copy
 from imp import reload
 
 import matplotlib as mpl
-#mpl.use('Agg')
+mpl.use('Agg')
 
 from mangadap.plot import dap
 from mangadap.plot import plotdap
@@ -50,36 +50,35 @@ for file_kws in file_kws_all:
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
 
-
-reload(cfg_io)
-plottype = 'emline'
-cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-
-reload(plotdap)
-plotdap.plot_emlines(dapdata=gal, bin=0, mg_kws=mg_kws)
-
-plotdap.plot_emline_multi(dapdata=gal, bin=0, mg_kws=mg_kws)
-
-plotdap.plot_emline(dapdata=gal, bin=0, mg_kws=mg_kws, nii=False, win_cen=6565.)
-
-
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-        plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        #plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        plotdap.plot_emlines(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
+
+reload(plotdap)
+plottype = 'gradients'
+cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
+plotdap.plot_gradient(dapdata=gal, column='OII3727', title='OII', **plot_kws)
 
 # TO DO
 # rename make_plots --> plot_maps (or make_maps)
 # create a new function make_plots that wraps all of the plotting types
 # (spectra, maps, emlines, gradients)
 
+# functions to refactor:
+# plotdap.plot_emline
+# plotdap.plot_emline_multi
+
+
 # DRPQA file
-# python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/6104/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/6104/CUBE_files_to_plot.txt drpqa_plottypes.ini
 
 # Normal DAP file
-# python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_MPL3/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
 

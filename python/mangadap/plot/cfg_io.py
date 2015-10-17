@@ -186,3 +186,8 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
         for k, v in d[section].items():
             dout[k] = convert_dtype(v)
     return dout
+
+# TO DO
+# parse bins = 0, as bins = [0] vs. bins = ['0', '']
+# try list(filter(None, str_list))
+# use json.loads?

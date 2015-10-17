@@ -9,6 +9,7 @@ import os
 from os.path import join
 import sys
 import copy
+import re
 
 import numpy as np
 import pandas as pd
@@ -18,11 +19,13 @@ from matplotlib.colors import LinearSegmentedColormap
 
 from sdss.files import base_path
 
-def fitsrec_to_dataframe(recarr):
+def fitsrec_to_dataframe(recarr, forceswap=False):
     """Convert astropy FITS_rec to pandas DataFrame.
 
     Args:
         recarr (astropy.io.fits.FITS_rec): FITS record array class.
+        forceswap (bool): If True, do a byteswap regardless of python verion.
+            Default is False.
 
     Returns:
         DataFrame
@@ -30,7 +33,7 @@ def fitsrec_to_dataframe(recarr):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        dtmp[col] = swap_byte(recarr[col])
+        dtmp[col] = swap_byte(recarr[col], forceswap)
     return pd.DataFrame(dtmp, columns=cols)
 
 def make_df(data, columns):
@@ -76,16 +79,15 @@ def read_vals(dapf, hdu, ext, columns):
     df = pd.DataFrame(swap_byte(recarr[ext]), columns=columns)
     return df
 
-def swap_byte(arr):
+def swap_byte(arr, forceswap=False):
     """Swap byte order from big-endian (FITS) to little-endian (pandas).
 
-    Only do byte swap if using Python 2.
+    Only do byte swap if using Python 2 or if forceswap is True.
     """
-    if sys.version_info[0] < 3:
+    if (sys.version_info[0] < 3) or forceswap:
         return arr.byteswap().newbyteorder()
     else:
         return arr
-
 
 def swap_byte_df(arr, columns=None):
     """Swap byte order and convert from array to DataFrame.
@@ -138,6 +140,21 @@ def lowercase_colnames(df):
     df.columns = [item.lower() for item in df.columns]
     return df
 
+def texify_elnames(names):
+    """Convert emission line names to pretty TeX format."""
+    texnames = []
+    for name in names:
+        if name.lower() in ('hb4862', 'hbeta', 'hb'):
+            name = r'H$\beta$'
+        elif name.lower() in ('ha6564', 'halpha', 'ha'):
+            name = r'H$\alpha$'
+        else:
+            linewave = re.split('(\d+)', name)
+            line, wave = list(filter(None, linewave))
+            name = '[' + line + ']' + wave
+        texnames.append(name)
+    return texnames
+
 def none_to_empty_dict(x):
     """If a variable is None, return an empty dictionary."""
     if x is None:
@@ -150,7 +167,8 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
     Args:
         name (str): Plot name.
         path_data (str): Path to parent directory of *plots/*.
-        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        plottype (str): Type of plot ('map,' 'spectra,' 'emline,' or
+                                      'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         mkdir (bool): Make directory if it does not exist. Default is False.
@@ -186,7 +204,6 @@ def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
         dpi (int): If file is png, specify dots-per-inch. Default is 200.
         mkdir (bool): Make directory if it does not exist. Default is False.
         overwrite (bool): Overwrite plot if it exists. Default is False.
-
     """
     path = output_path(name=name, path_data=path_data, plottype=plottype,
                        mg_kws=mg_kws, ext=ext, mkdir=mkdir)
