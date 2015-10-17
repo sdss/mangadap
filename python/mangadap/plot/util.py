@@ -162,7 +162,9 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
     if plottype == 'maps':
         filename = stem + '_{0}.{1}'.format(name, ext)
     elif plottype == 'spec':
-        filename = stem + '_{0}-{bin:0>4}.png'.format(name, **mg_kws)
+        filename = stem + '_spec-{bin:0>4}.png'.format(**mg_kws)
+    elif plottype == 'emline':
+        filename = stem + '_spec-{bin:0>4}_{0}.png'.format(name, **mg_kws)
     path_plottype = join(path_data, 'plots', plottype)
     fullpath = join(path_plottype, filename)
     if mkdir:

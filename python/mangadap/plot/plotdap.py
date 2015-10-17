@@ -1100,19 +1100,47 @@ def plot_spectrum(dapdata, bin=0,
 
 
 
-def plot_emlines(dapdata, bin=0, mg_kws=None):
+def plot_emlines(dapdata, bins=[0], mg_kws=None, make_single=True,
+                 make_multi=True, savefig_single=True, savefig_multi=True,
+                 overwrite=False):
+    """Make single panel and multi-panel emission line spectra plots.
+
+    Args:
+       dapdata: dap.DAP object.
+       bins (list): Bin numbers to plot. 
+       mg_kws (dict): Keyword args with identifying information about the
+           galaxy and analysis run. Default is None.
+       make_single (bool): Make single panel plots. Default is True.
+       make_multi (bool): Make multi-panel plot. Default is True.
+       savefig_single (bool): Save single panel plots. Default is True.
+       savefig_multi (bool): Save multi-panel plot. Default is True.
+       overwrite (bool): Overwrite plot if it exists. Default is False.
     """
-    """
+
+    # PASS ALL KWARGS TO plot_emline AND plot_emline_multi
+
     win_cen = np.array([3727., 4861., 4985., 6565., 6565., 6723.])
+    pnames = ['oii', 'hbeta', 'oiii' 'halpha', 'nii', 'sii']
 
-    plot_emline_multi(dapdata=dapdata, bin=bin, mg_kws=mg_kws)
-    for i in range(6):
-        nii = False
-        if i == 3:
-            nii = True
-        plot_emline(dapdata=dapdata, bin=bin, mg_kws=mg_kws, nii=nii,
-                    win_cen=win_cen[i])
+    for bin in bins:
+        if make_multi:
+            plot_emline_multi(dapdata=dapdata, bin=bin, mg_kws=mg_kws)
+            if savefig_multi:
+                # NOT WORKING
+                util.saveplot(name='emline', path_data=dapdata.path_data,
+                              plottype='emline', mg_kws=mg_kws, mkdir=True,
+                              overwrite=overwrite)
 
+        if make_single:
+            for i, (wc, pname) in enumerate(win_cen, pnames):
+                nii = True if i == 3 else False
+                plot_emline(dapdata=dapdata, bin=bin, mg_kws=mg_kws, nii=nii,
+                            win_cen=wc)
+                if savefig_multi:
+                    # NOT WORKING
+                    util.saveplot(name=pname_base, path_data=dapdata.path_data,
+                                  plottype='emline', mg_kws=mg_kws, mkdir=True,
+                                  overwrite=overwrite)
 
 
 

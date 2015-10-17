@@ -56,11 +56,11 @@ plottype = 'emline'
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
 
+reload(plotdap)
 plotdap.plot_emlines(dapdata=gal, bin=0, mg_kws=mg_kws)
 
 plotdap.plot_emline_multi(dapdata=gal, bin=0, mg_kws=mg_kws)
 
-reload(plotdap)
 plotdap.plot_emline(dapdata=gal, bin=0, mg_kws=mg_kws, nii=False, win_cen=6565.)
 
 
@@ -70,6 +70,11 @@ plotdap.plot_emline(dapdata=gal, bin=0, mg_kws=mg_kws, nii=False, win_cen=6565.)
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
         plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
+
+# TO DO
+# rename make_plots --> plot_maps (or make_maps)
+# create a new function make_plots that wraps all of the plotting types
+# (spectra, maps, emlines, gradients)
 
 # DRPQA file
 # python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/6104/CUBE_files_to_plot.txt drpqa_plottypes.ini
