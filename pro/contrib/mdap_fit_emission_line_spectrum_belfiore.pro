@@ -45,9 +45,9 @@
 ;       El struct
 ;           Structure contiaining the results of the line fits.  Defined as:
 ;            
-;           El = { name:strarr(nlines2), lambda:fltarr(nlines2), Ampl:fltarr(nlines2), $
-;                  Vel:fltarr(nlines2), Sigma:fltarr(nlines2), eAmpl:fltarr(nlines2), $
-;                  eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
+;           El = { name:strarr(nlines2), lambda:dblarr(nlines2), Ampl:dblarr(nlines2), $
+;                  Vel:dblarr(nlines2), Sigma:dblarr(nlines2), eAmpl:dblarr(nlines2), $
+;                  eVel:dblarr(nlines2), eSigma:dblarr(nlines2) }
 ;
 ;           where nlines2 is the number of fitted lines.  For now this
 ;           is hard-coded to be the lines defined by
@@ -120,7 +120,9 @@
 ;                          the fitting.  Implemented an iterative fit to
 ;                          avoid status=2 errors from MPFIT, which I've
 ;                          taken to mean that the input and output
-;                          parameters are the same.
+;                          parameters are the same.  Change to double
+;                          precision. Correction to output velocity
+;                          dispersion measurement.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -136,7 +138,7 @@ PRO MDAP_DEFINE_EMISSION_LINES_BELFIORE, $
         ; flag to fit line (0-no;1-yes)
         fit_l = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
         ; define sets of lines to be fit simultaneously; velocities will be tied; running index
-        con_l = [ 3, 3, 0, 0, 2, 2, 4, 4, 1, 0, 1, 5, 5 ]
+        con_l = [ 3, 3, 0, 0, 2, 2, 4, 4, 1, 1, 1, 5, 5 ]
         ; flag to tie dispersions (as well as velocities) for simultaneous line fits (0-no;1-yes)
         sig_l = [ 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
 
@@ -149,33 +151,24 @@ END
 
 
 ;----------------------------------------------------------------------------
-;function defining one or more Gaussians, input for MPFIT
-function gausfit, p, x=x, y=y, err=err, nlines2=nlines2, wl=wl, redshift=redshift
-
-  c=299792.458d  ; speed of light in KM/s
-  g_tot=make_array(n_elements(x), /double, value=p[3*nlines2])            ; background
-  for i=0, nlines2-1 do begin
-  g_p= p[3*i+2]*exp( -( (  x - wl[i]*(1+p[3*i]/c+redshift) )^2 )/ (2.*p[3*i+1]^2)  )
-  g_tot=g_tot+g_p
-  endfor
-
-  return, ((y-g_tot)/err)
-end
-;----------------------------------------------------------------------------
-
-
-;----------------------------------------------------------------------------
 ;function used to generate model
 function gausmod, p, x=x, nlines2=nlines2, wl=wl, redshift=redshift
 
-  c=299792.458d  ; speed of light in KM/s
-  g_tot=make_array(n_elements(x), /double, value=p[3*nlines2])            ; background
-  for i=0, nlines2-1 do begin
-  g_p= p[3*i+2]*exp( -( (  x - wl[i]*(1+p[3*i]/c+redshift) )^2 )/ (2.*p[3*i+1]^2)  )
-  g_tot=g_tot+g_p
-  endfor
+    c=299792.458d  ; speed of light in KM/s
+    g_tot=make_array(n_elements(x), /double, value=p[3*nlines2])      ; initialize to background
+    for i=0, nlines2-1 do begin
+        g_p= p[3*i+2]*exp( -( (  x - wl[i]*(1.0+p[3*i]/c+redshift) )^2 )/ (2.*p[3*i+1]^2)  )
+        g_tot=g_tot+g_p
+    endfor
 
-  return, g_tot
+    return, g_tot
+end
+;----------------------------------------------------------------------------
+;----------------------------------------------------------------------------
+;function defining one or more Gaussians, input for MPFIT
+function gausfit, p, x=x, y=y, err=err, nlines2=nlines2, wl=wl, redshift=redshift
+    g_tot = gausmod(p, x=x, nlines2=nlines2, wl=wl, redshift=redshift)
+    return, ((y-g_tot)/err)
 end
 ;----------------------------------------------------------------------------
 
@@ -185,17 +178,17 @@ end
 PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, $
                   tie_sig=tie_sig, zero_base=zero_base, eflg=eflg, quiet=quiet
 
-    c=299792.458d
+    c=299792.458d                   ; Speed of light in km/s
   
     ; Build the output structure
     L=REPLICATE({n:' ', wl:0.0, ws:0.0, we:0.0,  b:0.0,  s:0.0,  a:0.0,  v:0.0, $
                                                 eb:0.0, es:0.0, ea:0.0, ev:0.0}, nlines2)
     ; The spectral range to fit:
-    bin = 25.
-    wave_min = min(w_l)-bin
+    bin = 25.                       ; Half-width of the fitting window
+    wave_min = min(w_l)-bin         ; Wavelength range to fit
     wave_max = max(w_l)+bin
 ;   print, wave_min, wave_max
-    fit_indx = where( wave gt wave_min and wave lt wave_max, count)
+    fit_indx = where( wave gt wave_min and wave lt wave_max, count) ; Pixels to include in the fit
     eflg = 0
     if count eq 0 then begin
         print, 'No relevant wavelengths in spectrum!'
@@ -204,14 +197,15 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     endif
 
     ; Define some hard limits
-    mask_width = 600.           ; mask used for guess parameters in km/s
-    maxvel = 500.
-    velrange = [-maxvel, maxvel]
-    sigrange = [ 50., 450. ]
-    default_sigma = 80.
-    default_amplitude = 1.
+    mask_width = 600.               ; mask used for guess parameters in km/s
+    maxvel = 500.                   ; maximum allowed velocity
+    velrange = [-maxvel, maxvel]    ; allowed velocity range
+    sigrange = [ 50., 450. ]        ; allowed velocity dispersion range
+    default_sigma = 80.             ; default velocity dispersion
+    default_amplitude = 1.          ; default amplitude
 ;   xtol = 1d-6
   
+    ; ------------------------------------------------------------------
     ; **** Set Parameters for MPFIT
     err=noise_[fit_indx]
     x = wave[fit_indx]
@@ -235,33 +229,29 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     ; NOTE sometimes the stars are badly fitted, especially when the
     ; continuum is very low. In this case the velocity/sigma for the stars
     ; can  be nonsense.
-    sigma2=fltarr(nlines2)
-    v2=fltarr(nlines2)
-    a2=fltarr(nlines2)
-
     dw=mask_width*l.wl/c                    ;width of the mask in angstrom
 
     np_total = 3*nlines2+1
-    p_start=fltarr(np_total)           ; Last element is the baseline
+    p_start=dblarr(np_total)           ; Last element is the baseline
     
     parinfo=replicate({fixed:0,limited:[0,0],limits:[0.,0.], tied:''}, np_total)
 
     for i=0, nlines2-1 do begin
         if star_sigma ge sigrange[0] && star_sigma le sigrange[1] then begin
-            sigma2[i]=l[i].wl*star_sigma/c
+            sigma2=l[i].wl*star_sigma/c
         endif else $
-            sigma2[i]=l[i].wl*default_sigma/c
+            sigma2=l[i].wl*default_sigma/c
 
         ;subscripts of the wav range within the mask
         wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
         ; TODO: this error case needs to be handled better
         if count eq 0 then begin
-            a2[i] = 0.0
-            v2[i] = redshift*c
+            a2 = 0.0
+            v2 = redshift*c
             continue
         endif
         ;max of the flux within the mask, and its subscript (w_max)
-        a2[i]=max(y[wrange], w_max)
+        a2=max(y[wrange], w_max)
 
 ;       print, l[i].wl*(1+redshift)-dw[i], l[i].wl*(1+redshift)+dw[i]
 ;       print, y[wrange[w_max]], a2[i]
@@ -273,31 +263,30 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
 ;       oplot, [x[wrange[w_max]]], [a2[i]], psym=2, color='0000FF'x
 ;       stop
 
-        if a2[i] le 0.0 then $
-            a2[i] = default_amplitude
+        if a2 le 0.0 then $
+            a2 = default_amplitude
 
         ;wavelength of max subscript
         x_max = x[wrange[w_max]]
         ; velocity at max flux
-        v2[i] = (x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
-        if abs(v2[i]) gt maxvel then $
-            v2[i] = 0.
+        v2 = (x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
+        if abs(v2) gt maxvel then $
+            v2 = 0.
 
-        p_start[3*i]   =  v2[i]
-        p_start[1+3*i] =  sigma2[i]
-        p_start[2+3*i] =  a2[i]
-
-        ;all velocities between -400 and 400 km sec-1
+        ; Impose velocity range
         ; TODO: expand this range?
+        p_start[3*i]   =  v2
         parinfo[3*i].limited=[1,1]
         parinfo[3*i].limits=velrange
 
-        ;all sigmas between 70 and 200 km sec-1
+        ; Impose velocity dispersion range
         ; TODO: expand this range?
+        p_start[1+3*i] =  sigma2
         parinfo[1+3*i].limited=[1,1]
-        parinfo[1+3*i].limits=sigrange*l[i].wl/c
+        parinfo[1+3*i].limits=l[i].wl*sigrange/c
 
-        ;all amplitudes need to be positive!
+        ; All amplitudes need to be positive!
+        p_start[2+3*i] =  a2
         parinfo[2+3*i].limited=[1,0]
         parinfo[2+3*i].limits=[0.,0]
 
@@ -375,6 +364,13 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     p_start_orig = p_start
     while (ntry lt 10 && status eq 2) do begin
         p_start = (1.0+0.1*randomu(seed, np_total))*p_start_orig
+        for i=0,np_total-1 do begin
+            if parinfo[i].limited[0] eq 1 && p_start[i] lt parinfo[i].limits[0] then $
+                p_start[i] = parinfo[i].limits[0]+0.01*abs(parinfo[i].limits[0])
+            if parinfo[i].limited[1] eq 1 && p_start[i] gt parinfo[i].limits[1] then $
+                p_start[i] = parinfo[i].limits[1]-0.01*abs(parinfo[i].limits[1])
+        endfor
+
 ;       print, p_start_orig
 ;       print, p_start
         status=0
@@ -417,6 +413,11 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     eflg = 0
     if status LE 0 then begin
         print, errmsg
+;       print, parinfo[*].limited[0]
+;       print, parinfo[*].limits[0]
+;       print, p_start
+;       print, parinfo[*].limits[1]
+;       print, parinfo[*].limited[1]
         eflg = 1
         return
     endif
@@ -432,11 +433,14 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     
     ; *** Save Output
     for i=0, nlines2-1 do begin
-        l[i].s=p[1+3*i]/l[i].wl*c
-        l[i].es = perror[3*i+1]/l[i].wl*c
-        l[i].v=  p[3*i]
+;        l[i].s=p[1+3*i]*c/l[i].wl
+;        l[i].es = perror[3*i+1]*c/l[i].wl
+        lobs = l[i].wl*(1.+p[3*i]/c+redshift)   ; fitted wavelength
+        l[i].s=p[1+3*i]*c/lobs                  ; Velocity dispersion
+        l[i].es = perror[1+3*i]*c/lobs
+        l[i].v=  p[3*i]                         ; Velocity relative to the input redshift
         l[i].ev = perror[3*i]
-        l[i].a=p[2+3*i]
+        l[i].a=p[2+3*i]                         ; Amplitude
         l[i].ea=perror[2+3*i]
 
         ; Same baseline saved for all lines
@@ -465,10 +469,10 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
     nlines2 = n_elements(n_l)                       ; Number of lines
   
     ; Output structure
-    El = {  name:strarr(nlines2), lambda:fltarr(nlines2),   Lmin:fltarr(nlines2), $
-            Lmax:fltarr(nlines2),   Base:fltarr(nlines2),   Ampl:fltarr(nlines2), $
-             Vel:fltarr(nlines2),  Sigma:fltarr(nlines2),  eBase:fltarr(nlines2), $
-           eAmpl:fltarr(nlines2),   eVel:fltarr(nlines2), eSigma:fltarr(nlines2) }
+    El = {  name:strarr(nlines2), lambda:dblarr(nlines2),   Lmin:dblarr(nlines2), $
+            Lmax:dblarr(nlines2),   Base:dblarr(nlines2),   Ampl:dblarr(nlines2), $
+             Vel:dblarr(nlines2),  Sigma:dblarr(nlines2),  eBase:dblarr(nlines2), $
+           eAmpl:dblarr(nlines2),   eVel:dblarr(nlines2), eSigma:dblarr(nlines2) }
 
     indx = where(mask lt 1., count)
     if count eq 0 then $

@@ -110,7 +110,8 @@
 ;                          OII doublet!  Change guess for flux based on
 ;                          input spectrum.  Allow for a non-zero guess
 ;                          of the background.  Output warning if
-;                          status=2 is returned by MPFITEXPR.
+;                          status=2 is returned by MPFITEXPR.  Change to
+;                          double precision.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -137,18 +138,18 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, $
 ; 
 
 ; Save the wavelength limits of the fitting window(s)
-fitwin={  OII3727:fltarr(2),  OII3729:fltarr(2), OIId3727:fltarr(2),  Hb4861:fltarr(2), $
-         OIII4959:fltarr(2), OIII5007:fltarr(2),   OI6300:fltarr(2),  OI6363:fltarr(2), $
-          NII6548:fltarr(2),   Ha6563:fltarr(2),  NII6583:fltarr(2), SII6717:fltarr(2), $
-          SII6731:fltarr(2) }
+fitwin={  OII3727:dblarr(2),  OII3729:dblarr(2), OIId3727:dblarr(2),  Hb4861:dblarr(2), $
+         OIII4959:dblarr(2), OIII5007:dblarr(2),   OI6300:dblarr(2),  OI6363:dblarr(2), $
+          NII6548:dblarr(2),   Ha6563:dblarr(2),  NII6583:dblarr(2), SII6717:dblarr(2), $
+          SII6731:dblarr(2) }
 
 ; Number of parameters to save: 2*(3 gauss parameters + baseline) (value and error)
 npar = 8
-result={  OII3727:fltarr(npar),  OII3729:fltarr(npar), OIId3727:fltarr(npar), $
-           Hb4861:fltarr(npar), OIII4959:fltarr(npar), OIII5007:fltarr(npar), $
-           OI6300:fltarr(npar),   OI6363:fltarr(npar),  NII6548:fltarr(npar), $
-           Ha6563:fltarr(npar),  NII6583:fltarr(npar),  SII6717:fltarr(npar), $
-          SII6731:fltarr(npar) }
+result={  OII3727:dblarr(npar),  OII3729:dblarr(npar), OIId3727:dblarr(npar), $
+           Hb4861:dblarr(npar), OIII4959:dblarr(npar), OIII5007:dblarr(npar), $
+           OI6300:dblarr(npar),   OI6363:dblarr(npar),  NII6548:dblarr(npar), $
+           Ha6563:dblarr(npar),  NII6583:dblarr(npar),  SII6717:dblarr(npar), $
+          SII6731:dblarr(npar) }
 
 ; Model spectrum (without baseline!)
 emfit=pure_emi*0.0
@@ -253,11 +254,15 @@ if keyword_set(OII3727) then begin
    par(3).limits(0) = 0
    par(6).limited(0) = 1
    par(6).limits(0) = 0
+
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
    if status gt 0 then begin
 ;        result.OII3727=[result1[1:3],perror[1:3]]
@@ -329,8 +334,11 @@ if keyword_set(OIId3727) then begin
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && result1[3] gt 0 then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
    if status gt 0 then begin
         result.OIId3727=[result1[0:3],perror[0:3]]
@@ -399,8 +407,11 @@ if keyword_set(Hb4861) then begin
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && result1[3] gt 0 then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.Hb4861=[result1[0:3],perror[0:3]]
@@ -456,7 +467,7 @@ if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
-   par(3).tied = 'p[6]/3.'
+;   par(3).tied = 'p[6]/3.'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-4959.*400.0/c0
    par(1).limited(1) = 1
@@ -480,8 +491,11 @@ if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.OIII4959=[result1[0:3],perror[0:3]]
@@ -565,8 +579,11 @@ if keyword_set(OI6300) then begin
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.OI6300=[result1[0:3],perror[0:3]]
@@ -628,7 +645,7 @@ if keyword_set(Ha6563) || keyword_set(NII6583) then begin
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
-   par(3).tied = '0.348116 * p[9]'
+;  par(3).tied = '0.348116 * p[9]'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-6548.*400/c0
    par(1).limited(1) = 1
@@ -665,8 +682,11 @@ if keyword_set(Ha6563) || keyword_set(NII6583) then begin
 
 ;   TODO: Sort Gaussians by wavelength to make sure fits ordered properly
 
-    if status eq 2 then $
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0 || result1[9] gt 0) then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.NII6548=[result1[0:3],perror[0:3]]
@@ -752,8 +772,11 @@ if (keyword_set(SII6717) || keyword_set(SII6731)) then begin
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
-    if status eq 2 then $
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
         print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.SII6717=[result1[0:3],perror[0:3]]

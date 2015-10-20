@@ -50,6 +50,7 @@ FUNCTION MDAP_AUTO_EXCLUDE_EML_FROM_KIN, $
             exclude[4] = 1              ; First OIII line
             exclude[7] = 1              ; Second OI line
             exclude[8] = 1              ; First NII line
+            exclude[10] = 1             ; Second NII line
             exclude[12] = 1             ; Second SII line
         endif else begin
             exclude[0] = 1              ; First OII line

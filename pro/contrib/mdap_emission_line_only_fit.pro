@@ -544,8 +544,12 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, rest_wave, gala
 ;               continue
 ;           endif
 
-            fitwindow[i,j,0] = result.Lmin[j] * (1.0d + (result.Vel[j]+voff)/c)
-            fitwindow[i,j,1] = result.Lmax[j] * (1.0d + (result.Vel[j]+voff)/c)
+;           fitwindow[i,j,0] = result.Lmin[j] * (1.0d + (result.Vel[j]+voff)/c)
+;           fitwindow[i,j,1] = result.Lmax[j] * (1.0d + (result.Vel[j]+voff)/c)
+
+            ; Does not include fitted velocity, just redshift offset
+            fitwindow[i,j,0] = result.Lmin[j] * (1.0d + voff/c)
+            fitwindow[i,j,1] = result.Lmax[j] * (1.0d + voff/c)
 
             baseline[i,j] = result.Base[j]
             baseline_err[i,j] = result.eBase[j]
@@ -558,8 +562,12 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_BELFIORE, eml_par, voff, result, rest_wave, gala
             intens[i,j] = result.Ampl[j]
             intens_err[i,j] = result.eAmpl[j]
 
+;           fluxes[i,j] = result.Ampl[j] * sqrt(2*!pi) * result.Sigma[j] * eml_par[j].lambda $
+;                         * (1.0+(result.Vel[j]+voff)/c)/c
+
+            ; Does not include redshift offset, just fitted velocity
             fluxes[i,j] = result.Ampl[j] * sqrt(2*!pi) * result.Sigma[j] * eml_par[j].lambda $
-                          * (1+(result.Vel[j]+voff)/c)/c
+                          * (1.0+result.Vel[j]/c)/c
 
             fluxes_err[i,j] = sqrt( (fluxes[i,j]*result.eAmpl[j]/result.Ampl[j])^2 + $
                                     (fluxes[i,j]*result.eSigma[j]/result.Sigma[j])^2 + $
