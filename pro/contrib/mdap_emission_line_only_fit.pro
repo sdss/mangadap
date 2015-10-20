@@ -180,6 +180,7 @@
 ;       MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI
 ;       MDAP_MEASURE_EMISSION_LINE_EQUIV_WIDTH
 ;       MDAP_INSTRUMENTAL_DISPERSION()
+;       MDAP_AUTO_EXCLUDE_EML_FROM_KIN()
 ;       MDAP_LINES_FOR_MEAN_GAS_KINEMATICS()
 ;       MDAP_MEAN_GAS_KINEMATICS
 ;
@@ -214,6 +215,11 @@
 ;                          non-zero background; edited this code
 ;                          accordingly.
 ;       17 Sep 2015: (KBW) Return the window limits used for the fit.
+;       20 Oct 2015: (KBW) Include a fit to the OII doublet as a single
+;                          line.  Improved flux guess in Enci's code.
+;                          Automatically exclude some lines from the
+;                          mean gas kinematics; see
+;                          MDAP_AUTO_EXCLUDE_EML_FROM_KIN().
 ;-
 ;------------------------------------------------------------------------------
 
@@ -311,6 +317,24 @@ PRO MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, voff, fit
 ;       endif else begin
             MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OII3729, $
                                                      result.OII3729, cols, fitwindow, baseline, $
+                                                     baseline_err, kinematics, kinematics_err, $
+                                                     intens, intens_err, fluxes, fluxes_err, i, j
+;       endelse
+        j = j+1
+        ;---------------------------------------------------------------
+
+        ;---------------------------------------------------------------
+        ; OII 3727 double fit as a single line
+;        omitted[i,j] = result.OII3727[2] gt 0.0 ? 0 : 1
+        omitted[i,j] = MDAP_SAVE_EMISSION_LINE_FIT_CHECK_OMIT(result.OIId3727[cols.area], $
+                                                              result.OIId3727[cols.cen], $
+                                                              rest_wave, galaxy_mask)
+;       if omitted[i,j] eq 1 then begin
+;           MDAP_SAVE_EMISSION_LINE_SET_OMITTED, kinematics, kinematics_err, intens, intens_err, $
+;                                                fluxes, fluxes_err, i, j
+;       endif else begin
+            MDAP_SAVE_EMISSION_LINE_FIT_ENCI_SINGLE, eml_par[j].lambda, voff, fitwin.OIId3727, $
+                                                     result.OIId3727, cols, fitwindow, baseline, $
                                                      baseline_err, kinematics, kinematics_err, $
                                                      intens, intens_err, fluxes, fluxes_err, i, j
 ;       endelse
@@ -557,7 +581,7 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 emission_line_EW_err, eml_par=eml_par, version=version, enci=enci, $
                 belfiore=belfiore, zero_base=zero_base, quiet=quiet, dbg=dbg
 
-        version_module = '1.1'                  ; Version number
+        version_module = '1.2'                  ; Version number
         if n_elements(version) ne 0 then begin  ; If version is defined
             version = version_module            ; ... set it to the module version
             return                              ; ... and return without doing anything
@@ -575,13 +599,15 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
         eml_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
 
         ; Convert the inverse variance to an error, adjusting the mask for bad values
-        indx = where(ivar gt 0.0d, count, complement=nindx)
+        indx = where(ivar gt 0.0d, count, complement=nindx, ncomplement=ncnt)
+;       print, count, ncnt
+;       stop
         if count eq 0 then $
             message, 'All pixels are masked!'
 
         flux_err = ivar
         flux_err[indx] = sqrt(1.0d/ivar[indx])
-        if nindx[0] ne -1 then begin
+        if ncnt ne 0 then begin
             flux_err[nindx] = 1.0d
             mask[nindx] = 1.0d
         endif
@@ -615,6 +641,8 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
         emission_line_fluxes_err = dblarr(nobj, neml)
         emission_line_EW = dblarr(nobj, neml)
         emission_line_EW_err = dblarr(nobj, neml)
+
+        mean_kin_auto_exclude = MDAP_AUTO_EXCLUDE_EML_FROM_KIN(eml_par, belfiore=belfiore)
 
         ; TODO: Calculate a chi-square for the full fit using the
         ; eml_model
@@ -657,9 +685,9 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                 ; Fit the emission lines
                 MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, 0.0d, rest_wave, galaxy_eml_only, $
                                                       reform(flux_err[i,*]), reform(mask[i,*]), $
-                                                      fitwin, result, emfit, /OII3727, /Hb4861, $
-                                                      /OIII5007, /OI6300, /Ha6563, /SII6717, $
-                                                      zero_base=zero_base
+                                                      fitwin, result, emfit, /OII3727, /OIId3727, $
+                                                      /Hb4861, /OIII5007, /OI6300, /Ha6563, $
+                                                      /SII6717, zero_base=zero_base
 
                 ; Save the fitted parameters
                 MDAP_SAVE_EMISSION_LINE_FIT_ENCI, eml_par, rest_wave, galaxy_mask, $
@@ -701,6 +729,7 @@ PRO MDAP_EMISSION_LINE_ONLY_FIT, $
                                                     emission_line_kinematics_individual_err[i,*,0],$
                                                     emission_line_kinematics_individual[i,*,1], $
                                                     emission_line_kinematics_individual_err[i,*,1],$
+                                                    exclude=mean_kin_auto_exclude, $
                                                     omitted=emission_line_omitted[i,*], count=count)
 
             ; Convert the measured velocity dispersions to the square

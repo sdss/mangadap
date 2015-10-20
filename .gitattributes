@@ -2503,6 +2503,7 @@ external/templates/stelib/STELIB_v3.2_HD338529.fits -text svneol=unset#unset
 external/templates/stelib/STELIB_v3.2_LTT4364.fits -text svneol=unset#unset
 pro/contrib/Belfiore_ELfit.zip -text
 pro/contrib/Enci_ELfit.tar.gz -text
+pro/contrib/mdap_auto_exclude_eml_from_kin.pro -text
 pro/contrib/mdap_define_emission_lines_enci_belfiore.pro -text
 pro/contrib/mdap_emission_line_only_fit.pro -text
 pro/contrib/mdap_fit_emission_line_spectrum_belfiore.pro -text

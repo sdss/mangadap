@@ -109,6 +109,18 @@
 ;                          25 angstroms about the range in rest
 ;                          wavelength of the fitted lines.  Add a
 ;                          keyword to fix the baseline to zero.
+;       20 Oct 2015: (KBW) Add a second fit of the OII doublet that
+;                          treats it as a single line.  The output model
+;                          (eml_model) provides only the single Gaussian
+;                          fit to the OII doublet!  Formatting edits.
+;                          Added gausmod function.  Added functionality
+;                          to MDAP_DEFINE_EMISSION_LINES_BELFIORE to
+;                          indicate whether or not the dispersions of
+;                          two "connected" lines should be tied during
+;                          the fitting.  Implemented an iterative fit to
+;                          avoid status=2 errors from MPFIT, which I've
+;                          taken to mean that the input and output
+;                          parameters are the same.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -116,12 +128,17 @@
 ;----------------------------------------------------------------------------
 ; Define the lines to fit
 PRO MDAP_DEFINE_EMISSION_LINES_BELFIORE, $
-                n_l, w_l, fit_l, con_l
+                n_l, w_l, fit_l, con_l, sig_l
 
-        n_l = [ 'OII_3727', 'OII_3729', 'Hb', 'OIII_4959', 'OIII_5007', 'OI_6300', 'OI_6363', $
-                'NII_6548', 'Ha', 'NII_6583', 'SII_6716', 'SII_6731' ]
-        fit_l = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-        con_l = [ 3, 3, 0, 2, 2, 4, 4, 1, 0, 1, 5, 5 ]
+        ; line names
+        n_l = [ 'OII_3727', 'OII_3729', 'OIId_3727', 'Hb', 'OIII_4959', 'OIII_5007', 'OI_6300', $
+                'OI_6363', 'NII_6548', 'Ha', 'NII_6583', 'SII_6716', 'SII_6731' ]
+        ; flag to fit line (0-no;1-yes)
+        fit_l = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+        ; define sets of lines to be fit simultaneously; velocities will be tied; running index
+        con_l = [ 3, 3, 0, 0, 2, 2, 4, 4, 1, 0, 1, 5, 5 ]
+        ; flag to tie dispersions (as well as velocities) for simultaneous line fits (0-no;1-yes)
+        sig_l = [ 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
 
         ; Force the rest wavelengths to be the same between Enci and Belfiore fits
         eml_par = MDAP_DEFINE_EMISSION_LINES_ENCI_BELFIORE()
@@ -148,173 +165,255 @@ end
 
 
 ;----------------------------------------------------------------------------
+;function used to generate model
+function gausmod, p, x=x, nlines2=nlines2, wl=wl, redshift=redshift
+
+  c=299792.458d  ; speed of light in KM/s
+  g_tot=make_array(n_elements(x), /double, value=p[3*nlines2])            ; background
+  for i=0, nlines2-1 do begin
+  g_p= p[3*i+2]*exp( -( (  x - wl[i]*(1+p[3*i]/c+redshift) )^2 )/ (2.*p[3*i+1]^2)  )
+  g_tot=g_tot+g_p
+  endfor
+
+  return, g_tot
+end
+;----------------------------------------------------------------------------
+
+
+;----------------------------------------------------------------------------
 ; procedure performing the actual line fitting using MPFIT
 PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, l, $
-                  zero_base=zero_base, eflg=eflg, quiet=quiet
-  c=299792.458d
-  
-  ; Build the output structure
-  L=REPLICATE({n:' ', wl:0.0, ws:0.0, we:0.0,  b:0.0,  s:0.0,  a:0.0,  v:0.0, $
-                                              eb:0.0, es:0.0, ea:0.0, ev:0.0}, nlines2)
-  ; The spectral range to fit:
-  bin = 25.
-  wave_min = min(w_l)-bin
-  wave_max = max(w_l)+bin
-  fit_indx = where( wave gt wave_min and wave lt wave_max, count)
-  eflg = 0
-  if count eq 0 then begin
-    print, 'No relevant wavelengths in spectrum!'
-    eflg = 1
-    return
-  endif
-  
-  ; **** Set Parameters for MPFIT
-  err=noise_[fit_indx]
-  ;x = exp(loglam_gal)
-  x = wave[fit_indx]
-  y = resid[fit_indx]
-  
-  ; *** Initialize the output structure values
-  l.n=N_L
-  l.wl=W_L
-  l[*].ws = wave_min
-  l[*].we = wave_max
+                  tie_sig=tie_sig, zero_base=zero_base, eflg=eflg, quiet=quiet
 
-  ; *** Set emission lines starting parameters
-  ;
-  ;emission lines sigma and velocity are set equal to those of the stars
-  sigma2=fltarr(nlines2)
-  v2=fltarr(nlines2)
-
-  ; NOTE sometimes the stars are badly fitted, especially when the
-  ; continuum is very low. In this case the velocity/sigma for the stars
-  ; can  be nonsense.
-  for i=0, nlines2-1 do begin
-;   if star_sigma le 200 and star_sigma ge 70 then begin
-    if star_sigma le 200 && star_sigma ge 70 then begin
-      sigma2[i]=l[i].wl*star_sigma/c
-    endif else begin
-      sigma2[i]=l[i].wl*80/c
-    endelse
-  endfor
+    c=299792.458d
   
-  mask=600.0                        ;draw a mask of 600 km s-1 around each line
-  dw=mask*l.wl/c                    ;width of the mask in angstrom
- 
-  ;guess for the line velocity using the max of the flux within the mask
-  
-  for i=0, nlines2-1 do begin
-      ;subscripts of the wav range within the mask
-      wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
-      if count eq 0 then begin
-        amp = 0.0
-        vguess = redshift*c
-        continue
-      endif
-      ;max of the flux within the mask, and its subscripts (w_max)
-      amp=max(resid[wrange], w_max)
-      ;wavelength of max subscript
-      x_max=x[wrange[w_max]]
-      vguess=(x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
-;      if vguess gt -400 and vguess lt 400 then begin
-       if vguess gt -400 && vguess lt 400 then begin
-          v2[i]=vguess
-       endif else begin
-          v2[i]=0
-       endelse
-
-  endfor
-
-  np_total = 3*nlines2+1
-; p_start=fltarr(3*nlines2)
-  p_start=fltarr(np_total)           ; Last element is the baseline
-  for i=0, nlines2-1 do begin
-    ;subscripts of the wav range withing the mask
-    wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
+    ; Build the output structure
+    L=REPLICATE({n:' ', wl:0.0, ws:0.0, we:0.0,  b:0.0,  s:0.0,  a:0.0,  v:0.0, $
+                                                eb:0.0, es:0.0, ea:0.0, ev:0.0}, nlines2)
+    ; The spectral range to fit:
+    bin = 25.
+    wave_min = min(w_l)-bin
+    wave_max = max(w_l)+bin
+;   print, wave_min, wave_max
+    fit_indx = where( wave gt wave_min and wave lt wave_max, count)
+    eflg = 0
     if count eq 0 then begin
-      amp = 0.0
-      vguess = redshift*c
-      continue
+        print, 'No relevant wavelengths in spectrum!'
+        eflg = 1
+        return
     endif
-    ;max of the flux within the mask, and its subscripts (w_max)
-    amp=max(resid[wrange], w_max)
-    p_start[3*i]   =  v2[i]
-    p_start[1+3*i] =  sigma2[i]
 
-    if amp gt 0 then begin
-      p_start[2+3*i] =  amp
-    endif else begin
-      p_start[2+3*i] = 0
-     endelse 
-    endfor
+    ; Define some hard limits
+    mask_width = 600.           ; mask used for guess parameters in km/s
+    maxvel = 500.
+    velrange = [-maxvel, maxvel]
+    sigrange = [ 50., 450. ]
+    default_sigma = 80.
+    default_amplitude = 1.
+;   xtol = 1d-6
+  
+    ; **** Set Parameters for MPFIT
+    err=noise_[fit_indx]
+    x = wave[fit_indx]
+    y = resid[fit_indx]
+
+;   plot, wave, resid
+;   oplot, x, y, color=200
+;   stop
+  
+    ; *** Initialize the output structure values
+    l.n=N_L
+    l.wl=W_L
+    l[*].ws = wave_min
+    l[*].we = wave_max
+
+    ; ------------------------------------------------------------------
+    ; *** Set emission lines starting parameters
+    ;
+    ; emission lines sigma and velocity are set equal to those of the stars
+    ;
+    ; NOTE sometimes the stars are badly fitted, especially when the
+    ; continuum is very low. In this case the velocity/sigma for the stars
+    ; can  be nonsense.
+    sigma2=fltarr(nlines2)
+    v2=fltarr(nlines2)
+    a2=fltarr(nlines2)
+
+    dw=mask_width*l.wl/c                    ;width of the mask in angstrom
+
+    np_total = 3*nlines2+1
+    p_start=fltarr(np_total)           ; Last element is the baseline
     
+    parinfo=replicate({fixed:0,limited:[0,0],limits:[0.,0.], tied:''}, np_total)
 
-    ;print, p_start
-    ; *** Constrain parameters
-
-    parinfo=replicate({fixed:0,limited:[0,0],limits:[0.,0.], tied:''},np_total)
-    
-    ;all amplitudes need to be positive!
     for i=0, nlines2-1 do begin
-      parinfo[3*i+2].limited=[1,0]
-      parinfo[3*i+2].limits=[0]
-    endfor
-    
-    
-    ; Tie the relative amplitude and sigmas and velocities of multiplet
-    ; lines (here only [OIII] and [NII])
-    wOIII_4959=where( l.n eq 'OIII_4959', count_4959)
-    wOIII_5007=where(l.n eq 'OIII_5007', count_5007)
-    
-    WNII_6548=where(l.n eq 'NII_6548', count_6548)
-    wNII_6583=where(l.n eq 'NII_6583', count_6583)
-    ;print, 'OIII 4959', WOIII_4959, 'OIII 5007', WOIII_5007
+        if star_sigma ge sigrange[0] && star_sigma le sigrange[1] then begin
+            sigma2[i]=l[i].wl*star_sigma/c
+        endif else $
+            sigma2[i]=l[i].wl*default_sigma/c
 
-    ; KBW: To tie fluxes, must tie both amplitude and velocity dispersion!
-    if count_4959 ne 0 && count_5007 ne 0 then begin
-      ;ratio of amplitudes fixed to theoretical
-      parinfo[3*wOIII_4959+2].tied='0.330*p['+string(3*wOIII_5007+2)+']'
-      ;fix to have same velocities
-      parinfo[3*wOIII_4959].tied='p['+string(3*wOIII_5007)+']'
-      ;fix to have same sigma
-      parinfo[3*wOIII_4959+1].tied='p['+string(3*wOIII_5007+1)+']'
-    endif
-    
-    if count_6548 ne 0 && count_6583 ne 0 then begin
-      ;ratio of amplitudes fixed to theoretical
-      parinfo[3*WNII_6548+2].tied='0.340*p['+string(3*wNII_6583+2)+']'
-      ;fix to have same velocities
-      parinfo[3*WNII_6548].tied='p['+string(3*wNII_6583)+']'
-      ;fix to have same sigma
-      parinfo[3*WNII_6548+1].tied='p['+string(3*wNII_6583+1)+']'
-    endif
-    
-    ; TODO: KBW: add the SII lines to this list?
+        ;subscripts of the wav range within the mask
+        wrange=where(x gt l[i].wl*(1+redshift)-dw[i] and x lt l[i].wl*(1+redshift)+dw[i], count)
+        ; TODO: this error case needs to be handled better
+        if count eq 0 then begin
+            a2[i] = 0.0
+            v2[i] = redshift*c
+            continue
+        endif
+        ;max of the flux within the mask, and its subscript (w_max)
+        a2[i]=max(y[wrange], w_max)
 
-    for i=0, nlines2-1 do begin              ;all sigmas between 70 and 200 km sec-1
-      parinfo[3*i+1].limited=[1,1]
-      parinfo[3*i+1].limits=[70, 200]*l[i].wl/c
+;       print, l[i].wl*(1+redshift)-dw[i], l[i].wl*(1+redshift)+dw[i]
+;       print, y[wrange[w_max]], a2[i]
+
+;       plot, x, y
+;       oplot, x[wrange], y[wrange], color='00FF00'x
+;       oplot, [x[wrange[0]]], [y[wrange[0]]], psym=2, color='FF0000'x
+;       oplot, [x[wrange[count-1]]], [y[wrange[count-1]]], psym=2, color='FF0000'x
+;       oplot, [x[wrange[w_max]]], [a2[i]], psym=2, color='0000FF'x
+;       stop
+
+        if a2[i] le 0.0 then $
+            a2[i] = default_amplitude
+
+        ;wavelength of max subscript
+        x_max = x[wrange[w_max]]
+        ; velocity at max flux
+        v2[i] = (x_max - l[i].wl*(1+redshift))/(l[i].wl*(1+redshift))*c
+        if abs(v2[i]) gt maxvel then $
+            v2[i] = 0.
+
+        p_start[3*i]   =  v2[i]
+        p_start[1+3*i] =  sigma2[i]
+        p_start[2+3*i] =  a2[i]
+
+        ;all velocities between -400 and 400 km sec-1
+        ; TODO: expand this range?
+        parinfo[3*i].limited=[1,1]
+        parinfo[3*i].limits=velrange
+
+        ;all sigmas between 70 and 200 km sec-1
+        ; TODO: expand this range?
+        parinfo[1+3*i].limited=[1,1]
+        parinfo[1+3*i].limits=sigrange*l[i].wl/c
+
+        ;all amplitudes need to be positive!
+        parinfo[2+3*i].limited=[1,0]
+        parinfo[2+3*i].limits=[0.,0]
+
     endfor
+
+;   print, p_start
+;   gstrt = gausmod(p_start, x=x, nlines2=nlines2, wl=l.wl, redshift=redshift)
+;   plot, x, y
+;   oplot, x, gstrt, color='FF0000'x
+
+    ; ------------------------------------------------------------------
+    ; *** Apply additional constraints
+
+;    ; Tie the relative amplitude and sigmas and velocities of multiplet
+;    ; lines (here only [OIII] and [NII])
+;    wOIII_4959 = where(l.n eq 'OIII_4959', count_4959)
+;    wOIII_5007 = where(l.n eq 'OIII_5007', count_5007)
+;    
+;    ; KBW: To tie fluxes, must tie both amplitude and velocity dispersion!
+;    if count_4959 ne 0 && count_5007 ne 0 then begin
+;        ;ratio of amplitudes fixed to theoretical
+;        parinfo[3*wOIII_4959+2].tied=strcompress('0.330*p['+string(3*wOIII_5007+2)+']',/remove_all)
+;        ;fix to have same velocities
+;        parinfo[3*wOIII_4959].tied=strcompress('p['+string(3*wOIII_5007)+']',/remove_all)
+;        ;fix to have same sigma
+;        parinfo[3*wOIII_4959+1].tied=strcompress('p['+string(3*wOIII_5007+1)+']',/remove_all)
+;    endif
+;    
+;    WNII_6548 = where(l.n eq 'NII_6548', count_6548)
+;    wNII_6583 = where(l.n eq 'NII_6583', count_6583)
+;
+;    if count_6548 ne 0 && count_6583 ne 0 then begin
+;        ;ratio of amplitudes fixed to theoretical
+;        parinfo[3*WNII_6548+2].tied=strcompress('0.340*p['+string(3*wNII_6583+2)+']',/remove_all)
+;        ;fix to have same velocities
+;        parinfo[3*WNII_6548].tied=strcompress('p['+string(3*wNII_6583)+']',/remove_all)
+;        ;fix to have same sigma
+;        parinfo[3*WNII_6548+1].tied=strcompress('p['+string(3*wNII_6583+1)+']',/remove_all)
+;    endif
     
-    for i=0, nlines2-1 do begin              ;all velocities between -400 and 400 km sec-1
-      parinfo[3*i].limited=[1,1]
-      parinfo[3*i].limits=[-400, 400]
-    endfor
-    
-    if nlines2 gt 1 then begin                  ;if there are more than one lines
-      for i=0, nlines2-2 do begin              ;all velocities are tied
-        parinfo[3*(i+1)].tied=strcompress('p[0]', /remove_all)
-      endfor
+    ; if there is more than one line, tie all the velocities, and tie the dispersions if requested
+    if nlines2 gt 1 then begin
+        for i=0, nlines2-2 do begin
+            parinfo[3*(i+1)].tied=strcompress('p[0]', /remove_all)
+            p_start[3*(i+1)] = p_start[0]
+            if n_elements(tie_sig) gt 0 && tie_sig gt 0 then begin
+                parinfo[1+3*(i+1)].tied=strcompress('p[1]', /remove_all)
+                p_start[1+3*(i+1)] = p_start[1]
+            endif
+        endfor
     endif
     
-    ; Force the baseline to be zero if requested
-    if keyword_set(zero_base) then $
+;   gstrt = gausmod(p_start, x=x, nlines2=nlines2, wl=l.wl, redshift=redshift)
+;   oplot, x, gstrt, color='0000FF'x, linestyle=2
+
+    if keyword_set(zero_base) then begin
+        ; Force the baseline to be zero
+        p_start[np_total-1] = 0.
         parinfo[np_total-1].fixed=1
-    
-    ; *** Fit function
-    p = mpfit('gausfit',p_start, functargs={x:x,y:y,err:err, nlines2:nlines2, wl:l.wl, redshift:redshift}, bestnorm=chi2, parinfo=parinfo, perror=perror, status=status, errmsg=errmsg, quiet=1)
+    endif else begin
+        ; Otherwise set it to the sigma-clipped mean within the spectral range to fit
+        MEANCLIP, y, meanbg, clipsig=3.
+        p_start[np_total-1] = meanbg
+    endelse
 
-    ;g_tot=0.0
+;   print, parinfo.tied
+   
+    ; ------------------------------------------------------------------
+    ; *** Fit function
+
+    ; To avoid getting the same thing that's put in, I run the fit in a
+    ; while...do loop for a maximum of 5 iterations
+    status = 2
+    ntry = 0
+    p_start_orig = p_start
+    while (ntry lt 10 && status eq 2) do begin
+        p_start = (1.0+0.1*randomu(seed, np_total))*p_start_orig
+;       print, p_start_orig
+;       print, p_start
+        status=0
+        p = mpfit('gausfit',p_start, functargs={x:x,y:y,err:err, nlines2:nlines2, wl:l.wl, $
+                  redshift:redshift}, bestnorm=chi2, parinfo=parinfo, perror=perror, $
+                  status=status, errmsg=errmsg, quiet=1);, xtol=xtol)
+        ntry++
+    endwhile
+    if ntry eq 10 then $
+        print, 'WARNING: peak_fitting(): Hit maximum number of fit restarts!'
+
+    ; TODO: Only print this if !quiet
+    if status eq 5 then $
+        print, 'WARNING: Maximum number of iterations reached in MPFIT()!'
+
+;   print, p
+
+;   gmod = gausmod(p, x=x, nlines2=nlines2, wl=l.wl, redshift=redshift)
+;   oplot, x, gmod, color='00FF00'x
+;   stop
+    for i=0,np_total-1 do begin
+        all_same = 1
+        if abs(p[i]-p_start[i]) gt 1e-4 then begin
+            all_same = 0
+            break
+        endif
+    endfor
+    if all_same eq 1 then begin
+        print, 'WARNING: Input and output parameters are all within 1e-4!'
+;       print, status
+;       print, errmsg
+        print, l.n
+    endif
+
+    ; Expects that the input and output parameters are the same if
+    ; status=2, warn if not true
+    if status eq 2 && all_same eq 0 then $
+        print, 'WARNING: status is 2 but the input/output parameters are different'
+
     eflg = 0
     if status LE 0 then begin
         print, errmsg
@@ -322,19 +421,9 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
         return
     endif
 
-    ; TODO: Only print this if !quiet
-    if status eq 5 then $
-        print, 'WARNING: Maximum number of iterations reached in MPFIT()!'
-
-    ;;print, p
-    ;print, 'fitting lines', l.n
-    ;for kk=0, nlines2-1 do begin
-    ;  g_p= p[3*kk+2]*exp( -( (  x - l[kk].wl*(1+p[3*kk]/c+redshift) )^2 )/ (2.*p[3*kk+1]^2)  )
-    ;  g_tot=g_tot+g_p
-    ;endfor
-    
-    
+    ; ------------------------------------------------------------------
     ; *** Calculate the reduced chi^2
+    ; TODO: Return this?
     n_data = n_elements(x);lambda)          ; Number of fitted data points
     np_free = np_total
     if keyword_set(zero_base) then $
@@ -343,18 +432,18 @@ PRO peak_fitting, resid, noise_, wave, star_sigma, redshift, w_l, n_l, nlines2, 
     
     ; *** Save Output
     for i=0, nlines2-1 do begin
-      l[i].s=p[1+3*i]/l[i].wl*c
-      l[i].es = perror[3*i+1]/l[i].wl*c
-      l[i].v=  p[3*i]
-      l[i].ev = perror[3*i]
-      l[i].a=p[2+3*i]
-      l[i].ea=perror[2+3*i]
+        l[i].s=p[1+3*i]/l[i].wl*c
+        l[i].es = perror[3*i+1]/l[i].wl*c
+        l[i].v=  p[3*i]
+        l[i].ev = perror[3*i]
+        l[i].a=p[2+3*i]
+        l[i].ea=perror[2+3*i]
 
-      ; Same baseline saved for all lines
-      if ~keyword_set(zero_base) then begin
-        l[i].b=p[np_total-1]
-        l[i].eb=perror[np_total-1]
-      endif
+        ; Same baseline saved for all lines
+        if ~keyword_set(zero_base) then begin
+            l[i].b=p[np_total-1]
+            l[i].eb=perror[np_total-1]
+        endif
       
     endfor
 
@@ -372,7 +461,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
                 zero_base=zero_base, quiet=quiet
 
     ; Define the lines to fit; !! HARD-CODED !!
-    MDAP_DEFINE_EMISSION_LINES_BELFIORE, n_l, w_l, fit_l, con_l
+    MDAP_DEFINE_EMISSION_LINES_BELFIORE, n_l, w_l, fit_l, con_l, sig_l
     nlines2 = n_elements(n_l)                       ; Number of lines
   
     ; Output structure
@@ -401,7 +490,7 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
     untied=where(con_l eq 0, count)
     n_tied=max(con_l)
    
-    ; *** Call the emission line fitting prcedure ***
+    ; *** Call the emission line fitting procedure ***
     
     ;*** Fit the untied lines
     if count ne 0 then begin
@@ -465,9 +554,15 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
       wl_m=w_l[wgroup]
       nl_m=n_l[wgroup]
       n_m=N_elements(wgroup)
+
+      if total(sig_l[wgroup]) gt 0 then begin
+        tie_sig = 1
+      endif else $
+        tie_sig = 0
       
         peak_fitting, galaxy_eml_only[indx], flux_err[indx], wave[indx], star_sigma, redshift, $
-                      wl_m, nl_m, n_m, l, zero_base=zero_base, eflg=eflg, quiet=quiet
+                      wl_m, nl_m, n_m, l, tie_sig=tie_sig, zero_base=zero_base, eflg=eflg, $
+                      quiet=quiet
         
         if eflg eq 1 then begin
             El.name[wgroup]=l.n
@@ -503,7 +598,9 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_BELFIORE, $
    ; Get the full model of the emission-line spectrum (ignoring masks and the baseline)
    c=299792.458d  ; speed of light in KM/s
     eml_model=wave*0.0
-   for kk=0, nlines2-1 do begin
+    ; ignore the OII line fit as two separate lines
+    startk=2
+   for kk=startk, nlines2-1 do begin
      a1=El.ampl[kk]
      a1=a1[0]
      l1=El.lambda[kk]
