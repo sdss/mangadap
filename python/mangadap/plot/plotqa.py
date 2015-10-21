@@ -34,7 +34,7 @@ else:
     # DRPQA file
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'test', 'mpl4',
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7443', '6104', 'CUBE_files_to_plot.txt')
+                     '7495', '1901', 'CUBE_files_to_plot.txt')
     #file_list = join(os.getenv('MANGA_MPL3'),
     #                 '7443', '1901', 'CUBE_files_to_plot.txt')
     plottypes_list = 'drpqa_plottypes.ini'
