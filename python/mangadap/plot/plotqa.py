@@ -32,7 +32,7 @@ if hasattr(main, '__file__'):
 else:
     # interactive session
     # DRPQA file
-    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), 'test', 'mpl4',
+    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
                      '7495', '1901', 'CUBE_files_to_plot.txt')
     #file_list = join(os.getenv('MANGA_MPL3'),
