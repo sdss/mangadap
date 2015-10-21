@@ -317,7 +317,7 @@ def set_map_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
     imshow_kws = dict(cmap=cmap)
     title_kws = dict(fontsize=titlefontsize, label=title)
     cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                  cbrange=None, sigclip=3, symmetric=True,
+                  cbrange=None, sigclip=3, symmetric=False,
                   label_kws=dict(label=cblabel, size=cbfontsize),
                   tick_params_kws=dict(labelsize=cbfontsize))
     return title_kws, imshow_kws, cb_kws
