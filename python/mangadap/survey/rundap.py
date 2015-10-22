@@ -76,6 +76,10 @@ Utah.
         :mod:`mangadap.util.defaults`; version number set to 1_1_0.
     | **06 Oct 2015**: (KBW) Added functionality to select the types of
         additional output.  Minor changes to allow for DR13 QA plots.
+    | **22 Oct 2015**: (KBW) Added check that the selected MPL versions match
+        the current environmental versions.  Includes edit to
+        :class:`mangadap.survey.mangampl` to include MANGACORE_VER.  Changed
+        default number of nodes to 9.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -308,7 +312,7 @@ class rundap:
                 # Flags to create additional output files
                 plots=True, covar=True, maps=True,
                 # Cluster options
-                label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
+                label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 submit=True):
 
         # Save run-mode options
@@ -380,9 +384,54 @@ class rundap:
 
         # Alert the user of the versions to be used
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
+        print(self.mpl.show())
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
+
+        # Check the environment matches the selected MPL
+#        idlver_env = None
+#        for m in environ['LOADEDMODULES'].split(':'):
+#            if 'idlutils' in m:
+#                idlver_env = m.split('/')[1]
+        # These will throw KeyErrors if the appropriate environmental variables do not exist
+        try:
+            accessver_env = environ['SDSS_ACCESS_DIR'].split('/')[-1]
+        except KeyError:
+            accessver_env = None
+        idlver_env = environ['IDLUTILS_DIR'].split('/')[-1]
+
+#        print('mpl.accessver: {0}'.format(self.mpl.accessver))
+#        print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
+#        print('mpl.idlver: {0}'.format(self.mpl.idlver))
+#        print('IDLUTILS_VER: {0}'.format(idlver_env))
+#        print('mpl.corever: {0}'.format(self.mpl.corever))
+#        print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+#        print('mpl.drpver: {0}'.format(self.mpl.drpver))
+#        print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+
+        if self.mpl.accessver != accessver_env:
+            print('mpl.accessver: {0}'.format(self.mpl.accessver))
+            print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
+            raise EnvironmentError('MPL SDSS_ACCESS version does not match current environment;'
+                                   ' see above')
+        if self.mpl.idlver != idlver_env:
+            print('mpl.idlver: {0}'.format(self.mpl.idlver))
+            print('IDLUTILS_VER: {0}'.format(idlver_env))
+            raise EnvironmentError('MPL IDLUTILS version does not match current environment;'
+                                   ' see above')
+        if self.mpl.corever != environ['MANGACORE_VER']:
+            print('mpl.corever: {0}'.format(self.mpl.corever))
+            print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+            raise EnvironmentError('MPL CORE version does not match current environment; see above')
+        if self.mpl.drpver != environ['MANGADRP_VER']:
+            print('mpl.drpver: {0}'.format(self.mpl.drpver))
+            print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+            raise EnvironmentError('MPL DRP version does not match current environment; see above')
+
+        # If setting qos, the number of nodes must be 1
+        if self.qos is not None and self.nodes > 1:
+            raise Exception('When selecting the fast node, must have nodes=1!')
 
         # Check that something is to be done
         nrun = 0
@@ -650,6 +699,7 @@ class rundap:
             self.walltime = arg.walltime
         if arg.qos is not None:
             self.qos = arg.qos
+            self.nodes = 1          # Force the number of nodes to be 1
         if arg.umask is not None:
             self.umask = arg.umask
         if arg.hard is not None:
@@ -659,6 +709,9 @@ class rundap:
 
 #       print(self.submit)
 #       self.submit = False
+
+#       print('QOS: {0}'.format(self.qos))
+#       exit()
 
 
     def _check_path(self, plate, ifudesign):
@@ -825,10 +878,15 @@ class rundap:
             Exception - Raised if qos is requested; this mode is only
                 allowed for the daily run.
         """
-        self.label = '{0}_redo'.format(self.label)
-        # In here, qos should never be anything but None; always set in daily
+        # A TEMPORARY PROVISION FOR THE DR13 QA!
+        self.label = '{0}_dr13qa'.format(self.label)
         if self.qos is not None:
-            raise Exception('This qos is reserved for single-node usage.')
+            print('WARNING: USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
+
+#        self.label = '{0}_redo'.format(self.label)
+#        # In here, qos should never be anything but None; always set in daily
+#        if self.qos is not None:
+#            raise Exception('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_redo()
         print('Number of DRP files to process: {0}'.format(len(drpfiles)))
@@ -1214,6 +1272,7 @@ class rundap:
 #            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
 #            file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
 #                       '-overwrite \n'.format(pyplot_path, output_path, mode))
+            # THIS IS A PROVISIONAL COMMAND FOR THE DR13 QA
             pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plotqa.py')
             file.write('python3 {0} {1}/{2}_files_to_plot.txt drpqa_plottypes.ini \n'.format(
                                     pyplot_path, output_path, mode))
