@@ -17,7 +17,7 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-from sdss.files import base_path
+from sdss_access.path import base_path
 
 def fitsrec_to_dataframe(recarr, forceswap=False):
     """Convert astropy FITS_rec to pandas DataFrame.
