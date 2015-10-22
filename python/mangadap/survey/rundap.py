@@ -79,7 +79,8 @@ Utah.
     | **22 Oct 2015**: (KBW) Added check that the selected MPL versions match
         the current environmental versions.  Includes edit to
         :class:`mangadap.survey.mangampl` to include MANGACORE_VER.  Changed
-        default number of nodes to 9.
+        default number of nodes to 9.  Added definition of idl command
+        for use on sciama cluster at the ICG, Portsmouth.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -239,6 +240,8 @@ class rundap:
                 "--submit" command-line options; i.e. including
                 --submit on the command line sets submit=False.
 
+        idl_cmnd (str): (Optional) IDL command.  Default: idl.
+
     Attributes:
         daily (bool): Execute daily update of analyses
         all (bool): Analyze all existing DRP data.
@@ -290,6 +293,7 @@ class rundap:
         hard (bool): Same as hard keyword in cluster submission; see
             :func:`pbs.queue.commit`.
         submit (bool): Submit all jobs to the cluster.
+        idl_cmnd (str): The specific IDL command to use
         drpc (:class:`mangadap.survey.drpcomplete`): Database of the
             available DRP files and the parameters necessary to write
             the DAP par files.
@@ -313,7 +317,7 @@ class rundap:
                 plots=True, covar=True, maps=True,
                 # Cluster options
                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                submit=True):
+                submit=True, idl_cmnd='idl'):
 
         # Save run-mode options
         self.daily = daily
@@ -359,6 +363,8 @@ class rundap:
         self.walltime = walltime
         self.hard = hard
         self.submit = submit
+
+        self.idl_cmnd = idl_cmnd
 
         # Read and parse command-line arguments
         if console:
@@ -620,6 +626,10 @@ class rundap:
                             help='turn off hard keyword for cluster submission')
         parser.add_argument("--submit", help='turn off cluster submission', action='store_false',
                             default=True)
+
+        parser.add_argument("--idl", type=str, help='IDL command to use', default=None)
+
+
         
         # Finally parse the full set and set it to its own container
         arg = parser.parse_args()
@@ -706,6 +716,10 @@ class rundap:
             self.hard = arg.hard
         if arg.submit is not None:
             self.submit = arg.submit
+
+        # Specify the IDL command
+        if arg.idl is not None:
+            self.idl_cmnd = arg.idl
 
 #       print(self.submit)
 #       self.submit = False
@@ -1236,7 +1250,7 @@ class rundap:
         if self.plan_file is None:
             # Will create and use the default plan
             file.write('echo \" manga_dap, par=\'{0}\', drppath=\'{1}\', dappath=\'{2}\', /nolog' \
-                       '\" | idl \n'.format(parfile, drppath, self.analysis_path))
+                       '\" | {3} \n'.format(parfile, drppath, self.analysis_path, self.idl_cmnd))
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
@@ -1257,7 +1271,8 @@ class rundap:
 
             file.write('echo \" resolve_all, resolve_procedure=\'manga_dap\' & manga_dap, ' \
                        'par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', dappath=\'{3}\', /nolog \"'
-                       ' | idl \n'.format(parfile, default_plan_file, drppath, self.analysis_path))
+                       ' | {4} \n'.format(parfile, default_plan_file, drppath, self.analysis_path,
+                                          self.idl_cmnd))
 
         file.write('\n')
 
