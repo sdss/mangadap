@@ -316,7 +316,7 @@ def set_map_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
     imshow_kws = dict(cmap=cmap)
     title_kws = dict(fontsize=titlefontsize, label=title)
     cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                  cbrange=None, sigclip=3, symmetric=True,
+                  cbrange=None, sigclip=3, symmetric=False,
                   label_kws=dict(label=cblabel, size=cbfontsize),
                   tick_params_kws=dict(labelsize=cbfontsize))
     return title_kws, imshow_kws, cb_kws
@@ -604,11 +604,11 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
     return fig, ax
 
-def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
-               val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
-               cblabels=None, cmaps=None, make_single=True, make_multi=True,
-               make_binnum=False, savefig_single=True, savefig_multi=True,
-               savefig_binnum=False, overwrite=False):
+def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
+              val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
+              cblabels=None, cmaps=None, make_single=True, make_multi=True,
+              make_binnum=False, savefig_single=True, savefig_multi=True,
+              savefig_binnum=False, overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
 
     Args:
@@ -712,6 +712,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
             util.saveplot(name=pname_base, path_data=dapdata.path_data,
                           plottype='maps', mg_kws=mg_kws, mkdir=True,
                           overwrite=overwrite)
+
 
 
 def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
@@ -1274,4 +1275,19 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
     #                     ecolor=colors[j], elinewidth=1, marker='None', ls='None')
 
 
+def plot_gradients():
+    """wrapper to run plot_gradient and plot_gradient_multi"""
+    pass
+
+
+
+def make_plots(plottype, dapdata, mg_kws, plot_kws):
+    if plottype == 'spectra':
+        plot_spectra(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
+    elif plottype == 'emlines':
+        plot_emlines(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
+    elif plottype == 'gradients':
+        plot_gradients(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
+    else:
+        plot_maps(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
 
