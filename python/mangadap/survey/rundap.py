@@ -1123,14 +1123,14 @@ class rundap:
             except ValueError: # as e:
                 getcube = False
 
+        drplist = []
         if getcube:
-            drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
-                                drpver=self.mpl.drpver, redux_path=self.redux_path)
-                      for i in range(0,n_plates)
-                          if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
-                                                       self.drpc.ifudesignlist[i])] != 'NULL' ]
-        else:
-            drplist = list()
+            for i in range(0,n_plates):
+                j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
+                if self.drpc.data['MANGAID'][j] != 'NULL' and (self.drpc.data['MANGA_TARGET1'][j] > 0 or self.drpc.data['MANGA_TARGET3'][j] > 0) \
+                        and self.drpc.data['VEL'][j] > 0.0:
+                    drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', drpver=self.mpl.drpver,
+                                         redux_path=self.redux_path) ]
 
         # Add the list of RSS DRP files, if requested (implicitly or
         # otherwise)
@@ -1140,13 +1140,12 @@ class rundap:
             except ValueError: #as e:
                 return drplist                  # List complete
 
-        drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
-                                      drpver=self.mpl.drpver, redux_path=self.redux_path)
-                  for i in range(0,n_plates)
-                  if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
-                                               self.drpc.ifudesignlist[i])] != 'NULL' and
-                     self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
-                                             self.drpc.ifudesignlist[i])] == 2 ]
+        for i in range(0,n_plates):
+            j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
+            if self.drpc.data['MANGAID'][j] != 'NULL' and (self.drpc.data['MANGA_TARGET1'][j] > 0 or self.drpc.data['MANGA_TARGET3'][j] > 0) \
+                    and self.drpc.data['VEL'][j] > 0.0 and self.drpc.data['MODES'][j] == 2:
+                drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS', drpver=self.mpl.drpver,
+                                         redux_path=self.redux_path) ]
 
         return drplist
 
