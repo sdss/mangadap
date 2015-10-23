@@ -596,7 +596,8 @@ def plot_multi_map(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
 def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
                val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
-               cblabels=None, cmaps=None, make_single=True, make_multi=True,
+               cblabels=None, cmaps=None, cb_kws=None, make_single=True,
+               make_multi=True,
                make_binnum=False, savefig_single=True, savefig_multi=True,
                savefig_binnum=False, overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
@@ -618,6 +619,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
        titles (list): Plot title for each map. Default is None.
        cblabels (list): Colorbar labels. Default is None.
        cmaps (list): Colormaps. Default is None.
+       cb_kws (dict): Colorbar kwargs. Default is None.
        make_single (bool): Make single panel plots. Default is True.
        make_multi (bool): Make multi-panel plot. Default is True.
        make_binnum (bool): Make single panel bin number plot. Default is
@@ -638,6 +640,7 @@ def make_plots(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cmaps = set_cmaps(cmaps, len(columns))
+    # cb_kws['cmaps'] = set_cmaprs(cb_kws['cmaps'], len(columns))
 
     # Set common plot elements
     xpos = dapdata.drps.xpos.values
