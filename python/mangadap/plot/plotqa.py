@@ -32,12 +32,12 @@ if hasattr(main, '__file__'):
 else:
     # interactive session
     # DRPQA file
-    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
-                     os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7495', '3704', 'CUBE_files_to_plot.txt')
-    #file_list = join(os.getenv('MANGA_MPL3'),
-    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
-    plottypes_list = 'drpqa_plottypes.ini'
+    # file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
+    #                  os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
+    #                  '7495', '3704', 'CUBE_files_to_plot.txt')
+    file_list = join(os.getenv('MANGA_MPL3'),
+                     '7443', '1901', 'CUBE_files_to_plot.txt')
+    plottypes_list = 'dapqa_plottypes.ini'
 
 file_kws_all = util.read_file_list(file_list)
 cfg_dir = util.make_config_path(plottypes_list)
@@ -66,12 +66,11 @@ for file_kws in file_kws_all:
 # (spectra, maps, emlines, gradients)
 
 
-# I'm currently loading a NONE file, instead of a RADIAL file
 reload(plotdap)
-plottype = 'gradients'
+plottype = 'emline_gradients'
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-#plotdap.plot_gradient(dapdata=gal, column='OII3727', title='OII', **plot_kws)
+plotdap.plot_gradients(dapdata=gal, mg_kws=mg_kws, **plot_kws)
 
 # functions to refactor:
 # plotdap.plot_emline

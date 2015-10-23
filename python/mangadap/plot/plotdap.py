@@ -783,7 +783,8 @@ def set_spec_line_prop(lw):
         list: Color palette.
     """
     if 'seaborn' in sys.modules:
-        c = sns.color_palette('bright', 5)
+        c_in = sns.color_palette('bright', 5)
+        c = [c_in[i] for i in (1, 2, 0, 3, 4)]
         sns.set_context('poster', rc={'lines.linewidth': lw})
     else:
         c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
@@ -950,7 +951,7 @@ def plot_spectrum(dapdata, bin=0,
 
             # stellar continuum fit
             p.append(ax.plot(spec.wave[spec.smod > 0.],
-                             spec.smod[spec.smod > 0.], color=colors[1])[0])
+                             spec.smod[spec.smod > 0.], color=colors[0])[0])
             labels.append('stellar continuum fit')
 
             emfits = [spec['fullfit_' + fit_id] for fit_id in fit_ids]
@@ -967,7 +968,7 @@ def plot_spectrum(dapdata, bin=0,
         # emission line + stellar continuum fits
         for j, (emfit, em_label) in enumerate(zip(emfits, em_labels)):
             p.append(ax.plot(spec.wave[spec.smod > 0.], emfit[spec.smod > 0.],
-                     color=colors[2-2*j])[0])
+                     color=colors[j+1])[0])
             labels.append(em_label)
 
         if panel is 'spectrum':
@@ -1127,9 +1128,9 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, win_cen=None, xlim=None,
     ax.errorbar(wave[ind], flux[ind], yerr=noise[ind], ecolor='gray',
                 fmt='none', zorder=1)
     p_kws = dict(alpha=0.75, lw=lw)
-    pst = ax.plot(wave[ind], stmodel[ind], color=colors[1], **p_kws)[0]
-    pFB = ax.plot(wave[ind], fullfit_fb[ind], color=colors[2], **p_kws)[0]
-    pEW = ax.plot(wave[ind], fullfit_ew[ind], color=colors[0], **p_kws)[0]
+    pst = ax.plot(wave[ind], stmodel[ind], color=colors[0], **p_kws)[0]
+    pFB = ax.plot(wave[ind], fullfit_fb[ind], color=colors[1], **p_kws)[0]
+    pEW = ax.plot(wave[ind], fullfit_ew[ind], color=colors[2], **p_kws)[0]
 
     for name, w, x_off in zip(dapdata.elopar.elname_tex,
                               dapdata.elopar.restwave, x_offs):
@@ -1217,11 +1218,13 @@ def plot_gradient_multi(map_order, args,
 
 
 def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
-                  leg_kws=dict(handlelength=2, loc=1), title=None,
+                  leg_kws=None, title=None, labels=None, mg_kws=None,
                   figsize=(10, 8)):
     """
     Plot radial gradients.
     """
+    if leg_kws is None: leg_kws = dict(handlelength=2, loc=1)
+
     colors = set_spec_line_prop(lw=2)
 
     if ax is None:
@@ -1233,51 +1236,49 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
             tick.label.set_fontsize(20)
         for tick in ax.yaxis.get_major_ticks():
             tick.label.set_fontsize(20)
-        #axtitle = args[gradname]['kwargs']['title_text'].split(' (')[0]
         ax.set_title(title, fontsize=28)
 
     if 'seaborn' not in sys.modules:
         ax.set_axis_bgcolor('#A8A8A8')
-        ax.grid(False, which='both', axis='both')
         colors = ['b', 'r', 'c']
 
-    #d = args[gradname]
     p = []
     lab = []
-    #if not np.isnan(d['val']).all():
-        #for kk, kkerr, j, author in zip(['val2', 'val'], ['val2_err', 'val_err'],
-        #                                c_ind, leglabels):
-    for value, color in zip(values, colors):
-        val = dapdata.__dict__[value]
-        p.append(ax.hlines(val[column], dapdata.bins.binxrl,
-                 dapdata.bins.binyru, color=color))
-            #ytmp = np.concatenate((args[gradname][kk],
-            #                      np.atleast_1d(args[gradname][kk][-1])))
-            #p.append(ax.step(bin_edges, ytmp, c=colors[j],
-            #         where='post')[0])
-            #p.append(ax.plot(self.binr, args[gradname][kk], c=colors[j], zorder=8)[0])
-        ax.plot(dapdata.bins.binr, val[column], color=color,
-                zorder=8, lw=0.5)
-        ax.scatter(dapdata.bins.binr, val[column], facecolor=color,
-                   edgecolor='None', s=60, zorder=9)
-            #ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
-            #            ecolor=c[j], elinewidth=1, marker='None', ls='None')
-        lab.append(value)
+    for value, error, color, label in zip(values, errors, colors[1:3], labels):
+        binr = dapdata.bins.binr.values
+        val = dapdata.__dict__[value][column]
+        err = dapdata.__dict__[error][column]
+        p.append(ax.hlines(val, dapdata.bins.binxrl, dapdata.bins.binyru,
+                 color=color))
+        ax.plot(binr, val, color=color, zorder=8, lw=0.5)
+        ax.scatter(binr, val, facecolor=color, edgecolor='None', s=60, zorder=9)
+        # Following line was commented out in MPL-3 run
+        ax.errorbar(binr, val, yerr=err, ecolor=color, elinewidth=1,
+                    marker='None', ls='None')
+        lab.append(label)
 
     leg = plt.legend(p, lab, **leg_kws)
     plt.setp(leg.get_texts(), fontsize=24)
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
-        
+    
+    # This section was used to plot errors in MPL-3 run    
     # if not np.isnan(d['val']).all():
     #     for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
     #         ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
-    #                     ecolor=colors[j], elinewidth=1, marker='None', ls='None')
+    #                     ecolor=c[j], elinewidth=1, marker='None', ls='None')
 
 
-def plot_gradients():
+
+
+def plot_gradients(dapdata, values, errors, columns, mg_kws=None,
+                   leg_kws=None, titles=None, labels=None,
+                   figsize=(10, 8)):
     """wrapper to run plot_gradient and plot_gradient_multi"""
-    pass
+    for column in columns:
+        plot_gradient(dapdata, values, errors, column,
+                      leg_kws=leg_kws, title=titles[column], labels=labels,
+                      mg_kws=mg_kws, figsize=figsize)
 
 
 
