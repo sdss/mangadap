@@ -71,6 +71,8 @@
 ;       17 Aug 2015: Moved from MDAP_GET_SPECTRAL_INDEX by K. Westfall (KBW), 
 ;                    for use in other routines, e.g.
 ;                    MDAP_NONPAR_EMISSION_LINE_MEASUREMENTS
+;       26 Oct 2015: (KBW) Edited to reflect changes in
+;                          MDAP_INTEGRATE_PIXELIZED_VALUE.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -90,10 +92,10 @@ PRO MDAP_GET_PSEUDOCONTINUUM, $
             sige[indx] = 1.0d
         endif
 
+        ; 'err' initialized to 0 in MDAP_INTEGRATE_PIXELIZED_VALUE, so
+        ; not necessary to do here
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, unity, unity, mask_, passband, wave_integral, dummy, $
                                         err=err, geometric=geometric
-        ; MDAP_INTEGRATE_PIXELIZED_VALUE returns err=1 if the passband
-        ; did not overlap with the provided wavelength vector.
         if err eq 1 then begin
             pseudo_continuum = -9999.0d
             pseudo_continuum_error = -9999.0d
@@ -102,10 +104,24 @@ PRO MDAP_GET_PSEUDOCONTINUUM, $
         endif
 
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, flux, sige, mask_, passband, flux_integral, $
-                                        flux_integral_err, geometric=geometric
-        ; If err != 1 above, then it won't equal zero here
+                                        flux_integral_err, err=err, geometric=geometric
+        if err eq 1 then begin
+            pseudo_continuum = -9999.0d
+            pseudo_continuum_error = -9999.0d
+            wave_integral = -9999.0d
+            return
+        endif
+
+        ; All cases when wave_integral is zero should be taken care of
+        ; by having err == 1 above
         pseudo_continuum = flux_integral/wave_integral
         pseudo_continuum_error = flux_integral_err/wave_integral
+
+;        if finite(pseudo_continuum) eq 0 || finite(pseudo_continuum_error) eq 0 then begin
+;            print, wave_integral, dummy, flux_integral, flux_integral_err, err
+;            stop
+;        endif
+
 END
 
 

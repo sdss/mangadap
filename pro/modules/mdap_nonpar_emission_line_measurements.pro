@@ -143,6 +143,12 @@
 ;       18 Aug 2015: Original implementation by K. Westfall (KBW)
 ;       20 Aug 2015 (KBW): Include redshift factor in flux-weighted
 ;                          centers of sidebands.
+;       26 Oct 2015: (KBW) More strictly check for err=1 returns from
+;                          MDAP_INTEGRATE_PIXELIZED_VALUE and
+;                          MDAP_GET_PSEUDOCONTINUUM.  This is meant to
+;                          avoid some NaN results caused by spectral
+;                          regions with no (0.0) flux that were not
+;                          caught in the previous version.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -185,6 +191,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         v = c*(wave/eml_band.lambda - 1.0d)
 
         ; Integrate the continuum-subtracted flux over the main bandpass
+;        print, 'flux_raw'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, flux, flux_err, mask, eml_band.bandpass, fr, fre, $
                                         err=err, geometric=geometric
         if err eq 1 then $
@@ -193,18 +200,24 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         result.flux_raw[1] = fre
 
         ; Get the 1st and 2nd moments
+;        print, 'mom1_raw'
         integrand = v*flux
         integrand_err = v*flux_err
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.bandpass, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         result.mom1_raw[0] = num/result.flux_raw[0]
         result.mom1_raw[1] = sqrt( (nume/result.flux_raw[0])^2 $
                                    + (result.mom1_raw[0]*result.flux_raw[1]/result.flux_raw[0])^2 )
 
         integrand = v*v*flux
         integrand_err = v*v*flux_err
+;        print, 'mom2_raw'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.bandpass, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         result.mom2_raw[0] = num/result.flux_raw[0]
         result.mom2_raw[1] = sqrt( (nume/result.flux_raw[0])^2 $
                                    + (result.mom2_raw[0]*result.flux_raw[1]/result.flux_raw[0])^2 )
@@ -215,6 +228,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         result.mom2_raw[1] = abs(result.mom2_raw[1]/2.0/result.mom2_raw[0])
 
         ; Integrate the continuum-subtracted flux over the blue and red side bands
+;        print, 'blue_flux'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, flux, flux_err, mask, eml_band.blueside, fr, fre, $
                                         err=err, geometric=geometric
         if err eq 1 then $
@@ -222,6 +236,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         result.blue_flux[0] = fr
         result.blue_flux[1] = fre
 
+;        print, 'red_flux'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, flux, flux_err, mask, eml_band.redside, fr, fre, $
                                         err=err, geometric=geometric
         if err eq 1 then $
@@ -233,6 +248,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         ; Get the pseudocontinuum in the side bands
 
         ; Blue side band
+;        print, 'blue pseudo'
         MDAP_GET_PSEUDOCONTINUUM, wave, flux, ivar, mask, eml_band.blueside, fr, fre, err=err, $
                                   geometric=geometric
         if err eq 1 then $
@@ -241,6 +257,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         result.blue_cont[1] = fre
 
         ; Red side band
+;        print, 'red pseudo'
         MDAP_GET_PSEUDOCONTINUUM, wave, flux, ivar, mask, eml_band.redside, fr, fre, err=err, $
                                   geometric=geometric
         if err eq 1 then $
@@ -250,16 +267,22 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
 
         ; TODO: Set some threshold for using this vs. using the center of the band
         ; Get the flux-weighted centers
+;        print, 'blue cen'
         integrand = wave*flux
         integrand_err = wave*flux_err
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.blueside, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         if abs(result.blue_flux[0]) lt 1e-6 then begin
             result.blue_fcen = total(eml_band.blueside)/2.
         endif else $
             result.blue_fcen = num/result.blue_flux[0]
+;        print, 'red cen'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.redside, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         if abs(result.red_flux[0]) lt 1e-6 then begin
             result.red_fcen = total(eml_band.redside)/2.
         endif else $
@@ -279,6 +302,7 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         ingegrand_err = flux_err
 
         ; Integrate the continuum-subtracted flux over the main bandpass
+;        print, 'corrected flux'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.bandpass, $
                                         fr, fre, err=err, geometric=geometric
         if err eq 1 then $
@@ -289,16 +313,22 @@ PRO MDAP_EMISSION_LINES_NONPARAMETRIC_QUANTITIES, $
         ; Get the 1st and 2nd moments
         integrand = v*(flux - continuum)
         integrand_err = v*flux_err
+;        print, 'corrected mom1'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.bandpass, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         result.mom1_corr[0] = num/result.flux_corr[0]
         result.mom1_corr[1] = sqrt( (nume/result.flux_corr[0])^2 $
                                 + (result.mom1_corr[0]*result.flux_corr[1]/result.flux_corr[0])^2 )
 
         integrand = v*v*(flux - continuum)
         integrand_err = v*v*flux_err
+;        print, 'corrected mom2'
         MDAP_INTEGRATE_PIXELIZED_VALUE, wave, integrand, integrand_err, mask, eml_band.bandpass, $
                                         num, nume, err=err, geometric=geometric
+        if err eq 1 then $
+            return
         result.mom2_corr[0] = num/result.flux_corr[0]
         result.mom2_corr[1] = sqrt( (nume/result.flux_corr[0])^2 $
                                 + (result.mom2_corr[0]*result.flux_corr[1]/result.flux_corr[0])^2 )
