@@ -49,8 +49,8 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
         ; Global
         w_range_sn[*,0] = 5560.00                   ; Calculate S/N in r-band
         w_range_sn[*,1] = 6942.00
-        threshold_ston_bin[i] = 0.0d                ; Only the first plan sets a binning threshold
-        bin_par[i].noise_calib = 1      ; Always perform the noise calibration (ignored for NONE)
+        threshold_ston_bin[*] = 0.0d                ; Only the first plan sets a binning threshold
+        bin_par[*].noise_calib = 1      ; Always perform the noise calibration (ignored for NONE)
         analysis[*,0] = 'stellar-cont'              ; Perform all analyses except for GANDALF
         analysis[*,1] = 'emission-line'
         analysis[*,2] = 'abs-indices'
