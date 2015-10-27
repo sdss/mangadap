@@ -353,6 +353,7 @@ class DAP():
 
         self.calc_snr()
         self.make_drpqa()
+        self.make_basic_qa()
         if len(self.stfit_kin) == self.n_bins:
             self.make_kinematics()
 
@@ -415,7 +416,10 @@ class DAP():
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
-        kincols = ['vel', 'vdisp']
+        if self.bintype in ['STON']:
+            kincols = ['vel', 'vdisp', 'h3', 'h4']
+        else:
+            kincols = ['vel', 'vdisp']
         stfit_in = self.read_hdu('STFIT')
         if stfit_in is not None:
             self.stfit_tplw = stfit_in['TPLW']
@@ -878,8 +882,8 @@ class DAP():
         """Create basic QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise, snr=self.snr,
                     Ha6564=self.flux_ew.Ha6564.values,
-                    resid_data_bin99=self.stfit_resid_data_bin99.values,
-                    stfit_chisq=self.stfit_chisq_bin.values)
+                    resid_data_bin99=self.stfit_resid_data_bin99,
+                    stfit_chisq=self.stfit_chisq_bin)
         errs = dict(signal=None, noise=None, snr=None,
                     Ha6564=self.fluxerr_ew.Ha6564.values,
                     resid_data_bin99=None, stfit_chisq=None)

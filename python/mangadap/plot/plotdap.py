@@ -557,6 +557,9 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
         ax.plot(*bindot_args, color='k', marker='.', markersize=3, ls='None',
                 zorder=10)
 
+    if 'seaborn' in sys.modules:
+        sns.set_style(rc={'axes.facecolor': '#EAEAF2'})    
+
     return fig, ax
 
 def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
@@ -571,7 +574,7 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
             make_map_title. Default is None.
 
     Returns:
-        tuple: (plt.figure object, plt.figure axis object)
+        tuple: plt.figure object
     """
     fig_kws = util.none_to_empty_dict(fig_kws)
     mg_kws = util.none_to_empty_dict(mg_kws)
@@ -587,7 +590,7 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
     n_ax = len(all_panel_kws)
     for i, panel_kws in enumerate(all_panel_kws):
-        left, bottom = multi_panel_loc(panelnum=1, n_panels=n_ax)
+        left, bottom = multi_panel_loc(panelnum=i, n_panels=n_ax)
         if 'seaborn' in sys.modules:
             sns.set_context('talk', rc={'lines.linewidth': 2})
             sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
@@ -599,10 +602,10 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
             ax.set_axis_bgcolor('#A8A8A8')
             ax.grid(False, which='both', axis='both')
 
-        fig, ax = plot_map(fig=fig, ax=ax, patch_kws=patch_kws,
-                           fig_kws=fig_kws, **panel_kws)
+        ig, ax = plot_map(fig=fig, ax=ax, patch_kws=patch_kws, fig_kws=fig_kws,
+                          **panel_kws)
 
-    return fig, ax
+    return fig
 
 def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
               val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
@@ -678,23 +681,25 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                       imshow_kws=iw, cb_kws=cb)
         # Make single panel maps
         if make_single:
-            ig = plot_map(im, extent, **sp_kws)
+            fig, ax = plot_map(im, extent, **sp_kws)
             if savefig_single:
                 pname = '_'.join([pname_base, col])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
-                              plottype='maps', mg_kws=mg_kws, mkdir=True,
+                              category='maps', mg_kws=mg_kws, mkdir=True,
                               overwrite=overwrite)
+            plt.close(fig)
 
         # Make single panel maps with bin numbers
         if make_binnum:
             binnum_kws = dict(val=values[col].values)
-            ig = plot_map(im, extent, dapdata=dapdata, binnum_kws=binnum_kws,
-                          **sp_kws)
+            fig, ax = plot_map(im, extent, dapdata=dapdata,
+                               binnum_kws=binnum_kws, **sp_kws)
             if savefig_binnum:
                 pname = '_'.join([pname_base, col, 'binnum'])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
-                              plottype='maps', mg_kws=mg_kws, ext='pdf',
+                              category='maps', mg_kws=mg_kws, ext='pdf',
                               mkdir=True, overwrite=overwrite)
+            plt.close(fig)
 
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = set_map_par(cmap=cmap, title=titles[col],
@@ -706,12 +711,13 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     # Make multi-panel maps
     if make_multi:
-        ig = plot_map_multi(all_panel_kws=all_panel_kws, patch_kws=patch_kws,
-                            mg_kws=mg_kws, fig_kws=dict(figsize=(20, 12)))
+        fig = plot_map_multi(all_panel_kws=all_panel_kws, patch_kws=patch_kws,
+                             mg_kws=mg_kws, fig_kws=dict(figsize=(20, 12)))
         if savefig_multi:
             util.saveplot(name=pname_base, path_data=dapdata.path_data,
-                          plottype='maps', mg_kws=mg_kws, mkdir=True,
+                          category='maps', mg_kws=mg_kws, mkdir=True,
                           overwrite=overwrite)
+        plt.close(fig)
 
 
 
@@ -877,14 +883,18 @@ def plot_spectra(dapdata, bins=(0),
                  figsize=(20, 12), mg_kws=None, savefig=True, overwrite=False):
     """Plot multiple spectra.
     """
-    if bins.lower() == 'all':
-        bins = np.arange(len(dapdata.bins))
+    try:
+        if bins.lower() == 'all':
+            bins = np.arange(len(dapdata.bins))
+    except AttributeError:
+        pass
 
     for bin in bins:
-        ig = plot_spectrum(dapdata, bin=bin, fits_to_plot=fits_to_plot,
-                           rest_frame=rest_frame, xlim=xlim, ylim=ylim,
-                           stfit_masks=stfit_masks, lw=lw, figsize=figsize,
-                           mg_kws=mg_kws, savefig=savefig, overwrite=overwrite)
+        fig = plot_spectrum(dapdata, bin=bin, fits_to_plot=fits_to_plot,
+                            rest_frame=rest_frame, xlim=xlim, ylim=ylim,
+                            stfit_masks=stfit_masks, lw=lw, figsize=figsize,
+                            mg_kws=mg_kws, savefig=savefig, overwrite=overwrite)
+        plt.close(fig)
 
 def plot_spectrum(dapdata, bin=0,
                   fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
@@ -979,15 +989,17 @@ def plot_spectrum(dapdata, bin=0,
 
     if savefig:
         mg_kws['bin'] = bin
-        util.saveplot(name='spec', path_data=dapdata.path_data, plottype='spec',
-                      mg_kws=mg_kws, mkdir=True,overwrite=overwrite)
+        util.saveplot(name='spec', path_data=dapdata.path_data,
+                      category='spectra', mg_kws=mg_kws, mkdir=True,
+                      overwrite=overwrite)
 
     return fig
 
 
-def plot_emlines(dapdata, bins=(0), pnames=None, win_cen=None, mg_kws=None,
-                 lw=2, make_single=True, make_multi=True, savefig_single=True,
-                 savefig_multi=True, overwrite=False):
+def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
+                        mg_kws=None, lw=2, make_single=True, make_multi=True,
+                        savefig_single=True, savefig_multi=True,
+                        overwrite=False):
     """Make single panel and multi-panel emission line spectra plots.
 
     Args:
@@ -1004,31 +1016,37 @@ def plot_emlines(dapdata, bins=(0), pnames=None, win_cen=None, mg_kws=None,
         savefig_multi (bool): Save multi-panel plot. Default is True.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
-    if bins.lower() == 'all':
-        bins = np.arange(len(dapdata.bins))
+    try:
+        if bins.lower() == 'all':
+            bins = np.arange(len(dapdata.bins))
+    except AttributeError:
+        pass
 
     for bin in bins:
         mg_kws['bin'] = bin
         if make_multi:
-            plot_emline_multi(dapdata=dapdata, bin=bin, win_cen=win_cen,
-                              mg_kws=mg_kws, lw=lw)
+            fig = plot_emline_spectra_multi(dapdata=dapdata, bin=bin,
+                                            win_cen=win_cen, mg_kws=mg_kws,
+                                            lw=lw)
             if savefig_multi:
-                util.saveplot(name='emline', path_data=dapdata.path_data,
-                              plottype='emline', mg_kws=mg_kws, mkdir=True,
-                              overwrite=overwrite)
+                util.saveplot(name='multi', path_data=dapdata.path_data,
+                              category='emline_spectra', mg_kws=mg_kws,
+                              mkdir=True, overwrite=overwrite)
+            plt.close(fig)
 
         if make_single:
             for i, (wc, pname) in enumerate(zip(win_cen, pnames)):
                 nii = True if i == 3 else False
-                plot_emline(dapdata=dapdata, bin=bin, win_cen=wc, nii=nii,
-                            lw=lw)
+                fig = plot_emline_spectrum(dapdata=dapdata, bin=bin, win_cen=wc,
+                                           nii=nii, lw=lw)
                 if savefig_multi:
                     util.saveplot(name=pname, path_data=dapdata.path_data,
-                                  plottype='emline', mg_kws=mg_kws, mkdir=True,
-                                  overwrite=overwrite)
+                                  category='emline_spectra', mg_kws=mg_kws,
+                                  mkdir=True, overwrite=overwrite)
+                plt.close(fig)
 
-def plot_emline_multi(dapdata, bin=0, win_cen=None, mg_kws=None,
-                      lw=2, figsize=(20, 12)):
+def plot_emline_spectra_multi(dapdata, bin=0, win_cen=None, mg_kws=None, lw=2,
+                              figsize=(20, 12)):
     """Plot multiple panel zoom-ins of spectra near strong emission lines.
 
     Args:
@@ -1039,6 +1057,9 @@ def plot_emline_multi(dapdata, bin=0, win_cen=None, mg_kws=None,
             galaxy and analysis run. Default is None.
         lw (int): Linewidth. Default is 2.
         figsize (tuple): Figure width and height in inches. Default is (20, 12).
+
+    Returns:
+        plt.figure axis object
     """
     fig = plt.figure(figsize=figsize)
     bigax_kws = dict(xlabel=r'$\lambda \, [\AA]$',
@@ -1051,11 +1072,13 @@ def plot_emline_multi(dapdata, bin=0, win_cen=None, mg_kws=None,
     for i, wc in enumerate(win_cen):
         ax = fig.add_subplot(2, 3, i+1)
         nii = True if i == 3 else False
-        plot_emline(dapdata=dapdata, fig=fig, ax=ax, bin=bin, win_cen=wc,
-                    nii=nii, lw=lw)
+        ig = plot_emline_spectrum(dapdata=dapdata, fig=fig, ax=ax, bin=bin,
+                                  win_cen=wc, nii=nii, lw=lw)
 
-def plot_emline(dapdata, fig=None, ax=None, bin=0, win_cen=None, xlim=None,
-                ylim=None, nii=False, lw=2, figsize=(10, 8)):
+    return fig
+
+def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
+                         xlim=None, ylim=None, nii=False, lw=2, figsize=(10, 8)):
     """Plot data and model spectra near strong emission lines.
 
     Args:
@@ -1071,6 +1094,8 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, win_cen=None, xlim=None,
         lw (int): Linewidth. Default is 2.
         figsize (tuple): Figure width and height in inches. Default is (10, 8).
     
+    Returns:
+        plt.figure axis object
     """
     colors = set_spec_line_prop(lw=lw)
 
@@ -1148,6 +1173,7 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, win_cen=None, xlim=None,
     else:
         plt.setp(leg.get_texts(), fontsize=16)
 
+    return fig
 
 
 
@@ -1156,65 +1182,38 @@ def plot_emline(dapdata, fig=None, ax=None, bin=0, win_cen=None, xlim=None,
 
 
 
-def plot_gradient_multi(map_order, args,
-                   n_ax=6, leg_kws=dict(handlelength=2, loc=1),
-                   figsize=(20, 12)):
-    # (all_panel_kws, fig_kws=None, mg_kws=None)
+def plot_gradient_multi(dapdata, values, errors, columns,
+                        leg_kws=None, titles=None, labels=None,
+                        mg_kws=None, figsize=(20, 12)):
     """
     Plot multiple radial gradients at once.
 
     Args:
-        all_panel_kws (dict): Collection of keyword args for each panel
-        fig_kws (dict): Keyword args to pass to plt.figure. Default is None.
-        patch_kws (dict): Keyword args to pass to ax.add_patch. Default is
-            None.
         mg_kws (dict): MaNGA analysis ID keyword args to pass to
             make_map_title. Default is None.
 
     Returns:
         tuple: (plt.figure object, plt.figure axis object)
     """
-    fig_kws = util.none_to_empty_dict(fig_kws)
     mg_kws = util.none_to_empty_dict(mg_kws)
 
-    fig = plt.figure(**fig_kws)
+    fig = plt.figure(figsize=figsize)
     if 'seaborn' in sys.modules:
         sns.set_context('poster', rc={'lines.linewidth': 2})
-
 
     bigax_kws = dict(xlabel='R [arcsec]', ylabel=set_flux_units(dapdata),
                      title_kws=dict(fontsize=20), mg_kws=mg_kws)
     bigAxes = make_big_axes(fig, **bigax_kws)
     
-    bin_edges = np.concatenate((dapdata.bins.binxrl.values,
-                               np.atleast_1d(dapdata.bins.binyru.values[-1])))
-
-    n_ax = len(all_panel_kws)
-    for i, panel_kws in enumerate(all_panel_kws):
-        left, bottom = multi_panel_loc(panelnum=1, n_panels=n_ax)
-
-        # UNNCESSARY?
-        if 'seaborn' in sys.modules:
-            sns.set_context('poster', rc={'lines.linewidth': 2})
-    
+    for i, column in enumerate(columns):
+        left, bottom = multi_panel_loc(panelnum=i, n_panels=len(columns))    
         ax = fig.add_axes([left, bottom, 0.23, 0.33333])
-        
-        # MOVE INTO plot_gradient?
-        axtitle = args[k]['kwargs']['title_text'].split(' (')[0]
-        ax.set_title(axtitle)
-        
-        if 'seaborn' not in sys.modules:
-            ax.set_axis_bgcolor('#EAEAF2')
-            ax.grid(False, which='both', axis='both')
-    
-        d = args[map_order[i]]
-        p = []
-        lab = []
-        if not np.isnan(d['val']).all():
-            self.plot_gradient(k, args, c_ind=[2, 0],
-                               leglabels=['F. Belfiore', 'E. Wang'],
-                               fig=fig, ax=ax, fig_kws=fig_kws,
-                               **panel_kws)
+        ig = plot_gradient(dapdata, values, errors, column, fig=fig, ax=ax,
+                           leg_kws=leg_kws, title=titles[column], labels=labels,
+                           mg_kws=mg_kws)
+
+    return fig
+
 
 
 def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
@@ -1236,7 +1235,11 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
             tick.label.set_fontsize(20)
         for tick in ax.yaxis.get_major_ticks():
             tick.label.set_fontsize(20)
-        ax.set_title(title, fontsize=28)
+        title_kws = dict(fontsize=28)
+    else:
+        title_kws = dict(fontsize=20)
+
+    ax.set_title(title, **title_kws)
 
     if 'seaborn' not in sys.modules:
         ax.set_axis_bgcolor('#A8A8A8')
@@ -1268,27 +1271,54 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
     #         ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
     #                     ecolor=c[j], elinewidth=1, marker='None', ls='None')
 
+    return fig
 
 
 
-def plot_gradients(dapdata, values, errors, columns, mg_kws=None,
+def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
                    leg_kws=None, titles=None, labels=None,
-                   figsize=(10, 8)):
-    """wrapper to run plot_gradient and plot_gradient_multi"""
+                   figsize=(10, 8), make_single=True, make_multi=True,
+                   savefig_single=True, savefig_multi=True, overwrite=False):
+    """wrapper around plot_gradient and plot_gradient_multi"""
+
+    if make_multi:
+        fig = plot_gradient_multi(dapdata, values, errors, columns,
+                                  leg_kws=leg_kws, titles=titles, labels=labels,
+                                  mg_kws=mg_kws)
+        if savefig_multi:
+            util.saveplot(name=plotname, path_data=dapdata.path_data,
+                          category='gradients', mg_kws=mg_kws, mkdir=True,
+                          overwrite=overwrite)
+        plt.close(fig)
+    
     for column in columns:
-        plot_gradient(dapdata, values, errors, column,
-                      leg_kws=leg_kws, title=titles[column], labels=labels,
-                      mg_kws=mg_kws, figsize=figsize)
+        if make_single:
+            fig = plot_gradient(dapdata, values, errors, column,
+                                leg_kws=leg_kws, title=titles[column],
+                                labels=labels, mg_kws=mg_kws, figsize=figsize)
+            if savefig_single:
+                pname = '_'.join([plotname, column])
+                util.saveplot(name=pname, path_data=dapdata.path_data,
+                              category='gradients', mg_kws=mg_kws, mkdir=True,
+                              overwrite=overwrite)
+            plt.close(fig)
 
 
 
 def make_plots(plottype, dapdata, mg_kws, plot_kws):
-    if plottype == 'spectra':
-        plot_spectra(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
-    elif plottype == 'emlines':
-        plot_emlines(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
-    elif plottype == 'gradients':
-        plot_gradients(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
-    else:
+    """general wrapper for all plotting functions"""
+    print()
+    print(plottype)
+    ptype = '_'.join(plottype.split('_')[:-1])
+    category = plottype.split('_')[-1]
+    if category == 'spectra':
+        if ptype == 'full':
+            plot_spectra(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
+        elif ptype == 'emline':
+            plot_emline_spectra(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
+    elif (category == 'gradients') and (mg_kws['bintype'] == 'RADIAL'):
+        plot_gradients(dapdata=dapdata, mg_kws=mg_kws, plotname=ptype,
+                       **plot_kws)
+    elif (category == 'maps') and (mg_kws['bintype'] in ['NONE', 'STON']):
         plot_maps(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
 

@@ -46,7 +46,7 @@ paths_cfg = join(cfg_dir, 'sdss_paths.ini')
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
     # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=False)
+    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
 
@@ -54,27 +54,15 @@ for file_kws in file_kws_all:
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-        plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
-                           plot_kws=plot_kws)
-        #plotdap.plot_maps(dapdata=gal, mg_kws=mg_kws, **plot_kws)
-        #plotdap.plot_emlines(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        plotdap.make_plots(plottype=plottype, dapdata=gal,
+                           mg_kws=mg_kws, plot_kws=plot_kws)
+
 
 
 # TO DO
-# rename make_plots --> plot_maps (or make_maps)
-# create a new function make_plots that wraps all of the plotting types
-# (spectra, maps, emlines, gradients)
-
-
-reload(plotdap)
-plottype = 'emline_gradients'
-cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-plotdap.plot_gradients(dapdata=gal, mg_kws=mg_kws, **plot_kws)
-
-# functions to refactor:
-# plotdap.plot_emline
-# plotdap.plot_emline_multi
+# velocity: cm.RdBu, symmetric
+# what do the snr plots look like for the STON files? Try reading in a STON file
+# must test (esp, flux_band_maps) with MPL4 FITS files
 
 
 # DRPQA file

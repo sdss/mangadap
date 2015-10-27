@@ -161,14 +161,14 @@ def none_to_empty_dict(x):
         x = {}
     return x
 
-def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
+def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
     """Make plot output path and file name.
 
     Args:
         name (str): Plot name.
         path_data (str): Path to parent directory of *plots/*.
-        plottype (str): Type of plot ('map,' 'spectra,' 'emline,' or
-                                      'gradients').
+        category (str): Type of plot ('map,' 'spectra,' 'emline,' or
+            'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         mkdir (bool): Make directory if it does not exist. Default is False.
@@ -177,42 +177,46 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
         str: Plot output path and file name.
     """
     stem = 'manga-{plateifu}-LOG{mode}_BIN-{bintype}-{niter}'.format(**mg_kws)
-    if plottype == 'maps':
+    if category == 'maps':
         filename = stem + '_{0}.{1}'.format(name, ext)
-    elif plottype == 'spec':
+    elif category == 'gradients':
+        filename = stem + '_{0}.png'.format(name)
+    elif category == 'spectra':
         filename = stem + '_spec-{bin:0>4}.png'.format(**mg_kws)
-    elif plottype == 'emline':
-        filename = stem + '_spec-{bin:0>4}_{0}.png'.format(name, **mg_kws)
-    path_plottype = join(path_data, 'plots', plottype)
-    fullpath = join(path_plottype, filename)
+    elif category == 'emline_spectra':
+        filename = stem + '_spec-{bin:0>4}_emline_{0}.png'.format(name, **mg_kws)
+        category = 'spectra'
+    path_category = join(path_data, 'plots', category)
+    fullpath = join(path_category, filename)
     if mkdir:
-        if not os.path.isdir(path_plottype):
-            os.makedirs(path_plottype)
-            print('\nCreated directory: {}\n'.format(path_plottype))
+        if not os.path.isdir(path_category):
+            os.makedirs(path_category)
+            print('\nCreated directory: {}\n'.format(path_category))
     return fullpath
 
-def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
+def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, mkdir=False,
              overwrite=False):
     """Save a figure.
 
     Args:
         name (str): Plot name.
         path_data (str): Path to parent directory of *plots/*.
-        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        category (str): Type of plot ('map', 'spectra', or 'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         dpi (int): If file is png, specify dots-per-inch. Default is 200.
         mkdir (bool): Make directory if it does not exist. Default is False.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
-    path = output_path(name=name, path_data=path_data, plottype=plottype,
+    path = output_path(name=name, path_data=path_data, category=category,
                        mg_kws=mg_kws, ext=ext, mkdir=mkdir)
     if overwrite or not os.path.isfile(path):
         kws = {}
         if ext == 'png':
             kws['dpi'] = dpi
         plt.savefig(path, **kws)
-        print('\n', path.split('/')[-1], '\n')
+        # print('\n', path.split('/')[-1], '\n')
+        print(path.split('/')[-1])
 
 
 def reverse_cmap(x):
