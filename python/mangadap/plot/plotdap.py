@@ -272,17 +272,57 @@ def pretty_specind_units(units):
     return cblabel
 
 def set_cmaps(cmaps, n_plots):
+    """Set the colormaps.
+
+    Args:
+        cmaps (list): Matplotlib colormap names.
+        n_plots (int): Number of plots.
+
+    Returns:
+        tuple: colormap, reversed colormap
+    """
+    if (cmaps is not None) and (len(cmaps) not in [1, n_plots]):
+        print('Invalid number of cmaps given. Using default cmap.')
+        cmaps = None
+
     if cmaps is None:
         try:
             cmap, cmap_r = util.linear_Lab()
         except IOError:
             cmap = cm.Blues_r
         cmaps = [cmap for _ in range(n_plots)]
+    elif len(cmaps) == n_plots:
+        cmaps = [string_to_cmap(it) for it in cmaps]
+    elif len(cmaps) == 1:
+        cmaps = [string_to_cmap(cmaps[0]) for _ in range(n_plots)]
 
-    if len(cmaps) == 1:
-        cmaps = [cmaps[0] for _ in range(n_plots)]
+    # if cmaps is None:
+    #     try:
+    #         cmap, cmap_r = util.linear_Lab()
+    #     except IOError:
+    #         cmap = cm.Blues_r
+    #     cmaps = [cmaps for _ in range(n_plots)]
+    # elif len(cmaps) == 1:
+    #     cmap = cmaps[0]
+    #     cmaps = [cmap for _ in range(n_plots)]
+    # else:
+    #     for cmap in cmaps:
+    #         if cmap == 
 
     return cmaps
+
+
+def string_to_cmap(cm_name):
+    """
+    """
+    if 'linear_Lab' in cm_name:
+        cmap, cmap_r = util.linear_Lab()
+        if '_r' in cm_name:
+            cmap = cmap_r
+    else:
+        cmap = cm.__dict__[cm_name]
+    return cmap
+
 
 def set_map_background_color(spaxel_size, color='#A8A8A8'):
     """Set default parameters for a single panel plot.

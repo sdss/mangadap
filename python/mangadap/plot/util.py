@@ -218,12 +218,14 @@ def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, mkdir=False,
         # print('\n', path.split('/')[-1], '\n')
         print(path.split('/')[-1])
 
-
-def reverse_cmap(x):
-    """Reverse colormap."""
-    def out(y):
-        return x(1. - y)
-    return out
+def reverse_cmap(cdict):
+    cdict_r = {}
+    for k, v in cdict.items():
+        data = []
+        for it in v:
+            data.append((1 - it[0], it[1], it[2]))
+        cdict_r[k] = sorted(data)
+    return cdict_r
 
 def linear_Lab():
     """Make linear Lab color map.
@@ -261,9 +263,7 @@ def linear_Lab():
     k = ['red', 'green', 'blue']
     LinearL = dict(zip(k, rgb)) # makes a dictionary from 2 lists
 
-    LinearL_r = {}
-    for k in LinearL:
-        LinearL_r[k] = reverse_cmap(LinearL[k])
+    LinearL_r = reverse_cmap(LinearL)
 
     cmap = LinearSegmentedColormap('linearL', LinearL)
     cmap_r = LinearSegmentedColormap('linearL_r', LinearL_r)

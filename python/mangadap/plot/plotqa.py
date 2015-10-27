@@ -45,8 +45,7 @@ paths_cfg = join(cfg_dir, 'sdss_paths.ini')
 
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
-    # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
+    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=False)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
 
@@ -61,7 +60,6 @@ for file_kws in file_kws_all:
 
 # TO DO
 # velocity: cm.RdBu, symmetric
-# what do the snr plots look like for the STON files? Try reading in a STON file
 # must test (esp, flux_band_maps) with MPL4 FITS files
 
 
