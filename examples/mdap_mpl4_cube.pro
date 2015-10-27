@@ -1,57 +1,35 @@
 ;===============================================================================
 ; MPL-4 CUBE FILE PLANS
 ;===============================================================================
-;   1: STON: Bin to S/N=30; only include S/N>5 spectra (r-band continuum)
-;       MILES-THIN (219 stars drawn from a 12x12x12 grid in logT, logg, and [Fe/H])
-;           stellar-cont (4 moments)
-;           emission-line
-;           abs-indices
-;   2: NONE: Fit all spaxels with a continuum S/N>0, no binning
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   3: RADIAL: 10 logarithmically spaced radial bins; S/N>0
-;       **No velocity registration**
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   4: RADIAL: 10 logarithmically spaced radial bins; S/N>0
-;       Use velocity registration (based on velocities from iter 2)
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   5: ALL: Bin all "valid" spaxels; S/N>0
-;       Use velocity registration (based on velocities from iter 2)
-;       MILES-THIN (219 stars drawn from a 12x12x12 grid in logT, logg, and [Fe/H])
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   6: ALL: Bin all "valid" spaxels; S/N>0
-;       Use velocity registration (based on velocities from iter 2)
-;       *Full MILES*
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   7: ALL: Bin all "valid" spaxels; S/N>0
-;       Use velocity registration (based on velocities from iter 2)
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   8: ALL: Bin all "valid" spaxels; S/N>0
-;       **No velocity registration**
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments)
-;           emission-line
-;           abs-indices
-;   9: STON: Bin to S/N=5; only include S/N>0 spectra (r-band continuum)
-;       MIUSCAT-THIN (72 templates: Salpeter IMF; every other age <14 Gyr; three metallicities)
-;           stellar-cont (2 moments); **NO multiplicative polynomial**
-;           emission-line
-;           abs-indices
+; Focus on a single template set:
+;       - MIUSCAT-THIN to start
+; All plans perform
+;       - stellar-cont
+;       - emission-line
+;       - abs-indices
+; Multiplicative polynomial is always 6th-order
+; Only the S/N=30 plan (plan 1) fits 4 moments for the stellar
+; kinematics; all others fit two.
+;
+;   1: STON:
+;           - Bin to S/N=30; only include S/N>5 spectra (r-band continuum)
+;           - stellar-cont (4 moments)
+;   2: STON:
+;           - Bin to S/N=5; including all spectra with S/N>0 (r-band continuum)
+;   3: NONE:
+;           - Fit all spaxels with a continuum S/N>0, no binning
+;   4: RADIAL:
+;           - 10 logarithmically spaced radial bins; S/N>0
+;           - **No velocity registration**
+;   5: RADIAL:
+;           - 10 logarithmically spaced radial bins; S/N>0
+;           - Velocity register based on velocities from iter 2
+;   6: ALL:
+;           - Bin all "valid" spaxels; S/N>0
+;           - **No velocity registration**
+;   7: ALL:
+;           - Bin all "valid" spaxels; S/N>0
+;           - Velocity register based on velocities from iter 2
 
 PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
                 ofile, overwrite=overwrite
@@ -59,7 +37,7 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
         ;---------------------------------------------------------------
         ; Define the number of execution iterations and setup the needed vectors
         ; and allocate the necessary arrays.
-        niter = 9                                       ; Number of ExecutionPlans to produce
+        niter = 7                                       ; Number of ExecutionPlans to produce
 
         MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, niter, bin_par, w_range_sn, threshold_ston_bin, $
                                                 w_range_analysis, threshold_ston_analysis, $
@@ -69,125 +47,76 @@ PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
 
         ;---------------------------------------------------------------
         ; Global
-        threshold_ston_analysis[*] = 0.0d
-        analysis[*,0] = 'stellar-cont'
+        w_range_sn[*,0] = 5560.00                   ; Calculate S/N in r-band
+        w_range_sn[*,1] = 6942.00
+        threshold_ston_bin[i] = 0.0d                ; Only the first plan sets a binning threshold
+        bin_par[i].noise_calib = 1      ; Always perform the noise calibration (ignored for NONE)
+        analysis[*,0] = 'stellar-cont'              ; Perform all analyses except for GANDALF
         analysis[*,1] = 'emission-line'
         analysis[*,2] = 'abs-indices'
-        ems_par_analysis[*] = 'STANDARD'
-        abs_par_analysis[*] = 'LICK'
-        analysis_par[*].degree = -1
-        analysis_par[*].mdegree = 6
-        analysis_par[*].reddening_order = 0
-        overwrite_flag[*] = 1
+        w_range_analysis[*,0] = 3650.0              ; Analyze the full spectrum
+        w_range_analysis[*,1] = 10300.0
+        threshold_ston_analysis[*] = 0.0d           ; Analyze all spectra with positive S/N
+        ems_par_analysis[*] = 'STANDARD'            ; Always use the standard emission-line mask
+        abs_par_analysis[*] = 'LICK'                ; Always ust the standard index definitions
+        analysis_par[*].moments = 2                 ; All but one plan uses two moments
+        analysis_par[*].degree = -1                 ; Never fit an additive polynomial
+        analysis_par[*].mdegree = 6                 ; Always use 6th order mult. polynomial
+        analysis_par[*].reddening_order = 0         ; Never fit a reddening function
+        analysis_prior[*] = ''                      ; All but two plans do not use a prior
+        overwrite_flag[*] = 1                       ; Always overwrite any existing file
+
+        ; Template selection!
+        tpl_lib_analysis[*] = 'MIUSCAT-THIN'
+
+        i = 0
 
         ;---------------------------------------------------------------
         ; Plan 1
-        bin_par[0].type = 'STON'
-        bin_par[0].ston = 30.0d
-        bin_par[0].noise_calib = 1
-        w_range_sn[0,*] = [5560.00, 6942.00]
-        threshold_ston_bin[0] = 5.0d
-        w_range_analysis[0,*] = [3650.,10300.] 
-        tpl_lib_analysis[0] = 'MILES-THIN'
-        analysis_par[0].moments = 4
-        analysis_prior[0] = ''
+        bin_par[i].type = 'STON'
+        bin_par[i].ston = 30.0d
+        threshold_ston_bin[i] = 5.0d
+        analysis_par[i].moments = 4
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 2
-        bin_par[1].type = 'NONE'
-        w_range_sn[1,*] = [5560.00, 6942.00]
-        threshold_ston_bin[1] = 0.0d
-        w_range_analysis[1,*] = [3650.,10300.] 
-        tpl_lib_analysis[1] = 'MIUSCAT-THIN'
-        analysis_par[1].moments = 2
-        analysis_prior[1] = ''
+        bin_par[i].type = 'STON'
+        bin_par[i].ston = 5.0d
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 3
-        bin_par[2].type = 'RADIAL'
-        bin_par[2].noise_calib = 1
-        bin_par[2].nr = 10
-        bin_par[2].rlog = 1
-        w_range_sn[2,*] = [5560.00, 6942.00]
-        threshold_ston_bin[2] = 0.0d
-        w_range_analysis[2,*] = [3650.,10300.] 
-        tpl_lib_analysis[2] = 'MIUSCAT-THIN'
-        analysis_par[2].moments = 2
-        analysis_prior[2] = ''
+        bin_par[i].type = 'NONE'
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 4
-        bin_par[3].type = 'RADIAL'
-        bin_par[3].v_register = 1
-        bin_par[3].noise_calib = 1
-        bin_par[3].nr = 10
-        bin_par[3].rlog = 1
-        w_range_sn[3,*] = [5560.00, 6942.00]
-        threshold_ston_bin[3] = 0.0d
-        w_range_analysis[3,*] = [3650.,10300.] 
-        tpl_lib_analysis[3] = 'MIUSCAT-THIN'
-        analysis_par[3].moments = 2
-        analysis_prior[3] = '1'
+        bin_par[i].type = 'RADIAL'
+        bin_par[i].nr = 10
+        bin_par[i].rlog = 1
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 5
-        bin_par[4].type = 'ALL'
-        bin_par[4].v_register = 1
-        bin_par[4].noise_calib = 1
-        w_range_sn[4,*] = [5560.00, 6942.00]
-        threshold_ston_bin[4] = 0.0d
-        w_range_analysis[4,*] = [3650.,10300.] 
-        tpl_lib_analysis[4] = 'MILES-THIN'
-        analysis_par[4].moments = 2
-        analysis_prior[4] = '1'
+        bin_par[i].type = 'RADIAL'
+        bin_par[i].v_register = 1
+        bin_par[i].nr = 10
+        bin_par[i].rlog = 1
+        analysis_prior[i] = '1'
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 6
-        bin_par[5].type = 'ALL'
-        bin_par[5].v_register = 1
-        bin_par[5].noise_calib = 1
-        w_range_sn[5,*] = [5560.00, 6942.00]
-        threshold_ston_bin[5] = 0.0d
-        w_range_analysis[5,*] = [3650.,10300.] 
-        tpl_lib_analysis[5] = 'MILES'
-        analysis_par[5].moments = 2
-        analysis_prior[5] = '1'
+        bin_par[i].type = 'ALL'
+        i++
 
         ;---------------------------------------------------------------
         ; Plan 7
-        bin_par[6].type = 'ALL'
-        bin_par[6].v_register = 1
-        bin_par[6].noise_calib = 1
-        w_range_sn[6,*] = [5560.00, 6942.00]
-        threshold_ston_bin[6] = 0.0d
-        w_range_analysis[6,*] = [3650.,10300.] 
-        tpl_lib_analysis[6] = 'MIUSCAT-THIN'
-        analysis_par[6].moments = 2
-        analysis_prior[6] = '1'
-
-        ;---------------------------------------------------------------
-        ; Plan 8
-        bin_par[7].type = 'ALL'
-        bin_par[7].noise_calib = 1
-        w_range_sn[7,*] = [5560.00, 6942.00]
-        threshold_ston_bin[7] = 0.0d
-        w_range_analysis[7,*] = [3650.,10300.] 
-        tpl_lib_analysis[7] = 'MIUSCAT-THIN'
-        analysis_par[7].moments = 2
-        analysis_prior[7] = ''
-
-        ;---------------------------------------------------------------
-        ; Plan 9
-        bin_par[8].type = 'STON'
-        bin_par[8].ston = 5.0d
-        bin_par[8].noise_calib = 1
-        w_range_sn[8,*] = [5560.00, 6942.00]
-        threshold_ston_bin[8] = 0.0d
-        w_range_analysis[8,*] = [3650.,10300.] 
-        tpl_lib_analysis[8] = 'MIUSCAT-THIN'
-        analysis_par[8].moments = 2
-        analysis_par[8].mdegree = 0
-        analysis_prior[8] = ''
+        bin_par[i].type = 'ALL'
+        bin_par[i].v_register = 1
+        analysis_prior[i] = '1'
+        i++
 
         ;---------------------------------------------------------------
         ;---------------------------------------------------------------
