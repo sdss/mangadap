@@ -2697,6 +2697,7 @@ python/mangadap/plot/plotdap.py -text
 python/mangadap/plot/plotqa.py -text
 python/mangadap/plot/tests/__init__.py -text
 python/mangadap/plot/tests/test_cfg_io.py -text
+python/mangadap/plot/tests/test_plotdap.py -text
 python/mangadap/plot/util.py -text
 python/mangadap/proc/SpatiallyBinnedSpectra.py -text
 python/mangadap/proc/TemplateLibrary.py -text

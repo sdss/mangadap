@@ -296,24 +296,16 @@ def set_cmaps(cmaps, n_plots):
     elif len(cmaps) == 1:
         cmaps = [string_to_cmap(cmaps[0]) for _ in range(n_plots)]
 
-    # if cmaps is None:
-    #     try:
-    #         cmap, cmap_r = util.linear_Lab()
-    #     except IOError:
-    #         cmap = cm.Blues_r
-    #     cmaps = [cmaps for _ in range(n_plots)]
-    # elif len(cmaps) == 1:
-    #     cmap = cmaps[0]
-    #     cmaps = [cmap for _ in range(n_plots)]
-    # else:
-    #     for cmap in cmaps:
-    #         if cmap == 
-
     return cmaps
 
-
 def string_to_cmap(cm_name):
-    """
+    """Return colormap given name.
+
+    Args:
+        cm_name (str): Name of colormap.
+
+    Returns:
+        colormap
     """
     if 'linear_Lab' in cm_name:
         cmap, cmap_r = util.linear_Lab()
@@ -322,7 +314,6 @@ def string_to_cmap(cm_name):
     else:
         cmap = cm.__dict__[cm_name]
     return cmap
-
 
 def set_map_background_color(spaxel_size, color='#A8A8A8'):
     """Set default parameters for a single panel plot.
@@ -355,10 +346,14 @@ def set_map_par(cmap, title, cblabel, titlefontsize=28, cbfontsize=20):
     """
     imshow_kws = dict(cmap=cmap)
     title_kws = dict(fontsize=titlefontsize, label=title)
-    cb_kws = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                  cbrange=None, sigclip=3, symmetric=False,
-                  label_kws=dict(label=cblabel, size=cbfontsize),
-                  tick_params_kws=dict(labelsize=cbfontsize))
+    cb_kws_default = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
+                          cbrange=None, sigclip=3, symmetric=False,
+                          label_kws=dict(label=cblabel, size=cbfontsize),
+                          tick_params_kws=dict(labelsize=cbfontsize))
+    if cb_kws is not None:
+        for k, v in cb_kws_default.items():
+            if k not in cb_kws:
+                cb_kws[k] = v
     return title_kws, imshow_kws, cb_kws
 
 def map_ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
