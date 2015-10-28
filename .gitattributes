@@ -2685,7 +2685,6 @@ python/mangadap/plot/config/kinematics_maps.ini -text
 python/mangadap/plot/config/sdss_paths.ini -text
 python/mangadap/plot/config/snr_maps.ini -text
 python/mangadap/plot/config/specind_maps.ini -text
-python/mangadap/plot/config/spectra.ini -text
 python/mangadap/plot/dap.py -text
 python/mangadap/plot/deprecated/plot_map_wrap.py -text
 python/mangadap/plot/deprecated/plot_qa.py -text
