@@ -301,6 +301,8 @@ class DAP():
         self.fits.open_hdu()
         self.fits.read_par()
         self.extnames = [hdu._summary()[0] for hdu in self.fits.hdu]
+        print('Read manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
+              '.fits'.format(**file_kws))
 
     def get_all_ext(self):
         """Read in all extensions from FITS file."""
@@ -373,6 +375,10 @@ class DAP():
         self.mangaid = self.header['MANGAID']
         self.flux_units = self.header['BUNIT']
         try:
+            self.bin_sn = self.header['BINSN']
+        except KeyError:
+            self.bin_sin = None
+        try:
             self.tplkey = self.header['TPLKEY']
         except KeyError:
             self.tplkey = None
@@ -416,7 +422,7 @@ class DAP():
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
-        if self.bintype in ['STON']:
+        if (self.bintype in ['STON']) and (self.bin_sn == 30):
             kincols = ['vel', 'vdisp', 'h3', 'h4']
         else:
             kincols = ['vel', 'vdisp']
@@ -473,6 +479,8 @@ class DAP():
             cols = [it.lower() for it in elmmnt_in.columns.names]
             self.elmmnt = util.fitsrec_to_multiindex_df(elmmnt_in, cols,
                                                         self.elband.index)
+            self.flux_nonpar = self.elmmnt.flux
+            self.flux_nonparerr = self.elmmnt.fluxerr
         else:
             self.elmmnt = None
 
@@ -621,6 +629,8 @@ class DAP():
                 self.calc_CalII0p86()
             else:
                 self.sindx = sindx
+            self.specind = self.sindx.indx
+            self.specinderr = self.sindx.indxerr
         else:
             self.sindx = None
 
@@ -715,8 +725,12 @@ class DAP():
 
     def deredshift_velocities(self):
         """Deredshift stellar and emission line velocities."""
-        stkincols = ['vel', 'vdisp']
-        elkincols = copy.deepcopy(stkincols)
+        elkincols = ['vel', 'vdisp']
+        if (self.bintype in ['STON']) and (self.bin_sn == 30):
+            stkincols = ['vel', 'vdisp', 'h3', 'h4']
+        else:
+            stkincols = ['vel', 'vdisp']
+
         # Emission line kinematics are calculated using several methods in
         # MPL-4+. Select flux-weighted kinematics ("flux_wt") by default. 
         if 'vel_flux_wt' in list(self.kin_ew.columns.values):
@@ -733,6 +747,11 @@ class DAP():
             stkin = dict(vel=stvel, vdisp=self.stfit_kin['vdisp'].values)
             stkinerr = dict(vel=stvelerr,
                             vdisp=self.stfit_kinerr['vdisp'].values)
+            if (self.bintype in ['STON']) and (self.bin_sn == 30):
+                for it in ['h3', 'h4']:
+                    stkin[it] = self.stfit_kin[it].values
+                    stkinerr[it] = self.stfit_kinerr[it].values
+
             elkin = {elkincols[0]: elvel,
                      elkincols[1]: self.kin_ew[elkincols[1]].values}
             elkinerr = {elkincols[0]: elvelerr,
@@ -907,7 +926,13 @@ class DAP():
                     elvel=self.kinerr_rest_ew[elkincols[0]],
                     elvdisp=self.kinerr_ew[elkincols[1]],
                     stfit_resid99=None)
-        columns = ['stvel', 'stvdisp', 'stfit_chisq', 'elvel', 'elvdisp',
-                   'stfit_resid99']
+        if (self.bintype in ['STON']) and (self.bin_sn == 30):
+            for it in ['h3', 'h4']:
+                vals[it] = self.stfit_kin[it].values
+                errs[it] = self.stfit_kinerr[it].values
+            columns = ['stvel', 'stvdisp', 'h3', 'elvel', 'elvdisp', 'h4']
+        else:
+            columns = ['stvel', 'stvdisp', 'stfit_chisq', 'elvel', 'elvdisp',
+                       'stfit_resid99']
         self.kinematics = pd.DataFrame(vals, columns=columns)
         self.kinematics_err = pd.DataFrame(errs, columns=columns)

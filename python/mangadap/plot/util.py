@@ -194,8 +194,8 @@ def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
             print('\nCreated directory: {}\n'.format(path_category))
     return fullpath
 
-def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, mkdir=False,
-             overwrite=False):
+def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, main=True,
+             mkdir=False, overwrite=False):
     """Save a figure.
 
     Args:
@@ -205,6 +205,8 @@ def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, mkdir=False,
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         dpi (int): If file is png, specify dots-per-inch. Default is 200.
+        main (bool): True is running as script. False is running interactively.
+            Default is True.
         mkdir (bool): Make directory if it does not exist. Default is False.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
@@ -215,8 +217,10 @@ def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, mkdir=False,
         if ext == 'png':
             kws['dpi'] = dpi
         plt.savefig(path, **kws)
-        # print('\n', path.split('/')[-1], '\n')
-        print(path.split('/')[-1])
+        filename = path.split('/')[-1]
+        if not main:
+            filename = '\n' + filename + '\n'
+        print(filename)
 
 def reverse_cmap(cdict):
     cdict_r = {}
