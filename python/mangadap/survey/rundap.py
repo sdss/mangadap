@@ -215,13 +215,11 @@ class rundap:
         nodes (int): (Optional) Number of cluster nodes to use.  Default
             is 18.
         qos (str): (Optional) Select a specific processor (only None for
-            daily run)
-
+            daily run).  This option is ignored if :attr:`q` is set.
         umask (str): (Optional) umask to set for output. Default is
             0027.
         walltime (str): (Optional) Maximum wall time for cluster job.
             Default is 10 days ('240:00:00').
-
         hard (bool): (Optional) Same as hard keyword in cluster
             submission; see :func:`pbs.queue.commit`.
 
@@ -239,7 +237,11 @@ class rundap:
                 This keyword is in the **opposite** sense of the
                 "--submit" command-line options; i.e. including
                 --submit on the command line sets submit=False.
-
+        queue (str): (Optional) Name of the destination queue.  When
+            submitting jobs at Utah, this should **not** be set (leaving
+            it at the default of None).  When submitting jobs at
+            Portsmouth, this can be used to select either sciama1.q,
+            cluster.q (default), or sciama3.q.
         idl_cmnd (str): (Optional) IDL command.  Default: idl.
 
     Attributes:
@@ -287,12 +289,13 @@ class rundap:
         maps (bool): Create the MAP fits file
         label (str): Label to use in cluster queue.
         nodes (int): Number of cluster nodes to use.
-        qos (str): Specific processor to use. 
+        qos (str): Specific processor to use (Utah specific)
         umask (str): umask to set for output.
         walltime (str): Maximum wall time for cluster job.
         hard (bool): Same as hard keyword in cluster submission; see
             :func:`pbs.queue.commit`.
         submit (bool): Submit all jobs to the cluster.
+        q (str): Queue destination (Portsmouth specific)
         idl_cmnd (str): The specific IDL command to use
         drpc (:class:`mangadap.survey.drpcomplete`): Database of the
             available DRP files and the parameters necessary to write
@@ -317,7 +320,7 @@ class rundap:
                 plots=True, covar=True, maps=True,
                 # Cluster options
                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                submit=True, idl_cmnd='idl'):
+                submit=True, queue=None, idl_cmnd='idl'):
 
         # Save run-mode options
         self.daily = daily
@@ -364,6 +367,7 @@ class rundap:
         self.hard = hard
         self.submit = submit
 
+        self.q = queue
         self.idl_cmnd = idl_cmnd
 
         # Read and parse command-line arguments
@@ -389,6 +393,8 @@ class rundap:
                              if self.analysis_path is None else str(self.analysis_path)
 
         # Alert the user of the versions to be used
+        if self.q is not None:
+            print('Attempting to submit to queue: {0}'.format(self.q))
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
         print(self.mpl.show())
         print('Paths:')
@@ -627,6 +633,8 @@ class rundap:
         parser.add_argument("--submit", help='turn off cluster submission', action='store_false',
                             default=True)
 
+        parser.add_argument("--queue", dest='queue', type=str, help='set the destination queue', default=None)
+
         parser.add_argument("--idl", type=str, help='IDL command to use', default=None)
 
 
@@ -717,6 +725,12 @@ class rundap:
         if arg.submit is not None:
             self.submit = arg.submit
 
+        # Specify the destination queue
+        if arg.queue is not None:
+            self.q = arg.queue
+
+#       print(self.q)
+
         # Specify the IDL command
         if arg.idl is not None:
             self.idl_cmnd = arg.idl
@@ -761,6 +775,27 @@ class rundap:
         :attr:`submit` is False, this is essentially a wrapper for
         :func:`prepare_for_analysis`.
 
+        This function is written to be functional for submission to the
+        cluster queues both at Utah and using the sciama cluster at
+        Portsmouth.  The available queues are:
+
+        +===========+========+======+===========+
+        |     Queue |  Nodes |  PPN |   GB/core |
+        +===========+========+======+===========+
+        | sciama1.q |     80 |   12 |         2 |
+        +-----------+--------+------+-----------+
+        | sciama2.q |     96 |   16 |         4 |
+        +-----------+--------+------+-----------+
+        | sciama3.q |     48 |   20 |       3.2 |
+        +-----------+--------+------+-----------+
+
+        One should **not** submit to sciama3.q without permission from
+        Will Percival.  The default queue is cluster.q (sciama2.q); so
+        basically only use :attr:`q` to select sciama1.q.
+
+        Submissions to Utah should have their queue destination set to
+        None.  However, the fast node can be selected using :attr:`qos`.
+
         .. todo::
             - This algorithm is slow because it has to search through
               the drpcomplete file each time to find the plate/ifudesign
@@ -772,10 +807,31 @@ class rundap:
             clobber (bool): (Optional) Overwrite any existing script
                 files.
         """
-        # If submitting to the queue, create the queue object
+        # If submitting to the queue, create the queue object.  The
+        # creation of the queue object is system dependent; however,
+        # once created, the queue object is treated identically for both
+        # the Utah and Portsmouth clusters.
         if self.submit:
-            self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                              walltime=self.walltime)
+            if self.q is not None:
+                # Expect to select the queue only when submitting to the
+                # Portsmouth cluster, sciama.  In this case, the number
+                # of nodes is queue dependent, and qos is not set
+                if self.q == 'sciama1.q':
+                    ppn = 12
+                elif self.q == 'sciama3.q':
+                    ppn = 20
+                else:
+                    ppn = 16
+                self.queue.create(label=self.label, nodes=self.nodes, umask=self.umask,
+                                  walltime=self.walltime, queue=self.q, ppn=ppn)
+            else:
+                # self.q can be None when submitting to both the
+                # Portsmouth and Utah clusters.  In this case, the
+                # default queue destination and ppn is correct.  qos is
+                # also set, but this should only be used when submitting
+                # to Utah.
+                self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos,
+                                  umask=self.umask, walltime=self.walltime)
        
         # Create the script files, regardless of whether or not they are
         # submitted to the queue, appending the scripts to the queue if
