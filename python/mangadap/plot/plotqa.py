@@ -57,11 +57,9 @@ for file_kws in file_kws_all:
         plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
                            plot_kws=plot_kws)
 
-
 # TO DO
-# must test (esp, flux_band_maps) with MPL4 FITS files
-# add x_off from plotdap.py / plot_emline_spectrum to gal.elopar 
-
+# test MPL4 FITS files
+# currently checking NONE-003 kinematics maps
 
 
 # DRPQA file

@@ -1162,10 +1162,12 @@ def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
         ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
         ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
         ax.set_ylabel(set_flux_units(dapdata), fontsize=24)
-        x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+        # x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
+        x_offs = [-24, 10, -8, -3, -9, -9, -9, -9, -12, -3, -5, -12, -5]
         indiv_ax = True
     else:
-        x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
+        # x_offs = [-12, -4, -12, -12, -20, -4, -12, -20, -6]
+        x_offs = [-38, 10, -16, -4, -12, -12, -12, -12, -20, -4, -12, -20, -6]
         indiv_ax = False
 
     wave = dapdata.wave_rest[bin]
