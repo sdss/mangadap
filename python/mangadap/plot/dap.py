@@ -532,13 +532,13 @@ class DAP():
 
             # combine [OII]3727 and [OII]3729 flux measurements
             key = 'flux_' + fitcode.lower()
-            oii = self.__dict__[key].loc[:, ['OII3727', 'OII3729']].sum(axis=1)
-            self.__dict__[key].loc[:, 'OIIsum'] = oii
+            oii = self.__dict__[key][['OII3727', 'OII3729']].sum(axis=1)
+            self.__dict__[key]['OIIsum'] = oii
 
             kerr = 'fluxerr_' + fitcode.lower()
-            oiierr_sq = self.__dict__[kerr].loc[:, ['OII3727', 'OII3729']]**2.
+            oiierr_sq = self.__dict__[kerr][['OII3727', 'OII3729']]**2.
             oiierr = np.sqrt(oiierr_sq.sum(axis=1))
-            self.__dict__[kerr].loc[:, 'OIIsum'] = oiierr
+            self.__dict__[kerr]['OIIsum'] = oiierr
 
             # Read in NKIN column
             try:
