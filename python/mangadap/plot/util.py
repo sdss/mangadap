@@ -74,7 +74,6 @@ def read_vals(dapf, hdu, ext, columns):
     Returns:
         DataFrame
     """
-
     recarr = dapf.read_hdu_data(hdu)
     df = pd.DataFrame(swap_byte(recarr[ext], forceswap=True), columns=columns)
     return df

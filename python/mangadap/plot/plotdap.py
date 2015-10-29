@@ -919,8 +919,10 @@ def set_flux_units(dapdata):
         string: Flux units for spectrum.
     """
     indiv_units = np.array(dapdata.flux_units.split(' ')[1].split('/'))
+    indiv_units = indiv_units.astype('<U32')
     indiv_units[indiv_units == 'cm^2'] = 'cm$^2$'
     indiv_units[indiv_units == 'Ang'] = '$\AA$'
+    indiv_units[indiv_units == 'arcsec^2'] = 'arcsec$^2$'
     units = '/'.join(indiv_units)
     flux_units = 'Flux / {0} [10$^{{-17}}$ {1}]'.format(indiv_units[-1], units)
     return flux_units
@@ -1219,7 +1221,8 @@ def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
 
     for name, w, x_off in zip(dapdata.elopar.elname_tex,
                               dapdata.elopar.restwave, x_offs):
-        if (w > xmin) and (w < xmax):
+        if ((w > xmin) and (w < xmax) and
+            (name not in ['[OII]3727', '[OII]3729'])):
             if (not nii) or (name is not r'H$\alpha$'):
                 ax.text(w + x_off, ymax-dy*0.08, name, color='k', fontsize=20)
                 ax.plot([w, w], [ymax-dy*0.16, ymax-dy*0.11], color='k')
