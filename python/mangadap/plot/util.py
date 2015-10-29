@@ -9,6 +9,7 @@ import os
 from os.path import join
 import sys
 import copy
+import re
 
 import numpy as np
 import pandas as pd
@@ -18,12 +19,13 @@ from matplotlib.colors import LinearSegmentedColormap
 
 from sdss_access.path import base_path
 
-
-def fitsrec_to_dataframe(recarr):
+def fitsrec_to_dataframe(recarr, forceswap=False):
     """Convert astropy FITS_rec to pandas DataFrame.
 
     Args:
         recarr (astropy.io.fits.FITS_rec): FITS record array class.
+        forceswap (bool): If True, do a byteswap regardless of python verion.
+            Default is False.
 
     Returns:
         DataFrame
@@ -31,7 +33,7 @@ def fitsrec_to_dataframe(recarr):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        dtmp[col] = swap_byte(recarr[col])
+        dtmp[col] = swap_byte(recarr[col], forceswap)
     return pd.DataFrame(dtmp, columns=cols)
 
 def make_df(data, columns):
@@ -72,21 +74,19 @@ def read_vals(dapf, hdu, ext, columns):
     Returns:
         DataFrame
     """
-
     recarr = dapf.read_hdu_data(hdu)
-    df = pd.DataFrame(swap_byte(recarr[ext]), columns=columns)
+    df = pd.DataFrame(swap_byte(recarr[ext], forceswap=True), columns=columns)
     return df
 
-def swap_byte(arr):
+def swap_byte(arr, forceswap=False):
     """Swap byte order from big-endian (FITS) to little-endian (pandas).
 
-    Only do byte swap if using Python 2.
+    Only do byte swap if using Python 2 or if forceswap is True.
     """
-    if sys.version_info[0] < 3:
+    if (sys.version_info[0] < 3) or forceswap:
         return arr.byteswap().newbyteorder()
     else:
         return arr
-
 
 def swap_byte_df(arr, columns=None):
     """Swap byte order and convert from array to DataFrame.
@@ -139,19 +139,35 @@ def lowercase_colnames(df):
     df.columns = [item.lower() for item in df.columns]
     return df
 
+def texify_elnames(names):
+    """Convert emission line names to pretty TeX format."""
+    texnames = []
+    for name in names:
+        if name.lower() in ('hb4862', 'hbeta', 'hb'):
+            name = r'H$\beta$'
+        elif name.lower() in ('ha6564', 'halpha', 'ha'):
+            name = r'H$\alpha$'
+        else:
+            linewave = re.split('(\d+)', name)
+            line, wave = list(filter(None, linewave))
+            name = '[' + line + ']' + wave
+        texnames.append(name)
+    return texnames
+
 def none_to_empty_dict(x):
     """If a variable is None, return an empty dictionary."""
     if x is None:
         x = {}
     return x
 
-def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
+def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
     """Make plot output path and file name.
 
     Args:
         name (str): Plot name.
         path_data (str): Path to parent directory of *plots/*.
-        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        category (str): Type of plot ('map,' 'spectra,' 'emline,' or
+            'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         mkdir (bool): Make directory if it does not exist. Default is False.
@@ -160,48 +176,59 @@ def output_path(name, path_data, plottype, mg_kws, ext='png', mkdir=False):
         str: Plot output path and file name.
     """
     stem = 'manga-{plateifu}-LOG{mode}_BIN-{bintype}-{niter}'.format(**mg_kws)
-    if plottype == 'maps':
+    if category == 'maps':
         filename = stem + '_{0}.{1}'.format(name, ext)
-    elif plottype == 'spec':
-        filename = stem + '_{0}-{bin:0>4}.png'.format(name, **mg_kws)
-    path_plottype = join(path_data, 'plots', plottype)
-    fullpath = join(path_plottype, filename)
+    elif category == 'gradients':
+        filename = stem + '_{0}.png'.format(name)
+    elif category == 'spectra':
+        filename = stem + '_spec-{bin:0>4}.png'.format(**mg_kws)
+    elif category == 'emline_spectra':
+        filename = stem + '_spec-{bin:0>4}_emline_{0}.png'.format(name, **mg_kws)
+        category = 'spectra'
+    path_category = join(path_data, 'plots', category)
+    fullpath = join(path_category, filename)
     if mkdir:
-        if not os.path.isdir(path_plottype):
-            os.makedirs(path_plottype)
-            print('\nCreated directory: {}\n'.format(path_plottype))
+        if not os.path.isdir(path_category):
+            os.makedirs(path_category)
+            print('\nCreated directory: {}\n'.format(path_category))
     return fullpath
 
-def saveplot(name, path_data, plottype, mg_kws, ext='png', dpi=200, mkdir=False,
-             overwrite=False):
+def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, main=True,
+             mkdir=False, overwrite=False):
     """Save a figure.
 
     Args:
         name (str): Plot name.
         path_data (str): Path to parent directory of *plots/*.
-        plottype (str): Type of plot ('map', 'spectra', or 'gradients').
+        category (str): Type of plot ('map', 'spectra', or 'gradients').
         mg_kws (dict): MaNGA galaxy and analysis information.
         ext (str): File extension.
         dpi (int): If file is png, specify dots-per-inch. Default is 200.
+        main (bool): True is running as script. False is running interactively.
+            Default is True.
         mkdir (bool): Make directory if it does not exist. Default is False.
         overwrite (bool): Overwrite plot if it exists. Default is False.
-
     """
-    path = output_path(name=name, path_data=path_data, plottype=plottype,
+    path = output_path(name=name, path_data=path_data, category=category,
                        mg_kws=mg_kws, ext=ext, mkdir=mkdir)
     if overwrite or not os.path.isfile(path):
         kws = {}
         if ext == 'png':
             kws['dpi'] = dpi
         plt.savefig(path, **kws)
-        print('\n', path.split('/')[-1], '\n')
+        filename = path.split('/')[-1]
+        if not main:
+            filename = '\n' + filename + '\n'
+        print(filename)
 
-
-def reverse_cmap(x):
-    """Reverse colormap."""
-    def out(y):
-        return x(1. - y)
-    return out
+def reverse_cmap(cdict):
+    cdict_r = {}
+    for k, v in cdict.items():
+        data = []
+        for it in v:
+            data.append((1 - it[0], it[1], it[2]))
+        cdict_r[k] = sorted(data)
+    return cdict_r
 
 def linear_Lab():
     """Make linear Lab color map.
@@ -239,9 +266,7 @@ def linear_Lab():
     k = ['red', 'green', 'blue']
     LinearL = dict(zip(k, rgb)) # makes a dictionary from 2 lists
 
-    LinearL_r = {}
-    for k in LinearL:
-        LinearL_r[k] = reverse_cmap(LinearL[k])
+    LinearL_r = reverse_cmap(LinearL)
 
     cmap = LinearSegmentedColormap('linearL', LinearL)
     cmap_r = LinearSegmentedColormap('linearL_r', LinearL_r)

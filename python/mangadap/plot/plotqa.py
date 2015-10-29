@@ -34,11 +34,10 @@ else:
     # DRPQA file
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7495', '3704', 'CUBE_files_to_plot.txt')
+                     '7443', '1901', 'CUBE_files_to_plot.txt')
     #file_list = join(os.getenv('MANGA_MPL3'),
     #                 '7443', '1901', 'CUBE_files_to_plot.txt')
-    plottypes_list = 'drpqa_plottypes.ini'
-
+    plottypes_list = 'dapqa_plottypes.ini'
 
 file_kws_all = util.read_file_list(file_list)
 cfg_dir = util.make_config_path(plottypes_list)
@@ -46,22 +45,26 @@ paths_cfg = join(cfg_dir, 'sdss_paths.ini')
 
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
-    # Read DAP file
-    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=False)
+    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
 
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-        plot_kws = cfg_io.convert_config_dtypes(cfg, plottype, dapdata=gal)
-        plotdap.make_plots(dapdata=gal, mg_kws=mg_kws, **plot_kws)
+        plot_kws = cfg_io.make_kws(cfg)
+        plot_kws['main'] = hasattr(main, '__file__')
+        plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
+                           plot_kws=plot_kws)
 
+# TO DO
+# merge refactor_dapqa into trunk
 
 # DRPQA file
-# python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/6104/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
 # Normal DAP file
-# python plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
+# python3 plotqa.py $MANGA_MPL3/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
 
