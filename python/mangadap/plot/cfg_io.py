@@ -176,7 +176,9 @@ def convert_config_dtypes(d, plottype=None, dapdata=None):
             d['colorbar']['cblabels'] = specind_units(dapdata, columns)
         else:
             d['colorbar']['cblabels'] = cblabels_to_series(d)
-    
+
+    # Read in cb_kws as a dictionary
+
     if 'snr' in d['data']:
         d['snr'] = string_to_float(d['snr'])
 
