@@ -117,6 +117,10 @@
 ;                          version changes.
 ;       22 Sep 2015: (KBW) Added hard-wired mask of poorly subtracted
 ;                          sky-line at roughly 5578 ang
+;       26 Oct 2015: (KBW) Include header in call to MDAP_RSS_ONSKY_XY
+;                          to allow for new offset application based on
+;                          IFU and OBJ RA/DEC read from the DRP (v1_5_1
+;                          and later) header.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -131,6 +135,14 @@ PRO MDAP_READ_DRP_FITS,$
             version = version_module
             return
         endif
+
+        ; TODO: Header is taken from FLUX extension.  This is needed for
+        ; the CUBE data to get the appropriate WCS information.
+        ; However, that header has additional, possibly extraneous,
+        ; information, that will get written to the output DAP file.
+        ; Should I instead input the headers from both the primary and
+        ; flux extentions, but only copy the information from the
+        ; primary extension to the output DAP file?
 
         ;---------------------------------------------------------------
         ; Read the data from the DRP file used for both RSS and CUBE
@@ -169,7 +181,8 @@ PRO MDAP_READ_DRP_FITS,$
             unit=wcsunit                                ; Set unit value, if requested
 
         endif else begin
-            MDAP_RSS_ONSKY_XY, file, skyx, skyy         ; Get the on-sky spaxel coordinates
+;           MDAP_RSS_ONSKY_XY, file, skyx, skyy         ; Get the on-sky spaxel coordinates
+            MDAP_RSS_ONSKY_XY, file, header, skyx, skyy ; Get the on-sky spaxel coordinates
             MDAP_RESTRUCTURE_RSS, flux, ivar, mask      ; Restructure the RSS
 
             ; XY coordinates of RSS data are already in arcsec offset from IFU center

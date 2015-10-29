@@ -900,10 +900,14 @@ class DAP():
     def make_drpqa(self):
         """Create DRP QA DataFrame."""
         vals = dict(signal=self.signal, noise=self.noise,
-                    Ha6564=self.flux_ew.Ha6564.values)
+                    Ha6564_ew=self.flux_ew.Ha6564.values,
+                    Ha6564_fb=self.flux_fb.Ha6564.values,
+                    Ha6564_nonpar=self.elmmnt.flux.Ha6564.values)
         errs = dict(signal=None, noise=None,
-                    Ha6564=self.fluxerr_ew.Ha6564.values)
-        columns = ['signal', 'noise', 'Ha6564']
+                    Ha6564_ew=self.fluxerr_ew.Ha6564.values,
+                    Ha6564_fb=self.fluxerr_fb.Ha6564.values,
+                    Ha6564_nonpar=None)
+        columns = ['signal', 'noise', 'Ha6564_ew', 'Ha6564_fb', 'Ha6564_nonpar']
         self.drpqa = pd.DataFrame(vals, columns=columns)
         self.drpqa_err = pd.DataFrame(errs, columns=columns)
 

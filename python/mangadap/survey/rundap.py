@@ -76,6 +76,11 @@ Utah.
         :mod:`mangadap.util.defaults`; version number set to 1_1_0.
     | **06 Oct 2015**: (KBW) Added functionality to select the types of
         additional output.  Minor changes to allow for DR13 QA plots.
+    | **22 Oct 2015**: (KBW) Added check that the selected MPL versions match
+        the current environmental versions.  Includes edit to
+        :class:`mangadap.survey.mangampl` to include MANGACORE_VER.  Changed
+        default number of nodes to 9.  Added definition of idl command
+        for use on sciama cluster at the ICG, Portsmouth.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -210,13 +215,11 @@ class rundap:
         nodes (int): (Optional) Number of cluster nodes to use.  Default
             is 18.
         qos (str): (Optional) Select a specific processor (only None for
-            daily run)
-
+            daily run).  This option is ignored if :attr:`q` is set.
         umask (str): (Optional) umask to set for output. Default is
             0027.
         walltime (str): (Optional) Maximum wall time for cluster job.
             Default is 10 days ('240:00:00').
-
         hard (bool): (Optional) Same as hard keyword in cluster
             submission; see :func:`pbs.queue.commit`.
 
@@ -234,6 +237,12 @@ class rundap:
                 This keyword is in the **opposite** sense of the
                 "--submit" command-line options; i.e. including
                 --submit on the command line sets submit=False.
+        queue (str): (Optional) Name of the destination queue.  When
+            submitting jobs at Utah, this should **not** be set (leaving
+            it at the default of None).  When submitting jobs at
+            Portsmouth, this can be used to select either sciama1.q,
+            cluster.q (default), or sciama3.q.
+        idl_cmnd (str): (Optional) IDL command.  Default: idl.
 
     Attributes:
         daily (bool): Execute daily update of analyses
@@ -280,12 +289,14 @@ class rundap:
         maps (bool): Create the MAP fits file
         label (str): Label to use in cluster queue.
         nodes (int): Number of cluster nodes to use.
-        qos (str): Specific processor to use. 
+        qos (str): Specific processor to use (Utah specific)
         umask (str): umask to set for output.
         walltime (str): Maximum wall time for cluster job.
         hard (bool): Same as hard keyword in cluster submission; see
             :func:`pbs.queue.commit`.
         submit (bool): Submit all jobs to the cluster.
+        q (str): Queue destination (Portsmouth specific)
+        idl_cmnd (str): The specific IDL command to use
         drpc (:class:`mangadap.survey.drpcomplete`): Database of the
             available DRP files and the parameters necessary to write
             the DAP par files.
@@ -308,8 +319,8 @@ class rundap:
                 # Flags to create additional output files
                 plots=True, covar=True, maps=True,
                 # Cluster options
-                label='mangadap', nodes=18, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                submit=True):
+                label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
+                submit=True, queue=None, idl_cmnd='idl'):
 
         # Save run-mode options
         self.daily = daily
@@ -356,6 +367,9 @@ class rundap:
         self.hard = hard
         self.submit = submit
 
+        self.q = queue
+        self.idl_cmnd = idl_cmnd
+
         # Read and parse command-line arguments
         if console:
             self._read_arg()
@@ -379,10 +393,57 @@ class rundap:
                              if self.analysis_path is None else str(self.analysis_path)
 
         # Alert the user of the versions to be used
+        if self.q is not None:
+            print('Attempting to submit to queue: {0}'.format(self.q))
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
+        print(self.mpl.show())
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
+
+        # Check the environment matches the selected MPL
+#        idlver_env = None
+#        for m in environ['LOADEDMODULES'].split(':'):
+#            if 'idlutils' in m:
+#                idlver_env = m.split('/')[1]
+        # These will throw KeyErrors if the appropriate environmental variables do not exist
+        try:
+            accessver_env = environ['SDSS_ACCESS_DIR'].split('/')[-1]
+        except KeyError:
+            accessver_env = None
+        idlver_env = environ['IDLUTILS_DIR'].split('/')[-1]
+
+#        print('mpl.accessver: {0}'.format(self.mpl.accessver))
+#        print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
+#        print('mpl.idlver: {0}'.format(self.mpl.idlver))
+#        print('IDLUTILS_VER: {0}'.format(idlver_env))
+#        print('mpl.corever: {0}'.format(self.mpl.corever))
+#        print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+#        print('mpl.drpver: {0}'.format(self.mpl.drpver))
+#        print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+
+        if self.mpl.accessver != accessver_env:
+            print('mpl.accessver: {0}'.format(self.mpl.accessver))
+            print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
+            raise EnvironmentError('MPL SDSS_ACCESS version does not match current environment;'
+                                   ' see above')
+        if self.mpl.idlver != idlver_env:
+            print('mpl.idlver: {0}'.format(self.mpl.idlver))
+            print('IDLUTILS_VER: {0}'.format(idlver_env))
+            raise EnvironmentError('MPL IDLUTILS version does not match current environment;'
+                                   ' see above')
+        if self.mpl.corever != environ['MANGACORE_VER']:
+            print('mpl.corever: {0}'.format(self.mpl.corever))
+            print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+            raise EnvironmentError('MPL CORE version does not match current environment; see above')
+        if self.mpl.drpver != environ['MANGADRP_VER']:
+            print('mpl.drpver: {0}'.format(self.mpl.drpver))
+            print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+            raise EnvironmentError('MPL DRP version does not match current environment; see above')
+
+        # If setting qos, the number of nodes must be 1
+        if self.qos is not None and self.nodes > 1:
+            raise Exception('When selecting the fast node, must have nodes=1!')
 
         # Check that something is to be done
         nrun = 0
@@ -571,6 +632,12 @@ class rundap:
                             help='turn off hard keyword for cluster submission')
         parser.add_argument("--submit", help='turn off cluster submission', action='store_false',
                             default=True)
+
+        parser.add_argument("--queue", dest='queue', type=str, help='set the destination queue', default=None)
+
+        parser.add_argument("--idl", type=str, help='IDL command to use', default=None)
+
+
         
         # Finally parse the full set and set it to its own container
         arg = parser.parse_args()
@@ -650,6 +717,7 @@ class rundap:
             self.walltime = arg.walltime
         if arg.qos is not None:
             self.qos = arg.qos
+            self.nodes = 1          # Force the number of nodes to be 1
         if arg.umask is not None:
             self.umask = arg.umask
         if arg.hard is not None:
@@ -657,8 +725,21 @@ class rundap:
         if arg.submit is not None:
             self.submit = arg.submit
 
+        # Specify the destination queue
+        if arg.queue is not None:
+            self.q = arg.queue
+
+#       print(self.q)
+
+        # Specify the IDL command
+        if arg.idl is not None:
+            self.idl_cmnd = arg.idl
+
 #       print(self.submit)
 #       self.submit = False
+
+#       print('QOS: {0}'.format(self.qos))
+#       exit()
 
 
     def _check_path(self, plate, ifudesign):
@@ -694,6 +775,27 @@ class rundap:
         :attr:`submit` is False, this is essentially a wrapper for
         :func:`prepare_for_analysis`.
 
+        This function is written to be functional for submission to the
+        cluster queues both at Utah and using the sciama cluster at
+        Portsmouth.  The available queues are:
+
+        +===========+========+======+===========+
+        |     Queue |  Nodes |  PPN |   GB/core |
+        +===========+========+======+===========+
+        | sciama1.q |     80 |   12 |         2 |
+        +-----------+--------+------+-----------+
+        | sciama2.q |     96 |   16 |         4 |
+        +-----------+--------+------+-----------+
+        | sciama3.q |     48 |   20 |       3.2 |
+        +-----------+--------+------+-----------+
+
+        One should **not** submit to sciama3.q without permission from
+        Will Percival.  The default queue is cluster.q (sciama2.q); so
+        basically only use :attr:`q` to select sciama1.q.
+
+        Submissions to Utah should have their queue destination set to
+        None.  However, the fast node can be selected using :attr:`qos`.
+
         .. todo::
             - This algorithm is slow because it has to search through
               the drpcomplete file each time to find the plate/ifudesign
@@ -705,10 +807,31 @@ class rundap:
             clobber (bool): (Optional) Overwrite any existing script
                 files.
         """
-        # If submitting to the queue, create the queue object
+        # If submitting to the queue, create the queue object.  The
+        # creation of the queue object is system dependent; however,
+        # once created, the queue object is treated identically for both
+        # the Utah and Portsmouth clusters.
         if self.submit:
-            self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                              walltime=self.walltime)
+            if self.q is not None:
+                # Expect to select the queue only when submitting to the
+                # Portsmouth cluster, sciama.  In this case, the number
+                # of nodes is queue dependent, and qos is not set
+                if self.q == 'sciama1.q':
+                    ppn = 12
+                elif self.q == 'sciama3.q':
+                    ppn = 20
+                else:
+                    ppn = 16
+                self.queue.create(label=self.label, nodes=self.nodes, umask=self.umask,
+                                  walltime=self.walltime, queue=self.q, ppn=ppn)
+            else:
+                # self.q can be None when submitting to both the
+                # Portsmouth and Utah clusters.  In this case, the
+                # default queue destination and ppn is correct.  qos is
+                # also set, but this should only be used when submitting
+                # to Utah.
+                self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos,
+                                  umask=self.umask, walltime=self.walltime)
        
         # Create the script files, regardless of whether or not they are
         # submitted to the queue, appending the scripts to the queue if
@@ -825,10 +948,15 @@ class rundap:
             Exception - Raised if qos is requested; this mode is only
                 allowed for the daily run.
         """
-        self.label = '{0}_redo'.format(self.label)
-        # In here, qos should never be anything but None; always set in daily
+        # A TEMPORARY PROVISION FOR THE DR13 QA!
+        self.label = '{0}_dr13qa'.format(self.label)
         if self.qos is not None:
-            raise Exception('This qos is reserved for single-node usage.')
+            print('WARNING: USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
+
+#        self.label = '{0}_redo'.format(self.label)
+#        # In here, qos should never be anything but None; always set in daily
+#        if self.qos is not None:
+#            raise Exception('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_redo()
         print('Number of DRP files to process: {0}'.format(len(drpfiles)))
@@ -1051,14 +1179,14 @@ class rundap:
             except ValueError: # as e:
                 getcube = False
 
+        drplist = []
         if getcube:
-            drplist = [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', 
-                                drpver=self.mpl.drpver, redux_path=self.redux_path)
-                      for i in range(0,n_plates)
-                          if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
-                                                       self.drpc.ifudesignlist[i])] != 'NULL' ]
-        else:
-            drplist = list()
+            for i in range(0,n_plates):
+                j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
+                if self.drpc.data['MANGAID'][j] != 'NULL' and (self.drpc.data['MANGA_TARGET1'][j] > 0 or self.drpc.data['MANGA_TARGET3'][j] > 0) \
+                        and self.drpc.data['VEL'][j] > 0.0:
+                    drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE', drpver=self.mpl.drpver,
+                                         redux_path=self.redux_path) ]
 
         # Add the list of RSS DRP files, if requested (implicitly or
         # otherwise)
@@ -1068,13 +1196,12 @@ class rundap:
             except ValueError: #as e:
                 return drplist                  # List complete
 
-        drplist = drplist + [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
-                                      drpver=self.mpl.drpver, redux_path=self.redux_path)
-                  for i in range(0,n_plates)
-                  if self.drpc.data['MANGAID'][self.drpc.entry_index(self.drpc.platelist[i],
-                                               self.drpc.ifudesignlist[i])] != 'NULL' and
-                     self.drpc.data['MODES'][self.drpc.entry_index(self.drpc.platelist[i],
-                                             self.drpc.ifudesignlist[i])] == 2 ]
+        for i in range(0,n_plates):
+            j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
+            if self.drpc.data['MANGAID'][j] != 'NULL' and (self.drpc.data['MANGA_TARGET1'][j] > 0 or self.drpc.data['MANGA_TARGET3'][j] > 0) \
+                    and self.drpc.data['VEL'][j] > 0.0 and self.drpc.data['MODES'][j] == 2:
+                drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS', drpver=self.mpl.drpver,
+                                         redux_path=self.redux_path) ]
 
         return drplist
 
@@ -1178,7 +1305,7 @@ class rundap:
         if self.plan_file is None:
             # Will create and use the default plan
             file.write('echo \" manga_dap, par=\'{0}\', drppath=\'{1}\', dappath=\'{2}\', /nolog' \
-                       '\" | idl \n'.format(parfile, drppath, self.analysis_path))
+                       '\" | {3} \n'.format(parfile, drppath, self.analysis_path, self.idl_cmnd))
         else:
             # Will use the provided plan file, but first copy it for
             # documentation purposes
@@ -1199,7 +1326,8 @@ class rundap:
 
             file.write('echo \" resolve_all, resolve_procedure=\'manga_dap\' & manga_dap, ' \
                        'par=\'{0}\', plan=\'{1}\', drppath=\'{2}\', dappath=\'{3}\', /nolog \"'
-                       ' | idl \n'.format(parfile, default_plan_file, drppath, self.analysis_path))
+                       ' | {4} \n'.format(parfile, default_plan_file, drppath, self.analysis_path,
+                                          self.idl_cmnd))
 
         file.write('\n')
 
@@ -1214,6 +1342,7 @@ class rundap:
 #            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plot_qa_wrap.py')
 #            file.write('python3 {0} {1} {2}_files_to_plot.txt -no_stkin_interp '
 #                       '-overwrite \n'.format(pyplot_path, output_path, mode))
+            # THIS IS A PROVISIONAL COMMAND FOR THE DR13 QA
             pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plotqa.py')
             file.write('python3 {0} {1}/{2}_files_to_plot.txt drpqa_plottypes.ini \n'.format(
                                     pyplot_path, output_path, mode))

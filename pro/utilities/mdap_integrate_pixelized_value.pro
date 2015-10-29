@@ -78,6 +78,9 @@
 ;       17 Aug 2015: Moved from MDAP_GET_SPECTRAL_INDEX by K. Westfall (KBW), 
 ;                    for use in other routines, e.g.
 ;                    MDAP_NONPAR_EMISSION_LINE_MEASUREMENTS
+;       26 Oct 2015: (KBW) Check that the spectrum to integrate over has
+;                          pixels that are non-zero.  Otherwise, return
+;                          err=1.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -152,12 +155,24 @@ PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
             indx = where(bin_edges gt xrange[1])
             integral = ym[indx[0]-1]*(xrange[1]-xrange[0])
             integral_err = yme[indx[0]-1]*(xrange[1]-xrange[0])
+;            print, 'Interval smaller than a pixel!'
+;            print, integral, integral_err
             return
         endif
 
         ; Initialize output
         integral = 0.0d
         integral_err = 0.0d
+
+        ; Check that there are non-zero values to integrate
+        nonzero = where(ym[indx] ne 0, nnz)
+        if nnz eq 0 then begin
+;            print, 'No non-zero fluxes!'
+            integral = 0.0d
+            integral_err = 1.0d
+            err=1                                               ; Return an error
+            return
+        endif
 
         ; Add partial pixel at the blue end
         if indx[0] gt 0 then begin
@@ -180,5 +195,14 @@ PRO MDAP_INTEGRATE_PIXELIZED_VALUE, $
         endif
 
         integral_err = sqrt(integral_err)
+;       if integral eq 0 || integral_err eq 0 then begin
+;           print, ni, integral, integral_err
+;           plot, x, ym
+;           oplot, x[indx], ym[indx], color=200
+;           print, x[indx]
+;           print, ym[indx]
+;           print, y[indx]
+;           stop
+;       endif
 END
 

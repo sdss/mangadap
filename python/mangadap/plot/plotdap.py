@@ -696,6 +696,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws = util.none_to_empty_dict(cb_kws)
     cmaps = set_cmaps(cmaps, len(columns))
+    # cb_kws['cmaps'] = set_cmaprs(cb_kws['cmaps'], len(columns))
 
     # Set common plot elements
     xpos = dapdata.drps.xpos.values

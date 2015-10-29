@@ -148,7 +148,8 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
 
 def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='coolwarm',
                  colorbar=False, nticks=7, clabel=None, flux=None, fixpdf=False, xlim=None,
-                 xlabel=None, ylim=None, ylabel=None, pixelscale=None, fill_value=0.0, **kwargs):
+                 xlabel=None, ylim=None, ylabel=None, pixelscale=None, fill_value=0.0,
+                 contour_levels=None, **kwargs):
 
     """
     Copyright (C) 2013-2014, Michele Cappellari
@@ -197,6 +198,15 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
         cs = ax.imshow(img, interpolation='nearest', cmap=cmap, vmin=zmin,
                        vmax=zmax, extent=ext, origin='lower')
 #        print('output imshow')
+
+        if contour_levels is not None:
+            nx = img.shape[0]
+            dx = (ext[1]-ext[0])/nx
+            ny = img.shape[1]
+            dy = (ext[3]-ext[2])/ny
+            ximg, yimg = numpy.meshgrid(ext[0]+dx*(numpy.arange(nx)+0.5),
+                                        ext[2]+dy*(numpy.arange(ny)+0.5), indexing='xy')
+            cs1 = ax.contour(ximg, yimg, img, levels=contour_levels, colors='k', linewidths=1.5)
        
     # Provide an interpolated map
     else:

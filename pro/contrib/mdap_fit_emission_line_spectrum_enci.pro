@@ -7,9 +7,10 @@
 ;
 ; CALLING SEQUENCE:
 ;       MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, shift0, lambda, pure_emi, err, mask, fitwin, result, $
-;                                             emfit, OII3727=OII3727, Hb4861=Hb4861, $
-;                                             OIII5007=OIII5007, OI6300=OI6300, Ha6563=Ha6563, $
-;                                             SII6717=SII6717, zero_base=zero_base, plotsp=plotsp
+;                                             emfit, OII3727=OII3727, OIId3727=OIId3727, $
+;                                             Hb4861=Hb4861, OIII5007=OIII5007, OI6300=OI6300, $
+;                                             Ha6563=Ha6563, SII6717=SII6717, zero_base=zero_base, $
+;                                             plotsp=plotsp
 ;
 ; INPUTS:
 ;       shift0 double
@@ -32,6 +33,9 @@
 ; OPTIONAL KEYWORDS:
 ;       /OII3727
 ;               Flag to fit the OII lines (simultaneously fit both)
+;
+;       /OIId3727
+;               Flag to fit the OII doublet as a single line
 ;
 ;       /Hb4861
 ;               Flag to fit the H-beta line
@@ -100,13 +104,21 @@
 ;                          fit
 ;       17 Sep 2015: (KBW) Return wavelength limits of the fitting
 ;                          window used for each (set of) line(s)
+;       20 Oct 2015: (KBW) Include a fit of the OII 3727 doublet as a
+;                          single line.  The output model (eml_model)
+;                          provides only the single Gaussian fit to the
+;                          OII doublet!  Change guess for flux based on
+;                          input spectrum.  Allow for a non-zero guess
+;                          of the background.  Output warning if
+;                          status=2 is returned by MPFITEXPR.  Change to
+;                          double precision.
 ;-
 ;------------------------------------------------------------------------------
 
 PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, $
                 shift0, lambda, pure_emi, err, mask, fitwin, result, emfit, OII3727=OII3727, $
-                Hb4861=Hb4861, OIII5007=OIII5007, OI6300=OI6300, Ha6563=Ha6563, SII6717=SII6717, $
-                zero_base=zero_base, plotsp=plotsp
+                OIId3727=OIId3727, Hb4861=Hb4861, OIII5007=OIII5007, OI6300=OI6300, Ha6563=Ha6563, $
+                SII6717=SII6717, zero_base=zero_base, plotsp=plotsp
 
 ;pro emission_fit1,shift0,lambda,pure_emi,err,result,emfit,$
 ;        OII3727=OII3727,Hb4861=Hb4861,OIII5007=OIII5007,Ha6563=Ha6563,$
@@ -126,15 +138,18 @@ PRO MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI, $
 ; 
 
 ; Save the wavelength limits of the fitting window(s)
-fitwin={  OII3727:fltarr(2), OII3729:fltarr(2),  Hb4861:fltarr(2), OIII4959:fltarr(2), $
-         OIII5007:fltarr(2),  OI6300:fltarr(2),  OI6363:fltarr(2),  NII6548:fltarr(2), $
-           Ha6563:fltarr(2), NII6583:fltarr(2), SII6717:fltarr(2),  SII6731:fltarr(2) }
+fitwin={  OII3727:dblarr(2),  OII3729:dblarr(2), OIId3727:dblarr(2),  Hb4861:dblarr(2), $
+         OIII4959:dblarr(2), OIII5007:dblarr(2),   OI6300:dblarr(2),  OI6363:dblarr(2), $
+          NII6548:dblarr(2),   Ha6563:dblarr(2),  NII6583:dblarr(2), SII6717:dblarr(2), $
+          SII6731:dblarr(2) }
 
 ; Number of parameters to save: 2*(3 gauss parameters + baseline) (value and error)
 npar = 8
-result={  OII3727:fltarr(npar), OII3729:fltarr(npar),  Hb4861:fltarr(npar), OIII4959:fltarr(npar), $
-         OIII5007:fltarr(npar),  OI6300:fltarr(npar),  OI6363:fltarr(npar),  NII6548:fltarr(npar), $
-           Ha6563:fltarr(npar), NII6583:fltarr(npar), SII6717:fltarr(npar),  SII6731:fltarr(npar) }
+result={  OII3727:dblarr(npar),  OII3729:dblarr(npar), OIId3727:dblarr(npar), $
+           Hb4861:dblarr(npar), OIII4959:dblarr(npar), OIII5007:dblarr(npar), $
+           OI6300:dblarr(npar),   OI6363:dblarr(npar),  NII6548:dblarr(npar), $
+           Ha6563:dblarr(npar),  NII6583:dblarr(npar),  SII6717:dblarr(npar), $
+          SII6731:dblarr(npar) }
 
 ; Model spectrum (without baseline!)
 emfit=pure_emi*0.0
@@ -205,11 +220,16 @@ if keyword_set(OII3727) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(3727.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(3727.*100.0/c0)
 
    expr1='p[0]+gauss1(x,p[1:3])+gauss1(x,p[4:6])'
    par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},7)
-   par(*).value = [meansp,3727.*shift,3727.*100.0/c0,300.,3730.*shift,3730.*100.0/c0,900.]
+   par(*).value = [meansp,3727.*shift,3727.*100.0/c0,flux,3730.*shift,3730.*100.0/c0,0.35*flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
@@ -234,8 +254,15 @@ if keyword_set(OII3727) then begin
    par(3).limits(0) = 0
    par(6).limited(0) = 1
    par(6).limits(0) = 0
+
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
    if status gt 0 then begin
 ;        result.OII3727=[result1[1:3],perror[1:3]]
@@ -250,14 +277,86 @@ if keyword_set(OII3727) then begin
 
    ;emfit[indx]=yfit
    ; KBW: allow for mask, but then provide best fitting Gaussian over full window
-   indx=where(lambda gt fitwin.OII3727[0] and lambda lt fitwin.OII3727[1], count)
-   if count ne 0 then $
-    emfit[indx] = emfit[indx] + GAUSS1(lambda[indx],result1[1:3]) $
-                              + GAUSS1(lambda[indx],result1[4:6])
-;    emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3]) $
+;   indx=where(lambda gt fitwin.OII3727[0] and lambda lt fitwin.OII3727[1], count)
+;   if count ne 0 then $
+;    emfit[indx] = emfit[indx] + GAUSS1(lambda[indx],result1[1:3]) $
 ;                              + GAUSS1(lambda[indx],result1[4:6])
+
 if keyword_set(plotsp) then begin
    plot,lam1,emi1,title='OII_3727+3729';,$;ytitle='flux(unit of 10^-15)'
+;               position=[0.25,0.35,0.40,0.55]
+   ;oplot,lam1,result1[0]+gauss1(lam1,result1[1:3]),color=djs_icolor('red')
+   ;oplot,lam1,result1[0]+gauss1(lam1,result1[4:6]),color=djs_icolor('red')
+        oplot,lam1,yfit,color=djs_icolor('red'),linestyle=2
+endif
+endif
+endif
+
+
+
+;-----------------OII_3727+3729 as a single line-------------------------
+if keyword_set(OIId3727) then begin
+
+    ; Set the fitting window; same for both lines
+    fitwin.OIId3727 = [ 3728.5-bin, 3728.5+bin ]
+
+   indx=where(lambda gt fitwin.OIId3727[0] and lambda lt fitwin.OIId3727[1] and mask lt 0.5)
+   if n_elements(indx) gt 5 then begin
+   lam1=lambda[indx]
+   emi1=pure_emi[indx]
+   err1=err[indx]
+        meanclip,emi1,meansp,sig,clipsig=3
+        ; Initial guess background is 0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(3727.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(3727.*100.0/c0)
+
+   expr1='p[0]+gauss1(x,p[1:3])'
+   par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},4)
+   par(*).value = [meansp,3728.5*shift,3728.5*100.0/c0,flux]
+   ; Force the baseline to be zero
+   if keyword_set(zero_base) then $
+        par(0).fixed=1
+;   par(3).tied = 'p(6)/3.'
+   par(1).limited(0) = 1
+   par(1).limits(0) = par(1).value-3727.*400.0/c0
+   par(1).limited(1) = 1
+   par(1).limits(1) = par(1).value+3727.*400.0/c0
+   par(2).limited(0)=1
+   par(2).limits(0)=3727.*50.0/c0
+   par(2).limited(1) = 1
+   par(2).limits(1) = 3727.0*450.0/c0
+   par(3).limited(0) = 1
+   par(3).limits(0) = 0
+   result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
+                     yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && result1[3] gt 0 then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
+
+   if status gt 0 then begin
+        result.OIId3727=[result1[0:3],perror[0:3]]
+   endif else $
+        print, errmsg
+
+    if status eq 5 then $
+        print, 'WARNING: Maximum number of iterations reached in MPFITEXPR()!'
+
+   ;emfit[indx]=yfit
+   ; KBW: allow for mask, but then provide best fitting Gaussian over full window
+   indx=where(lambda gt fitwin.OIId3727[0] and lambda lt fitwin.OIId3727[1], count)
+   if count ne 0 then $
+    emfit[indx] = emfit[indx] + GAUSS1(lambda[indx],result1[1:3])
+    ;    emfit[indx] = emfit[indx] + result1[0] + GAUSS1(lambda[indx],result1[1:3]) $
+;                              + GAUSS1(lambda[indx],result1[4:6])
+if keyword_set(plotsp) then begin
+   plot,lam1,emi1,title='OIId_3727';,$;ytitle='flux(unit of 10^-15)'
 ;               position=[0.25,0.35,0.40,0.55]
    ;oplot,lam1,result1[0]+gauss1(lam1,result1[1:3]),color=djs_icolor('red')
    ;oplot,lam1,result1[0]+gauss1(lam1,result1[4:6]),color=djs_icolor('red')
@@ -282,11 +381,16 @@ if keyword_set(Hb4861) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(4861.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(4861.*100.0/c0)
 
    expr1='p[0]+gauss1(x,p[1:3])'
    par=replicate({value:0.D, fixed:0,limited:[0,0], limits:[0.D,0.D]},4)
-   par(*).value = [meansp,4861.*shift,4861.0*100.0/c0,600.]
+   par(*).value = [meansp,4861.*shift,4861.0*100.0/c0,flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
@@ -302,6 +406,12 @@ if keyword_set(Hb4861) then begin
    par(3).limits(0)=0
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && result1[3] gt 0 then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.Hb4861=[result1[0:3],perror[0:3]]
@@ -344,15 +454,20 @@ if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(5007.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(5007.*100.0/c0)
 
    expr1='p[0]+gauss1(x,p[1:3])+gauss1(x,p[4:6])'
    par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},7)
-   par(*).value = [meansp,4959.*shift,4959.*100.0/c0,300.,5007.*shift,5007.*100.0/c0,900.]
+   par(*).value = [meansp,4959.*shift,4959.*100.0/c0,0.35*flux,5007.*shift,5007.*100.0/c0,flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
-   par(3).tied = 'p[6]/3.'
+;   par(3).tied = 'p[6]/3.'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-4959.*400.0/c0
    par(1).limited(1) = 1
@@ -375,6 +490,12 @@ if (keyword_set(OIII5007) || keyword_set(OIII4959)) then begin
         par(6).limits(0) = 0
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.OIII4959=[result1[0:3],perror[0:3]]
@@ -421,11 +542,16 @@ if keyword_set(OI6300) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(6302.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(6302.*100.0/c0)
 
    expr1='p[0]+gauss1(x,p[1:3])+gauss1(x,p[4:6])'
    par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},7)
-   par(*).value = [meansp,6302.*shift,6302.*100.0/c0,300.,6365.*shift,6365.*100.0/c0,900.]
+   par(*).value = [meansp,6302.*shift,6302.*100.0/c0,flux,6365.*shift,6365.*100.0/c0,0.33*flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
@@ -452,6 +578,12 @@ if keyword_set(OI6300) then begin
    par(6).limits(0) = 0
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.OI6300=[result1[0:3],perror[0:3]]
@@ -499,15 +631,21 @@ if keyword_set(Ha6563) || keyword_set(NII6583) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
 ;   print,'Halpha, meansp:',meansp
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(6563.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(6563.*100.0/c0)
+
    expr1='p[0]+gauss1(x,p[1:3])+gauss1(x,p[4:6])+gauss1(x,p[7:9])'
    par=replicate({value:0.D, fixed:0, tied:' ', limited:[0,0], limits:[0.D,0.D]},10)
-   par(*).value = [meansp,6548.*shift,6548.*100.0/c0,200.,6563*shift,6563.*100.0/c0,2000.,6583.*shift,6583.0*100.0/c0,500.]
+   par(*).value = [meansp,6548.*shift,6548.*100.0/c0,0.34*0.4*flux, $
+                          6563*shift,6563.*100.0/c0,flux,6583.*shift,6583.0*100.0/c0,0.4*flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
-   par(3).tied = '0.348116 * p[9]'
+;  par(3).tied = '0.348116 * p[9]'
    par(1).limited(0) = 1
    par(1).limits(0) = par(1).value-6548.*400/c0
    par(1).limited(1) = 1
@@ -543,6 +681,12 @@ if keyword_set(Ha6563) || keyword_set(NII6583) then begin
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
 
 ;   TODO: Sort Gaussians by wavelength to make sure fits ordered properly
+
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0 || result1[9] gt 0) then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.NII6548=[result1[0:3],perror[0:3]]
@@ -591,11 +735,16 @@ if (keyword_set(SII6717) || keyword_set(SII6731)) then begin
    err1=err[indx]
         meanclip,emi1,meansp,sig,clipsig=3
         ; Initial guess background is 0.0
-        meansp=0.0
+        ;meansp=0.0
+
+    ; Guess the flux
+    flux = (max(emi1)-meansp)*sqrt(2.0*!pi)*(6731.*100.0/c0)
+    if flux lt 0.0 then $
+        flux = sqrt(2.0*!pi)*(6731.*100.0/c0)
 
    expr1='p[0]+gauss1(x,p[1:3])+gauss1(x,p[4:6])'
    par=replicate({value:0.D, fixed:0, tied:'', limited:[0,0], limits:[0.D,0.D]},7)
-   par(*).value = [meansp,6717.*shift,6717.*100.0/c0,300.,6731.*shift,6731.*100.0/c0,900.]
+   par(*).value = [meansp,6717.*shift,6717.*100.0/c0,0.8*flux,6731.*shift,6731.*100.0/c0,flux]
    ; Force the baseline to be zero
    if keyword_set(zero_base) then $
         par(0).fixed=1
@@ -622,6 +771,12 @@ if (keyword_set(SII6717) || keyword_set(SII6731)) then begin
    par(6).limits(0) = 0
    result1=mpfitexpr(expr1, lam1, emi1, err1, parinfo=par, perror=perror, bestnorm=bestnorm, $
                      yfit=yfit, status=status, errmsg=errmsg, /quiet)
+
+    if status eq 2 && (result1[3] gt 0 || result1[6] gt 0) then begin
+        print, 'WARNING:  MDAP_FIT_EMISSION_LINE_SPECTRUM_ENCI: Status=2'
+        print, 'INP:', par.value
+        print, 'OUT:', result1
+    endif
 
     if status gt 0 then begin
         result.SII6717=[result1[0:3],perror[0:3]]

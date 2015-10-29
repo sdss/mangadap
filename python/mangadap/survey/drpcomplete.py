@@ -608,7 +608,7 @@ class drpcomplete:
                     ifudesigns.append(self.ifudesignlist[i])
             return plates, ifudesigns
 
-        print(path)
+#        print(path)
         print('Searching for completed DRP CUBE files...', end='\r')
         # Otherwise generate the lists
         for root, dir, files in walk(path):
