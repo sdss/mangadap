@@ -58,9 +58,8 @@ for file_kws in file_kws_all:
                            plot_kws=plot_kws)
 
 # TO DO
-# merge refactor_dapqa into trunk
 
-# DRPQA file
+# MPL-4 file
 # python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
 # Normal DAP file

@@ -650,8 +650,8 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
               val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
               cblabels=None, cmaps=None, cb_kws=None, main=True,
-              make_single=True, make_multi=True, make_binnum=False,
-              savefig_single=True, savefig_multi=True, savefig_binnum=False,
+              make_single=True, make_multi=True, make_binnum=None,
+              savefig_single=True, savefig_multi=True, savefig_binnum=None,
               overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
 
@@ -677,12 +677,12 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
             Default is True.
         make_single (bool): Make single panel plots. Default is True.
         make_multi (bool): Make multi-panel plot. Default is True.
-        make_binnum (bool): Make single panel bin number plot. Default is
-            False.
+        make_binnum (list): Make single panel bin number plot. Default is
+            None.
         savefig_single (bool): Save single panel plots. Default is True.
         savefig_multi (bool): Save multi-panel plot. Default is True.
-        savefig_binnum (bool): Save single panel bin number plots. Default is
-            False.
+        savefig_binnum (list): Save single panel bin number plots. Default is
+            None.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
     # Adjust arguments
@@ -697,6 +697,10 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     cb_kws = util.none_to_empty_dict(cb_kws)
     cmaps = set_cmaps(cmaps, len(columns))
     # cb_kws['cmaps'] = set_cmaprs(cb_kws['cmaps'], len(columns))
+    if make_binnum is None:
+        make_binnum = [False for _ in columns]
+    if savefig_binnum is None:
+        savefig_binnum = [False for _ in columns]
 
     # Set common plot elements
     xpos = dapdata.drps.xpos.values
@@ -737,11 +741,11 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                 plt.close(fig)
 
         # Make single panel maps with bin numbers
-        if make_binnum:
+        if make_binnum[i]:
             binnum_kws = dict(val=values[col].values)
             fig, ax = plot_map(im, extent, dapdata=dapdata,
                                binnum_kws=binnum_kws, **sp_kws)
-            if savefig_binnum:
+            if savefig_binnum[i]:
                 pname = '_'.join([pname_base, col, 'binnum'])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
                               category='maps', mg_kws=mg_kws, ext='pdf',
