@@ -21,19 +21,19 @@
 ;           - **No velocity registration**
 ;   5: RADIAL:
 ;           - 10 logarithmically spaced radial bins; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 2
 ;   6: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
 ;           - **No velocity registration**
 ;   7: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 2
 ;   8: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
 ;           - **No velocity registration**
 ;   9: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 2
 ;
 ;  10: DUMMY
 ;
@@ -47,19 +47,19 @@
 ;           - **No velocity registration**
 ;  15: RADIAL:
 ;           - 10 logarithmically spaced radial bins; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 12
 ;  16: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
 ;           - **No velocity registration**
 ;  17: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 12
 ;  18: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
 ;           - **No velocity registration**
 ;  19: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 12
 ;
 ;  20: DUMMY
 ;
@@ -73,19 +73,19 @@
 ;           - **No velocity registration**
 ;  25: RADIAL:
 ;           - 10 logarithmically spaced radial bins; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 22
 ;  26: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
 ;           - **No velocity registration**
 ;  27: RADIAL:
 ;           - 2 bins: 0-1 Re, and 1-2 Re; all spectra with S/N>0 included
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 22
 ;  28: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
 ;           - **No velocity registration**
 ;  29: ALL:
 ;           - Bin all "valid" spaxels; S/N>0
-;           - Velocity register based on velocities from iter 2
+;           - Velocity register based on velocities from CUBE iter 22
 
 PRO CREATE_MANGA_DAP_EXECUTION_PLAN, $
                 ofile, overwrite=overwrite

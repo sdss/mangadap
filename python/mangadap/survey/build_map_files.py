@@ -26,7 +26,7 @@ def build_map_files(plt, ifu, mpl, output_path):
         
     scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_cube.py')
 
-    bintype = [ 'NONE', 'STON' ]
+    bintype = [ 'NONE', 'STON', 'RADIAL' ]
 
     for bt in bintype:
         file_search_str = os.path.join(output_path, file_root+'_BIN-'+bt+'*fits')

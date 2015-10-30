@@ -72,7 +72,6 @@
 ;
 ;  20: DUMMY
 ;
-;
 ; USING MILES-THIN
 ;  21: STON:
 ;           - Bin to S/N=30; only include S/N>5 spectra (r-band continuum)

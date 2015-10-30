@@ -73,8 +73,8 @@ def create_dap_fits_cube(plate, ifudesign, bintype, output_file, mpl=3, plan_ind
     if mpl == 4 and plan_index is None:
         raise Exception('Must provide plan index for MPL-4 data!')
 
-    if bintype != 'STON' and bintype != 'NONE':
-        raise KeyError('Binning type must be STON or NONE!')
+    if bintype != 'STON' and bintype != 'NONE' and bintype != 'RADIAL':
+        raise KeyError('Binning type must be STON, NONE, or RADIAL!')
 
     if mpl == 3 and bintype == 'STON':
         plan_index = 1
@@ -110,8 +110,8 @@ def create_dap_fits_cube(plate, ifudesign, bintype, output_file, mpl=3, plan_ind
 
     #-------------------------------------------------------------------
     # List the columns to print
-    drps_col = [ 'FGOODPIX', 'SIGNAL', 'NOISE', 'BINID', 'BINW' ]
-    bins_col = [ 'BINSN' ]
+    drps_col = [ 'FGOODPIX', 'SIGNAL', 'NOISE', 'BINVR', 'BINID', 'BINW' ]
+    bins_col = [ 'BINXRL', 'BINYRU', 'BINR', 'BINA', 'BINSN', 'NBIN' ]
 
     stfit_vec = [ 'KIN', 'KINERR' ]
     stfit_col = [ 'RCHI2' ]
@@ -129,9 +129,14 @@ def create_dap_fits_cube(plate, ifudesign, bintype, output_file, mpl=3, plan_ind
     if mpl == 4:
         elofit_kin_vec += [ 'KINSTDE' ]
 
-    elofit_ind_vec = [ 'ELOMIT', 'AMPL', 'AMPLERR', 'IKIN', 'IKINERR', 'SINST', 'FLUX', 'FLUXERR',
-                        'EW', 'EWERR' ]
-    elofit_ind_vec_nel = [ 1, 1, 1, nelokin, nelokin, 1, 1, 1, 1, 1 ]
+    if mpl == 3:
+        elofit_ind_vec = [ 'ELOMIT', 'AMPL', 'AMPLERR', 'IKIN', 'IKINERR', 'SINST', 'FLUX',
+                           'FLUXERR', 'EW', 'EWERR' ]
+        elofit_ind_vec_nel = [ 1, 1, 1, nelokin, nelokin, 1, 1, 1, 1, 1 ]
+    if mpl == 4:
+        elofit_ind_vec = [ 'ELOMIT', 'WIN', 'BASE', 'BASEERR', 'AMPL', 'AMPLERR', 'IKIN',
+                           'IKINERR', 'SINST', 'FLUX', 'FLUXERR', 'EW', 'EWERR' ]
+        elofit_ind_vec_nel = [ 1, 2, 1, 1, 1, 1, nelokin, nelokin, 1, 1, 1, 1, 1 ]
 
     if mpl == 3:
         sindx_vec = [ 'SIOMIT', 'INDX', 'INDXERR', 'INDX_OTPL', 'INDX_BOTPL' ]
@@ -359,7 +364,7 @@ if __name__ == '__main__':
     parser.add_argument('mpl', type=int, help='MPL number (3 or 4)')
     parser.add_argument('output_file', type=str, help='Name for output file')
     parser.add_argument('-b', '--bintype', type=str,
-                        help='Binning type to process: NONE(def) or STON', default='NONE')
+                        help='Binning type to process: NONE(def), STON, or RADIAL', default='NONE')
     parser.add_argument('-i', '--plan_index', type=int,
                         help='Index of plan used by DAP (used in the DAP output file name)',
                         default=None)
