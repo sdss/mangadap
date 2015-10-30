@@ -281,7 +281,7 @@ PRO MDAP_INITIALIZATION_BLOCK, $
             MDAP_SURVEY_EXECUTION_SETUP, mode, bin_par, w_range_sn, threshold_ston_bin, $
                                          w_range_analysis, threshold_ston_analysis, analysis, $
                                          tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-                                         analysis_par, analysis_prior, overwrite_flag
+                                         analysis_par, analysis_prior, overwrite_flag, execute_flag
 
             plan = output_dir + '/mangadap-' + MDAP_STC(plate, /integer) + '-' $
                    + MDAP_STC(ifudesign, /integer) + '-LOG' + mode + '-plan.par'
@@ -289,13 +289,14 @@ PRO MDAP_INITIALIZATION_BLOCK, $
             MDAP_WRITE_EXECUTION_PLANS, plan, bin_par, w_range_sn, threshold_ston_bin, $
                                         w_range_analysis, threshold_ston_analysis, analysis, $
                                         tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-                                        analysis_par, analysis_prior, overwrite_flag, /overwrite
+                                        analysis_par, analysis_prior, overwrite_flag, $
+                                        execute_flag, /overwrite
         endif else begin
             ; Read the execution plan from a file
             MDAP_READ_EXECUTION_PLANS, plan, bin_par, w_range_sn, threshold_ston_bin, $
                                        w_range_analysis, threshold_ston_analysis, analysis, $
                                        tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-                                       analysis_par, analysis_prior, overwrite_flag
+                                       analysis_par, analysis_prior, overwrite_flag, execute_flag
         endelse
 
         ;-----------------------------------------------------------------------
@@ -359,8 +360,8 @@ PRO MDAP_INITIALIZATION_BLOCK, $
                                     w_range_sn, threshold_ston_bin, w_range_analysis, $
                                     threshold_ston_analysis, analysis, analysis_par, $
                                     analysis_prior, tpl_lib_analysis, ems_par_analysis, $
-                                    abs_par_analysis, overwrite_flag, output_file_root, $
-                                    execution_plan
+                                    abs_par_analysis, overwrite_flag, execute_flag, $
+                                    output_file_root, execution_plan
 
         ; Report the ExecutionPlans to the user for review
         n_plans = n_elements(execution_plan)

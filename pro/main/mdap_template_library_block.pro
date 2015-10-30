@@ -96,7 +96,9 @@
 ;       MDAP_ABS_LINE_RESOLUTION()
 ;
 ; REVISION HISTORY:
-;       01 Feb 2015: (KBW) Pulled from manga_dap.pro
+;       01 Feb 2015: Pulled from manga_dap.pro by K. Westfall (KBW)
+;       30 Oct 2015: (KBW) Account for the newly implemented exection
+;                          flag in the execution_plan.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -112,7 +114,7 @@ PRO MDAP_TEMPLATE_LIBRARY_BLOCK, $
         ; Determine which template libraries are needed
         use_tpl_lib = intarr(n_tpl_lib)
         for i=0,n_plans-1 do begin
-            if execution_plan[i].tpl_lib ne -1 then $
+            if execution_plan[i].exec eq 1 && execution_plan[i].tpl_lib ne -1 then $
                 use_tpl_lib[execution_plan[i].tpl_lib] = 1
         endfor
 
@@ -163,11 +165,11 @@ PRO MDAP_TEMPLATE_LIBRARY_BLOCK, $
                 for j=0,n_plans-1 do begin
 
                     ; Spectral-index analysis not performed so continue
-                    if execution_plan[j].abs_par eq -1 then $
+                    if execution_plan[j].exec eq 0 || execution_plan[j].abs_par eq -1 then $
                         continue
 
                     ; This execution plan doesn't use this template library
-                    if execution_plan[j].tpl_lib ne i then $
+                    if execution_plan[j].exec eq 0 || execution_plan[j].tpl_lib ne i then $
                         continue
 
                     ; Working template library used with MDAP_MEASURE_INDICES

@@ -10,7 +10,7 @@
 ;       MDAP_READ_EXECUTION_PLANS, ifile, bin_par, w_range_sn, threshold_ston_bin, $
 ;                                  w_range_analysis, threshold_ston_analysis, analysis, $
 ;                                  tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-;                                  analysis_par, analysis_prior, overwrite_flag
+;                                  analysis_par, analysis_prior, overwrite_flag, execute_flag
 ;
 ; INPUTS:
 ;       ifile string
@@ -136,6 +136,9 @@
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
 ;
+;       execute_flag intarr[P]
+;               Flag to execute the plan (0-no;1-yes)
+;
 ; OPTIONAL OUTPUT:
 ;
 ; COMMENTS:
@@ -151,13 +154,17 @@
 ;
 ; REVISION HISTORY:
 ;       17 Mar 2015: Original implementation by K. Westfall (KBW)
+;       30 Oct 2015: (KBW) Add the "execute_flag" keyword to allow plans
+;                          to be skipped, while keeping the output file
+;                          names dependent on the index of the input
+;                          plan.
 ;-
 ;-----------------------------------------------------------------------
 
 PRO MDAP_READ_EXECUTION_PLANS, $
                 ifile, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
                 threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, $
-                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag
+                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag, execute_flag
 
         ; Check the file exists
         if file_test(ifile) eq 0 then $
@@ -171,14 +178,14 @@ PRO MDAP_READ_EXECUTION_PLANS, $
                                                 w_range_analysis, threshold_ston_analysis, $
                                                 analysis, tpl_lib_analysis, ems_par_analysis, $
                                                 abs_par_analysis, analysis_par, analysis_prior, $
-                                                overwrite_flag
+                                                overwrite_flag, execute_flag
 
         ; Copy the parameter data to the output variables
         for i=0,n_plans-1 do begin
 
             bin_par[i].type = data[i].bin_type
 
-            if bin_par[i].type eq 'NULL' then $
+            if bin_par[i].type eq 'NULL' && execute_flag[i] eq 1 then $
                 message, 'Bin type cannot be NULL'
 
             bin_par[i].v_register = data[i].bin_v_register
@@ -228,6 +235,8 @@ PRO MDAP_READ_EXECUTION_PLANS, $
             if analysis_prior[i] eq 'NULL' then $
                 analysis_prior[i] = ''
             overwrite_flag[i] = data[i].overwrite_flag
+
+            execute_flag[i] = data[i].execute_flag
 
         endfor
 

@@ -10,8 +10,8 @@
 ;       MDAP_BUILD_EXECUTION_PLANS, n_tpl, n_ems, n_abs, bin_par, ell, pa, Reff, w_range_sn, $
 ;                                   threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
 ;                                   analysis, analysis_par, analysis_prior, tpl_lib_analysis, $
-;                                   ems_par_analysis, abs_par_analysis, overwrite_flag, file_root, $
-;                                   execution_plan, version=version
+;                                   ems_par_analysis, abs_par_analysis, overwrite_flag, $
+;                                   execute_flag, file_root, execution_plan, version=version
 ;
 ; INPUTS:
 ;       n_tpl integer
@@ -160,6 +160,9 @@
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
 ;
+;       execute_flag intarr[P]
+;               Flag to execute the plan (0-no;1-yes)
+;
 ;       file_root string
 ;               Root name for the output file of each plan.
 ;
@@ -211,6 +214,10 @@
 ;       23 Sep 2015: (KBW) Changed logic of when to turn off the tpl_lib
 ;                          flag; no longer require that the
 ;                          emission-line-only analysis also be off.
+;       30 Oct 2015: (KBW) Add the "execute_flag" keyword to allow plans
+;                          to be skipped, while keeping the output file
+;                          names dependent on the index of the input
+;                          plan.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -302,11 +309,14 @@ PRO MDAP_CHECK_EXECUTION_PLAN, $
                 n_tpl, n_ems, n_abs, execution_plan
 
         ; Check bin type
-        if execution_plan.bin_par.type ne 'NONE' && execution_plan.bin_par.type ne 'ALL' && $
-           execution_plan.bin_par.type ne 'STON' && execution_plan.bin_par.type ne 'RADIAL' $
-           then begin 
-            message, 'Unknown binning type:' + execution_plan.bin_par.type
+        if execution_plan.bin_par.type ne 'NONE' && execution_plan.bin_par.type ne 'ALL' $
+           && execution_plan.bin_par.type ne 'STON' && execution_plan.bin_par.type ne 'RADIAL' $
+           && execution_plan.bin_par.type ne 'NULL'then begin 
+            message, 'Unknown binning type: ' + execution_plan.bin_par.type
         endif
+
+        if execution_plan.bin_par.type eq 'NULL' && execution_plan.exec eq 1 then $
+            message, 'Cannot use NULL bin type with a plan that is to be executed!'
 
         ; If there is no prior, cannot velocity register the spectra
         if execution_plan.bin_par.v_register eq 1 $
@@ -378,8 +388,8 @@ END
 PRO MDAP_BUILD_EXECUTION_PLANS, $
                 n_tpl, n_ems, n_abs, bin_par, ell, pa, Reff, w_range_sn, threshold_ston_bin, $
                 w_range_analysis, threshold_ston_analysis, analysis, analysis_par, analysis_prior, $
-                tpl_lib_analysis, ems_par_analysis, abs_par_analysis, overwrite_flag, file_root, $
-                execution_plan, version=version
+                tpl_lib_analysis, ems_par_analysis, abs_par_analysis, overwrite_flag, $
+                execute_flag, file_root, execution_plan, version=version
 
         version_module = '0.3'                          ; Version number
         if n_elements(version) ne 0 then begin          ; set version and return
@@ -403,7 +413,8 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
                                                      analysis:intarr(n_analyses), $
                                                      analysis_par:analysis_par_def, $
                                                      analysis_prior:'', tpl_lib:0, ems_par:0, $
-                                                     abs_par:0, overwrite:0, ofile:''}, n_plans)
+                                                     abs_par:0, overwrite:0, exec:0, ofile:''}, $
+                                                     n_plans)
 
         for i=0,n_plans-1 do begin
 
@@ -446,7 +457,6 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
                                  execution_plan[i].analysis_prior
                     endif
 
-;                   if indx lt 0 or indx ge i then begin
                     if indx lt 0 || indx ge i then begin
                         message, 'Plan ' + MDAP_STC(i,/integer) + ' cannot use prior from a plan ' $
                                  + MDAP_STC(indx, /integer) + ' either because there is no such ' $
@@ -470,6 +480,8 @@ PRO MDAP_BUILD_EXECUTION_PLANS, $
             endelse
 
             execution_plan[i].overwrite = overwrite_flag[i]     ; Overwrite existing files?
+
+            execution_plan[i].exec = execute_flag[i]            ; Execute the plan?
 
             ; Set the output file name
             execution_plan[i].ofile = MDAP_OUTPUT_FILE_NAME(file_root, execution_plan[i], i)

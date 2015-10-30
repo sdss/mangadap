@@ -10,7 +10,7 @@
 ;                                               w_range_analysis, threshold_ston_analysis, $
 ;                                               analysis, tpl_lib_analysis, ems_par_analysis, $
 ;                                               abs_par_analysis, analysis_par, analysis_prior, $
-;                                               overwrite_flag
+;                                               overwrite_flag, execute_flag
 ;
 ; INPUTS:
 ;       niter int
@@ -136,6 +136,9 @@
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
 ;
+;       execute_flag intarr[P]
+;               Flag to execute the plan (0-no;1-yes)
+;
 ; OPTIONAL OUTPUT:
 ;
 ; COMMENTS:
@@ -152,13 +155,17 @@
 ;
 ; REVISION HISTORY:
 ;       17 Mar 2015: Original implementation by K. Westfall (KBW)
+;       30 Oct 2015: (KBW) Add the "execute_flag" keyword to allow plans
+;                          to be skipped, while keeping the output file
+;                          names dependent on the index of the input
+;                          plan.
 ;-
 ;-----------------------------------------------------------------------
 
 PRO MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, $
                 niter,  bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
                 threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, $
-                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag
+                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag, execute_flag
 
         bin_par_def = MDAP_DEFINE_BIN_PAR()             ; Define the BinPar structure
         bin_par = replicate( bin_par_def, niter)        ; Create the array of BinPar structures
@@ -182,5 +189,7 @@ PRO MDAP_ALLOCATE_EXECUTION_PLAN_VARIABLES, $
         analysis_prior = strarr(niter)                  ; Prior information used for analysis
 
         overwrite_flag = intarr(niter)                  ; Flag to overwrite any existing output file
+
+        execute_flag = intarr(niter)                    ; Flag to execute the plan
 END
 

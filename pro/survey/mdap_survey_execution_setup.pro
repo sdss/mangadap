@@ -9,7 +9,7 @@
 ;       MDAP_SURVEY_EXECUTION_SETUP, mode, bin_par, w_range_sn, threshold_ston_bin, $
 ;                                    w_range_analysis, threshold_ston_analysis, analysis, $
 ;                                    tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-;                                    analysis_par, analysis_prior, overwrite_flag 
+;                                    analysis_par, analysis_prior, overwrite_flag, execute_flag
 ;
 ; INPUTS:
 ;       mode string
@@ -129,6 +129,9 @@
 ;               Flag to overwrite any existing output file with the exact same
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
+;
+;       execute_flag intarr[P]
+;               Flag to execute the plan (0-no;1-yes)
 ;
 ; OPTIONAL INPUTS:
 ;
@@ -441,6 +444,10 @@
 ;
 ; REVISION HISTORY:
 ;       17 Mar 2015: Original implementation by K. Westfall (KBW)
+;       30 Oct 2015: (KBW) Add the "execute_flag" keyword to allow plans
+;                          to be skipped, while keeping the output file
+;                          names dependent on the index of the input
+;                          plan.  **THIS FILE IS VERY OUT OF DATE!!**
 ;-
 ;-----------------------------------------------------------------------
 
@@ -448,7 +455,7 @@
 PRO MDAP_SURVEY_EXECUTION_SETUP, $
         mode, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, threshold_ston_analysis, $
         analysis, tpl_lib_analysis, ems_par_analysis, abs_par_analysis, analysis_par, $
-        analysis_prior, overwrite_flag, version=version
+        analysis_prior, overwrite_flag, execute_flag, version=version
 
         version_module = '0.1'                          ; Version number
         if n_elements(version) ne 0 then begin          ; set version and return
@@ -470,14 +477,13 @@ PRO MDAP_SURVEY_EXECUTION_SETUP, $
                                                 w_range_analysis, threshold_ston_analysis, $
                                                 analysis, tpl_lib_analysis, ems_par_analysis, $
                                                 abs_par_analysis, analysis_par, analysis_prior, $
-                                                overwrite_flag
+                                                overwrite_flag, execute_flag
 
         ;-----------------------------------------------------------------------
         ; Nominal pipeline run at Utah
 
         if mode eq 'CUBE' then $
             bin_par[*].noise_calib = 1
-
 
         ; Run the pipeline
         bin_par[0].type = 'NONE'        ; ... without binning
@@ -527,6 +533,8 @@ PRO MDAP_SURVEY_EXECUTION_SETUP, $
         analysis_prior[3] = '2'                 ; ... for all but the RADIAL binning type
 
         overwrite_flag[*] = 1                   ; Always overwrite the existing data
+
+        execute_flag[*] = 1                     ; Execute all plans
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------

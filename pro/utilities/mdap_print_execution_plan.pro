@@ -48,6 +48,7 @@
 ;       05 Dec 2014: (KBW) Print the prior
 ;       11 Dec 2014: (KBW) Change to allow for emission-line-only fits
 ;       16 Mar 2015: (KBW) Print value of bin_par.noise_calib
+;       30 Oct 2015: (KBW) Add execution flag to ouput
 ;-
 ;------------------------------------------------------------------------------
 
@@ -134,6 +135,7 @@ PRO MDAP_PRINT_EXECUTION_PLAN, $
             endif
         endelse
         print, '    Overwrite flag: ', execution_plan.overwrite
+        print, '    Execution flag: ', execution_plan.exec
         print, '    Output file: ', execution_plan.ofile
 END
 

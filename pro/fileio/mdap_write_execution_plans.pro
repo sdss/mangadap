@@ -10,7 +10,7 @@
 ;       MDAP_WRITE_EXECUTION_PLANS, ofile, bin_par, w_range_sn, threshold_ston_bin, $
 ;                                   w_range_analysis, threshold_ston_analysis, analysis, $
 ;                                   tpl_lib_analysis, ems_par_analysis, abs_par_analysis, $
-;                                   analysis_par, analysis_prior, overwrite_flag, $
+;                                   analysis_par, analysis_prior, overwrite_flag, execute_flag, $
 ;                                   version=version, overwrite=overwrite
 ;
 ; INPUTS:
@@ -132,6 +132,9 @@
 ;               execution plan.  TODO: Should this actually just be a flag that
 ;               forces analyses to be redone?
 ;
+;       execute_flag intarr[P]
+;               Flag to execute the plan (0-no;1-yes)
+;
 ; OPTIONAL INPUTS:
 ;
 ; OPTIONAL KEYWORDS:
@@ -159,6 +162,12 @@
 ;
 ; REVISION HISTORY:
 ;       17 Mar 2015: Original implementation by K. Westfall (KBW)
+;       30 Oct 2015: (KBW) Add the "execute_flag" keyword to allow plans
+;                          to be skipped, while keeping the output file
+;                          names dependent on the index of the input
+;                          plan.  Expand the length of the template
+;                          library, emission-line database, and
+;                          spectral-index database names.
 ;-
 ;-----------------------------------------------------------------------
 
@@ -187,9 +196,9 @@ PRO MDAP_WRITE_EXECUTION_PLANS_STRUCT, $
         printf, unit, '    double w_range_analysis[2];'
         printf, unit, '    double threshold_ston_analysis;'
         printf, unit, '    char analysis[4][20];'
-        printf, unit, '    char tpl_lib_analysis[12];'
-        printf, unit, '    char ems_par_analysis[12];'
-        printf, unit, '    char abs_par_analysis[12];'
+        printf, unit, '    char tpl_lib_analysis[18];'
+        printf, unit, '    char ems_par_analysis[18];'
+        printf, unit, '    char abs_par_analysis[18];'
         printf, unit, '    int analysis_moments;'
         printf, unit, '    int analysis_degree;'
         printf, unit, '    int analysis_mdegree;'
@@ -198,6 +207,7 @@ PRO MDAP_WRITE_EXECUTION_PLANS_STRUCT, $
         printf, unit, '    int analysis_zero_instr_disp;'
         printf, unit, '    char analysis_prior[300];'
         printf, unit, '    int overwrite_flag;'
+        printf, unit, '    int execute_flag;'
         printf, unit, '} DAPPLAN;'
         printf, unit, ''
         printf, unit, ''
@@ -207,9 +217,21 @@ END
 PRO MDAP_WRITE_EXECUTION_PLANS_INSTANCE, $
                 unit, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
                 threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, $
-                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag
+                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag, execute_flag
 
         ; Perform some checks
+        if strlen(tpl_lib_analysis) gt 18 then begin
+            print, strlen(tpl_lib_analysis)
+            message, 'Cannot accommodate Tpl Lib key with length greater than 18!'
+        endif
+        if strlen(ems_par_analysis) gt 18 then begin
+            print, strlen(ems_par_analysis)
+            message, 'Cannot accommodate emission-line key with length greater than 18!'
+        endif
+        if strlen(abs_par_analysis) gt 18 then begin
+            print, strlen(abs_par_analysis)
+            message, 'Cannot accommodate spectral-index key with length greater than 18!'
+        endif
         if strlen(analysis_prior) gt 50 then begin
             print, strlen(analysis_prior)
             message, 'Cannot accommodate prior with length greater than 50!'
@@ -252,18 +274,18 @@ PRO MDAP_WRITE_EXECUTION_PLANS_INSTANCE, $
                 analysis_par.moments, analysis_par.degree, analysis_par.mdegree, $
                 analysis_par.reddening[0], analysis_par.reddening[1], $
                 analysis_par.reddening_order, analysis_par.zero_instr_disp, prior, $
-                overwrite_flag, $
+                overwrite_flag, execute_flag, $
                 format='("DAPPLAN ", A6, 3(I2), 7(E14.6), I4, I2, E14.6, 2(" { ", 2(E14.6), ' $
-                       + '" } ", E14.6), " { ", 4(A20), " } ", 3(A12), 3(I3), " { ", 2(E14.6), ' $
-                       + '" } ", 2(I2), A301, I2)'
+                       + '" } ", E14.6), " { ", 4(A20), " } ", 3(A18), 3(I3), " { ", 2(E14.6), ' $
+                       + '" } ", 2(I2), A301, 2(I2))'
 END
 
 
 PRO MDAP_WRITE_EXECUTION_PLANS, $
                 ofile, bin_par, w_range_sn, threshold_ston_bin, w_range_analysis, $
                 threshold_ston_analysis, analysis, tpl_lib_analysis, ems_par_analysis, $
-                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag, version=version, $
-                overwrite=overwrite
+                abs_par_analysis, analysis_par, analysis_prior, overwrite_flag, execute_flag, $
+                version=version, overwrite=overwrite
 
         version_module = '0.1'                          ; Version number
         if n_elements(version) ne 0 then begin          ; set version and return
@@ -294,7 +316,8 @@ PRO MDAP_WRITE_EXECUTION_PLANS, $
                                                  reform(analysis[i,*]), $
                                                  tpl_lib_analysis[i], ems_par_analysis[i], $
                                                  abs_par_analysis[i], analysis_par[i], $
-                                                 analysis_prior[i], overwrite_flag[i]
+                                                 analysis_prior[i], overwrite_flag[i], $
+                                                 execute_flag[i]
 
         ; Close the file
         printf, unit, ''

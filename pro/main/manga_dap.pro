@@ -239,7 +239,6 @@ PRO MANGA_DAP, $
         SXADDPAR, header, 'VDAPPLAN', manga_dap_version.execute_plan, $
                           'mdap_build_execution_plans version'
 
-
         ; BLOCK 2 ------------------------------------------------------
         ; With the DRP data read, the required input to appropriately
         ; manipulate ALL the template libraries is available.  This
@@ -282,6 +281,9 @@ PRO MANGA_DAP, $
         if keyword_set(dbg) then $
             n_plans=1                           ; Only run the first plan
         for i=0,n_plans-1 do begin
+
+            if execution_plan[i].exec eq 0 then $           ; Do not execute this plan
+                continue
 
             if ~keyword_set(quiet) then $
                 print, 'Beginning ExecutionPlan: ', i+1
