@@ -938,10 +938,19 @@ def plot_spectra(dapdata, bins=(0),
                  figsize=(20, 12), mg_kws=None, main=True, savefig=True,
                  overwrite=False):
     """Plot multiple spectra.
+
+    Show all bins by setting bins = all in config file.
+    Show N bins by setting bins = *N*total (e.g., 100total) in config file.
     """
     try:
         if bins.lower() == 'all':
             bins = np.arange(len(dapdata.bins))
+        elif 'total' in bins:
+            n_spec = int(bins.split('total')[0])
+            if n_spec >= len(dapdata.bins):
+                bins = np.arange(len(dapdata.bins))
+            else:
+                bins = np.linspace(0, len(dapdata.bins) - 1, n_spec, dtype=int)
     except AttributeError:
         pass
 

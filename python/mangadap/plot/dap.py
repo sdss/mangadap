@@ -301,7 +301,7 @@ class DAP():
         self.fits.open_hdu()
         self.fits.read_par()
         self.extnames = [hdu._summary()[0] for hdu in self.fits.hdu]
-        print('Read manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
+        print('\nRead manga-{plate}-{ifudesign}-LOG{mode}_BIN-{bintype}-{niter}'
               '.fits'.format(**file_kws))
 
     def get_all_ext(self):
@@ -375,9 +375,9 @@ class DAP():
         self.mangaid = self.header['MANGAID']
         self.flux_units = self.header['BUNIT']
         try:
-            self.bin_sn = self.header['BINSN']
+            self.binsn = self.header['BINSN']
         except KeyError:
-            self.bin_sin = None
+            self.binsn = None
         try:
             self.tplkey = self.header['TPLKEY']
         except KeyError:
@@ -422,7 +422,7 @@ class DAP():
 
     def get_stellar_cont_fit(self):
         """Read in stellar continuum fits to the binned spectra."""
-        if (self.bintype in ['STON']) and (self.bin_sn == 30):
+        if (self.bintype in ['STON']) and (self.binsn == 30):
             kincols = ['vel', 'vdisp', 'h3', 'h4']
         else:
             kincols = ['vel', 'vdisp']
@@ -736,7 +736,7 @@ class DAP():
     def deredshift_velocities(self):
         """Deredshift stellar and emission line velocities."""
         elkincols = ['vel', 'vdisp']
-        if (self.bintype in ['STON']) and (self.bin_sn == 30):
+        if (self.bintype in ['STON']) and (self.binsn == 30):
             stkincols = ['vel', 'vdisp', 'h3', 'h4']
         else:
             stkincols = ['vel', 'vdisp']
@@ -757,7 +757,7 @@ class DAP():
             stkin = dict(vel=stvel, vdisp=self.stfit_kin['vdisp'].values)
             stkinerr = dict(vel=stvelerr,
                             vdisp=self.stfit_kinerr['vdisp'].values)
-            if (self.bintype in ['STON']) and (self.bin_sn == 30):
+            if (self.bintype in ['STON']) and (self.binsn == 30):
                 for it in ['h3', 'h4']:
                     stkin[it] = self.stfit_kin[it].values
                     stkinerr[it] = self.stfit_kinerr[it].values
@@ -940,7 +940,7 @@ class DAP():
                     elvel=self.kinerr_rest_ew[elkincols[0]],
                     elvdisp=self.kinerr_ew[elkincols[1]],
                     stfit_resid99=None)
-        if (self.bintype in ['STON']) and (self.bin_sn == 30):
+        if (self.bintype in ['STON']) and (self.binsn == 30):
             for it in ['h3', 'h4']:
                 vals[it] = self.stfit_kin[it].values
                 errs[it] = self.stfit_kinerr[it].values

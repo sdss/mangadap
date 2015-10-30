@@ -451,3 +451,21 @@ def make_mg_kws(dapdata, file_kws):
     mg_kws['mangaid'] = dapdata.mangaid
     mg_kws['plateifu'] = '{plate}-{ifudesign}'.format(**mg_kws)
     return mg_kws
+
+def check_h3_h4(bintype, binsn, plottypes_list):
+    """If h3 and h4 were measured, use appropriate plottypes config file.
+
+    Args:
+        bintype (str): Bintype.
+        binsn (float): Minimum S/N for Voronoi binning.
+        plottypes_list (str): Plot types config file originally specified.
+
+    Returns:
+        str
+    """
+    if ((bintype == 'STON') and (binsn == 30) and
+        (plottypes_list == 'dapqa_plottypes.ini')):
+        print('Switched to {} to make h3 and h4 maps.'.format(plottypes_list))
+        return 'dapqa_STON30_plottypes.ini'
+    else:
+        return plottypes_list

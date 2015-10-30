@@ -48,8 +48,9 @@ for file_kws in file_kws_all:
     gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
-
-    plottypes = cfg_io.read_plottypes_config(join(cfg_dir, plottypes_list))
+    
+    ptypes_list = util.check_h3_h4(gal.bintype, gal.binsn, plottypes_list)
+    plottypes = cfg_io.read_plottypes_config(join(cfg_dir, ptypes_list))
     for plottype in plottypes:
         cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
         plot_kws = cfg_io.make_kws(cfg)
