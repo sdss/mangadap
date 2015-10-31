@@ -464,7 +464,9 @@ class drpcomplete:
                 ell[i] = -9999.0
 
             try:
-                pa[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_phi'][indx][0]
+                # THERE'S A BUG IN THE MANGACORE/V1_2_0 PLATETARGETS FILES
+#                pa[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_phi'][indx][0]
+                pa[i] = 180-plttrg_data[plttrg_j]['PLTTRGT']['nsa_phi'][indx][0]
             except:
                 pa[i] = -9999.0
 

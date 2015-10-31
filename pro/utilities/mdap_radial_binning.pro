@@ -164,7 +164,7 @@ PRO MDAP_RADIAL_BINNING, $
                                bin_par.ell, R, theta
 
         ; Scale R if requested
-        print, 'RSCALE: ', bin_par.rscale
+;        print, 'RSCALE: ', bin_par.rscale
         if bin_par.rscale gt 0.0 then $
             R = R / bin_par.rscale
 
@@ -175,29 +175,42 @@ PRO MDAP_RADIAL_BINNING, $
 ;
 ;        stop
 
+;        print, 'input num: ', bin_par.nr
+;        print, 'input end: ', bin_par.re
+
         ; Get the maximum radius to use in the binning, if not provided
         if bin_par.re lt 0.0 then $
             bin_par.re = max(R)+0.1d
+
+;        print, 'max, re: ', max(R), bin_par.re
 
 ;       print, 'RS: ', bin_par.rs
 ;       print, 'minR', R[r_sort_indx[0]], R[r_sort_indx[1]], R[r_sort_indx[2]], R[r_sort_indx[3]] 
 ;       print, 'RE: ', bin_par.re
 ;       print, 'maxR', max(R)
 
+;        print, 'input start: ', bin_par.rs
+
         ; Get the lower and upper edges of the radial bins
         if bin_par.rlog eq 1 then begin
             ; Minimum r must be positive for logarithmic binning
-            if bin_par.rs lt 0.001 then begin
-                indx = where(R gt 0.001)
-                bin_par.rs = min(R[indx]);-0.1d
+            minr = 0.1/bin_par.rscale           ; 0.1 arcsec in units of the scale radius
+            if bin_par.rs lt minr then begin
+                indx = where(R gt minr)
+;                print, 'min > 0.1/rscale: ', min(R[indx])
+                bin_par.rs = min(R[indx])/1.1
             endif
             bin_edges = MDAP_RANGE(bin_par.rs, bin_par.re, bin_par.nr+1, /log)
         endif else $
             bin_edges = MDAP_RANGE(bin_par.rs, bin_par.re, bin_par.nr+1)
+
+;        print, 'min, rs: ', min(R), bin_par.rs
+
         binned_rlow = bin_edges[0:bin_par.nr-1]
         binned_rupp = bin_edges[1:bin_par.nr]
 
 ;        print, bin_par.rs, bin_par.re, bin_par.rlog
+        print, 'Radial bin limits:'
         for i=0,bin_par.nr-1 do $
             print, binned_rlow[i], binned_rupp[i]
 
@@ -214,6 +227,7 @@ PRO MDAP_RADIAL_BINNING, $
             optimal_weighting = 1
 
         ; Get the binned indices
+        print, 'Signal-weighted radius, S/N, number in bin:'
         for i=0,bin_par.nr-1 do begin
             indx = where(R gt binned_rlow[i] and R lt binned_rupp[i], count)   ; Spectra in the bin
 ;           if indx[0] eq -1 then begin                 ; No spectra in the bin
@@ -234,9 +248,10 @@ PRO MDAP_RADIAL_BINNING, $
 
             nbinned[i] = n_elements(indx)               ; Add the number of spectra in the bin
 
-;            print, binned_wrad[i], binned_ston[i], nbinned[i]
+            print, binned_wrad[i], binned_ston[i], nbinned[i]
 
         endfor
+;       stop
 END
 
 
