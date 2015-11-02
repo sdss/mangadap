@@ -932,15 +932,17 @@ def set_flux_units(dapdata):
     flux_units = 'Flux / {0} [10$^{{-17}}$ {1}]'.format(indiv_units[-1], units)
     return flux_units
 
-def plot_spectra(dapdata, bins=(0),
-                 fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
-                 rest_frame=True, xlim=None, ylim=None, stfit_masks=False, lw=1,
-                 figsize=(20, 12), mg_kws=None, main=True, savefig=True,
-                 overwrite=False):
-    """Plot multiple spectra.
 
-    Show all bins by setting bins = all in config file.
-    Show N bins by setting bins = *N*total (e.g., 100total) in config file.
+def convert_bins_from_string_to_list(dapdata, bins, n_spec):
+    """If bins is specified by a string, convert it to an array.
+
+    Args:    
+        bins: If bins = 'all' or bins = *N*total (e.g., 100total) in config
+            file instead of a list of integers, then create an array of
+            integers.
+
+    Returns:
+        array (or list of intgers)
     """
     try:
         if bins.lower() == 'all':
@@ -953,7 +955,19 @@ def plot_spectra(dapdata, bins=(0),
                 bins = np.linspace(0, len(dapdata.bins) - 1, n_spec, dtype=int)
     except AttributeError:
         pass
+    return bins
 
+def plot_spectra(dapdata, bins=(0),
+                 fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
+                 rest_frame=True, xlim=None, ylim=None, stfit_masks=False, lw=1,
+                 figsize=(20, 12), mg_kws=None, main=True, savefig=True,
+                 overwrite=False):
+    """Plot multiple spectra.
+
+    Show all bins by setting bins = all in config file.
+    Show N bins by setting bins = *N*total (e.g., 100total) in config file.
+    """
+    bins = convert_bins_from_string_to_list(dapdata, bins, n_spec)
     for bin in bins:
         fig = plot_spectrum(dapdata, bin=bin, fits_to_plot=fits_to_plot,
                             rest_frame=rest_frame, xlim=xlim, ylim=ylim,
@@ -1087,12 +1101,7 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
         savefig_multi (bool): Save multi-panel plot. Default is True.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
-    try:
-        if bins.lower() == 'all':
-            bins = np.arange(len(dapdata.bins))
-    except AttributeError:
-        pass
-
+    bins = convert_bins_from_string_to_list(dapdata, bins, n_spec)
     for bin in bins:
         mg_kws['bin'] = bin
         if make_multi:
