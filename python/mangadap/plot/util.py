@@ -33,7 +33,7 @@ def fitsrec_to_dataframe(recarr, forceswap=False):
     cols = recarr.columns.names
     dtmp = {}
     for col in cols:
-        dtmp[col] = swap_byte(recarr[col], forceswap)
+        dtmp[col] = swap_byte(recarr[col])
     return pd.DataFrame(dtmp, columns=cols)
 
 def make_df(data, columns):
@@ -75,15 +75,13 @@ def read_vals(dapf, hdu, ext, columns):
         DataFrame
     """
     recarr = dapf.read_hdu_data(hdu)
-    df = pd.DataFrame(swap_byte(recarr[ext], forceswap=True), columns=columns)
+    df = pd.DataFrame(swap_byte(recarr[ext]), columns=columns)
     return df
 
-def swap_byte(arr, forceswap=False):
+def swap_byte(arr):
     """Swap byte order from big-endian (FITS) to little-endian (pandas).
-
-    Only do byte swap if using Python 2 or if forceswap is True.
     """
-    if (sys.version_info[0] < 3) or forceswap:
+    if arr.dtype.byteorder == '>':
         return arr.byteswap().newbyteorder()
     else:
         return arr
