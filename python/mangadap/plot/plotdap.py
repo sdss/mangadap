@@ -933,10 +933,11 @@ def set_flux_units(dapdata):
     return flux_units
 
 
-def convert_bins_from_string_to_list(dapdata, bins, n_spec):
+def convert_bins_from_string_to_list(dapdata, bins):
     """If bins is specified by a string, convert it to an array.
 
-    Args:    
+    Args:
+        dapdata: dap.DAP object.
         bins: If bins = 'all' or bins = *N*total (e.g., 100total) in config
             file instead of a list of integers, then create an array of
             integers.
@@ -967,7 +968,7 @@ def plot_spectra(dapdata, bins=(0),
     Show all bins by setting bins = all in config file.
     Show N bins by setting bins = *N*total (e.g., 100total) in config file.
     """
-    bins = convert_bins_from_string_to_list(dapdata, bins, n_spec)
+    bins = convert_bins_from_string_to_list(dapdata, bins)
     for bin in bins:
         fig = plot_spectrum(dapdata, bin=bin, fits_to_plot=fits_to_plot,
                             rest_frame=rest_frame, xlim=xlim, ylim=ylim,
@@ -1101,7 +1102,7 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
         savefig_multi (bool): Save multi-panel plot. Default is True.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
-    bins = convert_bins_from_string_to_list(dapdata, bins, n_spec)
+    bins = convert_bins_from_string_to_list(dapdata, bins)
     for bin in bins:
         mg_kws['bin'] = bin
         if make_multi:

@@ -463,7 +463,8 @@ def check_h3_h4(bintype, binsn, plottypes_list):
     """
     if ((bintype == 'STON') and (binsn == 30) and
         (plottypes_list == 'dapqa_plottypes.ini')):
-        print('Switched to {} to make h3 and h4 maps.'.format(plottypes_list))
-        return 'dapqa_STON30_plottypes.ini'
+        new_list = 'dapqa_STON30_plottypes.ini'
+        print('Switched to {} to make h3 and h4 maps.'.format(new_list))
+        return new_list
     else:
         return plottypes_list

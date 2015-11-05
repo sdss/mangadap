@@ -31,12 +31,15 @@ if hasattr(main, '__file__'):
         raise IndexError('Usage: python plotqa.py file_list plottypes_list')
 else:
     # interactive session
-    # DRPQA file
-    file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
+    # Utah MPL4 file
+    # file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
+    #                  os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
+    #                  '7443', '1901', 'CUBE_files_to_plot.txt')
+    # Portsmouth MPL4 file
+    file_list = join(os.getenv('MANGA_SANDBOX_MPL4'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     '7443', '1901', 'CUBE_files_to_plot.txt')
-    #file_list = join(os.getenv('MANGA_MPL3'),
-    #                 '7443', '1901', 'CUBE_files_to_plot.txt')
+                     os.getenv('MANGADAP_TPL'), '7443', '1901',
+                     'CUBE_files_to_plot.txt')
     plottypes_list = 'dapqa_plottypes.ini'
 
 file_kws_all = util.read_file_list(file_list)
@@ -58,13 +61,9 @@ for file_kws in file_kws_all:
         plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
                            plot_kws=plot_kws)
 
-# TO DO
 
 # MPL-4 file
 # python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
-# Normal DAP file
-# python3 plotqa.py $MANGA_MPL4/$MANGADRP_VER/$MANGADAP_VER/7443/1901/CUBE_files_to_plot.txt drpqa_plottypes.ini
-# python3 plotqa.py $MANGA_MPL3/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
-
-
+# MPL-4 Sandbox
+# python3 plotqa.py $MANGA_SANDBOX_MPL4/$MANGADRP_VER/$MANGADAP_VER/mpl4_m11stelibzsol/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
