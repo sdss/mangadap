@@ -506,11 +506,12 @@ class DAP():
             kincols = ['_'.join([kc, wt, 'wt']) for wt in wtnames
                        for kc in kincols]
         ikincols = ['vel', 'vdisp']
+        wincols = ['window_start', 'window_end']
         elonames = self.elopar.elname.values
 
         kinexts = ['KIN', 'KINERR', 'KINSTDE']
-        eloexts = ['ELOMIT', 'AMPL', 'AMPLERR', 'SINST', 'FLUX', 'FLUXERR',
-                   'EW', 'EWERR']
+        eloexts = ['ELOMIT', 'BASE', 'BASEERR', 'AMPL', 'AMPLERR',
+                   'SINST', 'FLUX', 'FLUXERR', 'EW', 'EWERR']
         ikinexts = ['IKIN', 'IKINERR']
 
         for fitcode in ['EW', 'FB']:
@@ -529,6 +530,26 @@ class DAP():
                     if self.verbose:
                         print('\n', traceback.format_exc(), '\n')
                     self.__dict__[ext.lower()] = None
+
+            # Read in fitting window specifications
+            try:
+                ext = '_'.join(['WIN', fitcode])
+                val_in = util.swap_byte(elofit[ext])
+            except KeyError:
+                print('Column {} not found in ELOFIT extension.'
+                      ''.format(ext))
+                if self.verbose:
+                    print('\n', traceback.format_exc(), '\n')
+                self.__dict__[ext.lower()] = None
+            else:
+                val = np.transpose(val_in, (1, 2, 0))
+                df_tmp = util.arr_to_multiindex_df(val, wincols, elonames)
+                cols_order = [(el, w) for el in elonames for w in wincols]
+
+                self.__dict__[ext.lower()] = (df_tmp
+                                              .reorder_levels([1, 0], axis=1)
+                                              .sort_index(axis=1)
+                                              .reindex(columns=cols_order))
 
             # combine [OII]3727 and [OII]3729 flux measurements
             key = 'flux_' + fitcode.lower()
