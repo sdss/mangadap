@@ -429,7 +429,8 @@ def deredshift_velocities(redshift, vel, velerr):
     """
     v_light = 299792.458
     vel_rest = vel - (redshift * v_light)
-    # WHY IS IT SETTING ERRORS TO ZERO?
+    # Set velocity errors to 1e-6 because otherwise rest frame velocities of 0
+    # are lower than the SNR threshold and won't be plotted.
     velerr_rest = velerr * 0. + 1e-6
     mask = ((np.abs(vel_rest) > 250.) | (velerr > 250.) | (velerr == 0.))
     velerr_rest[mask] = 1e8

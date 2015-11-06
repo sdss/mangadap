@@ -57,9 +57,6 @@ class DAP():
             1 = bad).
         wave_rest (array): Rest frame wavelengths (in Angstroms) of binned
             spectra.
-        wave_rest_med (array): Median rest frame wavelengths (in Angstroms).
-        dlam (array): Size of wavelength bins divided by wavelength (inverse
-            of resolution).
         flux_rest (array): Rest frame flux of the binned spectra.
         ivar_rest (array): Rest frame inverse variance of the binned spectra.
         smod_rest (array): Rest frame stellar continuum fit.
@@ -721,11 +718,6 @@ class DAP():
             wave_obs_grid = (np.ones((self.n_bins, self.n_pix)) * self.wave)
             self.wave_rest = (wave_obs_grid.T / (1. + self.redshift)).T
 
-            # FIX: what do we need dlam for?
-            self.wave_rest_med = self.wave / (1. + self.median_redshift)
-            self.dlam = ((self.wave_rest_med[1] - self.wave_rest_med[0]) /
-                         self.wave_rest_med[0])
-
             # conserve flux by multiplying by (1+z)
             self.flux_rest = (self.flux.T * (1. + self.redshift)).T
             self.ivar_rest = (self.ivar.T * (1. + self.redshift)).T
@@ -736,9 +728,9 @@ class DAP():
             print('Could not deredshift spectra.')
             if self.verbose:
                 print('\n', traceback.format_exc(), '\n')
-            for it in ['redshift', 'median_redshift', 'wave_rest',
-                       'wave_rest_med', 'dlam', 'flux_rest', 'ivar_rest',
-                       'smod_rest', 'fullfit_ew_rest', 'fullfit_fb_rest']:
+            for it in ['redshift', 'median_redshift', 'wave_rest', 'flux_rest',
+                       'ivar_rest', 'smod_rest', 'fullfit_ew_rest',
+                       'fullfit_fb_rest']:
                 self.__dict__[it] = None
 
     def get_nsa_redshift(self):
