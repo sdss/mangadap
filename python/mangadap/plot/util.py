@@ -181,7 +181,7 @@ def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
     elif category == 'spectra':
         filename = stem + '_spec-{bin:0>4}.png'.format(**mg_kws)
     elif category == 'emline_spectra':
-        filename = stem + '_spec-{bin:0>4}_emline_{0}.png'.format(name, **mg_kws)
+        filename = stem + '_spec-{bin:0>4}_emline_{}.png'.format(name, **mg_kws)
         category = 'spectra'
     path_category = join(path_data, 'plots', category)
     fullpath = join(path_category, filename)

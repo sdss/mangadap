@@ -28,12 +28,12 @@ try:
 except ImportError:
     print('Seaborn could not be imported. Continuing...')
 
-def set_extent(xpos, ypos, delta):
+def _set_extent(xpos, ypos, delta):
     """Set extent of map."""
     return np.array([-xpos.max() - delta, -xpos.min() + delta,
                      ypos.min() - delta, ypos.max() + delta])
 
-def reorient(x):
+def _reorient(x):
     """Reorient XPOS and YPOS.
 
     XPOS and YPOS are oriented to start in the lower left and go up then
@@ -77,18 +77,18 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
     im_err = err[binid]
     im_err[binid == -1] = np.nan
 
-    no_measure = make_mask_no_measurement(im, im_err, val_no_measure,
-                                          snr_thresh)
-    no_data = make_mask_no_data(im, no_measure)
+    no_measure = _make_mask_no_measurement(im, im_err, val_no_measure,
+                                           snr_thresh)
+    no_data = _make_mask_no_data(im, no_measure)
     image = np.ma.array(im, mask=no_data)
 
     # spaxels with data but no measurement
-    xpos_re = reorient(xpos)
-    ypos_re = reorient(ypos)
+    xpos_re = _reorient(xpos)
+    ypos_re = _reorient(ypos)
     xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
     return image, xy_nomeasure
 
-def make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
+def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
     """Mask invalid measurements within a data array.
 
     Args:
@@ -111,7 +111,7 @@ def make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
         no_measure[(np.abs(data / err) < snr_thresh)] = True
     return no_measure
 
-def make_mask_no_data(data, mask_no_measurement):
+def _make_mask_no_data(data, mask_no_measurement):
     """Mask entries with no data or invalid measurements.
 
     Args:
@@ -127,7 +127,7 @@ def make_mask_no_data(data, mask_no_measurement):
     no_data[mask_no_measurement] = True
     return no_data
 
-def set_vmin_vmax(d, cbrange):
+def _set_vmin_vmax(d, cbrange):
     """Set minimum and maximum values of the color map."""
     if 'vmin' not in d.keys():
         d['vmin'] = cbrange[0]
@@ -135,7 +135,7 @@ def set_vmin_vmax(d, cbrange):
         d['vmax'] = cbrange[1]
     return d
 
-def cbrange_sigclip(image, sigma):
+def _cbrange_sigclip(image, sigma):
     """Sigma clip colorbar range.
 
     Args:
@@ -152,7 +152,7 @@ def cbrange_sigclip(image, sigma):
         cbrange = [image.min(), image.max()]
     return cbrange
 
-def cbrange_user_defined(cbrange, cbrange_user):
+def _cbrange_user_defined(cbrange, cbrange_user):
     """Set user-specified colorbar range.
 
     Args:
@@ -168,7 +168,7 @@ def cbrange_user_defined(cbrange, cbrange_user):
             cbrange[i] = cbrange_user[i]
     return cbrange
 
-def set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
+def _set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
     """Set colorbar range.
 
     Args:
@@ -183,12 +183,12 @@ def set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
         list: Colorbar range.
     """
     if sigclip is not None:
-        cbr = cbrange_sigclip(image, sigclip)
+        cbr = _cbrange_sigclip(image, sigclip)
     else:
         cbr = [image.min(), image.max()]
 
     if cbrange is not None:
-        cbr = cbrange_user_defined(cbr, cbrange)
+        cbr = _cbrange_user_defined(cbr, cbrange)
 
     if symmetric:
         cb_max = np.max(np.abs(cbr))
@@ -196,7 +196,7 @@ def set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
 
     return cbr
 
-def make_draw_colorbar_kws(image, cb_kws):
+def _make_draw_colorbar_kws(image, cb_kws):
     """Make keyword args dictionary to pass to draw_colorbar.
 
     Args:
@@ -208,7 +208,7 @@ def make_draw_colorbar_kws(image, cb_kws):
     """
     keys = ('cbrange', 'sigclip', 'symmetric')
     cbrange_kws = {k: cb_kws.pop(k, None) for k in keys}
-    cb_kws['cbrange'] = set_cbrange(image, **cbrange_kws)
+    cb_kws['cbrange'] = _set_cbrange(image, **cbrange_kws)
     return cb_kws
 
 def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
@@ -254,24 +254,7 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
 
     return fig, cb
 
-def pretty_specind_units(units):
-    """Convert units of spectral index to colorbar label.
-
-    Args:
-        units (str): 'ang' or 'mag'
-
-    Returns:
-        str
-    """
-    if units == 'ang':
-        cblabel = r'$\AA$'
-    elif units == 'mag':
-        cblabel = 'Mag'
-    else:
-        raise ValueError('Unknown spectral index units.')
-    return cblabel
-
-def set_cmaps(cmaps, n_plots):
+def _set_cmaps(cmaps, n_plots):
     """Set the colormaps.
 
     Args:
@@ -292,13 +275,13 @@ def set_cmaps(cmaps, n_plots):
             cmap = cm.Blues_r
         cmaps = [cmap for _ in range(n_plots)]
     elif len(cmaps) == n_plots:
-        cmaps = [string_to_cmap(it) for it in cmaps]
+        cmaps = [_string_to_cmap(it) for it in cmaps]
     elif len(cmaps) == 1:
-        cmaps = [string_to_cmap(cmaps[0]) for _ in range(n_plots)]
+        cmaps = [_string_to_cmap(cmaps[0]) for _ in range(n_plots)]
 
     return cmaps
 
-def string_to_cmap(cm_name):
+def _string_to_cmap(cm_name):
     """Return colormap given name.
 
     Args:
@@ -315,7 +298,7 @@ def string_to_cmap(cm_name):
         cmap = cm.__dict__[cm_name]
     return cmap
 
-def set_map_background_color(spaxel_size, color='#A8A8A8'):
+def _set_map_background_color(spaxel_size, color='#A8A8A8'):
     """Set default parameters for a single panel plot.
 
     Args:
@@ -330,7 +313,7 @@ def set_map_background_color(spaxel_size, color='#A8A8A8'):
                      linewidth=0, fill=True, fc=color, ec='w', zorder=10)
     return ax_kws, patch_kws
 
-def set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
+def _set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
     """Set default parameters for a single panel plot.
 
     Args:
@@ -356,7 +339,7 @@ def set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
         if k not in cb_kws_out:
             cb_kws_out[k] = v
 
-    if type(cb_kws_out['symmetric']) is pd.Series:
+    if isinstance(cb_kws_out['symmetric'], pd.Series):
         cb_kws_out['symmetric'] = cb_kws_out['symmetric'][column]
 
     return title_kws, imshow_kws, cb_kws_out
@@ -396,7 +379,7 @@ def map_ax_setup(fig=None, ax=None, fig_kws=None, facecolor='#EAEAF2'):
     ax.grid(False, which='both', axis='both')
     return fig, ax
 
-def make_map_title(analysis_id):
+def _make_map_title(analysis_id):
     """Make a map title to identify galaxy and analysis run.
 
     Args:
@@ -408,8 +391,8 @@ def make_map_title(analysis_id):
     return '     '.join(('pid-ifu {plate}-{ifudesign}', 'manga-id {mangaid}',
                          '{bintype}-{niter}')).format(**analysis_id)
 
-def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
-                  labelsize=20, title_kws=None, mg_kws=None):
+def _make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
+                   labelsize=20, title_kws=None, mg_kws=None):
     """Make a big axes for x- and y-labels and a large plot title.
 
     Args:
@@ -421,7 +404,7 @@ def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
         labelsize (int): x- and y-axis labelsize. Defaults to 20.
         title_kws (dict): Keyword args to pass to ax.set_title. Default is None
         mg_kws (dict): MaNGA analysis ID keyword args to pass to
-            make_map_title. Default is None.
+            _make_map_title. Default is None.
 
     Returns:
         plt.figure axis object
@@ -441,12 +424,12 @@ def make_big_axes(fig, axloc=(0.04, 0.05, 0.9, 0.88), xlabel=None, ylabel=None,
 
     # set title
     if ('label' not in title_kws) and (mg_kws is not None):
-        title_kws['label'] = make_map_title(mg_kws)
+        title_kws['label'] = _make_map_title(mg_kws)
     if 'label' in title_kws:
         bigAxes.set_title(**title_kws)
     return bigAxes
 
-def multi_panel_loc(panelnum, n_panels):
+def _multi_panel_loc(panelnum, n_panels):
     """
     Args:
         panelnum: Panel number (0-indexed).
@@ -463,7 +446,7 @@ def multi_panel_loc(panelnum, n_panels):
     left, bottom = (0.08 + dx, 0.1 + dy)
     return (left, bottom)
 
-def show_bin_num(dapdata, val, ax, imshow_kws, fontsize=6):
+def _show_bin_num(dapdata, val, ax, imshow_kws, fontsize=6):
     """Display bin number on map.
 
     Args:
@@ -480,14 +463,14 @@ def show_bin_num(dapdata, val, ax, imshow_kws, fontsize=6):
     binyru = dapdata.bins.binyru.values
     nbin = dapdata.bins.nbin.values
     for i, (x, y, nb, v) in enumerate(zip(binxrl, binyru, nbin, val)):
-        fontsize_tmp = set_bin_num_fontsize(fontsize, i, nb)
-        color = set_bin_num_color(v, imshow_kws)
+        fontsize_tmp = _set_bin_num_fontsize(fontsize, i, nb)
+        color = _set_bin_num_color(v, imshow_kws)
         ax.text(-x, y, str(i), fontsize=fontsize_tmp, color=color,
                 horizontalalignment='center', verticalalignment='center',
                 zorder=10)
     return ax
 
-def set_bin_num_color(value, imshow_kws):
+def _set_bin_num_color(value, imshow_kws):
     """Set color of bin numbers to be inverse of bin color.
 
     Args:
@@ -503,7 +486,7 @@ def set_bin_num_color(value, imshow_kws):
     color = (1.-ctmp[0], 1.-ctmp[1], 1.-ctmp[2], ctmp[3])  # invert
     return color
 
-def set_bin_num_fontsize(fontsize, number, nbin):
+def _set_bin_num_fontsize(fontsize, number, nbin):
     """Set font size of bin numbers.
 
     Args:
@@ -526,19 +509,11 @@ def set_bin_num_fontsize(fontsize, number, nbin):
         fontsize_out = fontsize + 2
     return fontsize_out
 
-
-def plot_bindot(binxrl, binyru):
-    """SNIPPETS ONLY
-    """
-    bindot_args = ()
-    if show_bindot:
-        bindot_args = (-binxrl, binyru)
-
 def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
              dapdata=None, fig_kws=None, ax_kws=None, title_kws=None,
              patch_kws=None, imshow_kws=None, cb_kws=None, binnum_kws=None,
              bindot_args=()):
-    """Make map.
+    """Make single panel map or one panel of multi-panel map plot.
 
     Args:
         image (masked array): Image to display.
@@ -557,7 +532,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
             None.
         imshow_kws (dict): Keyword args to pass to ax.imshow. Default is None.
         cb_kws (dict): Keyword args to set and draw colorbar. Default is None.
-        binnum_kws (dict): Keyword args to pass to show_bin_num. Default is
+        binnum_kws (dict): Keyword args to pass to _show_bin_num. Default is
             None.
         bindot_args (tuple): x- and y-coordinates of bins.
 
@@ -577,8 +552,8 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     if title_kws['label'] is not None:
         ax.set_title(**title_kws)
 
-    drawcb_kws = make_draw_colorbar_kws(image, cb_kws)
-    imshow_kws = set_vmin_vmax(imshow_kws, drawcb_kws['cbrange'])
+    drawcb_kws = _make_draw_colorbar_kws(image, cb_kws)
+    imshow_kws = _set_vmin_vmax(imshow_kws, drawcb_kws['cbrange'])
 
     # Plot regions with no measurement as hatched
     if xy_nomeasure is not None:
@@ -590,15 +565,15 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     fig, cb = draw_colorbar(fig, p, **drawcb_kws)
 
     if binnum_kws:
-        ax = show_bin_num(dapdata=dapdata, ax=ax, imshow_kws=imshow_kws,
-                          **binnum_kws)
+        ax = _show_bin_num(dapdata=dapdata, ax=ax, imshow_kws=imshow_kws,
+                           **binnum_kws)
 
     if bindot_args:
         ax.plot(*bindot_args, color='k', marker='.', markersize=3, ls='None',
                 zorder=10)
 
     if 'seaborn' in sys.modules:
-        sns.set_style(rc={'axes.facecolor': '#EAEAF2'})    
+        sns.set_style(rc={'axes.facecolor': '#EAEAF2'})
 
     return fig, ax
 
@@ -611,7 +586,7 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
         patch_kws (dict): Keyword args to pass to ax.add_patch. Default is
             None.
         mg_kws (dict): MaNGA analysis ID keyword args to pass to
-            make_map_title. Default is None.
+            _make_map_title. Default is None.
 
     Returns:
         tuple: plt.figure object
@@ -626,11 +601,11 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
     bigax_kws = dict(xlabel='arcsec', ylabel='arcsec',
                      title_kws=dict(fontsize=20), mg_kws=mg_kws)
-    bigAxes = make_big_axes(fig, **bigax_kws)
+    bigAxes = _make_big_axes(fig, **bigax_kws)
 
     n_ax = len(all_panel_kws)
     for i, panel_kws in enumerate(all_panel_kws):
-        left, bottom = multi_panel_loc(panelnum=i, n_panels=n_ax)
+        left, bottom = _multi_panel_loc(panelnum=i, n_panels=n_ax)
         if 'seaborn' in sys.modules:
             sns.set_context('talk', rc={'lines.linewidth': 2})
             sns.set_style(rc={'axes.facecolor': '#A8A8A8'})
@@ -695,7 +670,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws = util.none_to_empty_dict(cb_kws)
-    cmaps = set_cmaps(cmaps, len(columns))
+    cmaps = _set_cmaps(cmaps, len(columns))
     # cb_kws['cmaps'] = set_cmaprs(cb_kws['cmaps'], len(columns))
     if make_binnum is None:
         make_binnum = [False for _ in columns]
@@ -705,10 +680,10 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     # Set common plot elements
     xpos = dapdata.drps.xpos.values
     ypos = dapdata.drps.ypos.values
-    binid = reorient(dapdata.drps.binid.values)
+    binid = _reorient(dapdata.drps.binid.values)
     delta = spaxel_size / 2.
-    extent = set_extent(xpos=xpos, ypos=ypos, delta=delta)
-    ax_kws, patch_kws = set_map_background_color(spaxel_size=spaxel_size)
+    extent = _set_extent(xpos=xpos, ypos=ypos, delta=delta)
+    ax_kws, patch_kws = _set_map_background_color(spaxel_size=spaxel_size)
 
     # Create images
     ims = []
@@ -724,8 +699,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     # Make plots
     all_panel_kws = []
     for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
-        tt, iw, cb = set_map_par(column=col, cmap=cmap, titles=titles,
-                                 cblabels=cblabels, cb_kws=cb_kws)
+        tt, iw, cb = _set_map_par(column=col, cmap=cmap, titles=titles,
+                                  cblabels=cblabels, cb_kws=cb_kws)
         sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
                       imshow_kws=iw, cb_kws=cb)
@@ -754,9 +729,9 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                 plt.close(fig)
 
         # create dictionaries for multi-panel maps
-        t_kws, i_kws, c_kws = set_map_par(column=col, cmap=cmap, titles=titles,
-                                          cblabels=cblabels,
-                                          titlefontsize=20, cb_kws=cb_kws)
+        t_kws, i_kws, c_kws = _set_map_par(column=col, cmap=cmap, titles=titles,
+                                           cblabels=cblabels,
+                                           titlefontsize=20, cb_kws=cb_kws)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
                                   ax_kws=ax_kws, title_kws=t_kws,
                                   imshow_kws=i_kws, cb_kws=c_kws))
@@ -771,8 +746,6 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                           overwrite=overwrite)
         if main:
             plt.close(fig)
-
-
 
 def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
     """Create DataFrame with spectrum and fits.
@@ -808,7 +781,7 @@ def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
 
     return spec
 
-def set_spec_lims(spec, xlim, ylim):
+def _set_spec_lims(spec, xlim, ylim):
     """Set axis limits for spectrum.
 
     Args:
@@ -822,7 +795,7 @@ def set_spec_lims(spec, xlim, ylim):
     """
     if xlim is None:
         xlim = [3600, 9300]
-    
+
     ind = (spec.wave >= xlim[0]) & (spec.wave <= xlim[1])
 
     if ylim is None:
@@ -832,7 +805,7 @@ def set_spec_lims(spec, xlim, ylim):
 
     return xlim, ylim, ind
 
-def set_spec_line_prop(lw):
+def _set_spec_line_prop(lw):
     """Set line properties for spectrum.
 
     Args:
@@ -849,7 +822,7 @@ def set_spec_line_prop(lw):
         c = ['b', 'lime', 'r', 'DarkOrchid', 'gold']
     return c
 
-def make_stfit_masks(dapdata, bin):
+def _make_stfit_masks(dapdata, bin):
     """Determine regions that were masked in the stellar continuum fit.
 
     Args:
@@ -876,7 +849,7 @@ def make_stfit_masks(dapdata, bin):
 
     return ind_split, smsk_val
 
-def show_stfit_masks(ax, spec, ind_split, smsk_val, ylim):
+def _show_stfit_masks(ax, spec, ind_split, smsk_val, ylim):
     """Display stellar continuum fitting masks.
 
     Args:
@@ -901,7 +874,7 @@ def show_stfit_masks(ax, spec, ind_split, smsk_val, ylim):
             ax.fill_between(x, ylim[0], ylim[1], **mskkws)
     return ax
 
-def make_spec_title(dapdata, bin):
+def _make_spec_title(dapdata, bin):
     """Make a spectrum title to identify galaxy, analysis run, and bin number.
 
     Args:
@@ -915,7 +888,7 @@ def make_spec_title(dapdata, bin):
     return '     '.join(('pid-ifu {plateifu}', 'manga-id {mangaid}',
                          '{bintype}-{niter}', 'bin {bin}')).format(bin=bin, **d)
 
-def set_flux_units(dapdata):
+def _set_flux_units(dapdata):
     """Determine flux units for spectrum bases on analysis mode.
     Args:
         dapdata: dap.DAP object.
@@ -1009,13 +982,13 @@ def plot_spectrum(dapdata, bin=0,
     Returns:
         plt.figure object
     """
-    colors = set_spec_line_prop(lw=lw)
+    colors = _set_spec_line_prop(lw=lw)
     spec = make_spec_df(dapdata=dapdata, bin=bin, fits_to_plot=fits_to_plot,
                         rest_frame=rest_frame)
-    xlim, ylim, ind = set_spec_lims(spec, xlim, ylim)
+    xlim, ylim, ind = _set_spec_lims(spec, xlim, ylim)
 
     if stfit_masks:
-        ind_split, smsk_val = make_stfit_masks(dapdata, bin)
+        ind_split, smsk_val = _make_stfit_masks(dapdata, bin)
 
     fig = plt.figure(figsize=figsize)
 
@@ -1034,13 +1007,13 @@ def plot_spectrum(dapdata, bin=0,
         p = []
         labels = []
         if panel is 'spectrum':
-            ax.set_title(make_spec_title(dapdata, bin))
+            ax.set_title(_make_spec_title(dapdata, bin))
             plt.setp(ax.get_xticklabels(), visible=False)
-            ax.set_ylabel(set_flux_units(dapdata))
+            ax.set_ylabel(_set_flux_units(dapdata))
 
             # spectrum
             p.append(ax.plot(spec.wave[ind], spec.flux[ind],
-                     color='#808080')[0])
+                             color='#808080')[0])
             labels.append('galaxy')
 
             # stellar continuum fit
@@ -1055,21 +1028,21 @@ def plot_spectrum(dapdata, bin=0,
         elif panel is 'residuals':
             ax.set_xlabel(r'$\lambda_{\rm rest} [\AA]$')
             ax.set_ylabel(r'$\Delta$')
-            ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75, 
+            ax.plot([xlim[0], xlim[1]], [0, 0], color='gray', alpha=0.75,
                     lw=2, zorder=1)
             emfits = [spec['resid_' + fit_id] for fit_id in fit_ids]
 
         # emission line + stellar continuum fits
         for j, (emfit, em_label) in enumerate(zip(emfits, em_labels)):
             p.append(ax.plot(spec.wave[spec.smod > 0.], emfit[spec.smod > 0.],
-                     color=colors[j+1])[0])
+                             color=colors[j+1])[0])
             labels.append(em_label)
 
         if panel is 'spectrum':
             plt.legend(p, labels, loc=2)
 
         if stfit_masks:
-            show_stfit_masks(ax, spec, ind_split, smsk_val, ylim[i])
+            _show_stfit_masks(ax, spec, ind_split, smsk_val, ylim[i])
 
     if savefig:
         mg_kws['bin'] = bin
@@ -1117,11 +1090,11 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
                 plt.close(fig)
 
         if make_single:
-            for i, (wc, pname) in enumerate(zip(win_cen, pnames)):
+            for wc, pname in zip(win_cen, pnames):
                 nii = True if pname == 'nii' else False
                 fig = plot_emline_spectrum(dapdata=dapdata, bin=bin, win_cen=wc,
                                            nii=nii, lw=lw)
-                if savefig_multi:
+                if savefig_single:
                     util.saveplot(name=pname, path_data=dapdata.path_data,
                                   category='emline_spectra', mg_kws=mg_kws,
                                   main=main, mkdir=True, overwrite=overwrite)
@@ -1147,10 +1120,10 @@ def plot_emline_spectra_multi(dapdata, bin=0, win_cen=None, pnames=None,
     """
     fig = plt.figure(figsize=figsize)
     bigax_kws = dict(xlabel=r'$\lambda \, [\AA]$',
-                     ylabel=set_flux_units(dapdata), mg_kws=mg_kws,
-                     title_kws=dict(label=make_spec_title(dapdata, bin),
+                     ylabel=_set_flux_units(dapdata), mg_kws=mg_kws,
+                     title_kws=dict(label=_make_spec_title(dapdata, bin),
                                     fontsize=20))
-    bigAxes = make_big_axes(fig, axloc=(0.04, 0.06, 0.9, 0.9), **bigax_kws)
+    bigAxes = _make_big_axes(fig, axloc=(0.04, 0.06, 0.9, 0.9), **bigax_kws)
     fig.subplots_adjust(wspace=0.2, hspace=0.15, left=0.1, bottom=0.1,
                         right=0.95, top=0.95)
     for i, (wc, pname) in enumerate(zip(win_cen, pnames)):
@@ -1162,7 +1135,8 @@ def plot_emline_spectra_multi(dapdata, bin=0, win_cen=None, pnames=None,
     return fig
 
 def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
-                         xlim=None, ylim=None, nii=False, lw=2, figsize=(10, 8)):
+                         xlim=None, ylim=None, nii=False, lw=2,
+                         figsize=(10, 8)):
     """Plot data and model spectra near strong emission lines.
 
     Args:
@@ -1177,17 +1151,17 @@ def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
             lines (not Halpha). Default is False.
         lw (int): Linewidth. Default is 2.
         figsize (tuple): Figure width and height in inches. Default is (10, 8).
-    
+
     Returns:
         plt.figure axis object
     """
-    colors = set_spec_line_prop(lw=lw)
+    colors = _set_spec_line_prop(lw=lw)
 
     if ax is None:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.17, 0.15, 0.72, 0.75])
         ax.set_xlabel(r'$\lambda \, [\AA]$', fontsize=24)
-        ax.set_ylabel(set_flux_units(dapdata), fontsize=24)
+        ax.set_ylabel(_set_flux_units(dapdata), fontsize=24)
         # x_offs = [-9, -3, -9, -9, -12, -3, -5, -12, -5]
         x_offs = [-24, 10, -8, -3, -9, -9, -9, -9, -12, -3, -5, -12, -5]
         indiv_ax = True
@@ -1206,7 +1180,7 @@ def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
 
     #linenames = ['[OII]3727', r'H$\beta$', '[OIII]4959', '[OIII]5007',
     #'[NII]6548', r'H$\alpha$', '[NII]6583', '[SII]6716', '[SII]6731']
-    
+
     if xlim is None:
         xmin = win_cen - 50.
         xmax = win_cen + 50.
@@ -1262,22 +1236,15 @@ def plot_emline_spectrum(dapdata, fig=None, ax=None, bin=0, win_cen=None,
 
     return fig
 
-
-
-
-
-
-
-
-def plot_gradient_multi(dapdata, values, errors, columns,
-                        leg_kws=None, titles=None, labels=None,
-                        mg_kws=None, figsize=(20, 12)):
+def plot_gradient_multi(dapdata, values, errors, columns, leg_kws=None,
+                        titles=None, labels=None, mg_kws=None,
+                        figsize=(20, 12)):
     """
     Plot multiple radial gradients at once.
 
     Args:
         mg_kws (dict): MaNGA analysis ID keyword args to pass to
-            make_map_title. Default is None.
+            _make_map_title. Default is None.
 
     Returns:
         tuple: (plt.figure object, plt.figure axis object)
@@ -1288,36 +1255,35 @@ def plot_gradient_multi(dapdata, values, errors, columns,
     if 'seaborn' in sys.modules:
         sns.set_context('poster', rc={'lines.linewidth': 2})
 
-    bigax_kws = dict(xlabel='R [arcsec]', ylabel=set_flux_units(dapdata),
+    bigax_kws = dict(xlabel='R [arcsec]', ylabel=_set_flux_units(dapdata),
                      title_kws=dict(fontsize=20), mg_kws=mg_kws)
-    bigAxes = make_big_axes(fig, **bigax_kws)
-    
+    bigAxes = _make_big_axes(fig, **bigax_kws)
+
     for i, column in enumerate(columns):
-        left, bottom = multi_panel_loc(panelnum=i, n_panels=len(columns))    
+        left, bottom = _multi_panel_loc(panelnum=i, n_panels=len(columns))
         ax = fig.add_axes([left, bottom, 0.23, 0.33333])
         ig = plot_gradient(dapdata, values, errors, column, fig=fig, ax=ax,
-                           leg_kws=leg_kws, title=titles[column], labels=labels,
-                           mg_kws=mg_kws)
+                           leg_kws=leg_kws, title=titles[column], labels=labels)
 
     return fig
 
 
 
 def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
-                  leg_kws=None, title=None, labels=None, mg_kws=None,
-                  figsize=(10, 8)):
+                  leg_kws=None, title=None, labels=None, figsize=(10, 8)):
     """
     Plot radial gradients.
     """
-    if leg_kws is None: leg_kws = dict(handlelength=2, loc=1)
+    if leg_kws is None:
+        leg_kws = dict(handlelength=2, loc=1)
 
-    colors = set_spec_line_prop(lw=2)
+    colors = _set_spec_line_prop(lw=2)
 
     if ax is None:
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.17, 0.11, 2/3., 5/6.])
         ax.set_xlabel('R [arcsec]', fontsize=28)
-        ax.set_ylabel(set_flux_units(dapdata), fontsize=28)
+        ax.set_ylabel(_set_flux_units(dapdata), fontsize=28)
         for tick in ax.xaxis.get_major_ticks():
             tick.label.set_fontsize(20)
         for tick in ax.yaxis.get_major_ticks():
@@ -1339,7 +1305,7 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
         val = dapdata.__dict__[value][column]
         err = dapdata.__dict__[error][column]
         p.append(ax.hlines(val, dapdata.bins.binxrl, dapdata.bins.binyru,
-                 color=color))
+                           color=color))
         ax.plot(binr, val, color=color, zorder=8, lw=0.5)
         ax.scatter(binr, val, facecolor=color, edgecolor='None', s=60, zorder=9)
         # Following line was commented out in MPL-3 run
@@ -1351,8 +1317,8 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
     plt.setp(leg.get_texts(), fontsize=24)
     ax.set_xlim(left=0)
     ax.set_ylim(bottom=0)
-    
-    # This section was used to plot errors in MPL-3 run    
+
+    # This section was used to plot errors in MPL-3 run
     # if not np.isnan(d['val']).all():
     #     for kk, kkerr, j in zip(['val2', 'val'], ['val2_err', 'val_err'], [2, 0]):
     #         ax.errorbar(self.binr, args[gradname][kk], yerr=args[gradname][kkerr],
@@ -1378,12 +1344,12 @@ def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
                           mkdir=True, overwrite=overwrite)
         if main:
             plt.close(fig)
-    
+
     for column in columns:
         if make_single:
             fig = plot_gradient(dapdata, values, errors, column,
                                 leg_kws=leg_kws, title=titles[column],
-                                labels=labels, mg_kws=mg_kws, figsize=figsize)
+                                labels=labels, figsize=figsize)
             if savefig_single:
                 pname = '_'.join([plotname, column])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
@@ -1391,8 +1357,6 @@ def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
                               mkdir=True, overwrite=overwrite)
             if main:
                 plt.close(fig)
-
-
 
 def make_plots(plottype, dapdata, mg_kws, plot_kws):
     """general wrapper for all plotting functions"""
@@ -1413,5 +1377,5 @@ def make_plots(plottype, dapdata, mg_kws, plot_kws):
 
 
 
-# TO DO 
+# TO DO
 # Fix set_map_par to take in cb_kws and delete other cb args

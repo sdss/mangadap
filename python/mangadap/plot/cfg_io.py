@@ -5,8 +5,6 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 
-import copy
-
 import pandas as pd
 from mangadap.plot import plotdap
 
@@ -72,7 +70,7 @@ def tolist(inp):
 #     for k, v in d.items():
 #         d[k] = float(v)
 #     return d
-# 
+#
 # def convert_to_number(s):
 #     try:
 #         s = int(s)
@@ -82,7 +80,7 @@ def tolist(inp):
 #         except (TypeError, ValueError):
 #             raise TypeError
 #     return s
-# 
+#
 # def convert_to_number_list(item):
 #     try:
 #         item = [int(it) for it in item]
@@ -93,7 +91,7 @@ def tolist(inp):
 #             pass
 #     finally:
 #         return item
-# 
+#
 # def convert_dtype(item):
 #     """Convert value from string to boolean or None."""
 #     try:
@@ -145,7 +143,7 @@ def cblabels_to_series(d):
 
 # def convert_config_dtypes(d, plottype=None, dapdata=None):
 #     """Convert dtypes of config parser dictionary to useful forms.
-# 
+#
 #     Args:
 #         d (dict): Config parser output dictionary.
 #         plottype (str): Type of plot. Defaults to None.
@@ -219,8 +217,8 @@ def read_config(filename):
             elif section == 'list_bool':
                 d[k] = [tobool(it) for it in tolist(string)]
             elif section == 'series_bool':
-                d[k] =  pd.Series([tobool(it) for it in tolist(string)],
-                                  index=d['columns'])
+                d[k] = pd.Series([tobool(it) for it in tolist(string)],
+                                 index=d['columns'])
     return d
 
 def make_kws(d):
