@@ -312,8 +312,14 @@ def read_drpall(paths_cfg):
     Returns:
         astropy fitsrec: DRPall table.
     """
-    bp = base_path(paths_cfg)
-    drpall_file = bp.full('drpall')
+    try:
+        bp = base_path(paths_cfg)
+    except NameError:
+        drpall_file = join(os.getenv('MANGA_SPECTRO_REDUX'),
+                           os.getenv('MANGADRP_VER'),
+                           'drpall-{}.fits'.format(os.getenv('MANGADRP_VER')))
+    else:
+        drpall_file = bp.full('drpall')
     fin = fits.open(drpall_file)
     drpall = fin[1].data
     fin.close()
@@ -350,8 +356,15 @@ def make_data_path(paths_cfg, file_kws):
     Returns:
         str: Path to data.
     """
-    bp = base_path(paths_cfg)
-    return bp.dir('dap', **file_kws)
+    try:
+        bp = base_path(paths_cfg)
+    except NameError:
+        return join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
+                    os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
+                    '{plate}'.format(**file_kws),
+                    '{ifudesign}'.format(**file_kws))
+    else:
+        return bp.dir('dap', **file_kws)
 
 def make_config_path(filename):
     """Make path to config files.
