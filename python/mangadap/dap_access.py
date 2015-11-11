@@ -15,14 +15,15 @@ import pandas as pd
 from mangadap import dapfile
 from mangadap.plot import util
 
-class DAP():
+class DAPAccess():
     """Convenience class for information from DAP FITS file.
 
     Args:
         path_data (str): Path to DAP FITS file.
-        paths_cfg (str): Full path to sdss_paths.ini file.
         file_kws (dict): DAP FITS file specifications.
-
+        paths_cfg (str): Full path to sdss_paths.ini file. Default is None.
+        verbose (boolean): Verbose output. Default is False.
+    
     Attributes:
         path_data (str): Path to DAP FITS file.
         paths_cfg (str): Full path to sdss_paths.ini file.
@@ -280,7 +281,7 @@ class DAP():
         kinematics_err (DataFrame): Errors for kinematics plots.
     """
 
-    def __init__(self, path_data, paths_cfg, file_kws, verbose=False):
+    def __init__(self, path_data, file_kws, paths_cfg=None, verbose=False):
         self.path_data = path_data
         self.paths_cfg = paths_cfg
         self.plate = file_kws['plate']

@@ -15,7 +15,7 @@ from imp import reload
 import matplotlib as mpl
 mpl.use('Agg')
 
-from mangadap.plot import dap
+from mangadap import dap_access
 from mangadap.plot import plotdap
 from mangadap.plot import cfg_io
 from mangadap.plot import util
@@ -48,7 +48,7 @@ paths_cfg = join(cfg_dir, 'sdss_paths.ini')
 
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
-    gal = dap.DAP(path_data, paths_cfg, file_kws, verbose=True)
+    gal = dap_access.DAPAccess(path_data, file_kws, paths_cfg, verbose=True)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
     

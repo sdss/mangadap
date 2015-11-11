@@ -314,7 +314,7 @@ def read_drpall(paths_cfg):
     """
     try:
         bp = base_path(paths_cfg)
-    except NameError:
+    except (NameError, TypeError):
         drpall_file = join(os.getenv('MANGA_SPECTRO_REDUX'),
                            os.getenv('MANGADRP_VER'),
                            'drpall-{}.fits'.format(os.getenv('MANGADRP_VER')))
@@ -325,6 +325,21 @@ def read_drpall(paths_cfg):
     fin.close()
     print('Read {}'.format(drpall_file))
     return drpall
+
+def parse_fits_filename(filename):
+    """Parse FITS filename.
+
+    Args:
+        filename (str): DAP FITS filename.
+
+    Returns:
+        dict
+    """
+    stem_file = filename.strip('.fits')
+    ig, plate, ifudesign, mode_in, bintype, niter = stem_file.split('-')
+    mode = mode_in.split('_')[0].strip('LOG')
+    return dict(plate=plate, ifudesign=ifudesign, mode=mode,
+                bintype=bintype, niter=niter)
 
 def read_file_list(file_list):
     """Read file list.
@@ -339,11 +354,10 @@ def read_file_list(file_list):
     files = np.atleast_1d(files)
     f_kws = []
     for item in files:
-        stem_file = item.strip('.fits')
-        ig, plate, ifudesign, mode_in, bintype, niter = stem_file.split('-')
-        mode = mode_in.split('_')[0].strip('LOG')
-        f_kws.append(dict(plate=plate, ifudesign=ifudesign, mode=mode,
-                          bintype=bintype, niter=niter))
+        # stem_file = item.strip('.fits')
+        # ig, plate, ifudesign, mode_in, bintype, niter = stem_file.split('-')
+        # mode = mode_in.split('_')[0].strip('LOG')
+        f_kws.append(parse_fits_filename(item))
     return f_kws
 
 def make_data_path(paths_cfg, file_kws):
@@ -358,7 +372,7 @@ def make_data_path(paths_cfg, file_kws):
     """
     try:
         bp = base_path(paths_cfg)
-    except NameError:
+    except (NameError, TypeError):
         return join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                     os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
                     '{plate}'.format(**file_kws),

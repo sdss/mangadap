@@ -2661,6 +2661,7 @@ python/README -text
 python/mangadap/__init__.py -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
+python/mangadap/dap_access.py -text
 python/mangadap/dapfile.py -text
 python/mangadap/drpfile.py -text
 python/mangadap/par/AnalysisPlan.py -text
@@ -2689,7 +2690,6 @@ python/mangadap/plot/config/kinematics_STON30_maps.ini -text
 python/mangadap/plot/config/kinematics_maps.ini -text
 python/mangadap/plot/config/sdss_paths.ini -text
 python/mangadap/plot/config/specind_maps.ini -text
-python/mangadap/plot/dap.py -text
 python/mangadap/plot/deprecated/plot_map_wrap.py -text
 python/mangadap/plot/deprecated/plot_qa.py -text
 python/mangadap/plot/deprecated/plot_qa_wrap.py -text
