@@ -1,0 +1,21 @@
+# switch DAPVER from trunk to version X.X.X
+
+mkdir -p ~/manga/spectro/redux/v1_5_1
+mkdir -p ~/manga/spectro/analysis/v1_5_1/X.X.X
+mkdir -p ~/manga/mangadap
+
+svn co https://svn.sdss.org/repo/manga/mangadap/trunk ~/manga/mangadap/trunk
+
+add to ~/.bashrc:
+export MANGADRP_VER=v1_5_1
+export MANGADAP_VER=X.X.X
+
+export MANGA_SPECTRO_REDUX=$HOME/manga/spectro/redux
+export MANGA_SPECTRO_ANALYSIS=$HOME/manga/spectro/analysis
+
+export MANGADAP_DIR=$HOME/manga/mangadap/trunk
+
+export PYTHONPATH=${PYTHONPATH}:$MANGADAP_DIR/python
+
+
+# install pandas, seaborn
