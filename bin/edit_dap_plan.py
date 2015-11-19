@@ -13,12 +13,12 @@ def edit_dap_plan():
         print('Usage: edit_dap_plan.py <plan file> <variable> <old value> <new value>')
         raise Exception('Incorrect number of arguments!')
 
-    print(sys.argv)
+#    print(sys.argv)
 
     par = yanny(filename=sys.argv[1])
 
     nplan = len(par['DAPPLAN'][sys.argv[2]])
-    print('Number of plans read: {0}'.format(nplan))
+#    print('Number of plans read: {0}'.format(nplan))
 
 #   if sys.argv[4] == 'all':
 #       for i in range(0,len(par['DAPPLAN'][sys.argv[2]])):
@@ -32,7 +32,7 @@ def edit_dap_plan():
         if par['DAPPLAN'][sys.argv[2]][i] == sys.argv[3]:
             par['DAPPLAN'][sys.argv[2]][i] = sys.argv[4]
 
-    print(par['DAPPLAN'][sys.argv[2]])
+#    print(par['DAPPLAN'][sys.argv[2]])
 
     remove(sys.argv[1])
     par.write()
