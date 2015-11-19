@@ -480,6 +480,12 @@ class drpcomplete:
             except:
                 veldisp[i] = -9999.0
 
+            # Correct for known nan issue
+            if numpy.isnan(ell[i]):
+                ell[i] = -9999.0
+            if numpy.isnan(pa[i]):
+                pa[i] = -9999.0
+
         print('Searching platetargets file for observed galaxies...DONE')
 
         return numpy.array(mangaid), objra, objdec, catid, catindx, numpy.array(trg_version), \

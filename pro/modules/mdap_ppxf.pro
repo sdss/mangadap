@@ -728,6 +728,10 @@ if moments gt 0 then begin
     if s1[1] le 2*(abs(vsyst/velScale)+abs(start1[0])+5d*start1[1]) then $
         message, 'Velocity shift too big: Adjust wavelength ranges of spectrum and templates'
 
+;    print, start1
+;    print, parinfo.limits
+;    stop
+
     ; Here the actual calculation starts.
     ; If required, once the minimum is found, clean the pixels deviating
     ; more than 3*sigma from the best fit and repeat the minimization

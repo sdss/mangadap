@@ -125,6 +125,8 @@ class dapfile:
             :func:`mangadap.util.defaults.default_dap_par_file`.
         read (bool) : (Optional) Read the DAP file upon instantiation of
             the object.
+        checksum (bool): (Optional) Flag for astropy.io.fits.open
+            checksum operation.
 
     Attributes:
 
@@ -147,10 +149,12 @@ class dapfile:
             the DRP file
         par (:class:`mangadap.util.yanny.yanny`): List of parameters
             used by the DAP.
+        checksum (bool): Boolean to use for checksum in
+            astropy.io.fits.open.
 
     """
     def __init__(self, plate, ifudesign, mode, bintype, niter, drpver=None, dapver=None,
-                 analysis_path=None, directory_path=None, par_file=None, read=True):
+                 analysis_path=None, directory_path=None, par_file=None, read=True, checksum=True):
         # Set the attributes, forcing a known type
         self.plate = int(plate)
         self.ifudesign = int(ifudesign)
@@ -180,6 +184,7 @@ class dapfile:
         self.hdu = None
         self.par = None
 
+        self.checksum = checksum
         if read:
             self.open_hdu()
 
@@ -207,7 +212,7 @@ class dapfile:
 #           return data
     
     
-    def open_hdu(self, permissions='readonly', quiet=True):
+    def open_hdu(self, permissions='readonly', checksum=None, quiet=True):
         """
         Open the fits file and save it to :attr:`hdu`; if :attr:`hdu` is
         not None, the function returns without re-reading the data.
@@ -215,7 +220,11 @@ class dapfile:
         Args:
             permissions (string): (Optional) Open the fits file with
                 these read/write permissions.
-            quiet (bool): Suppress terminal output
+            checksum (bool): (Optional) Flag for astropy.io.fits.open
+                checksum operation.  This overrides the internal
+                :attr:`checksum` attribute **for the current operation
+                only**.
+            quiet (bool): (Optional) Suppress terminal output
 
         Raises:
             Exception: Raised if the DAP file doesn't exist.
@@ -231,7 +240,8 @@ class dapfile:
             raise Exception('Cannot open file: {0}'.format(inp))
 
         # Open the fits file with the requested read/write permission
-        self.hdu = fits.open(inp, mode=permissions, checksum=True)
+        check = self.checksum if checksum is None else checksum
+        self.hdu = fits.open(inp, mode=permissions, checksum=check)
 
 
     def read_hdu_data(self, index=None):

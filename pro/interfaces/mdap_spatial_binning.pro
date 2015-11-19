@@ -173,6 +173,10 @@
 ;                          returned "bins" are sorted by their S/N.
 ;                          /snsort is *automatically* used when it is
 ;                          called throughout the rest of the code.
+;       15 Nov 2015: (KBW) If there are no spectra that meet the S/N
+;                          threshold for binning, bin all "good" spectra
+;                          are binned into a single spectrum and
+;                          continue.
 ;-
 ;------------------------------------------------------------------------------
 
@@ -223,19 +227,26 @@ PRO MDAP_SPATIAL_BINNING, $
             return
         endif
 
+        bintype = bin_par.type              ; Allow the binning to change if required by tests
+
         ; Find which spectra in the 2D map are good (and bad)
         ;       good = has a positive and finite noise, a finite signal,
         ;       and S/N > threshold
         gindx= where(gflag eq 1 and abs(signal/noise) ge threshold_ston_bin, count, compl=bindx)
 
-;        if gindx[0] eq -1 then $                        ; No good spectra so return and fail
-        if count eq 0 then $                        ; No good spectra so return and fail
-            message, 'No good spectra!'
+
+        ; TODO: Need to figure out a better way to handle this.
+        if count eq 0 then begin                        ; No good spectra so return and fail
+            print, 'WARNING: No good spectra that are above the S/N threshold for binning!'
+            print, '         Binning all spectra and continuing.'
+            bintype = 'ALL'
+            gindx = where(gflag eq 1, count)
+        endif
 
         print, ' unmasked pixels: ', n_elements(where(mask lt 1.))
         print, ' non-zero pixels: ', n_elements(where(flux gt 0.))
 
-        if bin_par.type eq 'NONE' then begin                ; No binning
+        if bintype eq 'NONE' then begin                ; No binning
             MDAP_SPATIAL_BINNING_SETUP_NONE, gindx, dx, dy, xcoo, ycoo, signal, noise, flux, ivar, $
                                              mask, bin_weights, binned_indx, binned_flux, $
                                              binned_ivar, binned_mask, binned_x_rl, binned_y_ru, $
@@ -249,7 +260,7 @@ PRO MDAP_SPATIAL_BINNING, $
             optimal_weighting = 1
 
         ; Will only perform one of the following:
-        if bin_par.type eq 'ALL' then begin
+        if bintype eq 'ALL' then begin
 
             MDAP_ALL_SPECTRA_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], $
                                       binned_indx, binned_x_rl, binned_y_ru, binned_ston, $
@@ -260,7 +271,7 @@ PRO MDAP_SPATIAL_BINNING, $
             binned_wrad = sqrt( binned_x_rl^2 + binned_y_ru^2 )
         endif
         
-        if bin_par.type eq 'STON' then begin             ; Use the Voronoi binning scheme
+        if bintype eq 'STON' then begin             ; Use the Voronoi binning scheme
             if keyword_set(plot) then begin                     ; setup plot
 ;               mydevice=!D.NAME
 ;               set_plot, 'PS'
@@ -319,7 +330,7 @@ PRO MDAP_SPATIAL_BINNING, $
 ;           endif
         endif
         
-        if bin_par.type eq 'RADIAL' then begin
+        if bintype eq 'RADIAL' then begin
             MDAP_RADIAL_BINNING, xcoo[gindx], ycoo[gindx], signal[gindx], noise[gindx], bin_par, $
                                  binned_indx, binned_x_rl, binned_y_ru, binned_wrad, binned_ston, $
                                  nbinned
@@ -350,7 +361,7 @@ PRO MDAP_SPATIAL_BINNING, $
 
 ;       TODO: NOT DEFINED YET -----------------------------------
 ;       ; Check the user defined binning scheme, fault if check fails!
-;       if bin_par.type eq 'USER'then begin
+;       if bintype eq 'USER'then begin
 ;           MDAP_READ_USER_DEFINED_SPATIAL_BINS, user_bin_map, header, binned_indx, success
 ;       endif
 ;       NOT DEFINED YET ----------------------------------------

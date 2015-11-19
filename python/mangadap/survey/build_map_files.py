@@ -24,7 +24,8 @@ def build_map_files(plt, ifu, mpl, output_path):
     dap_source = default_dap_source()
     file_root = default_manga_fits_root(plt, ifu, 'CUBE')
         
-    scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_cube.py')
+#    scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_cube.py')
+    scr = os.path.join(dap_source, 'bin', 'dap_data_to_map_file.py')
 
     bintype = [ 'NONE', 'STON', 'RADIAL' ]
 
@@ -33,13 +34,19 @@ def build_map_files(plt, ifu, mpl, output_path):
         file_list = glob.glob(file_search_str)
         for f in file_list:
             bintype_index = f.find(bt)
-            ofile = '{0}MAP-{1}'.format(f[:f.find('BIN')],f[bintype_index:])
-            indx = int(f[bintype_index+5:bintype_index+8])
+            ofile = '{0}MAPS-{1}'.format(f[:f.find('BIN')],f[bintype_index:])
+            indx = int(f.split('-')[-1].split('.')[0])
+#            print(indx)
+#            indx = int(f[bintype_index+5:bintype_index+8])
             print('CALLING:')
             print('{0} {1} {2} {3} {4} -b {5} -i {6} -d {7}\n\n'.format(scr, plt, ifu, mpl, ofile,
                                                                         bt, indx, output_path))
+            # Create the MAP file
             call([ scr, str(plt), str(ifu), str(mpl), ofile, '-b', bt, '-i', str(indx), '-d',
                    output_path])
+
+            # And gzip it
+            call([ 'gzip', ofile ])
             
 
 #-----------------------------------------------------------------------

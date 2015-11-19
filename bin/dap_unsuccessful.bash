@@ -9,7 +9,7 @@ echo ${dir}
 
 ((tot=0))
 ((flt=0))
-for donef in $( ls */*/*.done ); do
+for donef in $( ls ${dir}/*/*/*.done ); do
     root=$( echo $donef | cut -f 1 -d '.')
     ((++tot))
     if [ $( grep -c SUCCESSFULLY ${root}.out ) -ne 1 ]; then 

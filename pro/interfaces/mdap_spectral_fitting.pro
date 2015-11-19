@@ -365,6 +365,9 @@
 ;                          pro/utilities/mdap_spectral_fitting_mask.pro
 ;                          to allow for that function to be used
 ;                          elsewhere.
+;       15 Nov 2015: (KBW) Make sure that the starting velocity
+;                          dispersion of the stars is larger than the
+;                          minimum allowed by pPXF
 ;-
 ;------------------------------------------------------------------------------
 
@@ -716,6 +719,11 @@ PRO MDAP_SPECTRAL_FITTING, $
         start = MDAP_SPECTRAL_FITTING_START_KIN(reform(star_kin_starting_guesses[0,*]), $
                                                 reform(gas_kin_starting_guesses[0,*]) )
         ; the returned vector has *four* elements!!
+
+        ; Make sure that the velocity dispersion of the stars is larger
+        ; than the minimum allowed by pPXF:
+        if start[1] lt velScale/10. then $
+            start[1] = velScale/9.
 
         if ~keyword_set(quiet) then begin
             print, "Voff: ", voff
