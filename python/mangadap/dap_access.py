@@ -628,7 +628,7 @@ class DAPAccess():
         """Spectral index parameters."""
         sipar_in = self.read_hdu('SIPAR')
         if sipar_in is not None:
-            self.sinames = list(util.swap_byte(sipar_in['SINAME']))
+            self.sinames = [it.strip() for it in util.swap_byte(sipar_in['SINAME'])]
             sipar_tmp = dict(unit=util.swap_byte(sipar_in['UNIT']))
             for band in ['passband', 'blueband', 'redband']:
                 for i, bedge in enumerate(['start', 'end']):
@@ -649,7 +649,7 @@ class DAPAccess():
         """Read in spectral index info."""
         sindx = self.read_hdu('SINDX')
         if sindx is not None:
-            cols = [it.lower() for it in sindx.columns.names]
+            cols = [it.lower().strip() for it in sindx.columns.names]
             if len(sindx[sindx.columns.names[0]]) == self.n_bins:
                 self.sindx = util.fitsrec_to_multiindex_df(sindx, cols,
                                                            self.sinames)
@@ -658,8 +658,6 @@ class DAPAccess():
                 self.calc_CalII0p86()
             else:
                 self.sindx = sindx
-            self.specind = self.sindx.indx
-            self.specinderr = self.sindx.indxerr
         else:
             self.sindx = None
 
