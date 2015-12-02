@@ -2714,7 +2714,9 @@ python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
 python/mangadap/stack/dap_stack.py -text
 python/mangadap/stack/select.py -text
+python/mangadap/stack/stack.py -text
 python/mangadap/stack/tests/test_select.py -text
+python/mangadap/stack/tests/test_stack.py -text
 python/mangadap/survey/__init__.py -text
 python/mangadap/survey/build_map_files.py -text
 python/mangadap/survey/drpcomplete.py -text
