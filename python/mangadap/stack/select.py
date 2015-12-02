@@ -37,8 +37,6 @@ def join_conditions(ind_bool_list, operator):
                     ind = np.logical_and(ind, it)
                 elif operator is 'or':
                     ind = np.logical_or(ind, it)
-                elif operator is 'xor':
-                    ind = np.logical_xor(ind, it)
                 else:
                     raise ValueError('Must select a valid logical operator.')
         return ind
@@ -66,17 +64,6 @@ def join_logical_or(ind_bool_list):
        array: boolean index array.
     """
     return join_conditions(ind_bool_list, operator='or')
-
-def join_logical_xor(ind_bool_list):
-    """Join conditions using logical XOR.
-
-    Args:
-        ind_bool_list (list): list of boolean index arrays.
-
-    Returns:
-       array: boolean index array.
-    """
-    return join_conditions(ind_bool_list, operator='xor')
 
 def notnan(arr, nanvals=None):
     """Find not NaN values.

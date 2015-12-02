@@ -104,7 +104,7 @@ def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
             masked out).
     """
     no_measure = (data == val_no_measure)
-    if all([[i is None for i in x] for x in err]):
+    if np.all([[i in [None, np.nan] for i in x] for x in err]):
         err = None
     if err is not None:
         no_measure[err == 0.] = True
@@ -341,6 +341,9 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
 
     if isinstance(cb_kws_out['symmetric'], pd.Series):
         cb_kws_out['symmetric'] = cb_kws_out['symmetric'][column]
+
+    if isinstance(cb_kws_out['cbrange'], pd.Series):
+        cb_kws_out['cbrange'] = cb_kws_out['cbrange'][column]
 
     return title_kws, imshow_kws, cb_kws_out
 
@@ -671,7 +674,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws = util.none_to_empty_dict(cb_kws)
     cmaps = _set_cmaps(cmaps, len(columns))
-    # cb_kws['cmaps'] = set_cmaprs(cb_kws['cmaps'], len(columns))
+    # cb_kws['cmaps'] = set_cmaps(cb_kws['cmaps'], len(columns))
     if make_binnum is None:
         make_binnum = [False for _ in columns]
     if savefig_binnum is None:

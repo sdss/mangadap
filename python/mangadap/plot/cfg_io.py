@@ -4,6 +4,7 @@
 
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
+import ast
 
 import pandas as pd
 from mangadap.plot import plotdap
@@ -64,6 +65,10 @@ def tolist(inp):
         return [it.strip() for it in inp.split('\n') if it != '']
     else:
         return [inp]
+
+def tolist_of_lists(inp):
+    if '[' in inp:
+        return list(ast.literal_eval(inp))
 
 # def string_to_float(d):
 #     """Convert values in a dictionary from strings to floats."""
@@ -219,6 +224,8 @@ def read_config(filename):
             elif section == 'series_bool':
                 d[k] = pd.Series([tobool(it) for it in tolist(string)],
                                  index=d['columns'])
+            elif section == 'series_list_float':
+                d[k] = pd.Series(tolist_of_lists(string), index=d['columns'])
     return d
 
 def make_kws(d):

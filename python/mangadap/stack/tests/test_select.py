@@ -1,12 +1,10 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
+import numpy as np
 
 import unittest
 from numpy.testing import assert_array_equal
-from pandas.util.testing import assert_frame_equal
-
-import numpy as np
-import pandas as pd
+# from pandas.util.testing import assert_frame_equal
 
 from mangadap.stack import select
 
@@ -87,34 +85,6 @@ class SelectTestCase(unittest.TestCase):
         ind_bool = [np.array([False, False]), np.array([False, False])]
         desired = np.array([False, False])
         actual = select.join_logical_or(ind_bool)
-        assert_array_equal(actual, desired)
-
-    def test_join_logical_xor_empty_list(self):
-        desired = []
-        actual = select.join_logical_xor(desired)
-        assert_array_equal(actual, desired)
-    
-    def test_join_logical_xor_single_condition(self):
-        desired = np.array([True, False])
-        actual = select.join_logical_xor([desired])
-        assert_array_equal(actual, desired)
-
-    def test_join_logical_xor_mixed_conditions(self):
-        ind_bool = [np.array([True, True]), np.array([True, False])]
-        desired = np.array([False, True])
-        actual = select.join_logical_xor(ind_bool)
-        assert_array_equal(actual, desired)
-
-    def test_join_logical_xor_all_true(self):
-        ind_bool = [np.array([True, True]), np.array([True, True])]
-        desired = np.array([False, False])
-        actual = select.join_logical_xor(ind_bool)
-        assert_array_equal(actual, desired)
-
-    def test_join_logical_xor_all_false(self):
-        ind_bool = [np.array([False, False]), np.array([False, False])]
-        desired = np.array([False, False])
-        actual = select.join_logical_and(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_notnan_np_nan_only(self):
