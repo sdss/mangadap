@@ -15,6 +15,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
+from matplotlib.colors import LogNorm
 
 from astropy.stats import sigma_clip
 
@@ -254,12 +255,13 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
 
     return fig, cb
 
-def _set_cmaps(cmaps, n_plots):
+def _set_cmaps(cmaps, n_plots, n_levels):
     """Set the colormaps.
 
     Args:
         cmaps (list): Matplotlib colormap names.
         n_plots (int): Number of plots.
+        n_levels: int or list of number of levels for colorbar.
 
     Returns:
         tuple: colormap, reversed colormap
@@ -278,6 +280,13 @@ def _set_cmaps(cmaps, n_plots):
         cmaps = [_string_to_cmap(it) for it in cmaps]
     elif len(cmaps) == 1:
         cmaps = [_string_to_cmap(cmaps[0]) for _ in range(n_plots)]
+
+    if isinstance(n_levels, int):
+        n_levels = [n_levels for _ in range(n_plots)]
+
+    if n_levels is not None:
+        cmaps = [util.cmap_discretize(it, n_level)
+                 for it, n_level in zip(cmaps, n_levels)]
 
     return cmaps
 
@@ -313,7 +322,8 @@ def _set_map_background_color(spaxel_size, color='#A8A8A8'):
                      linewidth=0, fill=True, fc=color, ec='w', zorder=10)
     return ax_kws, patch_kws
 
-def _set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
+def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
+                 titlefontsize=28):
     """Set default parameters for a single panel plot.
 
     Args:
@@ -322,6 +332,7 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
         titles (str): Plot titles.
         cblabels (str): Color bar labels.
         cb_kws_in (dict): Color bar keyword args.
+        log_colobar (bool): Use logarithmic color bar.
         titlefontsize (int): Title font size. Default is 28.
 
     Returns:
@@ -344,6 +355,9 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, titlefontsize=28):
 
     if isinstance(cb_kws_out['cbrange'], pd.Series):
         cb_kws_out['cbrange'] = cb_kws_out['cbrange'][column]
+
+    if log_colorbar:
+        imshow_kws['norm'] = LogNorm()
 
     return title_kws, imshow_kws, cb_kws_out
 
@@ -627,7 +641,8 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
 def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
               val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
-              cblabels=None, cmaps=None, cb_kws=None, main=True,
+              cblabels=None, cmaps=None, cmap_levels=None, cb_kws=None,
+              main=True, log_colorbar=False,
               make_single=True, make_multi=True, make_binnum=None,
               savefig_single=True, savefig_multi=True, savefig_binnum=None,
               overwrite=False):
@@ -650,6 +665,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         titles (list): Plot title for each map. Default is None.
         cblabels (list): Colorbar labels. Default is None.
         cmaps (list): Colormaps. Default is None.
+        cmap_levels (list): Number of discrete levels for colormaps. Default is
+            None.
         cb_kws (dict): Color bar keyword args. Default is None.
         main (bool): True is running as script. False is running interactively.
             Default is True.
@@ -673,7 +690,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws = util.none_to_empty_dict(cb_kws)
-    cmaps = _set_cmaps(cmaps, len(columns))
+    cmaps = _set_cmaps(cmaps, len(columns), cmap_levels)
     # cb_kws['cmaps'] = set_cmaps(cb_kws['cmaps'], len(columns))
     if make_binnum is None:
         make_binnum = [False for _ in columns]
@@ -703,7 +720,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     all_panel_kws = []
     for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
         tt, iw, cb = _set_map_par(column=col, cmap=cmap, titles=titles,
-                                  cblabels=cblabels, cb_kws=cb_kws)
+                                  cblabels=cblabels, cb_kws=cb_kws,
+                                  log_colorbar=log_colorbar)
         sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
                       imshow_kws=iw, cb_kws=cb)
@@ -734,7 +752,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = _set_map_par(column=col, cmap=cmap, titles=titles,
                                            cblabels=cblabels,
-                                           titlefontsize=20, cb_kws=cb_kws)
+                                           titlefontsize=20, cb_kws=cb_kws,
+                                           log_colorbar=log_colorbar)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
                                   ax_kws=ax_kws, title_kws=t_kws,
                                   imshow_kws=i_kws, cb_kws=c_kws))

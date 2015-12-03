@@ -34,7 +34,7 @@ else:
     # Utah MPL4 file
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     'full', '7443', '3702', 'CUBE_files_to_plot.txt')
+                     'full', '7443', '6102', 'CUBE_files_to_plot.txt')
     # Portsmouth MPL4 file
     # file_list = join(os.getenv('MANGA_SANDBOX_MPL4'),
     #                  os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
@@ -64,7 +64,9 @@ for file_kws in file_kws_all:
 
 # DELETE
 from mangadap.plot import plotdap
+from mangadap.plot import util
 reload(plotdap)
+reload(util)
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
 plot_kws = cfg_io.make_kws(cfg)
 plot_kws['main'] = hasattr(main, '__file__')

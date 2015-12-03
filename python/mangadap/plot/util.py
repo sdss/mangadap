@@ -13,7 +13,10 @@ import re
 
 import numpy as np
 import pandas as pd
+import scipy.interpolate as interpolate
 from astropy.io import fits
+import matplotlib
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -218,6 +221,43 @@ def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, main=True,
         if not main:
             filename = '\n' + filename + '\n'
         print(filename)
+
+def cmap_discretize(cmap_in, N):
+    """Return a discrete colormap from the continuous colormap cmap.
+    
+    Example
+        x = resize(arange(100), (5,100))
+        djet = cmap_discretize(cm.jet, 5)
+        imshow(x, cmap=djet)
+
+    Args:
+        cmap_in: colormap instance, eg. cm.jet. 
+        N (int): Number of colors.
+    
+    Returns:
+        colormap instance
+    """
+    cdict = cmap_in._segmentdata.copy()
+    # N colors
+    colors_i = np.linspace(0, 1., N)
+    # N+1 indices
+    indices = np.linspace(0, 1., N+1)
+    for key in ('red', 'green', 'blue'):
+        # Find the N colors
+        D = np.array(cdict[key])
+        I = interpolate.interp1d(D[:,0], D[:,1])
+        colors = I(colors_i)
+        # Place these colors at the correct indices.
+        A = np.zeros((N + 1, 3), float)
+        A[:, 0] = indices
+        A[1:, 1] = colors
+        A[:-1, 2] = colors
+        # Create a tuple for the dictionary.
+        L = []
+        for l in A:
+            L.append(tuple(l))
+        cdict[key] = tuple(L)
+    return matplotlib.colors.LinearSegmentedColormap('colormap', cdict, 1024)
 
 def reverse_cmap(cdict):
     cdict_r = {}
