@@ -80,6 +80,23 @@ Stacking options:
 For now, assume dataframes and use built-in mean() and median() if possible.
 """
 
+from mangadap.plot import cfg_io
+from mangadap.stack import select
+import operator as op
+path_mangadap = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap')
+path_config = join(path_mangadap, 'stack', 'config')
+paths_cfg = join(path_mangadap, 'plot', 'config', 'sdss_paths.ini')
+
+drpall = util.read_drpall(paths_cfg)
+data_refs = dict(drpall=drpall)
+
+cfg = cfg_io.read_config(join(path_config, 'example.ini'))
+# sample_conditions = [['drpall', 'nsa_mstar', 'gt', '1e10', 'float']]
+sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
+
+out = select.do_selection(sample_conditions, data_refs)
+
+plateifus = drpall['plateifu'][out]
 
 
 

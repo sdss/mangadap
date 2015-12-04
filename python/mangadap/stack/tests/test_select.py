@@ -1,9 +1,11 @@
 from __future__ import (division, print_function, absolute_import,
                         unicode_literals)
 import numpy as np
+import pandas as pd
 
 import unittest
 from numpy.testing import assert_array_equal
+from pandas.util.testing import assert_series_equal
 # from pandas.util.testing import assert_frame_equal
 
 from mangadap.stack import select
@@ -115,6 +117,59 @@ class SelectTestCase(unittest.TestCase):
         data = np.array([np.nan, -99, -9999, 2])
         desired = np.array([False, False, False, True])
         actual = select.notnan(data, nanvals=[-99, -9999])
+        assert_array_equal(actual, desired)
+
+    def test_set_value_type_none(self):
+        desired = 'foo'
+        actual = select.set_value_type('foo', type=None)
+        self.assertEqual(actual, desired)
+
+    def test_set_value_type_float(self):
+        desired = 7.5
+        actual = select.set_value_type('7.5', type='float')
+        self.assertEqual(actual, desired)
+
+    def test_set_value_type_int(self):
+        desired = 7
+        actual = select.set_value_type('7', type='int')
+        self.assertEqual(actual, desired)
+
+    def test_set_value_type_string(self):
+        desired = 'foo'
+        actual = select.set_value_type('foo', type='str')
+        self.assertEqual(actual, desired)
+    
+    def test_apply_selection_condition_df(self):
+        cfg_in = ['df', 'column1', 'gt', '2.5', 'float']
+        df = pd.DataFrame(dict(column1=np.arange(5), column2=np.arange(5)*2))
+        data_refs = dict(df=df)
+        desired = np.array([False, False, False, True, True])
+        actual = select.apply_selection_condition(cfg_in, data_refs)
+        assert_array_equal(actual, desired)
+
+    def test_apply_selection_condition_dict(self):
+        cfg_in = ['dict', 'column1', 'gt', '2.5', 'float']
+        d = dict(column1=np.arange(5), column2=np.arange(5)*2)
+        data_refs = dict(dict=d)
+        desired = np.array([False, False, False, True, True])
+        actual = select.apply_selection_condition(cfg_in, data_refs)
+        assert_array_equal(actual, desired)
+
+    def test_apply_selection_condition_recarr(self):
+        cfg_in = ['recarray', 'x', 'gt', '2.5', 'float']
+        ra = np.rec.array([(1, 5), (6, 7)], dtype=[('x', 'int'), ('y', 'int')])
+        data_refs = dict(recarray=ra)
+        desired = np.array([False, True])
+        actual = select.apply_selection_condition(cfg_in, data_refs)
+        assert_array_equal(actual, desired)
+
+    def test_do_selection(self):
+        data = dict(x=np.arange(5), y=np.arange(5))
+        data_refs = dict(d=data)
+        inp = [['d', 'x', 'gt', '1.5', 'float'],
+               ['d', 'y', 'mod', '2', 'int']]
+        desired = np.array([False, False, False, True, False])
+        actual = select.do_selection(inp, data_refs)
         assert_array_equal(actual, desired)
 
 if __name__ == '__main__':

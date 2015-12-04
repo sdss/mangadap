@@ -2712,6 +2712,7 @@ python/mangadap/proc/options.py -text
 python/mangadap/proc/ppxf.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/qaplot.py -text
+python/mangadap/stack/config/example.ini -text
 python/mangadap/stack/dap_stack.py -text
 python/mangadap/stack/select.py -text
 python/mangadap/stack/stack.py -text
