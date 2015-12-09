@@ -123,10 +123,13 @@ def apply_selection_condition(cfg_in, data_refs):
     Returns:
         boolean array
     """
-    data_obj_name, column, operator, value_in, value_type = cfg_in
-    data_obj = data_refs[data_obj_name]
+    data_obj_name, column_in, operator, value_in, value_type = cfg_in
     value = set_value_type(value_in, value_type)
-    ind_bool = op.__dict__[operator](data_obj[column], value)
+    column = column_in.split('.')
+    data_obj = data_refs[data_obj_name]
+    for i in range(len(column)-1):
+        data_obj = data_obj[column[i]]
+    ind_bool = op.__dict__[operator](data_obj[column[-1]], value)
     if isinstance(ind_bool, pd.Series):
         return ind_bool.values
     else:

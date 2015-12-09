@@ -13,13 +13,50 @@ from imp import reload
 
 from mangadap import dap_access
 from mangadap.plot import util
+from mangadap.plot import cfg_io
 from mangadap.stack import select
 from mangadap.stack import stack
 
 
-plateifus = ['7443-1901', '7443-9101', '7443-12701']
+# Set paths
+path_mangadap = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap')
+path_config = join(path_mangadap, 'stack', 'config')
+path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
+                 os.getenv('MANGADAP_VER'), 'full')
+
+# Read in meta-data sources
+paths_cfg = join(path_mangadap, 'plot', 'config', 'sdss_paths.ini')
+drpall = util.read_drpall(paths_cfg)
+metadata_refs = dict(drpall=drpall)
 
 """SAMPLE SELECTION"""
+cfg = cfg_io.read_config(join(path_config, 'example.ini'))
+sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
+bin_conditions = [v for k, v in cfg.items() if 'bin_condition' in k]
+stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
+
+pifu_bool = select.do_selection(sample_conditions, metadata_refs)
+plateifus = drpall['plateifu'][pifu_bool]
+
+# sample_conditions = [['drpall', 'nsa_mstar', 'gt', '1e10', 'float']]
+# plateifus = ['7443-1901', '7443-9101', '7443-12701']
+
+
+
+filename = 'manga-7443-3702-LOGCUBE_BIN-RADIAL-004.fits'
+file_kws = util.parse_fits_filename(filename)
+path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
+gal = dap_access.DAPAccess(path_gal, file_kws)
+gal.get_all_ext()
+galdata_refs = dict(dapdata=gal.__dict__)
+
+from mangadap.stack import select
+reload(select)
+outer2 = select.do_selection(bin_conditions, galdata_refs)
+D4000_notnan = select.notnan(gal.sindx.indx.D4000, nanvals=-9999)
+D4000_sample = select.join_logical_and([outer, D4000_notnan])
+
+
 
 out_bin = []
 out = []
@@ -28,12 +65,10 @@ for plateifu in plateifus:
     # filename = 'manga-7443-1901-LOGCUBE_BIN-RADIAL-004.fits'
     filename = 'manga-{}-LOGCUBE_BIN-RADIAL-004.fits'.format(plateifu)
     file_kws = util.parse_fits_filename(filename)
-    path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
-                     os.getenv('MANGADAP_VER'), file_kws['plate'],
-                     file_kws['ifudesign'])
+    path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
     
     # Read in data
-    gal = dap_access.DAPAccess(path_data, file_kws)
+    gal = dap_access.DAPAccess(path_gal, file_kws)
     gal.get_all_ext()
     
     """BIN SELECTION"""
@@ -55,6 +90,7 @@ for plateifu in plateifus:
 
     out_bin.append([gal.flux_ew.Ha6564.loc[outer],
                    gal.sindx.indx.D4000.loc[D4000_sample]])
+
 
 """Galaxy-internal stacking"""
 # Do this in a function
@@ -79,24 +115,6 @@ df_bin.D4000.mean()
 Stacking options:
 For now, assume dataframes and use built-in mean() and median() if possible.
 """
-
-from mangadap.plot import cfg_io
-from mangadap.stack import select
-import operator as op
-path_mangadap = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap')
-path_config = join(path_mangadap, 'stack', 'config')
-paths_cfg = join(path_mangadap, 'plot', 'config', 'sdss_paths.ini')
-
-drpall = util.read_drpall(paths_cfg)
-data_refs = dict(drpall=drpall)
-
-cfg = cfg_io.read_config(join(path_config, 'example.ini'))
-# sample_conditions = [['drpall', 'nsa_mstar', 'gt', '1e10', 'float']]
-sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
-
-out = select.do_selection(sample_conditions, data_refs)
-
-plateifus = drpall['plateifu'][out]
 
 
 
