@@ -4,7 +4,7 @@ import os
 from os.path import join
 import copy
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 import pandas as pd
 import seaborn as sns
@@ -14,7 +14,7 @@ from imp import reload
 from mangadap import dap_access
 from mangadap.plot import util
 from mangadap.plot import cfg_io
-from mangadap.stack import select
+from mangadap.stack import selections
 from mangadap.stack import stack
 
 
@@ -47,13 +47,14 @@ gal_columns = gal_ids + value_names
 
 
 """SAMPLE SELECTION"""
-pifu_bool = select.do_selection(sample_conditions, metadata_refs)
+pifu_bool = selections.do_selection(sample_conditions, metadata_refs)
 plateifus = drpall['plateifu'][pifu_bool]
 
 
 """LOOP OVER GALAXIES"""
 objs = []
 vals = []
+# SPECIFY PLATES BY NUMBER VIA CONFIG FILE
 plateifus = ['7443-3702', '7443-6102']
 for plateifu in plateifus:
     """Get Bin Data"""
@@ -64,16 +65,14 @@ for plateifu in plateifus:
     gal.get_all_ext()
     galdata_refs = dict(dapdata=gal.__dict__)
     
-    
     """Bin Selection"""
-    bins_selected = select.do_selection(bin_conditions, galdata_refs)
-    bins_notnan = [select.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
-    bins = select.join_logical_and([bins_selected] + bins_notnan)
-    
+    bins_selected = selections.do_selection(bin_conditions, galdata_refs)
+    bins_notnan = [selections.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
+    bins = selections.join_logical_and([bins_selected] + bins_notnan)
     
     """Save data"""
     objs.append([gal.mangaid, gal.header['OBJRA'], gal.header['OBJDEC']])
-    vals.append([select.cfg_to_data(sv, galdata_refs) for sv in stack_values])
+    vals.append([selections.cfg_to_data(sv, galdata_refs) for sv in stack_values])
 
 
 """Galaxy-internal combine"""
@@ -97,10 +96,12 @@ fout_stem = join(path_out, cfg_name.split('.ini')[0])
 csvkwargs = dict(sep='\t', float_format='%10.5f')
 fout_galaxies = fout_stem + '_gal.txt'
 fout_cross_sample = fout_stem + '_sample.txt'
+
+print('')
 galaxies.to_csv(fout_galaxies, **csvkwargs)
-print('Wrote '.format(fout_galaxies))
+print('Wrote {}'.format(fout_galaxies))
 cross_sample.to_csv(fout_cross_sample, **csvkwargs)
-print('Wrote '.format(fout_cross_sample))
+print('Wrote {}'.format(fout_cross_sample))
 
 
 

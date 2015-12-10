@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 from pandas.util.testing import assert_series_equal
 # from pandas.util.testing import assert_frame_equal
 
-from mangadap.stack import select
+from mangadap.stack import selections
 
 class SelectTestCase(unittest.TestCase):
 
@@ -16,107 +16,107 @@ class SelectTestCase(unittest.TestCase):
         int_ind = np.array([])
         arr_shape = 3
         desired = np.array([False, False, False])
-        actual = select.int_to_bool_index(int_ind, arr_shape)
+        actual = selections.int_to_bool_index(int_ind, arr_shape)
         assert_array_equal(actual, desired)
 
     def test_int_to_bool_index_partial_list(self):
         int_ind = np.arange(2)
         arr_shape = 3
         desired = np.array([True, True, False])
-        actual = select.int_to_bool_index(int_ind, arr_shape)
+        actual = selections.int_to_bool_index(int_ind, arr_shape)
         assert_array_equal(actual, desired)
     
     def test_int_to_bool_index_complete_list(self):
         int_ind = np.arange(3)
         arr_shape = 3
         desired = np.array([True, True, True])
-        actual = select.int_to_bool_index(int_ind, arr_shape)
+        actual = selections.int_to_bool_index(int_ind, arr_shape)
         assert_array_equal(actual, desired)
 
     def test_join_logical_and_empty_list(self):
         desired = []
-        actual = select.join_logical_and(desired)
+        actual = selections.join_logical_and(desired)
         assert_array_equal(actual, desired)
     
     def test_join_logical_and_single_condition(self):
         desired = np.array([True, False])
-        actual = select.join_logical_and([desired])
+        actual = selections.join_logical_and([desired])
         assert_array_equal(actual, desired)
 
     def test_join_logical_and_mixed_conditions(self):
         ind_bool = [np.array([True, True]), np.array([True, False])]
         desired = np.array([True, False])
-        actual = select.join_logical_and(ind_bool)
+        actual = selections.join_logical_and(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_join_logical_and_all_true(self):
         ind_bool = [np.array([True, True]), np.array([True, True])]
         desired = np.array([True, True])
-        actual = select.join_logical_and(ind_bool)
+        actual = selections.join_logical_and(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_join_logical_and_all_false(self):
         ind_bool = [np.array([False, False]), np.array([False, False])]
         desired = np.array([False, False])
-        actual = select.join_logical_and(ind_bool)
+        actual = selections.join_logical_and(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_join_logical_or_empty_list(self):
         desired = []
-        actual = select.join_logical_or(desired)
+        actual = selections.join_logical_or(desired)
         assert_array_equal(actual, desired)
     
     def test_join_logical_or_single_condition(self):
         desired = np.array([True, False])
-        actual = select.join_logical_or([desired])
+        actual = selections.join_logical_or([desired])
         assert_array_equal(actual, desired)
 
     def test_join_logical_or_mixed_conditions(self):
         ind_bool = [np.array([True, True]), np.array([True, False])]
         desired = np.array([True, True])
-        actual = select.join_logical_or(ind_bool)
+        actual = selections.join_logical_or(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_join_logical_or_all_true(self):
         ind_bool = [np.array([True, True]), np.array([True, True])]
         desired = np.array([True, True])
-        actual = select.join_logical_or(ind_bool)
+        actual = selections.join_logical_or(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_join_logical_or_all_false(self):
         ind_bool = [np.array([False, False]), np.array([False, False])]
         desired = np.array([False, False])
-        actual = select.join_logical_or(ind_bool)
+        actual = selections.join_logical_or(ind_bool)
         assert_array_equal(actual, desired)
 
     def test_get_notnan_np_nan_only(self):
         data = np.array([np.nan, 1, 2])
         desired = np.array([False, True, True])
-        actual = select.get_notnan(data)
+        actual = selections.get_notnan(data)
         assert_array_equal(actual, desired)
 
     def test_get_notnan_special_nan_value(self):
         data = np.array([-9999, 1, 2])
         desired = np.array([False, True, True])
-        actual = select.get_notnan(data, nanvals=-9999)
+        actual = selections.get_notnan(data, nanvals=-9999)
         assert_array_equal(actual, desired)
 
     def test_get_notnan_special_nan_values(self):
         data = np.array([-99, -9999, 2])
         desired = np.array([False, False, True])
-        actual = select.get_notnan(data, nanvals=[-99, -9999])
+        actual = selections.get_notnan(data, nanvals=[-99, -9999])
         assert_array_equal(actual, desired)
 
     def test_get_notnan_mixed_nan_value(self):
         data = np.array([np.nan, -9999, 2])
         desired = np.array([False, False, True])
-        actual = select.get_notnan(data, nanvals=-9999)
+        actual = selections.get_notnan(data, nanvals=-9999)
         assert_array_equal(actual, desired)
 
     def test_get_notnan_mixed_nan_values(self):
         data = np.array([np.nan, -99, -9999, 2])
         desired = np.array([False, False, False, True])
-        actual = select.get_notnan(data, nanvals=[-99, -9999])
+        actual = selections.get_notnan(data, nanvals=[-99, -9999])
         assert_array_equal(actual, desired)
 
     def test_cfg_to_notnan(self):
@@ -124,38 +124,39 @@ class SelectTestCase(unittest.TestCase):
         data_refs = dict(data=d)
         cfg_in = ['data', 'key1.key2', '3']
         desired = np.array([True, True, True, False, True])
-        actual = select.cfg_to_notnan(cfg_in, data_refs)
+        actual = selections.cfg_to_notnan(cfg_in, data_refs)
         assert_array_equal(actual, desired)
 
     def test_set_value_type_none(self):
         desired = 'foo'
-        actual = select.set_value_type('foo', value_type=None)
+        actual = selections.set_value_type('foo', value_type=None)
         self.assertEqual(actual, desired)
 
     def test_set_value_type_empty_string(self):
         desired = 'foo'
-        actual = select.set_value_type('foo', value_type='')
+        actual = selections.set_value_type('foo', value_type='')
         self.assertEqual(actual, desired)
 
     def test_set_value_type_float(self):
         desired = 7.5
-        actual = select.set_value_type('7.5', value_type='float')
+        actual = selections.set_value_type('7.5', value_type='float')
         self.assertEqual(actual, desired)
 
     def test_set_value_type_int(self):
         desired = 7
-        actual = select.set_value_type('7', value_type='int')
+        actual = selections.set_value_type('7', value_type='int')
         self.assertEqual(actual, desired)
 
     def test_set_value_type_str(self):
         desired = 'foo'
-        actual = select.set_value_type('foo', value_type='str')
+        actual = selections.set_value_type('foo', value_type='str')
         self.assertEqual(actual, desired)
 
     def test_get_multilevel_attribute(self):
         d = dict(key1=dict(key2=np.arange(5)))
         desired = np.arange(5)
-        actual = select.get_multilevel_attribute(keys=['key1', 'key2'], data=d)
+        actual = selections.get_multilevel_attribute(keys=['key1', 'key2'],
+                                                     data=d)
         assert_array_equal(actual, desired)
 
     def test_apply_selection_condition_df(self):
@@ -163,7 +164,7 @@ class SelectTestCase(unittest.TestCase):
         df = pd.DataFrame(dict(column1=np.arange(5), column2=np.arange(5)*2))
         data_refs = dict(df=df)
         desired = np.array([False, False, False, True, True])
-        actual = select.apply_selection_condition(cfg_in, data_refs)
+        actual = selections.apply_selection_condition(cfg_in, data_refs)
         assert_array_equal(actual, desired)
 
     def test_apply_selection_condition_dict(self):
@@ -171,7 +172,7 @@ class SelectTestCase(unittest.TestCase):
         d = dict(column1=np.arange(5), column2=np.arange(5)*2)
         data_refs = dict(dict=d)
         desired = np.array([False, False, False, True, True])
-        actual = select.apply_selection_condition(cfg_in, data_refs)
+        actual = selections.apply_selection_condition(cfg_in, data_refs)
         assert_array_equal(actual, desired)
 
     def test_apply_selection_condition_recarr(self):
@@ -179,7 +180,7 @@ class SelectTestCase(unittest.TestCase):
         ra = np.rec.array([(1, 5), (6, 7)], dtype=[('x', 'int'), ('y', 'int')])
         data_refs = dict(recarray=ra)
         desired = np.array([False, True])
-        actual = select.apply_selection_condition(cfg_in, data_refs)
+        actual = selections.apply_selection_condition(cfg_in, data_refs)
         assert_array_equal(actual, desired)
 
     def test_do_selection(self):
@@ -188,7 +189,7 @@ class SelectTestCase(unittest.TestCase):
         inp = [['d', 'x', 'gt', '1.5', 'float'],
                ['d', 'y', 'mod', '2', 'int']]
         desired = np.array([False, False, False, True, False])
-        actual = select.do_selection(inp, data_refs)
+        actual = selections.do_selection(inp, data_refs)
         assert_array_equal(actual, desired)
 
 if __name__ == '__main__':

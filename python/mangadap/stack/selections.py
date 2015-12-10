@@ -87,6 +87,8 @@ def get_notnan(arr, nanvals=None):
             ind_bools.append(arr != nanvals)
     return join_logical_and(ind_bools)
 
+
+# MOVE TO cfg_io.py
 def cfg_to_notnan(cfg_in, data_refs):
     """Find values that are not NaN from config file input list.
 
@@ -103,6 +105,7 @@ def cfg_to_notnan(cfg_in, data_refs):
     ind = get_notnan(data, nanvals=float(nanval))
     return util.series_to_array(ind)
 
+# MOVE TO cfg_io.py
 def cfg_to_data(cfg_in, data_refs):
     """Parse config file input list to read in data.
 
@@ -119,6 +122,7 @@ def cfg_to_data(cfg_in, data_refs):
     data_obj = data_refs[data_obj_name]
     return get_multilevel_attribute(keys=keys, data=data_obj)
 
+# MOVE TO cfg_io.py
 def set_value_type(value, value_type='float'):
     """Convert value from string to another type.
 
@@ -142,6 +146,7 @@ def set_value_type(value, value_type='float'):
     except ValueError as e:
         raise
 
+# MOVE TO util.py?
 def get_multilevel_attribute(keys, data):
     """Access multilevel attributes of a data object.
 
