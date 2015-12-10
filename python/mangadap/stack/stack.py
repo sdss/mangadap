@@ -25,7 +25,7 @@ def weighted_average(val, err=None, bins=None, weights=None):
 
 
 
-
+# Don't do nan selection or bin selection at this stage
 
 
 def mean(val):

@@ -32,10 +32,18 @@ path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
                  os.getenv('MANGADAP_VER'), 'full')
 
 # Read config file
-cfg = cfg_io.read_config(join(path_config, 'test.ini'))
+cfg_name = 'test.ini'
+cfg = cfg_io.read_config(join(path_config, cfg_name))
 sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
 bin_conditions = [v for k, v in cfg.items() if 'bin_condition' in k]
 stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
+
+# READ THESE IN FROM CONFIG FILE
+path_out = join(os.getenv('HOME'), 'tmp', 'dap_stack_out',
+                os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'))
+gal_ids = ['mangaid', 'RA', 'DEC']
+value_names = ['Ha', 'D4000']
+gal_columns = gal_ids + value_names
 
 
 """SAMPLE SELECTION"""
@@ -48,8 +56,6 @@ objs = []
 vals = []
 plateifus = ['7443-3702', '7443-6102']
 for plateifu in plateifus:
-    #plateifu = plateifus[0]
-    
     """Get Bin Data"""
     filename = 'manga-{}-LOGCUBE_BIN-RADIAL-004.fits'.format(plateifu)
     file_kws = util.parse_fits_filename(filename)
@@ -65,107 +71,40 @@ for plateifu in plateifus:
     bins = select.join_logical_and([bins_selected] + bins_notnan)
     
     
-    """Combine Data"""
-
+    """Save data"""
     objs.append([gal.mangaid, gal.header['OBJRA'], gal.header['OBJDEC']])
     vals.append([select.cfg_to_data(sv, galdata_refs) for sv in stack_values])
 
-# Return all of the values because when you do a cross-sample stack later, you
-# need all of the individual bins
 
+"""Galaxy-internal combine"""
 from mangadap.stack import stack
 reload(stack)
 vals_combined = [[stack.mean(col) for col in val] for val in vals]
-gal_internal = [obj + val for obj, val in zip(objs, vals_combined)]
-df = pd.DataFrame(gal_internal, columns=['mangaid', 'RA', 'DEC', 'Ha', 'D4000'],
-                  index=plateifus)
+indiv_gals = [obj + val for obj, val in zip(objs, vals_combined)]
+galaxies = pd.DataFrame(indiv_gals, columns=gal_columns, index=plateifus)
+galaxies.index.name = 'plateifu'
 
-
-
+"""Cross-sample combine"""
 vals_T = [list(it) for it in zip(*vals)] # "transpose" list
 vals_concat = [pd.concat(it) for it in vals_T] # concat data by type
-df_bin = pd.concat(vals_concat, axis=1, keys=['Ha', 'D4000'])
+df_bin = pd.concat(vals_concat, axis=1, keys=value_names)
 cross_sample = pd.Series([stack.mean(val) for val in vals_concat],
-                         index=['Ha', 'D4000'])
+                         index=value_names)
+
+
+"""Return Results"""
+fout_stem = join(path_out, cfg_name.split('.ini')[0])
+csvkwargs = dict(sep='\t', float_format='%10.5f')
+fout_galaxies = fout_stem + '_gal.txt'
+fout_cross_sample = fout_stem + '_sample.txt'
+galaxies.to_csv(fout_galaxies, **csvkwargs)
+print('Wrote '.format(fout_galaxies))
+cross_sample.to_csv(fout_cross_sample, **csvkwargs)
+print('Wrote '.format(fout_cross_sample))
 
 
 
 
 
 
-out_bin = []
-out = []
-# plateifus = ['7443-1901', '7443-9101', '7443-12701']
-for plateifu in plateifus:
-    # Specify File Name
-    filename = 'manga-{}-LOGCUBE_BIN-RADIAL-004.fits'.format(plateifu)
-    file_kws = util.parse_fits_filename(filename)
-    path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
-    
-    # Read in data
-    gal = dap_access.DAPAccess(path_gal, file_kws)
-    gal.get_all_ext()
-    
-    """BIN SELECTION"""
-    from mangadap.stack import select
-    reload(select)
-    # select bins with luminosity-weighted bin radius > 1 Re
-    outer = gal.bins.binr > 1.0
-    D4000_notnan = select.get_notnan(gal.sindx.indx.D4000, nanvals=-9999)
-    D4000_sample = select.join_logical_and([outer, D4000_notnan])
-    
-    """STACKING"""
-    from mangadap.stack import stack
-    reload(stack)
-    outer_Ha = gal.flux_ew.Ha6564.loc[outer].mean()
-    outer_D4000 = gal.sindx.indx.D4000.loc[D4000_sample].mean()
-    
-    out.append([gal.mangaid, gal.header['OBJRA'], gal.header['OBJDEC'],
-               outer_Ha, outer_D4000])
-
-    out_bin.append([gal.flux_ew.Ha6564.loc[outer],
-                   gal.sindx.indx.D4000.loc[D4000_sample]])
-
-
-"""Galaxy-internal stacking"""
-# Do this in a function
-df = pd.DataFrame(out, columns=['mangaid', 'RA', 'DEC', 'Ha', 'D4000'],
-                  index=plateifus)
-
-"""Cross-sample stacking"""
-# Do the next three lines in a function
-out_bin_T = [list(it) for it in zip(*out_bin)] # "transpose" list
-out_bin_concat = [pd.concat(it) for it in out_bin_T] # concat data by type
-df_bin = pd.concat(out_bin_concat, axis=1, keys=['Ha', 'D4000'])
-
-# Print results
-df_bin.Ha.mean()
-df_bin.D4000.mean()
-
-
-
-
-
-"""
-Stacking options:
-For now, assume dataframes and use built-in mean() and median() if possible.
-"""
-
-
-
-"""Another example"""
-# user-defined set of bins
-ind_bins = np.array([0, 1, 100, 200, 300, 350])
-# convert to boolean index array
-bins = select.int_to_bool_index(ind_bins, gal.flux_ew.Ha6564.shape)
-# bin Halpha flux selection cut
-high_halpha = gal.flux_ew.Ha6564 > gal.flux_ew.Ha6564.median()
-# list of conditions (including remove bins where Halpha flux is NaN)
-conditions = [bins, high_halpha, select.get_notnan(gal.flux_ew.Ha6564)]
-# join conditions
-sample = select.join_logical_and(conditions)
-
-
-"""Ivar wtmean Ha flux and D4000 for > 1 Re"""
-outer_Ha = stack.ivar_wtmean(gal.flux_ew.Ha6564, gal.fluxerr_ew.Ha6564, outer)
 
