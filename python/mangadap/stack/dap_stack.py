@@ -4,7 +4,7 @@ import os
 from os.path import join
 import copy
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 import pandas as pd
 import seaborn as sns
@@ -67,7 +67,8 @@ for plateifu in plateifus:
     
     """Bin Selection"""
     bins_selected = selections.do_selection(bin_conditions, galdata_refs)
-    bins_notnan = [selections.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
+    bins_notnan = [selections.cfg_to_notnan(sv, galdata_refs)
+                   for sv in stack_values]
     bins = selections.join_logical_and([bins_selected] + bins_notnan)
     
     """Save data"""
@@ -76,8 +77,8 @@ for plateifu in plateifus:
 
 
 """Galaxy-internal combine"""
-from mangadap.stack import stack
-reload(stack)
+# from mangadap.stack import stack
+# reload(stack)
 vals_combined = [[stack.mean(col) for col in val] for val in vals]
 indiv_gals = [obj + val for obj, val in zip(objs, vals_combined)]
 galaxies = pd.DataFrame(indiv_gals, columns=gal_columns, index=plateifus)
