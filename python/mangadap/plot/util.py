@@ -46,6 +46,13 @@ def make_df(data, columns):
     except ValueError:
         return data
 
+def series_to_array(x):
+    """Return an array if the input is a Series or an array."""
+    if isinstance(x, pd.Series):
+        return x.values
+    else:
+        return x
+
 def read_line_names(dapf, ltype='emission'):
     """Read emission line or spectral index names.
 

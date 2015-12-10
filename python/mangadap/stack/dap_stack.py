@@ -21,20 +21,24 @@ from mangadap.stack import stack
 # Set paths
 path_mangadap = join(os.getenv('MANGADAP_DIR'), 'python', 'mangadap')
 path_config = join(path_mangadap, 'stack', 'config')
-path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
-                 os.getenv('MANGADAP_VER'), 'full')
 
 # Read in meta-data sources
 paths_cfg = join(path_mangadap, 'plot', 'config', 'sdss_paths.ini')
 drpall = util.read_drpall(paths_cfg)
 metadata_refs = dict(drpall=drpall)
 
-"""SAMPLE SELECTION"""
+# DO THIS VIA sdss_paths.ini
+path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
+                 os.getenv('MANGADAP_VER'), 'full')
+
+# Read config file
 cfg = cfg_io.read_config(join(path_config, 'example.ini'))
 sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
 bin_conditions = [v for k, v in cfg.items() if 'bin_condition' in k]
 stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
 
+
+"""SAMPLE SELECTION"""
 pifu_bool = select.do_selection(sample_conditions, metadata_refs)
 plateifus = drpall['plateifu'][pifu_bool]
 
@@ -42,7 +46,7 @@ plateifus = drpall['plateifu'][pifu_bool]
 # plateifus = ['7443-1901', '7443-9101', '7443-12701']
 
 
-
+"""Get Bin Data"""
 filename = 'manga-7443-3702-LOGCUBE_BIN-RADIAL-004.fits'
 file_kws = util.parse_fits_filename(filename)
 path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
@@ -50,12 +54,23 @@ gal = dap_access.DAPAccess(path_gal, file_kws)
 gal.get_all_ext()
 galdata_refs = dict(dapdata=gal.__dict__)
 
-from mangadap.stack import select
-reload(select)
-outer2 = select.do_selection(bin_conditions, galdata_refs)
-D4000_notnan = select.notnan(gal.sindx.indx.D4000, nanvals=-9999)
-D4000_sample = select.join_logical_and([outer, D4000_notnan])
 
+"""Bin Selection"""
+bins_selected = select.do_selection(bin_conditions, galdata_refs)
+bins_notnan = [select.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
+bins = select.join_logical_and([bins_selected] + bins_notnan)
+# stack_value = stack_values[0]
+# bins_notnan = select.cfg_to_notnan(stack_value, galdata_refs)
+# bins = select.join_logical_and([bins_selected, bins_notnan])
+
+
+"""Combine Data"""
+from mangadap.stack import stack
+reload(stack)
+#for sv in stack_values:
+sv = stack_values[0]
+val = select.cfg_to_data(sv, galdata_refs)
+stack.mean(val, bins)
 
 
 out_bin = []
@@ -76,7 +91,7 @@ for plateifu in plateifus:
     reload(select)
     # select bins with luminosity-weighted bin radius > 1 Re
     outer = gal.bins.binr > 1.0
-    D4000_notnan = select.notnan(gal.sindx.indx.D4000, nanvals=-9999)
+    D4000_notnan = select.get_notnan(gal.sindx.indx.D4000, nanvals=-9999)
     D4000_sample = select.join_logical_and([outer, D4000_notnan])
     
     """STACKING"""
@@ -126,7 +141,7 @@ bins = select.int_to_bool_index(ind_bins, gal.flux_ew.Ha6564.shape)
 # bin Halpha flux selection cut
 high_halpha = gal.flux_ew.Ha6564 > gal.flux_ew.Ha6564.median()
 # list of conditions (including remove bins where Halpha flux is NaN)
-conditions = [bins, high_halpha, select.notnan(gal.flux_ew.Ha6564)]
+conditions = [bins, high_halpha, select.get_notnan(gal.flux_ew.Ha6564)]
 # join conditions
 sample = select.join_logical_and(conditions)
 

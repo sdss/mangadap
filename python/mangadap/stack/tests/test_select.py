@@ -89,56 +89,75 @@ class SelectTestCase(unittest.TestCase):
         actual = select.join_logical_or(ind_bool)
         assert_array_equal(actual, desired)
 
-    def test_notnan_np_nan_only(self):
+    def test_get_notnan_np_nan_only(self):
         data = np.array([np.nan, 1, 2])
         desired = np.array([False, True, True])
-        actual = select.notnan(data)
+        actual = select.get_notnan(data)
         assert_array_equal(actual, desired)
 
-    def test_notnan_special_nan_value(self):
+    def test_get_notnan_special_nan_value(self):
         data = np.array([-9999, 1, 2])
         desired = np.array([False, True, True])
-        actual = select.notnan(data, nanvals=-9999)
+        actual = select.get_notnan(data, nanvals=-9999)
         assert_array_equal(actual, desired)
 
-    def test_notnan_special_nan_values(self):
+    def test_get_notnan_special_nan_values(self):
         data = np.array([-99, -9999, 2])
         desired = np.array([False, False, True])
-        actual = select.notnan(data, nanvals=[-99, -9999])
+        actual = select.get_notnan(data, nanvals=[-99, -9999])
         assert_array_equal(actual, desired)
 
-    def test_notnan_mixed_nan_value(self):
+    def test_get_notnan_mixed_nan_value(self):
         data = np.array([np.nan, -9999, 2])
         desired = np.array([False, False, True])
-        actual = select.notnan(data, nanvals=-9999)
+        actual = select.get_notnan(data, nanvals=-9999)
         assert_array_equal(actual, desired)
 
-    def test_notnan_mixed_nan_values(self):
+    def test_get_notnan_mixed_nan_values(self):
         data = np.array([np.nan, -99, -9999, 2])
         desired = np.array([False, False, False, True])
-        actual = select.notnan(data, nanvals=[-99, -9999])
+        actual = select.get_notnan(data, nanvals=[-99, -9999])
+        assert_array_equal(actual, desired)
+
+    def test_cfg_to_notnan(self):
+        d = dict(key1=dict(key2=np.arange(5)))
+        data_refs = dict(data=d)
+        cfg_in = ['data', 'key1.key2', '3']
+        desired = np.array([True, True, True, False, True])
+        actual = select.cfg_to_notnan(cfg_in, data_refs)
         assert_array_equal(actual, desired)
 
     def test_set_value_type_none(self):
         desired = 'foo'
-        actual = select.set_value_type('foo', type=None)
+        actual = select.set_value_type('foo', value_type=None)
+        self.assertEqual(actual, desired)
+
+    def test_set_value_type_empty_string(self):
+        desired = 'foo'
+        actual = select.set_value_type('foo', value_type='')
         self.assertEqual(actual, desired)
 
     def test_set_value_type_float(self):
         desired = 7.5
-        actual = select.set_value_type('7.5', type='float')
+        actual = select.set_value_type('7.5', value_type='float')
         self.assertEqual(actual, desired)
 
     def test_set_value_type_int(self):
         desired = 7
-        actual = select.set_value_type('7', type='int')
+        actual = select.set_value_type('7', value_type='int')
         self.assertEqual(actual, desired)
 
-    def test_set_value_type_string(self):
+    def test_set_value_type_str(self):
         desired = 'foo'
-        actual = select.set_value_type('foo', type='str')
+        actual = select.set_value_type('foo', value_type='str')
         self.assertEqual(actual, desired)
-    
+
+    def test_get_multilevel_attribute(self):
+        d = dict(key1=dict(key2=np.arange(5)))
+        desired = np.arange(5)
+        actual = select.get_multilevel_attribute(keys=['key1', 'key2'], data=d)
+        assert_array_equal(actual, desired)
+
     def test_apply_selection_condition_df(self):
         cfg_in = ['df', 'column1', 'gt', '2.5', 'float']
         df = pd.DataFrame(dict(column1=np.arange(5), column2=np.arange(5)*2))

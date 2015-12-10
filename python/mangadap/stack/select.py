@@ -4,6 +4,7 @@ import operator as op
 import numpy as np
 import pandas as pd
 
+from mangadap.plot import util
 
 def int_to_bool_index(ind_int, arr_shape):
     """Convert integer index array to a boolean index array.
@@ -67,8 +68,8 @@ def join_logical_or(ind_bool_list):
     """
     return join_conditions(ind_bool_list, operator='or')
 
-def notnan(arr, nanvals=None):
-    """Find not NaN values.
+def get_notnan(arr, nanvals=None):
+    """Find values that are not NaN.
 
     Args:
         nanvals: list of numbers or single number that corresponds to NaN.
@@ -86,31 +87,74 @@ def notnan(arr, nanvals=None):
             ind_bools.append(arr != nanvals)
     return join_logical_and(ind_bools)
 
+def cfg_to_notnan(cfg_in, data_refs):
+    """Find values that are not NaN from config file input list.
 
+    Args:
+        cfg_in (list): Strings the specify how to do selection.
+        data_refs (dict): Mapping between name of data source and actual data
+            source.
 
+    Returns:
+        boolean array
+    """
+    data_obj_name, keys_in, nanval = cfg_in
+    data = cfg_to_data(cfg_in, data_refs)
+    ind = get_notnan(data, nanvals=float(nanval))
+    return util.series_to_array(ind)
 
+def cfg_to_data(cfg_in, data_refs):
+    """Parse config file input list to read in data.
 
-#---- UNTESTED -----
+    Args:
+        cfg_in (list): Strings the specify how to do selection.
+        data_refs (dict): Mapping between name of data source and actual data
+            source.
 
-def set_value_type(value, type='float'):
+    Returns:
+        array or Series
+    """
+    data_obj_name, keys_in, nanval = cfg_in
+    keys = keys_in.split('.')
+    data_obj = data_refs[data_obj_name]
+    return get_multilevel_attribute(keys=keys, data=data_obj)
+
+def set_value_type(value, value_type='float'):
     """Convert value from string to another type.
 
     Args:
         value (str): Input value.
-        type (str): Data type to convert value to. Default is 'float'.
+        value_type (str): Data type to convert value to. Default is 'float'.
 
     Returns:
         Value with new type.
     """
-    if type == 'float':
-        return float(value)
-    elif type == 'int':
-        return int(value)
-    elif type == 'str':
-        return str(value)
-    else:
-        print('No value type specified. Returning input value.')
-        return value
+    try:
+        if value_type == 'float':
+            return float(value)
+        elif value_type == 'int':
+            return int(value)
+        elif value_type == 'str':
+            return str(value)
+        else:
+            # print('No value type specified. Returning input value as string.')
+            return value
+    except ValueError as e:
+        raise
+
+def get_multilevel_attribute(keys, data):
+    """Access multilevel attributes of a data object.
+
+    Args:
+        keys (list): Attribute or column names.
+        data: Data object.
+
+    Return:
+        array
+    """
+    for key in keys:
+        data = data[key]
+    return data
 
 def apply_selection_condition(cfg_in, data_refs):
     """Apply selection condition.
@@ -123,17 +167,13 @@ def apply_selection_condition(cfg_in, data_refs):
     Returns:
         boolean array
     """
-    data_obj_name, column_in, operator, value_in, value_type = cfg_in
+    data_obj_name, keys_in, operator, value_in, value_type = cfg_in
     value = set_value_type(value_in, value_type)
-    column = column_in.split('.')
+    keys = keys_in.split('.')
     data_obj = data_refs[data_obj_name]
-    for i in range(len(column)-1):
-        data_obj = data_obj[column[i]]
-    ind_bool = op.__dict__[operator](data_obj[column[-1]], value)
-    if isinstance(ind_bool, pd.Series):
-        return ind_bool.values
-    else:
-        return ind_bool
+    data = get_multilevel_attribute(keys=keys, data=data_obj)
+    ind_bool = op.__dict__[operator](data, value)
+    return util.series_to_array(ind_bool)
 
 def do_selection(raw_cfg_in, data_refs):
     """Do selection by applying multiple conditions.
@@ -150,7 +190,6 @@ def do_selection(raw_cfg_in, data_refs):
     conditions = []
     for item in raw_cfg_in:
         conditions.append(apply_selection_condition(item, data_refs))
-    # DROP NANs?
     return join_logical_and(conditions)
 
     
