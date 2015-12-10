@@ -32,7 +32,7 @@ path_data = join(os.getenv('MANGA_SPECTRO_ANALYSIS'), os.getenv('MANGADRP_VER'),
                  os.getenv('MANGADAP_VER'), 'full')
 
 # Read config file
-cfg = cfg_io.read_config(join(path_config, 'example.ini'))
+cfg = cfg_io.read_config(join(path_config, 'test.ini'))
 sample_conditions = [v for k, v in cfg.items() if 'sample_condition' in k]
 bin_conditions = [v for k, v in cfg.items() if 'bin_condition' in k]
 stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
@@ -42,42 +42,62 @@ stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
 pifu_bool = select.do_selection(sample_conditions, metadata_refs)
 plateifus = drpall['plateifu'][pifu_bool]
 
-# sample_conditions = [['drpall', 'nsa_mstar', 'gt', '1e10', 'float']]
-# plateifus = ['7443-1901', '7443-9101', '7443-12701']
 
+"""LOOP OVER GALAXIES"""
+objs = []
+vals = []
+plateifus = ['7443-3702', '7443-6102']
+for plateifu in plateifus:
+    #plateifu = plateifus[0]
+    
+    """Get Bin Data"""
+    filename = 'manga-{}-LOGCUBE_BIN-RADIAL-004.fits'.format(plateifu)
+    file_kws = util.parse_fits_filename(filename)
+    path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
+    gal = dap_access.DAPAccess(path_gal, file_kws)
+    gal.get_all_ext()
+    galdata_refs = dict(dapdata=gal.__dict__)
+    
+    
+    """Bin Selection"""
+    bins_selected = select.do_selection(bin_conditions, galdata_refs)
+    bins_notnan = [select.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
+    bins = select.join_logical_and([bins_selected] + bins_notnan)
+    
+    
+    """Combine Data"""
 
-"""Get Bin Data"""
-filename = 'manga-7443-3702-LOGCUBE_BIN-RADIAL-004.fits'
-file_kws = util.parse_fits_filename(filename)
-path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])
-gal = dap_access.DAPAccess(path_gal, file_kws)
-gal.get_all_ext()
-galdata_refs = dict(dapdata=gal.__dict__)
+    objs.append([gal.mangaid, gal.header['OBJRA'], gal.header['OBJDEC']])
+    vals.append([select.cfg_to_data(sv, galdata_refs) for sv in stack_values])
 
+# Return all of the values because when you do a cross-sample stack later, you
+# need all of the individual bins
 
-"""Bin Selection"""
-bins_selected = select.do_selection(bin_conditions, galdata_refs)
-bins_notnan = [select.cfg_to_notnan(sv, galdata_refs) for sv in stack_values]
-bins = select.join_logical_and([bins_selected] + bins_notnan)
-# stack_value = stack_values[0]
-# bins_notnan = select.cfg_to_notnan(stack_value, galdata_refs)
-# bins = select.join_logical_and([bins_selected, bins_notnan])
-
-
-"""Combine Data"""
 from mangadap.stack import stack
 reload(stack)
-#for sv in stack_values:
-sv = stack_values[0]
-val = select.cfg_to_data(sv, galdata_refs)
-stack.mean(val, bins)
+vals_combined = [[stack.mean(col) for col in val] for val in vals]
+gal_internal = [obj + val for obj, val in zip(objs, vals_combined)]
+df = pd.DataFrame(gal_internal, columns=['mangaid', 'RA', 'DEC', 'Ha', 'D4000'],
+                  index=plateifus)
+
+
+
+vals_T = [list(it) for it in zip(*vals)] # "transpose" list
+vals_concat = [pd.concat(it) for it in vals_T] # concat data by type
+df_bin = pd.concat(vals_concat, axis=1, keys=['Ha', 'D4000'])
+cross_sample = pd.Series([stack.mean(val) for val in vals_concat],
+                         index=['Ha', 'D4000'])
+
+
+
+
 
 
 out_bin = []
 out = []
+# plateifus = ['7443-1901', '7443-9101', '7443-12701']
 for plateifu in plateifus:
     # Specify File Name
-    # filename = 'manga-7443-1901-LOGCUBE_BIN-RADIAL-004.fits'
     filename = 'manga-{}-LOGCUBE_BIN-RADIAL-004.fits'.format(plateifu)
     file_kws = util.parse_fits_filename(filename)
     path_gal = join(path_data, file_kws['plate'], file_kws['ifudesign'])

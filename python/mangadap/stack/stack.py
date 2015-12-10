@@ -28,19 +28,16 @@ def weighted_average(val, err=None, bins=None, weights=None):
 
 
 
-def mean(val, bins):
+def mean(val):
     """Compute mean.
 
     Args:
         val (Series): Data.
-        bins (array): Bins to combine.
 
     Returns:
         float
     """
-    ind_notnan = select.get_notnan(val)
-    b = select.join_logical_and([bins, ind_notnan])
-    return np.mean(val[b])
+    return np.mean(val)
 
 def median(val, bins):
     """Compute median.
