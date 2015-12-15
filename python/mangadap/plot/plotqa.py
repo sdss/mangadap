@@ -62,17 +62,6 @@ for file_kws in file_kws_all:
                            plot_kws=plot_kws)
 
 
-# DELETE
-from mangadap.plot import plotdap
-from mangadap.plot import util
-reload(plotdap)
-reload(util)
-cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-plot_kws = cfg_io.make_kws(cfg)
-plot_kws['main'] = hasattr(main, '__file__')
-plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
-                   plot_kws=plot_kws)
-
 # MPL-4 file
 # python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/full/7443/3702/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
