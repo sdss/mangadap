@@ -39,9 +39,7 @@ bin_conditions = [v for k, v in cfg.items() if 'bin_condition' in k]
 stack_values = [v for k, v in cfg.items() if 'stack_value' in k]
 
 # READ THESE IN FROM CONFIG FILE
-path_out = join(os.getenv('HOME'), 'tmp', 'dap_stack_out',
-                os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'))
-gal_ids = ['mangaid', 'RA', 'DEC']
+gal_ids = ['mangaid', 'RA', 'DEC'] # 
 value_names = ['Ha', 'D4000']
 gal_columns = gal_ids + value_names
 
@@ -93,7 +91,7 @@ cross_sample = pd.Series([stack.mean(val) for val in vals_concat],
 
 
 """Return Results"""
-fout_stem = join(path_out, cfg_name.split('.ini')[0])
+fout_stem = join(cfg['path_out'], cfg_name.split('.ini')[0])
 csvkwargs = dict(sep='\t', float_format='%10.5f')
 fout_galaxies = fout_stem + '_gal.txt'
 fout_cross_sample = fout_stem + '_sample.txt'

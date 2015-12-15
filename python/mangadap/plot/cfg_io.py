@@ -119,6 +119,8 @@ def read_config(filename):
                                  index=d['columns'])
             elif section == 'series_list_float':
                 d[k] = pd.Series(tolist_of_lists(string), index=d['columns'])
+            elif section == 'list_list_str':
+                d[k] = tolist_of_lists(string)
     return d
 
 def make_kws(d):
