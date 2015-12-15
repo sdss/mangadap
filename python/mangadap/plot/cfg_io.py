@@ -24,6 +24,7 @@ def read_plottypes_config(filename):
         list
     """
     ptypes = read_config(filename)
+    print(filename)
     plottypes = ptypes['plottypes']
     if isinstance(plottypes, str):
         plottypes = [plottypes]

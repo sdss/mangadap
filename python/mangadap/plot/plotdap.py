@@ -645,7 +645,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
               main=True, log_colorbar=False,
               make_single=True, make_multi=True, make_binnum=None,
               savefig_single=True, savefig_multi=True, savefig_binnum=None,
-              overwrite=False):
+              savedir=None, overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
 
     Args:
@@ -678,6 +678,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         savefig_multi (bool): Save multi-panel plot. Default is True.
         savefig_binnum (list): Save single panel bin number plots. Default is
             None.
+        savedir (str): Directory to save plots in. If None, then default to data
+            directory. Default is None.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
     # Adjust arguments
@@ -732,7 +734,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                 pname = '_'.join([pname_base, col])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
                               category='maps', mg_kws=mg_kws, main=main,
-                              mkdir=True, overwrite=overwrite)
+                              mkdir=True, savedir=savedir, overwrite=overwrite)
             if main:
                 plt.close(fig)
 
@@ -745,7 +747,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                 pname = '_'.join([pname_base, col, 'binnum'])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
                               category='maps', mg_kws=mg_kws, ext='pdf',
-                              main=main, mkdir=True, overwrite=overwrite)
+                              main=main, mkdir=True, savedir=savedir,
+                              overwrite=overwrite)
             if main:
                 plt.close(fig)
 
@@ -765,7 +768,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         if savefig_multi:
             util.saveplot(name=pname_base, path_data=dapdata.path_data,
                           category='maps', mg_kws=mg_kws, main=main, mkdir=True,
-                          overwrite=overwrite)
+                          savedir=savedir, overwrite=overwrite)
         if main:
             plt.close(fig)
 
@@ -977,7 +980,7 @@ def plot_spectrum(dapdata, bin=0,
                   fits_to_plot=('smod', 'fullfit_fb', 'fullfit_ew'),
                   rest_frame=True, xlim=None, ylim=None, stfit_masks=False,
                   lw=1, figsize=(20, 12), mg_kws=None, main=True, savefig=True,
-                  overwrite=False):
+                  savedir=None, overwrite=False):
     """Plot spectrum and residuals.
 
     Args:
@@ -999,6 +1002,8 @@ def plot_spectrum(dapdata, bin=0,
         main (bool): True is running as script. False is running interactively.
             Default is True.
         savefig (bool): Save plot. Default is True.
+        savedir (str): Directory to save plots in. If None, then default to data
+            directory. Default is None.
         overwrite (bool): Overwrite plot if it exists. Default is False.
 
     Returns:
@@ -1070,7 +1075,7 @@ def plot_spectrum(dapdata, bin=0,
         mg_kws['bin'] = bin
         util.saveplot(name='spec', path_data=dapdata.path_data,
                       category='spectra', mg_kws=mg_kws, main=main, mkdir=True,
-                      overwrite=overwrite)
+                      savedir=savedir, overwrite=overwrite)
 
     return fig
 
@@ -1078,7 +1083,7 @@ def plot_spectrum(dapdata, bin=0,
 def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
                         mg_kws=None, lw=2, main=True, make_single=True,
                         make_multi=True, savefig_single=True,
-                        savefig_multi=True, overwrite=False):
+                        savefig_multi=True, savedir=None, overwrite=False):
     """Make single panel and multi-panel emission line spectra plots.
 
     Args:
@@ -1095,6 +1100,8 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
         make_multi (bool): Make multi-panel plot. Default is True.
         savefig_single (bool): Save single panel plots. Default is True.
         savefig_multi (bool): Save multi-panel plot. Default is True.
+        savedir (str): Directory to save plots in. If None, then default to data
+            directory. Default is None.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
     bins = convert_bins_from_string_to_list(dapdata, bins)
@@ -1107,7 +1114,8 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
             if savefig_multi:
                 util.saveplot(name='multi', path_data=dapdata.path_data,
                               category='emline_spectra', mg_kws=mg_kws,
-                              main=main, mkdir=True, overwrite=overwrite)
+                              main=main, mkdir=True, savedir=savedir,
+                              overwrite=overwrite)
             if main:
                 plt.close(fig)
 
@@ -1119,7 +1127,8 @@ def plot_emline_spectra(dapdata, bins=(0), pnames=None, win_cen=None,
                 if savefig_single:
                     util.saveplot(name=pname, path_data=dapdata.path_data,
                                   category='emline_spectra', mg_kws=mg_kws,
-                                  main=main, mkdir=True, overwrite=overwrite)
+                                  main=main, mkdir=True, savedir=savedir,
+                                  overwrite=overwrite)
                 if main:
                     plt.close(fig)
 
@@ -1353,8 +1362,14 @@ def plot_gradient(dapdata, values, errors, column, fig=None, ax=None,
 def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
                    leg_kws=None, titles=None, labels=None, figsize=(10, 8),
                    main=True, make_single=True, make_multi=True,
-                   savefig_single=True, savefig_multi=True, overwrite=False):
-    """wrapper around plot_gradient and plot_gradient_multi"""
+                   savefig_single=True, savefig_multi=True, savedir=None,
+                   overwrite=False):
+    """wrapper around plot_gradient and plot_gradient_multi
+
+    Args:
+        savedir (str): Directory to save plots in. If None, then default to data
+            directory. Default is None.
+    """
 
     if make_multi:
         fig = plot_gradient_multi(dapdata, values, errors, columns,
@@ -1363,7 +1378,7 @@ def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
         if savefig_multi:
             util.saveplot(name=plotname, path_data=dapdata.path_data,
                           category='gradients', mg_kws=mg_kws, main=main,
-                          mkdir=True, overwrite=overwrite)
+                          mkdir=True, savedir=savedir, overwrite=overwrite)
         if main:
             plt.close(fig)
 
@@ -1376,7 +1391,7 @@ def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
                 pname = '_'.join([plotname, column])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
                               category='gradients', mg_kws=mg_kws, main=main,
-                              mkdir=True, overwrite=overwrite)
+                              mkdir=True, savedir=savedir, overwrite=overwrite)
             if main:
                 plt.close(fig)
 

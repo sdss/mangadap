@@ -20,7 +20,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
-from sdss_access.path import base_path
+from sdss_access.path.path import BasePath
 
 def fitsrec_to_dataframe(recarr, forceswap=False):
     """Convert astropy FITS_rec to pandas DataFrame.
@@ -168,7 +168,8 @@ def none_to_empty_dict(x):
         x = {}
     return x
 
-def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
+def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False,
+                savedir=None):
     """Make plot output path and file name.
 
     Args:
@@ -193,7 +194,14 @@ def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
     elif category == 'emline_spectra':
         filename = stem + '_spec-{bin:0>4}_emline_{}.png'.format(name, **mg_kws)
         category = 'spectra'
-    path_category = join(path_data, 'plots', category)
+    
+    if savedir is None:
+        savedir = path_data
+    else:
+        savedir = join(savedir, '{plate}'.format(**mg_kws),
+                       '{ifudesign}'.format(**mg_kws))
+
+    path_category = join(savedir, 'plots', category)
     fullpath = join(path_category, filename)
     if mkdir:
         if not os.path.isdir(path_category):
@@ -202,7 +210,7 @@ def output_path(name, path_data, category, mg_kws, ext='png', mkdir=False):
     return fullpath
 
 def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, main=True,
-             mkdir=False, overwrite=False):
+             mkdir=False, savedir=None, overwrite=False):
     """Save a figure.
 
     Args:
@@ -215,10 +223,12 @@ def saveplot(name, path_data, category, mg_kws, ext='png', dpi=200, main=True,
         main (bool): True is running as script. False is running interactively.
             Default is True.
         mkdir (bool): Make directory if it does not exist. Default is False.
+        savedir (str): Directory to save plots in. If None, then default to data
+            directory. Default is None.
         overwrite (bool): Overwrite plot if it exists. Default is False.
     """
     path = output_path(name=name, path_data=path_data, category=category,
-                       mg_kws=mg_kws, ext=ext, mkdir=mkdir)
+                       mg_kws=mg_kws, ext=ext, mkdir=mkdir, savedir=savedir)
     if overwrite or not os.path.isfile(path):
         kws = {}
         if ext == 'png':
@@ -360,7 +370,7 @@ def read_drpall(paths_cfg):
         astropy fitsrec: DRPall table.
     """
     try:
-        bp = base_path(paths_cfg)
+        bp = BasePath(paths_cfg)
     except (NameError, TypeError):
         drpall_file = join(os.getenv('MANGA_SPECTRO_REDUX'),
                            os.getenv('MANGADRP_VER'),
@@ -418,7 +428,7 @@ def make_data_path(paths_cfg, file_kws):
         str: Path to data.
     """
     try:
-        bp = base_path(paths_cfg)
+        bp = BasePath(paths_cfg)
     except (NameError, TypeError):
         return join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                     os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
