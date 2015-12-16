@@ -1370,7 +1370,6 @@ def plot_gradients(dapdata, values, errors, columns, plotname=None, mg_kws=None,
         savedir (str): Directory to save plots in. If None, then default to data
             directory. Default is None.
     """
-
     if make_multi:
         fig = plot_gradient_multi(dapdata, values, errors, columns,
                                   leg_kws=leg_kws, titles=titles, labels=labels,

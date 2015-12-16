@@ -658,6 +658,13 @@ class DAPAccess():
                 self.calc_CalII0p86()
             else:
                 self.sindx = sindx
+            # The following 2 lines were removed in r66634. They were re-added
+            # because referencing them from the plotting config file
+            # specind_maps.ini produced png files with "sindx.indx" in the file
+            # name, which could break file name parsing code because of the
+            # non-extension use of a period.
+            self.specind = self.sindx.indx 
+            self.specinderr = self.sindx.indxerr 
         else:
             self.sindx = None
 
