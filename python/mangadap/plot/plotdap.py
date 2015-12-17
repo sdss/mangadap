@@ -209,10 +209,24 @@ def _make_draw_colorbar_kws(image, cb_kws):
     """
     keys = ('cbrange', 'sigclip', 'symmetric')
     cbrange_kws = {k: cb_kws.pop(k, None) for k in keys}
-    cb_kws['cbrange'] = _set_cbrange(image, **cbrange_kws)
+    cbrange_tmp = _set_cbrange(image, **cbrange_kws)
+    # let MaxNLocator come up with good tick locations
+    try:
+        n_ticks = cb_kws.pop('n_ticks', None)
+        ticks = MaxNLocator(n_ticks).tick_values(*cbrange_tmp)
+    except AttributeError:
+        print('AttributeError: MaxNLocator instance has no attribute'
+              ' "tick_values" ')
+    else:
+        cb_kws['ticks'] = ticks
+        offset = (ticks[1] - ticks[0]) / 2.
+        cbrange_tmp = [ticks[0] - offset, ticks[-1] + offset]
+    cb_kws['cbrange'] = cbrange_tmp
     return cb_kws
 
-def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
+#def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
+#                  label_kws=None, tick_params_kws=None):
+def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
                   label_kws=None, tick_params_kws=None):
     """Make colorbar.
 
@@ -222,7 +236,7 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
         axloc (list): Specify (left, bottom, width, height) of colorbar axis.
             Defaults to None.
         cbrange (list): Colorbar min and max.
-        n_ticks (int): Number of ticks on colorbar.
+        #### n_ticks (int): Number of ticks on colorbar.
         label_kws (dict): Keyword args to set colorbar label. Default is None.
         tick_params_kws (dict): Keyword args to set colorbar tick parameters.
             Default is None.
@@ -238,14 +252,18 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
     else:
         cax = None
 
-    try:
-        ticks = MaxNLocator(n_ticks).tick_values(*cbrange)
-    except AttributeError:
-        print('AttributeError: MaxNLocator instance has no attribute'
-              ' "tick_values" ')
-        cb = fig.colorbar(mappable, cax)
-    else:
-        cb = fig.colorbar(mappable, cax, ticks=ticks)
+    # try:
+    #     ticks = MaxNLocator(n_ticks).tick_values(*cbrange)
+    #     print('cbrange', cbrange)
+    #     print('ticks:', ticks)
+    # except AttributeError:
+    #     print('AttributeError: MaxNLocator instance has no attribute'
+    #           ' "tick_values" ')
+    #     cb = fig.colorbar(mappable, cax)
+    # else:
+    #     cb = fig.colorbar(mappable, cax, ticks=ticks)
+
+    cb = fig.colorbar(mappable, cax, ticks=ticks)
 
     if label_kws['label'] is not None:
         cb.set_label(**label_kws)
