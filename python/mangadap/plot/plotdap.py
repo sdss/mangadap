@@ -197,12 +197,14 @@ def _set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
 
     return cbr
 
-def _make_draw_colorbar_kws(image, cb_kws):
+def _make_draw_colorbar_kws(image, cb_kws, log_colorbar):
     """Make keyword args dictionary to pass to draw_colorbar.
 
     Args:
         image (masked array): Image to display.
         cb_kws (dict): Keyword args to set and draw colorbar.
+        log_colorbar (bool): If true, set minimum value to smallest non-negative
+            value.
 
     Returns:
         dict: draw_colorbar keyword args
@@ -210,10 +212,10 @@ def _make_draw_colorbar_kws(image, cb_kws):
     keys = ('cbrange', 'sigclip', 'symmetric')
     cbrange_kws = {k: cb_kws.pop(k, None) for k in keys}
     cbrange_tmp = _set_cbrange(image, **cbrange_kws)
+
     # let MaxNLocator come up with good tick locations
     try:
-        n_ticks = cb_kws.pop('n_ticks', None)
-        ticks = MaxNLocator(n_ticks).tick_values(*cbrange_tmp)
+        ticks = MaxNLocator(cb_kws['n_ticks']).tick_values(*cbrange_tmp)
     except AttributeError:
         print('AttributeError: MaxNLocator instance has no attribute'
               ' "tick_values" ')
@@ -221,13 +223,15 @@ def _make_draw_colorbar_kws(image, cb_kws):
         cb_kws['ticks'] = ticks
         offset = (ticks[1] - ticks[0]) / 2.
         cbrange_tmp = [ticks[0] - offset, ticks[-1] + offset]
+
+    if log_colorbar:
+        cbrange_tmp[0] = np.max((cbrange_tmp[0], np.min(image[image > 0.])))
+
     cb_kws['cbrange'] = cbrange_tmp
     return cb_kws
 
-#def draw_colorbar(fig, mappable, axloc=None, cbrange=None, n_ticks=7,
-#                  label_kws=None, tick_params_kws=None):
 def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
-                  label_kws=None, tick_params_kws=None):
+                  label_kws=None, tick_params_kws=None, **extras):
     """Make colorbar.
 
     Args:
@@ -236,7 +240,7 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
         axloc (list): Specify (left, bottom, width, height) of colorbar axis.
             Defaults to None.
         cbrange (list): Colorbar min and max.
-        #### n_ticks (int): Number of ticks on colorbar.
+        ticks (list): Ticks on colorbar.
         label_kws (dict): Keyword args to set colorbar label. Default is None.
         tick_params_kws (dict): Keyword args to set colorbar tick parameters.
             Default is None.
@@ -251,17 +255,6 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
         cax = fig.add_axes(axloc)
     else:
         cax = None
-
-    # try:
-    #     ticks = MaxNLocator(n_ticks).tick_values(*cbrange)
-    #     print('cbrange', cbrange)
-    #     print('ticks:', ticks)
-    # except AttributeError:
-    #     print('AttributeError: MaxNLocator instance has no attribute'
-    #           ' "tick_values" ')
-    #     cb = fig.colorbar(mappable, cax)
-    # else:
-    #     cb = fig.colorbar(mappable, cax, ticks=ticks)
 
     cb = fig.colorbar(mappable, cax, ticks=ticks)
 
@@ -375,6 +368,7 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
         cb_kws_out['cbrange'] = cb_kws_out['cbrange'][column]
 
     if log_colorbar:
+        # cb_kws_out['cbrange'] = np.max((cb_kws_out['cbrange'][0], 1e-6))
         imshow_kws['norm'] = LogNorm()
 
     return title_kws, imshow_kws, cb_kws_out
@@ -547,7 +541,7 @@ def _set_bin_num_fontsize(fontsize, number, nbin):
 def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
              dapdata=None, fig_kws=None, ax_kws=None, title_kws=None,
              patch_kws=None, imshow_kws=None, cb_kws=None, binnum_kws=None,
-             bindot_args=()):
+             log_colorbar=False, bindot_args=()):
     """Make single panel map or one panel of multi-panel map plot.
 
     Args:
@@ -587,7 +581,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     if title_kws['label'] is not None:
         ax.set_title(**title_kws)
 
-    drawcb_kws = _make_draw_colorbar_kws(image, cb_kws)
+    drawcb_kws = _make_draw_colorbar_kws(image, cb_kws, log_colorbar)
     imshow_kws = _set_vmin_vmax(imshow_kws, drawcb_kws['cbrange'])
 
     # Plot regions with no measurement as hatched
@@ -744,7 +738,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                                   log_colorbar=log_colorbar)
         sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
-                      imshow_kws=iw, cb_kws=cb)
+                      imshow_kws=iw, cb_kws=cb, log_colorbar=log_colorbar)
         # Make single panel maps
         if make_single:
             fig, ax = plot_map(im, extent, **sp_kws)
@@ -777,7 +771,8 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                                            log_colorbar=log_colorbar)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
                                   ax_kws=ax_kws, title_kws=t_kws,
-                                  imshow_kws=i_kws, cb_kws=c_kws))
+                                  imshow_kws=i_kws, cb_kws=c_kws,
+                                  log_colorbar=log_colorbar))
 
     # Make multi-panel maps
     if make_multi:
