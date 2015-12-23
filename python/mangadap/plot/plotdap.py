@@ -87,6 +87,12 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
     xpos_re = _reorient(xpos)
     ypos_re = _reorient(ypos)
     xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
+    print()
+    print('xpos', xpos.shape)
+    print('binid', binid.shape)
+    print('im', im.shape)
+    print('xy_nomeasure', len(xy_nomeasure), len(xy_nomeasure[0]), len(xy_nomeasure[1]))
+    print()
     return image, xy_nomeasure
 
 def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
@@ -197,14 +203,13 @@ def _set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
 
     return cbr
 
-def _make_draw_colorbar_kws(image, cb_kws, log_colorbar):
+def _make_draw_colorbar_kws(column, image, cb_kws):
     """Make keyword args dictionary to pass to draw_colorbar.
 
     Args:
+        column (str): Column name.
         image (masked array): Image to display.
         cb_kws (dict): Keyword args to set and draw colorbar.
-        log_colorbar (bool): If true, set minimum value to smallest non-negative
-            value.
 
     Returns:
         dict: draw_colorbar keyword args
@@ -213,18 +218,22 @@ def _make_draw_colorbar_kws(image, cb_kws, log_colorbar):
     cbrange_kws = {k: cb_kws.pop(k, None) for k in keys}
     cbrange_tmp = _set_cbrange(image, **cbrange_kws)
 
-    # let MaxNLocator come up with good tick locations
+    # Move this section of code into _set_cbrange
     try:
-        ticks = MaxNLocator(cb_kws['n_ticks']).tick_values(*cbrange_tmp)
+        ticks = MaxNLocator(cb_kws['n_ticks'][column]).tick_values(*cbrange_tmp)
     except AttributeError:
         print('AttributeError: MaxNLocator instance has no attribute'
               ' "tick_values" ')
     else:
+        # only apply this offset if discrete colorbar
+        if cb_kws['n_ticks'][column] == cb_kws['n_levels'][column]:
+            offset = (ticks[1] - ticks[0]) / 2.
+            cbrange_tmp = [ticks[0] - offset, ticks[-1] + offset]
+            if cb_kws['tick_everyother'][column]:
+                ticks = ticks[::2]
         cb_kws['ticks'] = ticks
-        offset = (ticks[1] - ticks[0]) / 2.
-        cbrange_tmp = [ticks[0] - offset, ticks[-1] + offset]
 
-    if log_colorbar:
+    if cb_kws['log_colorbar'][column]:
         cbrange_tmp[0] = np.max((cbrange_tmp[0], np.min(image[image > 0.])))
 
     cb_kws['cbrange'] = cbrange_tmp
@@ -258,7 +267,7 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
 
     cb = fig.colorbar(mappable, cax, ticks=ticks)
 
-    if label_kws['label'] is not None:
+    if label_kws.get('label', None) is not None:
         cb.set_label(**label_kws)
 
     if tick_params_kws is not None:
@@ -266,13 +275,12 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
 
     return fig, cb
 
-def _set_cmaps(cmaps, n_plots, n_levels):
+def _set_cmaps(cmaps, n_plots, cb_kws):
     """Set the colormaps.
 
     Args:
         cmaps (list): Matplotlib colormap names.
         n_plots (int): Number of plots.
-        n_levels: int or list of number of levels for colorbar.
 
     Returns:
         tuple: colormap, reversed colormap
@@ -292,12 +300,16 @@ def _set_cmaps(cmaps, n_plots, n_levels):
     elif len(cmaps) == 1:
         cmaps = [_string_to_cmap(cmaps[0]) for _ in range(n_plots)]
 
-    if isinstance(n_levels, int):
-        n_levels = [n_levels for _ in range(n_plots)]
-
-    if n_levels is not None:
-        cmaps = [util.cmap_discretize(it, n_level)
-                 for it, n_level in zip(cmaps, n_levels)]
+    # Discretize colormaps
+    if 'n_levels' in cb_kws:
+        cmaps_tmp = []
+        for it, n_level in zip(cmaps, cb_kws['n_levels']):
+            # if n_level == 0, use continuous colorbar
+            if n_level != 0:
+                cmaps_tmp.append(util.cmap_discretize(it, n_level))
+            else:
+                cmaps_tmp.append(it)
+        cmaps = cmaps_tmp
 
     return cmaps
 
@@ -333,7 +345,7 @@ def _set_map_background_color(spaxel_size, color='#A8A8A8'):
                      linewidth=0, fill=True, fc=color, ec='w', zorder=10)
     return ax_kws, patch_kws
 
-def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
+def _set_map_par(column, cmap, titles, cblabels, cb_kws,
                  titlefontsize=28):
     """Set default parameters for a single panel plot.
 
@@ -342,8 +354,7 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
         cmap (list): Colormap.
         titles (str): Plot titles.
         cblabels (str): Color bar labels.
-        cb_kws_in (dict): Color bar keyword args.
-        log_colobar (bool): Use logarithmic color bar.
+        cb_kws (dict): Color bar keyword args.
         titlefontsize (int): Title font size. Default is 28.
 
     Returns:
@@ -353,8 +364,9 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
     title_kws = dict(fontsize=titlefontsize, label=titles[column])
     cb_kws_default = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
                           cbrange=None, sigclip=3, symmetric=False,
-                          label_kws=dict(label=cblabels[column], size=20),
-                          tick_params_kws=dict(labelsize=20))
+                          log_colorbar=False,
+                          label_kws=dict(label=cblabels[column], size=24),
+                          tick_params_kws=dict(labelsize=24))
 
     cb_kws_out = copy.deepcopy(cb_kws)
     for k, v in cb_kws_default.items():
@@ -367,8 +379,11 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws, log_colorbar,
     if isinstance(cb_kws_out['cbrange'], pd.Series):
         cb_kws_out['cbrange'] = cb_kws_out['cbrange'][column]
 
-    if log_colorbar:
-        # cb_kws_out['cbrange'] = np.max((cb_kws_out['cbrange'][0], 1e-6))
+    # if 'n_ticks' in cb_kws:
+    #     if isinstance(cb_kws['n_ticks'], pd.Series):
+    #         cb_kws_out['n_ticks'] = cb_kws['n_ticks'][column]
+
+    if cb_kws_out['log_colorbar'][column]:
         imshow_kws['norm'] = LogNorm()
 
     return title_kws, imshow_kws, cb_kws_out
@@ -538,10 +553,10 @@ def _set_bin_num_fontsize(fontsize, number, nbin):
         fontsize_out = fontsize + 2
     return fontsize_out
 
-def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
+def plot_map(image, extent, xy_nomeasure=None, column=None, fig=None, ax=None,
              dapdata=None, fig_kws=None, ax_kws=None, title_kws=None,
              patch_kws=None, imshow_kws=None, cb_kws=None, binnum_kws=None,
-             log_colorbar=False, bindot_args=()):
+             bindot_args=()):
     """Make single panel map or one panel of multi-panel map plot.
 
     Args:
@@ -549,6 +564,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
         extent (array): Minimum and maximum x- and y-values.
         xy_nomeasure (tuple): x- and y-coordinates of spaxels without
             measurements.
+        column (str): Column name. Default is None.
         fig: Matplotlib plt.figure object. Use if creating subplot of a
             multi-panel plot. Default is None.
         ax: Matplotlib plt.figure axis object. Use if creating subplot of a
@@ -581,7 +597,7 @@ def plot_map(image, extent, xy_nomeasure=None, fig=None, ax=None,
     if title_kws['label'] is not None:
         ax.set_title(**title_kws)
 
-    drawcb_kws = _make_draw_colorbar_kws(image, cb_kws, log_colorbar)
+    drawcb_kws = _make_draw_colorbar_kws(column, image, cb_kws)
     imshow_kws = _set_vmin_vmax(imshow_kws, drawcb_kws['cbrange'])
 
     # Plot regions with no measurement as hatched
@@ -653,9 +669,8 @@ def plot_map_multi(all_panel_kws, fig_kws=None, patch_kws=None, mg_kws=None):
 
 def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
               val_no_measure=0, snr_thresh=1, mg_kws=None, titles=None,
-              cblabels=None, cmaps=None, cmap_levels=None, cb_kws=None,
-              main=True, log_colorbar=False,
-              make_single=True, make_multi=True, make_binnum=None,
+              cblabels=None, cmaps=None, cb_kws=None,
+              main=True, make_single=True, make_multi=True, make_binnum=None,
               savefig_single=True, savefig_multi=True, savefig_binnum=None,
               savedir=None, overwrite=False):
     """Make single panel plots and multi-panel plot for set of measurements.
@@ -677,8 +692,6 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         titles (list): Plot title for each map. Default is None.
         cblabels (list): Colorbar labels. Default is None.
         cmaps (list): Colormaps. Default is None.
-        cmap_levels (list): Number of discrete levels for colormaps. Default is
-            None.
         cb_kws (dict): Color bar keyword args. Default is None.
         main (bool): True is running as script. False is running interactively.
             Default is True.
@@ -704,7 +717,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws = util.none_to_empty_dict(cb_kws)
-    cmaps = _set_cmaps(cmaps, len(columns), cmap_levels)
+    cmaps = _set_cmaps(cmaps, len(columns), cb_kws)
     # cb_kws['cmaps'] = set_cmaps(cb_kws['cmaps'], len(columns))
     if make_binnum is None:
         make_binnum = [False for _ in columns]
@@ -734,11 +747,10 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     all_panel_kws = []
     for i, (im, xy, col, cmap) in enumerate(zip(ims, xys, columns, cmaps)):
         tt, iw, cb = _set_map_par(column=col, cmap=cmap, titles=titles,
-                                  cblabels=cblabels, cb_kws=cb_kws,
-                                  log_colorbar=log_colorbar)
-        sp_kws = dict(xy_nomeasure=xy, ax_kws=ax_kws, title_kws=tt,
+                                  cblabels=cblabels, cb_kws=cb_kws)
+        sp_kws = dict(xy_nomeasure=xy, column=col, ax_kws=ax_kws, title_kws=tt,
                       fig_kws=dict(figsize=(10, 8)), patch_kws=patch_kws,
-                      imshow_kws=iw, cb_kws=cb, log_colorbar=log_colorbar)
+                      imshow_kws=iw, cb_kws=cb)
         # Make single panel maps
         if make_single:
             fig, ax = plot_map(im, extent, **sp_kws)
@@ -767,12 +779,10 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         # create dictionaries for multi-panel maps
         t_kws, i_kws, c_kws = _set_map_par(column=col, cmap=cmap, titles=titles,
                                            cblabels=cblabels,
-                                           titlefontsize=20, cb_kws=cb_kws,
-                                           log_colorbar=log_colorbar)
+                                           titlefontsize=20, cb_kws=cb_kws)
         all_panel_kws.append(dict(image=im, extent=extent, xy_nomeasure=xy,
-                                  ax_kws=ax_kws, title_kws=t_kws,
-                                  imshow_kws=i_kws, cb_kws=c_kws,
-                                  log_colorbar=log_colorbar))
+                                  column=col, ax_kws=ax_kws, title_kws=t_kws,
+                                  imshow_kws=i_kws, cb_kws=c_kws))
 
     # Make multi-panel maps
     if make_multi:
