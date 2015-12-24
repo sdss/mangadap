@@ -15,6 +15,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import LogLocator
+from matplotlib.ticker import LogFormatter
+from matplotlib.ticker import AutoMinorLocator
+from matplotlib import ticker
 from matplotlib.colors import LogNorm
 
 from astropy.stats import sigma_clip
@@ -87,12 +91,6 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
     xpos_re = _reorient(xpos)
     ypos_re = _reorient(ypos)
     xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
-    print()
-    print('xpos', xpos.shape)
-    print('binid', binid.shape)
-    print('im', im.shape)
-    print('xy_nomeasure', len(xy_nomeasure), len(xy_nomeasure[0]), len(xy_nomeasure[1]))
-    print()
     return image, xy_nomeasure
 
 def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
@@ -134,6 +132,22 @@ def _make_mask_no_data(data, mask_no_measurement):
     no_data[mask_no_measurement] = True
     return no_data
 
+def tick_format(value):
+    """
+    get the value and returns the value as:
+       integer: [0,99]
+       1 digit float: [0.1, 0.99]
+       n*10^m: otherwise
+    """
+    exp = np.floor(np.log10(value))
+    base = value / 10**exp
+    if exp == 0 or exp == 1:   
+        return '{0:d}'.format(int(value))
+    if exp == -1:
+        return '{0:.1f}'.format(value)
+    else:
+        return '{0:d}e{1:d}'.format(int(base), int(exp))
+
 def _set_vmin_vmax(d, cbrange):
     """Set minimum and maximum values of the color map."""
     if 'vmin' not in d.keys():
@@ -159,6 +173,21 @@ def _cbrange_sigclip(image, sigma):
         cbrange = [image.min(), image.max()]
     return cbrange
 
+def _cbrange_percentile_clip(image, lower, upper):
+    """Clip colorbar range according to percentiles.
+
+    Args:
+        image (masked array): Image.
+        lower (float): Lower percentile boundary.
+        upper (float): Upper percentile boundary.
+
+    Returns:
+        list: Colorbar range.
+    """
+    cblow = np.percentile(image.data[~image.mask], lower)
+    cbup = np.percentile(image.data[~image.mask], upper)
+    return [cblow, cbup]
+
 def _cbrange_user_defined(cbrange, cbrange_user):
     """Set user-specified colorbar range.
 
@@ -175,22 +204,29 @@ def _cbrange_user_defined(cbrange, cbrange_user):
             cbrange[i] = cbrange_user[i]
     return cbrange
 
-def _set_cbrange(image, cbrange=None, sigclip=None, symmetric=False):
+def _set_cbrange(image, column, cbrange=None, sigclip=None,
+                 percentile_clip=None, symmetric=False, **extras):
     """Set colorbar range.
 
     Args:
         image (masked array): Image.
+        column (str): Column name.
         cbrange (list): User-specified colorbar range. Default is None.
         sigclip (float): Sigma value for sigma clipping. If None, then do not
             clip. Default is None.
+        percentile_clip (list): Percentile values for clipping. If None, then do
+            not clip. Default is None.
         symmetric (boolean): If True, make colorbar symmetric around zero.
             Default is False.
 
     Returns:
         list: Colorbar range.
     """
+    # change sigclip to a Series to allow for different sigma clipping levels
     if sigclip is not None:
         cbr = _cbrange_sigclip(image, sigclip)
+    elif percentile_clip is not None:
+        cbr = _cbrange_percentile_clip(image, *percentile_clip[column])
     else:
         cbr = [image.min(), image.max()]
 
@@ -214,9 +250,7 @@ def _make_draw_colorbar_kws(column, image, cb_kws):
     Returns:
         dict: draw_colorbar keyword args
     """
-    keys = ('cbrange', 'sigclip', 'symmetric')
-    cbrange_kws = {k: cb_kws.pop(k, None) for k in keys}
-    cbrange_tmp = _set_cbrange(image, **cbrange_kws)
+    cbrange_tmp = _set_cbrange(image, column, **cb_kws)
 
     # Move this section of code into _set_cbrange
     try:
@@ -233,19 +267,21 @@ def _make_draw_colorbar_kws(column, image, cb_kws):
                 ticks = ticks[::2]
         cb_kws['ticks'] = ticks
 
-    if cb_kws['log_colorbar'][column]:
+    if cb_kws.get('log_colorbar', {column: False})[column]:
         cbrange_tmp[0] = np.max((cbrange_tmp[0], np.min(image[image > 0.])))
 
     cb_kws['cbrange'] = cbrange_tmp
     return cb_kws
 
-def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
-                  label_kws=None, tick_params_kws=None, **extras):
+def draw_colorbar(fig, mappable, column=None, axloc=None, cbrange=None,
+                  ticks=None, label_kws=None, tick_params_kws=None,
+                  log_colorbar=None, **extras):
     """Make colorbar.
 
     Args:
         fig: plt.figure object.
         mappable: Plotting element to map to colorbar.
+        column (str): Column name. Default is None.
         axloc (list): Specify (left, bottom, width, height) of colorbar axis.
             Defaults to None.
         cbrange (list): Colorbar min and max.
@@ -265,10 +301,25 @@ def draw_colorbar(fig, mappable, axloc=None, cbrange=None, ticks=None,
     else:
         cax = None
 
-    cb = fig.colorbar(mappable, cax, ticks=ticks)
+    # kws = {}
+    # if (log_colorbar is not None) and (log_colorbar[column]):
+    #     kws['format'] = '%s'
+
+    cb = fig.colorbar(mappable, cax, ticks=ticks)#, **kws)
 
     if label_kws.get('label', None) is not None:
         cb.set_label(**label_kws)
+
+    if (log_colorbar is not None) and (log_colorbar[column]):
+        subs = [1., 2., 3., 6.]
+        bottom = np.floor(np.log10(cbrange[0]))
+        top = np.ceil(np.log10(cbrange[1]))
+        decs = np.arange(bottom, top+1)
+        tmp = np.array([sub * 10.**dec for dec in decs for sub in subs])
+        ticks = tmp[np.logical_and((tmp >= cbrange[0]), (tmp <= cbrange[1]))]
+        cb.set_ticks(ticks)
+        cb.set_ticklabels([tick_format(tick) for tick in ticks])
+
 
     if tick_params_kws is not None:
         cb.ax.tick_params(**tick_params_kws)
@@ -363,8 +414,7 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws,
     imshow_kws = dict(cmap=cmap)
     title_kws = dict(fontsize=titlefontsize, label=titles[column])
     cb_kws_default = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                          cbrange=None, sigclip=3, symmetric=False,
-                          log_colorbar=False,
+                          cbrange=None, symmetric=False,
                           label_kws=dict(label=cblabels[column], size=24),
                           tick_params_kws=dict(labelsize=24))
 
@@ -383,7 +433,7 @@ def _set_map_par(column, cmap, titles, cblabels, cb_kws,
     #     if isinstance(cb_kws['n_ticks'], pd.Series):
     #         cb_kws_out['n_ticks'] = cb_kws['n_ticks'][column]
 
-    if cb_kws_out['log_colorbar'][column]:
+    if cb_kws_out.get('log_colorbar', {column: False})[column]:
         imshow_kws['norm'] = LogNorm()
 
     return title_kws, imshow_kws, cb_kws_out
@@ -607,7 +657,10 @@ def plot_map(image, extent, xy_nomeasure=None, column=None, fig=None, ax=None,
 
     p = ax.imshow(image, interpolation='none', extent=extent, **imshow_kws)
 
-    fig, cb = draw_colorbar(fig, p, **drawcb_kws)
+    fig, cb = draw_colorbar(fig, p, column, **drawcb_kws)
+
+    #cb.ax.yaxis.set_major_locator(LogLocator(base=10))
+    # cb.ax.yaxis.set_minor_locator(AutoMinorLocator(6))
 
     if binnum_kws:
         ax = _show_bin_num(dapdata=dapdata, ax=ax, imshow_kws=imshow_kws,

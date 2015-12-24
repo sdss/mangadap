@@ -34,7 +34,7 @@ else:
     # Utah MPL4 file
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     'full', '7443', '6102', 'CUBE_files_to_plot.txt')
+                     'full', '8082', '3702', 'CUBE_files_to_plot.txt')
     # Portsmouth MPL4 file
     # file_list = join(os.getenv('MANGA_SANDBOX_MPL4'),
     #                  os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
@@ -61,6 +61,29 @@ for file_kws in file_kws_all:
         plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
                            plot_kws=plot_kws)
 
+
+from mangadap.plot import plotdap
+reload(plotdap)
+cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+plot_kws = cfg_io.make_kws(cfg)
+plot_kws['main'] = hasattr(main, '__file__')
+plot_kws['columns'] = ['Ha6564']
+plot_kws['make_multi'] = False
+plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
+
+
+x = 10.**(MaxNLocator(7).tick_values(np.log10(0.1), np.log10(12.5)))
+
+LogLocator(base=10, subs=[1.0], numdecs=1, numticks=7).tick_values(3.1, 12.5)
+
+sub = [1.0, 2.0, 3.0, 6.0]
+ax.xaxis.set_ticks(np.arange(0.15, 12.5, 0.712123))
+ticker.LogLocator(subs=subs).tick_values(0.15, 12.5)
+
+"""
+The problem is that LogLocator is taking vmin and vmax to be 1e-2 and 1e3 and
+won't let me specify them.
+"""
 
 # MPL-4 file
 # python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/full/7443/3702/CUBE_files_to_plot.txt dapqa_plottypes.ini
