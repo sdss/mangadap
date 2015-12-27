@@ -42,6 +42,18 @@ def tolist(inp):
     else:
         return [inp]
 
+def string_to_new_dtype(string, func):
+    """Convert string from config file into a list of a new dtype.
+
+    Args:
+       string (str): String from config file to read in as a list.
+       func: dtype conversion function (e.g., int()).
+
+    Return:
+       list 
+    """
+    return [func(it) if it != 'None' else None for it in tolist(string)]
+
 def tolist_of_lists(inp):
     if '[' in inp:
         return list(ast.literal_eval(inp))
@@ -100,21 +112,21 @@ def read_config(filename):
             elif section == 'int':
                 d[k] = config.getint(section, k)
             elif section == 'list_int':
-                d[k] = [int(it) for it in tolist(string)]
+                d[k] = string_to_new_dtype(string, int)
             elif section == 'series_int':
-                d[k] = pd.Series([int(it) for it in tolist(string)],
+                d[k] = pd.Series(string_to_new_dtype(string, int),
                                  index=d['columns'])
             elif section == 'float':
                 d[k] = config.getfloat(section, k)
             elif section == 'list_float':
-                d[k] = [float(it) for it in tolist(string)]
+                d[k] = string_to_new_dtype(string, float)
             elif section == 'series_float':
-                d[k] = pd.Series([float(it) for it in tolist(string)],
+                d[k] = pd.Series(string_to_new_dtype(string, float),
                                  index=d['columns'])
             elif section == 'bool':
                 d[k] = config.getboolean(section, k)
             elif section == 'list_bool':
-                d[k] = [tobool(it) for it in tolist(string)]
+                d[k] = [it for it in tolist(string)]
             elif section == 'series_bool':
                 d[k] = pd.Series([tobool(it) for it in tolist(string)],
                                  index=d['columns'])
@@ -139,10 +151,10 @@ def make_kws(d):
             cb_kws_given = True
 
     if cb_kws_given:
-        d['cb_kws'] = {}
+        d['cb_kws_master'] = {}
         for k in list(d):
             if 'cb-' in k:
                 k_cb = k.split('cb-')[-1]
-                d['cb_kws'][k_cb] = d.pop(k)
+                d['cb_kws_master'][k_cb] = d.pop(k)
     return d
 

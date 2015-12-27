@@ -61,7 +61,7 @@ for file_kws in file_kws_all:
         plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
                            plot_kws=plot_kws)
 
-
+"""
 from mangadap.plot import plotdap
 reload(plotdap)
 cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
@@ -70,19 +70,33 @@ plot_kws['main'] = hasattr(main, '__file__')
 plot_kws['columns'] = ['Ha6564']
 plot_kws['make_multi'] = False
 plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
+"""
 
-
-x = 10.**(MaxNLocator(7).tick_values(np.log10(0.1), np.log10(12.5)))
-
-LogLocator(base=10, subs=[1.0], numdecs=1, numticks=7).tick_values(3.1, 12.5)
-
-sub = [1.0, 2.0, 3.0, 6.0]
-ax.xaxis.set_ticks(np.arange(0.15, 12.5, 0.712123))
-ticker.LogLocator(subs=subs).tick_values(0.15, 12.5)
 
 """
-The problem is that LogLocator is taking vmin and vmax to be 1e-2 and 1e3 and
-won't let me specify them.
+Rename cb_kws read in from config file as cb_kws_master and populate it with
+default args.
+
+cb_kws_master should contain the following:
+log_colorbar --> log_norm
+cblabels --> labels
+cmaps
+symmetric
+cbrange
+
+_set_map_par should not need cmap or cblabels as args because they will be
+passed in with cb_kws_master
+
+Only the titlefontsize differs between single and multi-panel plot calls to
+_set_map_par 
+
+"""
+
+"""
+1. clean up plotdap
+- svn commit, then delete commented material
+2. run for two plates
+3. email marvin list
 """
 
 # MPL-4 file
