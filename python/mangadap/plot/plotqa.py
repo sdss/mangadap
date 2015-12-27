@@ -61,42 +61,21 @@ for file_kws in file_kws_all:
         plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws,
                            plot_kws=plot_kws)
 
-"""
-from mangadap.plot import plotdap
-reload(plotdap)
-cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-plot_kws = cfg_io.make_kws(cfg)
-plot_kws['main'] = hasattr(main, '__file__')
-plot_kws['columns'] = ['Ha6564']
-plot_kws['make_multi'] = False
-plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
-"""
+
+# from mangadap.plot import plotdap
+# reload(plotdap)
+# cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+# plot_kws = cfg_io.make_kws(cfg)
+# plot_kws['main'] = hasattr(main, '__file__')
+# plot_kws['columns'] = ['Ha6564']
+# plot_kws['make_multi'] = False
+# plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
 
 
-"""
-Rename cb_kws read in from config file as cb_kws_master and populate it with
-default args.
-
-cb_kws_master should contain the following:
-log_colorbar --> log_norm
-cblabels --> labels
-cmaps
-symmetric
-cbrange
-
-_set_map_par should not need cmap or cblabels as args because they will be
-passed in with cb_kws_master
-
-Only the titlefontsize differs between single and multi-panel plot calls to
-_set_map_par 
 
 """
-
-"""
-1. clean up plotdap
-- svn commit, then delete commented material
-2. run for two plates
-3. email marvin list
+1. run for two plates
+2. email marvin list
 """
 
 # MPL-4 file

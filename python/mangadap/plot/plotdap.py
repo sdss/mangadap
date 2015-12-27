@@ -223,83 +223,71 @@ def _cbrange_user_defined(cbrange, cbrange_user):
             cbrange[i] = cbrange_user[i]
     return cbrange
 
-def _set_cbrange(image, column, cbrange=None, sigclip=None,
-                 percentile_clip=None, symmetric=False, **extras):
+def _set_cbrange(image, column, cb_kws):
     """Set colorbar range.
 
     Args:
         image (masked array): Image.
         column (str): Column name.
-        cbrange (list): User-specified colorbar range. Default is None.
-        sigclip (float): Sigma value for sigma clipping. If None, then do not
-            clip. Default is None.
-        percentile_clip (list): Percentile values for clipping. If None, then do
-            not clip. Default is None.
-        symmetric (boolean): If True, make colorbar symmetric around zero.
-            Default is False.
+        cbrange (list): Colorbar kwargs.
 
     Returns:
         list: Colorbar range.
     """
-    # change sigclip to a Series to allow for different sigma clipping levels______
-    if sigclip is not None:
-        cbr = _cbrange_sigclip(image, sigclip)
-    elif percentile_clip is not None:
-        cbr = _cbrange_percentile_clip(image, *percentile_clip)
+    if cb_kws.get('sigclip', None) is not None:
+        cbr = _cbrange_sigclip(image, cb_kws['sigclip'])
+    elif cb_kws.get('percentile_clip', None) is not None:
+        cbr = _cbrange_percentile_clip(image, *cb_kws['percentile_clip'])
     else:
         cbr = [image.min(), image.max()]
+    
+    if cb_kws.get('cbrange', None) is not None:
+        cbr = _cbrange_user_defined(cbr, cb_kws['cbrange'])
 
-    if cbrange is not None:
-        cbr = _cbrange_user_defined(cbr, cbrange)
-
-    if symmetric:
+    if cb_kws['symmetric']:
         cb_max = np.max(np.abs(cbr))
         cbr = [-cb_max, cb_max]
 
-    # cbr, ticks = _set_cbticks(cbrange=cbr, n_ticks=n_ticks)
+    cbr, cb_kws['ticks'] = _set_cbticks(cbr, cb_kws)
 
-    # if cb_kws.get('log_colorbar', False):
-    #     cbrange_tmp[0] = np.max((cbrange_tmp[0], np.min(image[image > 0.])))
+    if cb_kws.get('log_colorbar', False):
+        cbr[0] = np.max((cbr[0], np.min(image[image > 0.])))
 
-    return cbr #, ticks
+    cb_kws['cbrange'] = cbr
 
+    return cb_kws
 
-# Get rid of this function and directly call _set_cbrange from plot_map
-def _make_draw_colorbar_kws(column, image, cb_kws):
-    """Make keyword args dictionary to pass to draw_colorbar.
+def _set_cbticks(cbrange, cb_kws):
+    """Set colorbar ticks.
+
+    Adjust colorbar range if using a discrete colorbar so that the ticks fall in
+    the middle of each level.
 
     Args:
-        column (str): Column name.
-        image (masked array): Image to display.
+        cbrange (list): Colorbar range.
         cb_kws (dict): Keyword args to set and draw colorbar.
 
-    Returns:
-        dict: draw_colorbar keyword args
+    Return:
+        tuple: colorbar range, colorbar tick numbers
     """
-    cbrange_tmp = _set_cbrange(image, column, **cb_kws)
-
-    # Move this section of code into _set_cbticks---------------------------------
-    try:
-        ticks = MaxNLocator(cb_kws['n_ticks']).tick_values(*cbrange_tmp)
-    except AttributeError:
-        print('AttributeError: MaxNLocator instance has no attribute'
-              ' "tick_values" ')
+    if cb_kws['log_colorbar']:
+        ticks = _log_colorbar_ticks(cbrange)
     else:
-        # if discrete colorbar, offset upper and lower cbrange so that ticks are
-        # in the center of each level
-        if cb_kws['n_levels'] is not None:
-            offset = (ticks[1] - ticks[0]) / 2.
-            cbrange_tmp = [ticks[0] - offset, ticks[-1] + offset]
-            if cb_kws.get('tick_everyother', False):
-                ticks = ticks[::2]
-        cb_kws['ticks'] = ticks
+        try:
+            ticks = MaxNLocator(cb_kws['n_ticks']).tick_values(*cbrange)
+        except AttributeError:
+            print('AttributeError: MaxNLocator instance has no attribute'
+                  ' "tick_values" ')
 
-    # Move into _set_cbrange -----------------------------------------------------
-    if cb_kws.get('log_colorbar', False):
-        cbrange_tmp[0] = np.max((cbrange_tmp[0], np.min(image[image > 0.])))
+    # if discrete colorbar, offset upper and lower cbrange so that ticks are in
+    # the center of each level
+    if cb_kws['n_levels'] is not None:
+        offset = (ticks[1] - ticks[0]) / 2.
+        cbrange = [ticks[0] - offset, ticks[-1] + offset]
+        if cb_kws.get('tick_everyother', False):
+            ticks = ticks[::2]
 
-    cb_kws['cbrange'] = cbrange_tmp
-    return cb_kws
+    return cbrange, ticks
 
 def draw_colorbar(fig, mappable, column=None, axloc=None, cbrange=None,
                   ticks=None, label_kws=None, tick_params_kws=None,
@@ -324,10 +312,6 @@ def draw_colorbar(fig, mappable, column=None, axloc=None, cbrange=None,
     label_kws = util.none_to_empty_dict(label_kws)
     tick_params_kws = util.none_to_empty_dict(tick_params_kws)
 
-    # move to _set_cbticks -----------------------------------------------------------
-    if log_colorbar:
-        ticks = _log_colorbar_ticks(cbrange)
-
     cax = (fig.add_axes(axloc) if axloc is not None else None)
     cb = fig.colorbar(mappable, cax, ticks=ticks)
     cb.ax.tick_params(**tick_params_kws)
@@ -335,49 +319,10 @@ def draw_colorbar(fig, mappable, column=None, axloc=None, cbrange=None,
     if label_kws.get('label', None) is not None:
         cb.set_label(**label_kws)
 
-    # leave here
     if log_colorbar:
         cb.set_ticklabels([_log_tick_format(tick) for tick in ticks])
 
     return fig, cb
-
-# def _set_cmaps(cb_kws_master):
-#     """Set the colormaps.
-# 
-#     Args:
-#         cb_kws_master (dict): Color bar keyword args.
-# 
-#     Returns:
-#         list
-#     """
-#     if (cmaps is not None) and (len(cmaps) not in [1, n_plots]):
-#         print('Invalid number of cmaps given. Using default cmap.')
-#         cmaps = None
-# 
-#     if cmaps is None:
-#         try:
-#             cmap, cmap_r = util.linear_Lab()
-#         except IOError:
-#             cmap = cm.Blues_r
-#         cmaps = [cmap for _ in range(n_plots)]
-#     elif len(cmaps) == n_plots:
-#         cmaps = [_string_to_cmap(it) for it in cmaps]
-#     elif len(cmaps) == 1:
-#         cmaps = [_string_to_cmap(cmaps[0]) for _ in range(n_plots)]
-# 
-#     # Discretize colormaps
-#     if 'n_levels' in cb_kws_master:
-#         cmaps_tmp = []
-#         for it, n_level in zip(cmaps, cb_kws_master['n_levels']):
-#             # Is there a better way of specifying continuous color bar than n_level=0?
-#             if n_level != 0:
-#                 cmaps_tmp.append(util.cmap_discretize(it, n_level))
-#             else:
-#                 cmaps_tmp.append(it)
-#         cmaps = cmaps_tmp
-# 
-#     return cmaps
-
 
 def _set_cmap(cm_name, n_levels=None):
     """Set the colormaps.
@@ -476,15 +421,12 @@ def _set_cb_kws(column, cb_kws_master):
     Returns:
         dict
     """
-    cb_kws_default = dict(axloc=[0.82, 0.1, 0.02, 5/6.],
-                          cbrange=None, symmetric=False, cmap=None,
-                          n_levels=None,
-                          # label_kws=dict(label=cblabels[column], size=24),
-                          label_kws=dict(label=cb_kws_master['label'][column],
-                                         size=24),
+    cb_kws_default = dict(axloc=[0.82, 0.1, 0.02, 5/6.], cbrange=None,
+                          symmetric=False, cmap=None, n_levels=None,
+                          label_kws=dict(size=24),
                           tick_params_kws=dict(labelsize=24))
 
-    # Instead of copying cb_kws_master, pluck out key-value pairs.
+    # Load master kwargs
     cb_kws = {}
     for k, v in cb_kws_master.items():
         try:
@@ -492,17 +434,13 @@ def _set_cb_kws(column, cb_kws_master):
         except (TypeError, IndexError):
             cb_kws[k] = v
 
-    # cb_kws = copy.deepcopy(cb_kws_master)
-
+    # Load default kwargs
     for k, v in cb_kws_default.items():
         if k not in cb_kws:
             cb_kws[k] = v
 
-    # if isinstance(cb_kws['symmetric'], pd.Series):
-    #     cb_kws['symmetric'] = cb_kws['symmetric'][column]
-
-    # if isinstance(cb_kws['cbrange'], pd.Series):
-    #     cb_kws['cbrange'] = cb_kws['cbrange'][column]
+    if 'label' in cb_kws:
+        cb_kws['label_kws']['label'] = cb_kws.pop('label')
 
     cb_kws['cmap'] = _set_cmap(cb_kws['cmap'], cb_kws['n_levels'])
 
@@ -717,8 +655,9 @@ def plot_map(image, extent, xy_nomeasure=None, column=None, fig=None, ax=None,
     if title_kws['label'] is not None:
         ax.set_title(**title_kws)
 
-    drawcb_kws = _make_draw_colorbar_kws(column, image, cb_kws)
-    imshow_kws = _set_vmin_vmax(imshow_kws, drawcb_kws['cbrange'])
+    cb_kws = _set_cbrange(image, column, cb_kws)
+    imshow_kws = _set_vmin_vmax(imshow_kws, cb_kws['cbrange'])
+
 
     # Plot regions with no measurement as hatched
     if xy_nomeasure is not None:
@@ -727,7 +666,7 @@ def plot_map(image, extent, xy_nomeasure=None, column=None, fig=None, ax=None,
 
     p = ax.imshow(image, interpolation='none', extent=extent, **imshow_kws)
 
-    fig, cb = draw_colorbar(fig, p, column, **drawcb_kws)
+    fig, cb = draw_colorbar(fig, p, column, **cb_kws)
 
     if binnum_kws:
         ax = _show_bin_num(dapdata=dapdata, ax=ax, imshow_kws=imshow_kws,
@@ -834,8 +773,6 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
 
     mg_kws = util.none_to_empty_dict(mg_kws)
     cb_kws_master = util.none_to_empty_dict(cb_kws_master)
-    # cmaps = _set_cmaps(len(columns), cb_kws_master)
-    # cb_kws['cmaps'] = set_cmaps(cb_kws['cmaps'], len(columns)) ------------------
     if make_binnum is None:
         make_binnum = [False for _ in columns]
     if savefig_binnum is None:
