@@ -270,7 +270,7 @@ def _set_cbticks(cbrange, cb_kws):
     Return:
         tuple: colorbar range, colorbar tick numbers
     """
-    if cb_kws['log_colorbar']:
+    if cb_kws.get('log_colorbar'):
         ticks = _log_colorbar_ticks(cbrange)
     else:
         try:
@@ -363,7 +363,10 @@ def _string_to_cmap(cm_name):
             if '_r' in cm_name:
                 cmap = cmap_r
     else:
-        cmap = cm.__dict__[cm_name]
+        try:
+            cmap = cm.__dict__[cm_name]
+        except KeyError:
+            cmap = cm.Blues_r
     return cmap
 
 def _set_map_background_color(spaxel_size, color='#A8A8A8'):
