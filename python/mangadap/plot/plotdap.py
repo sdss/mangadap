@@ -237,7 +237,10 @@ def _set_cbrange(image, column, cb_kws):
     if cb_kws.get('sigclip', None) is not None:
         cbr = _cbrange_sigclip(image, cb_kws['sigclip'])
     elif cb_kws.get('percentile_clip', None) is not None:
-        cbr = _cbrange_percentile_clip(image, *cb_kws['percentile_clip'])
+        try:
+            cbr = _cbrange_percentile_clip(image, *cb_kws['percentile_clip'])
+        except IndexError:
+            cbr = [image.min(), image.max()]
     else:
         cbr = [image.min(), image.max()]
     
