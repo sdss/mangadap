@@ -53,7 +53,7 @@ def _reorient(x):
     return x_sq.T[::-1]
 
 def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
-               snr_thresh):
+               snr_thresh, log_colorbar):
     """Make masked array of image.
 
     Args:
@@ -66,6 +66,7 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
         val_no_measure (float): Value that corresponds to no measurement.
         snr_thresh (float): Signal-to-noise theshold below which is not
            considered a measurement.
+        log_colorbar (bool): If True, use log colorbar.
 
     Returns:
         tuple: (masked array of image,
@@ -79,7 +80,7 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
     im_err[binid == -1] = np.nan
 
     no_measure = _make_mask_no_measurement(im, im_err, val_no_measure,
-                                           snr_thresh)
+                                           snr_thresh, log_colorbar)
     no_data = _make_mask_no_data(im, no_measure)
     image = np.ma.array(im, mask=no_data)
 
@@ -89,7 +90,8 @@ def make_image(val, err, xpos, ypos, binid, delta, val_no_measure,
     xy_nomeasure = (-(xpos_re[no_measure]+delta), ypos_re[no_measure]-delta)
     return image, xy_nomeasure
 
-def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
+def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh,
+                              log_colorbar):
     """Mask invalid measurements within a data array.
 
     Args:
@@ -99,6 +101,7 @@ def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
             measurement.
         snr_thresh (float): Signal-to-noise threshold for keeping a valid
             measurement.
+        log_colorbar (bool): If True, use log colorbar.
 
     Returns:
         array: Boolean array for mask (i.e., True corresponds to value to be
@@ -110,6 +113,10 @@ def _make_mask_no_measurement(data, err, val_no_measure, snr_thresh):
     if err is not None:
         no_measure[err == 0.] = True
         no_measure[(np.abs(data / err) < snr_thresh)] = True
+        # NEW for LogNorm
+        if log_colorbar:
+            no_measure[data <= 0.] = True
+
     return no_measure
 
 def _make_mask_no_data(data, mask_no_measurement):
@@ -234,7 +241,7 @@ def _set_cbrange(image, column, cb_kws):
     Returns:
         list: Colorbar range.
     """
-    if cb_kws.get('sigclip', None) is not None:
+    if cb_kws.get('sigclip') is not None:
         cbr = _cbrange_sigclip(image, cb_kws['sigclip'])
     elif cb_kws.get('percentile_clip', None) is not None:
         try:
@@ -244,7 +251,7 @@ def _set_cbrange(image, column, cb_kws):
     else:
         cbr = [image.min(), image.max()]
     
-    if cb_kws.get('cbrange', None) is not None:
+    if cb_kws.get('cbrange') is not None:
         cbr = _cbrange_user_defined(cbr, cb_kws['cbrange'])
 
     if cb_kws['symmetric']:
@@ -316,14 +323,16 @@ def draw_colorbar(fig, mappable, column=None, axloc=None, cbrange=None,
     tick_params_kws = util.none_to_empty_dict(tick_params_kws)
 
     cax = (fig.add_axes(axloc) if axloc is not None else None)
-    cb = fig.colorbar(mappable, cax, ticks=ticks)
-    cb.ax.tick_params(**tick_params_kws)
-
-    if label_kws.get('label', None) is not None:
-        cb.set_label(**label_kws)
-
-    if log_colorbar:
-        cb.set_ticklabels([_log_tick_format(tick) for tick in ticks])
+    try:
+        cb = fig.colorbar(mappable, cax, ticks=ticks)
+    except ValueError:
+        cb = None
+    else:
+        cb.ax.tick_params(**tick_params_kws)
+        if label_kws.get('label') is not None:
+            cb.set_label(**label_kws)
+        if log_colorbar:
+            cb.set_ticklabels([_log_tick_format(tick) for tick in ticks])
 
     return fig, cb
 
@@ -796,10 +805,11 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
     ims = []
     xys = []
     for col in columns:
+        log_cbar = cb_kws_master.get('log_colorbar', {col: False})[col]
         im, xy = make_image(val=values[col].values, err=errors[col].values,
                             xpos=xpos, ypos=ypos, binid=binid, delta=delta,
                             val_no_measure=val_no_measure,
-                            snr_thresh=snr_thresh)
+                            snr_thresh=snr_thresh, log_colorbar=log_cbar)
         ims.append(im)
         xys.append(xy)
 
