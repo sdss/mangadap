@@ -240,7 +240,7 @@ def _set_cbrange(image, column, cb_kws):
         try:
             cbr = _cbrange_percentile_clip(image, *cb_kws['percentile_clip'])
         except IndexError:
-            cbr = [image.min(), image.max()]
+            cbr = [0.1, 1]
     else:
         cbr = [image.min(), image.max()]
     

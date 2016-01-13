@@ -34,7 +34,7 @@ else:
     # Utah MPL4 file
     file_list = join(os.getenv('MANGA_SPECTRO_ANALYSIS'),
                      os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
-                     'full', '8082', '3702', 'CUBE_files_to_plot.txt')
+                     'full', '8083', '1901', 'CUBE_files_to_plot.txt')
     # Portsmouth MPL4 file
     # file_list = join(os.getenv('MANGA_SANDBOX_MPL4'),
     #                  os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
