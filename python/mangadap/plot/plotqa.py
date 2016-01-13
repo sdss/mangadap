@@ -43,19 +43,29 @@ else:
     plottypes_list = 'dapqa_plottypes.ini'
 
 # COMMENT OUT
-plottypes_list = join(os.getenv('HOME'), 'mangadap', 'trunk', 'python',
-                      'mangadap', 'plot', 'config', 'dapqa_plottypes.ini')
+# plottypes_list = join(os.getenv('HOME'), 'mangadap', 'trunk', 'python',
+#                       'mangadap', 'plot', 'config', 'dapqa_plottypes.ini')
 
 file_kws_all = util.read_file_list(file_list)
 cfg_dir = util.make_config_path(plottypes_list)
 paths_cfg = join(cfg_dir, 'sdss_paths.ini')
+
+# COMMENT OUT
+# file_kws = file_kws_all[0]
+# path_data = util.make_data_path(paths_cfg, file_kws)
+# gal = dap_access.DAPAccess(path_data, file_kws, paths_cfg, verbose=True)
+# gal.get_all_ext()
+# mg_kws = util.make_mg_kws(gal, file_kws)
+# ptypes_list = util.check_h3_h4(gal.bintype, gal.binsn, plottypes_list)
+# plottypes = cfg_io.read_plottypes_config(join(cfg_dir, ptypes_list))
+
 
 for file_kws in file_kws_all:
     path_data = util.make_data_path(paths_cfg, file_kws)
     gal = dap_access.DAPAccess(path_data, file_kws, paths_cfg, verbose=True)
     gal.get_all_ext()
     mg_kws = util.make_mg_kws(gal, file_kws)
-    
+
     ptypes_list = util.check_h3_h4(gal.bintype, gal.binsn, plottypes_list)
     plottypes = cfg_io.read_plottypes_config(join(cfg_dir, ptypes_list))
     for plottype in plottypes:
@@ -66,17 +76,18 @@ for file_kws in file_kws_all:
                            plot_kws=plot_kws)
 
 
-cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
-plot_kws = cfg_io.make_kws(cfg)
-plot_kws['main'] = hasattr(main, '__file__')
-plot_kws['columns'] = ['Ha6564']
-plot_kws['make_multi'] = False
-plot_kws['savefig_multi'] = False
-plot_kws['savefig_single'] = True
-
-from mangadap.plot import plotdap
-reload(plotdap)
-plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
+# plottype = 'flux_ew_maps'
+# cfg = cfg_io.read_config(join(cfg_dir, plottype + '.ini'))
+# plot_kws = cfg_io.make_kws(cfg)
+# plot_kws['main'] = hasattr(main, '__file__')
+# plot_kws['columns'] = ['Ha6564']
+# plot_kws['make_multi'] = False
+# plot_kws['savefig_multi'] = False
+# plot_kws['savefig_single'] = True
+# 
+# from mangadap.plot import plotdap
+# reload(plotdap)
+# plotdap.make_plots(plottype=plottype, dapdata=gal, mg_kws=mg_kws, plot_kws=plot_kws)
 
 
 

@@ -261,7 +261,10 @@ def _set_cbrange(image, column, cb_kws):
     cbr, cb_kws['ticks'] = _set_cbticks(cbr, cb_kws)
 
     if cb_kws.get('log_colorbar', False):
-        cbr[0] = np.max((cbr[0], np.min(image[image > 0.])))
+        im_min = np.min(image[image > 0.])
+        if im_min is np.ma.masked:
+            im_min = 0.1
+        cbr[0] = np.max((cbr[0], im_min))
 
     cb_kws['cbrange'] = cbr
 
@@ -673,7 +676,6 @@ def plot_map(image, extent, xy_nomeasure=None, column=None, fig=None, ax=None,
     cb_kws = _set_cbrange(image, column, cb_kws)
     imshow_kws = _set_vmin_vmax(imshow_kws, cb_kws['cbrange'])
 
-
     # Plot regions with no measurement as hatched
     if xy_nomeasure is not None:
         for xh, yh in zip(*xy_nomeasure):
@@ -825,6 +827,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
         # Make single panel maps
         if make_single:
             fig, ax = plot_map(im, extent, **sp_kws)
+
             if savefig_single:
                 pname = '_'.join([pname_base, col])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
@@ -865,6 +868,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
                           savedir=savedir, overwrite=overwrite)
         if main:
             plt.close(fig)
+
 
 def make_spec_df(dapdata, bin, fits_to_plot, rest_frame):
     """Create DataFrame with spectrum and fits.
@@ -1504,4 +1508,3 @@ def make_plots(plottype, dapdata, mg_kws, plot_kws):
                        **plot_kws)
     elif (category == 'maps') and (mg_kws['bintype'] in ['NONE', 'STON']):
         plot_maps(dapdata=dapdata, mg_kws=mg_kws, **plot_kws)
-
