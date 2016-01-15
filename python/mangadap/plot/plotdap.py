@@ -266,7 +266,10 @@ def _set_cbrange(image, column, cb_kws):
     cbr, cb_kws['ticks'] = _set_cbticks(cbr, cb_kws)
 
     if cb_kws.get('log_colorbar', False):
-        im_min = np.min(image[image > 0.])
+        try:
+            im_min = np.min(image[image > 0.])
+        except ValueError:
+            im_min = 0.1
         if im_min is np.ma.masked:
             im_min = 0.1
         cbr[0] = np.max((cbr[0], im_min))

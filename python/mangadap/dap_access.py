@@ -295,7 +295,8 @@ class DAPAccess():
 
     def read_dap_fits(self, path_data, file_kws):
         """Read in DAP FITS file."""
-        self.fits = dapfile.dapfile(directory_path=path_data, read=False, **file_kws)
+        self.fits = dapfile.dapfile(directory_path=path_data, read=False,
+                                    **file_kws)
         self.fits.open_hdu(checksum=False)
         self.fits.read_par()
         self.extnames = [hdu._summary()[0] for hdu in self.fits.hdu]
