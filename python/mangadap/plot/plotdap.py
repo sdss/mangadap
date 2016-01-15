@@ -192,11 +192,16 @@ def _cbrange_sigclip(image, sigma):
     Returns:
         list: Colorbar range.
     """
-    imclip = sigma_clip(image.data[~image.mask], sigma=sigma)
+    try:
+        imclip = sigma_clip(image.data[~image.mask], sigma=sigma)
+    except TypeError:
+        imclip = sigma_clip(image.data[~image.mask], sig=sigma)
+
     try:
         cbrange = [imclip.min(), imclip.max()]
     except ValueError:
         cbrange = [image.min(), image.max()]
+
     return cbrange
 
 def _cbrange_percentile_clip(image, lower, upper):

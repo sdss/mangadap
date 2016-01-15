@@ -126,7 +126,7 @@ def read_config(filename):
             elif section == 'bool':
                 d[k] = config.getboolean(section, k)
             elif section == 'list_bool':
-                d[k] = [it for it in tolist(string)]
+                d[k] = [tobool(it) for it in tolist(string)]
             elif section == 'series_bool':
                 d[k] = pd.Series([tobool(it) for it in tolist(string)],
                                  index=d['columns'])

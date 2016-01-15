@@ -97,7 +97,7 @@ for file_kws in file_kws_all:
 """
 
 # MPL-4 file
-# python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/full/7443/3702/CUBE_files_to_plot.txt dapqa_plottypes.ini
+# python3 plotqa.py $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/full/8083/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
 
 # MPL-4 Sandbox
 # python3 plotqa.py $MANGA_SANDBOX_MPL4/$MANGADRP_VER/$MANGADAP_VER/mpl4_m11stelibzsol/7443/1901/CUBE_files_to_plot.txt dapqa_plottypes.ini
