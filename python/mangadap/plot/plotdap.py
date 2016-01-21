@@ -852,7 +852,7 @@ def plot_maps(columns, values, errors, spaxel_size=0.5, dapdata=None,
             if savefig_binnum[i]:
                 pname = '_'.join([pname_base, col, 'binnum'])
                 util.saveplot(name=pname, path_data=dapdata.path_data,
-                              category='maps', mg_kws=mg_kws, ext='pdf',
+                              category='maps', mg_kws=mg_kws, ext='png',
                               main=main, mkdir=True, savedir=savedir,
                               overwrite=overwrite)
             if main:
