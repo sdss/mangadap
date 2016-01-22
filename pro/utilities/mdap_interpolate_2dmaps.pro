@@ -106,7 +106,7 @@ PRO MDAP_INTERPOLATE_2DMAPS, $
         if count lt 7 then $        ; Limit of 7 is for use of GRID_TPS
             if ~keyword_set(quiet) then $
                 print, 'ERROR: Insufficient number of valid measurements!'
-            if n_elements(default) then begin
+            if n_elements(default) ne 0 then begin
                 z_out[*] = default
             endif else $
                 z_out[*] = 0.0

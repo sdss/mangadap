@@ -1,7 +1,7 @@
 
 FUNCTION check_data, data=data
 ;       if keyword_set(data) then return, 1
-        if n_elements(data) then return, 1
+        if n_elements(data) ne 0 then return, 1
         return, 0
 END
 

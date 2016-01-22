@@ -258,7 +258,7 @@ PRO MDAP_INITIALIZATION_BLOCK, $
 
         ; Check the external library has an appropriate shared-object
         ; library
-        if n_elements(external_library) then begin
+        if n_elements(external_library) ne 0 then begin
             bvls_shared_lib=external_library+'bvls.so'
             if file_test(bvls_shared_lib) eq 0 then $
                 bvls_shared_lib=external_library+'bvls.dylib'

@@ -67,10 +67,12 @@ FUNCTION MDAP_SPECTRAL_FITTING_MASK, $
         ; 1. Apply the wavelength range limit, if provided
         now=(size(obj_wave))[1]                             ; Number of object wavelengths
         print, 'Original number of galaxy pixels: ', now
-        if n_elements(wave_range_analysis) then begin
+        if n_elements(wave_range_analysis) ne 0 then begin
+;            print, wave_range_analysis
             MDAP_SELECT_WAVE, obj_wave, wave_range_analysis, fit_indx, count=count
             if count eq 0 then $
                 message, 'wave_range_analysis selects no pixels!'
+;            print, now, count
         endif else $
             fit_indx = indgen(now)
 

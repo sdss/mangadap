@@ -62,7 +62,7 @@ FUNCTION MDAP_INSTRUMENTAL_DISPERSION, $
                 wave, sres, restwave, velocity, zero_instr_disp=zero_instr_disp
 
         ignore = 0
-        if n_elements(zero_instr_disp) then begin
+        if n_elements(zero_instr_disp) ne 0 then begin
             ignore = zero_instr_disp
         endif
 

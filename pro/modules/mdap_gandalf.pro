@@ -850,7 +850,7 @@ weights = sol[degree+1:n_elements(sol)-1]
 ; and gaus should already have the right amplitudes
 sol_gas = sol[degree+ntemp+1:degree+ntemp+nlines]
 emission_templates = gaus
-IF n_elements(reddening)eq 0   THEN BEGIN
+IF n_elements(reddening) eq 0   THEN BEGIN
     for i = 0,n_elements(sol_gas)-1 do emission_templates[*,i] = gaus[*,i]*sol_gas[i]
 ENDIF ELSE BEGIN
     ; Provide the emission-line templates as observed, i.e. reddened
@@ -1397,7 +1397,7 @@ ENDIF
 ; words, make sure we output the emission-line amplitudes as observed.
 ; This is the right thing to later compute the amplitude-over-noise
 ; ratio of the lines and decide whether they are detected
-if n_elements(reddening) then begin
+if n_elements(reddening) ne 0 then begin
     ; make the spectrum wavelength array
     if not keyword_set(log10) then $
       ob_lambda = exp(dindgen(n_elements(galaxy))*lstep_gal + l0_gal) else $
