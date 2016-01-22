@@ -112,6 +112,8 @@ PRO MDAP_DRP_SNR_BLOCK, $
             MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, good_fraction_threshold=0.8, $
                                       fraction_good=fraction_good, min_eq_max=min_eq_max, $
                                       quiet=quiet
+;            print, total(gflag)
+;            stop
 
             ; Select the pixels to use in the S/N calculation
             MDAP_SELECT_WAVE, wave, execution_plan.wave_range_sn, lam_sn

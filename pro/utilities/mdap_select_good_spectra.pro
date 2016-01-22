@@ -16,8 +16,10 @@
 ;               - min(flux) ne max(flux)
 ;
 ; CALLING SEQUENCE:
-;       MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, count=count, goodfrac=goodfrac, $
-;                                 /quiet
+;       MDAP_SELECT_GOOD_SPECTRA, flux, ivar, mask, gflag, gindx, $
+;                                 good_fraction_threshold=good_fraction_threshold, $
+;                                 fraction_good=fraction_good, min_eq_max=min_eq_max, $
+;                                 count=count, /quiet
 ;
 ; INPUTS:
 ;       flux dblarr[N][T]
@@ -80,6 +82,8 @@
 ;                          mask. Add fraction_good and min_eq_max to
 ;                          output.
 ;       12 Aug 2015: (KBW) Turned off printing of properties to stdout
+;       22 Jan 2016: (KBW) Fixed error in propagation of
+;                          good_fraction_threshold
 ;-
 ;------------------------------------------------------------------------------
 
@@ -87,12 +91,14 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
                 flux, ivar, mask, gflag, gindx, good_fraction_threshold=good_fraction_threshold, $
                 fraction_good=fraction_good, min_eq_max=min_eq_max, count=count, quiet=quiet
 
-        if n_elements(goodfrac) eq 0 then $
-            goodfrac = 0.2
+        if n_elements(good_fraction_threshold) eq 0 then $
+            good_fraction_threshold = 0.2
+;        print, good_fraction_threshold
 
         sz=size(flux)
         ns=sz[1]                                        ; Number of spectra
         nc=sz[2]                                        ; Number of spectral channels
+;        print, ns, nc
 
 ;        if ~keyword_set(quiet) then begin
 ;            print, ['Spec', 'max=min', 'Unmasked', 'Good ivar', 'Fin. ivar', 'Fin. flux', $
@@ -115,19 +121,23 @@ PRO MDAP_SELECT_GOOD_SPECTRA, $
 ;           endif
 
             ; If reporting, determine which pixels fell into which category
-            if ~keyword_set(quiet) then begin
-                indx=where(mask[i,*] lt 1., count)          ; Unmasked pixels
-                unmasked = double(count)*100./double(nc)
-                
-                indx=where(ivar[i,*] gt 0., count)          ; Positive ivar values
-                posivar = double(count)*100./double(nc)
-                
-                indx=where(finite(ivar[i,*]) eq 1, count)   ; Finite ivar values
-                finivar = double(count)*100./double(nc)
-
-                indx=where(finite(flux[i,*]) eq 1, count)   ; Finite flux values
-                finflux = double(count)*100./double(nc)
-            endif
+;            if ~keyword_set(quiet) then begin
+;                indx=where(mask[i,*] lt 1., count)          ; Unmasked pixels
+;                unmasked = double(count)*100./double(nc)
+;                print, 'unmasked: ', unmasked
+;                
+;                indx=where(ivar[i,*] gt 0., count)          ; Positive ivar values
+;                posivar = double(count)*100./double(nc)
+;                print, 'posivar: ', posivar
+;                
+;                indx=where(finite(ivar[i,*]) eq 1, count)   ; Finite ivar values
+;                finivar = double(count)*100./double(nc)
+;                print, 'finivar: ', finivar
+;
+;                indx=where(finite(flux[i,*]) eq 1, count)   ; Finite flux values
+;                finflux = double(count)*100./double(nc)
+;                print, 'finflux: ', finflux
+;            endif
 
             ; Select good pixels according to the criteria listed above
             indx=where(mask[i,*] lt 1. and ivar[i,*] gt 0. and finite(ivar[i,*]) eq 1 $
