@@ -492,7 +492,9 @@ def measured_quantity_hdus(dapf, ext, data_col, err_col, output_ext, mask_col=No
 
         place_values_in_map(-X, Y, place_values_in_bins(binid, z_ivar, dtype=data_type), xs, dx,
                             ys, dy, channel_flt)
-        output_ivar[j,:,:] = channel_flt[:,:]*unit_conversion
+        # Fixed bug: 9 Dec 2015:
+        # output_ivar[j,:,:] = channel_flt[:,:]*unit_conversion
+        output_ivar[j,:,:] = channel_flt[:,:]/numpy.square(unit_conversion)
 
         place_values_in_map(-X, Y,
                             place_values_in_bins(binid, z_mask, default_value=1, dtype=numpy.uint8),
