@@ -1,7 +1,19 @@
-KBW (28 Apr 2015): tag v1_0_0
-    Tagged version run on MPL-3 DRP fits files. 
+KBW (25 Jan 2016): tag 1.1.1
+    Tagged version run for MPL-4.
+    
+    NOTE: Tag was created much later than MPL-4 was released.  DAP MPL-4
+    release located in the mangawork/sandbox directory, and not
+    maintained in the nominal MANGA_SPECTRO_ANALYSIS directory structure
+    because run on ICG, Portsmouth, cluster.  Differences between tagged
+    version and version that produced MPL-4 are minor and largely
+    contained within the python/mangadap/plot directory.  Edits to
+    plotting routines have been used for plots of MPL-4 data shown in
+    Marvin.
 
 --------------------------------------------------------------------------------
+
+KBW (28 Apr 2015): tag v1_0_0
+    Tagged version run on MPL-3 DRP fits files. 
 
 KBW (19 Feb 2015)
 Altered python directory structure in anticipation of a python rewrite of DAP
