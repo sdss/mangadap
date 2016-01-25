@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html lang='en'>
+
+<head>
+    <meta charset="utf-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaNGA DAP QA</title>
+    
+    <!--
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="https://data.sdss.org/css/platelist.css">
+    
+
+    <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>  
+    -->
+
+    <link rel="icon" 
+      type="image/png" 
+      href="/uufs/chpc.utah.edu/common/home/u0957918/software/sdss/manga/mangadap/trunk/www/html/images/favicon.ico">
+
+</head>
+
+
+<body>
+    <script language="JavaScript" type="text/JavaScript">
+ 
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split('&');
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split('=');
+                if (decodeURIComponent(pair[0]) == variable) {
+                    return decodeURIComponent(pair[1]);
+                }
+            }
+            console.log('Query variable %s not found', variable);
+        }
+        
+        var urls = {{ urls|safe }}
+        var numImages = urls.length;
+        var field = 'id';
+        var curImage = 1;
+
+        if (typeof getQueryVariable(field) !== 'undefined'){
+            curImage = getQueryVariable(field);
+        }
+
+        function f_slideshow( xflip ) {
+            curImage = curImage + xflip;
+            if (curImage > numImages)
+                { curImage = 1 ; }
+            if (curImage == 0)
+                { curImage = numImages ; }
+            document.images[0].src = urls[curImage - 1];
+        }
+    
+        // window.onload = function() {
+        //     img = document.createElement('img');
+        //     img.src = urls[curImage-1];
+        //     setImageSize(85);
+        //     document.body.appendChild(img);
+        // }
+
+        function setImageSize(widthPercentage) { 
+            var pageWidth = window.outerWidth;
+            var pageHeight = window.outerHeight;
+            var imageWidth = img.width;
+            var imageHeight = img.height;
+            var calculatedImageWidth;
+            var calculatedImageHeight;
+            var scaleFactor;
+        
+            if(widthPercentage) {
+                calculatedImageWidth = pageWidth * (widthPercentage / 100);
+                scaleFactor = calculatedImageWidth / imageWidth;
+                calculatedImageHeight = imageHeight * scaleFactor;
+                img.width = calculatedImageWidth;
+                img.height = calculatedImageHeight;
+            }
+        }
+
+    </script>
+ 
+<br>
+<input type="button" value="<< Prev" name="cb_prev" onclick="f_slideshow(-1)">
+<input type="button" value="Next >>" name="cb_next" onclick="f_slideshow(1)">
+<br>
+<img src='{{ urls[0] }}' width=85%>
+
+
+</body>
+
+</html>

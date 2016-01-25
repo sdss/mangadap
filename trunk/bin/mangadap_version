@@ -1,0 +1,70 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# Script to return SVN version of the mangadap product.
+# Don't forget to run:
+#   svn propset svn:keywords HeadURL mangadap_version
+#   svn ci -m "setting keywords property to HeadURL" mangadap_version
+# once you have added this to your new SVN product
+#
+# For trunk and exported the script uses the $TEMPLATE_DIR/bin directory to
+# compute the svnversion.  This is because calculating the full svnversion
+# on a product like speclog can take a long time.
+#
+# Written by C. Loomis, Princeton;
+# Modified by Michael Blanton, Gary Kushner, Ben Weaver and Joel Brownstein
+#
+# Note /bin/sh is preferred over /bin/bash because many bash users do EUPS
+# setups in their ~/.bashrc file.  If they have $BASH_ENV set as well, then
+# the ~/.bashrc file will be read before executing this script.  This may
+# result in a different product version being setup prior to the execution
+# of this script.  Another good reason to use tcsh.
+#------------------------------------------------------------------------------
+#
+# This will inhibit glob processing, just in case regexes have lots of * in
+# them
+#
+set -o noglob
+#
+# The trailing part of this executable's filename, with respect to the product root.
+# CHANGE THIS LINE
+myName='bin/mangadap_version'
+#
+# Compute the value of $TEMPLATE_DIR based on the name
+#
+myEnv=$(echo "${myName}" | cut -d/ -f2 | sed 's/version/dir/' | tr '[:lower:]' '[:upper:]')
+eval "myDir=\$${myEnv}"
+#
+# The following line will include an URL name after the colon
+# for any SVN version.
+#
+svnURL='$HeadURL$'
+#
+# Special case the trunk, which we want to recognize as a version named "trunk"
+#
+svnTag=$(echo "${svnURL}" | sed 's,^$HeadURL: .*/trunk/,trunk/,; s, \$$,,' | sed "s,/${myName},,")
+svnVersion=$(svnversion "${myDir}/bin")
+if test "${svnTag}" = "trunk"; then
+    if test "$1" = "-t"; then
+        echo "trunk"
+    else
+        echo "trunk ${svnVersion}"
+    fi
+    exit 0
+fi
+#
+# Look for the tag name
+#
+# To change output to "tag $tag" and "branch $branch" change "\3" to "\1 \3"
+svnTag=$(perl -pe 's{^\$HeadURL: .*/(tag|branch)(s|es)/(.*)/'"${myName}"' \$$}{\3}' <<< "${svnURL}")
+if test -z "${svnTag}" || $(echo "${svnTag}" | grep -s -q '/') ; then
+    # Noisy failure:
+    echo "NOTAG: unparseable ${svnVersion} ${svnURL}"
+    # Quiet failure:
+    # echo "NOTAG: unparseable"
+    exit 1
+fi
+#
+# Print the tag & exit nicely.
+#
+echo ${svnTag}
+exit 0

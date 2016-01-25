@@ -1,0 +1,45 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+MILES STELLAR LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+Library downloaded from:
+
+http://miles.iac.es/media/tarfiles/Stellar_Libraries/MILES_library_v9.1.tar.gz
+
+These files were coverted to fits images for use in the DAP.
+
+------------------------------------------------------------------------
+
+The full parameter file for the library provided by the MILES website is
+included:
+
+paramsMILES_v9.1.txt
+
+which was downloaded from this MILES website:
+
+http://miles.iac.es/media/tarfiles/Stellar_Libraries/paramsMILES_v9.1.txt
+
+------------------------------------------------------------------------
+
+I have pared down the full parameter file to just the MILES spectrum ID
+(m????V), the temperature, log g, and [Fe/H].  Any spectra without
+fitted stellar parameters are changed from the '--' provided in the
+original file to 99999 for the temperature and 9999 for the logg and
+[Fe/H] values.  This file is called:
+
+MILES_params.db
+
+------------------------------------------------------------------------
+I moved spectrum m0970 to the omit/ directory, meaning it will be
+omitted from the list of included templates.  This spectrum has a
+shortened wavelength range, and it has what looks like a strong,
+non-zero artifact at the red end.  Propagated through to miles_thin/ and
+miles_avg/ as well.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall, 24 Mar 2015
+               19 Jun 2015 - m970 omitted, added reasoning
+------------------------------------------------------------------------

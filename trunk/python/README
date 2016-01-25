@@ -1,0 +1,146 @@
+
+Code structure:
+
+    ./mangadap          - Top-level directory
+
+        __init__        - Announce package
+
+        ./survey        - Survey-level utilities.  Include things that
+                          only someone runnning the pipeline at Utah
+                          will need.
+
+            __init__    - Announce package
+            util        - Survey-level utilities
+            rundap      - Survey-level wrapper used to prepare the
+                          directory stucture, generate the DAP analysis
+                          plans, generate scripts, and submit those
+                          scripts to the cluster using pbs.
+
+        ./util          - General utilities, used both at user- and
+                          survey-level
+
+            __init__    - Announce package
+            except      - Exception utilities
+            parser      - Utilities used to parse input
+
+            fileio
+            block_logic
+
+            ...
+
+            TEMPORARY!!: merge with mangadrp/sdss_python_module
+            yanny       - Yanny reader
+            generalUtils - SDSS maskbits reader
+
+        drpfile         - Container class for DRP produced output files
+                          (for now only used with DAP)
+
+        mangampl        - Definition of MPLs, used to set versioning of
+                          DRP, IDLUTILS, etc (differentiate between
+                          user- and survey-level only performance?)
+
+        dapplan         - Used to generate the analysis/execution plans
+        dapfile         - Container class for DAP output files
+                          (reading/writing/manipulating)
+        daplog          - Container class for automatic
+                          logging/record-keeping of procedures
+        qaplot          - Class used to generate QA plots
+
+        drpcomplete     - Searches and collates data on completed DRP
+                          files on disk (can be both a user- and
+                          survey-level utility)
+
+        tpl_library     - Class used to read/manipulate the template
+                          libraries; will have an associated DRP file
+                          and/or spectral-index system
+
+        dapproc         - Main container class for DAP processing steps
+
+        ./contrib       - To hold contributed code
+            __init__    - Announce package
+
+        ./proc          - To hold main analysis code
+            __init__    - Announce package
+        
+            prep
+            bin
+            stellar-cont
+            emission-line
+            full-spectral-fit
+            spectral-index
+            ...
+
+------------------------------------------------------------------------
+
+in ../bin
+
+    Need a python script that:
+        - executes dapproc steps given a plan and drpfile
+        - produces the QA plots for each resulting dapfile
+
+    This script must be able to be called on the command-line so that it
+    can be submitted to compute nodes at Utah.  Can also be a user-level
+    script.
+
+
+
+------------------------------------------------------------------------
+PATH STRUCTURE!
+
+    drppath
+    dappath
+    dapsrc
+
+
+------------------------------------------------------------------------
+Some info on how to structure the files:
+
+http://stackoverflow.com/questions/1523427/python-what-is-the-common-header-format
+
+    How do I organize my modules (source files)? (Archive)
+
+    The first line of each file shoud be #!/usr/bin/env python. This
+    makes it possible to run the file as a script invoking the
+    interpreter implicitly, e.g. in a CGI context.
+
+    Next should be the docstring with a description. If the description
+    is long, the first line should be a short summary that makes sense
+    on its own, separated from the rest by a newline.
+
+    All code, including import statements, should follow the docstring.
+    Otherwise, the docstring will not be recognized by the interpreter,
+    and you will not have access to it in interactive sessions (i.e.
+    through obj.__doc__) or when generating documentation with automated
+    tools.
+
+    Import built-in modules first, followed by third-party modules,
+    followed by any changes to the path and your own modules.
+    Especially, additions to the path and names of your modules are
+    likely to change rapidly: keeping them in one place makes them
+    easier to find.
+
+    Next should be authorship information. This information should
+    follow this format:
+
+    __author__ = "Rob Knight, Gavin Huttley, and Peter Maxwell"
+    __copyright__ = "Copyright 2007, The Cogent Project"
+    __credits__ = ["Rob Knight", "Peter Maxwell", "Gavin Huttley",
+                        "Matthew Wakefield"]
+    __license__ = "GPL"
+    __version__ = "1.0.1"
+    __maintainer__ = "Rob Knight"
+    __email__ = "rob@spot.colorado.edu"
+    __status__ = "Production"
+
+    Status should typically be one of "Prototype", "Development", or
+    "Production". __maintainer__ should be the person who will fix bugs
+    and make improvements if imported. __credits__ differs from
+    __author__ in that __credits__ includes people who reported bug
+    fixes, made suggestions, etc. but did not actually write the code.
+
+
+
+I don't follow this explicitly, but it's good to keep in mind.
+
+
+

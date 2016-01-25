@@ -1,0 +1,4 @@
+setupRequired("idlutils >= v5_5_12") # should have a version
+
+envAppend(PATH,${PRODUCT_DIR}/bin)
+envPrepend(IDL_PATH, +{PRODUCT_DIR}/pro)
