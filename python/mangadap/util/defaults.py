@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Provides a set of functions that define and return defaults used by the
@@ -43,10 +45,15 @@ MaNGA DAP, such as paths and file names.
     | **28 Aug 2015**: (KBW) Added
         :func:`mangadap.util.defaults.default_manga_fits_root` and
         :func:`mangadap.util.defaults.default_cube_covariance_file`
-    | **07 Oct 3015**: (KBW) Adjusted for changes to naming of the
+    | **07 Oct 2015**: (KBW) Adjusted for changes to naming of the
         template library database definitions.  Added M11-STELIB-ZSOL
         library.
-
+    | **29 Jan 2016**: (KBW) Changed :func:`default_template_libraries`
+        to use configparser ini files to define each template library.
+    | **03 Feb 2016**: (KBW) Added checks for required environmental
+        variables.
+    | **17 Feb 2016**: (KBW) Added try/except blocks for importing
+        ConfigParser.
 """
 
 from __future__ import division
@@ -57,12 +64,31 @@ from __future__ import unicode_literals
 import sys
 if sys.version > '3':
     long = int
+    try:
+        from configparser import ConfigParser
+    except ImportError:
+        print('WARNING: Unable to import configparser!  Beware!')
+    try:
+        from configparser import ExtendedInterpolation
+    except ImportError:
+        print('WARNING: Unable to import ExtendedInterpolation!  Some configurations will fail!')
+else:
+    try:
+        from ConfigParser import ConfigParser
+    except ImportError:
+        print('WARNING: Unable to import ConfigParser!  Beware!')
+    try:
+        from ConfigParser import ExtendedInterpolation
+    except ImportError:
+        print('WARNING: Unable to import ExtendedInterpolation!  Some configurations will fail!')
 
 import os.path
 from os import environ
 import glob
 import numpy
 from mangadap.par.database_definitions import TemplateLibraryDef
+from mangadap.config.util import validate_template_config
+from mangadap.util.exception_tools import check_environment_variable
 
 __author__ = 'Kyle B. Westfall'
 
@@ -72,6 +98,7 @@ def default_drp_version():
     MANGADRP_VER.
 
     """
+    check_environment_variable('MANGADRP_VER')
     return environ['MANGADRP_VER']
 
 
@@ -90,7 +117,7 @@ def default_redux_path(drpver):
     # Make sure the DRP version is set
     if drpver is None:
         drpver = default_drp_version()
-
+    check_environment_variable('MANGA_SPECTRO_REDUX')
     return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
 
 
@@ -177,6 +204,7 @@ def default_dap_source():
     environmental variable MANGADAP_DIR.
 
     """
+    check_environment_variable('MANGADAP_DIR')
     return environ['MANGADAP_DIR']
 
 
@@ -186,6 +214,7 @@ def default_dap_version():
     MANGADAP_VER.
 
     """
+    check_environment_variable('MANGADAP_VER')
     return environ['MANGADAP_VER']
 
 
@@ -208,7 +237,7 @@ def default_analysis_path(drpver, dapver):
     # Make sure the DAP version is set
     if dapver is None:
         dapver = default_dap_version()
-
+    check_environment_variable('MANGA_SPECTRO_ANALYSIS')
     return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
 
 
@@ -412,6 +441,10 @@ def default_template_libraries(dapsrc=None):
     |    MIUSCAT-THIN |       2.51 |      No | 3480 - 9430 |  None |
     +-----------------+------------+---------+-------------+-------+
 
+    .. warning::
+
+        Function is currently only valid for Python 3.2 or greater!
+
     Args:
         dapsrc (str): (Optional) Root path to the DAP source
             directory.  If not provided, the default is defined by
@@ -425,149 +458,89 @@ def default_template_libraries(dapsrc=None):
     Raises:
         NotADirectoryError: Raised if the provided or default
             *dapsrc* is not a directory.
+        OSError/IOError: Raised if no template configuration files could
+            be found.
+        KeyError: Raised if the template-library keywords are not all
+            unique.
+        NameError: Raised if either ConfigParser or
+            ExtendedInterpolation are not correctly imported.  The
+            latter is a *Python 3 only module*!
 
+    .. todo::
+        - Add backup function for Python 2.
     """
+    # Check the source directory exists
     dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
+    # Check the configuration files exist
+    ini_files = glob.glob(dapsrc+'/python/mangadap/config/templates/*.ini')
+    if len(ini_files) == 0:
+        raise IOError('Could not find any template library configuration files in {0} !'.format(
+                      dapsrc+'/python/mangadap/config/templates'))
+
+    # Build the list of library definitions
     template_libraries = []
+    for f in ini_files:
+        # Read the config file
+        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
+        cnfg.read(f)
+        # Ensure it has the necessary elements to define the template
+        # library
+        validate_template_config(cnfg)
+        # Convert wave_limit and lower_flux_limit to types acceptable by
+        # TemplateLibraryDef
+        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
+                                        for e in cnfg['default']['wave_limit'].split(',') ])
+        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
+                           cnfg['default'].getfloat('lower_flux_limit')
+        # Append the definition of the template library 
+        template_libraries += \
+            [ TemplateLibraryDef(key=cnfg['default']['key'],
+                                 file_search=cnfg['default']['file_search'],
+                                 fwhm=cnfg['default'].getfloat('fwhm'),
+                                 sres_ext=cnfg['default']['sres_ext'],
+                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
+                                 wave_limit=wave_limit,
+                                 lower_flux_limit=lower_flux_limit,
+                                 log10=cnfg['default'].getboolean('log10') )
+            ]
 
-    # M11-MARCS
-    template_libraries += \
-        [ TemplateLibraryDef(key='M11-MARCS',
-                             file_search=dapsrc+'/external/templates/m11_marcs/*_s.fits',
-                             # TODO: This is the resolution in the header of the files, is it
-                             # right?
-                             fwhm=2.73, in_vacuum=False, wave_limit=numpy.array([ None, None ]),
-                             lower_flux_limit=None)
-        ]
+    # Check the keywords of the libraries are all unique
+    if len(numpy.unique( numpy.array([tpl['key'] for tpl in template_libraries]) )) \
+            != len(template_libraries):
+        raise KeyError('Template-library keywords are not all unique!')
 
-    # M11-STELIB
-    template_libraries += \
-        [ TemplateLibraryDef(key='M11-STELIB',
-                             file_search=dapsrc+'/external/templates/m11_stelib/*_s.fits',
-                             # Changed in IDL version on 27 Jan 2015 to match Maraston &
-                             # Strombach (2011) Table 1
-                             fwhm=3.40, in_vacuum=False, wave_limit=numpy.array([ None, None ]),
-                             lower_flux_limit=None)
-        ]
-
-    # M11-STELIB
-    template_libraries += \
-        [ TemplateLibraryDef(key='M11-STELIB-ZSOL',
-                             file_search=dapsrc+'/external/templates/m11_stelib_zsol/*_s.fits',
-                             fwhm=3.40, in_vacuum=False, wave_limit=numpy.array([ None, None ]),
-                             lower_flux_limit=None)
-        ]
-
-    # M11-ELODIE
-    template_libraries += \
-        [ TemplateLibraryDef(key='M11-ELODIE',
-                             file_search=dapsrc+'/external/templates/m11_elodie/*.fits',
-                             # Resolution taken from Maraston & Strombach (2011)
-                             fwhm=0.55, in_vacuum=False, wave_limit=numpy.array([ None, 6795. ]),
-                             lower_flux_limit=None)
-        ]
-
-    # M11-MILES
-    template_libraries += \
-        [ TemplateLibraryDef(key='M11-MILES',
-                             file_search=dapsrc+'/external/templates/m11_miles/*.fits',
-                             # TODO: Should this be the same as MILES?
-                             fwhm=2.54, in_vacuum=False, wave_limit=numpy.array([ 3550., 7400. ]),
-                             lower_flux_limit=None)
-        ]
-
-    # MILES
-    template_libraries += \
-        [ TemplateLibraryDef(key='MILES',
-                             file_search=dapsrc+'/external/templates/miles/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-                             fwhm=2.50, in_vacuum=False, wave_limit=numpy.array([ 3575., 7400. ]),
-                             lower_flux_limit=0.0)
-        ]
-
-    # MILES-AVG
-    template_libraries += \
-        [ TemplateLibraryDef(key='MILES-AVG',
-                             file_search=dapsrc+'/external/templates/miles_avg/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-                             fwhm=2.50, in_vacuum=False, wave_limit=numpy.array([ 3575., 7400. ]),
-                             lower_flux_limit=None)
-        ]
-
-    # MILES-THIN
-    template_libraries += \
-        [ TemplateLibraryDef(key='MILES-THIN',
-                             file_search=dapsrc+'/external/templates/miles_thin/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Resolution from Falcon-Barroso et al. (2011, A&A, 532, 95)
-                             fwhm=2.50, in_vacuum=False, wave_limit=numpy.array([ 3575., 7400. ]),
-                             lower_flux_limit=None)
-        ]
-
-    # STELIB
-    template_libraries += \
-        [ TemplateLibraryDef(key='STELIB',
-                             file_search=dapsrc+'/external/templates/stelib/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Only given as approximate in Le Borgne et al. (2003, A&A, 402,
-                             # 433); assume value from Maraston & Strombach (2011, MNRAS,
-                             # 418, 2785)
-                             fwhm=3.40, in_vacuum=False, wave_limit=numpy.array([ None, None ]),
-                             lower_flux_limit=0.0)
-        ]
-
-    # MIUSCAT
-    template_libraries += \
-        [ TemplateLibraryDef(key='MIUSCAT',
-                             file_search=dapsrc+'/external/templates/miuscat/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Using value provided by the header in all the fits files
-                             fwhm=2.51, in_vacuum=False, wave_limit=numpy.array([ 3480., 9430. ]),
-                             lower_flux_limit=None)
-        ]
-
-    # MIUSCAT-THIN
-    template_libraries += \
-        [ TemplateLibraryDef(key='MIUSCAT-THIN',
-                             file_search=dapsrc+'/external/templates/miuscat_thin/*.fits',
-                             # TODO: Unknown if this library is in vacuum or in air
-                             # Using value provided by the header in all the fits files
-                             fwhm=2.51, in_vacuum=False, wave_limit=numpy.array([ 3480., 9430. ]),
-                             lower_flux_limit=None)
-        ]
-
+    # Return the default list of template libraries
     return template_libraries
 
 
 def default_plate_target_files():
-        """
-        Return the default plateTarget files in mangacore and their
-        associated catalog indices.  The catalog indices are determined
-        assuming the file names are of the form::
+    """
+    Return the default plateTarget files in mangacore and their
+    associated catalog indices.  The catalog indices are determined
+    assuming the file names are of the form::
 
-            'plateTargets-{0}.par'.format(catalog_id)
+        'plateTargets-{0}.par'.format(catalog_id)
 
-        Returns:
-            numpy.array : Two arrays: the first contains the identified
-                plateTargets files found using the default search
-                string, the second provides the integer catalog index
-                determined for each file.
-        """
-        # Default search string
-        search_str = os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                                  'plateTargets*.par')
-        file_list = glob.glob(search_str)                       # List of files
-        nfiles = len(file_list)
-        trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices
-        for i in range(nfiles):
-            suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
-            trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
-        
-        return numpy.array(file_list), trgid
+    Returns:
+        numpy.array : Two arrays: the first contains the identified
+            plateTargets files found using the default search
+            string, the second provides the integer catalog index
+            determined for each file.
+    """
+    # Default search string
+    check_environment_variable('MANGACORE_DIR')
+    search_str = os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+                              'plateTargets*.par')
+    file_list = glob.glob(search_str)                       # List of files
+    nfiles = len(file_list)
+    trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices
+    for i in range(nfiles):
+        suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
+        trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
+    
+    return numpy.array(file_list), trgid
 
 

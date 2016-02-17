@@ -84,6 +84,8 @@ Utah.
     | **04 Nov 2015**: (KBW) Added capability to turn off main DAP
         processing call so that :class:`rundap` can be used to, e.g.,
         just create the plots for existing data.
+    | **17 Feb 2016**: (KBW) Added try/except block for importing
+        pbs.queue
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -104,9 +106,13 @@ if sys.version > '3':
 import subprocess
 import time
 import os.path
-import pbs.queue
 import numpy
 import glob
+
+try:
+    import pbs.queue
+except:
+    print('WARNING: Could not import pbs.queue!  Any cluster submission will fail!')
 
 from os import environ, makedirs
 from argparse import ArgumentParser

@@ -24,6 +24,7 @@ exceptions.
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
+    | **03 Feb 2016**: (KBW) Added :func:`check_environmental_variable`
 """
 
 from __future__ import division
@@ -36,6 +37,7 @@ if sys.version > '3':
     long = int
 
 import inspect
+from os import environ
 
 __author__ = 'Kyle Westfall'
 
@@ -52,5 +54,22 @@ def print_frame(prefix):
     info = inspect.getframeinfo(frame)
     print('{0}: FILE={1}, FUNCTION={2}, LINE={3}\n'.format(prefix, info.filename, info.function,
           info.lineno))
+
+
+def check_environment_variable(name):
+    """
+    Check for the existence of an environment variable.
+
+    Args:
+        name (str): Name of a required environmental variable
+
+    Raises:
+        EnvironmentError: Raised if *name* is not defined.
+    """
+    if name not in environ:
+        raise EnvironmentError('{0} not defined in current environment!')
+
+
+
 
 

@@ -34,7 +34,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
 *Imports*::
 
     import os.path
-    from os import environ, makedirs, walk
+    from os import walk
     import numpy
     from astropy.io import fits
     from astropy import constants
@@ -99,7 +99,7 @@ if sys.version > '3':
     long = int
 
 import os.path
-from os import environ, makedirs, walk
+from os import walk
 import numpy
 from astropy.io import fits
 from astropy import constants

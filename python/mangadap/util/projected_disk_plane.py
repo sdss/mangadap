@@ -20,7 +20,6 @@ Defines a class to calculate and convert between on-sky and a projected
 *Imports*::
 
     import os.path
-    from os import environ
     import time
     import numpy
     from scipy import linalg
@@ -70,7 +69,6 @@ if sys.version > '3':
     long = int
 
 import os.path
-from os import environ
 import time
 import numpy
 from scipy import linalg

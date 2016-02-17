@@ -10,7 +10,6 @@ if sys.version > '3':
     long = int
 
 #-----------------------------------------------------------------------
-from os import remove, environ
 import os.path
 import glob
 from subprocess import call

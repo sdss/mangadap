@@ -1,9 +1,11 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
-Define some utility classes used to hold parameters.
+Define container classes for database parameters.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/util/par.py
+    $MANGADAP_DIR/python/mangadap/par/database_definitions.py
 
 *Python2/3 compliance*::
 
@@ -19,8 +21,7 @@ Define some utility classes used to hold parameters.
 *Imports*::
 
     import numpy
-    from mangadap.util.options import binning_options, bin_weighting_options
-    from mangadap.util.options import spectral_analysis_options
+    from mangadap.par.ParSet import ParSet
 
 *Class usage examples*:
 
@@ -30,7 +31,8 @@ Define some utility classes used to hold parameters.
 
 *Revision history*:
     | **16 Jun 2015**: Original implementation by K. Westfall (KBW)
-
+    | **29 Jan 2016**: (KBW) Included sres_ext and log10 keywords in
+        TemplateLibraryDef.  Documentation.
 """
 
 from __future__ import division
@@ -47,19 +49,41 @@ from mangadap.par.ParSet import ParSet
 
 __author__ = 'Kyle B. Westfall'
 
-
 class TemplateLibraryDef(ParSet):
     """
     Class with parameters used to define the template library.
     Options and defaults in ParSet base class are set to None.
+
+    Args:
+        key (str): Keyword to distinguish the template library.
+        file_search (str): Search string used by glob to find the 1D
+            fits spectra to include in the template library.
+        fwhm (int or float): FWHM of the resolution element in
+            angstroms.
+        sres_ext (str): Extension in the fits files with measurements of
+            the spectral resolution as a function of wavelength.
+        in_vacuum (bool): Flag that the wavelengths of the spectra are
+            in vacuum, not air.
+        wave_limit (numpy.ndarray): 2-element array with the starting
+            and ending wavelengths for the valid spectral range of the
+            templates.
+        lower_flux_limit (int or float): Minimum valid flux in the
+            template spectra.
+        log10 (bool): Flag that the template spectra have been binned
+            logarithmically in wavelength.
+
     """
-    def __init__(self, key, file_search, fwhm, in_vacuum, wave_limit, lower_flux_limit): 
+    def __init__(self, key, file_search, fwhm, sres_ext, in_vacuum, wave_limit, lower_flux_limit,
+                 log10): 
         # Perform some checks of the input
         in_fl = [ int, float ]
         
-        pars =   [ 'key', 'file_search', 'fwhm', 'in_vacuum',  'wave_limit', 'lower_flux_limit' ]
-        values = [   key,   file_search,   fwhm,   in_vacuum,    wave_limit,   lower_flux_limit ]
-        dtypes = [   str,           str,  in_fl,        bool, numpy.ndarray,              in_fl ]
+        pars =   [ 'key', 'file_search', 'fwhm', 'sres_ext', 'in_vacuum',  'wave_limit',
+                        'lower_flux_limit', 'log10' ]
+        values = [   key,   file_search,   fwhm,   sres_ext,   in_vacuum,    wave_limit,
+                          lower_flux_limit,   log10 ]
+        dtypes = [   str,           str,  in_fl,        str,        bool, numpy.ndarray,
+                                     in_fl,    bool ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 

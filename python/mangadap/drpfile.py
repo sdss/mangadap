@@ -22,7 +22,6 @@ matrix for the DRP 'CUBE' files.
 *Imports*::
 
     import os.path
-    from os import environ
     from scipy import sparse
     from astropy.io import fits
     from astropy.wcs import WCS
@@ -69,12 +68,17 @@ matrix for the DRP 'CUBE' files.
         directly defined.**
     | **28 Aug 2015**: (KBW) Added usage of
         :func:`mangadap.util.defaults.default_manga_fits_root`
+    | **15 Feb 2016**: (KBW) Added :func:`mangadap.drpfile.__getitem__`
+        function
 
 .. todo::
 
     - Calculation in :func:`drpfile._cube_dimensions` will only be correct if
       the WCS coordinates have no rotation.
     - Further optimize calculation of transfer matrix
+
+    - Make DRP file class flexible to linear or log-linear wavelength
+      sampling?  Incorporate into MODE?
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
@@ -92,7 +96,6 @@ if sys.version > '3':
     long = int
 
 import os.path
-from os import environ
 from scipy import sparse
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -239,6 +242,7 @@ class drpfile:
             :func:`mangadap.util.defaults.default_drp_directory_path`.
         read (bool) : (Optional) Read the DRP file upon instantiation of
             the object.
+        checksum (bool): (Optional) Check for file corruption.
 
     Raises:
         Exception: Raised if *mode* is not 'RSS' or 'CUBE'.
@@ -351,12 +355,15 @@ class drpfile:
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
             the DRP file
 
+        checksum (bool): Flag to check for file corruption when opening
+            the HDU.
+
         wcs (`astropy.wcs.wcs.WCS`_): WCS object based on WCS keywords
             in the header of the FLUX extension.
 
     """
     def __init__(self, plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
-                 read=False):
+                 read=False, checksum=False):
 
         # Set the attributes, forcing a known type
         self.plate = long(plate)
@@ -365,12 +372,6 @@ class drpfile:
 
         if mode not in [ 'CUBE', 'RSS']:
             raise Exception('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
-
-
-#       self.drpver = default_drp_version() if drpver is None else str(drpver)
-#       self.redux_path = default_redux_path(self.drpver) if redux_path is None else str(redux_path)
-#       self.directory_path = default_drp_directory_path(self.drpver, self.redux_path, self.plate) \
-#                             if directory_path is None else str(directory_path)
 
         if directory_path is None:
             self.drpver = default_drp_version() if drpver is None else str(drpver)
@@ -407,10 +408,11 @@ class drpfile:
         self.cov_rho = None
 
         self.hdu = None                 # Do not automatically read the data
+        self.checksum = checksum        # Check the file for corruption
         self.wcs = None                 # WCS structure
 
         if read:
-            self.open_hdu()
+            self.open_hdu(checksum=self.checksum)
         
 
     def __del__(self):
@@ -423,36 +425,10 @@ class drpfile:
         self.hdu.close()
         self.hdu = None
 
-
-#    def _default_cube_pixelscale(self):
-#        """Return the default pixel scale in arcsec."""
-#        return 0.5
-#
-#
-#    def _default_cube_width_buffer(self):
-#        """Return the default width buffer for the cube dimensions."""
-#        return 10
-#
-#
-#    def _default_cube_recenter(self):
-#        """Return the default recenter flag for the cube dimensions."""
-#        return False
-#
-#
-#    def _default_regrid_rlim(self):
-#        """
-#        Return the default limiting radius for the Gaussian regridding
-#        kernel.
-#        """
-#        return 1.6
-#
-#
-#    def _default_regrid_sigma(self):
-#        """
-#        Return the default limiting radius for the Gaussian regridding
-#        kernel.
-#        """
-#        return 0.7
+    def __getitem__(self, key):
+        if self.hdu is None:
+            return None
+        return self.hdu[key]
 
 
     def _cube_dimensions_undefined(self):
@@ -617,7 +593,7 @@ class drpfile:
         """
 
         # Make sure that the fits file is ready for reading
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
 
         # TODO: This will only be correct if the WCS coordinates have no rotation
         if self.mode is 'CUBE':
@@ -800,8 +776,13 @@ class drpfile:
         
             May not be necessary for DRP v1_4_0.
 
+        .. todo::
+
+            - Check this is necessary based on the DRP version 'VERSDRP'
+              in the header
+
         """
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
 
         # So that astropy 0.4.4 wcs can read the first two dimensions of
         # the WCS header values
@@ -818,11 +799,6 @@ class drpfile:
         return ('{0}.fits.gz'.format(root))
 
 
-#    def directory_path(self):
-#        """Return the path to the directory with the DRP file."""
-#        return os.path.join(environ['MANGA_SPECTRO_REDUX'], self.drpver, str(self.plate), 'stack')
-
-
     def file_path(self):
         """Return the full path to the DRP file"""
         return os.path.join(self.directory_path, self.file_name())
@@ -832,14 +808,21 @@ class drpfile:
         """
         Return the full path to the PNG finding chart for the targetted
         object.
+
+        .. todo::
+            - Move this to the defaults file
+
         """
         return os.path.join(self.directory_path, 'images', str(self.ifudesign)+'.png')
 
 
-    def open_hdu(self):
+    def open_hdu(self, checksum=False):
         """
         Open the HDUList.  Will only do so if :attr:`hdu` is None.  The
         HDUList is *always* opened as read only.
+
+        Args:
+            checksum (bool): (Optional) Check for file corruption.
 
         Raises:
             Exception: Raised if the DRP file does not exist.
@@ -854,7 +837,7 @@ class drpfile:
 
         # Open the fits file, but do NOT allow the file to be
         # overwritten
-        self.hdu = fits.open(inp, mode='readonly', checksum=True)
+        self.hdu = fits.open(inp, mode='readonly', checksum=checksum)
 
 
     def object_data(self):
@@ -866,7 +849,7 @@ class drpfile:
         The HDUList is opened if hasn't been already.
 
         """
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
         return self.hdu[0].header['MANGAID'], self.hdu[0].header['OBJRA'], \
                self.hdu[0].header['OBJDEC']
 
@@ -879,7 +862,7 @@ class drpfile:
         The HDUList is opened if hasn't been already.
 
         """
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
         return self.hdu[0].header['OBJRA'], self.hdu[0].header['OBJDEC']
 
 
@@ -1414,7 +1397,7 @@ class drpfile:
                 raise Exception('Must use default pixel scale, rlim, and sigma to get '
                                 + 'wavelength-channel image for DRP-produced CUBE files.')
 
-            self.open_hdu()
+            self.open_hdu(checksum=self.checksum)
             return numpy.transpose(self.hdu['FLUX'].data[channel,:,:])
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
@@ -1702,7 +1685,7 @@ class drpfile:
             return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, \
                                         sigma_rho, csr, quiet)
 
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
 
         if channels is None:
             nc = self.hdu['FLUX'].data.shape[1]     # The number of wavelength channels

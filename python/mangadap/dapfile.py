@@ -60,6 +60,7 @@ Analysis Pipeline (DAP).
         checks to other code to make sure drpver, dapver, and
         analysis_path are not None when directory_path has been directly
         defined.**
+    | **15 Feb 2015**: (KBW) Reset checksum default to False.
 
 .. todo::
     - check that *bintype* is valid 
@@ -154,7 +155,7 @@ class dapfile:
 
     """
     def __init__(self, plate, ifudesign, mode, bintype, niter, drpver=None, dapver=None,
-                 analysis_path=None, directory_path=None, par_file=None, read=True, checksum=True):
+                 analysis_path=None, directory_path=None, par_file=None, read=True, checksum=False):
         # Set the attributes, forcing a known type
         self.plate = int(plate)
         self.ifudesign = int(ifudesign)
@@ -186,7 +187,7 @@ class dapfile:
 
         self.checksum = checksum
         if read:
-            self.open_hdu()
+            self.open_hdu(checksum=self.checksum)
 
 
     def __del__(self):
@@ -200,19 +201,7 @@ class dapfile:
         self.hdu = None
 
 
-#   def _twod_image_data(self, exten, indx):
-#       self.open_hdu()
-#       try:
-#           data = self.hdu[exten].data[:,indx]
-#       except IndexError as e:
-#           print_frame('IndexError')
-#           print('{0}'.format(e))
-#           return None
-#       else:
-#           return data
-    
-    
-    def open_hdu(self, permissions='readonly', checksum=None, quiet=True):
+    def open_hdu(self, permissions='readonly', checksum=False, quiet=True):
         """
         Open the fits file and save it to :attr:`hdu`; if :attr:`hdu` is
         not None, the function returns without re-reading the data.
@@ -240,8 +229,8 @@ class dapfile:
             raise Exception('Cannot open file: {0}'.format(inp))
 
         # Open the fits file with the requested read/write permission
-        check = self.checksum if checksum is None else checksum
-        self.hdu = fits.open(inp, mode=permissions, checksum=check)
+        #check = self.checksum if checksum is None else checksum
+        self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
 
 
     def read_hdu_data(self, index=None):
@@ -303,7 +292,7 @@ class dapfile:
 
     def header(self):
         """Return the primary header"""
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
         return self.hdu[0].header
 
 
@@ -437,7 +426,7 @@ class dapfile:
         disk_plane = projected_disk_plane(xc, yc, rot, pa, inc)
 
         # Calculate the in-plane radius and azimuth for each bin
-        self.open_hdu()
+        self.open_hdu(checksum=self.checksum)
         nbin = self.hdu['BINS'].data['BINXRL'].size
         radius = numpy.zeros(nbin, dtype=numpy.float64)
         azimuth = numpy.zeros(nbin, dtype=numpy.float64)

@@ -31,11 +31,18 @@ Provides a set of functions to handle instrumental effects.
 
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
-        based on downgrader_MANGA.f provided by D. Thomas, O. Steele, D.
-        Wilkinson, D. Goddard.
+                       based on downgrader_MANGA.f provided by D.
+                       Thomas, O. Steele, D.  Wilkinson, D. Goddard.
     | **13 Jun 2015**: D.Wilkinson edit to not calculate unimportant
-        convolution terms -> runs 5x faster.
-
+                       convolution terms -> runs 5x faster.
+    | **03 Feb 2016**: (KBW) Generalized M. Cappellari's
+                       :func:`log_rebin` to :func:`resample_vector` to
+                       allow for linear interpolation of flux density
+                       across the pixel.
+    | **04 Feb 2016**: (KBW) Further fixes to :func:`resample_vector`.
+                       Added :func:`spectral_coordiante_step`, and
+                       propagated change to
+                       :func:`spectrum_velocity_scale`
 """
 
 from __future__ import division
@@ -55,7 +62,30 @@ from mangadap.util.constants import constants
 from mangadap.util.misc import where_not
 import astropy.constants
 
-# from matplotlib import pyplot
+#from matplotlib import pyplot
+
+def spectral_coordinate_step(wave, log=False, base=10.0):
+    """
+    Return the sampling step for the input wavelength vector.
+
+    If the sampling is logarithmic, return the change in the logarithm
+    of the wavelength; otherwise, return the linear step in angstroms.
+
+    Args: 
+        wave (numpy.ndarray): Wavelength coordinates of each spectral
+            channel in angstroms.
+        log (bool): (Optional) Input spectrum has been sampled
+            geometrically.
+        base (float): (Optional) If sampled geometrically, the sampling
+            is done using a logarithm with this base.  For natural
+            logarithm, use numpy.exp(1).
+
+    Returns:
+        float : Spectral sampling step in either angstroms (log=False)
+            or the step in log(angstroms).
+    """
+    return ( numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]) )
+
 
 def spectrum_velocity_scale(wave, log10=False):
     """
@@ -75,11 +105,11 @@ def spectrum_velocity_scale(wave, log10=False):
         float : Velocity scale of the spectrum in km/s.
 
     """
-
-    dl_over_l = (numpy.log10(wave[1])-numpy.log10(wave[0]))*numpy.log(10.0) if log10 else \
-                numpy.log(wave[1])-numpy.log(wave[0])
+#    dl_over_l = (numpy.log10(wave[1])-numpy.log10(wave[0]))*numpy.log(10.0) if log10 else \
+#                numpy.log(wave[1])-numpy.log(wave[0])
                 
-    return astropy.constants.c.to('km/s').value*dl_over_l
+    return astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave, log=True,
+                                                                         base=numpy.exp(1.))
 
 
 class convolution_integral_element:
@@ -105,6 +135,10 @@ class convolution_integral_element:
             Gaussian kernel
         norm (numpy.ndarray): Gaussian normalization; calculated once for
             efficiency
+
+    .. todo::
+
+        - Allow to switch to pixel sampled Gaussian kernel?
 
     """
     def __init__(self, y, sigma, ye=None):
@@ -841,13 +875,14 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     # Initialize some variables
     nspec = 1 if len(sres.shape) == 1 else sres.shape[0]
+    dim = len(sres.shape)
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
     new_res = spectral_resolution(new_sres_wave, new_sres, log10=new_log10)
     res = []
 
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
-    if nspec == 1:
+    if nspec == 1 and dim == 1:
         res = [spectral_resolution(wave, sres, log10=log10)]
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
@@ -875,20 +910,20 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         mask = numpy.zeros(flux.shape, dtype=numpy.uint)
     out_mask = numpy.copy(mask)
 
-    if nspec == 1:
+    if nspec == 1 and dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
         out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
         out_sres[indx] = res[0].adjusted_resolution(indx=indx)
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:
         for i in range(0,nspec):
-            print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
+            print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
             out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
             out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
             out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (mask[i,:] == 1)).astype(numpy.uint)
-        print('Matching resolution: {0}/{0}'.format(nspec))
+        print('Matching resolution ... DONE         ')
 
     # TODO: Add this functionality from the IDL version?
     #
@@ -1057,10 +1092,17 @@ def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=
     dLam, m, logscale, velscale = \
         log_rebin_pix(lamRange, n, oversample=oversample, velscale=velscale, log10=log10,
                       newRange=newRange)
+    print(dLam)                        
+    print(m)
+    print(logscale)
+    print(velscale)
 
     # Get the sampling of the existing spectrum
     lim = lamRange/dLam + [-0.5, 0.5]           # All in units of dLam
     borders = numpy.linspace(*lim, num=n+1)     # Linearly sampled pixels
+
+    print(borders)
+    print(dLam)
 
     # Set limits to a new wavelength range
     if newRange is not None:
@@ -1071,8 +1113,14 @@ def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=
     logLim[1] = logLim[0] + m*logscale      # Set last wavelength, based on integer # of pixels
 
     # Geometrically spaced pixel borders for the new spectrum
+#    newBorders = numpy.logspace(*logLim, num=m+1, base=(10.0 if log10 else numpy.exp(1)))
     newBorders = numpy.power(10., numpy.linspace(*logLim, num=m+1)) if log10 else \
                  numpy.exp(numpy.linspace(*logLim, num=m+1))
+
+
+    print(newBorders)
+    print(m)
+    print(logscale)
 
     # Get the new spectrum by performing an analytic integral
     k = (newBorders - borders[0]).clip(0, n-1).astype(int)
@@ -1197,5 +1245,214 @@ def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newR
 
 
 
+def _pixel_borders(xlim, npix, log=False, base=10.0):
+    """
+    Determine the borders of the pixels in a vector.
+
+    Args:
+        xlim (numpy.ndarray) : (Geometric) Centers of the first and last
+            pixel in the vector.
+        npix (int) : Number of pixels in the vector.
+        log (bool) : (Optional) The input range is (to be)
+            logarithmically sampled.
+        base (float) : (Optional) The base of the logarithmic sampling.
+            The default is 10.0; use numpy.exp(1.) for the natural
+            logarithm.
+
+    Returns:
+        (numpy.ndarray, float): A vector with the (npix+1) borders of
+            the pixels and the sampling rate.  If logarithmically
+            binned, the sampling is the step in log(x).
+    """
+    if log:
+        logRange = numpy.log(xlim)/numpy.log(base)
+        dlogx = numpy.diff(logRange)/(npix-1.)
+        borders = numpy.power(base, numpy.linspace(*(logRange/dlogx + [-0.5, 0.5]),
+                                                   num=npix+1)*dlogx)
+        return borders, dlogx
+    dx = numpy.diff(xlim)/(npix-1.)
+    borders = numpy.linspace(*(xlim/dx + numpy.array([-0.5, 0.5])), num=npix+1)*dx
+    return borders, dx
+
+
+def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=None):
+    """
+    Determine the number of pixels needed to resample the vector.
+
+    Args:
+        outRange (list or numpy.ndarray) : Two-element array with the
+            starting and ending x coordinate of the pixel centers to
+            divide into pixels of a given width.  If *log* is True, this
+            must still be the linear value of the x coordinate, not
+            log(x)!.
+        dx (float) : Linear or logarithmic pixel width.
+        log (bool) : Flag that the range should be logarithmically
+            binned.
+        base (float) : Base for the logarithm
+        default (int) : Default number of pixels to use.  The default is
+            returned if either *outRange* or *dx* are not provided.
+
+    Returns:
+        int : The number of pixels to cover *outRange* with pixels of
+            width *dx*.
+    """
+    # If the range or sampling are not provided, the number of pixels is
+    # already set
+    if outRange is None or dx is None:
+        return default
+
+    outRange = numpy.array(outRange)
+    return ( int( numpy.diff(numpy.log(outRange))/numpy.log(base) / dx) + 1 if log else \
+                int(numpy.diff(outRange)/dx + 1) )
+
+
+def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, newLog=True,
+                    dx=None, base=10.0, ext_value=0.0, conserve=False, flat=True):
+    """
+    Resample the provided vector to a new grid using integration.
+
+    This is a generalization of the routine :func:`log_rebin` provided
+    by Michele Cappellari in the pPXF package.
+
+    Args:
+        y (numpy.ndarray): Vector to resample.  Must be 1-D.
+        xRange (array): (Optional) A two-element array with the starting
+            and ending value for the coordinates of the centers of the
+            first and last pixels in y.  If not provided, the pixel
+            coordinates are used; i.e., xRange = [0,y.size-1].
+        inLog (bool): (Optional) Flag that the input vector is
+            logarithmically spaced within xRange.  Cannot be used if
+            xRange is not provided!
+        newRange (array): (Optional) Coordinates for the centers of the
+            first and last pixel in the output vector.  If not provided,
+            assumed to be the same as the input range.
+        newpix (int): (Optional) Number of pixels for the output vector.
+            If not provided, assumed to be the same as the input vector.
+        newLog (bool): (Optional) The output vector should be
+            logarithmically binned in the x-coordinates.
+        dx (float): (Optional) The sampling step for the output vector.
+            If *newLog* is True, this has to be the change in the
+            logarithm of x for the output vector!  If not provided, the
+            sampling is set by the output range (see *newRange* above)
+            and number of pixels (see *newpix* above).
+        base (float): (Optional) When logarithmically binning the output
+            vector, use this as the base.  The default is 10.0; use
+            numpy.exp(1) for natural logarithm.
+        ext_value (float): (Optional) Set extrapolated values to the
+            provided float.
+        conserve (bool): (Optional) Conserve the integral of the input
+            vector.  For example, if the input vector is a spectrum in
+            flux units, you should conserve the flux in the resampling;
+            if the spectrum is in units of flux density, you do not want
+            to conserve the integral.
+        flat (bool): (Optional) Assume the 'true' y function is flat
+            across a pixel, as is done in M. Cappellari's log_rebin
+            routine; this is the default behavior.  If set to False, the
+            integration follows a basic linear interpolation across the
+            pixel.
+
+    Returns:
+        (numpy.ndarray) : Two numpy arrays with the new x coordinates
+            and new y values for the resampled vector.
+    
+    Raises:
+        ValueError : Raised if *y* is not of type numpy.ndarray, if *y*
+            is not one-dimensional, or if *xRange* is not provided and
+            the input vector is logarithmically binned (see *inLog*
+            above).
+
+    .. todo:
+        - Need to check if this works rebinning from log to log!
+
+    """
+
+    # Check operation can be performed
+    if not isinstance(y, numpy.ndarray):
+        raise ValueError('Input vector must be a numpy.ndarray!')
+    if len(y.shape) != 1:
+        raise ValueError('Input must be a 1-D vector!')
+    if xRange is None and inLog:
+        raise ValueError('To specify the input vector as logarithmically binned, you must ' \
+                         'provided the coordinates of the first and last pixel!')
+
+    # Get the pixel borders of the input vector
+    n = int(y.shape[0])
+    inRange = numpy.array([0, n-1]) if xRange is None else numpy.array(xRange)
+    inBorders, inPscale = _pixel_borders(inRange, n, log=inLog, base=base)
+
+    # Set the output range, number of pixels, pixel borders, and output
+    # coordinate vector
+    outRange = inRange if newRange is None else numpy.array(newRange)
+    m = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=dx,
+                             default=(n if newpix is None else newpix))
+    outBorders, outPscale = _pixel_borders(outRange, m, log=newLog, base=base)
+    outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \
+            else (outBorders[1:]+outBorders[:-1])/2.0
+
+    #If the input is logarithmically binned, work in log space
+    if inLog:
+        inBorders = numpy.log(inBorders)/numpy.log(base)
+        outBorders = numpy.log(outBorders)/numpy.log(base)
+    # Convert the borders to the input pixel units
+    outBorders /= inPscale
+    inBorders /= inPscale
+
+    # Perform the integration
+    if flat:
+        # Get the new spectrum by performing an analytic integral
+        # assuming the value is flat across each pixel
+        #   - From M. Cappellari
+        k = (outBorders - inBorders[0]).clip(0, n-1).astype(int)
+        outY = numpy.add.reduceat(y, k)[:-1]
+        outY *= numpy.diff(k) > 0
+        outY += numpy.diff((outBorders - inBorders[k])*y[k])
+    else:
+        # Get the new spectrum by performing an analytic integral
+        # assuming a basic linear interpolation between the pixel values
+        #   - Not as elegant as Michele's code above, but it gets the
+        #     job done
+
+        # Create a sorted list of the pixel centers and the output
+        # borders
+        inCenters = numpy.sqrt(inBorders[1:]*inBorders[:-1]) if newLog \
+                         else (inBorders[1:]+inBorders[:-1])/2.0
+        _x = numpy.append( outBorders, inCenters )
+        srt = numpy.argsort(_x)
+        _x = _x[srt]
+
+        # Linearly interpolate the input function at the output border positions
+        _y = numpy.append(y, y[-1])
+        d = (outBorders-inCenters[0])
+        k = d.clip(0,n-1).astype(int)
+        _y = numpy.append( (1-(d-k))*y[k] + (d-k)*_y[k+1], y)[srt]
+
+        # Flag the input pixel centers for removal from reduceat
+        flg = numpy.zeros(_x.size, dtype=int)
+        flg[m+1:] = 1
+        _f = flg[srt]
+
+        # Compute the integrand
+        if inLog:
+            _y *= numpy.power(base, _x*inPscale)
+        integ = (_y[1:]+_y[:-1])*numpy.diff(_x)/2.0
+
+        # Use reduceat to calculate the integral
+        indx = _f < 1
+        k = numpy.arange(_y.size)[indx]
+        outY = numpy.add.reduceat(integ, k[:-1]) if k[-1] == _y.size-1 \
+                    else numpy.add.reduceat(integ, k)[:-1]
+
+    # Do not conserve the integral over the size of the pixel
+    if not conserve:
+        outY /= numpy.diff(outBorders)
+    if inLog:
+        outY /= outX
+
+    # Set values for extrapolated regions
+    if outRange is not None and (outRange[0] < inRange[0] or outRange[1] > inRange[1]):
+            outY[ (outX < inRange[0]) | (outX > inRange[1]) ] = ext_value
+
+    # Return new coordinates and rebinned values
+    return outX, outY
 
 

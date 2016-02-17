@@ -18,7 +18,6 @@ Defines a class used to store and interface with covariance matrices.
 *Imports*::
 
     import os.path
-    from os import environ
     from scipy import sparse
     import scipy.linalg
     from astropy.io import fits
@@ -55,7 +54,6 @@ if sys.version > '3':
     long = int
 
 import os.path
-from os import environ
 from scipy import sparse
 import scipy.linalg
 from astropy.io import fits

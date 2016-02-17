@@ -57,6 +57,10 @@ Bitmask class
 *Revision history*:
     | **01 Jun 2015**: Original implementation by K. Westfall (KBW)
     | **07 Oct 2015**: (KBW) Added a usage case
+    | **29 Jan 2016**: (KBW) Changed attributes of :class:`BitMask` and
+        added functionality to print a description of the bits.  Convert
+        :class:`TemplateLibraryBitMask` to new format where the bits are
+        read from a configuration file.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 
@@ -72,6 +76,10 @@ if sys.version > '3':
     long = int
 
 import numpy
+import os
+import textwrap
+from mangadap.config.util import _read_dap_mask_bits
+from mangadap.util.defaults import default_dap_source
 
 __author__ = 'Kyle B. Westfall'
 
@@ -83,25 +91,26 @@ class BitMask:
         keys (str, list, numpy.ndarray): List of keys (or single key) to
             use as the bit name.  Each key is given a bit number ranging
             from 0..N-1.
+        descr (str, list, numpy.ndarray): (Optional) List of descriptions
+            (or single discription) provided by :func:`info` for each bit.
 
     Raises:
-        Exception: Raised if the provided *keys* do not have the right
-            type or if the provided keys are not all unique.
+        ValueError: Raised if the provided `keys` are not all unique or
+            if the number of descriptions provided is not the same as
+            the number of keys.
+        TypeError: Raised if the provided `keys` do not have the correct
+            type.
 
     Attributes:
-        keys (numpy.ndarray): List of keys (or single key) to use as the
-            bit name.  Each key is given a bit number ranging from
-            0..N-1.
-        nbits (int): The number of bits (i.e. the length of the
-            :attr:`keys` vector).
-        flags (dict): A dictionary with the bit name and value
+        bits (dict): A dictionary with the bit name and value
+        descr (numpy.ndarray) : List of bit descriptions
         max_value (int): The maximum valid bitmask value given the
             number of bits.
 
     """
-    def __init__(self, keys):
+    def __init__(self, keys, descr=None):
         if type(keys) not in [str, list, numpy.ndarray]:
-            raise Exception('Input bit names do not have the right type.')
+            raise TypeError('Input bit names do not have the right type.')
 
         if type(keys) == list:
             keys = numpy.array(keys)
@@ -109,12 +118,57 @@ class BitMask:
             keys = numpy.array([keys])
 
         if keys.size != numpy.unique(keys).size:
-            raise Exception('All input keys must be unique.')
+            raise ValueError('All input keys must be unique.')
 
-        self.keys = keys
-        self.nbits = self.keys.size
-        self.flags = dict([ (self.keys[i],i) for i in range(0,self.nbits) ])
-        self.max_value = (1 << self.nbits)-1
+        self.bits = dict([ (k,i) for i,k in enumerate(keys) ])
+        self.max_value = (1 << self.nbits())-1
+
+        self.descr = None
+        if descr is None:
+            return
+
+        if type(descr) == list:
+            descr = numpy.array(descr)
+        if type(descr) == str:
+            descr = numpy.array([descr])
+
+        if descr.size != self.nbits():
+            raise ValueError('Number of listed descriptions not the same as number of keys.')
+
+        self.descr = descr.copy()
+
+
+    def keys(self):
+        """
+        Return a list of the bits.
+        
+        Returns:
+            list : List of bit keywords.
+        """
+        return list(self.bits.keys())
+
+
+    def nbits(self):
+        """
+        Return the number of bits.
+
+        Returns:
+            int : Number of bits
+        """
+        return len(self.bits)
+
+
+    def info(self):
+        """
+        Print the list of bits and, if available, their descriptions.
+        """
+        tr, tcols = numpy.array(os.popen('stty size', 'r').read().split()).astype(int)
+        tcols -= int(tcols*0.1)
+        for k,v in sorted(self.bits.items(), key=lambda x:(x[1],x[0])):
+            print('Bit: {0} = {1}'.format(k,v))
+            if self.descr is not None:
+                print(textwrap.fill('Description: {0}'.format(self.descr[v]), tcols))
+            print(' ')
 
 
     def flagged(self, value, flag=None):
@@ -142,20 +196,20 @@ class BitMask:
 
         """
         if flag is None:
-            flag = self.keys
+            flag = self.keys()
 
         if type(flag) == str:
-            return value & (1 << self.flags[flag]) != 0
+            return value & (1 << self.bits[flag]) != 0
 
         if hasattr(flag, "__iter__"):
             if any([ (type(f) != str and type(f) != numpy.str_) for f in flag ]):
                 raise Exception('Provided bit names must be strings!')
-            out = value & (1 << self.flags[flag[0]]) != 0
+            out = value & (1 << self.bits[flag[0]]) != 0
 #            print(out)
             nn = len(flag)
 #            print(nn)
             for i in range(1,nn):
-                out |= (value & (1 << self.flags[flag[i]]) != 0)
+                out |= (value & (1 << self.bits[flag[i]]) != 0)
 #                print(i, out)
             return out
 
@@ -183,7 +237,7 @@ class BitMask:
         """
         if type(flag) != str:
             raise Exception('Provided bit name must be a string!')
-        return value ^ (1 << self.flags[flag])
+        return value ^ (1 << self.bits[flag])
 
 
     def turn_on(self, value, flag):
@@ -207,7 +261,7 @@ class BitMask:
         """
         if type(flag) != str:
             raise Exception('Provided bit name must be a string!')
-        return value | (1 << self.flags[flag])
+        return value | (1 << self.bits[flag])
 
 
     def turn_off(self, value, flag):
@@ -231,7 +285,7 @@ class BitMask:
         """
         if type(flag) != str:
             raise Exception('Provided bit name must be a string!')
-        return value & ~(1 << self.flags[flag])
+        return value & ~(1 << self.bits[flag])
 
 
 class TemplateLibraryBitMask(BitMask):
@@ -260,14 +314,10 @@ class TemplateLibraryBitMask(BitMask):
           the existing spectral resolution.
 
     """
-    def __init__(self):
-        BitMask.__init__(self, numpy.array([
-                'NO_DATA',          # Pixel not observed
-                'WAVE_INVALID',     # Designated as invalid wavelength region
-                'FLUX_INVALID',     # Designated as invalid flux value
-                'SPECRES_EXTRAP',   # Spectral resolution match used extrapolated resolution value
-                'SPECRES_LOW'       # No spectral resolution match because target higher than input
-                         ]))
+    def __init__(self, dapsrc=None):
+        keys, descr = _read_dap_mask_bits('template_bits.ini',
+                                          default_dap_source() if dapsrc is None else str(dapsrc))
+        BitMask.__init__(self, keys, descr)
 
 
 def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \

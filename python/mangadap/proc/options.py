@@ -4,7 +4,7 @@ Provides a set of functions that define and return options available to
 the MaNGA DAP.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/util/options.py
+    $MANGADAP_DIR/python/mangadap/proc/options.py
 
 *Python2/3 compliance*::
 
@@ -19,10 +19,6 @@ the MaNGA DAP.
 
 *Imports*::
 
-    import os.path
-    from os import environ
-    import numpy
-
 *Revision history*:
     | **18 Jun 2015**: Original implementation by K. Westfall (KBW)
 
@@ -36,10 +32,6 @@ from __future__ import unicode_literals
 import sys
 if sys.version > '3':
     long = int
-
-import os.path
-from os import environ
-import numpy
 
 __author__ = 'Kyle B. Westfall'
 
