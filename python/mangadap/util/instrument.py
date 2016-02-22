@@ -58,6 +58,7 @@ import warnings
 import numpy
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy.special import erf
 from mangadap.util.constants import constants
 from mangadap.util.misc import where_not
 import astropy.constants
@@ -156,10 +157,23 @@ class convolution_integral_element:
 
 
     def _get_kernel(self, xc):
-        """Calculate the kernel vector when centered at *xc*."""
-        div = numpy.square((self.x-xc)/self.sigma) 
-        close_value = numpy.where(div < 50.0)
-        outkern = numpy.exp(-0.5*div[close_value])/self.norm[close_value]
+        """Calculate the kernel vector when centered at *xc*.
+
+        .. todo::
+
+            - Function is about 30% slower when using erf() as opposed
+              to exp().  erf() needed when sigma is small, but may be
+              efficient to include some decision on when it's safe to
+              use the quick way.
+        
+        """
+
+        d = (self.x-xc)
+        gf = numpy.square(d/self.sigma) 
+        close_value = numpy.where(gf < 50.0)
+#        outkern = numpy.exp(-0.5*gf[close_value])/self.norm[close_value]
+        outkern = (erf((d[close_value]+0.5)/numpy.sqrt(2)/self.sigma[close_value])
+                    - erf((d[close_value]-0.5)/numpy.sqrt(2)/self.sigma[close_value]))/2.
         return close_value, outkern
 
 
