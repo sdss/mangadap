@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
-"""
-
+r"""
 Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 

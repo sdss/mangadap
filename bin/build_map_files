@@ -9,7 +9,6 @@ import sys
 if sys.version > '3':
     long = int
 
-#-----------------------------------------------------------------------
 import os.path
 import glob
 from subprocess import call
@@ -24,7 +23,7 @@ def build_map_files(plt, ifu, mpl, output_path):
     file_root = default_manga_fits_root(plt, ifu, 'CUBE')
         
 #    scr = os.path.join(dap_source, 'bin', 'dap_data_to_fits_cube.py')
-    scr = os.path.join(dap_source, 'bin', 'dap_data_to_map_file.py')
+    scr = os.path.join(dap_source, 'bin', 'dap_data_to_map_file')
 
     bintype = [ 'NONE', 'STON', 'RADIAL' ]
 
@@ -53,9 +52,9 @@ if __name__ == '__main__':
     t = clock()
 
     if len(sys.argv) != 4 and len(sys.argv) != 5:
-        print('Usage: build_map_files.py <plate> <ifudesign> <MPL-3 or MPL-4>')
+        print('Usage: build_map_files <plate> <ifudesign> <MPL-3 or MPL-4>')
         print(' or')
-        print('       build_map_files.py <plate> <ifudesign> <MPL-3 or MPL-4> <directory path>')
+        print('       build_map_files <plate> <ifudesign> <MPL-3 or MPL-4> <directory path>')
         exit(1)
 
     plt = str(sys.argv[1])

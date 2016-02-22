@@ -28,13 +28,13 @@ Bitmask class
 
         # Imports
         import numpy
-        from mangadap.drpfile import drpfile
+        from mangadap.drpfits import DRPFits
         from mangadap.proc.TemplateLibrary import TemplateLibrary
         from mangadap.util.bitmasks import TemplateLibraryBitMask
         from matplotlib import pyplot
 
         # Define the DRP file
-        drpf = drpfile(7495, 12703, 'CUBE')
+        drpf = DRPFits(7495, 12703, 'CUBE')
 
         # Build the template library
         tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
@@ -61,6 +61,7 @@ Bitmask class
         added functionality to print a description of the bits.  Convert
         :class:`TemplateLibraryBitMask` to new format where the bits are
         read from a configuration file.
+    | **17 Feb 2016**: (KBW) Minor edit to documentation
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 

@@ -3,6 +3,7 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import numpy
 from os import remove
@@ -10,7 +11,7 @@ import os.path
 from time import clock
 import sys
 
-from mangadap.drpfile import drpfile
+from mangadap.drpfits import DRPFits
 
 #-----------------------------------------------------------------------------
 
@@ -21,7 +22,7 @@ def calculate_covariance_cube(plate, ifudesign, nchannels, ofile, directory_path
 
     # Access the DRP RSS file
     print('Attempting to open RSS file:')
-    drpf = drpfile(plate, ifudesign, 'RSS', read=True, directory_path=directory_path)
+    drpf = DRPFits(plate, ifudesign, 'RSS', read=True, directory_path=directory_path)
     print('     FOUND: {0}'.format(drpf.file_path()))
 
     nw = drpf.hdu['FLUX'].data.shape[1]                     # Number of wavelength channels
