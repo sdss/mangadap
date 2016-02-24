@@ -353,6 +353,7 @@
 ;       10 Jul 2015: (KBW) Converted default values to -9999.0d
 ;       13 Jul 2015: (KBW) Adjust for changes in
 ;                          MDAP_MEAN_GAS_KINEMATICS
+;       25 Jan 2016: (KBW) ppxf status set to 1 if not pixels to fit
 ;-
 ;------------------------------------------------------------------------------
 
@@ -940,9 +941,8 @@ PRO MDAP_GANDALF_WRAP, $
 
             print, 'Starting pPXF'
             fitted_pixels_ppxf = where(cnt_mask_ lt 1., count)      ; Select the unmasked pixels
-;           if fitted_pixels_ppxf[0] eq -1 then $
-            if count eq 0 then $
-                message, 'No pixels to fit by pPXF!'
+;           if count eq 0 then $
+;               message, 'No pixels to fit by pPXF!'
 
 ;           plot, obj_wave, obj_flux, color=200
 ;           oplot, obj_wave[goodpixels], obj_flux[goodpixels]
@@ -966,14 +966,22 @@ PRO MDAP_GANDALF_WRAP, $
 ;           mdegree=0
             ; TODO: Keep the additive and multiplicative continua using polyweights and sol
             ; TODO: Don't like passing transpose!
-            MDAP_PPXF, transpose(tpl_flux), obj_flux, obj_sige, velScale, start_ppxf, sol_ppxf, $
-                       bestfit=bestfit_ppxf, bias=bias, degree=degree, error=err_ppxf, $
-                       goodpixels=fitted_pixels_ppxf, mdegree=mdegree, moments=moments, $
-                       oversample=oversample, weights=weights_ppxf, range_v_star=range_v_star, $
-                       range_s_star=range_s_star, external_library=external_library, $
-                       polyweights=add_poly_coeff_ppxf, plot=plot
-            ; TODO: Check the success of pPXF!
-            ppxf_status = 0
+
+            if count ne 0 then begin
+                MDAP_PPXF, transpose(tpl_flux), obj_flux, obj_sige, velScale, start_ppxf, $
+                           sol_ppxf, bestfit=bestfit_ppxf, bias=bias, degree=degree, $
+                           error=err_ppxf, goodpixels=fitted_pixels_ppxf, mdegree=mdegree, $
+                           moments=moments, oversample=oversample, weights=weights_ppxf, $
+                           range_v_star=range_v_star, range_s_star=range_s_star, $
+                           external_library=external_library, polyweights=add_poly_coeff_ppxf, $
+                           plot=plot
+                ; TODO: Check the success of pPXF!
+                ppxf_status = 0
+            endif else begin
+                print, 'WARNING: No pixels to fit by pPXF!'
+                ppxf_status = 1
+            endelse
+
         endif
 
         print, 'Done pPXF'
@@ -988,7 +996,7 @@ PRO MDAP_GANDALF_WRAP, $
             err_ppxf = make_array(max_ppxf_moments, /double, value=-9999.0d)
 
             weights_ppxf = make_array(ntpl, /double, value=-9999.0d)    ; No template weights
-            bestfit_ppxf = make_array(nc, /double, value=-9999.0d)      ; No fit
+            bestfit_ppxf = make_array(nc, /double, value=0.0d)          ; No fit (set to 0)
 
             fitted_pixels_ppxf=-1                                       ; No pixels fit
             add_poly_coeff_ppxf=-1                                      ; No additive continuum
