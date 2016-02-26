@@ -60,7 +60,9 @@ Analysis Pipeline (DAP).
         checks to other code to make sure drpver, dapver, and
         analysis_path are not None when directory_path has been directly
         defined.**
-    | **15 Feb 2015**: (KBW) Reset checksum default to False.
+    | **15 Feb 2016**: (KBW) Reset checksum default to False.
+    | **24 Feb 2016**: (KBW) Added :func:`dapfile.__getitem__`
+        function
 
 .. todo::
     - check that *bintype* is valid 
@@ -199,6 +201,13 @@ class dapfile:
             return
         self.hdu.close()
         self.hdu = None
+
+
+    def __getitem__(self, key):
+        """Access elements of the hdu."""
+        if self.hdu is None:
+            return None
+        return self.hdu[key]
 
 
     def open_hdu(self, permissions='readonly', checksum=False, quiet=True):

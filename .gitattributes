@@ -2,6 +2,7 @@
 /RELEASE_NOTES -text
 bin/build_map_files -text
 bin/calculate_covariance -text
+bin/calculate_sigma_inst_cube -text
 bin/dap_data_to_fits_cube -text
 bin/dap_data_to_map_file -text
 bin/dap_running.bash -text

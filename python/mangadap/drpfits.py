@@ -41,7 +41,8 @@ matrix for the DRP 'CUBE' files.
 
     .. todo::
 
-        Add some usage comments here!
+        - Add some usage comments here!
+        - Image reconstruction has transpose sense wrt DRP output!
 
 *Revision history*:
     | **20 Nov 2014**: Original implementation by K. Westfall (KBW)
@@ -426,9 +427,12 @@ class DRPFits:
         self.hdu.close()
         self.hdu = None
 
+
     def __getitem__(self, key):
-        if self.hdu is None:
-            return None
+        """Access elements of the hdu."""
+        self.open_hdu(checksum=self.checksum)
+#        if self.hdu is None:
+#            return None
         return self.hdu[key]
 
 
