@@ -101,7 +101,7 @@ def default_drp_version():
     return environ['MANGADRP_VER']
 
 
-def default_redux_path(drpver):
+def default_redux_path(drpver=None):
     """
     Return the main output path for the DRP products using the
     environmental variable MANGA_SPECTRO_REDUX.
@@ -217,7 +217,7 @@ def default_dap_version():
     return environ['MANGADAP_VER']
 
 
-def default_analysis_path(drpver, dapver):
+def default_analysis_path(drpver=None, dapver=None):
     """
     Return the main output path for the DAP using the environmental
     variable MANGA_SPECTRO_ANALYSIS.
