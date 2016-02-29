@@ -58,6 +58,7 @@
 ;                          center of the galaxy.  The two coordinates
 ;                          are most often the same, except for
 ;                          intentional offsets (like 7443-12701).
+;       29 Feb 2016: (KBW) Fixed cos() argument to be in radians!
 ;-
 ;-----------------------------------------------------------------------
 
@@ -76,7 +77,7 @@ PRO MDAP_RSS_ONSKY_XY, $
         ifura = SXPAR(header, 'IFURA')              ; IFU RA in degrees
         ifudec = SXPAR(header, 'IFUDEC')            ; IFU DEC in degrees
 
-        x_offset = (ifura-objra)*cos(objdec)*3600. ; Offset in RA
+        x_offset = (ifura-objra)*cos(objdec*!PI/180.)*3600. ; Offset in RA
         y_offset = (ifudec-objdec)*3600.           ; Offset in DEC
 
         print, 'IFU RA/DEC:', ifura, ifudec
