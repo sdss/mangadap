@@ -1670,8 +1670,9 @@ class DRPFits:
         return covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
 
 
-    def instrumental_dispersion_plane(self, channel, pixelscale=None, recenter=None,
-                                      width_buffer=None, rlim=None, sigma=None, quiet=False):
+    def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,
+                                      recenter=None, width_buffer=None, rlim=None, sigma=None,
+                                      quiet=False):
         r"""
         Return the instrumental dispersion for the reconstructed 'CUBE'
         wavelength plane.
@@ -1727,6 +1728,9 @@ class DRPFits:
         Args:
             channel (int): Index of the spectral channel for which
                 to calculate the transfer matrix.
+            dispersion_factor (float): (Optional) Artificially multiply
+                the dispersion measurements by this factor before
+                calculating the reconstructed dispersion.
             pixelscale (float): (Optional) Desired pixel scale in arcsec
             recenter (bool): (Optional) Flag to recenter the cooridinate
                 system
@@ -1763,17 +1767,20 @@ class DRPFits:
 
             drpf = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
                            redux_path=self.redux_path, directory_path=self.directory_path)
-            return drpf.instrumental_dispersion_plane(channel, pixelscale, recenter, width_buffer,
-                                                      rlim, sigma, quiet)
+            return drpf.instrumental_dispersion_plane(channel, dispersion_factor, pixelscale,
+                                                      recenter, width_buffer, rlim, sigma, quiet)
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
         # keep the returned matrix)
         self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
+        # Get the dispersion factor
+        _df = 1.0 if dispersion_factor is None else dispersion_factor
+
         # Return the regridded data with the proper shape (nx by ny)
         Tc = self.regrid_T.sum(axis=1).flatten()
         Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
-        return numpy.sqrt( self.regrid_T.dot(numpy.square(self.hdu['DISP'].data[:,channel]))
+        return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu['DISP'].data[:,channel]))
                            / Tc ).reshape(self.nx, self.ny)
 
 

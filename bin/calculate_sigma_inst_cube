@@ -20,7 +20,8 @@ from astropy.io import fits
 
 #-----------------------------------------------------------------------------
 
-def calculate_sigma_inst_cube(plate, ifudesign, ofile, wave=None, directory_path=None):
+def calculate_sigma_inst_cube(plate, ifudesign, ofile, wave=None, directory_path=None,
+                              dispersion_factor=None):
 
     print('     PLATE: {0}'.format(plate))
     print(' IFUDESIGN: {0}'.format(ifudesign))
@@ -34,7 +35,8 @@ def calculate_sigma_inst_cube(plate, ifudesign, ofile, wave=None, directory_path
         channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data - wave) )[0]
         print('Nearest wavelength channel has wavelength {0:.1f} ang.'.format(
                                                                     drpf['WAVE'].data[channel]))
-        sig_inst = numpy.transpose(drpf.instrumental_dispersion_plane(channel))
+        sig_inst = numpy.transpose(drpf.instrumental_dispersion_plane(channel,
+                                   dispersion_factor=dispersion_factor))
         mask = numpy.array(numpy.invert(sig_inst>0), dtype=numpy.uint8)
 
         # Need to be more thoughtful with the header stuff here
@@ -55,7 +57,9 @@ def calculate_sigma_inst_cube(plate, ifudesign, ofile, wave=None, directory_path
 
         for i in range(nw):
             print('Constructing wavelength channel: {0}/{1}'.format(i+1,nw), end='\r')
-            siginst_cube[i,:,:] = numpy.transpose(drpf.instrumental_dispersion_plane(i,quiet=True))
+            siginst_cube[i,:,:] = numpy.transpose(
+                    drpf.instrumental_dispersion_plane(i, dispersion_factor=dispersion_factor,
+                                                       quiet=True))
             siginst_mask[i,:,:] = numpy.array(numpy.invert(siginst_cube[i,:,:]>0),dtype=numpy.uint8)
         print('Constructing wavelength channel: DONE                 ')
 
@@ -90,13 +94,19 @@ if __name__ == '__main__':
                         help='Directory with the DRP produced RSS file; default uses environmental '
                              'variables to define the default MaNGA DRP redux path', default=None)
 
+    parser.add_argument('-f', '--dispersion_factor', type=float,
+                        help='Artificially *increase* the instrumental dispersion (a *decrease* '
+                             'in the spectral resolution) by this factor before reconstructing '
+                             'the dispersion cube.', default=None)
+
     arg = parser.parse_args()
 
     if os.path.isfile(arg.output_file):
         print('WARNING: Overwriting existing file {0}!'.format(arg.output_file))
 
     calculate_sigma_inst_cube(arg.plate, arg.ifudesign, arg.output_file, wave=arg.wavelength,
-                              directory_path=arg.directory_path)
+                              directory_path=arg.directory_path,
+                              dispersion_factor=arg.dispersion_factor)
 
     print('Elapsed time: {0} seconds'.format(clock() - t))
 
