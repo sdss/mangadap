@@ -40,7 +40,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     from astropy import constants
     from mangadap.util.yanny import yanny, read_yanny
     from mangadap.util import defaults
-    from mangadap import drpfile
+    from mangadap import drpfits
     from mangadap import dapfile
     from mangadap.util.parser import arginp_to_list, list_to_csl_string
     from mangadap.util.exception_tools import print_frame
@@ -60,7 +60,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         the plateTargets files; added the nsa_catid.  Changed drppath to
         redux_path.  Added catid and catindx to output file.  Major
         change to matching when using NSA catalog(s).  Imports full
-        :class:`mangadap.drpfile` and :class:`mangadap.dapfile` classes,
+        :class:`mangadap.drpfits` and :class:`mangadap.dapfile` classes,
         require a change to the function calls. Changed parameter order
         in :func:`write` and allowed for use of attributes as default.
     | **20 May 2015**: (KBW) Documentation and Sphinx tests. Prep for
@@ -84,6 +84,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         MaNGA core
     | **17 Feb 2016**: (KBW) Converted the name of the class to
         DRPComplete
+    | **29 Feb 2016**: (KBW) Import drpfits, not drpfile
 
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
@@ -108,7 +109,7 @@ from astropy.io import fits
 from astropy import constants
 from mangadap.util.yanny import yanny, read_yanny
 from mangadap.util import defaults
-from mangadap import drpfile
+from mangadap import drpfits
 from mangadap import dapfile
 from mangadap.util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from mangadap.util.exception_tools import print_frame
@@ -138,7 +139,7 @@ class DRPComplete:
             :func:`mangadap.util.defaults.kdefault_plate_target_files`.
         drpver (str): (Optional) DRP version, which is:
                 - used to define the default DRP redux path
-                - used when declaring a drpfile instance
+                - used when declaring a drpfits instance
                 - used in the name of the drpcomplete fits file
                 - included as a header keyword in the output file
             Default is defined by
@@ -146,7 +147,7 @@ class DRPComplete:
 
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files; this is the same as the
-            *redux_path* in the :class:`mangadap.drpfile` class.
+            *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.
             Default is defined by
             :func:`mangadap.util.defaults.default_redux_path`.
         dapver (str): (Optional) DAP version, which is:
@@ -238,7 +239,7 @@ class DRPComplete:
         Grab the MaNGA IDs from the DRP fits files.
         
         Args:
-            drplist (drpfile) : List of :class:`mangadap.drpfile`
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
                 objects
 
         Returns:
@@ -268,7 +269,8 @@ class DRPComplete:
         files.
         
         Args:
-            drplist (list) : List of :class:`mangadap.drpfile` objects
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
+                objects
 
         Returns:
             numpy.array : Three arrays with, respectively, the MaNGA IDs
@@ -613,7 +615,7 @@ class DRPComplete:
         if matchedlist:
             n_plates=len(self.platelist)
             for i in range(0,n_plates):
-                drpf = drpfile.drpfile(self.platelist[i], self.ifudesignlist[i], 'CUBE',
+                drpf = drpfits.DRPFits(self.platelist[i], self.ifudesignlist[i], 'CUBE',
                                        drpver=self.drpver)
                 if os.path.exists(drpf.file_path()):
                     plates.append(self.platelist[i])
@@ -678,7 +680,8 @@ class DRPComplete:
             - Allow for there to be *only* 'RSS' files.
 
         Args:
-            drplist (list) : List of :class:`mangadap.drpfile` objects
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
+                objects
 
         Returns:
             numpy.array : Array of modes for each input DRP file.
@@ -688,7 +691,7 @@ class DRPComplete:
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
         print('Checking for RSS counterparts...', end='\r')
         for i in range(0,n_drp):
-            drpf = drpfile.drpfile(drplist[i].plate, drplist[i].ifudesign, 'RSS',
+            drpf = drpfits.DRPFits(drplist[i].plate, drplist[i].ifudesign, 'RSS',
                                    drpver=drplist[i].drpver)
             modes[i] = 2 if os.path.exists(drpf.file_path()) else 1
         print('Checking for RSS counterparts...DONE.')
@@ -807,12 +810,12 @@ class DRPComplete:
                                                                     combinatorics=combinatorics)
 
         # Setup the list of modes such that the combinatorics in
-        # drpfile_list is correct.  After running
+        # drpfits_list is correct.  After running
         # _find_completed_reductions(), the length of platelist and
         # ifudesignlist should be the same!
         n_plates = len(self.platelist)
         modelist = ['CUBE' for i in range(0,n_plates)]
-        drplist = drpfile.drpfile_list(self.platelist, self.ifudesignlist, modelist,
+        drplist = drpfits.drpfits_list(self.platelist, self.ifudesignlist, modelist,
                                        drpver=self.drpver)
 
         # By running _all_data_exists() the self.data and self.nrows
