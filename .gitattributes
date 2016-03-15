@@ -2728,7 +2728,7 @@ python/mangadap/plot/util.py -text
 python/mangadap/proc/__init__.py -text
 python/mangadap/proc/options.py -text
 python/mangadap/proc/ppxf.py -text
-python/mangadap/proc/templatelibrary.py -text
+python/mangadap/proc/templatelibrary.py.0 -text
 python/mangadap/proc/util.py -text
 python/mangadap/proc/voronoi_2d_binning.py -text
 python/mangadap/stack/__init__.py -text
