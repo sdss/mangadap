@@ -2,7 +2,7 @@
 Defines a class used to produce and provide an interface for data
 required to create the input `SDSS parameter files`_ for the DAP.
 
-The drpcomplete file/data is primarily requred for the survey-level
+The drpcomplete file/data is primarily required for the survey-level
 execution of the `DAP at Utah`_.  However, it does provide useful
 information regarding the completed DRP files, and it can be used to
 create DAP par files.
@@ -40,7 +40,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     from astropy import constants
     from mangadap.util.yanny import yanny, read_yanny
     from mangadap.util import defaults
-    from mangadap import drpfile
+    from mangadap import drpfits
     from mangadap import dapfile
     from mangadap.util.parser import arginp_to_list, list_to_csl_string
     from mangadap.util.exception_tools import print_frame
@@ -60,7 +60,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         the plateTargets files; added the nsa_catid.  Changed drppath to
         redux_path.  Added catid and catindx to output file.  Major
         change to matching when using NSA catalog(s).  Imports full
-        :class:`mangadap.drpfile` and :class:`mangadap.dapfile` classes,
+        :class:`mangadap.drpfits` and :class:`mangadap.dapfile` classes,
         require a change to the function calls. Changed parameter order
         in :func:`write` and allowed for use of attributes as default.
     | **20 May 2015**: (KBW) Documentation and Sphinx tests. Prep for
@@ -69,18 +69,22 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     | **21 Aug 2015**: (KBW) Major revisions: File moved from main
         module to survey submodule; now only reads plateTargets files,
         which have the NSA IDs in them; changed the number of arrays
-        returned by :func:`drpcomplete._match_platetargets` and the
+        returned by :func:`DRPComplete._match_platetargets` and the
         default values; removed def_veldisp and use_trg from
-        :func:`drpcomplete.update`; added target-catalog version, and
+        :func:`DRPComplete.update`; added target-catalog version, and
         NSAID v1_0_0 to the output fits file; removed options from
-        :func:`drpcomplete.write` related to the target catalogs and
+        :func:`DRPComplete.write` related to the target catalogs and
         platetargets files (these should be defined by the object);
-    | **27 Aug 2015**: Include MANGA_TARGET1 and MANGA_TARGET3 in data
-        structure, pulled from plateTargets files; NSAID v1_0_0 removed;
-        changed from returning Sersic parameters to elliptical Petrosian
-        parameters.
-    | **06 Oct 2015**: Changed to reading 'object_ra' and 'object_dec',
-        instead of target counter parts due to changes in MaNGA core
+    | **27 Aug 2015**: (KBW) Include MANGA_TARGET1 and MANGA_TARGET3 in
+        data structure, pulled from plateTargets files; NSAID v1_0_0
+        removed; changed from returning Sersic parameters to elliptical
+        Petrosian parameters.
+    | **06 Oct 2015**: (KBW) Changed to reading 'object_ra' and
+        'object_dec', instead of target counter parts due to changes in
+        MaNGA core
+    | **17 Feb 2016**: (KBW) Converted the name of the class to
+        DRPComplete
+    | **29 Feb 2016**: (KBW) Import drpfits, not drpfile
 
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
@@ -105,14 +109,14 @@ from astropy.io import fits
 from astropy import constants
 from mangadap.util.yanny import yanny, read_yanny
 from mangadap.util import defaults
-from mangadap import drpfile
+from mangadap import drpfits
 from mangadap import dapfile
 from mangadap.util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from mangadap.util.exception_tools import print_frame
 
 __author__ = 'Kyle Westfall'
 
-class drpcomplete:
+class DRPComplete:
     """Find DRP files ready for analysis and write parameter files.
 
     This class searches the defined paths for files resulting from the
@@ -135,21 +139,21 @@ class drpcomplete:
             :func:`mangadap.util.defaults.kdefault_plate_target_files`.
         drpver (str): (Optional) DRP version, which is:
                 - used to define the default DRP redux path
-                - used when declaring a drpfile instance
-                - used in the name of the drpcomplete file
+                - used when declaring a drpfits instance
+                - used in the name of the drpcomplete fits file
                 - included as a header keyword in the output file
             Default is defined by
             :func:`mangadap.util.defaults.default_drp_version`
 
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files; this is the same as the
-            *redux_path* in the :class:`mangadap.drpfile` class.
+            *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.
             Default is defined by
             :func:`mangadap.util.defaults.default_redux_path`.
         dapver (str): (Optional) DAP version, which is:
                 - used to define the default DAP analysis path
                 - included as a header keyword in the output drpcomplete
-                  file
+                  fits file
 
             Default is defined by
             :func:`mangadap.util.defaults.default_dap_version`
@@ -235,7 +239,7 @@ class drpcomplete:
         Grab the MaNGA IDs from the DRP fits files.
         
         Args:
-            drplist (drpfile) : List of :class:`mangadap.drpfile`
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
                 objects
 
         Returns:
@@ -265,7 +269,8 @@ class drpcomplete:
         files.
         
         Args:
-            drplist (list) : List of :class:`mangadap.drpfile` objects
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
+                objects
 
         Returns:
             numpy.array : Three arrays with, respectively, the MaNGA IDs
@@ -496,7 +501,7 @@ class drpcomplete:
         """
         Determines if the data for all the plates/ifudesigns selected in
         the current compilation is already present in the current
-        drpcomplete file.
+        drpcomplete fits file.
 
         Args:
             quiet (bool): (Optional) Suppress output
@@ -532,19 +537,20 @@ class drpcomplete:
 
     def _confirm_access(self, reread):
         """
-        Check the drpcomplete file at :func:`file_path` is accessible,
-        and read the data if not yet read.
+        Check the drpcomplete fits file at :func:`file_path` is
+        accessible, and read the data if not yet read.
 
         Args:
             reread (bool): Force the file to be re-read
 
         Raises:
-            Exception: Raised if the drpcomplete file does not exist.
+            FileNotFoundError: Raised if the drpcomplete fits file does
+                not exist.
 
         """
         inp = self.file_path()
         if not os.path.exists(inp):
-            raise Exception('Cannot open file: {0}'.format(inp))
+            raise FileNotFoundError('Cannot open file: {0}'.format(inp))
         if self.data is None or reread:
             self._read_data()
 
@@ -609,7 +615,7 @@ class drpcomplete:
         if matchedlist:
             n_plates=len(self.platelist)
             for i in range(0,n_plates):
-                drpf = drpfile.drpfile(self.platelist[i], self.ifudesignlist[i], 'CUBE',
+                drpf = drpfits.DRPFits(self.platelist[i], self.ifudesignlist[i], 'CUBE',
                                        drpver=self.drpver)
                 if os.path.exists(drpf.file_path()):
                     plates.append(self.platelist[i])
@@ -674,7 +680,8 @@ class drpcomplete:
             - Allow for there to be *only* 'RSS' files.
 
         Args:
-            drplist (list) : List of :class:`mangadap.drpfile` objects
+            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
+                objects
 
         Returns:
             numpy.array : Array of modes for each input DRP file.
@@ -684,7 +691,7 @@ class drpcomplete:
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
         print('Checking for RSS counterparts...', end='\r')
         for i in range(0,n_drp):
-            drpf = drpfile.drpfile(drplist[i].plate, drplist[i].ifudesign, 'RSS',
+            drpf = drpfits.DRPFits(drplist[i].plate, drplist[i].ifudesign, 'RSS',
                                    drpver=drplist[i].drpver)
             modes[i] = 2 if os.path.exists(drpf.file_path()) else 1
         print('Checking for RSS counterparts...DONE.')
@@ -765,24 +772,29 @@ class drpcomplete:
         If the result of :func:`file_path` does exist, the available
         plates and ifudesigns in the file are compared against the list
         (provided or collected) to update.  If the lists differ, the
-        drpcomplete file is re-created from scratch.  If all the plates
-        and ifudesigns are available, nothing is done, unless
+        drpcomplete fits file is re-created from scratch.  If all the
+        plates and ifudesigns are available, nothing is done, unless
         force=True.
 
         Args:
             platelist (str or list): (Optional) List of plates to
-                include in the drpcomplete file.
+                include in the drpcomplete fits file.
             ifudesignlist (str or list): (Optional) List of ifudesigns
-                to include in the drpcomplete file.
+                to include in the drpcomplete fits file.
             combinatorics (bool): (Optional) Determine all combinations
                 of the entered plates and ifudesigns.
             force (bool): (Optional) Overwrite any existing drpcomplete
-                file with a new one built from scratch.
+                fits file with a new one built from scratch.
             alldrp (bool): (Optional) Find the full list of available
                 DRP files.
+
+        Raises:
+            AttributeError: Raised if drpcomplete fits file was opened
+                in read-only mode.
+
         """
         if self.readonly:
-            raise Exception('drpcomplete file was opened as read-only!')
+            raise AttributeError('drpcomplete fits file was opened as read-only!')
 
         if platelist is not None:
             self.platelist = arginp_to_list(platelist, evaluate=True)
@@ -798,12 +810,12 @@ class drpcomplete:
                                                                     combinatorics=combinatorics)
 
         # Setup the list of modes such that the combinatorics in
-        # drpfile_list is correct.  After running
+        # drpfits_list is correct.  After running
         # _find_completed_reductions(), the length of platelist and
         # ifudesignlist should be the same!
         n_plates = len(self.platelist)
         modelist = ['CUBE' for i in range(0,n_plates)]
-        drplist = drpfile.drpfile_list(self.platelist, self.ifudesignlist, modelist,
+        drplist = drpfits.drpfits_list(self.platelist, self.ifudesignlist, modelist,
                                        drpver=self.drpver)
 
         # By running _all_data_exists() the self.data and self.nrows
@@ -814,10 +826,10 @@ class drpcomplete:
         else:
             print('Updating {0}.'.format(self.file_path()))
 
-        # Past this point, the drpcomplete file will be ovewritten if it
-        # already exists.  Only DRP files created using self.platelist
-        # and self.ifudesignlist will be used to create the file, EVEN
-        # IF OTHER FILES EXIST.
+        # Past this point, the drpcomplete fits file will be ovewritten
+        # if it already exists.  Only DRP files created using
+        # self.platelist and self.ifudesignlist will be used to create
+        # the file, EVEN IF OTHER FILES EXIST.
 
         modes = self._find_modes(drplist)
 
@@ -915,16 +927,18 @@ class drpcomplete:
             clobber (bool): (Optional) Overwrite any existing file.
 
         Raises:
-            Exception: Raised if the drpcomplete file was opened as read
-                only or if the drpcomplete file exists and clobber=False.
+            AttributeError: Raised if drpcomplete fits file was opened
+                in read-only mode.
+            FileExistsError: Raised if the drpcomplete file exists and
+                clobber=False.
 
         """
         if self.readonly:
-            raise Exception('drpcomplete file was opened as read-only!')
+            raise AttributeError('drpcomplete fits file was opened as read-only!')
 
         out=self.file_path()
         if os.path.exists(out) and not clobber:
-            raise Exception('DRP complete file already exists: {0}'.format(out))
+            raise FileExistsError('DRP complete file already exists: {0}'.format(out))
 
         # Create the primary header
         nplttrg = len(self.platetargets)

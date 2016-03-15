@@ -3,6 +3,7 @@
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import sys
 if sys.version > '3':
@@ -13,15 +14,12 @@ from os import remove
 import os.path
 from time import clock
 
-from mangadap.drpfile import drpfile
-from mangadap.proc.TemplateLibrary import TemplateLibrary
 from matplotlib import pyplot
-from mangadap.util.par import TemplateLibraryParSet
+
+from mangadap.drpfits import DRPFits
+from mangadap.proc.templatelibrary import TemplateLibrary
+#from mangadap.util.instrument import spectral_resolution, spectrum_velocity_scale
 from mangadap.util.defaults import default_dap_source
-
-from mangadap.util.fileio import readfits_1dspec
-from mangadap.util.instrument import spectral_resolution, spectrum_velocity_scale
-
 from mangadap.util.defaults import default_template_libraries
 
 #-----------------------------------------------------------------------------
@@ -42,15 +40,15 @@ def create_matched_template_library(plate, ifudesign, mode, library_key, ofile_p
 
     # Read the DRP file
     print('Attempting to open DRP file:')
-    drpf = drpfile(plate, ifudesign, mode, read=True, directory_path=drp_path)
+    drpf = DRPFits(plate, ifudesign, mode, read=True, directory_path=drp_path)
     print('     FOUND: {0}'.format(drpf.file_path()))
 
     # Set the spectral resolution and velocity scale for the matching
-    sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data, log10=True)
-    velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
+#    sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data, log10=True)
+#    velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
 
     # Produce the matched template library (output object not saved!)
-    TemplateLibrary(library_key, dapsrc=dapsrc, velscale=velscale, sres=sres,
+    TemplateLibrary(library_key, dapsrc=dapsrc, drpf=drpf, #velscale=velscale, sres=sres,
                     directory_path=ofile_path, processed_file=ofile_name, force=True)
 
 
@@ -62,10 +60,10 @@ if __name__ == '__main__':
     # Check the number of arguments and provide usage comments
     narg = len(sys.argv)
     if narg != 6 and narg != 8 :
-        print('Usage: matched_template_library.py <plate> <ifudesign> <CUBE or RSS> <library> '
+        print('Usage: matched_template_library <plate> <ifudesign> <CUBE or RSS> <library> '
               '<output file> <file directory> <DAP source directory>')
         print('  or')
-        print('       matched_template_library.py <plate> <ifudesign> <CUBE or RSS> <library> '
+        print('       matched_template_library <plate> <ifudesign> <CUBE or RSS> <library> '
               '<output file>')
 
         print('Available template libraries are:')

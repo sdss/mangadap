@@ -7,7 +7,7 @@ Added functionality is primarily for the calculation of the covariance
 matrix for the DRP 'CUBE' files.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/drpfile.py
+    $MANGADAP_DIR/python/mangadap/drpfits.py
 
 *Python2/3 compliance*::
 
@@ -41,26 +41,27 @@ matrix for the DRP 'CUBE' files.
 
     .. todo::
 
-        Add some usage comments here!
+        - Add some usage comments here!
+        - Image reconstruction has transpose sense wrt DRP output!
 
 *Revision history*:
     | **20 Nov 2014**: Original implementation by K. Westfall (KBW)
-    | **12 Feb 2014**: (KBW) Added :func:`drpfile.directory_path()`
-    | **20 Feb 2015**: (KBW) Add covariance calculation to :class:`drpfile`
-    | **19 Mar 2015**: (KBW) Added redux_path to :class:`drpfile`.
-        Re-arranged arguments in :func:`drpfile_list`, made drpver
+    | **12 Feb 2014**: (KBW) Added :func:`DRPFits.directory_path()`
+    | **20 Feb 2015**: (KBW) Add covariance calculation to :class:`DRPFits`
+    | **19 Mar 2015**: (KBW) Added redux_path to :class:`DRPFits`.
+        Re-arranged arguments in :func:`drpfits_list`, made drpver
         optional, and added redux_path
-    | **22 May 2015**: (KBW) Sphinx documentation.  Changed drpfile.w to
-        :attr:`drpfile.wcs`.
+    | **22 May 2015**: (KBW) Sphinx documentation.  Changed DRPFits.w to
+        :attr:`DRPFits.wcs`.
     | **26 May 2015**: (KBW) Added checksum=True when opening the DRP
         file.
     | **04 Jun 2015**: (KBW) Moved parse_drp_file_name to
-        :func:`parser.parse_drp_file_name`
+        :func:`mangadap.util.parser.parse_drp_file_name`
     | **15 Jun 2015**: (KBW) Moved functions that return default values
-        (like :func:`drpfile._default_pixelscale`) to
+        (like :func:`DRPFits._default_pixelscale`) to
         :file:`mangadap/util/defaults.py`
     | **05 Aug 2015**: (KBW) Changed mode testing to be more robust.
-        Added directory_path keyword to :func:`drpfile_list`.  Changed
+        Added directory_path keyword to :func:`drpfits_list`.  Changed
         how directory path is set; previously required drpver and
         redux_path defaults, even if directory_path was provided
         directly.  **May need to add checks to other code to make sure
@@ -68,12 +69,13 @@ matrix for the DRP 'CUBE' files.
         directly defined.**
     | **28 Aug 2015**: (KBW) Added usage of
         :func:`mangadap.util.defaults.default_manga_fits_root`
-    | **15 Feb 2016**: (KBW) Added :func:`mangadap.drpfile.__getitem__`
+    | **15 Feb 2016**: (KBW) Added :func:`DRPFits.__getitem__`
         function
+    | **17 Feb 2016**: (KBW) Converted drpfile class name to DRPFits
 
 .. todo::
 
-    - Calculation in :func:`drpfile._cube_dimensions` will only be correct if
+    - Calculation in :func:`DRPFits._cube_dimensions` will only be correct if
       the WCS coordinates have no rotation.
     - Further optimize calculation of transfer matrix
 
@@ -114,7 +116,7 @@ from mangadap.util.defaults import default_manga_fits_root
 
 __author__ = 'Kyle B. Westfall'
 
-def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
+def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
                  redux_path=None, directory_path=None):
     """
     Provided a list of plates, ifudesigns, and modes, return a list of
@@ -136,7 +138,7 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
             string value used for all DRP files.
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files; this is the same as the
-            *redux_path* in the :class:`mangadap.drpfile` class.
+            *redux_path* in the :class:`DRPFits` class.
         directory_path (str): (Optional) The exact path to the DRP file.
             Default is defined by
             :func:`mangadap.util.defaults.default_drp_directory_path`.
@@ -215,12 +217,12 @@ def drpfile_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
         nn = n_plates
 
     # Set the directory path based on the provided main path
-    return [drpfile(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver,
+    return [DRPFits(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver,
                     redux_path=redux_path, directory_path=directory_path) \
             for i in range(0,nn)]
 
 
-class drpfile:
+class DRPFits:
     r"""
     A general purpose class used to interface with a MaNGA DRP file
     in python.
@@ -245,7 +247,7 @@ class drpfile:
         checksum (bool): (Optional) Check for file corruption.
 
     Raises:
-        Exception: Raised if *mode* is not 'RSS' or 'CUBE'.
+        ValueError: Raised if *mode* is not 'RSS' or 'CUBE'.
 
     Attributes:
 
@@ -371,7 +373,7 @@ class drpfile:
         self.mode = str(mode)
 
         if mode not in [ 'CUBE', 'RSS']:
-            raise Exception('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
+            raise ValueError('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
 
         if directory_path is None:
             self.drpver = default_drp_version() if drpver is None else str(drpver)
@@ -417,7 +419,7 @@ class drpfile:
 
     def __del__(self):
         """
-        Deconstruct the drpfile object by ensuring that the fits file is
+        Deconstruct the DRPFits object by ensuring that the fits file is
         properly closed.
         """
         if self.hdu is None:
@@ -425,9 +427,12 @@ class drpfile:
         self.hdu.close()
         self.hdu = None
 
+
     def __getitem__(self, key):
-        if self.hdu is None:
-            return None
+        """Access elements of the hdu."""
+        self.open_hdu(checksum=self.checksum)
+#        if self.hdu is None:
+#            return None
         return self.hdu[key]
 
 
@@ -529,6 +534,30 @@ class drpfile:
         if self.regrid_channel != channel:
             return False
         return self._regrid_kernel_correct(pixelscale, rlim, sigma)
+
+
+    def _regrid_defaults(self, pixelscale, recenter, width_buffer, rlim, sigma):
+            if pixelscale != default_cube_pixelscale():
+                return False
+            if recenter != default_cube_recenter():
+                return False
+            if width_buffer != default_cube_width_buffer():
+                return False
+            if rlim != default_regrid_rlim():
+                return False
+            if sigma != default_regrid_sigma():
+                return False
+            return True
+
+
+    def _init_regrid_pars(self, pixelscale, recenter, width_buffer, rlim, sigma):
+        pixelscale = default_cube_pixelscale() if pixelscale is None else pixelscale
+        recenter = default_cube_recenter() if recenter is None else recenter
+        width_buffer = default_cube_width_buffer() if width_buffer is None else width_buffer
+        rlim = default_regrid_rlim() if rlim is None else rlim
+        sigma = default_regrid_sigma() if sigma is None else sigma
+
+        return pixelscale, recenter, width_buffer, rlim, sigma
 
 
     def _variance_correlation_undefined(self):
@@ -661,6 +690,8 @@ class drpfile:
             self.xs = self.xs + (minx+maxx)/2.0
             self.ys = self.ys + (miny+maxy)/2.0
 
+        print(self.xs, self.nx, self.ys, self.ny)
+
 
     def _get_variance_correlation(self, sigma_rho, pixelscale=None, recenter=None, 
                                   width_buffer=None, rlim=None, sigma=None, redo=False):
@@ -708,16 +739,8 @@ class drpfile:
         """
 
         # Set the default values for the input
-        if pixelscale is None:
-            pixelscale = default_cube_pixelscale()
-        if recenter is None:
-            recenter = default_cube_recenter()
-        if width_buffer is None:
-            width_buffer = default_cube_width_buffer()
-        if rlim is None:
-            rlim = default_regrid_rlim()
-        if sigma is None:
-            sigma = default_regrid_sigma()
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
 
         # Check if the variance correlation coefficients already exist
         # and were determined using the correct parameters
@@ -838,6 +861,11 @@ class drpfile:
         # Open the fits file, but do NOT allow the file to be
         # overwritten
         self.hdu = fits.open(inp, mode='readonly', checksum=checksum)
+
+
+    def info(self):
+        self.open_hdu(checksum=self.checksum)
+        print(self.hdu.info())
 
 
     def object_data(self):
@@ -1049,10 +1077,13 @@ class drpfile:
         if self.mode is 'RSS':
             # x and y are at the edges of the pixel
             x, y = self.pix_mesh_range()
+            print(x, y)
             # x0 is the front edge of the first pixel if not skyright an
             # the back edge of the last pixel if skyright
             x0 = self.xs+self.nx*self.pixelscale if skyright else self.xs
             dx = -self.pixelscale if skyright else self.pixelscale
+            print(x0, dx)
+            print((x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys)
             return (x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys
 
         if self.wcs is None:
@@ -1159,22 +1190,14 @@ class drpfile:
                 T}`
 
         Raises:
-            Exception: Raised for 'CUBE' files if the input parameters
+            ValueError: Raised for 'CUBE' files if the input parameters
                 are not the defaults.
 
         """
 
         # Set the default values for the input
-        if pixelscale is None:
-            pixelscale = default_cube_pixelscale()
-        if recenter is None:
-            recenter = default_cube_recenter()
-        if width_buffer is None:
-            width_buffer = default_cube_width_buffer()
-        if rlim is None:
-            rlim = default_regrid_rlim()
-        if sigma is None:
-            sigma = default_regrid_sigma()
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
 
         # Check if the calculation is necessary
         if not self._regrid_transfer_undefined() \
@@ -1187,25 +1210,13 @@ class drpfile:
 
             # Do not perform the calculation if the parameters are not
             # the default used by the DRP to create the CUBE file.
-            use_RSS = True
-            if pixelscale != default_cube_pixelscale():
-                use_RSS = False
-            if recenter != default_cube_recenter():
-                use_RSS = False
-            if width_buffer != default_cube_width_buffer():
-                use_RSS = False
-            if rlim != default_regrid_rlim():
-                use_RSS = False
-            if sigma != default_regrid_sigma():
-                use_RSS = False
-
-            if not use_RSS:
-                raise Exception('Must use default pixel scale, rlim, and sigma to get transfer '
-                                + 'matrix for DRP-produced CUBE files.')
+            if not self._regrid_defaults(pixelscale, recenter, width_buffer, rlim, sigma):
+                raise ValueError('Must use default pixel scale, rlim, and sigma to get transfer '
+                                 + 'matrix for DRP-produced CUBE files.')
 
             print('Attempting to use RSS counter-part for calculation.')
             # Get the RSS counterpart
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+            drpf = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
                            redux_path=self.redux_path, directory_path=self.directory_path)
             # Get the transfer matrix
             self.regrid_T = drpf.regrid_transfer_matrix(channel, pixelscale, rlim, sigma)
@@ -1322,7 +1333,7 @@ class drpfile:
     def regrid_wavelength_plane(self, channel, pixelscale=None, recenter=None, width_buffer=None,
                                 rlim=None, sigma=None, quiet=False):
         r"""
-        Return the reconstructed image for the specefied wavelength
+        Return the reconstructed image for the specified wavelength
         channel.
         
         For 'CUBE' files, the input parameters *must* be the same as the
@@ -1368,34 +1379,17 @@ class drpfile:
         """
 
         # Set the default values for the input
-        if pixelscale is None:
-            pixelscale = default_cube_pixelscale()
-        if recenter is None:
-            recenter = default_cube_recenter()
-        if width_buffer is None:
-            width_buffer = default_cube_width_buffer()
-        if rlim is None:
-            rlim = default_regrid_rlim()
-        if sigma is None:
-            sigma = default_regrid_sigma()
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
 
         # Allow CUBE output under certain conditions
         if self.mode is 'CUBE':
-            select_plane = True
-            if pixelscale != default_cube_pixelscale():
-                select_plane = False
-            if recenter != default_cube_recenter():
-                select_plane = False
-            if width_buffer != default_cube_width_buffer():
-                select_plane = False
-            if rlim != default_regrid_rlim():
-                select_plane = False
-            if sigma != default_regrid_sigma():
-                select_plane = False
 
-            if not select_plane:
-                raise Exception('Must use default pixel scale, rlim, and sigma to get '
-                                + 'wavelength-channel image for DRP-produced CUBE files.')
+            # Do not perform the calculation if the parameters are not
+            # the default used by the DRP to create the CUBE file.
+            if not self._regrid_defaults(pixelscale, recenter, width_buffer, rlim, sigma):
+                raise ValueError('Must use default pixel scale, rlim, and sigma to get '
+                                 + 'wavelength-channel image for DRP-produced CUBE files.')
 
             self.open_hdu(checksum=self.checksum)
             return numpy.transpose(self.hdu['FLUX'].data[channel,:,:])
@@ -1504,47 +1498,29 @@ class drpfile:
                 depends on *csr*.
 
         Raises:
-            Exception: Raised for 'CUBE' files when the input parameters
-                are not the same as the defaults.
+            ValueError: Raised for 'CUBE' files when the input
+                parameters are not the same as the defaults.
         
         """
 
         # Set the default values for the input
-        if pixelscale is None:
-            pixelscale = default_cube_pixelscale()
-        if recenter is None:
-            recenter = default_cube_recenter()
-        if width_buffer is None:
-            width_buffer = default_cube_width_buffer()
-        if rlim is None:
-            rlim = default_regrid_rlim()
-        if sigma is None:
-            sigma = default_regrid_sigma()
-
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
 
         # If sigma_rho is not provided, do the exact calculation
         if sigma_rho is None:
 
             # Allow CUBE output under certain conditions
             if self.mode is 'CUBE':
-                use_RSS = True
-                if pixelscale != default_cube_pixelscale():
-                    use_RSS = False
-                if recenter != default_cube_recenter():
-                    use_RSS = False
-                if width_buffer != default_cube_width_buffer():
-                    use_RSS = False
-                if rlim != default_regrid_rlim():
-                    use_RSS = False
-                if sigma != default_regrid_sigma():
-                    use_RSS = False
 
-                if not use_RSS:
-                    raise Exception('Must use default pixel scale, rlim, and sigma to get '
+                # Do not perform the calculation if the parameters are not
+                # the default used by the DRP to create the CUBE file.
+                if not self._regrid_defaults(pixelscale, recenter, width_buffer, rlim, sigma):
+                    raise ValueError('Must use default pixel scale, rlim, and sigma to get '
                                      + 'covariance matrices for DRP-produced CUBE files.')
 
                 print('Attempting to use RSS counter-part for calculation.')
-                drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                drpf = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
                                redux_path=self.redux_path, directory_path=self.directory_path)
                 return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
                                               sigma, csr, quiet)
@@ -1576,7 +1552,7 @@ class drpfile:
             # Allow to process RSS if necessary, but warn user
             if self.mode is 'RSS':
                 print('Attempting to use CUBE counter-part for calculation.')
-                drpf = drpfile(self.plate, self.ifudesign, 'CUBE', drpver=self.drpver, \
+                drpf = DRPFits(self.plate, self.ifudesign, 'CUBE', drpver=self.drpver, \
                                redux_path=self.redux_path, directory_path=self.directory_path)
                 return drpf.covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
                                               sigma, sigma_rho, csr, quiet)
@@ -1650,37 +1626,20 @@ class drpfile:
         """
 
         # Set the default values for the input
-        if pixelscale is None:
-            pixelscale = default_cube_pixelscale()
-        if recenter is None:
-            recenter = default_cube_recenter()
-        if width_buffer is None:
-            width_buffer = default_cube_width_buffer()
-        if rlim is None:
-            rlim = default_regrid_rlim()
-        if sigma is None:
-            sigma = default_regrid_sigma()
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
 
         # Allow CUBE output under certain conditions
         if self.mode is 'CUBE':
-            use_RSS = True
-            if pixelscale != default_cube_pixelscale():
-                use_RSS = False
-            if recenter != default_cube_recenter():
-                use_RSS = False
-            if width_buffer != default_cube_width_buffer():
-                use_RSS = False
-            if rlim != default_regrid_rlim():
-                use_RSS = False
-            if sigma != default_regrid_sigma():
-                use_RSS = False
 
-            if not use_RSS:
-                raise Exception('Must use default pixel scale, rlim, and sigma to get '
+            # Do not perform the calculation if the parameters are not
+            # the default used by the DRP to create the CUBE file.
+            if not self._regrid_defaults(pixelscale, recenter, width_buffer, rlim, sigma):
+                raise ValueError('Must use default pixel scale, rlim, and sigma to get '
                                 + 'covariance matrices for DRP-produced CUBE files.')
 
             print('Attempting to use RSS counter-part for calculation.')
-            drpf = drpfile(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+            drpf = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
                            redux_path=self.redux_path, directory_path=self.directory_path)
             return drpf.covariance_cube(pixelscale, recenter, width_buffer, rlim, sigma, \
                                         sigma_rho, csr, quiet)
@@ -1709,6 +1668,121 @@ class drpfile:
 
         # Don't provide input indices if the full cube is calculated
         return covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
+
+
+    def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,
+                                      recenter=None, width_buffer=None, rlim=None, sigma=None,
+                                      quiet=False):
+        r"""
+        Return the instrumental dispersion for the reconstructed 'CUBE'
+        wavelength plane.
+        
+        For 'CUBE' files, the input parameters *must* be the same as the
+        defaults.  If they are, the function must be able to find and
+        access the 'RSS' file to construct the instrumental dispersion
+        map because the necessary information is not in the 'CUBE'
+        files.
+        
+        For 'RSS' files, the transfer matrix, :math:`{\mathbf T}`, is
+        first calculated using :func:`regrid_transfer_matrix`.  The
+        transfer matrix is used to construct the 'CUBE' wavelength plane
+        image, :math:`{\mathbf I}`, by computing :math:`{\mathbf T}
+        \times {\mathbf F} = {\mathbf I}`, where :math:`{\mathbf F}` it
+        the vector of the fiber fluxes.  Under the assumption that the
+        line-spread-function (LSF) is Gaussian, we determine the
+        instrumental dispersion for the data in the wavelength channel
+        of the reconstructed CUBE by calculating the second moment of
+        the weighted sum of Gaussians of the appropriate dispersion.
+        Assuming all the Gaussians have the normalized form:
+
+        .. math::
+            
+            \mathcal{N}(x|\mu=0,\sigma) = \frac{1}{\sqrt{2\pi}\sigma}
+            \exp\left(-\frac{x^2}{2\sigma^2}\right),
+
+        the combined instrumental dispersion becomes
+
+        .. math::
+            
+            \sigma_{\rm inst,j}^2 = \frac{\sum_i T_{ij}
+            \sigma^2_i}{\sum_i T_{ij}},
+
+        where :math:`T_{ij}` are the elements of the transfer matrix.
+        In terms of matrix multiplications, this can be written as
+
+        .. math::
+
+            {\mathbf S} = \frac{ {\mathbf T} \times {\mathbf V} }{
+            {\mathbf T_c} },
+
+        where :math:`{\mathbf T_c} = {\mathbf T_c} \times {\mathbf 1}`
+        is the vector with the sum :math:`\sum_j T_{ij}`,
+        :math:`{\mathbf V}` is the instrumental variance for all fibers
+        at the designated wavelength plane, and :math:`{\mathbf S}` is
+        the variance for all the spaxels in the reconstructed wavelength
+        image; the division by :math:`{\mathbf T_c}` is element-wise.
+        The returned matrix is the element-wise square-root of
+        :math:`{\mathbf S}`, rearranged into a 2D array of size
+        :attr:`nx` by :attr:`ny`.
+
+        Args:
+            channel (int): Index of the spectral channel for which
+                to calculate the transfer matrix.
+            dispersion_factor (float): (Optional) Artificially multiply
+                the dispersion measurements by this factor before
+                calculating the reconstructed dispersion.
+            pixelscale (float): (Optional) Desired pixel scale in arcsec
+            recenter (bool): (Optional) Flag to recenter the cooridinate
+                system
+            width_buffer (int): (Optional) Number of pixels to use as
+                buffer for the image reconstruction
+            rlim (float): (Optional) The limiting radius of the image
+                reconstruction kernel in arcseconds.
+            sigma (float): (Optional) The sigma of the image
+                reconstruction kernel in arcseconds.
+            quiet (bool): (Optional) Suppress terminal output
+
+        Returns:
+            numpy.ndarray : The reconstructed image for the specified
+                wavelength channel.
+
+        Raises:
+            ValueError: Raised for 'CUBE' files when the input parameters
+                are not the same as the defaults.
+        
+        """
+
+        # Set the default values for the input
+        pixelscale, recenter, width_buffer, rlim, sigma = \
+            self._init_regrid_pars(pixelscale, recenter, width_buffer, rlim, sigma)
+
+        # Allow CUBE output under certain conditions
+        if self.mode is 'CUBE':
+
+            # Do not perform the calculation if the parameters are not
+            # the default used by the DRP to create the CUBE file.
+            if not self._regrid_defaults(pixelscale, recenter, width_buffer, rlim, sigma):
+                raise ValueError('Must use default pixel scale, rlim, and sigma to get '
+                                 + 'wavelength-channel image for DRP-produced CUBE files.')
+
+            drpf = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver, \
+                           redux_path=self.redux_path, directory_path=self.directory_path)
+            return drpf.instrumental_dispersion_plane(channel, dispersion_factor, pixelscale,
+                                                      recenter, width_buffer, rlim, sigma, quiet)
+
+        # Set the transfer matrix (set to self.regrid_T; don't need to
+        # keep the returned matrix)
+        self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
+
+        # Get the dispersion factor
+        _df = 1.0 if dispersion_factor is None else dispersion_factor
+
+        # Return the regridded data with the proper shape (nx by ny)
+        Tc = self.regrid_T.sum(axis=1).flatten()
+        Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
+        return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu['DISP'].data[:,channel]))
+                           / Tc ).reshape(self.nx, self.ny)
+
 
 
 #   def white_light(self, mask_list=None):

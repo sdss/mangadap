@@ -71,12 +71,12 @@ disk for later recovery.
     Assuming you have the default directory structure setup, you can do::
 
         # Imports
-        from mangadap.drpfile import drpfile
+        from mangadap.drpfits import DRPFits
         from mangadap.proc.TemplateLibrary import TemplateLibrary
         from matplotlib import pyplot
 
         # Define the DRP file
-        drpf = drpfile(7495, 12703, 'CUBE')
+        drpf = DRPFits(7495, 12703, 'CUBE')
 
         # Build the template library
         tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
@@ -272,7 +272,7 @@ class TemplateLibrary:
         dapsrc (str): (Optional) Root path to the DAP source directory.
             If not provided, the default is defined by
             :func:`mangadap.util.defaults.default_dap_source`.
-        drpf (:class:`mangadap.drpfile.drpfile`): (Optional) DRP file
+        drpf (:class:`mangadap.drpfits.DRPFits`): (Optional) DRP file
             (object) with which the template library is associated for
             analysis
         sres (:class:`mangadap.util.instrument.spectral_resolution`):
@@ -329,7 +329,7 @@ class TemplateLibrary:
         file_list (list): The list of files found using `glob.glob`_ and
             :attr:`file_search`.
         ntpl (int): Number of template spectra in the library
-        drpf (:class:`mangadap.drpfile.drpfile`): DRP file (object) with
+        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
         sres (:class:`mangadap.util.instrument.spectral_resolution`):
             The object is used simply to access the spectral resolution
@@ -526,7 +526,7 @@ class TemplateLibrary:
             analysis_path (str): The path to the top-level directory
                 containing the DAP output files for a given DRP and DAP
                 version.
-            drpf (:class:`mangadap.drpfile.drpfile`): The container
+            drpf (:class:`mangadap.drpfits.DRPFits`): The container
                 object of the DRP file that is used to construct the
                 path for the processed template library.
             processed_file (str): The name of the file with the prepared
@@ -1135,7 +1135,7 @@ class TemplateLibrary:
 
             The routine **does not** check that that an existing
             processed file or the existing object has been processed
-            using the same drpfile, velocity_offset, velscale, or sres
+            using the same DRPFits, velocity_offset, velscale, or sres
             input.  If unsure, use force=True.
         
         Args:
@@ -1152,7 +1152,7 @@ class TemplateLibrary:
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.util.defaults.default_dap_source`.
                 Input ignored if *library_key* is None.
-            drpf (:class:`mangadap.drpfile.drpfile`): (Optional) DRP
+            drpf (:class:`mangadap.drpfits.DRPFits`): (Optional) DRP
                 file (object) with which the template library is
                 associated for analysis.  **If not provided**, the user
                 must define *velscale* and *sres* such that the library
@@ -1205,12 +1205,11 @@ class TemplateLibrary:
 
         .. todo::
             - type checking
-
             - If a DRP file is provided, the processing to a logarithmic
               binning is done by default (log=True).  But linearly
               sampled DRP data are available, so need to have
-              :class:`mangadap.drpfile' return the spectral sampling
-              type.
+              :class:`mangadap.drpfits.DRPFits` return the spectral
+              sampling type.
             - Documentation needs updating!
 
 
@@ -1225,7 +1224,7 @@ class TemplateLibrary:
             self.sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
                                             log10=True)
 #            self.velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
-            # Set this by default, but need drpfile to return if the
+            # Set this by default, but need DRPFits to return if the
             # file is logarithmically sampled!
             self.log10_sampling = True
             self.spectral_step = spectral_coordinate_step(drpf.hdu['WAVE'].data, log=True)

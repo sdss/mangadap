@@ -32,8 +32,8 @@ Utah.
     from os import environ, makedirs
     from argparse import ArgumentParser
 
-    from mangadap.survey.drpcomplete import drpcomplete
-    from mangadap.drpfile import drpfile
+    from mangadap.survey.drpcomplete import DRPComplete
+    from mangadap.drpfits import DRPFits
     from mangadap.util.defaults import default_redux_path, default_drp_directory_path
     from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
     from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
@@ -85,7 +85,8 @@ Utah.
         processing call so that :class:`rundap` can be used to, e.g.,
         just create the plots for existing data.
     | **17 Feb 2016**: (KBW) Added try/except block for importing
-        pbs.queue
+        pbs.queue; converted old drpfile to new DRPFits, and drpcomplete
+        to new DRPComplete
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -118,8 +119,8 @@ from os import environ, makedirs
 from argparse import ArgumentParser
 
 # DAP imports
-from mangadap.survey.drpcomplete import drpcomplete
-from mangadap.drpfile import drpfile
+from mangadap.survey.drpcomplete import DRPComplete
+from mangadap.drpfits import DRPFits
 from mangadap.util.defaults import default_redux_path, default_drp_directory_path
 from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
 from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
@@ -199,7 +200,7 @@ class rundap:
         combinatorics (bool): (Optional) Use all unique combinations of
             the entered plate/ifudesign/mode lists to create the full
             list of DRP files to analyze.  See
-            :func:`mangadap.drpfile.drpfile_list`.
+            :func:`mangadap.drpfits.drpfits_list`.
         prior_mode (str): (Optional) Used to construct a plate-ifu
             specific prior fits file name to replace an existing value
             in the plan file.  This sets the mode ('RSS' or 'CUBE') of
@@ -315,9 +316,10 @@ class rundap:
         submit (bool): Submit all jobs to the cluster.
         q (str): Queue destination (Portsmouth specific)
         idl_cmnd (str): The specific IDL command to use
-        drpc (:class:`mangadap.survey.drpcomplete`): Database of the
-            available DRP files and the parameters necessary to write
-            the DAP par files.
+        drpc (:class:`mangadap.survey.drpcomplete.DRPComplete`):
+            Database of the available DRP files and the parameters
+            necessary to write the DAP par files.
+
     """
     def __init__(self,
                 # Run mode options
@@ -365,7 +367,7 @@ class rundap:
         self.modelist = arginp_to_list(modelist)
         self.combinatorics = combinatorics
 
-        # plateTargets file(s) to be used by the drpcomplete class,
+        # plateTargets file(s) to be used by the DRPComplete class,
         # which can be None
         self.platetargets = arginp_to_list(platetargets)
 
@@ -533,24 +535,24 @@ class rundap:
             raise Exception('To define prior, must provide a plan file to edit.')
 
         # If running all or daily, make sure lists are set to None such
-        # that drpcomplete will search for all available DRP files and
+        # that DRPComplete will search for all available DRP files and
         # make sure that the needed information is up-to-date
         if self.all or self.daily:
             self.platelist = None
             self.ifudesignlist = None
             self.modelist = None
 
-        # Create and update the drpcomplete file if necessary
-        self.drpc = drpcomplete(platetargets=self.platetargets, drpver=self.mpl.drpver,
+        # Create and update the DRPComplete file if necessary
+        self.drpc = DRPComplete(platetargets=self.platetargets, drpver=self.mpl.drpver,
                                 redux_path=self.redux_path, dapver=self.dapver,
                                 analysis_path=self.analysis_path)
 
-        # TODO: Should this also be done from within the drpcomplete
+        # TODO: Should this also be done from within the DRPComplete
         # class?
         if not os.path.isdir(self.analysis_path):
             makedirs(self.analysis_path)
 
-        # Update the drpcomplete list; force an update if platetarget
+        # Update the DRPComplete list; force an update if platetarget
         # files are provided
         self.drpc.update(platelist=self.platelist, ifudesignlist=self.ifudesignlist,
                          combinatorics=self.combinatorics, force=(self.platetargets is not None))
@@ -644,7 +646,7 @@ class rundap:
                             "provided lists", action="store_true", default=False)
 
         parser.add_argument("--plttargets", type=str, help="path to plateTargets file(s); "
-                            "if provided will force update to drpcomplete file", default=None)
+                            "if provided will force update to drpcomplete fits file", default=None)
 #        parser.add_argument("--nsa_cat", type=str, help="path to NSA catalog(s) to use; if "
 #                            "provided will force update to drpcomplete file", default=None)
 #        parser.add_argument("--nsa_catid", type=str, help="path to NSA catalog ID(s); if "
@@ -841,8 +843,8 @@ class rundap:
 
         .. todo::
             - This algorithm is slow because it has to search through
-              the drpcomplete file each time to find the plate/ifudesign
-              combo.  Should make this more efficient.
+              the drpcomplete fits file each time to find the
+              plate/ifudesign combo.  Should make this more efficient.
 
         Args:
             drpfiles (list): The list of DRP file objects that define
@@ -1063,8 +1065,8 @@ class rundap:
             - Add whether or not the DAP ended in error
 
         Args:
-            drpf (:class:`mangadap.drpfile`) : DRP file object used to
-                pass the plate, ifudesign, and mode values.
+            drpf (:class:`mangadap.drpfits.DRPFits`) : DRP file object
+                used to pass the plate, ifudesign, and mode values.
 
         Returns:
             bool : Flag that the DAP has finished (True) or not (False).
@@ -1129,8 +1131,9 @@ class rundap:
                 output.
 
         Returns:
-            list : A list of :class:`mangadap.drpfile` objects defining
-                the DRP files that should be analyzed.
+            list : A list of :class:`mangadap.drpfits.DRPFits` objects
+                defining the DRP files that should be analyzed.
+
         """
 
         # Get the full list of available DRP files that can be processed
@@ -1158,28 +1161,28 @@ class rundap:
         implicitly True.
 
         Returns:
-            list : A list of :class:`mangadap.drpfile` objects defining
-                the DRP files that should be analyzed.
+            list : A list of :class:`mangadap.drpfits.DRPFits` objects
+                defining the DRP files that should be analyzed.
         """
         return self.selected_drpfile_list()
 
 
     def full_drpfile_list(self):
         """
-        Generate a list of all the DRP files based on the drpcomplete
-        database.  DRP files constructed based on the drpcomplete
+        Generate a list of all the DRP files based on the DRPComplete
+        database.  DRP files constructed based on the DRPComplete
         database are expected to exist.  See :func:`__init__` for the
-        creation of the drpcomplete object (:attr:`drpc`).
+        creation of the DRPComplete object (:attr:`drpc`).
 
         Returns:
-            list : A list of :class:`mangadap.drpfile` objects defining
-                the available DRP files.
+            list : A list of :class:`mangadap.drpfits.DRPFits` objects
+                defining the available DRP files.
         """
         # Number of plates (CUBE only)
         n_plates = len(self.drpc.data['PLATE'])
 
         # Create the list of CUBE DRP files
-        drplist = [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
+        drplist = [ DRPFits(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i], 'CUBE',
                             drpver=self.mpl.drpver, redux_path=self.redux_path) \
                             for i in range(0,n_plates) \
                                 if self.drpc.data['MANGAID'][i] != 'NULL' \
@@ -1188,7 +1191,7 @@ class rundap:
                                    and self.drpc.data['VEL'][i] > 0.0 ]
 
         # Add the list of RSS DRP files
-        drplist = drplist + [ drpfile(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
+        drplist = drplist + [ DRPFits(self.drpc.data['PLATE'][i], self.drpc.data['IFUDESIGN'][i],
                                       'RSS', drpver=self.mpl.drpver, redux_path=self.redux_path)
                   for i in range(0,n_plates)
                   if self.drpc.data['MANGAID'][i] != 'NULL' \
@@ -1202,13 +1205,13 @@ class rundap:
     def selected_drpfile_list(self):
         """
         Generate a list of all the DRP files based on the provided
-        plates, ifudesigns, and modes, using the drpcomplete database.
-        See :func:`__init__` for the creation of the drpcomplete object
+        plates, ifudesigns, and modes, using the DRPComplete database.
+        See :func:`__init__` for the creation of the DRPComplete object
         (:attr:`drpc`).
 
         Returns:
-            list : A list of :class:`mangadap.drpfile` objects defining
-                the selected DRP files.
+            list : A list of :class:`mangadap.drpfits.DRPFits` objects
+                defining the selected DRP files.
         """
         # Number of plates (CUBE only); self.drpc.platelist and
         # self.drpc.ifudesignlist should be the same size!
@@ -1231,7 +1234,7 @@ class rundap:
                         and (self.drpc.data['MANGA_TARGET1'][j] > 0 \
                              or self.drpc.data['MANGA_TARGET3'][j] > 0) \
                         and self.drpc.data['VEL'][j] > 0.0:
-                    drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE',
+                    drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE',
                                  drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
         # Add the list of RSS DRP files, if requested (implicitly or
@@ -1248,7 +1251,7 @@ class rundap:
                     and (self.drpc.data['MANGA_TARGET1'][j] > 0 \
                          or self.drpc.data['MANGA_TARGET3'][j] > 0) \
                     and self.drpc.data['VEL'][j] > 0.0 and self.drpc.data['MODES'][j] == 2:
-                drplist += [ drpfile(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
+                drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
                              drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
         return drplist
@@ -1352,7 +1355,7 @@ class rundap:
         # of the DRP file, if mode is 'CUBE' and the calculation has
         # been requested
         if covar and mode is 'CUBE':
-            scr = os.path.join(dap_source, 'bin', 'calculate_covariance.py')
+            scr = os.path.join(dap_source, 'bin', 'calculate_covariance')
             covar_file = default_cube_covariance_file(plate, ifudesign)
             covar_file = os.path.join(output_path, covar_file)
             file.write('{0} {1} {2} 11 {3}\n'.format(scr, plate, ifudesign, covar_file))
@@ -1382,7 +1385,7 @@ class rundap:
                     prior_file = default_dap_file_name(plate, ifudesign, self.prior_mode,
                                                        self.prior_bin, self.prior_iter)
                     prior_file = os.path.join(output_path, prior_file)
-                    scr = os.path.join(dap_source, 'bin', 'edit_dap_plan.py')
+                    scr = os.path.join(dap_source, 'bin', 'edit_dap_plan')
                     file.write('{0} {1} analysis_prior {2} {3}\n'.format(scr, default_plan_file,
                                                                         self.prior_old, prior_file))
                     file.write('\n')
@@ -1417,7 +1420,7 @@ class rundap:
         # Generate the fits file with the quantity maps, if the mode is
         # 'CUBE' and if requested
         if maps and mode is 'CUBE':
-            scr = os.path.join(dap_source, 'python', 'mangadap', 'survey', 'build_map_files.py')
+            scr = os.path.join(dap_source, 'bin', 'build_map_files')
             file.write('{0} {1} {2} {3} {4}\n\n'.format(scr, plate, ifudesign, self.mpl.mplver,
                                                         output_path))
 
@@ -1454,8 +1457,8 @@ class rundap:
         above steps are completed successfully.
 
         Args:
-            drpf (:class:`mangadap.drpfile`): Object defining the DRP
-                file to analyze.
+            drpf (:class:`mangadap.drpfits.DRPFits`): Object defining
+                the DRP file to analyze.
             clobber (bool): (Optional) Flag to overwrite any existing
                 files.
         

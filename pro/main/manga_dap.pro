@@ -10,12 +10,12 @@
 ;
 ; CALLING SEQUENCE:
 ;       MANGA_DAP, inptbl=inptbl, index=index, drppath=drppath, dappath=dappath, dapsrc=dapsrc, $
-;                  /nolog, /quiet, /plot, /dbg
+;                  /nolog, /quiet, /oversample, /plot, /dbg
 ;
 ;           or
 ;
 ;       MANGA_DAP, par=par, drppath=drppath, dappath=dappath, dapsrc=dapsrc, /nolog, /quiet, $
-;                  /plot, /dbg
+;                  /oversample, /plot, /dbg
 ;
 ; INPUTS:
 ;
@@ -58,6 +58,9 @@
 ;
 ;       /quiet
 ;               Limit (eliminate?) the output printed to the screen.
+;
+;       /oversample
+;               Turn on oversampling in pPXF.
 ;
 ;       /plot
 ;               Produce the Voronoi binning, PPXF and GANDALF plots
@@ -153,6 +156,7 @@
 ;                          MDAP_SPECTRAL_INDEX_BLOCK.
 ;       07 Oct 2015: (KBW) Now reports the execution time for each
 ;                          block.
+;       08 Mar 2016: (KBW) Add oversample as keyword (temporary)
 ;-
 ;-----------------------------------------------------------------------
 
@@ -166,7 +170,7 @@
 
 PRO MANGA_DAP, $
         inptbl=inptbl, index=index, par=par, plan=plan, drppath=drppath, dappath=dappath, $
-        dapsrc=dapsrc, nolog=nolog, quiet=quiet, plot=plot, dbg=dbg
+        dapsrc=dapsrc, nolog=nolog, quiet=quiet, oversample=oversample, plot=plot, dbg=dbg
 
         manga_dap_version = MDAP_DEFINE_MANGA_DAP_VERSION()
         manga_dap_version.main = '0.96'     ; set the version number
@@ -454,8 +458,8 @@ PRO MANGA_DAP, $
                                           tpl_mask, obj_fit_mask_ppxf, weights_ppxf, bestfit_ppxf, $
                                           obj_fit_mask_gndf, weights_gndf, bestfit_gndf, $
                                           eml_model, stellar_kinematics, eml_par=eml_par, $
-                                          bvls_shared_lib=bvls_shared_lib, quiet=quiet, plot=plot, $
-                                          dbg=dbg
+                                          bvls_shared_lib=bvls_shared_lib, quiet=quiet, $
+                                          oversample=oversample, plot=plot, dbg=dbg
 
 ;           get_lun, unit
 ;           print, unit

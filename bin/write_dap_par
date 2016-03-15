@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 
 #-----------------------------------------------------------------------
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import sys
+if sys.version > '3':
+    long = int
+
 import os.path
-from mangadap.survey.drpcomplete import drpcomplete
+from time import clock
+
+from mangadap.survey.drpcomplete import DRPComplete
 #-----------------------------------------------------------------------
 
 def write_dap_par():
@@ -18,13 +28,15 @@ def write_dap_par():
     drpc_file = sys.argv[1]
     drpver = drpc_file[drpc_file.find('_v')+1 : drpc_file.find('.fits')]
 
-    drpc = drpcomplete(drpver=drpver, analysis_path=root_dir, readonly=True)
+    drpc = DRPComplete(drpver=drpver, analysis_path=root_dir, readonly=True)
 
     drpc.write_par(ofile=sys.argv[5], mode=sys.argv[4], plate=int(sys.argv[2]),
                    ifudesign=int(sys.argv[3]))
 
 
 if __name__ == '__main__':
+    t = clock()
     write_dap_par()
+    print('Elapsed time: {0} seconds'.format(clock() - t))
 
 
