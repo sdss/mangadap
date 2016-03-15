@@ -459,7 +459,7 @@ PRO MANGA_DAP, $
                                           obj_fit_mask_gndf, weights_gndf, bestfit_gndf, $
                                           eml_model, stellar_kinematics, eml_par=eml_par, $
                                           bvls_shared_lib=bvls_shared_lib, quiet=quiet, $
-                                          oversample=oversample, plot=plot, $ dbg=dbg
+                                          oversample=oversample, plot=plot, dbg=dbg
 
 ;           get_lun, unit
 ;           print, unit

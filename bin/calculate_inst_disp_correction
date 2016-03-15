@@ -181,7 +181,7 @@ def dispersion_corrections(drpf_old, dapf_old, disp_hdu, avg=False, dispersion_f
 #-----------------------------------------------------------------------------
 
 def calculate_inst_disp_table(plate, ifudesign, planid, ofile, dispersion_factor, redux_path,
-                              analysis_path, new_redux_path):
+                              analysis_path, new_redux_path, disp_cube_name):
 
     print('     PLATE: {0}'.format(plate))
     print(' IFUDESIGN: {0}'.format(ifudesign))
@@ -198,7 +198,9 @@ def calculate_inst_disp_table(plate, ifudesign, planid, ofile, dispersion_factor
 
     print('\nAttempting to open CUBE_DISP file:')
     disp_file = os.path.join(new_redux_path, str(plate), 'stack',
-                             'manga-{0}-{1}-LOGCUBE_DISP.fits.gz'.format(plate, ifudesign))
+                             'manga-{0}-{1}-LOGCUBE_{2}.fits.gz'.format(plate, ifudesign,
+                                                                        disp_cube_name))
+
     if not os.path.isfile(disp_file):
         warnings.warn('Cannot open {0}; providing only nominal corrections!'.format(disp_file))
         disp_hdu = None
@@ -270,6 +272,11 @@ if __name__ == '__main__':
                         help='Factor to use for the nominal correction to the old dispersion '
                              'measurements; default is 1.1', default=1.1)
 
+    parser.add_argument('-d', '--disp_cube_name', type=str,
+                        help='Identifier of dispersion cube to use in file name - '
+                             'manga-{plt}-{ifu}-LOGCUBE_{id}.fits.gz; default is {id}=DISP',
+                        default='DISP')
+
     parser.add_argument('-r', '--redux_path', type=str,
                         help='Directory with the old DRP produced CUBE file; default uses '
                              'environmental variables to define the default MaNGA DRP redux path',
@@ -304,7 +311,8 @@ if __name__ == '__main__':
         print('WARNING: Overwriting existing file {0}!'.format(arg.output_file))
 
     calculate_inst_disp_table(arg.plate, arg.ifudesign, arg.planid, arg.output_file,
-                              arg.dispersion_factor, redux_path, analysis_path, new_redux_path)
+                              arg.dispersion_factor, redux_path, analysis_path, new_redux_path,
+                              arg.disp_cube_name)
 
     print('Elapsed time: {0} seconds'.format(clock() - t))
 
