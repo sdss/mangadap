@@ -88,7 +88,7 @@ class TemplateLibraryDef(ParSet):
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
 
-class EmissionLineDef(ParSet):
+class EmissionLineDatabaseDef(ParSet):
     """
     Class with parameters used to define an emission-line database.
     Options and defaults in ParSet base class are set to None.
@@ -102,7 +102,7 @@ class EmissionLineDef(ParSet):
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
 
-class SpectralIndexDef(ParSet):
+class SpectralIndexDatabaseDef(ParSet):
     """
     Class with parameters used to define a spectral-index database.
     Options and defaults in ParSet base class are set to None.

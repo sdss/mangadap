@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Provides a set of utility function that should **only be used for the
 survey-level execution of the DAP**.

@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Provides a set of file I/O routines.
@@ -41,6 +43,7 @@ if sys.version > '3':
 
 import numpy
 from astropy.io import fits
+
 
 def wavelength_vector(npix, header, log10=False):
     crval = header['CRVAL1']
@@ -111,14 +114,15 @@ def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None
     Read a template spectrum.
     
     Template spectra are "raw format" files with template data and are,
-    at minimum, expected to have the following components:
-        - hdu[0].header['CRVAL1']
-        - hdu[0].header['CRPIX1']
-        - hdu[0].header['CDELT1']
-        - hdu[data_ext].data : flux data
+    at minimum, expected to have the following components::
+    
+        hdu[0].header['CRVAL1']
+        hdu[0].header['CRPIX1']
+        hdu[0].header['CDELT1']
+        hdu[data_ext].data
 
-    If `log10` is true, the wavelength solution above is expected to be
-    in log wavelengths.
+    The latter has the flux data.  If `log10` is true, the wavelength
+    solution above is expected to be in log wavelengths.
     
     Args:
         filename (str): Name of the fits file to read.

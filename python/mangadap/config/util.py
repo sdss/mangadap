@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Contains utility functions needed for configuration.
@@ -97,14 +99,14 @@ def validate_template_config(cnfg):
 def _read_dap_mask_bits(f, dapsrc):
     """
     Read a config file that defines a set of mask bits to be used with
-    :class:`mangadap.util.bitmasks.BitMask`.
+    :class:`mangadap.util.bitmask.BitMask`.
 
     Args:
         f (str): File name.  MUST be found in
             ${dapsrc}/python/mangadap/config/bitmasks/
 
         dapsrc (str): Root of the DAP source directory tree.  Cannot use
-            :func:`mangadap.util.defaults.default_dap_source` because
+            :func:`mangadap.config.defaults.default_dap_source` because
             this source is imported by defaults.py.
 
     Returns:

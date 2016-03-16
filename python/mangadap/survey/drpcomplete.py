@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Defines a class used to produce and provide an interface for data
 required to create the input `SDSS parameter files`_ for the DAP.
@@ -39,7 +41,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     from astropy.io import fits
     from astropy import constants
     from mangadap.util.yanny import yanny, read_yanny
-    from mangadap.util import defaults
+    from mangadap.config import defaults
     from mangadap import drpfits
     from mangadap import dapfile
     from mangadap.util.parser import arginp_to_list, list_to_csl_string
@@ -108,7 +110,7 @@ import numpy
 from astropy.io import fits
 from astropy import constants
 from mangadap.util.yanny import yanny, read_yanny
-from mangadap.util import defaults
+from mangadap.config import defaults
 from mangadap import drpfits
 from mangadap import dapfile
 from mangadap.util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
@@ -133,35 +135,35 @@ class DRPComplete:
         platetargets (str or list): (Optional) List of platetargets
             files to search through to find any given plate ifudesign
             combination.  Default is returned as the first element in
-            :func:`mangadap.util.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.default_plate_target_files`.
         catid (str or list): (Optional) List of target catalog ID
             numbers.  Default is returned as the second element in
-            :func:`mangadap.util.defaults.kdefault_plate_target_files`.
+            :func:`mangadap.config.defaults.kdefault_plate_target_files`.
         drpver (str): (Optional) DRP version, which is:
                 - used to define the default DRP redux path
                 - used when declaring a drpfits instance
                 - used in the name of the drpcomplete fits file
                 - included as a header keyword in the output file
             Default is defined by
-            :func:`mangadap.util.defaults.default_drp_version`
+            :func:`mangadap.config.defaults.default_drp_version`
 
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files; this is the same as the
             *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.
             Default is defined by
-            :func:`mangadap.util.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.default_redux_path`.
         dapver (str): (Optional) DAP version, which is:
                 - used to define the default DAP analysis path
                 - included as a header keyword in the output drpcomplete
                   fits file
 
             Default is defined by
-            :func:`mangadap.util.defaults.default_dap_version`
+            :func:`mangadap.config.defaults.default_dap_version`
         analysis_path (str): The path to the top level directory for the
             DAP output files; this is **different** from the
             directory_path in the :class:`mangadap.dapfile` class.  Default is
             defined by
-            :func:`mangadap.util.defaults.default_analysis_path`
+            :func:`mangadap.config.defaults.default_analysis_path`
         readonly (bool) : Flag that the drpcomplete fits file is only
             opened for reading, not for updating.
 

@@ -1,9 +1,10 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
-
-Define some utility classes used to hold parameters.
+Define a utility base class used to hold parameters.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/util/par.py
+    $MANGADAP_DIR/python/mangadap/par/parset.py
 
 *Python2/3 compliance*::
 
@@ -19,14 +20,12 @@ Define some utility classes used to hold parameters.
 *Imports*::
 
     import numpy
-    from mangadap.util.options import binning_options, bin_weighting_options
-    from mangadap.util.options import spectral_analysis_options
 
-*Class usage examples*:
+..todo::
 
-    .. todo::
-
-        Add some usage comments here!
+    - Add range and elements parameters allowing one to define the range
+      allowed for the parameter values and number of elements required
+      (if the parameter is an array)
 
 *Revision history*:
     | **16 Jun 2015**: Original implementation by K. Westfall (KBW)

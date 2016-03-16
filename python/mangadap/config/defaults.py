@@ -5,7 +5,7 @@ Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/util/defaults.py
+    $MANGADAP_DIR/python/mangadap/config/defaults.py
 
 *Python2/3 compliance*::
 
@@ -24,7 +24,9 @@ MaNGA DAP, such as paths and file names.
     from os import environ
     import glob
     import numpy
-    from mangadap.par.database_definitions import TemplateLibraryDef
+    from mangadap.proc.templatelibrary import TemplateLibraryDef
+    from mangadap.config.util import validate_template_config
+    from mangadap.util.exception_tools import check_environment_variable
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
@@ -41,9 +43,8 @@ MaNGA DAP, such as paths and file names.
     | **27 Aug 2015**: (KBW) Changed the name of the plan file; added
         :func:`default_dap_file_root` based on file_root() from
         :class:`mangadap.survey.rundap`.
-    | **28 Aug 2015**: (KBW) Added
-        :func:`mangadap.util.defaults.default_manga_fits_root` and
-        :func:`mangadap.util.defaults.default_cube_covariance_file`
+    | **28 Aug 2015**: (KBW) Added :func:`default_manga_fits_root` and
+        :func:`default_cube_covariance_file`
     | **07 Oct 2015**: (KBW) Adjusted for changes to naming of the
         template library database definitions.  Added M11-STELIB-ZSOL
         library.
@@ -53,6 +54,9 @@ MaNGA DAP, such as paths and file names.
         variables.
     | **17 Feb 2016**: (KBW) Added try/except blocks for importing
         ConfigParser.
+    | **16 Mar 2016**: (KBW) Added
+        :func:`default_emission_line_databases`
+
 """
 
 from __future__ import division
@@ -85,7 +89,7 @@ import os.path
 from os import environ
 import glob
 import numpy
-from mangadap.par.database_definitions import TemplateLibraryDef
+from mangadap.proc.templatelibrary import TemplateLibraryDef
 from mangadap.config.util import validate_template_config
 from mangadap.util.exception_tools import check_environment_variable
 
@@ -447,12 +451,105 @@ def default_template_libraries(dapsrc=None):
     Args:
         dapsrc (str): (Optional) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.util.defaults.default_dap_source`.
+            :func:`default_dap_source`.
 
     Returns:
         list : An list with of :class:`mangadap.par.ParSet.ParSet`
             objects, each of which is created using
-            :func:`mangadap.par.database_definitions.TemplateLibraryDef`.
+            :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
+
+    Raises:
+        NotADirectoryError: Raised if the provided or default
+            *dapsrc* is not a directory.
+        OSError/IOError: Raised if no template configuration files could
+            be found.
+        KeyError: Raised if the template-library keywords are not all
+            unique.
+        NameError: Raised if either ConfigParser or
+            ExtendedInterpolation are not correctly imported.  The
+            latter is a *Python 3 only module*!
+
+    .. todo::
+        - Add backup function for Python 2.
+    """
+    # Check the source directory exists
+    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    if not os.path.isdir(dapsrc):
+        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
+
+    # Check the configuration files exist
+    ini_files = glob.glob(dapsrc+'/python/mangadap/config/templates/*.ini')
+    if len(ini_files) == 0:
+        raise IOError('Could not find any template library configuration files in {0} !'.format(
+                      dapsrc+'/python/mangadap/config/templates'))
+
+    # Build the list of library definitions
+    template_libraries = []
+    for f in ini_files:
+        # Read the config file
+        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
+        cnfg.read(f)
+        # Ensure it has the necessary elements to define the template
+        # library
+        validate_template_config(cnfg)
+        # Convert wave_limit and lower_flux_limit to types acceptable by
+        # TemplateLibraryDef
+        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
+                                        for e in cnfg['default']['wave_limit'].split(',') ])
+        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
+                           cnfg['default'].getfloat('lower_flux_limit')
+        # Append the definition of the template library 
+        template_libraries += \
+            [ TemplateLibraryDef(key=cnfg['default']['key'],
+                                 file_search=cnfg['default']['file_search'],
+                                 fwhm=cnfg['default'].getfloat('fwhm'),
+                                 sres_ext=cnfg['default']['sres_ext'],
+                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
+                                 wave_limit=wave_limit,
+                                 lower_flux_limit=lower_flux_limit,
+                                 log10=cnfg['default'].getboolean('log10') )
+            ]
+
+    # Check the keywords of the libraries are all unique
+    if len(numpy.unique( numpy.array([tpl['key'] for tpl in template_libraries]) )) \
+            != len(template_libraries):
+        raise KeyError('Template-library keywords are not all unique!')
+
+    # Return the default list of template libraries
+    return template_libraries
+
+
+def default_emission_line_databases(dapsrc=None):
+    """
+
+    Return the list of database keys and file names for the available
+    emission-line databases.  The currently available libraries are:
+    
+    +-----------------+------------+-------------------------------+
+    |             KEY |    N lines | Description                   |
+    +=================+============+===============================+
+    |        STANDARD |         62 | Original line list with nearly|
+    |                 |            | all strong and weak lines     |
+    +-----------------+------------+---------+-------------+-------+
+    |          STRONG |       3.40 | A subset of only the strong   |
+    |                 |            | emission lines.               |
+    +-----------------+------------+---------+-------------+-------+
+    |        EXTENDED |       3.40 |       |
+    +-----------------+------------+---------+-------------+-------+
+
+    .. warning::
+
+        Function is currently only valid for Python 3.2 or greater!
+
+    Args:
+        dapsrc (str): (Optional) Root path to the DAP source
+            directory.  If not provided, the default is defined by
+            :func:`default_dap_source`.
+
+    Returns:
+        list : An list with of :class:`mangadap.par.ParSet.ParSet`
+            objects, each of which is created using
+            :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
 
     Raises:
         NotADirectoryError: Raised if the provided or default

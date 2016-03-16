@@ -29,10 +29,10 @@ Analysis Pipeline (DAP).
     from mangadap.util.exception_tools import print_frame
     from mangadap.util.yanny import yanny
     from mangadap.util.projected_disk_plane import projected_disk_plane
-    from mangadap.util.defaults import default_drp_version, default_dap_version
-    from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-    from mangadap.util.defaults import default_dap_par_file, default_dap_plan_file
-    from mangadap.util.defaults import default_dap_file_name
+    from mangadap.config.defaults import default_drp_version, default_dap_version
+    from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
+    from mangadap.config.defaults import default_dap_par_file, default_dap_plan_file
+    from mangadap.config.defaults import default_dap_file_name
 
 *Class usage examples*:
 
@@ -91,10 +91,10 @@ import numpy
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.yanny import yanny
 from mangadap.util.projected_disk_plane import projected_disk_plane
-from mangadap.util.defaults import default_drp_version, default_dap_version
-from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-from mangadap.util.defaults import default_dap_par_file, default_dap_plan_file
-from mangadap.util.defaults import default_dap_file_name
+from mangadap.config.defaults import default_drp_version, default_dap_version
+from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
+from mangadap.config.defaults import default_dap_par_file, default_dap_plan_file
+from mangadap.config.defaults import default_dap_file_name
 
 __author__ = 'Kyle Westfall'
 
@@ -112,20 +112,20 @@ class dapfile:
             plan parameter file.
         drpver (str): (Optional) DRP version, which is used to define
             the default DAP analysis path.  Default is defined by
-            :func:`mangadap.util.defaults.default_drp_version`
+            :func:`mangadap.config.defaults.default_drp_version`
         dapver (str): (Optional) DAP version, which is used to define
             the default DAP analysis path.  Default is defined by
-            :func:`mangadap.util.defaults.default_dap_version`
+            :func:`mangadap.config.defaults.default_dap_version`
         analysis_path (str): (Optional) The path to the top level
             directory containing the DAP output files for a given DRP
             and DAP version.  Default is defined by
-            :func:`mangadap.util.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.default_analysis_path`.
         directory_path (str): (Optional) The exact path to the DAP file.
             Default is defined by
-            :func:`mangadap.util.defaults.default_dap_directory_path`.
+            :func:`mangadap.config.defaults.default_dap_directory_path`.
         par_file (str): SDSS parameter file used to provide input
             parameters for the DAP.  Default is defined by
-            :func:`mangadap.util.defaults.default_dap_par_file`.
+            :func:`mangadap.config.defaults.default_dap_par_file`.
         read (bool) : (Optional) Read the DAP file upon instantiation of
             the object.
         checksum (bool): (Optional) Flag for astropy.io.fits.open

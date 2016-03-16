@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 r"""
 
 Defines a class to calculate and convert between on-sky and a projected

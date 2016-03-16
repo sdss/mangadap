@@ -1,6 +1,7 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
-
-Bitmask class
+Base class for handling bit masks by the DAP.
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/bitmask.py
@@ -19,6 +20,10 @@ Bitmask class
 *Imports*::
 
     import numpy
+    import os
+    import textwrap
+    from mangadap.config.util import _read_dap_mask_bits
+    from mangadap.config.defaults import default_dap_source
 
 *Class usage examples*:
 
@@ -29,8 +34,7 @@ Bitmask class
         # Imports
         import numpy
         from mangadap.drpfits import DRPFits
-        from mangadap.proc.TemplateLibrary import TemplateLibrary
-        from mangadap.util.bitmasks import TemplateLibraryBitMask
+        from mangadap.proc.TemplateLibrary import TemplateLibrary, TemplateLibraryBitMask
         from matplotlib import pyplot
 
         # Define the DRP file
@@ -59,11 +63,13 @@ Bitmask class
     | **07 Oct 2015**: (KBW) Added a usage case
     | **29 Jan 2016**: (KBW) Changed attributes of :class:`BitMask` and
         added functionality to print a description of the bits.  Convert
-        :class:`TemplateLibraryBitMask` to new format where the bits are
-        read from a configuration file.
+        :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask` to
+        new format where the bits are read from a configuration file.
     | **17 Feb 2016**: (KBW) Minor edit to documentation
-
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
+    | **16 Mar 2016**: (KBW) Moved TemplateLibraryBitMask to
+        :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask`;
+        moved HDUList_mask_wavelengths to
+        :func:`mangadap.proc.util.HDUList_mask_wavelengths`.
 
 """
 
@@ -80,7 +86,7 @@ import numpy
 import os
 import textwrap
 from mangadap.config.util import _read_dap_mask_bits
-from mangadap.util.defaults import default_dap_source
+from mangadap.config.defaults import default_dap_source
 
 __author__ = 'Kyle B. Westfall'
 
@@ -287,78 +293,6 @@ class BitMask:
         if type(flag) != str:
             raise Exception('Provided bit name must be a string!')
         return value & ~(1 << self.bits[flag])
-
-
-class TemplateLibraryBitMask(BitMask):
-    """
-    Derived class that specifies a BitMask for the template library
-    data.
-
-    The bit names and meanings are:
-    
-        - 'NO_DATA': Pixel has no data 
-
-        - 'WAVE_INVALID': Used to designate pixels in the 1D spectra
-          that are outside the valid wavelength range defined by
-          :func:`mangadap.util.defaults.default_template_libraries`
-
-        - 'FLUX_INVALID': Used to designate pixels in the 1D spectra
-          that are below the valid flux limit defined by
-          :func:`mangadap.util.defaults.default_template_libraries`
-
-        - 'SPECRES_EXTRAP': The spectral resolution has been matched to
-          a value that was an extrapolation of the target spectral
-          resolution samples.
-          
-        - 'SPECRES_LOW': The spectral resolution was *not* matched to
-          the target value because the target value was *higher* than
-          the existing spectral resolution.
-
-    """
-    def __init__(self, dapsrc=None):
-        keys, descr = _read_dap_mask_bits('template_bits.ini',
-                                          default_dap_source() if dapsrc is None else str(dapsrc))
-        BitMask.__init__(self, keys, descr)
-
-
-def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \
-                             mask_ext='MASK', invert=False):
-    """
-    Mask pixels in a specified wavelength range by turning on the bit
-    value in the specified extention in a provided HDUList object.
-
-    Args:
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList to alter
-        bitmask (class:`BitMask`): Bit mask object used to turn on the
-            named bit mask.
-        bitmask_flag (str): Name of the bit to turn on.
-        wave_limits (list or numpy.ndarray): Two-element array with the
-            low and high wavelength limits.
-        wave_ext (str): (Optional) Name of the wavelength extension in
-            *hdu*.
-        mask_ext (str): (Optional) Name of the mask extension in *hdu*.
-        invert (bool): (Optional) Invert the sense of the masking.
-            Instead of masking pixel in the wavelength interval, mask
-            all pixels *outside* it.
-
-    Returns:
-        `astropy.io.fits.hdu.hdulist.HDUList`_ : The modified HDUList
-            object.
-
-    Raises:
-        Exception: Raised if *wave_limits* does not have a length of
-            two.
-
-    """
-    if len(wave_limits) != 2:
-        raise Exception('Wavelength limits must be a two-element vector.')
-
-    indx = numpy.where( (hdu[wave_ext].data < wave_limits[0]) \
-                        | (hdu[wave_ext].data > wave_limits[1])) if invert else \
-           numpy.where( (hdu[wave_ext].data >= wave_limits[0]) \
-                        & (hdu[wave_ext].data <= wave_limits[1]))
-    hdu[mask_ext].data[indx] = bitmask.turn_on(hdu[mask_ext].data[indx], bitmask_flag)
-    return hdu
 
 
 

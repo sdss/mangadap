@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Provides a set of processing utility functions for the MaNGA DAP.
@@ -23,6 +25,8 @@ Provides a set of processing utility functions for the MaNGA DAP.
 
 *Revision history*:
     | **01 Feb 2016**: Original implementation by K. Westfall (KBW)
+
+.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 
 """
 
@@ -168,5 +172,46 @@ def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velocity_scale):
     """
     return (numpy.log(tpl_wave[0])-numpy.log(obj_wave[0]))*velocity_scale \
                 / numpy.diff(numpy.log(obj_wave[0:2]))
+
+
+def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \
+                             mask_ext='MASK', invert=False):
+    """
+    Mask pixels in a specified wavelength range by turning on the bit
+    value in the specified extention in a provided HDUList object.
+
+    Args:
+        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList to alter
+        bitmask (class:`BitMask`): Bit mask object used to turn on the
+            named bit mask.
+        bitmask_flag (str): Name of the bit to turn on.
+        wave_limits (list or numpy.ndarray): Two-element array with the
+            low and high wavelength limits.
+        wave_ext (str): (Optional) Name of the wavelength extension in
+            *hdu*.
+        mask_ext (str): (Optional) Name of the mask extension in *hdu*.
+        invert (bool): (Optional) Invert the sense of the masking.
+            Instead of masking pixel in the wavelength interval, mask
+            all pixels *outside* it.
+
+    Returns:
+        `astropy.io.fits.hdu.hdulist.HDUList`_ : The modified HDUList
+            object.
+
+    Raises:
+        Exception: Raised if *wave_limits* does not have a length of
+            two.
+
+    """
+    if len(wave_limits) != 2:
+        raise Exception('Wavelength limits must be a two-element vector.')
+
+    indx = numpy.where( (hdu[wave_ext].data < wave_limits[0]) \
+                        | (hdu[wave_ext].data > wave_limits[1])) if invert else \
+           numpy.where( (hdu[wave_ext].data >= wave_limits[0]) \
+                        & (hdu[wave_ext].data <= wave_limits[1]))
+    hdu[mask_ext].data[indx] = bitmask.turn_on(hdu[mask_ext].data[indx], bitmask_flag)
+    return hdu
+
 
 

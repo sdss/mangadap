@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Defines the class used to automate the execution of the MaNGA DAP at
 Utah.
@@ -34,11 +36,11 @@ Utah.
 
     from mangadap.survey.drpcomplete import DRPComplete
     from mangadap.drpfits import DRPFits
-    from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-    from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-    from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
-    from mangadap.util.defaults import default_dap_par_file, default_dap_file_name
-    from mangadap.util.defaults import default_dap_source, default_cube_covariance_file
+    from mangadap.config.defaults import default_redux_path, default_drp_directory_path
+    from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
+    from mangadap.config.defaults import default_dap_file_root, default_dap_plan_file
+    from mangadap.config.defaults import default_dap_par_file, default_dap_file_name
+    from mangadap.config.defaults import default_dap_source, default_cube_covariance_file
     from mangadap.util.exception_tools import print_frame
     from mangadap.util.parser import arginp_to_list
     from mangadap.survey.mangampl import mangampl
@@ -73,7 +75,7 @@ Utah.
         anything before, commented out _write_module_commands for the
         time-being; removed file_root() and parameter_file() functions
         in favor of adding/using functions from
-        :mod:`mangadap.util.defaults`; version number set to 1_1_0.
+        :mod:`mangadap.config.defaults`; version number set to 1_1_0.
     | **06 Oct 2015**: (KBW) Added functionality to select the types of
         additional output.  Minor changes to allow for DR13 QA plots.
     | **22 Oct 2015**: (KBW) Added check that the selected MPL versions match
@@ -121,11 +123,11 @@ from argparse import ArgumentParser
 # DAP imports
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.drpfits import DRPFits
-from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
-from mangadap.util.defaults import default_dap_par_file, default_dap_file_name
-from mangadap.util.defaults import default_dap_source, default_cube_covariance_file
+from mangadap.config.defaults import default_redux_path, default_drp_directory_path
+from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
+from mangadap.config.defaults import default_dap_file_root, default_dap_plan_file
+from mangadap.config.defaults import default_dap_par_file, default_dap_file_name
+from mangadap.config.defaults import default_dap_source, default_cube_covariance_file
 from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.survey.mangampl import mangampl
@@ -179,16 +181,16 @@ class rundap:
                 
         redux_path (str): (Optional) The top-level path with the DRP
             files used to override the default defined by
-            :func:`mangadap.util.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.default_redux_path`.
         dapver (str): (Optional) The DAP version to use for the
             analysis, used to override the default defined by
-            :func:`mangadap.util.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.default_dap_version`.
         analysis_path (str): (Optional) The top-level path for the DAP
             output files, used to override the default defined by
-            :func:`mangadap.util.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.default_analysis_path`.
         plan_file (str): (Optional) Name of the plan file to use for ALL
             DRP data in this run, used to override the default defined
-            by :func:`mangadap.util.defaults.default_dap_plan_file`.
+            by :func:`mangadap.config.defaults.default_dap_plan_file`.
         platelist (int or str): (Optional) List of plates to analyze;
             default is to search the :attr:`redux_path` for any DRP
             files.
@@ -219,7 +221,7 @@ class rundap:
         platetargets (str or list): (Optional) List of platetargets
             files to search through to find any given plate-ifudesign
             combination.  Default is returned as the first element in
-            :func:`mangadap.util.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.default_plate_target_files`.
         covar (bool): (Optional) Calculate and output the covariance
             matrix. Default is True.
         dapproc (bool): (Optional) Flag to execute the main DAP
@@ -791,7 +793,7 @@ class rundap:
         """
         Check if the output path exists for a given plate and ifudesign.
         If not, create it.  The output path is set using
-        :func:`mangadap.util.defaults.default_dap_directory_path`.
+        :func:`mangadap.config.defaults.default_dap_directory_path`.
 
         Args:
             plate (int): Plate number
@@ -1031,7 +1033,7 @@ class rundap:
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
-        :func:`mangadap.util.defaults.default_dap_file_root`.
+        :func:`mangadap.config.defaults.default_dap_file_root`.
 
         Args:
             plate (int): Plate number

@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Defines a class used to interface with files produced in the 3D phase of
@@ -30,12 +32,12 @@ matrix for the DRP 'CUBE' files.
     from matplotlib import pyplot
     from mangadap.util.parser import arginp_to_list
     from mangadap.util.covariance import covariance
-    from mangadap.util.defaults import default_drp_version
-    from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-    from mangadap.util.defaults import default_cube_pixelscale, default_cube_width_buffer
-    from mangadap.util.defaults import default_cube_recenter, default_regrid_rlim
-    from mangadap.util.defaults import default_regrid_sigma
-    from mangadap.util.defaults import default_manga_fits_root
+    from mangadap.config.defaults import default_drp_version
+    from mangadap.config.defaults import default_redux_path, default_drp_directory_path
+    from mangadap.config.defaults import default_cube_pixelscale, default_cube_width_buffer
+    from mangadap.config.defaults import default_cube_recenter, default_regrid_rlim
+    from mangadap.config.defaults import default_regrid_sigma
+    from mangadap.config.defaults import default_manga_fits_root
 
 *Class usage examples*:
 
@@ -68,7 +70,7 @@ matrix for the DRP 'CUBE' files.
         drpver and redux_path are not None when directory_path has been
         directly defined.**
     | **28 Aug 2015**: (KBW) Added usage of
-        :func:`mangadap.util.defaults.default_manga_fits_root`
+        :func:`mangadap.config.defaults.default_manga_fits_root`
     | **15 Feb 2016**: (KBW) Added :func:`DRPFits.__getitem__`
         function
     | **17 Feb 2016**: (KBW) Converted drpfile class name to DRPFits
@@ -107,12 +109,12 @@ from matplotlib import pyplot
 
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.covariance import covariance
-from mangadap.util.defaults import default_drp_version
-from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-from mangadap.util.defaults import default_cube_pixelscale, default_cube_width_buffer
-from mangadap.util.defaults import default_cube_recenter, default_regrid_rlim
-from mangadap.util.defaults import default_regrid_sigma
-from mangadap.util.defaults import default_manga_fits_root
+from mangadap.config.defaults import default_drp_version
+from mangadap.config.defaults import default_redux_path, default_drp_directory_path
+from mangadap.config.defaults import default_cube_pixelscale, default_cube_width_buffer
+from mangadap.config.defaults import default_cube_recenter, default_regrid_rlim
+from mangadap.config.defaults import default_regrid_sigma
+from mangadap.config.defaults import default_manga_fits_root
 
 __author__ = 'Kyle B. Westfall'
 
@@ -141,7 +143,7 @@ def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
             *redux_path* in the :class:`DRPFits` class.
         directory_path (str): (Optional) The exact path to the DRP file.
             Default is defined by
-            :func:`mangadap.util.defaults.default_drp_directory_path`.
+            :func:`mangadap.config.defaults.default_drp_directory_path`.
 
     Returns:
         list : A list of DRP file objects
@@ -234,14 +236,14 @@ class DRPFits:
             'CUBE'
         drpver (str): (Optional) DRP version, which is used to define
             the default DRP redux path.  Default is defined by
-            :func:`mangadap.util.defaults.default_drp_version`
+            :func:`mangadap.confg.defaults.default_drp_version`
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files for a given DRP version.
             Default is defined by
-            :func:`mangadap.util.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.default_redux_path`.
         directory_path (str): (Optional) The exact path to the DRP file.
             Default is defined by
-            :func:`mangadap.util.defaults.default_drp_directory_path`.
+            :func:`mangadap.config.defaults.default_drp_directory_path`.
         read (bool) : (Optional) Read the DRP file upon instantiation of
             the object.
         checksum (bool): (Optional) Check for file corruption.
