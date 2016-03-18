@@ -3,6 +3,10 @@
 """
 Base class for handling bit masks by the DAP.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/bitmask.py
 
@@ -22,8 +26,6 @@ Base class for handling bit masks by the DAP.
     import numpy
     import os
     import textwrap
-    from mangadap.config.util import _read_dap_mask_bits
-    from mangadap.config.defaults import default_dap_source
 
 *Class usage examples*:
 
@@ -85,8 +87,6 @@ if sys.version > '3':
 import numpy
 import os
 import textwrap
-from mangadap.config.util import _read_dap_mask_bits
-from mangadap.config.defaults import default_dap_source
 
 __author__ = 'Kyle B. Westfall'
 

@@ -4,6 +4,10 @@ r"""
 Define a parameter instance that holds the input information needed to
 run the DAP for a specific MaNGA observation.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/obsinput.py
 
@@ -22,9 +26,10 @@ run the DAP for a specific MaNGA observation.
 
     import numpy
     import os.path
-    from mangadap.par.parset import ParSet
-    from mangadap.util.yanny import yanny
-    from mangadap.proc.options import drp_3dmode_options
+    import warnings
+    from .parset import ParSet
+    from ..util.yanny import yanny
+    from ..proc.options import drp_3dmode_options
 
 *Class usage examples*:
 
@@ -56,10 +61,10 @@ if sys.version > '3':
 
 import numpy
 import os.path
-from mangadap.par.parset import ParSet
-from mangadap.util.yanny import yanny
-from mangadap.proc.options import drp_3dmode_options
 import warnings
+from .parset import ParSet
+from ..util.yanny import yanny
+from ..proc.options import drp_3dmode_options
 
 __author__ = 'Kyle B. Westfall'
 

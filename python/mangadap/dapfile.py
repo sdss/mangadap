@@ -1,9 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Defines a class used to interface with files produced by the MaNGA Data
 Analysis Pipeline (DAP).
+
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/dapfile.py
@@ -88,13 +91,13 @@ from astropy.io import fits
 import time
 import numpy
 
-from mangadap.util.exception_tools import print_frame
-from mangadap.util.yanny import yanny
-from mangadap.util.projected_disk_plane import projected_disk_plane
-from mangadap.config.defaults import default_drp_version, default_dap_version
-from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
-from mangadap.config.defaults import default_dap_par_file, default_dap_plan_file
-from mangadap.config.defaults import default_dap_file_name
+from .util.exception_tools import print_frame
+from .util.yanny import yanny
+from .util.projected_disk_plane import projected_disk_plane
+from .config.defaults import default_drp_version, default_dap_version
+from .config.defaults import default_analysis_path, default_dap_directory_path
+from .config.defaults import default_dap_par_file, default_dap_plan_file
+from .config.defaults import default_dap_file_name
 
 __author__ = 'Kyle Westfall'
 
@@ -170,19 +173,25 @@ class dapfile:
             self.dapver = default_dap_version() if dapver is None else str(dapver)
             self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
                                  if analysis_path is None else str(analysis_path)
-            self.directory_path = default_dap_directory_path(self.drpver, self.dapver,
-                                                             self.analysis_path, self.plate,
-                                                             self.ifudesign)
+            self.directory_path = default_dap_directory_path(self.plate, self.ifudesign,
+                                                             drpver=self.drpver, dapver=self.dapver,
+                                                             analysis_path=self.analysis_path)
         else:
             self.drpver = None
             self.dapver = None
             self.analysis_path = None
             self.directory_path = str(directory_path)
 
-        self.par_file = default_dap_par_file(self.drpver, self.dapver, self.analysis_path, \
-                                             self.directory_path, self.plate, self.ifudesign, \
-                                             self.mode) \
+        # drpver, dapver, and analysis_path can be None and par_file
+        # will still only use the above defined directory_path
+        self.par_file = default_dap_par_file(self.plate, self.ifudesign, self.mode,
+                                             drpver=self.drpver, dapver=self.dapver,
+                                             analysis_path=self.analysis_path,
+                                             directory_path=self.directory_path) \
                                              if par_file is None else str(par_file)
+
+        # TODO: Do we need drpver, dapver, analysis_path to be kept
+        # by self?
 
         self.hdu = None
         self.par = None

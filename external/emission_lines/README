@@ -1,0 +1,50 @@
+# Columns in the emission-line database parameter files are:
+#
+#   INDEX:
+#       Unique integer identifier of the emission line.  Used when tying
+#       lines together.
+#   NAME:
+#       Name of the element, read as a string.
+#   LAMBDA:
+#       Rest frame wavelength of the emission line to fit; can be in air
+#       or vacuum.  DAP assumes the input is in VACUUM if not specified
+#       in the definition of the database using
+#       :class:`EmissionLineDBDef`
+#   ACTION:
+#       Describes how the line should be treated.  Possible values are:
+#
+#           'i': ignore the line, as if the line were commented out.
+#
+#           'f': fit the line and mask the line when fitting the stellar
+#                continuum.
+#
+#           'm': mask the line when fitting the stellar continuum but do
+#                NOT fit the line itself
+#
+#           's': defines a sky line that should be masked.  When masked,
+#                the wavelength of the line is NOT adjusted for the
+#                redshift of the object spectrum.
+#   LINE:
+#       Type of line, which can be either 'l' for a line or 'dN' for a
+#       doublet.  For doublets, the 'N' indicates the line ID of the
+#       other line in the doublet.  The line to which the doublet is
+#       tied should have LINE='l'; for example, if emission line with
+#       ID=4 has line='d3', then the emission line with ID=3 must have
+#       LINE='l'.
+#   AMPL:
+#       Relative intensity of the gas emission (positive) or absorption
+#       (negative) lines with respect to the doublet.  Therefore, this
+#       should most often be unity if LINE='l' and indicate the ratio of
+#       line INTENSITY if LINE='dN'.
+#   VEL:
+#       Guess for the velocity offset with respect to the galaxy
+#       systemic velocity (km/s).
+#   SIG:
+#       Guess for the velocity dispersion (km/s).
+#   MODE:
+#       Fitting mode for the line, which can be either 'f' to fit the
+#       line independently or 'tN' to set both the velocity and
+#       dispersion to be tied to a fitted line (MODE='f') with ID=N.
+#       One can also force only the velocities to be tied using 'vN' or
+#       only the velocity dispersions to be tied using 'sN'.
+#------------------------------------------------------------------------

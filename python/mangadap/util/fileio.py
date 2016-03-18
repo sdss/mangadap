@@ -4,6 +4,10 @@
 
 Provides a set of file I/O routines.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/fileio.py
 

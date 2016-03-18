@@ -5,6 +5,10 @@
 Provides a set of tools that the MaNGA DAP uses to handle/report raised
 exceptions.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/exception_tools.py
 

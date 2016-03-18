@@ -5,6 +5,10 @@ r"""
 Defines a class to calculate and convert between on-sky and a projected
 (disk) plane.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/projected_disk_plane.py
 

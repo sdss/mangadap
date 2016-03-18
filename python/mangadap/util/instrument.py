@@ -7,6 +7,11 @@ Provides a set of functions to handle instrumental effects.
 :func:`log_rebin` has been pulled from
 :mod:`mangadap.contrib.ppxf_util.py` and modified.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall, David Wilkinson, Oliver
+                        Steele, Daniel Thomas
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/instrument.py
 

@@ -3,6 +3,10 @@
 """
 Defines a class used to store and interface with covariance matrices.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/covariance.py
 
@@ -65,7 +69,7 @@ from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 
-class covariance:
+class Covariance:
     """
     Meant to be a general utility for storing, manipulating, and file
     I/O of large but sparse covariance matrices.

@@ -9,7 +9,7 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     module files.  So, even as it is, this class has little utility.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
+    Copyright (c) 2015, Kyle B. Westfall
     Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:

@@ -4,6 +4,10 @@
 
 A catch-all module with miscellaneous utility functions.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/misc.py
 

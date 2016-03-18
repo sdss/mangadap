@@ -1,12 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Defines a class used to interface with files produced in the 3D phase of
 the MaNGA Data Reduction Pipeline (DRP).
 
 Added functionality is primarily for the calculation of the covariance
 matrix for the DRP 'CUBE' files.
+
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/drpfits.py
@@ -23,21 +26,22 @@ matrix for the DRP 'CUBE' files.
 
 *Imports*::
 
+    import time
     import os.path
+    import numpy
+
     from scipy import sparse
     from astropy.io import fits
     from astropy.wcs import WCS
-    import time
-    import numpy
-    from matplotlib import pyplot
-    from mangadap.util.parser import arginp_to_list
-    from mangadap.util.covariance import covariance
-    from mangadap.config.defaults import default_drp_version
-    from mangadap.config.defaults import default_redux_path, default_drp_directory_path
-    from mangadap.config.defaults import default_cube_pixelscale, default_cube_width_buffer
-    from mangadap.config.defaults import default_cube_recenter, default_regrid_rlim
-    from mangadap.config.defaults import default_regrid_sigma
-    from mangadap.config.defaults import default_manga_fits_root
+
+    from .util.parser import arginp_to_list
+    from .util.covariance import Covariance
+    from .config.defaults import default_drp_version
+    from .config.defaults import default_redux_path, default_drp_directory_path
+    from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
+    from .config.defaults import default_cube_recenter, default_regrid_rlim
+    from .config.defaults import default_regrid_sigma
+    from .config.defaults import default_manga_fits_root
 
 *Class usage examples*:
 
@@ -99,22 +103,22 @@ import sys
 if sys.version > '3':
     long = int
 
+import time
 import os.path
+import numpy
+
 from scipy import sparse
 from astropy.io import fits
 from astropy.wcs import WCS
-import time
-import numpy
-from matplotlib import pyplot
 
-from mangadap.util.parser import arginp_to_list
-from mangadap.util.covariance import covariance
-from mangadap.config.defaults import default_drp_version
-from mangadap.config.defaults import default_redux_path, default_drp_directory_path
-from mangadap.config.defaults import default_cube_pixelscale, default_cube_width_buffer
-from mangadap.config.defaults import default_cube_recenter, default_regrid_rlim
-from mangadap.config.defaults import default_regrid_sigma
-from mangadap.config.defaults import default_manga_fits_root
+from .util.parser import arginp_to_list
+from .util.covariance import Covariance
+from .config.defaults import default_drp_version
+from .config.defaults import default_redux_path, default_drp_directory_path
+from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
+from .config.defaults import default_cube_recenter, default_regrid_rlim
+from .config.defaults import default_regrid_sigma
+from .config.defaults import default_manga_fits_root
 
 __author__ = 'Kyle B. Westfall'
 
@@ -236,7 +240,7 @@ class DRPFits:
             'CUBE'
         drpver (str): (Optional) DRP version, which is used to define
             the default DRP redux path.  Default is defined by
-            :func:`mangadap.confg.defaults.default_drp_version`
+            :func:`mangadap.config.defaults.default_drp_version`
         redux_path (str): (Optional) The path to the top level directory
             containing the DRP output files for a given DRP version.
             Default is defined by
@@ -379,10 +383,10 @@ class DRPFits:
 
         if directory_path is None:
             self.drpver = default_drp_version() if drpver is None else str(drpver)
-            self.redux_path = default_redux_path(self.drpver) \
+            self.redux_path = default_redux_path(drpver=self.drpver) \
                               if redux_path is None else str(redux_path)
-            self.directory_path = default_drp_directory_path(self.drpver, self.redux_path,
-                                                             self.plate)
+            self.directory_path = default_drp_directory_path(self.plate, drpver=self.drpver,
+                                                             redux_path=self.redux_path)
         else:
             self.drpver = None
             self.redux_path = None
@@ -1414,7 +1418,7 @@ class DRPFits:
         covariance matrix has a size that is :math:`(N M)\times (N M)`;
         however, the majority of these pixels will be zero.  Therefore,
         the covariance matrix is stored as a sparse matrix and
-        interfaced with using the :class:`mangadap.util.covariance`
+        interfaced with using the :class:`mangadap.util.covariance.Covariance`
         object class.
 
         The value of the covariance matrix at pixel :math:`(i,j)` is the
@@ -1485,16 +1489,16 @@ class DRPFits:
                 function used to approximate the trend of the
                 correlation coefficient with pixel separation.
             csr (bool): (Optional) Instead of reaturning a
-                :class:`mangadap.util.covariance` object, return the
+                :class:`mangadap.util.covariance.Covariance` object, return the
                 covariance matrix as a `scipy.sparse.csr_matrix`_
                 object.  Primarily used by :func:`covariance_cube` for
                 collating the covariance matrix of each wavelength
                 channel before combining them into a single
-                :class:`mangadap.util.covariance` object
+                :class:`mangadap.util.covariance.Covariance` object
             quiet (bool): (Optional) Suppress terminal output
 
         Returns:
-            :class:`mangadap.util.covariance` or
+            :class:`mangadap.util.covariance.Covariance` or
                 `scipy.sparse.csr_matrix`_ : The covariance matrix for
                 the designated wavelength channel.  The return type
                 depends on *csr*.
@@ -1582,7 +1586,7 @@ class DRPFits:
             C = sparse.coo_matrix((cov[cov>0], (ci[cov>0], cj[cov>0])), 
                                   shape=(self.nx*self.ny,self.nx*self.ny)).tocsr()
 
-        return covariance(C) if not csr else C
+        return Covariance(C) if not csr else C
 
 
     def covariance_cube(self, channels=None, pixelscale=None, recenter=None, width_buffer=None, 
@@ -1606,17 +1610,17 @@ class DRPFits:
                 function used to approximate the trend of the
                 correlation coefficient with pixel separation.
             csr (bool): (Optional) Instead of reaturning a
-                :class:`mangadap.util.covariance` object, return a
+                :class:`mangadap.util.covariance.Covariance` object, return a
                 numpy.ndarray of the covariance matrices for each
                 channel, which are `scipy.sparse.csr_matrix`_ objects.
                 Primarily used by :func:`covariance_cube` for collating
                 the covariance matrix of each wavelength channel before
                 combining them into a single
-                :class:`mangadap.util.covariance` object
+                :class:`mangadap.util.covariance.Covariance` object
             quiet (bool): (Optional) Suppress terminal output
 
         Returns:
-            :class:`mangadap.util.covariance` or numpy.ndarray : The
+            :class:`mangadap.util.covariance.Covariance` or numpy.ndarray : The
                 return type depends on *csr*: if *csr* is True, the
                 returned object is an ndarray of
                 `scipy.sparse.csr_matrix`_ types.
@@ -1669,7 +1673,7 @@ class DRPFits:
             print('Covariance Cube Done                     ')
 
         # Don't provide input indices if the full cube is calculated
-        return covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
+        return Covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
 
 
     def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,

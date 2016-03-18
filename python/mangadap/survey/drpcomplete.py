@@ -16,7 +16,7 @@ Until further documented here, the description of the `DAP par
 file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
+    Copyright (c) 2015, Kyle B. Westfall
     Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:

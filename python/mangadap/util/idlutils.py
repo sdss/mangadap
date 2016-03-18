@@ -4,6 +4,10 @@
 
 Contains transcriptions of some IDLUTILS functions to python.
 
+*License*:
+    Copyright (c) 2015, W. Landsman, D. Schlegel, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/idlutils.py
 

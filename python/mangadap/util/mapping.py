@@ -6,6 +6,10 @@ Defines some utility routines used to map a provided set of quantities.
 These routines are largely adapted from code provided by Michele
 Cappellari.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall, Michele Cappellari
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/mapping.py
 

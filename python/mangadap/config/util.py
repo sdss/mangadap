@@ -114,6 +114,8 @@ def validate_emission_line_config(cnfg):
     Validate the `config.ConfigParser`_ object that is meant to define
     an emission-line database.
 
+    ``'in_vacuum'`` can be provided; however, it's not necessary.
+
     Args:
         cnfg (`config.ConfigParser`_): Object meant to contain defining
             parameters of the emission-line database needed by
@@ -137,10 +139,57 @@ def validate_emission_bandpass_filter_config(cnfg):
     an emission-line passband database.  This is currently identical to
     :func:`validate_emission_line_config`.
 
+    ``'in_vacuum'`` can be provided; however, it's not necessary.
+
     Args:
         cnfg (`config.ConfigParser`_): Object meant to contain defining
             parameters of the emission-line passband database needed by
             :class:`mangadap.proc.emissionlinedb.EmissionMomentsDBDef`.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if key has unacceptable value.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'file_path' not in cnfg.options('default'):
+        raise KeyError('Keyword \'file_path\' must be provided.')
+
+
+def validate_absorption_index_config(cnfg):
+    """ 
+    Validate the `config.ConfigParser`_ object that is meant to define
+    an absorption-line index database.  This is currently identical to
+    :func:`validate_emission_line_config`; however, ``'in_vacuum'``
+    should **not** be a keyword.
+
+    Args:
+        cnfg (`config.ConfigParser`_): Object meant to contain defining
+            parameters of the absorption-line index database needed by
+            :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDBDef`.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if key has unacceptable value.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'file_path' not in cnfg.options('default'):
+        raise KeyError('Keyword \'file_path\' must be provided.')
+
+
+def validate_bandhead_index_config(cnfg):
+    """ 
+    Validate the `config.ConfigParser`_ object that is meant to define a
+    bandhead-index database.  This is currently identical to
+    :func:`validate_absorption_index_config`.
+
+    Args:
+        cnfg (`config.ConfigParser`_): Object meant to contain defining
+            parameters of the bandhead index database needed by
+            :class:`mangadap.proc.bandheadindexdb.BandheadIndexDBDef`.
 
     Raises:
         KeyError: Raised if required keyword does not exist.

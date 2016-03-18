@@ -6,6 +6,10 @@ Defines a catch-all class for useful constants.  These are meant to be
 values that are **not** available elsewhere, such as
 `astropy.constants`_.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/constants.py
 

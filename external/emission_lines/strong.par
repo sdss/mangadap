@@ -1,0 +1,40 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 16 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Line wavelengths are in: VACUUM
+#
+# The columns are described in README.
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double lambda;
+    char action;
+    char line[6];
+    double ampl;
+    double vel;
+    double sig;
+    char mode[6];
+} DAPEML;
+
+DAPEML  16  OII     3727.092        f      l   1.000      0      10      f  
+DAPEML  17  OII     3729.875        f      l   1.000      0      10    t16  
+DAPEML  62  OIId    3728.4835       f      l   1.000      0      10      f  
+DAPEML  33  Hb      4862.691        f      l   1.000      0      10      f
+DAPEML  34  OIII    4960.295        f      l   1.000      0      10      f  
+DAPEML  35  OIII    5008.240        f      l   1.000      0      10      f  
+DAPEML  41  OI      6302.046        f      l   1.000      0      10      f  
+DAPEML  42  OI      6365.535        f      l   1.000      0      10      f  
+DAPEML  43  NII     6549.86         f      l   1.000      0      10      f  
+DAPEML  44  Ha      6564.632        f      l   1.000      0      10      f
+DAPEML  45  NII     6585.271        f      l   1.000      0      10      f
+DAPEML  46  SII     6718.294        f      l   1.000      0      10      f  
+DAPEML  47  SII     6732.674        f      l   1.000      0      10      f  
+

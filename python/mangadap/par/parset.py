@@ -3,6 +3,10 @@
 """
 Define a utility base class used to hold parameters.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/parset.py
 
@@ -23,12 +27,13 @@ Define a utility base class used to hold parameters.
 
 ..todo::
 
-    - Add range and elements parameters allowing one to define the range
+    - Add range and length parameters allowing one to define the range
       allowed for the parameter values and number of elements required
       (if the parameter is an array)
 
 *Revision history*:
     | **16 Jun 2015**: Original implementation by K. Westfall (KBW)
+    | **18 Mar 2016**: (KBW) Change dtype checking
 
 """
 
@@ -113,9 +118,11 @@ class ParSet:
         if self.options[key] is not None and value not in self.options[key]:
             raise ValueError('Input value invalid: {0}.\nOptions are: {1}'.format(value,
                                                                                 self.options[key]))
-        if self.dtype[key] is not None and type(value) not in self.dtype[key]:
+        if self.dtype[key] is not None \
+                and not any([ isinstance(value, d) for d in self.dtype[key]]):
             raise ValueError('Input value incorrect type: {0}.\nOptions are: {1}'.format(value,
                                                                                 self.dtype[key]))
+
         self.data[key] = value
         
 
