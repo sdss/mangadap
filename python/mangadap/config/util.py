@@ -4,6 +4,10 @@
 
 Contains utility functions needed for configuration.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/config/util.py
 
@@ -32,9 +36,15 @@ Contains utility functions needed for configuration.
     import numpy
     import os.path
 
+    from .defaults import default_dap_source
+
 *Revision history*:
     | **29 Jan 2016**: Original implementation by K. Westfall (KBW)
     | **17 Feb 2016**: (KBW) Added try/except block for ConfigParser
+    | **16 Mar 2016**: (KBW) Moved :func:`_read_dap_mask_bits` here;
+        used to be in :mod:`mangadap.util.bitmask`
+
+.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 
 """
 
@@ -59,17 +69,20 @@ else:
 import numpy
 import os.path
 
+from .defaults import default_dap_source
+
 __author__ = 'Kyle B. Westfall'
 
-#-----------------------------------------------------------------------
-def validate_template_config(cnfg):
+
+def validate_spectral_template_config(cnfg):
     """ 
-    Validate the ConfigParser object that is meant to define a template
-    library.
+    Validate the `config.ConfigParser`_ object that is meant to define a
+    template library.
 
     Args:
-        cnfg (ConfigParser): Object meant to contain defining parameters
-            of the template library needed by TemplateLibraryDef.
+        cnfg (`config.ConfigParser`_): Object meant to contain defining
+            parameters of the template library needed by
+            :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
 
     Raises:
         KeyError: Raised if required keyword does not exist.
@@ -96,7 +109,51 @@ def validate_template_config(cnfg):
         cnfg['default']['log10'] = 'False'
 
 
-def _read_dap_mask_bits(f, dapsrc):
+def validate_emission_line_config(cnfg):
+    """ 
+    Validate the `config.ConfigParser`_ object that is meant to define
+    an emission-line database.
+
+    Args:
+        cnfg (`config.ConfigParser`_): Object meant to contain defining
+            parameters of the emission-line database needed by
+            :class:`mangadap.proc.emissionlinedb.EmissionLineDBDef`.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if key has unacceptable value.
+
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'file_path' not in cnfg.options('default'):
+        raise KeyError('Keyword \'file_path\' must be provided.')
+
+
+def validate_emission_bandpass_filter_config(cnfg):
+    """ 
+    Validate the `config.ConfigParser`_ object that is meant to define
+    an emission-line passband database.  This is currently identical to
+    :func:`validate_emission_line_config`.
+
+    Args:
+        cnfg (`config.ConfigParser`_): Object meant to contain defining
+            parameters of the emission-line passband database needed by
+            :class:`mangadap.proc.emissionlinedb.EmissionMomentsDBDef`.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if key has unacceptable value.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'file_path' not in cnfg.options('default'):
+        raise KeyError('Keyword \'file_path\' must be provided.')
+
+
+def read_dap_mask_bits(f, dapsrc=None):
     """
     Read a config file that defines a set of mask bits to be used with
     :class:`mangadap.util.bitmask.BitMask`.
@@ -105,9 +162,9 @@ def _read_dap_mask_bits(f, dapsrc):
         f (str): File name.  MUST be found in
             ${dapsrc}/python/mangadap/config/bitmasks/
 
-        dapsrc (str): Root of the DAP source directory tree.  Cannot use
-            :func:`mangadap.config.defaults.default_dap_source` because
-            this source is imported by defaults.py.
+        dapsrc (str): (Optional) Root of the DAP source directory tree.
+            Default is to use
+            :func:`mangadap.config.defaults.default_dap_source`
 
     Returns:
         keys (list): List of bitmask keywords.  They must be ordered by
@@ -119,6 +176,8 @@ def _read_dap_mask_bits(f, dapsrc):
         ValueError: Raised if the list of bits do not have a sequential
             list of values or if the minimum mask value is not 0.
     """
+
+    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
 
     _f = os.path.join(dapsrc, 'python', 'mangadap', 'config', 'bitmasks', f)
     if not os.path.isfile(_f):
@@ -143,7 +202,4 @@ def _read_dap_mask_bits(f, dapsrc):
     return keys[srt], descr[srt]
         
     
-
-#-----------------------------------------------------------------------
-
 

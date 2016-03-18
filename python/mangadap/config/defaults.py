@@ -4,6 +4,10 @@ r"""
 Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
+*License*:
+    Copyright (c) 2015, Kyle B. Westfall
+    Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/config/defaults.py
 
@@ -24,8 +28,6 @@ MaNGA DAP, such as paths and file names.
     from os import environ
     import glob
     import numpy
-    from mangadap.proc.templatelibrary import TemplateLibraryDef
-    from mangadap.config.util import validate_template_config
     from mangadap.util.exception_tools import check_environment_variable
 
 *Revision history*:
@@ -36,9 +38,10 @@ MaNGA DAP, such as paths and file names.
     | **15 Jun 2015**: (KBW) Added default functions moved from
         :class:`mangadap.drpfile`
     | **16 Jun 2015**: (KBW) Added wavelength limits and lower flux
-        limit to :func:`available_template_libraries`
+        limit to
+        :func:`mangadap.config.inputdata.available_template_libraries`
     | **17 Jun 2015**: (KBW) Moved declarations of template library keys
-        to its own function: :func:`default_template_library_keys', and
+        to its own function: *default_template_library_keys*, and
         edited :func:`available_template_libraries` accordingly
     | **27 Aug 2015**: (KBW) Changed the name of the plan file; added
         :func:`default_dap_file_root` based on file_root() from
@@ -48,14 +51,18 @@ MaNGA DAP, such as paths and file names.
     | **07 Oct 2015**: (KBW) Adjusted for changes to naming of the
         template library database definitions.  Added M11-STELIB-ZSOL
         library.
-    | **29 Jan 2016**: (KBW) Changed :func:`default_template_libraries`
-        to use configparser ini files to define each template library.
+    | **29 Jan 2016**: (KBW) Changed
+        :func:`manga.config.inputdata.available_template_libraries` to
+        use configparser ini files to define each template library.
     | **03 Feb 2016**: (KBW) Added checks for required environmental
         variables.
     | **17 Feb 2016**: (KBW) Added try/except blocks for importing
         ConfigParser.
-    | **16 Mar 2016**: (KBW) Added
-        :func:`default_emission_line_databases`
+    | **16 Mar 2016**: (KBW) Created :mod:`mangadap.config.inputdata`
+        and moved **default_template_libraries** there (and changed it
+        to
+        :func:`mangadap.config.inputdata.available_template_libraries`.
+        No longer need ConfigParser here.
 
 """
 
@@ -67,33 +74,15 @@ from __future__ import unicode_literals
 import sys
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        print('WARNING: Unable to import configparser!  Beware!')
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        print('WARNING: Unable to import ExtendedInterpolation!  Some configurations will fail!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        print('WARNING: Unable to import ConfigParser!  Beware!')
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        print('WARNING: Unable to import ExtendedInterpolation!  Some configurations will fail!')
 
 import os.path
 from os import environ
 import glob
 import numpy
-from mangadap.proc.templatelibrary import TemplateLibraryDef
-from mangadap.config.util import validate_template_config
 from mangadap.util.exception_tools import check_environment_variable
 
 __author__ = 'Kyle B. Westfall'
+
 
 def default_drp_version():
     """
@@ -111,7 +100,8 @@ def default_redux_path(drpver=None):
     environmental variable MANGA_SPECTRO_REDUX.
 
     Args:
-        drpver (str): DRP version
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
 
     Returns:
         str: Path to reduction directory
@@ -124,14 +114,16 @@ def default_redux_path(drpver=None):
     return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
 
 
-def default_drp_directory_path(drpver, redux_path, plate):
+def default_drp_directory_path(plate, drpver=None, redux_path=None):
     """
     Return the exact directory path with the DRP file.
 
     Args:
-        drpver (str): DRP version
-        redux_path (str): Path to the root reduction directory
         plate (int): Plate number
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        redux_path (str): (Optional) Path to the root reduction
+            directory.  Default is to use :func:`default_redux_path`.
 
     Returns:
         str: Path to the directory with the 3D products of the DRP
@@ -139,7 +131,7 @@ def default_drp_directory_path(drpver, redux_path, plate):
     """
     # Make sure the redux path is set
     if redux_path is None:
-        redux_path = default_redux_path(drpver)
+        redux_path = default_redux_path(drpver=drpver)
 
     return os.path.join(redux_path, str(plate), 'stack')
 
@@ -227,8 +219,10 @@ def default_analysis_path(drpver=None, dapver=None):
     variable MANGA_SPECTRO_ANALYSIS.
 
     Args:
-        drpver (str): DRP version
-        dapver (str): DAP version
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        dapver (str): (Optional) DAP version.  Default is to use
+            :func:`default_dap_version`.
 
     Returns:
         str: Path to analysis directory
@@ -244,16 +238,19 @@ def default_analysis_path(drpver=None, dapver=None):
     return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
 
 
-def default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign):
+def default_dap_directory_path(plate, ifudesign, drpver=None, dapver=None, analysis_path=None):
     """
     Return the exact directory path with the DAP file.
 
     Args:
-        drpver (str): DRP version
-        dapver (str): DAP version
-        analysis_path (str): Path to the root analysis directory
         plate (int): Plate number
         ifudesign (int): IFU design number
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        dapver (str): (Optional) DAP version.  Default is to use
+            :func:`default_dap_version`.
+        analysis_path (str): (Optional) Path to the root analysis
+            directory.  Default is to use :func:`default_analysis_path`
 
     Returns:
         str: Path to the directory with DAP output files
@@ -261,7 +258,7 @@ def default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign):
     """
     # Make sure the DRP version is set
     if analysis_path is None:
-        analysis_path = default_analysis_path(drpver, dapver)
+        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 
     return os.path.join(analysis_path, str(plate), str(ifudesign))
 
@@ -304,19 +301,24 @@ def default_dap_file_root(plate, ifudesign, mode):
     return 'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
 
-def default_dap_par_file(drpver, dapver, analysis_path, directory_path, plate, ifudesign, mode):
+def default_dap_par_file(plate, ifudesign, mode, drpver=None, dapver=None, analysis_path=None,
+                         directory_path=None):
     """
     Return the full path to the DAP par file.
 
     Args:
-        drpver (str): DRP version
-        dapver (str): DAP version
-        analysis_path (str): Path to the root analysis directory
-        directory_path (str): Path to the directory with the DAP output
-            files
         plate (int): Plate number
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        dapver (str): (Optional) DAP version.  Default is to use
+            :func:`default_dap_version`.
+        analysis_path (str): (Optional) Path to the root analysis
+            directory.  Default is to use :func:`default_analysis_path`
+        directory_path (str): (Optional) Path to the directory with the
+            DAP output files.  Default is to use
+            :func:`default_dap_directory_path`
 
     Returns:
         str: Full path to the DAP par file
@@ -324,26 +326,31 @@ def default_dap_par_file(drpver, dapver, analysis_path, directory_path, plate, i
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign)
+        directory_path = default_dap_directory_path(plate, ifudesign, drpver=drpver, dapver=dapver,
+                                                    analysis_path=analysis_path)
     # Set the name of the par file; put this in its own function?
     par_file = '{0}.par'.format(default_dap_file_root(plate, ifudesign, mode))
-#    par_file = 'mangadap-{0}-{1}-LOG{2}.par'.format(plate, ifudesign, mode)
     return os.path.join(directory_path, par_file)
 
     
-def default_dap_plan_file(drpver, dapver, analysis_path, directory_path, plate, ifudesign, mode):
+def default_dap_plan_file(plate, ifudesign, mode, drpver=None, dapver=None, analysis_path=None,
+                          directory_path=None):
     """
     Return the full path to the DAP plan file.
 
     Args:
-        drpver (str): DRP version
-        dapver (str): DAP version
-        analysis_path (str): Path to the root analysis directory
-        directory_path (str): Path to the directory with the DAP output
-            files
         plate (int): Plate number
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
+        drpver (str): (Optional) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        dapver (str): (Optional) DAP version.  Default is to use
+            :func:`default_dap_version`.
+        analysis_path (str): (Optional) Path to the root analysis
+            directory.  Default is to use :func:`default_analysis_path`
+        directory_path (str): (Optional) Path to the directory with the
+            DAP output files.  Default is to use
+            :func:`default_dap_directory_path`
 
     Returns:
         str: Full path to the DAP plan file
@@ -351,9 +358,9 @@ def default_dap_plan_file(drpver, dapver, analysis_path, directory_path, plate, 
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_directory_path(drpver, dapver, analysis_path, plate, ifudesign)
+        directory_path = default_dap_directory_path(plate, ifudesign, drpver=drpver, dapver=dapver,
+                                                    analysis_path=analysis_path)
     # Set the name of the plan file; put this in its own function?
-#    plan_file = 'manga-{0}-{1}-LOG{2}-dapplan.par'.format(plate, ifudesign, mode)
     plan_file = '{0}-plan.par'.format(default_dap_file_root(plate, ifudesign, mode))
     return os.path.join(directory_path, plan_file)
 
@@ -405,211 +412,6 @@ def default_template_library_file(plate, ifudesign, mode, library_key, spindex_k
     if spindex_key is not None:
         return '{0}_{1}_{2}.fits'.format(root, library_key, spindex_key)
     return '{0}_{1}.fits'.format(root, library_key)
-
-
-def default_template_libraries(dapsrc=None):
-    """
-    Return the list of library keys, the searchable string of the 1D
-    template library fits files for the template libraries available for
-    use by the DAP, the FWHM of the libraries, and whether or not the
-    wavelengths are in vacuum.
-
-    The stellar template library files should be a list of 1D fits
-    files, and be associated with one of the following library keys:
-
-    +-----------------+------------+---------+-------------+-------+
-    |                 |   Spectral |         |  Wavelength | Lower |
-    |             KEY |  res (ang) | Vacuum? | Range (ang) | Limit |
-    +=================+============+=========+=============+=======+
-    |       M11-MARCS |       2.73 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |      M11-STELIB |       3.40 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    | M11-STELIB-ZSOL |       3.40 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |      M11-ELODIE |       0.55 |      No |      < 6795 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |       M11-MILES |       2.54 |      No | 3550 - 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |           MILES |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |       MILES-AVG |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |      MILES-THIN |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |          STELIB |       3.40 |      No |        full |   0.0 |
-    +-----------------+------------+---------+-------------+-------+
-    |         MIUSCAT |       2.51 |      No | 3480 - 9430 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |    MIUSCAT-THIN |       2.51 |      No | 3480 - 9430 |  None |
-    +-----------------+------------+---------+-------------+-------+
-
-    .. warning::
-
-        Function is currently only valid for Python 3.2 or greater!
-
-    Args:
-        dapsrc (str): (Optional) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`default_dap_source`.
-
-    Returns:
-        list : An list with of :class:`mangadap.par.ParSet.ParSet`
-            objects, each of which is created using
-            :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
-
-    Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no template configuration files could
-            be found.
-        KeyError: Raised if the template-library keywords are not all
-            unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
-
-    .. todo::
-        - Add backup function for Python 2.
-    """
-    # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
-    # Check the configuration files exist
-    ini_files = glob.glob(dapsrc+'/python/mangadap/config/templates/*.ini')
-    if len(ini_files) == 0:
-        raise IOError('Could not find any template library configuration files in {0} !'.format(
-                      dapsrc+'/python/mangadap/config/templates'))
-
-    # Build the list of library definitions
-    template_libraries = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
-        cnfg.read(f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_template_config(cnfg)
-        # Convert wave_limit and lower_flux_limit to types acceptable by
-        # TemplateLibraryDef
-        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
-                                        for e in cnfg['default']['wave_limit'].split(',') ])
-        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
-                           cnfg['default'].getfloat('lower_flux_limit')
-        # Append the definition of the template library 
-        template_libraries += \
-            [ TemplateLibraryDef(key=cnfg['default']['key'],
-                                 file_search=cnfg['default']['file_search'],
-                                 fwhm=cnfg['default'].getfloat('fwhm'),
-                                 sres_ext=cnfg['default']['sres_ext'],
-                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
-                                 wave_limit=wave_limit,
-                                 lower_flux_limit=lower_flux_limit,
-                                 log10=cnfg['default'].getboolean('log10') )
-            ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique( numpy.array([tpl['key'] for tpl in template_libraries]) )) \
-            != len(template_libraries):
-        raise KeyError('Template-library keywords are not all unique!')
-
-    # Return the default list of template libraries
-    return template_libraries
-
-
-def default_emission_line_databases(dapsrc=None):
-    """
-
-    Return the list of database keys and file names for the available
-    emission-line databases.  The currently available libraries are:
-    
-    +-----------------+------------+-------------------------------+
-    |             KEY |    N lines | Description                   |
-    +=================+============+===============================+
-    |        STANDARD |         62 | Original line list with nearly|
-    |                 |            | all strong and weak lines     |
-    +-----------------+------------+---------+-------------+-------+
-    |          STRONG |       3.40 | A subset of only the strong   |
-    |                 |            | emission lines.               |
-    +-----------------+------------+---------+-------------+-------+
-    |        EXTENDED |       3.40 |       |
-    +-----------------+------------+---------+-------------+-------+
-
-    .. warning::
-
-        Function is currently only valid for Python 3.2 or greater!
-
-    Args:
-        dapsrc (str): (Optional) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`default_dap_source`.
-
-    Returns:
-        list : An list with of :class:`mangadap.par.ParSet.ParSet`
-            objects, each of which is created using
-            :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
-
-    Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no template configuration files could
-            be found.
-        KeyError: Raised if the template-library keywords are not all
-            unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
-
-    .. todo::
-        - Add backup function for Python 2.
-    """
-    # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
-    # Check the configuration files exist
-    ini_files = glob.glob(dapsrc+'/python/mangadap/config/templates/*.ini')
-    if len(ini_files) == 0:
-        raise IOError('Could not find any template library configuration files in {0} !'.format(
-                      dapsrc+'/python/mangadap/config/templates'))
-
-    # Build the list of library definitions
-    template_libraries = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
-        cnfg.read(f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_template_config(cnfg)
-        # Convert wave_limit and lower_flux_limit to types acceptable by
-        # TemplateLibraryDef
-        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
-                                        for e in cnfg['default']['wave_limit'].split(',') ])
-        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
-                           cnfg['default'].getfloat('lower_flux_limit')
-        # Append the definition of the template library 
-        template_libraries += \
-            [ TemplateLibraryDef(key=cnfg['default']['key'],
-                                 file_search=cnfg['default']['file_search'],
-                                 fwhm=cnfg['default'].getfloat('fwhm'),
-                                 sres_ext=cnfg['default']['sres_ext'],
-                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
-                                 wave_limit=wave_limit,
-                                 lower_flux_limit=lower_flux_limit,
-                                 log10=cnfg['default'].getboolean('log10') )
-            ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique( numpy.array([tpl['key'] for tpl in template_libraries]) )) \
-            != len(template_libraries):
-        raise KeyError('Template-library keywords are not all unique!')
-
-    # Return the default list of template libraries
-    return template_libraries
 
 
 def default_plate_target_files():
