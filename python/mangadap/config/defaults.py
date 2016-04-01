@@ -5,30 +5,29 @@ Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/config/defaults.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+        
+        import sys
+        if sys.version > '3':
+            long = int
     
-    import sys
-    if sys.version > '3':
-        long = int
-
-*Imports*::
-
-    import os.path
-    from os import environ
-    import glob
-    import numpy
-    from mangadap.util.exception_tools import check_environment_variable
+        import os.path
+        from os import environ
+        import glob
+        import numpy
+        from mangadap.util.exception_tools import check_environment_variable
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
@@ -84,6 +83,15 @@ from mangadap.util.exception_tools import check_environment_variable
 __author__ = 'Kyle B. Westfall'
 
 
+def default_idlutils_dir():
+    """
+    Return the default IDLUTILS directory.
+
+    """
+    check_environment_variable('IDLUTILS_DIR')
+    return environ['IDLUTILS_DIR']
+
+
 def default_drp_version():
     """
     Return the DRP version defined by the environmental variable
@@ -105,7 +113,6 @@ def default_redux_path(drpver=None):
 
     Returns:
         str: Path to reduction directory
-    
     """
     # Make sure the DRP version is set
     if drpver is None:
@@ -127,7 +134,6 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
 
     Returns:
         str: Path to the directory with the 3D products of the DRP
-
     """
     # Make sure the redux path is set
     if redux_path is None:
@@ -186,8 +192,7 @@ def default_cube_covariance_file(plate, ifudesign):
         ifudesign (int): IFU design number
     
     Returns:
-        str : The default name of the covariance file.
-    
+        str: The default name of the covariance file.
     """
     root = default_manga_fits_root(plate, ifudesign, 'CUBE')
     return ('{0}_COVAR.fits'.format(root))
@@ -226,7 +231,6 @@ def default_analysis_path(drpver=None, dapver=None):
 
     Returns:
         str: Path to analysis directory
-
     """
     # Make sure the DRP version is set
     if drpver is None:
@@ -238,13 +242,34 @@ def default_analysis_path(drpver=None, dapver=None):
     return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
 
 
-def default_dap_directory_path(plate, ifudesign, drpver=None, dapver=None, analysis_path=None):
+#def default_dap_directory_path(plate, ifudesign, drpver=None, dapver=None, analysis_path=None):
+#    Return the exact directory path with the DAP file.
+#
+#    Args:
+#        plate (int): Plate number
+#        ifudesign (int): IFU design number
+#        drpver (str): (Optional) DRP version.  Default is to use
+#            :func:`default_drp_version`.
+#        dapver (str): (Optional) DAP version.  Default is to use
+#            :func:`default_dap_version`.
+#        analysis_path (str): (Optional) Path to the root analysis
+#            directory.  Default is to use :func:`default_analysis_path`
+#
+#    Returns:
+#        str: Path to the directory with DAP output files
+#
+#    # Make sure the DRP version is set
+#    if analysis_path is None:
+#        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+#
+#    return os.path.join(analysis_path, str(plate), str(ifudesign))
+def default_dap_reference_path(plate=None, drpver=None, dapver=None, analysis_path=None):
     """
-    Return the exact directory path with the DAP file.
+    Return the path to the top-level reference path for a given plate.
 
     Args:
-        plate (int): Plate number
-        ifudesign (int): IFU design number
+        plate (int): (Optional) Plate number, for reference directory of
+            a specific plate.
         drpver (str): (Optional) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (Optional) DAP version.  Default is to use
@@ -254,13 +279,13 @@ def default_dap_directory_path(plate, ifudesign, drpver=None, dapver=None, analy
 
     Returns:
         str: Path to the directory with DAP output files
-
     """
     # Make sure the DRP version is set
     if analysis_path is None:
         analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 
-    return os.path.join(analysis_path, str(plate), str(ifudesign))
+    return os.path.join(analysis_path, 'ref') \
+                if plate is None else os.path.join(analysis_path, 'ref', str(plate))
 
 
 def default_manga_fits_root(plate, ifudesign, mode):
@@ -277,8 +302,8 @@ def default_manga_fits_root(plate, ifudesign, mode):
         mode (str): Mode of the DRP reduction; either RSS or CUBE
 
     Returns:
-        str : Root name for a MaNGA fits file:
-            manga-[PLATE]-[IFUDESIGN]-LOG[MODE]
+        str: Root name for a MaNGA fits file:
+        `manga-[PLATE]-[IFUDESIGN]-LOG[MODE]`
     """
     return 'manga-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
@@ -294,9 +319,8 @@ def default_dap_file_root(plate, ifudesign, mode):
         mode (str): Mode of the DRP reduction; either RSS or CUBE
 
     Returns:
-        str : Root name for the DAP file:
-            mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]
-
+        str: Root name for the DAP file:
+        `mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]`
     """
     return 'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
@@ -318,30 +342,27 @@ def default_dap_par_file(plate, ifudesign, mode, drpver=None, dapver=None, analy
             directory.  Default is to use :func:`default_analysis_path`
         directory_path (str): (Optional) Path to the directory with the
             DAP output files.  Default is to use
-            :func:`default_dap_directory_path`
+            :func:`default_dap_reference_path`
 
     Returns:
         str: Full path to the DAP par file
-
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_directory_path(plate, ifudesign, drpver=drpver, dapver=dapver,
+        directory_path = default_dap_reference_path(plate=plate, drpver=drpver, dapver=dapver,
                                                     analysis_path=analysis_path)
     # Set the name of the par file; put this in its own function?
     par_file = '{0}.par'.format(default_dap_file_root(plate, ifudesign, mode))
     return os.path.join(directory_path, par_file)
 
     
-def default_dap_plan_file(plate, ifudesign, mode, drpver=None, dapver=None, analysis_path=None,
+def default_dap_plan_file(output_mode, drpver=None, dapver=None, analysis_path=None,
                           directory_path=None):
     """
     Return the full path to the DAP plan file.
 
     Args:
-        plate (int): Plate number
-        ifudesign (int): IFU design number
-        mode (str): Mode of the DRP reduction; either RSS or CUBE
+        output_mode (str): Mode of the DAP output; see AnalysisPlan
         drpver (str): (Optional) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (Optional) DAP version.  Default is to use
@@ -350,22 +371,21 @@ def default_dap_plan_file(plate, ifudesign, mode, drpver=None, dapver=None, anal
             directory.  Default is to use :func:`default_analysis_path`
         directory_path (str): (Optional) Path to the directory with the
             DAP output files.  Default is to use
-            :func:`default_dap_directory_path`
+            :func:`default_dap_reference_path`
 
     Returns:
         str: Full path to the DAP plan file
-
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_directory_path(plate, ifudesign, drpver=drpver, dapver=dapver,
+        directory_path = default_dap_reference_path(drpver=drpver, dapver=dapver,
                                                     analysis_path=analysis_path)
     # Set the name of the plan file; put this in its own function?
-    plan_file = '{0}-plan.par'.format(default_dap_file_root(plate, ifudesign, mode))
+    plan_file = 'mangadap-plan-{0}.par'.format(output_mode)
     return os.path.join(directory_path, plan_file)
 
 
-def default_dap_file_name(plate, ifudesign, mode, bintype, niter):
+def default_dap_file_name(plate, ifudesign, mode, output_mode):
     """
     Return the name of the DAP output fits file.
 
@@ -373,45 +393,18 @@ def default_dap_file_name(plate, ifudesign, mode, bintype, niter):
         plate (int): Plate number
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
-        bintype (str): Binning type used by the DAP
-        niter (int): Iteration number
+        output_mode (str) : Output mode designation
 
     Returns:
         str: Name of the DAP output file.
-
     """
     # Number of spaces provided for iteration number is 3
-    siter = str(niter).zfill(3)
     root = default_manga_fits_root(plate, ifudesign, mode)
     # TODO: ? Use default_dap_file_root() or change to:
-#   return 'manga-{0}-{1}-LOG{2}_{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
-    return '{0}_BIN-{1}-{2}.fits'.format(root, bintype, siter)
-
-
-def default_template_library_file(plate, ifudesign, mode, library_key, spindex_key=None):
-    """
-    Return the name of the processed template file.
-
-    Args:
-        plate (int): Plate number
-        ifudesign (int): IFU design number
-        mode (str): Mode of the DRP reduction; either RSS or CUBE
-        library_key (str): Template library keyword
-        spindex_key (str): (Optional) Spectral index library keyword
-
-    Returns:
-        str: Name of the fits file containing the template library as
-            prepared for use by the DAP.
-
-    .. todo:
-        - Add a docstring link to the default template libraries
-
-    """
-    # TODO: Use default_dap_file_root()?
-    root = default_manga_fits_root(plate, ifudesign, mode)
-    if spindex_key is not None:
-        return '{0}_{1}_{2}.fits'.format(root, library_key, spindex_key)
-    return '{0}_{1}.fits'.format(root, library_key)
+#    siter = str(niter).zfill(3)
+#    return 'manga-{0}-{1}-LOG{2}_{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
+#    return '{0}_BIN-{1}-{2}.fits'.format(root, bintype, siter)
+    return '{0}-{1}.fits.gz'.format(root, output_mode)
 
 
 def default_plate_target_files():
@@ -423,10 +416,10 @@ def default_plate_target_files():
         'plateTargets-{0}.par'.format(catalog_id)
 
     Returns:
-        numpy.array : Two arrays: the first contains the identified
-            plateTargets files found using the default search
-            string, the second provides the integer catalog index
-            determined for each file.
+        numpy.array: Two arrays: the first contains the identified
+        plateTargets files found using the default search string, the
+        second provides the integer catalog index determined for each
+        file.
     """
     # Default search string
     check_environment_variable('MANGACORE_DIR')

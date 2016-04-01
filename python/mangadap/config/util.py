@@ -5,38 +5,37 @@
 Contains utility functions needed for configuration.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/config/util.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+        
+        import sys
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                print('WARNING: Unable to import configparser!  Beware!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                print('WARNING: Unable to import ConfigParser!  Beware!')
     
-    import sys
-    if sys.version > '3':
-        long = int
-        try:
-            from configparser import ConfigParser
-        except ImportError:
-            print('WARNING: Unable to import configparser!  Beware!')
-    else:
-        try:
-            from ConfigParser import ConfigParser
-        except ImportError:
-            print('WARNING: Unable to import ConfigParser!  Beware!')
-
-*Imports*::
-
-    import numpy
-    import os.path
-
-    from .defaults import default_dap_source
+        import numpy
+        import os.path
+    
+        from .defaults import default_dap_source
 
 *Revision history*:
     | **29 Jan 2016**: Original implementation by K. Westfall (KBW)
@@ -74,14 +73,67 @@ from .defaults import default_dap_source
 __author__ = 'Kyle B. Westfall'
 
 
-def validate_spectral_template_config(cnfg):
+def validate_reduction_assessment_config(cnfg):
     """ 
-    Validate the `config.ConfigParser`_ object that is meant to define a
-    template library.
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a reduction assessment method.
 
     Args:
-        cnfg (`config.ConfigParser`_): Object meant to contain defining
-            parameters of the template library needed by
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the reduction assessment method as
+            needed by
+            :class:`mangadap.proc.reductionassessments.ReductionAssessmentsDef`.
+
+    Returns:
+        bool: Booleans that specify how the reduction assessment should
+        be constructed.  The flags specify to use (1) the wavelength
+        range, (2) a bandpass filter parameter file, or (3) a file with
+        a filter response function.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if keys have unacceptable values.
+        FileNotFoundError: Raised if a file is specified but could not
+            be found.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'wave_limits' not in cnfg.options('default') \
+        and 'par_file' not in cnfg.options('default') \
+        and 'response_function_file' not in cnfg.options('default'):
+        raise KeyError('Method undefined.  Must provide \'wave_limits\' or \'par_file\' '
+                       'or \'response_function_file\'.')
+
+    def_range = ('wave_limits' in cnfg.options('default') \
+                    and cnfg['default']['wave_limits'] is not None)
+
+    def_par = ('par_file' in cnfg.options('default') and cnfg['default']['par_file'] is not None)
+
+    def_response = ('response_function_file' in cnfg.options('default') \
+                        and cnfg['default']['response_function_file'] is not None)
+
+    if numpy.sum([ def_range, def_par, def_response] ) != 1:
+        raise ValueError('Method undefined.  Must provide one and only one of \'wave1\' and '
+                         '\'wave2\' or \'par_file\' or \'response_function_file\'.')
+
+    if def_par and not os.path.isfile(cnfg['default']['par_file']):
+        raise FileNotFoundError('par_file does not exist: {0}'.format(cnfg['default']['par_file']))
+    if def_response and not os.path.isfile(cnfg['default']['response_function_file']):
+        raise FileNotFoundError('response_function_file does not exist: {0}'.format(
+                                cnfg['default']['response_function_file']))
+
+    return def_range, def_par, def_response
+
+
+def validate_spectral_template_config(cnfg):
+    """ 
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a template library.
+
+    Args:
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the template library needed by
             :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
 
     Raises:
@@ -111,14 +163,14 @@ def validate_spectral_template_config(cnfg):
 
 def validate_emission_line_config(cnfg):
     """ 
-    Validate the `config.ConfigParser`_ object that is meant to define
-    an emission-line database.
 
-    ``'in_vacuum'`` can be provided; however, it's not necessary.
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define an emission-line database.  `'in_vacuum'` can be present in
+    the config file; however, it's not necessary.
 
     Args:
-        cnfg (`config.ConfigParser`_): Object meant to contain defining
-            parameters of the emission-line database needed by
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the emission-line database needed by
             :class:`mangadap.proc.emissionlinedb.EmissionLineDBDef`.
 
     Raises:
@@ -135,15 +187,16 @@ def validate_emission_line_config(cnfg):
 
 def validate_emission_bandpass_filter_config(cnfg):
     """ 
-    Validate the `config.ConfigParser`_ object that is meant to define
-    an emission-line passband database.  This is currently identical to
-    :func:`validate_emission_line_config`.
 
-    ``'in_vacuum'`` can be provided; however, it's not necessary.
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define an emission-line passband database.  This is currently
+    identical to :func:`validate_emission_line_config`.  `'in_vacuum'`
+    can be present in the config file; however, it's not necessary.
 
     Args:
-        cnfg (`config.ConfigParser`_): Object meant to contain defining
-            parameters of the emission-line passband database needed by
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the emission-line passband database
+            needed by
             :class:`mangadap.proc.emissionlinedb.EmissionMomentsDBDef`.
 
     Raises:
@@ -159,14 +212,15 @@ def validate_emission_bandpass_filter_config(cnfg):
 
 def validate_absorption_index_config(cnfg):
     """ 
-    Validate the `config.ConfigParser`_ object that is meant to define
-    an absorption-line index database.  This is currently identical to
-    :func:`validate_emission_line_config`; however, ``'in_vacuum'``
-    should **not** be a keyword.
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define an absorption-line index database.  This is currently
+    identical to :func:`validate_emission_line_config`; however,
+    `'in_vacuum'` should **not** be a keyword.
 
     Args:
-        cnfg (`config.ConfigParser`_): Object meant to contain defining
-            parameters of the absorption-line index database needed by
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the absorption-line index database
+            needed by
             :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDBDef`.
 
     Raises:
@@ -182,13 +236,13 @@ def validate_absorption_index_config(cnfg):
 
 def validate_bandhead_index_config(cnfg):
     """ 
-    Validate the `config.ConfigParser`_ object that is meant to define a
-    bandhead-index database.  This is currently identical to
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a bandhead-index database.  This is currently identical to
     :func:`validate_absorption_index_config`.
 
     Args:
-        cnfg (`config.ConfigParser`_): Object meant to contain defining
-            parameters of the bandhead index database needed by
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the bandhead index database needed by
             :class:`mangadap.proc.bandheadindexdb.BandheadIndexDBDef`.
 
     Raises:
@@ -202,8 +256,8 @@ def validate_bandhead_index_config(cnfg):
         raise KeyError('Keyword \'file_path\' must be provided.')
 
 
+"""
 def read_dap_mask_bits(f, dapsrc=None):
-    """
     Read a config file that defines a set of mask bits to be used with
     :class:`mangadap.util.bitmask.BitMask`.
 
@@ -224,7 +278,6 @@ def read_dap_mask_bits(f, dapsrc=None):
         FileNotFoundError: Raised if the file does not exist.
         ValueError: Raised if the list of bits do not have a sequential
             list of values or if the minimum mask value is not 0.
-    """
 
     dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
 
@@ -249,6 +302,7 @@ def read_dap_mask_bits(f, dapsrc=None):
     srt = numpy.argsort(vals)
 
     return keys[srt], descr[srt]
+"""
         
     
 

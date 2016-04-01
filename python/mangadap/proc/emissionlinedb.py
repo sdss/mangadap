@@ -5,62 +5,61 @@ Container class for a database of emission-line parameters, as well as
 support classes and functions.
 
 *License*:
-    Copyright (c) 2016, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/emissionlinedb.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-..warning::
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import configparser!  Beware!')
+            try:
+                from configparser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import ConfigParser!  Beware!')
+            try:
+                from ConfigParser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        
+        import os.path
+        from os import environ
+        import glob
+        import numpy
+        
+        from ..config.defaults import default_dap_source
+        from ..config.util import validate_emission_line_config
+        from ..util.idlutils import airtovac
+        from ..util.yanny import yanny
+        from ..par.parset import ParSet
+
+.. warning::
 
     Because of the use of the ``ExtendedInterpolation`` in
-    `config.ConfigParser`_, :func:`available_emission_line_databases` is
-    not python 2 compiliant.
-    
-*Imports*::
-
-    import sys
-    import warnings
-    if sys.version > '3':
-        long = int
-        try:
-            from configparser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import configparser!  Beware!')
-        try:
-            from configparser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    else:
-        try:
-            from ConfigParser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import ConfigParser!  Beware!')
-        try:
-            from ConfigParser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    
-    import os.path
-    from os import environ
-    import glob
-    import numpy
-    
-    from ..config.defaults import default_dap_source
-    from ..config.util import validate_emission_line_config
-    from ..util.idlutils import airtovac
-    from ..util.yanny import yanny
-    from ..par.parset import ParSet
+    `configparser.ConfigParser`_,
+    :func:`available_emission_line_databases` is not python 2
+    compiliant.
 
 *Class usage examples*:
-
     To define an emission line::
 
         from mangadap.proc.emissionlinedb import EmissionLinePar
@@ -105,6 +104,8 @@ support classes and functions.
 
 *Revision history*:
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
+
+.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 
 """
 
@@ -231,7 +232,8 @@ class EmissionLinePar(ParSet):
 
     def _check(self):
         """
-        Check the parameter list.
+        Check the parameter list:
+
             - *line* must be either ``'l'`` or ``'dN'``.
             - Amplitude has to be larger than zero.
             - Velocity dispersion has to be greater than 0.
@@ -241,7 +243,7 @@ class EmissionLinePar(ParSet):
             - Add check to __setitem__()?
 
         Raises:
-            ValueError : Raised if one of the conditions above are not
+            ValueError: Raised if one of the conditions above are not
                 met.
         """
         if self.data['line'][0] not in ['l', 'd']:
@@ -297,8 +299,8 @@ def available_emission_line_databases(dapsrc=None):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-        list : An list of :func:`EmissionLineDBDef`.  objects, each of
-            which defines a unique emission-line database.
+        list: An list of :func:`EmissionLineDBDef`.  objects, each of
+        which defines a unique emission-line database.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -311,7 +313,7 @@ def available_emission_line_databases(dapsrc=None):
             ExtendedInterpolation are not correctly imported.  The
             latter is a *Python 3 only module*!
 
-    ..todo::
+    .. todo::
         - Add backup function for Python 2.
         - Somehow add a python call that reads the databases and
           constructs the table for presentation in sphinx so that the
@@ -357,7 +359,7 @@ class EmissionLineDB:
     """
     Basic container class for the database of emission-line parameters.
 
-    ..todo::
+    .. todo::
         - Need to figure out is it's better to have an array of
           EmissionLinePar objects, or if I should convert self.data to a
           numpy record array.
@@ -404,8 +406,8 @@ class EmissionLineDB:
                 range.
 
         Returns:
-            :class:`EmissionLinePar` : Parameter set of the selected
-                emission line.
+            :class:`EmissionLinePar`: Parameter set of the selected
+            emission line.
 
         Raises:
             IndexError: Raised if the provided index is out of bounds.
@@ -417,15 +419,15 @@ class EmissionLineDB:
 
     def _check(self):
         """
-        Check that the database is correctly defined.
+        Check that the database is correctly defined:
+
             - All the indices must be unique.
 
-        ..todo::
+        .. todo::
             - Other checks needed?
 
-        Raises :
-            ValueError : Raised if the indices are not all unique.
-
+        Raises:
+            ValueError: Raised if the indices are not all unique.
         """
         if len(numpy.unique( numpy.array([d['index'] for d in self.data]))) != self.neml:
             raise ValueError('Indices in {0} database are not all unique!'.format(self.database))
@@ -452,7 +454,6 @@ class EmissionLineDB:
                 identical keyword.
             TypeError: Raised if the input *emldb_list* object is not a
                 list or a :class:`EmissionLineDBDef`.
-
         """
         # Get the default libraries if no list provided
         if emldb_list is None:

@@ -4,27 +4,26 @@
 Provides a set of processing utility functions for the MaNGA DAP.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/util.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
-    from astropy import constants
+        import numpy
+        from astropy import constants
 
 *Revision history*:
     | **01 Feb 2016**: Original implementation by K. Westfall (KBW)
@@ -89,8 +88,8 @@ def ppxf_fitting_mask(obj_wave, tpl_wave, velScale, velocity_offset, wave_range_
             Default is six times the default *max_velocity_range*.
 
     Returns:
-        array : Vector with the indices of pixels in the object spectrum
-            to fit using pPXF.
+        array: Vector with the indices of pixels in the object spectrum
+        to fit using pPXF.
 
     """
 
@@ -170,8 +169,8 @@ def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velocity_scale):
             to both the template and object spectrum.
 
     Returns:
-        float : Velocity offset in km/s between the initial wavelengths
-            of the template and object spectra.
+        float: Velocity offset in km/s between the initial wavelengths
+        of the template and object spectra.
     """
     return (numpy.log(tpl_wave[0])-numpy.log(obj_wave[0]))*velocity_scale \
                 / numpy.diff(numpy.log(obj_wave[0:2]))
@@ -198,8 +197,8 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
             all pixels *outside* it.
 
     Returns:
-        `astropy.io.fits.hdu.hdulist.HDUList`_ : The modified HDUList
-            object.
+        `astropy.io.fits.hdu.hdulist.HDUList`_: The modified HDUList
+        object.
 
     Raises:
         Exception: Raised if *wave_limits* does not have a length of

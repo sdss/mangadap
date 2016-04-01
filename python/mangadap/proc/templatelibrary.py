@@ -32,72 +32,70 @@ parameters of a DAP template library.  The second is a derived
 bitmasks for the template library spectra.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Lodovico Coccato
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/templatelibrary.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-..warning::
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import configparser!  Beware!')
+            try:
+                from configparser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import ConfigParser!  Beware!')
+            try:
+                from ConfigParser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        
+        import glob
+        import os.path
+        from os import remove, environ
+        from scipy import sparse
+        from astropy.io import fits
+        import astropy.constants
+        import time
+        import numpy
+
+        from scipy.interpolate import InterpolatedUnivariateSpline
+
+        from ..util.bitmask import BitMask
+        from ..par.parset import ParSet
+        from ..config.defaults import default_dap_source, default_dap_reference_path
+        from ..config.defaults import default_dap_file_name
+        from ..config.util import validate_spectral_template_config
+        from ..util.idlutils import airtovac
+        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
+        from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
+        from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+
+.. warning::
 
     Because of the use of the ``ExtendedInterpolation`` in
-    `config.ConfigParser`_, :func:`available_template_libraries` is not
-    python 2 compiliant.
-    
-*Imports*::
-
-    import sys
-    import warnings
-    if sys.version > '3':
-        long = int
-        try:
-            from configparser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import configparser!  Beware!')
-        try:
-            from configparser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    else:
-        try:
-            from ConfigParser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import ConfigParser!  Beware!')
-        try:
-            from ConfigParser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    
-    import glob
-    import os.path
-    from os import remove, environ
-    from scipy import sparse
-    from astropy.io import fits
-    import astropy.constants
-    import time
-    import numpy
-    
-    from scipy.interpolate import InterpolatedUnivariateSpline
-    
-    from ..util.bitmask import BitMask
-    from ..par.parset import ParSet
-    from ..config.defaults import default_dap_source, default_dap_directory_path
-    from ..config.defaults import default_template_library_file
-    from ..config.util import read_dap_mask_bits, validate_spectral_template_config
-    from ..util.idlutils import airtovac
-    from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
-    from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
-    from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+    `configparser.ConfigParser`_, :func:`available_template_libraries`
+    is not python 2 compiliant.
     
 *Class usage examples*:
-
     Assuming you have the default directory structure setup, you can do::
 
         # Imports
@@ -259,9 +257,9 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 from ..util.bitmask import BitMask
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_directory_path
-from ..config.defaults import default_template_library_file
-from ..config.util import read_dap_mask_bits, validate_spectral_template_config
+from ..config.defaults import default_dap_source, default_dap_reference_path
+from ..config.defaults import default_dap_file_name
+from ..config.util import validate_spectral_template_config
 from ..util.idlutils import airtovac
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
@@ -359,10 +357,9 @@ def available_template_libraries(dapsrc=None):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-
-        list : A list of
-            :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`
-            objects, each defining a separate template library.
+        list: A list of
+        :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`
+        objects, each defining a separate template library.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -375,7 +372,7 @@ def available_template_libraries(dapsrc=None):
             ExtendedInterpolation are not correctly imported.  The
             latter is a *Python 3 only module*!
 
-    ..todo::
+    .. todo::
         - Add backup function for Python 2.
         - Somehow add a python call that reads the databases and
           constructs the table for presentation in sphinx so that the
@@ -435,47 +432,35 @@ class TemplateLibraryBitMask(BitMask):
     Derived class that specifies the mask bits for the template library
     data.  See :class:`mangadap.util.bitmask.BitMask` for attributes.
 
-    The bit names and meanings are:
-    
-        - 'NO_DATA': Pixel has no data 
+    A list of the bits and meanings are provided by the base class
+    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
 
-        - 'WAVE_INVALID': Used to designate pixels in the 1D spectra
-          that are outside the valid wavelength range defined by
-          :func:`mangadap.config.inputdata.available_template_libraries`
-
-        - 'FLUX_INVALID': Used to designate pixels in the 1D spectra
-          that are below the valid flux limit defined by
-          :func:`mangadap.config.inputdata.available_template_libraries`
-
-        - 'SPECRES_EXTRAP': The spectral resolution has been matched to
-          a value that was an extrapolation of the target spectral
-          resolution samples.
-          
-        - 'SPECRES_LOW': The spectral resolution was *not* matched to
-          the target value because the target value was *higher* than
-          the existing spectral resolution.
+        from mangadap.proc.templatelibrary import TemplateLibraryBitMask
+        t = TemplateLibraryBitMask()
+        t.info()
 
     """
     def __init__(self, dapsrc=None):
-        keys, descr = read_dap_mask_bits('spectral_template_bits.ini', dapsrc)
-        BitMask.__init__(self, keys, descr)
+        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        t = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
+                                                  'bitmasks', 'spectral_template_bits.ini'))
+        BitMask.__init__(self, t.keys(), t.descr)
 
 
 class TemplateLibrary:
-    """
+    r"""
     Object used to read, store, and prepare template libraries for use
     in analyzing object spectra.
 
     The default list of available libraries provided by the MaNGA DAP
-    defined in
-    :func:`mangadap.config.inputdata.available_template_libraries`.  The
-    user can provide their own library for use with this class provided
-    they are contained in 1D fits spectra, sampled linearly in
-    wavelength with the wavelength coordinates available via the WCS
-    keywords (CRPIX1, CRVAL1, CDELT1), and they have an appropriately
-    defined spectral resolution (FWHM in angstroms that is constant as a
-    function of wavelength).  See :class:`TemplateLibraryDef` and
-    :func:`_build_raw`.
+    defined in :func:`available_template_libraries`.  The user can
+    provide their own library for use with this class provided they are
+    contained in 1D fits spectra, sampled linearly in wavelength with
+    the wavelength coordinates available via the WCS keywords (CRPIX1,
+    CRVAL1, CDELT1), and they have an appropriately defined spectral
+    resolution (FWHM in angstroms that is constant as a function of
+    wavelength).  See :class:`TemplateLibraryDef` and
+    :func:`_build_raw_hdu`.
 
     The class is optimized for use in analyzing MaNGA DRP files;
     however, one can provide the necessary information so that the class
@@ -539,12 +524,12 @@ class TemplateLibrary:
             :func:`mangadap.config.defaults.default_analysis_path`.
         directory_path (str): (Optional) The exact path to the processed
             template library file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_directory_path`.
+            :func:`mangadap.config.defaults.default_dap_reference_path`.
         processed_file (str): (Optional) The name of the file containing
             the prepared template library output file.  The file should
             be found at :attr:`directory_path`/:attr:`processed_file`.
             Default is defined by
-            :func:`mangadap.config.defaults.default_template_library_file`.
+            :func:`mangadap.config.defaults.default_dap_file_name`.
         process (bool): (Optional) If :attr:`drpf` is defined and the
             prepared template library does not exist, this will process
             the template library in preparation for use in fitting the
@@ -584,7 +569,7 @@ class TemplateLibrary:
             logarithmically sampled in wavelength.
         directory_path (str): The exact path to the processed template
             library file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_directory_path`.
+            :func:`mangadap.config.defaults.default_dap_reference_path`.
         processed_file (str): The name of the file containing (to
             contain) the prepared template library output file.  The
             file should be found at
@@ -685,7 +670,7 @@ class TemplateLibrary:
         Args:
             library_key (str): Keyword of the selected library.
                 Available libraries are proved by
-                :func:`mangadap.config.inputdata.available__template_libraries`
+                :func:`available__template_libraries`
             tpllib_list (list): (Optional) List of 
                 :class:`TemplateLibraryDef'
                 objects that define the parameters required to read and
@@ -709,7 +694,7 @@ class TemplateLibrary:
 
         # Make sure the input tpllib_list has the right type, and force
         # it to be a list
-        if type(tpllib_list) != list:
+        if isinstance(tpllib_list, list):
             tpllib_list = [tpllib_list]
         for l in tpllib_list:
             if not isinstance(l, TemplateLibraryDef):
@@ -752,8 +737,8 @@ class TemplateLibrary:
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`processed_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_directory_path` and
-        :func:`mangadap.config.defaults.default_template_library_file`.
+        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP template
@@ -773,13 +758,15 @@ class TemplateLibrary:
         self._can_set_paths(directory_path, drpf, processed_file)
 
         # Set the output directory path
-        self.directory_path = default_dap_directory_path(self.drpf.plate, self.drpf.ifudesign,
-                                                         drpver=self.drpf.drpver) \
+        self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
+                                                         drpver=self.drpf.drpver,
+                                                         dapver=dapver,
+                                                         analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.processed_file = default_template_library_file(self.drpf.plate, self.drpf.ifudesign,
-                                                            self.drpf.mode, self.library) \
+        self.processed_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                    self.drpf.mode, self.library) \
                                         if processed_file is None else str(processed_file)
 
 
@@ -808,10 +795,10 @@ class TemplateLibrary:
             - What happens if spectrum has an empty primary extension?
 
         Returns:
-            int : Maximum number of pixels used by the listed spectra.
+            int: Maximum number of pixels used by the listed spectra.
 
         Raises:
-            ValueError : Raised if the input template spectra are not
+            ValueError: Raised if the input template spectra are not
                 one-dimensional.
         """
         max_npix = 0
@@ -957,9 +944,8 @@ class TemplateLibrary:
                 :func:`mangadap.util.bitmasks.BitMask.flagged`.
 
         Returns:
-            numpy.ndarray : Two-element vector with wavelengths of the
-                first and last valid pixels.
-        
+            numpy.ndarray: Two-element vector with wavelengths of the
+            first and last valid pixels.
         """
 
         indx = numpy.where(numpy.invert(self.tplbm.flagged(self.hdu['MASK'].data, flag=flag)))
@@ -973,7 +959,7 @@ class TemplateLibrary:
         
         Returns:
             float : minimum sampling of all (will just be one if the
-                library has been processed) wavelength vectors.
+            library has been processed) wavelength vectors.
         """
         if self.processed:
             return self.spectral_step
@@ -1013,9 +999,8 @@ class TemplateLibrary:
                 allowed before considering the pixel as masked.
 
         Returns:
-            tuple : The indices of the pixels in the rebinned spectrum
-                that should be masked.
-
+            tuple: The indices of the pixels in the rebinned spectrum
+            that should be masked.
         """
 
         mask_ex = self.tplbm.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(numpy.float64)
@@ -1034,8 +1019,7 @@ class TemplateLibrary:
         :attr:`sres`.
 
         Returns:
-            float : Redshift used when matching the spectral resolution.
-
+            float: Redshift used when matching the spectral resolution.
         """
         print('Modifying spectral resolution ... ')
 
@@ -1280,11 +1264,11 @@ class TemplateLibrary:
             quiet (bool) : Suppress warning that library is linearly sampled.
 
         Returns:
-            float : Pixel scale in km/s for logarithmic wavelength
-                sampling.  Returns None if the sampling is linear.
+            float: Pixel scale in km/s for logarithmic wavelength
+            sampling.  Returns None if the sampling is linear.
 
         Raises:
-            ValueError : Raised if library has not been processed.
+            ValueError: Raised if library has not been processed.
 
         .. todo::
 
@@ -1418,13 +1402,13 @@ class TemplateLibrary:
                 :func:`mangadap.config.defaults.default_analysis_path`.
             directory_path (str): (Optional) The exact path for the
                 processed template library file.  Default is defined by
-                :func:`mangadap.config.defaults.default_dap_directory_path`.
+                :func:`mangadap.config.defaults.default_dap_reference_path`.
             processed_file (str): (Optional) The name of the file
                 containing (to contain) the prepared template library
                 output file.  The file should be found at
                 :attr:`directory_path`/:attr:`processed_file`.  Default
                 is defined by
-                :func:`mangadap.config.defaults.default_template_library_file`.
+                :func:`mangadap.config.defaults.default_dap_file_name`.
             force (bool): (Optional) Force the template library to be
                 processed, even if the prepared template library already
                 exists.
@@ -1520,7 +1504,7 @@ class TemplateLibrary:
                 file of the same name.
 
         Raises:
-            ValueError : Raised if the selected index is not available.
+            ValueError: Raised if the selected index is not available.
 
         """
 

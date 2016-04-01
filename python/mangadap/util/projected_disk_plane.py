@@ -6,32 +6,30 @@ Defines a class to calculate and convert between on-sky and a projected
 (disk) plane.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/projected_disk_plane.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import os.path
-    import time
-    import numpy
-    from scipy import linalg
+        import os.path
+        import time
+        import numpy
+        from scipy import linalg
 
 *Class usage examples*:
-
     Declare a disk with a position angle of 45 degrees, an inclination
     of 60 degrees, and an on-sky coordinate system that is centered at
     :math:`(x_0,y_0) = (-1.0,0.5)`::
@@ -50,6 +48,10 @@ Defines a class to calculate and convert between on-sky and a projected
 
         xf,yf = disk.polar_invert(r, theta)
         print(xf, yf)
+
+.. todo::
+    - Deprecate this in favor of
+      :class:`mangadap.util.geometry.SemiMajorAxisCoo`
 
 *Revision history*:
     | **01 Mar 2015**: Original Implementation by K. Westfall (KBW)
@@ -344,9 +346,7 @@ class projected_disk_plane:
                 :math:`(x_d,y_d)`.
 
         Returns:
-            float, float: The disk-plane polar coordinates: :math:`R,
-                \theta`.
-        
+            float: The disk-plane polar coordinates: :math:`R, \theta`.
         """
         R = numpy.sqrt( x*x + y*y)
         theta = numpy.degrees( numpy.arctan2(-y, x) )
@@ -375,9 +375,8 @@ class projected_disk_plane:
                 :math:`(R,\theta)`.
 
         Returns:
-            float, float: The disk-plane Cartesian coordinates:
-                :math:`x_d, y_d`.
-        
+            float: The disk-plane Cartesian coordinates: :math:`x_d,
+            y_d`.
         """
         tant = numpy.tan(numpy.radians(theta))
         xd = r/numpy.sqrt(1.0 + numpy.square(tant))
@@ -400,14 +399,14 @@ class projected_disk_plane:
                 the projected plane (galaxy center).
 
         Returns:
-            numpy.ndarray : The :math:`{\mathbf x}` vector as defined by
-                the solution to :math:`{\mathbf A}^{-1}\ {\mathbf b}`
+            numpy.ndarray: The :math:`{\mathbf x}` vector as defined by
+            the solution to :math:`{\mathbf A}^{-1}\ {\mathbf b}`
 
         Raises:
-            Exception: Raised if object was not properly defined.
+            ValueError: Raised if object was not properly defined.
         """
         if not self._defined():
-            raise Exception('projected_coo object not fully defined!')
+            raise ValueError('projected_coo object not fully defined!')
 
         self._setB(x,y)
         return linalg.lu_solve((self.Alu, self.Apiv), self.B)
@@ -423,14 +422,14 @@ class projected_disk_plane:
                 :math:`(x_d,y_d)`.
 
         Returns:
-            numpy.ndarray : The :math:`{\mathbf f}` vector as defined by
-                the solution to :math:`{\mathbf C}^{-1}\ {\mathbf d}`
+            numpy.ndarray: The :math:`{\mathbf f}` vector as defined by
+            the solution to :math:`{\mathbf C}^{-1}\ {\mathbf d}`
 
         Raises:
-            Exception: Raised if object was not properly defined.
+            ValueError: Raised if object was not properly defined.
         """
         if not self._defined():
-            raise Exception('projected_coo object not fully defined!')
+            raise ValueError('projected_coo object not fully defined!')
 
         self._setD(x,y)
         return linalg.lu_solve((self.Clu, self.Cpiv), self.D)
@@ -453,8 +452,8 @@ class projected_disk_plane:
                 the center of the projected plane (galaxy center),
 
         Returns:
-            float, float, float, float: The projected Cartesian and
-                polar coordinates:  :math:`x_d, y_d, R, \theta`.
+            float: The projected Cartesian and polar coordinates:
+            :math:`x_d, y_d, R, \theta`.
         """
         coo = self.solve(x, y)
         R, theta = self._calculate_polar(coo[4], coo[5])
@@ -480,9 +479,7 @@ class projected_disk_plane:
                 the center of the projected plane (galaxy center),
 
         Returns:
-            float, float: The projected polar coordinates: :math:`R,
-                \theta`.
-
+            float: The projected polar coordinates: :math:`R, \theta`.
         """
         coo = self.solve(x, y)
         return self._calculate_polar(coo[4], coo[5])
@@ -499,9 +496,8 @@ class projected_disk_plane:
                 :math:`(R,\theta)`.
 
         Returns:
-            float, float: The focal-plane Cartesian coordinates
-                :math:`(x_f,y_f)`.
-
+            float: The focal-plane Cartesian coordinates
+            :math:`(x_f,y_f)`.
         """
         xd, yd = self._calculate_cartesian(r, theta)
         coo = self.solve_inverse(xd, yd)
@@ -521,9 +517,8 @@ class projected_disk_plane:
                 the center of the projected plane (galaxy center),
 
         Returns:
-            float, float: The projected Cartesian coordinates,
-                :math:`x_d, y_d`.
-
+            float: The projected Cartesian coordinates, :math:`x_d,
+            y_d`.
         """
         coo = self.solve(x, y)
         return coo[4], coo[5]
@@ -540,9 +535,8 @@ class projected_disk_plane:
                 :math:`(x_d,y_d)`.
 
         Returns:
-            float, float: The focal-plane Cartesian coordinates
-                :math:`(x_f,y_f)`.
-
+            float: The focal-plane Cartesian coordinates
+            :math:`(x_f,y_f)`.
         """
         coo = self.solve_inverse(x, y)
         return coo[0], coo[1]

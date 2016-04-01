@@ -5,45 +5,42 @@ Define a parameter instance that holds the input information needed to
 run the DAP for a specific MaNGA observation.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/obsinput.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
-    import os.path
-    import warnings
-    from .parset import ParSet
-    from ..util.yanny import yanny
-    from ..proc.options import drp_3dmode_options
+        import numpy
+        import os.path
+        import warnings
+        from .parset import ParSet
+        from ..util.yanny import yanny
+        from ..proc.options import drp_3dmode_options
 
 *Class usage examples*:
-
     To define a set of observation parameteters::
 
         from mangadap.par.obsinput import ObsInputPar
         p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
                         vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
 
-    Or declare the parameter object by reading a yanny parameter file
-    using the helper function :func:`read_obs_input`::
+    Or declare the parameter object by reading a yanny parameter file::
 
-        from mangadap.par.obsinput import read_obs_input
-        p = read_obs_input('mangadap-7443-12701-LOGCUBE.par')
+        from mangadap.par.obsinput import ObsInputPar
+        p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
 
 *Revision history*:
     | **15 Mar 2016**: Original implementation by K. Westfall (KBW)
@@ -70,7 +67,7 @@ __author__ = 'Kyle B. Westfall'
 
 
 class ObsInputPar(ParSet):
-    """
+    r"""
     Parameter object that defines the input observation and guess
     parameters to be used by the DAP.
 
@@ -114,18 +111,18 @@ class ObsInputPar(ParSet):
 
 
     def _check(self):
-        """
+        r"""
         Check that the values in the parameter list adhere to some
         hard-coded limits.
 
             - Velocity (:math:`cz`) and velocity dispersion have to be
               greater than 0.
-            - Ellipticity has to be :math:`0 \leq \varepsilon < 1'
+            - Ellipticity has to be :math:`0 \leq \varepsilon < 1`
             - Position angle has to be :math:`0 \leq \phi < 360`
             - Effective radius has to be greater than zero.
 
         Raises:
-            ValueError : Raised if velocity (:math:`cz`) is less than
+            ValueError: Raised if velocity (:math:`cz`) is less than
                 zero.
         """
         if self.data['vel'] < 0:
@@ -149,48 +146,46 @@ class ObsInputPar(ParSet):
             warnings.warn('Effective radius must be larger than 0; setting to unity.')
             self.data['reff'] = 1.0
 
+    @classmethod
+    def from_par_file(cls, f):
+        """ Read the observation parameters from the provided yanny file.
 
-def read_obs_input(f):
-    """ Read the observation parameters from the provided yanny file.
+        Args:
+            f (str) : Name of the file to read
 
-    Args:
-        f (str) : Name of the file to read
-
-    Returns:
-        :class:`ObsInputPar` : Derived instance of
+        Returns:
+            :class:`ObsInputPar`: Derived instance of
             :class:`mangadap.par.ParSet` with the input observational
             parameters of the DRP data product to analyze with the DAP.
 
-    Raises:
-        FileNotFoundError : Raised if the provided file does not exist.
+        Raises:
+            FileNotFoundError: Raised if the provided file does not
+                exist.
+            ValueError: Raised if the input yanny file has more than
+                one entry of DAPPAR.
+            KeyError: Raised if selected keys are not in provided file.
 
-        ValueError : Raised if the input yanny file has more than one
-            entry of DAPPAR.
-
-        KeyError : Raised if selected keys are not in provided file.
-
-    """
-    if not os.path.isfile(f):
-        raise FileNotFoundError('Could not open {0}!'.format(f))
+        """
+        if not os.path.isfile(f):
+            raise FileNotFoundError('Could not open {0}!'.format(f))
    
-    # Read the file
-    par = yanny(f)
+        # Read the file
+        par = yanny(f)
 
-    # Check the number of entries
-    if len(par['DAPPAR']['plate']) > 1:
-        raise ValueError('File must contain only instance of DAPPAR!')
+        # Check the number of entries
+        if len(par['DAPPAR']['plate']) > 1:
+            raise ValueError('File must contain only instance of DAPPAR!')
 
-    # Return the ObsInputPar instance
-    return ObsInputPar(
-                        par['DAPPAR']['plate'][0],
-                        par['DAPPAR']['ifudesign'][0],
-                        mode=par['DAPPAR']['mode'][0],
-                        vel=par['DAPPAR']['vel'][0],
-                        vdisp=par['DAPPAR']['vdisp'][0],
-                        ell=par['DAPPAR']['ell'][0],
-                        pa=par['DAPPAR']['pa'][0],
-                        reff=par['DAPPAR']['reff'][0]
-                      )
+        # Return the ObsInputPar instance
+        return cls( par['DAPPAR']['plate'][0],
+                    par['DAPPAR']['ifudesign'][0],
+                    mode=par['DAPPAR']['mode'][0],
+                    vel=par['DAPPAR']['vel'][0],
+                    vdisp=par['DAPPAR']['vdisp'][0],
+                    ell=par['DAPPAR']['ell'][0],
+                    pa=par['DAPPAR']['pa'][0],
+                    reff=par['DAPPAR']['reff'][0]
+                  )
     
 
 

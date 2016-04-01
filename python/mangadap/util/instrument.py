@@ -8,33 +8,33 @@ Provides a set of functions to handle instrumental effects.
 :mod:`mangadap.contrib.ppxf_util.py` and modified.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, David Wilkinson, Oliver
-                        Steele, Daniel Thomas
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/instrument.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import warnings
-    import numpy
-    from scipy import integrate
-    from scipy.interpolate import InterpolatedUnivariateSpline
-    from mangadap.util.constants import constants
-    from mangadap.util.misc import where_not
-    import astropy.constants
+        import warnings
+        import numpy
+        from scipy import integrate
+        from scipy.interpolate import InterpolatedUnivariateSpline
+        from scipy.special import erf
+        import astropy.constants
+
+        from .constants import constants
+        from .misc import where_not
 
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
@@ -66,11 +66,14 @@ import numpy
 from scipy import integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.special import erf
-from mangadap.util.constants import constants
-from mangadap.util.misc import where_not
 import astropy.constants
 
+from .constants import constants
+from .misc import where_not
+
 #from matplotlib import pyplot
+__author__ = 'Kyle B. Westfall'
+__credits__ = ['K. Westfall', 'D. Wilkinson', 'O. Steele', 'D. Thomas' ]
 
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
@@ -89,8 +92,8 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
             logarithm, use numpy.exp(1).
 
     Returns:
-        float : Spectral sampling step in either angstroms (log=False)
-            or the step in log(angstroms).
+        float: Spectral sampling step in either angstroms (log=False) or
+        the step in log(angstroms).
     """
     return ( numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]) )
 
@@ -110,7 +113,7 @@ def spectrum_velocity_scale(wave, log10=False):
             natural logarithm.
 
     Returns:
-        float : Velocity scale of the spectrum in km/s.
+        float: Velocity scale of the spectrum in km/s.
 
     """
 #    dl_over_l = (numpy.log10(wave[1])-numpy.log10(wave[0]))*numpy.log(10.0) if log10 else \
@@ -132,7 +135,7 @@ class convolution_integral_element:
         ye (numpy.ndarray): (Optional) Error in the vector to convolve
 
     Raises:
-        Exception: Raised if *y* is not a 1D vector, or if the shape of
+        ValueError: Raised if *y* is not a 1D vector, or if the shape of
             *y* and *sigma* (and *ye* if provided) are different.
 
     Attributes:
@@ -151,11 +154,11 @@ class convolution_integral_element:
     """
     def __init__(self, y, sigma, ye=None):
         if len(y.shape) != 1:
-            raise Exception('y must be a 1D array!')
+            raise ValueError('y must be a 1D array!')
         if y.shape != sigma.shape:
-            raise Exception('y and sigma must have the same shape!')
+            raise ValueError('y and sigma must have the same shape!')
         if ye is not None and ye.shape != y.shape:
-            raise Exception('y and ye must have the same shape!')
+            raise ValueError('y and ye must have the same shape!')
         self.x = numpy.arange(sigma.size, dtype=numpy.float64)
         self.y = y
         self.ye = ye
@@ -200,7 +203,6 @@ class convolution_integral_element:
 
         Returns:
             float: The weighted mean of :attr:`y`
-
         """
 #        kernel = self._get_kernel(xc)
 #        return numpy.sum(self.y*kernel) / numpy.sum(kernel)
@@ -223,7 +225,6 @@ class convolution_integral_element:
 
         Returns:
             float: The error in the weighted mean of :attr:`y`
-
         """
         close_array, kernel = self._get_kernel(xc)
         return numpy.sqrt(numpy.sum(numpy.square(self.ye[close_array]*kernel)) / numpy.sum(kernel))
@@ -280,14 +281,9 @@ def convolution_variable_sigma(y, sigma, ye=None):
 
     Returns:
         numpy.ndarray: Arrays with the convolved function :math:`(y\ast
-            g)(x)` sampled at the same positions as the input :math:`x`
-            vector and its error.  The second array will be returned as
-            None if the error vector is not provided.
-
-    Raises:
-        Exception: Raised if trying to calculate the errors because they
-        haven't been implemented yet.
-
+        g)(x)` sampled at the same positions as the input :math:`x`
+        vector and its error.  The second array will be returned as None
+        if the error vector is not provided.
     """
     kernel = convolution_integral_element(y,sigma,ye=ye)
 #    conv = numpy.array(list(map(kernel, kernel.x)))
@@ -325,7 +321,7 @@ class spectral_resolution:
             is to extrapolate.
 
     Raises:
-        Exception: Raised if *wave* is not a 1D vector or if *wave* and
+        ValueError: Raised if *wave* is not a 1D vector or if *wave* and
             *sres* do not have the same shape.
 
     Attributes:
@@ -384,9 +380,9 @@ class spectral_resolution:
     def __init__(self, wave, sres, log10=False, interp_ext='extrapolate'):
         # Check the sizes
         if len(wave.shape) != 1:
-            raise Exception('wave must be a 1D array!')
+            raise ValueError('wave must be a 1D array!')
         if wave.shape != sres.shape:
-            raise Exception('wave and sres must have the same shape!')
+            raise ValueError('wave and sres must have the same shape!')
 
         # k=1; always use linear interpolation
         if sys.version < '3':
@@ -691,14 +687,13 @@ class spectral_resolution:
                 :attr:`sig_pd`.
         
         Raises:
-            Exception: Raised if the kernel properties have not yet been
-                defined.
-
+            ValueError: Raised if the kernel properties have not yet
+                been defined.
         """
         if None in [self.min_sig, self.sig_pd, self.sig_mask, self.sig_vo]:
 #            print('WARNING: No kernel difference yet defined.  Assuming 0.')
 #            self.ZeroGaussianKernelDifference()
-            raise Exception('No kernel defined yet.  Run GaussianKernelDifference first.')
+            raise ValueError('No kernel defined yet.  Run GaussianKernelDifference first.')
         if numpy.isclose(offset,0.0):
             return
         off2 = offset*numpy.absolute(offset)
@@ -728,7 +723,7 @@ class spectral_resolution:
 
         Returns:
             numpy.ndarray: The (full or selected) vector with the
-                adjusted resolution.
+            adjusted resolution.
 
         .. todo::
             Allow to reset the resolution of this object to the adjusted
@@ -814,8 +809,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             logarithmically (base 10) in wavelength.
 
     Returns: 
-
-        numpy.ndarray : Four or Five arrays are returned:
+        numpy.ndarray: Four or Five arrays are returned:
 
             - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array
               with the resolution-matched flux sampled at the input
@@ -840,7 +834,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
               is just a carbon copy of the input array.**
 
     Raises:
-        Exception: Raised if:
+        ValueError: Raised if:
 
             - the input *wave* array is 2D and the *sres* array is not;
               a 1D wavelength array is allowed for a 2D *sres* array but
@@ -865,28 +859,28 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     wave_matrix = len(wave.shape) == 2
     sres_matrix = len(sres.shape) == 2
     if wave_matrix and not sres_matrix:
-        raise Exception('If input wavelength array is 2D, the spectral resolution array must' \
-                        ' also be 2D')
+        raise ValueError('If input wavelength array is 2D, the spectral resolution array must' \
+                         ' also be 2D')
 
     # Check the shapes
     if (wave_matrix == sres_matrix and wave.shape != sres.shape) or \
        (not wave_matrix and sres_matrix and wave.shape[0] != sres.shape[1]):
-        raise Exception('Input spectral resolution and coordinate arrays must have the same' \
-                        ' number of spectral channels!')
+        raise ValueError('Input spectral resolution and coordinate arrays must have the same' \
+                         ' number of spectral channels!')
     if (wave_matrix and wave.shape != flux.shape) or \
        (not wave_matrix and len(flux.shape) == 2 and wave.shape[0] != flux.shape[1]) or \
        (not wave_matrix and len(flux.shape) == 1 and wave.shape != flux.shape):
-        raise Exception('Input flux and coordinate arrays must have the same number of' \
-                        ' spectral channels!')
+        raise ValueError('Input flux and coordinate arrays must have the same number of' \
+                         ' spectral channels!')
     if (mask is not None and mask.shape != flux.shape):
-        raise Exception('Input flux and mask arrays must have the same shape!')
+        raise ValueError('Input flux and mask arrays must have the same shape!')
     if (ivar is not None and ivar.shape != flux.shape):
-        raise Exception('Input flux and ivar arrays must have the same shape!')
+        raise ValueError('Input flux and ivar arrays must have the same shape!')
         
     if len(new_sres_wave.shape) != 1 or len(new_sres.shape) != 1:
-        raise Exception('New spectral resolution and coordinate arrays must be 1D!')
+        raise ValueError('New spectral resolution and coordinate arrays must be 1D!')
     if new_sres_wave.shape != new_sres.shape:
-        raise Exception('New spectral resolution and coordinate arrays must have the same shape!')
+        raise ValueError('New spectral resolution and coordinate arrays must have the same shape!')
 
     # Raise a warning if the new_sres vector will have to be
     # extrapolated for the input wavelengths
@@ -1052,10 +1046,10 @@ def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=
             regions.
 
     Returns:
-        numpy.ndarray, float : Returns three variables: logarithmically
-            rebinned spectrum, the log of the wavelength at the
-            geometric center of each pixel, and the velocity scale of
-            each pixel in km/s.
+        numpy.ndarray, float: Returns three variables: logarithmically
+        rebinned spectrum, the log of the wavelength at the geometric
+        center of each pixel, and the velocity scale of each pixel in
+        km/s.
         
     Raises:
         ValueError: Raised if the input spectrum is not a
@@ -1206,16 +1200,18 @@ def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newR
             spectral range).
 
     Returns:
-        float, int : Returns (1) the linear wavelength step of each
-            pixel in the input spectrum, (2) the number of pixels for
-            the rebinned spectrum, (3) the log-linear wavelength step
-            for each pixel in the new spectrum, (4) the velocity step
-            for each pixel in the new spectrum.
+        float, int: Returns
+            
+            1. the linear wavelength step of each pixel in the input
+            spectrum, 
+            2. the number of pixels for the rebinned spectrum, 
+            3. the log-linear wavelength step for each pixel in the new
+            spectrum, and
+            4. the velocity step for each pixel in the new spectrum.
 
     Raises:
         ValueError: Raised if the input wavelength range (*lamRange* or
             *newRange*) does not have two elements or is not sorted.
-        
     """
     lamRange = numpy.asarray(lamRange)
     if len(lamRange) != 2:
@@ -1281,9 +1277,9 @@ def _pixel_borders(xlim, npix, log=False, base=10.0):
             logarithm.
 
     Returns:
-        (numpy.ndarray, float): A vector with the (npix+1) borders of
-            the pixels and the sampling rate.  If logarithmically
-            binned, the sampling is the step in log(x).
+        numpy.ndarray, float: A vector with the (npix+1) borders of the
+        pixels and the sampling rate.  If logarithmically binned, the
+        sampling is the step in :math`\log x`.
     """
     if log:
         logRange = numpy.log(xlim)/numpy.log(base)
@@ -1314,8 +1310,8 @@ def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=N
             returned if either *outRange* or *dx* are not provided.
 
     Returns:
-        int : The number of pixels to cover *outRange* with pixels of
-            width *dx*.
+        int: The number of pixels to cover *outRange* with pixels of
+        width *dx*.
     """
     # If the range or sampling are not provided, the number of pixels is
     # already set
@@ -1373,11 +1369,11 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
             pixel.
 
     Returns:
-        (numpy.ndarray) : Two numpy arrays with the new x coordinates
-            and new y values for the resampled vector.
+        numpy.ndarray: Two numpy arrays with the new x coordinates and
+        new y values for the resampled vector.
     
     Raises:
-        ValueError : Raised if *y* is not of type numpy.ndarray, if *y*
+        ValueError: Raised if *y* is not of type numpy.ndarray, if *y*
             is not one-dimensional, or if *xRange* is not provided and
             the input vector is logarithmically binned (see *inLog*
             above).

@@ -16,42 +16,38 @@ Until further documented here, the description of the `DAP par
 file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/survey/drpcomplete.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import os.path
-    from os import walk
-    import numpy
-    from astropy.io import fits
-    from astropy import constants
-    from mangadap.util.yanny import yanny, read_yanny
-    from mangadap.config import defaults
-    from mangadap import drpfits
-    from mangadap import dapfile
-    from mangadap.util.parser import arginp_to_list, list_to_csl_string
-    from mangadap.util.exception_tools import print_frame
+        import os.path
+        from os import walk
+        import numpy
+        from astropy.io import fits
+        from astropy import constants
+        from ..util.yanny import yanny, read_yanny
+        from ..config import defaults
+        from . import drpfits
+        from . import dapfile
+        from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
+        from ..util.exception_tools import print_frame
 
 *Class usage examples*:
-
-    .. todo::
-
-        Add some usage comments here!
+    Add some usage comments here!
 
 *Revision history*:
     | **20 Nov 2014**: Started implementation by K. Westfall (KBW)
@@ -109,12 +105,12 @@ from os import walk
 import numpy
 from astropy.io import fits
 from astropy import constants
-from mangadap.util.yanny import yanny, read_yanny
-from mangadap.config import defaults
-from mangadap import drpfits
-from mangadap import dapfile
-from mangadap.util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
-from mangadap.util.exception_tools import print_frame
+from ..util.yanny import yanny, read_yanny
+from ..config import defaults
+from .. import drpfits
+from .. import dapfile
+from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
+from ..util.exception_tools import print_frame
 
 __author__ = 'Kyle Westfall'
 
@@ -245,8 +241,8 @@ class DRPComplete:
                 objects
 
         Returns:
-            numpy.array : Array with the MaNGA IDs from the headers of
-                the DRP fits files.
+            numpy.array: Array with the MaNGA IDs from the headers of
+            the DRP fits files.
 
         .. note::
             This takes far too long; either astropy.io.fits is reading
@@ -275,9 +271,9 @@ class DRPComplete:
                 objects
 
         Returns:
-            numpy.array : Three arrays with, respectively, the MaNGA IDs
-                from the headers of the DRP fits files, the object right
-                ascension, and the object declination.
+            numpy.array: Three arrays with, respectively, the MaNGA IDs
+            from the headers of the DRP fits files, the object right
+            ascension, and the object declination.
 
         .. note::
             This takes far too long; either astropy.io.fits is reading
@@ -308,8 +304,7 @@ class DRPComplete:
             quiet (bool): (Optional) Suppress terminal output (NOT USED)
 
         Returns:
-            list : A list of yanny structures, one per platetargets
-                file.
+            list: A list of yanny structures, one per platetargets file.
 
         Raises:
             FileNotFoundError: Raised if cannot open one or more
@@ -361,14 +356,12 @@ class DRPComplete:
             quiet (bool): (Optional) Suppress terminal output
 
         Returns:
-            numpy.array : 14 arrays with: MaNGA ID, object right
-                ascension, object declination, catalog ID, index of the
-                entry in the catalog, catalog version, ID of object in
-                the catalog, main MaNGA survey target bitmask, ancillary
-                MaNGA survey target bitmask, velocity, velocity
-                dispersion, ellipticity, position angle, and effective
-                radius.
-
+            numpy.array: 14 arrays with: MaNGA ID, object right
+            ascension, object declination, catalog ID, index of the
+            entry in the catalog, catalog version, ID of object in the
+            catalog, main MaNGA survey target bitmask, ancillary MaNGA
+            survey target bitmask, velocity, velocity dispersion,
+            ellipticity, position angle, and effective radius.
         """
         # Read the platetargets file
         plttrg_data = self._read_platetargets(quiet=quiet)
@@ -509,9 +502,8 @@ class DRPComplete:
             quiet (bool): (Optional) Suppress output
 
         Returns:
-            bool : Flag that all data has already been collated for the
-                requested plate/ifudesign list.
-
+            bool: Flag that all data has already been collated for the
+            requested plate/ifudesign list.
         """
         nn = len(self.platelist)
         print('Checking for plate-ifudesign entries in existing file ...', end='\r')
@@ -548,7 +540,6 @@ class DRPComplete:
         Raises:
             FileNotFoundError: Raised if the drpcomplete fits file does
                 not exist.
-
         """
         inp = self.file_path()
         if not os.path.exists(inp):
@@ -603,8 +594,7 @@ class DRPComplete:
 
         Returns:
             list: Two lists with the available plates and ifudesigns for
-                which to collect data.
-
+            which to collect data.
         """
 
         path = self.redux_path
@@ -686,8 +676,7 @@ class DRPComplete:
                 objects
 
         Returns:
-            numpy.array : Array of modes for each input DRP file.
-
+            numpy.array: Array of modes for each input DRP file.
         """
         n_drp = len(drplist)
         modes = numpy.empty(n_drp, dtype=numpy.uint8)
@@ -793,7 +782,6 @@ class DRPComplete:
         Raises:
             AttributeError: Raised if drpcomplete fits file was opened
                 in read-only mode.
-
         """
         if self.readonly:
             raise AttributeError('drpcomplete fits file was opened as read-only!')
@@ -933,7 +921,6 @@ class DRPComplete:
                 in read-only mode.
             FileExistsError: Raised if the drpcomplete file exists and
                 clobber=False.
-
         """
         if self.readonly:
             raise AttributeError('drpcomplete fits file was opened as read-only!')
@@ -1001,15 +988,14 @@ class DRPComplete:
             reread (bool): (Optional) Force the database to be re-read
 
         Returns:
-            list : List of the 14 elements of :attr:`data`; see
-                :func:`write`.
+            list: List of the 14 elements of :attr:`data`; see
+            :func:`write`.
 
         Raises:
             ValueError: Raised if the row with the data is unknown
                 because either *index* is not defined or one or both of
                 *plate* and *ifudesign* is not defined.  Also raised if
                 *index* does not exist in the data array.
-
         """
         if (plate is None or ifudesign is None) and index is None:
             raise ValueError('Must provide plate and ifudesign or row index!')
@@ -1104,12 +1090,11 @@ class DRPComplete:
 
         Returns:
             int: Index of the row in :attr:`data` with the data for the
-                given *plate* and *ifudesign*
+            given *plate* and *ifudesign*
 
         Raises:
             Exception: Raised if the given *plate* and *ifudesign* were
                 not found.
-
         """
         self._confirm_access(reread)
 

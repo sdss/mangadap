@@ -5,26 +5,25 @@
 Contains transcriptions of some IDLUTILS functions to python.
 
 *License*:
-    Copyright (c) 2015, W. Landsman, D. Schlegel, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/idlutils.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
+        import numpy
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
@@ -43,6 +42,7 @@ if sys.version > '3':
 import numpy
 
 __author__ = 'Kyle B. Westfall'
+__credits__ = [ 'W. Landsman', 'D. Schlegel' ]
 
 #-----------------------------------------------------------------------
 def airtovac(wave_air):
@@ -58,9 +58,10 @@ def airtovac(wave_air):
             wavelength(s). 
 
     Returns:
-        numpy.float64 : The wavelength of the line in vacuum.
+        numpy.float64: The wavelength of the line in vacuum.
 
     Example:
+
         If the air wavelength is  W = 6056.125 (a Krypton line), then
         :func:`airtovac` returns vacuum wavelength of W = 6057.8019.
  

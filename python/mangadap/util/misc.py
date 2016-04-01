@@ -5,26 +5,25 @@
 A catch-all module with miscellaneous utility functions.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/misc.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
+        import numpy
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
@@ -66,8 +65,8 @@ def line_coeff(p1, p2):
             of the two points on the line.
 
     Returns:
-        real, real: Respectively, the slope (:math:`m`) and intercept
-            (:math:`b`) of the line.
+        float: The slope (:math:`m`) and intercept (:math:`b`) of the
+        line, respectively.
 
     .. warning:: 
         Performs **no** checks of the input.

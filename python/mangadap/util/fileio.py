@@ -5,27 +5,26 @@
 Provides a set of file I/O routines.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/fileio.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
-    from astropy.io import fits
+        import numpy
+        from astropy.io import fits
 
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
@@ -33,6 +32,10 @@ Provides a set of file I/O routines.
     | **01 Feb 2016**: (KBW) Moved wavelength calculation to a common
         function.
     | **09 Feb 2016**: (KBW) Added :func:`writefits_1dspec`.
+    | **28 Mar 2016**: (KBW) Added function :func:`init_record_array`
+        and :func:`rec_to_fits_type`
+
+.. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
 
 """
 
@@ -48,6 +51,7 @@ if sys.version > '3':
 import numpy
 from astropy.io import fits
 
+__author__ = 'Kyle B. Westfall'
 
 def wavelength_vector(npix, header, log10=False):
     crval = header['CRVAL1']
@@ -66,7 +70,7 @@ def readfits_1dspec(filename, log10=False):
         filename (str): Name of the file to read.
 
     Returns:
-        numpy.ndarray : Two numpy.float64 arrays with the wavelength and
+        numpy.ndarray: Two numpy.float64 arrays with the wavelength and
         flux read for the spectrum.
 
     Raises:
@@ -149,13 +153,12 @@ def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None
 
     Returns:
         numpy.ndarray : Up to four numpy.float64 arrays with the
-            wavelength, flux, inverse variance (if `ivar_ext` is
-            provided), and spectral resolution (if `sres_ext` is
-            provided) of the template spectrum.
+        wavelength, flux, inverse variance (if `ivar_ext` is provided),
+        and spectral resolution (if `sres_ext` is provided) of the
+        template spectrum.
 
     Raises:
         ValueError: Raised if fits file is not one-dimensional.
-
         KeyError: Raised if various header keywords or extension names
             are not available.
     """
@@ -181,3 +184,54 @@ def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None
     return ret
     
 
+def init_record_array(shape, dtype):
+    r"""
+
+    Utility function that initializes a record array using a provided
+    input data type.  For example::
+
+        dtype = [ ('INDX', numpy.int, (2,) ),
+                  ('VALUE', numpy.float) ]
+
+    Defines two columns, one named `INDEX` with two integers per row and
+    the one named `VALUE` with a single float element per row.  See
+    `numpy.recarray`_.
+    
+    Args:
+        shape (int or tuple) : Shape of the output array.
+
+        dtype (list of tuples) : List of the tuples that define each
+            element in the record array.
+
+    Returns:
+        numpy.recarray: Zeroed record array
+    """
+    data = numpy.zeros(shape, dtype=dtype)
+    return data.view(numpy.recarray)
+
+
+def rec_to_fits_type(rec_element):
+    """
+    Return the string representation of a fits binary table data type
+    based on the provided record array element.
+    """
+    if len(rec_element[0].shape) > 1:
+        raise TypeError('Cannot handle arrays with more than one dimension')
+    n = 1 if len(rec_element[0].shape) == 0 else rec_element[0].size
+    if rec_element.dtype == numpy.uint8:
+        return '{0}B'.format(n)
+    if rec_element.dtype == numpy.int16:
+        return '{0}I'.format(n)
+    if rec_element.dtype == numpy.int32:
+        return '{0}J'.format(n)
+    if rec_element.dtype == numpy.int64:
+        return '{0}K'.format(n)
+    if rec_element.dtype == numpy.float32:
+        return '{0}E'.format(n)
+    if rec_element.dtype == numpy.float64:
+        return '{0}D'.format(n)
+
+    # If it makes it here, assume its a string
+    l = int(rec_element.dtype.str[rec_element.dtype.str.find('U')+1:])
+    return '{0}A'.format(l)
+    

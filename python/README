@@ -144,3 +144,251 @@ I don't follow this explicitly, but it's good to keep in mind.
 
 
 
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+PLANNED CHANGES TO DATA MODEL: 10 Feb 2016
+------------------------------------------------------------------------
+
+RSS files:
+
+    There is currently no equivalent of MAPS format for RSS files.  What
+    do we plan to do at the survey level with the RSS files?
+        - We need a strong science case for developing the necessary
+          tools needed to properly handle the RSS files.
+        - Ideally, I (KBW) would rather be working with the RSS files,
+          but they are not as easy do deal with as the CUBEs.
+        - In fact, the development of the CUBE format is the DRP
+          solution to how to deal with the wavelength dependent on-sky
+          location of the fiber-based observations.
+        - Significant development needed to do this differently, and
+          that development may be better spent producing analysis tools
+          that include a sophisticated handling of the covariance
+          between the cube spaxels.
+
+      Because of this, MPL-5 and later will focus solely on the CUBE
+      files until a scientific need for a survey-level product justifies
+      sophisticated analysis of the RSS spectra.
+
+      Let the objections begin...
+
+CUBE files:
+
+    The main product for MPL-5 will be the MAPS format; i.e., all
+    deliverables should be in this file and only repeated elsewhere when
+    necessary.  We will expand the file to include all derived
+    quantities currently produced by the DAP.
+        - Additional emission line fits
+        - Additional spectral indices
+        - r-band signal and noise maps
+        - Any velocity offsets before binning the spectra, as is done
+          in, e.g., the radial binning case.
+        - Additional information (TBD) will be included with specifics
+          about how the DAP was run, etc.
+
+    We also plan to include 1D information based on the radially binned
+    data in the main MAPS file, as well as derived quantities based on
+    the "global" (ALL binning) spectrum, as a additional (set of) binary
+    table(s).
+
+    The main top-level directory for a given MPL will have the
+    following:
+        - a single par file that defines the set of analyses that were
+          done on each DRP CUBE file.  This will be nearly identical to
+          the current DAP plan file.
+        - that par file will be used to generate subdirectories along
+          the lines of:
+
+            templatelibrary_2Dbinningtype
+
+          where the results of the analysis performed using the
+          specified template library and binning approach are placed.
+          There are currently only 2 types of 2D binning, unbinned and
+          Voronoi (SNR) binning.  For the latter, the name of the
+          directory will include the (integer) S/N level used in the
+          Voronoi binning.
+        - The single par file will also define the "default" analysis
+          products.  After the analysis is complete, a default/
+          directory will be created and the appropriate files will be
+          symlinked in this directory.
+
+    Each templatelibrary_2Dbinningtype subdirectory will have the same
+    basic structure:  All the single MAPS files will be in a plate/
+    subdirectory.  Every plate/ subdirectory will also have qa/ and ref/
+    directories:
+        - the qa/ subdirectory will contain any QA files and plots
+        - the ref/ subdirectory will contain useful output files that
+          are mostly kept for convenience, but should be easily
+          reproducable given the information in the MAPS format files
+          and/or re-running simple components of the DAP.  Such files
+          include:
+            - the resolution- and sampling-matched template library
+            - the binned spectra (only kept for STON, RADIAL, and ALL
+              binning types)
+            - the fitted model spectra, including both the
+              stellar-continuum-only and the emission-line-only models
+
+          The format of the model and binned spectra should be the same
+          as the DRP cube file and compressed to keep storage space to a
+          minimum.
+
+    To keep the qa/ and ref/ subdirectories manageable, I imagine they
+    will have ifudesign/ subdirectories.
+
+    The top-level directory will include a DAPall file that provides
+    summary information for all runs of the DAP.  We should likely set
+    some column with a flag that selects the "default" products, and/or
+    perhaps create a separate DAPall_default file that only includes the
+    default data and put it in the default directory (TBD).
+            
+Covariance:
+
+    The only remaining thing that the DAP produces is the covariance
+    matrices for the CUBE files at specified wavelength channels.  Given
+    that this should really be a DRP product, we will punt this over to
+    that DRP data model.  TBD:
+
+        - data format: likely sparse matrix with coordinate and
+          covariance value
+        - location: maybe included as an extension in the current DRP
+          CUBE files if we're only providing a few wavelength planes.
+          (Including 11 wavelength channels for a 127 bundle is about 30
+          MB).
+        - type: We thought it might make sense to have the wavelength
+          channels match the flux-weighted centers of the griz bands, to
+          match other products currently in the DRP cube file.
+
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+Path structure and file names:
+------------------------------------------------------------------------
+
+$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/
+
+    # Read by MPLPlan and used to create the AnalysisPlan output files
+    mangadap-plan-$MANGADAP_VER.par
+
+    symlinks in ref directory below
+    ref/
+        # Read by AnalysisPlan
+        mangadap-plan-${bin2Dmode}-${tpl}-${contmode}.par
+
+        ${plate}/
+            # Main observational input parameter file
+            mangadap-${plate}-${ifudesign}-LOG${mode}.par
+
+            # Resolution/sampling matched template library
+            manga-${plate}-${ifudesign}-LOG${mode}-${tpl}.fits.gz
+
+            # S/N and other DRP assessments
+            manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}.fits.gz
+
+            # Binned spectra; only if binmode is not SPXL
+            manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}.fits.gz
+
+
+    ${bin2Dmode}_${tpl}_${contmode}/
+        ${plate}/
+            manga-${plate}-${ifudesign}-LOG${mode}-${bin2Dmode}-${tpl}-${contmode}.fits.gz
+            qa/
+                ${ifudesign}/
+                    gradients/
+                    maps/
+                    spectra/
+            ref/
+                ${ifudesign}/
+
+                    # pPXF fit to binned spectra
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}.fits.gz
+
+                    # Emission-line moments and parameterized fits
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}-${emldb}.fits.gz
+
+                    # Aborption-line and bandhead index measurements
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}-${emldb}-${spindxdb}.fits.gz
+
+
+    SNR modes are:
+        RFWHM
+        ELINE (to be added)
+
+    BIN2D modes are:
+        SPAXEL - No binning
+        CSNRXX  - Voronoi bin the continuum SN level to be >XX (e.g., CSNR05, CSNR30)
+        ESNRXX  - Voronoi bin the emission-line SN level to be >XX (e.g., CSNR05, CSNR30)
+
+    BINNING modes are:
+        SPAXEL - No binning
+        SNRXX  - Voronoi bin to SN level XX (e.g., SNR05, SNR30)
+        LOGRXX - XX logarithmically stepped radial bins over the full radial range (e.g., LOGR10)
+        REXXYY - XX radial bins stepped in linear in units of Re up to Y.YRe (e.g. RE0220)
+        LGREXXYY - Logarithmically stepped radial bins in units of Re up to Y.YRe with steps of dlogR=X.X (e.g., LGRE0125)
+        GLOBAL - All spectra in the CUBE binned into a single spectrum
+
+    TPL templates are:
+        M11MARCS
+        M11STELIB
+        M11STELIBZSOL
+        M11ELODIE
+        M11MILES
+        MILES
+        MILESAVG
+        MILESTHIN
+        STELIB
+        MIUSCAT
+        MIUSCATTHIN
+
+    CONT modes are:
+        GAUSNXX - S/N > XX; full spectral range of templates; 2 moments; mpoly = 6; no reddening; no oversampling
+        H34SNXX - S/N > XX; full spectral range of templates; 4 moments; mpoly = 6; no reddening; no oversampling
+
+    EML databases are:
+        ELSTRNG - single fit to OII doublet, Hb, OIII, NII, Ha, SII
+        ELEXTND - OII double and single Gaussian; Halpha,beta,gamma,delta,epsilon, He I/II, OIII, OI, NII, SII, SIII
+            - Each EML database has an associated moments file
+
+    SPINDX databases are:
+        SPFULL  - Lick indices, IMF senstitive indices, D4000 and TiO bandheads
+        SPLICK  - Only the Lick indices
+
+
+
+
+
+
+
+
+
+
+                    # (include ${tpl}-${contmode} if stellar continuum
+                    # subtracted first)
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${emldb}.fits.gz
+
+                    # (include ${tpl}-${contmode} if correcting for
+                    # dispersion; include ${emlmode} if subtracting
+                    # emission lines first)
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${spindxdb}.fits.gz
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${emldb}-${spindxdb}.fits.gz
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}-${spindxdb}.fits.gz
+
+
+
+
+
+
+
+FOR THE FUTURE
+
+#   - approx_center - The approximate correlation matrix (based on a
+#   Gaussian correlation value with spaxel separation) is constructed
+#   for the center wavelength channel only and the covariance matrix is
+#   calculated by multiplying by a nominal calculation of the variance.
+#
+#   - center - The formal correlation matrix is calculated for the
+#   central wavelength channel only and the covariance matrix is
+#   calculated by multiplying by a nominal calculation of the variance.
+#
+
+
+

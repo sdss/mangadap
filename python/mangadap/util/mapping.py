@@ -7,29 +7,28 @@ These routines are largely adapted from code provided by Michele
 Cappellari.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Michele Cappellari
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/mapping.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import print_function
+        from __future__ import division
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
-    from matplotlib import pyplot
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    from matplotlib.ticker import MaxNLocator
+        import numpy
+        from matplotlib import pyplot
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+        from matplotlib.ticker import MaxNLocator
 
 *Revision history*:
     | **10 Jun 2015**: Pulled out functions by Michele Cappellari into a
@@ -55,6 +54,9 @@ from matplotlib import pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import MaxNLocator
 
+__author__ = 'Kyle B. Westfall'
+__credits__ = [ 'K. Westfall', 'M. Cappellari' ]
+
 ##############################################################################
 
 def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow_prep=False,
@@ -71,16 +73,12 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
         x (numpy.array): X coordinates of the pixels
         y (numpy.array): Y coordinates of the pixels
         z (numpy.array): Image values at :math:`x,y`.
-
         pixelscale (float): (Optional) Pixelscale of the image in
             arcsec/pixel.
-
         zmin (float): (Optional) Minimum z value to include in the
             output image.  Default is to allow all pixel values.
-
         zmax (float): (Optional) Maximum z value to include in the
             output image.  Default is to allow all pixel values.
-
         imshow_prep (bool): (Optional) Prepare the matrix for use with
             `pyplot.imshow`_.  If *imshow_prep* is True, before output,
             the matrix is reordered such that increasing :math:`x`
@@ -96,17 +94,15 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
             Note that origin **must** be "lower" when calling
             `pyplot.imshow`_ on the array produced by this routine for
             the :math:`x,y` ordering to be as expected!
-
         fill_value (float): (Optional) The default value to use for
             pixels without any data.
 
     Returns:
-        numpy.ndarray: A four-element array with the extent of the image
-            from the bottom edge to the top edge of the x and y pixels,
-            respectively.
-        numpy.ma.MaskedArray: The image data and associated (boolean)
-            mask.
-
+        numpy.ndarray, `numpy.ma.MaskedArray`_: The first object
+        returned is a four-element array with the extent of the image
+        from the bottom edge to the top edge of the x and y pixels,
+        respectively.  The second object returned is the image data and
+        associated (boolean) mask.
     """
 
     # Image extent

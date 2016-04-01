@@ -4,30 +4,28 @@
 Container class that defines a bandpass filter.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/bandpassfilter.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
     
-    import sys
-    if sys.version > '3':
-        long = int
+        import sys
+        if sys.version > '3':
+            long = int
 
-*Imports*::
-
-    import numpy
-    from .parset import ParSet
+        import numpy
+        from .parset import ParSet
 
 *Class usage examples*:
-
     To define an bandpass filter::
 
         from mangadap.par.bandpassfilter import BandPassFilterPar
@@ -40,9 +38,6 @@ Container class that defines a bandpass filter.
     :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`, and
     :class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`; it is not
     really meant to be used as given above.
-
-..todo::
-    - Add a function that prints the filter.
 
 *Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
@@ -177,14 +172,15 @@ class BandPassFilterPar(ParSet):
 
     def _check(self):
         """
-        Check the parameter list.
+        Check the parameter list:
+            
             - Make sure arrays only have two elements.
 
         .. todo::
             - Add check to __setitem__()?
 
         Raises:
-            ValueError : Raised if one of the conditions above are not
+            ValueError: Raised if one of the conditions above are not
                 met.
         """
         if self.data['primary'] is not None and len(self.data['primary']) != 2:

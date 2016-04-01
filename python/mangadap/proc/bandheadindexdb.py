@@ -4,57 +4,62 @@
 Container class for the database of bandhead indices to measure.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/bandheadindexdb.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-*Imports*::
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-    import sys
-    import warnings
-    if sys.version > '3':
-        long = int
-        try:
-            from configparser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import configparser!  Beware!')
-        try:
-            from configparser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    else:
-        try:
-            from ConfigParser import ConfigParser
-        except ImportError:
-            warnings.warn('Unable to import ConfigParser!  Beware!')
-        try:
-            from ConfigParser import ExtendedInterpolation
-        except ImportError:
-            warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-    
-    import os.path
-    from os import environ
-    import glob
-    import numpy
-    
-    from ..config.defaults import default_dap_source
-    from ..config.util import validate_bandhead_index_config
-    from ..util.idlutils import airtovac
-    from ..util.yanny import yanny
-    from ..par.parset import ParSet
-    from ..par.bandpassfilter import BandPassFilterPar
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import configparser!  Beware!')
+            try:
+                from configparser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import ConfigParser!  Beware!')
+            try:
+                from ConfigParser import ExtendedInterpolation
+            except ImportError:
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        
+        import os.path
+        from os import environ
+        import glob
+        import numpy
+
+        from ..config.defaults import default_dap_source
+        from ..config.util import validate_bandhead_index_config
+        from ..util.idlutils import airtovac
+        from ..util.yanny import yanny
+        from ..par.parset import ParSet
+        from ..par.bandpassfilter import BandPassFilterPar
+
+.. warning::
+
+    Because of the use of the ``ExtendedInterpolation`` in
+    `configparser.ConfigParser`_,
+    :func:`available_bandhead_index_databases` is not python 2
+    compiliant.
 
 *Class usage examples*:
-
     Bandhead index databases are defined using SDSS parameter files.  To
     define a database, you can use one of the default set of available
     bandhead index databases (see
@@ -97,6 +102,8 @@ Container class for the database of bandhead indices to measure.
     
 *Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
+
+.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 
 """
 
@@ -179,10 +186,9 @@ def available_bandhead_index_databases(dapsrc=None):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-
-        list : An list of :class:`BandheadIndexDBDef` objects, each of
-            which defines a unique set of bandhead indices (see
-            :class:`mangadap.par.bandpassfilter.BandPassFilterPar`).
+        list: An list of :class:`BandheadIndexDBDef` objects, each of
+        which defines a unique set of bandhead indices (see
+        :class:`mangadap.par.bandpassfilter.BandPassFilterPar`).
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -194,7 +200,7 @@ def available_bandhead_index_databases(dapsrc=None):
             ExtendedInterpolation are not correctly imported.  The
             latter is a *Python 3 only module*!
 
-    ..todo::
+    .. todo::
         - Add backup function for Python 2.
         - Somehow add a python call that reads the databases and
           constructs the table for presentation in sphinx so that the
@@ -240,7 +246,7 @@ class BandheadIndexDB:
     """
     Basic container class for the database of bandhead index parameters.
 
-    ..todo::
+    .. todo::
         - Need to figure out is it's better to have an array of
           BandPassFilterPar objects, or if I should convert self.data to
           a numpy record array.
@@ -289,8 +295,8 @@ class BandheadIndexDB:
                 range.
 
         Returns:
-            :class:`mangadap.par.bandpassfilter.BandPassFilterPar` :
-                Parameter set of the selected bandhead index
+            :class:`mangadap.par.bandpassfilter.BandPassFilterPar`:
+            Parameter set of the selected bandhead index
 
         Raises:
             IndexError: Raised if the provided index is out of bounds.
@@ -302,14 +308,15 @@ class BandheadIndexDB:
 
     def _check(self):
         """
-        Check that the database is correctly defined.
+        Check that the database is correctly defined:
+
             - All the indices must be unique.
 
-        ..todo::
+        .. todo::
             - Other checks needed?
 
-        Raises :
-            ValueError : Raised if the indices are not all unique.
+        Raises:
+            ValueError: Raised if the indices are not all unique.
 
         """
         if len(numpy.unique( numpy.array([d['index'] for d in self.data]))) != self.nindx:

@@ -33,7 +33,7 @@ Analysis Pipeline (DAP).
     from mangadap.util.yanny import yanny
     from mangadap.util.projected_disk_plane import projected_disk_plane
     from mangadap.config.defaults import default_drp_version, default_dap_version
-    from mangadap.config.defaults import default_analysis_path, default_dap_directory_path
+    from mangadap.config.defaults import default_analysis_path, default_dap_reference_path
     from mangadap.config.defaults import default_dap_par_file, default_dap_plan_file
     from mangadap.config.defaults import default_dap_file_name
 
@@ -95,7 +95,7 @@ from .util.exception_tools import print_frame
 from .util.yanny import yanny
 from .util.projected_disk_plane import projected_disk_plane
 from .config.defaults import default_drp_version, default_dap_version
-from .config.defaults import default_analysis_path, default_dap_directory_path
+from .config.defaults import default_analysis_path, default_dap_reference_path
 from .config.defaults import default_dap_par_file, default_dap_plan_file
 from .config.defaults import default_dap_file_name
 
@@ -125,7 +125,7 @@ class dapfile:
             :func:`mangadap.config.defaults.default_analysis_path`.
         directory_path (str): (Optional) The exact path to the DAP file.
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_directory_path`.
+            :func:`mangadap.config.defaults.default_dap_reference_path`.
         par_file (str): SDSS parameter file used to provide input
             parameters for the DAP.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_par_file`.
@@ -173,8 +173,8 @@ class dapfile:
             self.dapver = default_dap_version() if dapver is None else str(dapver)
             self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
                                  if analysis_path is None else str(analysis_path)
-            self.directory_path = default_dap_directory_path(self.plate, self.ifudesign,
-                                                             drpver=self.drpver, dapver=self.dapver,
+            self.directory_path = default_dap_reference_path(plate=self.plate, drpver=self.drpver,
+                                                             dapver=self.dapver,
                                                              analysis_path=self.analysis_path)
         else:
             self.drpver = None
