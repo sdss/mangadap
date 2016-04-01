@@ -10,6 +10,7 @@ bin/dap_running.bash -text
 bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
 bin/edit_dap_plan -text
+bin/manga_dap -text
 bin/mangadap_version -text
 bin/matched_template_library -text
 bin/rundap -text
