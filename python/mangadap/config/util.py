@@ -69,6 +69,7 @@ import numpy
 import os.path
 
 from .defaults import default_dap_source
+from ..proc.spectralstack import SpectralStack
 
 __author__ = 'Kyle B. Westfall'
 
@@ -124,6 +125,83 @@ def validate_reduction_assessment_config(cnfg):
                                 cnfg['default']['response_function_file']))
 
     return def_range, def_par, def_response
+
+
+def validate_spatial_binning_scheme_config(cnfg):
+    """ 
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a spatial binning scheme.
+
+    Args:
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the binning method as needed by
+            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`.
+
+    Returns:
+        str: Name of the binning method to apply.
+
+    Raises:
+        KeyError: Raised if any required keywords do not exist.
+        ValueError: Raised if keys have unacceptable values.
+        FileNotFoundError: Raised if a file is specified but could not
+            be found.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'method' not in cnfg.options('default'):
+        raise KeyError('Keyword \'method\' must be provided.')
+
+    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
+        cnfg['default']['minimum_snr']= '0.0'
+
+    if 'operation' not in cnfg.options('default') or cnfg['default']['operation'] is None:
+        cnfg['default']['operation'] = 'mean'
+
+    if 'velocity_register' not in cnfg.options('default') \
+            or cnfg['default']['velocity_register'] is None:
+        cnfg['default']['velocity_register'] = 'False'
+
+    if 'stack_covariance_mode' not in cnfg.options('default') \
+            or cnfg['default']['stack_covariance_mode'] is None:
+        cnfg['default']['stack_covariance_mode'] = 'none'
+
+    covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
+    if cnfg['default']['stack_covariance_mode'] in covar_par_needed_modes \
+            and ('stack_covariance_par' not in cnfg.options('default') \
+                    or cnfg['default']['stack_covariance_par'] is None):
+        raise ValueError('For covariance mode = {0}, must provide a parameter!'.format(
+                         cnfg['default']['stack_covariance_mode']))
+        
+    if 'stack_covariance_par' not in cnfg.options('default') \
+            or cnfg['default']['stack_covariance_par'] is None:
+        cnfg['default']['stack_covariance_par'] = 'none'
+
+    if cnfg['default']['method'] in [ 'none', 'global' ]:
+        return
+
+    if cnfg['default']['method'] == 'voronoi':
+        if 'target_snr' not in cnfg.options('default'):
+            raise KeyError('Keyword \'target_snr\' must be provided for Voronoi binning.')
+        return
+
+    if cnfg['default']['method'] == 'radial':
+        if 'center' not in cnfg.options('default'):
+            raise KeyError('Keyword \'center\' must be provided for radial binning.')
+        if 'pa' not in cnfg.options('default'):
+            raise KeyError('Keyword \'pa\' must be provided for radial binning.')
+        if 'ell' not in cnfg.options('default'):
+            raise KeyError('Keyword \'ell\' must be provided for radial binning.')
+        if 'radii' not in cnfg.options('default'):
+            raise KeyError('Keyword \'radii\' must be provided for radial binning.')
+
+        if 'radius_scale' not in cnfg.options('default') or cnfg['default']['radius_scale'] is None:
+            cnfg['default']['radius_scale'] = '1.0'
+        if 'log_step' not in cnfg.options('default') or cnfg['default']['log_step'] is None:
+            cnfg['default']['log_step'] = 'False'
+        return
+
+    raise ValueError('{0} is not a recognized binning method.'.format(cnfg['default']['method']))
 
 
 def validate_spectral_template_config(cnfg):

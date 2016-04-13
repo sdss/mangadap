@@ -1,8 +1,8 @@
 """
 #####################################################################
 
-Copyright (C) 2001-2014, Michele Cappellari
-E-mail: cappellari_at_astro.ox.ac.uk
+Copyright (C) 2001-2016, Michele Cappellari
+E-mail: michele.cappellari_at_physics.ox.ac.uk
 
 Updated versions of the software are available from my web page
 http://purl.org/cappellari/software
@@ -24,7 +24,7 @@ NAME:
 
 AUTHOR:
       Michele Cappellari, University of Oxford
-      cappellari_at_astro.ox.ac.uk
+      michele.cappellari_at_physics.ox.ac.uk
 
 PURPOSE:
       Perform adaptive spatial binning of Integral-Field Spectroscopic
@@ -42,13 +42,10 @@ EXPLANATION:
 
 CALLING SEQUENCE:
 
-    binNum, xBin, yBin, xBar, yBar, sn, nPixels, scale = \
-        voronoi_2d_binning(x, y, signal, noise, targetSN,
-                           plot=True, quiet=False, wvt=False,
-                           cvt=True, pixelsize=None)
-
-    The function _sn_func() below returns the S/N of a bin and it can be
-    changed by the user if needed.
+        binNum, xBin, yBin, xBar, yBar, sn, nPixels, scale = \
+            voronoi_2d_binning(x, y, signal, noise, targetSN,
+                               cvt=True, pixelsize=None, plot=True,
+                               quiet=True, sn_func=None, wvt=True)
 
 INPUTS:
            X: Vector containing the X coordinate of the pixels to bin.
@@ -98,9 +95,15 @@ KEYWORDS:
             - The value is computed automatically by the program, but
               this can take a long times when (X, Y) have many elements.
               In those cases the PIXSIZE keyword should be given.
+     SN_FUNC: Generic function to calculate the S/N of a bin with spaxels
+              "index" with the form: "sn = func(signal, noise, index)".
+              If this keyword is not set, or is set to None, the program
+              uses the _sn_func(), included in the program file, but
+              another function can be adopted if needed.
+              See the documentation of _sn_func() for more details.
        QUIET: by default the program shows the progress while accreting
               pixels and then while iterating the CVT. Set this keyword
-              to avoid printing progess results.
+              to avoid printing progress results.
          WVT: When this keyword is set, the routine bin2d_cvt_equal_mass is
               modified as proposed by Diehl & Statler (2006, MNRAS, 368, 497).
               In this case the final step of the algorithm, after the bin-accretion
@@ -116,11 +119,14 @@ KEYWORDS:
 OUTPUTS:
    BINNUMBER: Vector (same size as X) containing the bin number assigned
               to each input pixel. The index goes from zero to Nbins-1.
-              This vector alone is enough to make *any* subsequent
-              computation on the binned data. Everything else is optional!
+              IMPORTANT: THIS VECTOR ALONE IS ENOUGH TO MAKE *ANY* SUBSEQUENT
+              COMPUTATION ON THE BINNED DATA. EVERYTHING ELSE IS OPTIONAL!
+
         XBIN: Vector (size Nbins) of the X coordinates of the bin generators.
               These generators uniquely define the Voronoi tessellation.
+              Note: USAGE OF THIS VECTOR IS DEPRECATED AS IT CAN CAUSE CONFUSION
         YBIN: Vector (size Nbins) of Y coordinates of the bin generators.
+              Note: USAGE OF THIS VECTOR IS DEPRECATED AS IT CAN CAUSE CONFUSION
         XBAR: Vector (size Nbins) of X coordinates of the bins luminosity
               weighted centroids. Useful for plotting interpolated data.
         YBAR: Vector (size Nbins) of Y coordinates of the bins luminosity
@@ -135,7 +141,7 @@ OUTPUTS:
 
 PROCEDURES USED:
       The following procedures are contained in the main VORONOI_2D_BINNING program.
-          SN_FUNC           -- Example routine to calculate the S/N of a bin.
+          _SN_FUNC          -- Example routine to calculate the S/N of a bin.
           WEIGHTED_CENTROID -- computes weighted centroid of one bin
           BIN_ROUNDNESS     -- equation (5) of Cappellari & Copin (2003)
           BIN_ACCRETION     -- steps (i)-(v) in section 5.1
@@ -212,6 +218,15 @@ MODIFICATION HISTORY:
       V3.0.1: Support both Python 2.6/2.7 and Python 3. MC, Oxford, 25 May 2014
       V3.0.2: Avoid potential runtime warning while plotting.
           MC, Oxford, 2 October 2014
+      V3.0.3: Use for loop to calculate Voronoi tessellation of large arrays
+          to reduce memory usage. Thanks to Peter Weilbacher (Potsdam) for
+          reporting the problem and providing the solution.
+          MC, Oxford, 31 March 2016
+      V3.0.4: Included keyword "sn_func" to pass a function which
+          calculates the S/N of a bin, rather than editing _sn_func().
+          Additional test to prevent the addition of a pixel from
+          decreasing the S/N of good bins during accretion stage.
+          MC, Oxford, 12 April 2016
 
 """
 
@@ -221,36 +236,51 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance
 from scipy import ndimage
+# KBW edit: Include warnings
+import warnings
 
 #----------------------------------------------------------------------------
 
-def _sn_func(signal, noise, index, covar):
+def _sn_func(signal, noise, index):
     """
-    Generic function to calculate the S/N of a bin with spaxels "index".
+    Default function to calculate the S/N of a bin with spaxels "index".
+
     The Voronoi binning algorithm does not require this function to have a
-    specific form and this generic one can be changed by the user if needed.
+    specific form and this default one can be changed by the user if needed
+    by passing a different function as
 
-    The S/N returned by this function does not need to be an analytic function
-    of S and N. There is no need for this function to return the actual S/N.
-    Instead this function could return any quantity the user needs to optimize.
+        ... = voronoi_2d_binning(..., sn_func=sn_func)
 
-    For example _sn_func could be a procedure which uses ppxf to measure the
-    velocity dispersion from the coadded spectrum of spaxels "index" and
-    returns the relative error in the dispersion.
-    Of course an analytic approximation of S/N speeds up the calculation.
+    The S/N returned by sn_func() does not need to be an analytic
+    function of S and N.
+
+    There is also no need for sn_func() to return the actual S/N.
+    Instead sn_func() could return any quantity the user needs to equalize.
+
+    For example sn_func() could be a procedure which uses ppxf to measure
+    the velocity dispersion from the coadded spectrum of spaxels "index"
+    and returns the relative error in the dispersion.
+
+    Of course an analytic approximation of S/N, like the one below,
+    speeds up the calculation.
+
+    NOTE: "index" is passed either as boolean vector or as indices.
+        This implies that index.size cannot be used to give the
+        number of spaxels in the bin. Instead one can use
+        "nspax = signal[index].size" if needed.
 
     """
 
-    #print(type(index))
-    #print(len(index))
-    #print(index)
+    sn = np.sum(signal[index])/np.sqrt(np.sum(noise[index]**2))
 
-    if covar is None:
-        return  np.sum(signal[index])/np.sqrt(np.sum(noise[index]**2))
+    # The following commented line illustrates, as an example, how one
+    # would include the effect of spatial covariance using the empirical
+    # Eq.(1) from http://adsabs.harvard.edu/abs/2015A%26A...576A.135G
+    # Note however that the formula is not accurate for large bins.
+    #
+    # sn /= 1 + 1.07*np.log10(signal[index].size)
 
-    i, j = np.meshgrid(index, index, indexing='ij')
-#    print(np.sum(signal[index])/np.sqrt(np.sum(covar[i,j])))
-    return np.sum(signal[index])/np.sqrt(np.sum(covar[i,j]))
+    return  sn
 
 #----------------------------------------------------------------------
 
@@ -283,7 +313,7 @@ def _roundness(x, y, pixelSize):
 
 #----------------------------------------------------------------------
 
-def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, covar):
+def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
     """
     Implements steps (i)-(v) in section 5.1 of Cappellari & Copin (2003)
 
@@ -306,7 +336,12 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, covar):
     # remaining computation time when binning very big dataset.
     #
     w = signal/noise < targetSN
-    maxnum = int(np.sum((signal[w]/noise[w])**2)/targetSN**2 + np.sum(~w))
+
+    # KBW edit:
+    sn_total_less_than_target = sn_func(signal, noise, np.where(w)[0])
+    maxnum = int(np.square(sn_total_less_than_target/targetSN) + np.sum(~w))
+    # Replaces:
+    #maxnum = int(np.sum((signal[w]/noise[w])**2)/targetSN**2 + np.sum(~w))
 
     # The first bin will be assigned CLASS = 1
     # With N pixels there will be at most N bins
@@ -342,14 +377,14 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, covar):
             # the CANDIDATE pixel to the current bin
             #
             SNOld = SN
-            SN = _sn_func(signal, noise, nextBin, covar)
+            SN = sn_func(signal, noise, nextBin)
 
             # Test whether (1) the CANDIDATE pixel is connected to the
             # current bin, (2) whether the POSSIBLE new bin is round enough
             # and (3) whether the resulting S/N would get closer to targetSN
             #
             if (np.sqrt(minDist) > 1.2*pixelSize or roundness > 0.3
-                or abs(SN - targetSN) > abs(SNOld - targetSN)):
+                or abs(SN - targetSN) > abs(SNOld - targetSN) or SNOld > SN):
                 if SNOld > 0.8*targetSN:
                     good[currentBin] = 1
                 break
@@ -390,7 +425,7 @@ def _reassign_bad_bins(classe, x, y):
     Implements steps (vi)-(vii) in section 5.1 of Cappellari & Copin (2003)
 
     """
-    # Find the centroid of all succesful bins.
+    # Find the centroid of all successful bins.
     # CLASS = 0 are unbinned pixels which are excluded.
     #
     good = np.unique(classe[classe > 0])
@@ -401,7 +436,7 @@ def _reassign_bad_bins(classe, x, y):
     # to the closest centroid of a good bin
     #
     bad = classe == 0
-    index = np.argmin((x[bad, np.newaxis] - xnode)**2 + (y[bad, np.newaxis] - ynode)**2, axis=1)
+    index = np.argmin((x[bad, None] - xnode)**2 + (y[bad, None] - ynode)**2, axis=1)
     classe[bad] = good[index]
 
     # Recompute all centroids of the reassigned bins.
@@ -415,7 +450,7 @@ def _reassign_bad_bins(classe, x, y):
 
 #----------------------------------------------------------------------------
 
-def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, covar):
+def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, sn_func):
     """
     Implements the modified Lloyd algorithm
     in section 4.1 of Cappellari & Copin (2003).
@@ -430,13 +465,18 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, covar):
         dens = (signal/noise)**2  # See beginning of section 4.1 of CC03
     scale = np.ones_like(xnode)   # Start with the same scale length for all bins
 
-    for it in range(1, xnode.size):  # Do at most xnode.size iteratons
+    for it in range(1, xnode.size):  # Do at most xnode.size iterations
 
         xnodeOld, ynodeOld = xnode.copy(), ynode.copy()
 
         # Computes (Weighted) Voronoi Tessellation of the pixels grid
         #
-        classe = np.argmin(((x[:, np.newaxis] - xnode)**2 + (y[:, np.newaxis] - ynode)**2)/scale**2, axis=1)
+        if x.size < 10000:
+            classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
+        else:  # use for loop to reduce memory usage
+            classe = np.zeros(x.size, dtype=int)
+            for j, (xj, yj) in enumerate(zip(x, y)):
+                classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
 
         # Computes centroids of the bins, weighted by dens**2.
         # Exponent 2 on the density produces equal-mass Voronoi bins.
@@ -444,10 +484,10 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, covar):
         #
         good = np.unique(classe)
         for k in good:
-            index = np.where(classe == k)   # Find subscripts of pixels in bin k.
+            index = classe == k   # Find subscripts of pixels in bin k.
             xnode[k], ynode[k] = _weighted_centroid(x[index], y[index], dens[index]**2)
             if wvt:
-                sn = _sn_func(signal, noise, index, covar)
+                sn = sn_func(signal, noise, index)
                 scale[k] = np.sqrt(index.sum()/sn)  # Eq. (4) of Diehl & Statler (2006)
 
         diff = np.sum((xnode - xnodeOld)**2 + (ynode - ynodeOld)**2)
@@ -461,7 +501,12 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, covar):
     # If coordinates have changed, re-compute (Weighted) Voronoi Tessellation of the pixels grid
     #
     if diff > 0:
-        classe = np.argmin(((x[:, np.newaxis] - xnode)**2 + (y[:, np.newaxis] - ynode)**2)/scale**2, axis=1)
+        if x.size < 10000:
+            classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
+        else:  # use for loop to reduce memory usage
+            classe = np.zeros(x.size, dtype=int)
+            for j, (xj, yj) in enumerate(zip(x, y)):
+                classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
         good = np.unique(classe)  # Check for zero-size Voronoi bins
 
     # Only return the generators and scales of the nonzero Voronoi bins
@@ -470,7 +515,7 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, covar):
 
 #-----------------------------------------------------------------------
 
-def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, covar):
+def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, sn_func):
     """
     Recomputes (Weighted) Voronoi Tessellation of the pixels grid to make sure
     that the class number corresponds to the proper Voronoi generator.
@@ -480,7 +525,12 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, cov
     """
     # classe will contain the bin number of each given pixel
     #
-    classe = np.argmin(((x[:, np.newaxis] - xnode)**2 + (y[:, np.newaxis] - ynode)**2)/scale**2, axis=1)
+    if x.size < 10000:
+        classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
+    else:  # use for loop to reduce memory usage
+        classe = np.zeros(x.size, dtype=int)
+        for j, (xj, yj) in enumerate(zip(x, y)):
+            classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
 
     # At the end of the computation evaluate the bin luminosity-weighted
     # centroids (xbar, ybar) and the corresponding final S/N of each bin.
@@ -491,10 +541,10 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, cov
     area = np.empty_like(xnode)
     good = np.unique(classe)
     for k in good:
-        index = np.where(classe == k)   # Find subscripts of pixels in bin k.
+        index = classe == k   # Boolean vector of pixels in bin k.
         xbar[k], ybar[k] = _weighted_centroid(x[index], y[index], signal[index])
-        sn[k] = _sn_func(signal, noise, index, covar)
-        area[k] = np.sum(classe == k)
+        sn[k] = sn_func(signal, noise, index)
+        area[k] = index.sum()
 
     return classe, xbar, ybar, sn, area
 
@@ -516,15 +566,20 @@ def _display_pixels(x, y, counts, pixelSize):
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = counts
 
-    plt.imshow(np.rot90(img), interpolation='none', cmap='prism',
+    # KBW edit:
+    plt.imshow(np.rot90(img), interpolation='nearest', cmap='prism',
+    # Replaces:
+    #plt.imshow(np.rot90(img), interpolation='none', cmap='prism',
                extent=[xmin - pixelSize/2, xmax + pixelSize/2,
                        ymin - pixelSize/2, ymax + pixelSize/2])
 
 #----------------------------------------------------------------------
 
+# KBW
+# TODO: Change quiet to verbose and use logging
 def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
-                         pixelsize=None, plot=True, quiet=True, wvt=False,
-                         covar=None):
+                         pixelsize=None, plot=True, quiet=True,
+                         sn_func=None, wvt=True):
     """
     PURPOSE:
           Perform adaptive spatial binning of Integral-Field Spectroscopic
@@ -543,57 +598,80 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
 
         binNum, xBin, yBin, xBar, yBar, sn, nPixels, scale = \
             voronoi_2d_binning(x, y, signal, noise, targetSN,
-                               plot=True, quiet=False, wvt=False,
-                               cvt=True, pixelsize=None)
-
-        25 Feb 2015: Added usage of covariance matrix by K. Westfall
+                               cvt=True, pixelsize=None, plot=True,
+                               quiet=True, sn_func=None, wvt=True)
 
     """
     # This is the main program that has to be called from external programs.
     # It simply calls in sequence the different steps of the algorithms
     # and optionally plots the results at the end of the calculation.
 
-    npix = x.size
-    if (y.size != npix) or (signal.size != npix) or (noise.size != npix):
-            raise ValueError('Input vectors (x, y, signal, noise) must have the same size')
+    if not (x.size == y.size == signal.size == noise.size):
+        raise ValueError('Input vectors (x, y, signal, noise) must have the same size')
     if not np.all((noise > 0) & np.isfinite(noise)):
         raise ValueError('NOISE must be a positive vector')
 
+    if sn_func is None:
+        sn_func = _sn_func
+
     # Perform basic tests to catch common input errors
     #
-    print('Total S/N: {0}'.format(_sn_func(signal, noise, np.arange(0,npix), covar)))
-    if _sn_func(signal, noise, np.arange(0,npix), covar) < targetSN:
-        raise ValueError("""Not enough S/N in the whole set of pixels.
-            Many pixels may have noise but virtually no signal.
-            They should not be included in the set to bin,
-            or the pixels should be optimally weighted.
-            See Cappellari & Copin (2003, Sec.2.1) and README file.""")
+#    if np.sum(signal)/np.sqrt(np.sum(noise**2)) < targetSN:
+#        raise ValueError("""Not enough S/N in the whole set of pixels.
+#            Many pixels may have noise but virtually no signal.
+#            They should not be included in the set to bin,
+#            or the pixels should be optimally weighted.
+#            See Cappellari & Copin (2003, Sec.2.1) and README file.""")
+#    if np.min(signal/noise) > targetSN:
+#        raise ValueError('All pixels have enough S/N and binning is not needed')
+
+    # KBW edit, replaces above:
+    # Change calculation of total S/N
+    # If can't reach total S/N, just return all pixels in same bin
+    sn_total = sn_func(signal, noise, np.arange(signal.size))
+    if not quiet:
+        print('Total S/N:', sn_total)
+    if sn_total < targetSN:
+        warnings.warn('Cannot reach target S/N using all data.')
+        return (np.zeros(signal.size),) + (None,)*7
+    # If all spaxels have S/N greater than target, just return each
+    # pixel in its own bin
     if np.min(signal/noise) > targetSN:
-        raise ValueError('All pixels have enough S/N and binning is not needed')
+        warnings.warn('All pixels have enough S/N. Binning is not needed')
+        return (np.arange(signal.size),) + (None,)*7
 
     # Prevent division by zero for pixels with signal=0 and
     # noise=sqrt(signal)=0 as can happen with X-ray data
     #
-    noise = noise.clip(np.min(noise[noise > 0])*1e-9)
+    # KBW edit:
+    # Check that pixels with positive noise exist
+    noise = noise.clip(np.min(noise[noise > 0])*1e-9) if any(noise > 0) else np.ones(x.size)
+    # Replaces:
+    #noise = noise.clip(np.min(noise[noise > 0])*1e-9)
 
-    print('Bin-accretion...')
-    classe, pixelsize = _accretion(x, y, signal, noise, targetSN, pixelsize, quiet, covar)
-    print(np.max(classe), ' initial bins.')
-    print('Reassign bad bins...')
+    # KBW edit: Apply quiet strictly
+    if not quiet:
+        print('Bin-accretion...')
+    classe, pixelsize = _accretion(x, y, signal, noise, targetSN, pixelsize, quiet, sn_func)
+    if not quiet:
+        print(np.max(classe), ' initial bins.')
+        print('Reassign bad bins...')
     xNode, yNode = _reassign_bad_bins(classe, x, y)
-    print(xNode.size, ' good bins.')
+    if not quiet:
+        print(xNode.size, ' good bins.')
     if cvt:
-        print('Modified Lloyd algorithm...')
-        xNode, yNode, scale, it = \
-            _cvt_equal_mass(x, y, signal, noise, xNode, yNode, quiet, wvt, covar)
-        print(it-1, ' iterations.')
+        if not quiet:
+            print('Modified Lloyd algorithm...')
+        xNode, yNode, scale, it = _cvt_equal_mass(x, y, signal, noise, xNode, yNode, quiet, wvt, sn_func)
+        if not quiet:
+            print(it - 1, ' iterations.')
     else:
         scale = 1.
-    classe, xBar, yBar, sn, area = \
-        _compute_useful_bin_quantities(x, y, signal, noise, xNode, yNode, scale, covar)
+    classe, xBar, yBar, sn, area = _compute_useful_bin_quantities(x, y, signal, noise, xNode, yNode, scale, sn_func)
     w = area == 1
-    print('Unbinned pixels: ', np.sum(w), ' / ', npix)
-    print('Fractional S/N scatter (%):', np.std(sn[~w] - targetSN, ddof=1)/targetSN*100)
+    if not quiet:
+        print('Unbinned pixels: ', np.sum(w), ' / ', x.size)
+        print('Fractional S/N scatter (%):', np.std(sn[~w] - targetSN, ddof=1)/targetSN*100)
 
     if plot:
         plt.clf()
@@ -611,10 +689,11 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
         plt.xlabel('R (arcsec)')
         plt.ylabel('Bin S/N')
         plt.axis([np.min(rad), np.max(rad), 0, np.max(sn)])  # x0, x1, y0, y1
-        if (np.sum(w) > 0):
+        if np.sum(w) > 0:
             plt.plot(rad[w], sn[w], 'xb', label='single spaxels')
         plt.axhline(targetSN)
         plt.legend()
+        plt.pause(0.01)  # allow plot to appear in certain cases
 
     return classe, xNode, yNode, xBar, yBar, sn, area, scale
 

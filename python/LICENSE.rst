@@ -1,5 +1,6 @@
 
-Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
+Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -54,6 +54,10 @@ import os
 from ..drpfits import DRPFits
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..proc.reductionassessments import ReductionAssessment
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+
+from ..util.covariance import Covariance
+from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 __email__ = 'kbwestfall@gmail.com'
@@ -63,8 +67,8 @@ __license__ = 'BSD3'
 __version__ = 2.0
 __status__ = 'Development'
 
-def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, directory_path=None,
-              analysis_path=None):
+def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc=None,
+              directory_path=None, analysis_path=None):
     """
     Main wrapper function for the MaNGA DAP.
 
@@ -156,43 +160,51 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, direct
         #-------------------------------------------------------------------
         # S/N Assessments
         #-------------------------------------------------------------------
-        snr = ReductionAssessment('RFWHM', drpf, pa=obs['pa'], ell=obs['ell'],
+        snr = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
                                   analysis_path=analysis_path, verbose=verbose, clobber=True)
+ 
+        #-------------------------------------------------------------------
+        # Spatial Binning
+        #-------------------------------------------------------------------
+        binned_spectra = SpatiallyBinnedSpectra('VOR10C', drpf, snr, reff=obs['reff'],
+                                                dapsrc=dapsrc, analysis_path=analysis_path,
+                                                verbose=verbose, clobber=True)
+        pyplot.imshow(binned_spectra['FLUX'].data[:,:,1000].T, origin='lower',
+                      interpolation='nearest')
+        pyplot.show()
+
+        c = Covariance(source=binned_spectra.hdu, primary_ext='COVAR', plane_ext='COVAR_PLANE')
+        c.show(plane=0)
+ 
+        #-------------------------------------------------------------------
+        # Stellar Continuum Fit
+        #-------------------------------------------------------------------
+#       stellar_continuum = StellarContinuumFit(drpf, plan.continuum, snr=snr,
+#                                               binned_spectra=binned_spectra)
 #
-#        #-------------------------------------------------------------------
-#        # Spatial Binning
-#        #-------------------------------------------------------------------
-#        binned_spectra = SpatialBinning(drpf, plan.binning, snr=snr)
+#       #-------------------------------------------------------------------
+#       # Emission-line Moment measurements
+#       #-------------------------------------------------------------------
+#       emission_line_moments = EmissionLineMoments(drpf, plan.emission, snr=snr,
+#                                                   binned_spectra=binned_spectra,
+#                                                   stellar_continuum=stellar_continuum)
 #
-#        #-------------------------------------------------------------------
-#        # Stellar Continuum Fit
-#        #-------------------------------------------------------------------
-#        stellar_continuum = StellarContinuumFit(drpf, plan.continuum, snr=snr,
-#                                                binned_spectra=binned_spectra)
+#       #-------------------------------------------------------------------
+#       # Emission-line Fit
+#       #-------------------------------------------------------------------
+#       emission_lines_fits = EmissionLineFits(drpf, plan.emission, snr=snr,
+#                                              binned_spectra=binned_spectra,
+#                                              stellar_continuum=stellar_continuum,
+#                                              emission_line_moments=emission_line_moments)
 #
-#        #-------------------------------------------------------------------
-#        # Emission-line Moment measurements
-#        #-------------------------------------------------------------------
-#        emission_line_moments = EmissionLineMoments(drpf, plan.emission, snr=snr,
-#                                                    binned_spectra=binned_spectra,
-#                                                    stellar_continuum=stellar_continuum)
-#
-#        #-------------------------------------------------------------------
-#        # Emission-line Fit
-#        #-------------------------------------------------------------------
-#        emission_lines_fits = EmissionLineFits(drpf, plan.emission, snr=snr,
-#                                               binned_spectra=binned_spectra,
-#                                               stellar_continuum=stellar_continuum,
-#                                               emission_line_moments=emission_line_moments)
-#
-#        #-------------------------------------------------------------------
-#        # Spectral-Index Measurements
-#        #-------------------------------------------------------------------
-#        spectral_indices = SpectraIndexMeasurements(drpf, plan, snr=snr,
-#                                                    binned_spectra=binned_spectra,
-#                                                    stellar_continuum=stellar_continuum,
-#                                                    emission_lines=emission_lines)
-#
+#       #-------------------------------------------------------------------
+#       # Spectral-Index Measurements
+#       #-------------------------------------------------------------------
+#       spectral_indices = SpectraIndexMeasurements(drpf, plan, snr=snr,
+#                                                   binned_spectra=binned_spectra,
+#                                                   stellar_continuum=stellar_continuum,
+#                                                   emission_lines=emission_lines)
+
     #-------------------------------------------------------------------
     # Construct the main output file
     #-------------------------------------------------------------------

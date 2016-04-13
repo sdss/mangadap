@@ -50,8 +50,8 @@ if __name__ == '__main__':
     analysisplan = None
 
     status = manga_dap(obspar, analysisplan, dbg=arg.dbg, log=arg.log, verbose=arg.verbose,
-                       redux_path=arg.redux_path, directory_path=arg.directory_path,
-                       analysis_path=arg.analysis_path)
+                       redux_path=arg.redux_path, dapsrc=arg.dap_src,
+                       directory_path=arg.directory_path, analysis_path=arg.analysis_path)
 
     print('Elapsed time: {0} seconds'.format(clock() - t))
 

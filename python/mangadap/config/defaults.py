@@ -108,7 +108,7 @@ def default_redux_path(drpver=None):
     environmental variable MANGA_SPECTRO_REDUX.
 
     Args:
-        drpver (str): (Optional) DRP version.  Default is to use
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
 
     Returns:
@@ -127,9 +127,9 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
 
     Args:
         plate (int): Plate number
-        drpver (str): (Optional) DRP version.  Default is to use
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
-        redux_path (str): (Optional) Path to the root reduction
+        redux_path (str): (**Optional**) Path to the root reduction
             directory.  Default is to use :func:`default_redux_path`.
 
     Returns:
@@ -224,9 +224,9 @@ def default_analysis_path(drpver=None, dapver=None):
     variable MANGA_SPECTRO_ANALYSIS.
 
     Args:
-        drpver (str): (Optional) DRP version.  Default is to use
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
-        dapver (str): (Optional) DAP version.  Default is to use
+        dapver (str): (**Optional**) DAP version.  Default is to use
             :func:`default_dap_version`.
 
     Returns:
@@ -268,13 +268,13 @@ def default_dap_reference_path(plate=None, drpver=None, dapver=None, analysis_pa
     Return the path to the top-level reference path for a given plate.
 
     Args:
-        plate (int): (Optional) Plate number, for reference directory of
-            a specific plate.
-        drpver (str): (Optional) DRP version.  Default is to use
+        plate (int): (**Optional**) Plate number, for reference
+            directory of a specific plate.
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
-        dapver (str): (Optional) DAP version.  Default is to use
+        dapver (str): (**Optional**) DAP version.  Default is to use
             :func:`default_dap_version`.
-        analysis_path (str): (Optional) Path to the root analysis
+        analysis_path (str): (**Optional**) Path to the root analysis
             directory.  Default is to use :func:`default_analysis_path`
 
     Returns:
@@ -334,14 +334,14 @@ def default_dap_par_file(plate, ifudesign, mode, drpver=None, dapver=None, analy
         plate (int): Plate number
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
-        drpver (str): (Optional) DRP version.  Default is to use
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
-        dapver (str): (Optional) DAP version.  Default is to use
+        dapver (str): (**Optional**) DAP version.  Default is to use
             :func:`default_dap_version`.
-        analysis_path (str): (Optional) Path to the root analysis
+        analysis_path (str): (**Optional**) Path to the root analysis
             directory.  Default is to use :func:`default_analysis_path`
-        directory_path (str): (Optional) Path to the directory with the
-            DAP output files.  Default is to use
+        directory_path (str): (**Optional**) Path to the directory with
+            the DAP output files.  Default is to use
             :func:`default_dap_reference_path`
 
     Returns:
@@ -363,14 +363,14 @@ def default_dap_plan_file(output_mode, drpver=None, dapver=None, analysis_path=N
 
     Args:
         output_mode (str): Mode of the DAP output; see AnalysisPlan
-        drpver (str): (Optional) DRP version.  Default is to use
+        drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
-        dapver (str): (Optional) DAP version.  Default is to use
+        dapver (str): (**Optional**) DAP version.  Default is to use
             :func:`default_dap_version`.
-        analysis_path (str): (Optional) Path to the root analysis
+        analysis_path (str): (**Optional**) Path to the root analysis
             directory.  Default is to use :func:`default_analysis_path`
-        directory_path (str): (Optional) Path to the directory with the
-            DAP output files.  Default is to use
+        directory_path (str): (**Optional**) Path to the directory with
+            the DAP output files.  Default is to use
             :func:`default_dap_reference_path`
 
     Returns:

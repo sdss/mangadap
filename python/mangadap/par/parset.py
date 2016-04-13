@@ -34,12 +34,16 @@ Define a utility base class used to hold parameters.
     - Allow for a from_par_file classmethod to initialize the parameter
       set based on a yanny parameter file.
     - Save the defaults and allow for a revert_to_default function.
+    - Write an __add__ function that will all you to add multiple
+      parameter sets.
 
 *Revision history*:
     | **16 Jun 2015**: Original implementation by K. Westfall (KBW)
     | **18 Mar 2016**: (KBW) Change dtype checking
     | **23 Mar 2016**: (KBW) Changed initialization type checking of
         lists to use `isinstance`_.
+    | **02 Apr 2016**: (KBW) Allow input parameters to be callable
+        functions.
 
 .. _isinstance: https://docs.python.org/2/library/functions.html#isinstance
 
@@ -66,20 +70,22 @@ class ParSet:
 
     Args:
         pars (list) : A list of keywords for a list of parameter values
-        values (list) : (Optional) Initialize the parameters to these
-            values.  If not provided, all parameters are initialized to
-            `None` or the provided default.
-        defaults (list) : (Optional) For any parameters not provided in
-            the *values* list, use these default values.  If not
+        values (list) : (**Optional**) Initialize the parameters to
+            these values.  If not provided, all parameters are
+            initialized to `None` or the provided default.
+        defaults (list) : (**Optional**) For any parameters not provided
+            in the *values* list, use these default values.  If not
             provided, no defaults are assumed.
-        options (list) : (Optional) Force the parameters to be one of a
-            list of options.  Each element in the list can be a list
-            itself.  If not provided, all parameters are allowed to take
-            on any value within the allowed data type.
-        dtypes (list) : (Optional) Force the parameter to be one of a
-            list of data types.  Each element in the list can be a list
-            itself.  If not provided, all parameters are allowed to have
-            any data type.
+        options (list) : (**Optional**) Force the parameters to be one
+            of a list of options.  Each element in the list can be a
+            list itself.  If not provided, all parameters are allowed to
+            take on any value within the allowed data type.
+        dtypes (list) : (**Optional**) Force the parameter to be one of
+            a list of data types.  Each element in the list can be a
+            list itself.  If not provided, all parameters are allowed to
+            have any data type.
+        can_call (list) : (**Optional**) Flag that the parameters are
+            callable operations.  Default is False.
 
     Raises:
         TypeError: Raised if the input parameters are not lists or if
@@ -94,9 +100,10 @@ class ParSet:
             parameter values
         dtype (dict) : Dictionary with the allowed data types for the
             parameters
+        can_call (dict): Dictionary with the callable flags
 
     """
-    def __init__(self, pars, values=None, defaults=None, options=None, dtypes=None):
+    def __init__(self, pars, values=None, defaults=None, options=None, dtypes=None, can_call=None):
         # Check that the list of input parameters is a list of strings
         if not isinstance(pars, list):
             raise TypeError('Input parameter keys must be provided as a list.')
@@ -113,13 +120,15 @@ class ParSet:
         # Check that the other lists, if provided, have the correct type
         # and length
         if values is not None and (not isinstance(values, list) or len(values) != self.npar):
-            raise ValueError('Values must be a list with the same length as the number of keys.')
+            raise ValueError('Values must be a list with the same length as the keys list.')
         if defaults is not None and (not isinstance(defaults, list) or len(defaults) != self.npar):
-            raise ValueError('Defaults must be a list with the same length as the number of keys.')
+            raise ValueError('Defaults must be a list with the same length as the keys list.')
         if options is not None and (not isinstance(options, list) or len(options) != self.npar):
-            raise ValueError('Options must be a list with the same length as the number of keys.')
+            raise ValueError('Options must be a list with the same length as the keys list.')
         if dtypes is not None and (not isinstance(dtypes, list) or len(dtypes) != self.npar):
-            raise ValueError('Data types list must have the same length as the number of keys.')
+            raise ValueError('Data types list must have the same length as the keys list.')
+        if can_call is not None and (not isinstance(can_call, list) or len(can_call) != self.npar):
+            raise ValueError('List of callable flags must have the same length as keys list.')
 
         # Set up dummy lists for no input
         if values is None:
@@ -130,6 +139,8 @@ class ParSet:
             options = [None]*self.npar
         if dtypes is None:
             dtypes = [None]*self.npar
+        if can_call is None:
+            can_call = [False]*self.npar
 
         # Set the valid options
         self.options = dict([ (p, [o]) if o is not None and not isinstance(o, list) else (p, o) \
@@ -137,6 +148,9 @@ class ParSet:
         # Set the valid types
         self.dtype = dict([ (p, [t]) if t is not None and not isinstance(t, list) else (p, t) \
                                      for p, t in zip(pars, dtypes) ])
+
+        # Set the calling flags
+        self.can_call = dict([ (p, t) for p, t in zip(pars, can_call) ])
 
         # Set the data dictionary using the internal functions
         self.data = {}
@@ -170,7 +184,9 @@ class ParSet:
             ValueError: Raised if the parameter value is not among the
                 allowed options (:attr:`options`).
             TypeError: Raised if the parameter value does not have an
-                allowed data type (:attr:`dtype`)
+                allowed data type (:attr:`dtype`) or if the provided
+                value is not a callable object, but is expected to be by
+                :attr:`can_call`.
         """
         if value is None:
             self.data[key] = value
@@ -183,6 +199,10 @@ class ParSet:
                 and not any([ isinstance(value, d) for d in self.dtype[key]]):
             raise TypeError('Input value incorrect type: {0}.\nOptions are: {1}'.format(value,
                                                                                 self.dtype[key]))
+
+        if self.can_call[key] and not callable(value):
+            raise TypeError('{0} is not a callable object.'.format(value))
+
         self.data[key] = value
 
 
@@ -200,11 +220,11 @@ class ParSet:
         """Return a crude string represenation of the parameters."""
         out = ''
         for k in self.data.keys():
-            out += '{0}: {1}\n'.format(k, self.data[k])
+            out += '{0:>10}: {1}\n'.format(k, self.data[k])
         return out
 
     
-    def add(self, key, value, options=None, dtype=None):
+    def add(self, key, value, options=None, dtype=None, can_call=None):
         """
         Add a new parameter.
 
@@ -212,15 +232,28 @@ class ParSet:
             key (str) : Key for new parameter
             value (*dtype*) : Parameter value, must have a type in the
                 list provided (*dtype*), if the list is provided
-            options (list) : (Optional) List of discrete values that the
-                parameter is allowed to have
-            dtype (list) : (Optional) List of allowed data types that
-                the parameter can have
+            options (list) : (**Optional**) List of discrete values that
+                the parameter is allowed to have
+            dtype (list) : (**Optional**) List of allowed data types
+                that the parameter can have
+            can_call (bool) : (**Optional**) Flag that the parameters
+                are callable operations.  Default is False.
         """
+        if key in self.data.keys():
+            raise ValueError('Keyword {0} already exists and cannot be added!')
         self.npar += 1
         self.options[key] = [options] if options is not None and not isinstance(options, list) \
                                       else options
         self.dtype[key] = [dtype] if dtype is not None and not isinstance(dtype, list) else dtype
-        self.__setitem__(key, value)
+        self.can_call[key] = False if can_call is None else can_call
+        try:
+            self.__setitem__(key, value)
+        except:
+            # Delete the added components
+            del self.options[key]
+            del self.dtype[key]
+            del self.can_call[key]
+            # Re-raise the exception
+            raise
 
 

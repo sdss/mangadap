@@ -40,17 +40,8 @@ if sys.version > '3':
 
 __author__ = 'Kyle B. Westfall'
 
-def drp_wave_sampling_options():
-    return [ 'LIN', 'LOG' ]
-
-def drp_3dmode_options():
-    return [ 'CUBE', 'RSS' ]
-
-#def covariance_options():
-#    return [ 'approx_center', 'center' ]
-
 def binning_options():
-    return [ 'NONE', 'SNR', 'RADIAL', 'ALL' ]
+    return [ 'none', 'voronoi', 'radial', 'global' ]
 
 def bin_weighting_options():
     return [ 'Uniform', 'Optimal' ]

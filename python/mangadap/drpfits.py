@@ -92,6 +92,7 @@ the MaNGA Data Reduction Pipeline (DRP).
     - Change warnings.warn to logger warnings
     - Image reconstruction has transpose sense wrt DRP output!
 
+.. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
 .. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
@@ -116,6 +117,12 @@ import warnings
 from scipy import sparse
 from astropy.io import fits
 from astropy.wcs import WCS
+
+try:
+    from shapely.ops import cascaded_union
+    from shapely.geometry import Point
+except ImportError:
+    warnings.warn('Could not import shapely!')
 
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
@@ -146,16 +153,16 @@ def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
         platelist (str or list): List of plates to use.
         ifudesignlist (str or list): List of IFU designs to use.
         modelist (str or list): List of DRP output modes ('CUBE' or 'RSS')
-        combinatorics (bool): (Optional) Based on the input *platelist*
-            and *ifudesignlist*, create a list with all possible
-            combinations.
-        drpver (str): (Optional) The DRP version, which **must** be a single
-            string value used for all DRP files.
-        redux_path (str): (Optional) The path to the top level directory
-            containing the DRP output files; this is the same as the
-            *redux_path* in the :class:`DRPFits` class.
-        directory_path (str): (Optional) The exact path to the DRP file.
-            Default is defined by
+        combinatorics (bool): (**Optional**) Based on the input
+            *platelist* and *ifudesignlist*, create a list with all
+            possible combinations.
+        drpver (str): (**Optional**) The DRP version, which **must** be
+            a single string value used for all DRP files.
+        redux_path (str): (**Optional**) The path to the top level
+            directory containing the DRP output files; this is the same
+            as the *redux_path* in the :class:`DRPFits` class.
+        directory_path (str): (**Optional**) The exact path to the DRP
+            file.  Default is defined by
             :func:`mangadap.config.defaults.default_drp_directory_path`.
 
     Returns:
@@ -241,18 +248,12 @@ class DRPFitsBitMask(BitMask):
     r"""
     Structure with the DRP mask bits.
     """
-    def __init__(self, sdss_maskbits=None):
+    def __init__(self, sdss_maskbits=None, mode='CUBE'):
+        DRPFits._check_mode(mode)
         sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
                         if sdss_maskbits is None else sdss_maskbits
-        t = BitMask.from_par_file(sdss_maskbits, 'MANGA_DRP3PIXMASK')
-        keys = t.keys()
-        descr, vals = [], []
-        for i,k in enumerate(keys):
-            descr += [ t.descr[t.bits[k]] ]
-            vals += [ t.bits[k] ]
-        keys, vals, descr = self._fill_sequence(keys, vals, descr)
-        srt = numpy.argsort(vals)
-        BitMask.__init__(self, keys[srt], descr=descr[srt])
+        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
+                                                        if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
 
 
 class DRPFits:
@@ -264,19 +265,19 @@ class DRPFits:
         ifudesign (int): IFU design
         mode (str): 3D mode of the DRP file; must be either 'RSS' or
             'CUBE'
-        drpver (str): (Optional) DRP version, which is used to define
-            the default DRP redux path.  Default is defined by
+        drpver (str): (**Optional**) DRP version, which is used to
+            define the default DRP redux path.  Default is defined by
             :func:`mangadap.config.defaults.default_drp_version`
-        redux_path (str): (Optional) The path to the top level directory
-            containing the DRP output files for a given DRP version.
-            Default is defined by
+        redux_path (str): (**Optional**) The path to the top level
+            directory containing the DRP output files for a given DRP
+            version.  Default is defined by
             :func:`mangadap.config.defaults.default_redux_path`.
-        directory_path (str): (Optional) The exact path to the DRP file.
-            Default is defined by
+        directory_path (str): (**Optional**) The exact path to the DRP
+            file.  Default is defined by
             :func:`mangadap.config.defaults.default_drp_directory_path`.
-        read (bool) : (Optional) Read the DRP file upon instantiation of
-            the object.
-        checksum (bool): (Optional) Check for file corruption.
+        read (bool) : (**Optional**) Read the DRP file upon
+            instantiation of the object.
+        checksum (bool): (**Optional**) Check for file corruption.
 
     Raises:
         ValueError: Raised if *mode* is not 'RSS' or 'CUBE'.
@@ -384,18 +385,27 @@ class DRPFits:
                 
                 self.nspec = numpy.prod(self.spatial_shape)
         
-        spatial_index (numpy.ndarray) : Array with tuples of the
-            original coordinates of each spectrum in the original DRP
-            file.  See: :func:`select`.
+        spatial_index (numpy.ndarray) : Array with tuples used to select
+            spectra at specific locations within the data array.  This
+            is mainly useful in ``CUBE`` mode, where this provides the
+            indices in the spatial coordinates.  The order is
+            :math:`(x,y)`; i.e. this is *different* that what you get if
+            you read the DRP CUBE fits file directly using
+            `astropy.io.fits`_.  In ``RSS`` mode, this is just the index
+            of the spectrum in the 2D array.  See: :func:`select`.
         data_arrays (list) : List of viable keywords for the data arrays
             in the DRP file.  For CUBE files, these are 'FLUX', 'IVAR',
             and 'MASK'; for RSS files, this also includes 'DISP',
             'XPOS', and 'YPOS'.
-        dispaxis (int) : The axis with the spectral channels.  The internal
-            data structure always has :attr:`dispaxis` as the *last*
-            axis in the array.  So :attr:`dispaxis` is 2 for CUBE files
-            and 1 for RSS files.  This means that the internal data
-            array restructures the input fits data for the CUBE files.
+        dispaxis (int) : Index of the axis with the spectral channels.
+            The internal data structure always has :attr:`dispaxis` as
+            the *last* axis in the array.  So :attr:`dispaxis` is 2 for
+            CUBE files and 1 for RSS files.  This means that the
+            internal data array restructures the input fits data for the
+            CUBE files.
+        nwave (int): The number of wavelength channels; this is just::
+
+                self.nwave = self.shape[self.dispaxis]
 
     """
     def __init__(self, plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
@@ -404,10 +414,8 @@ class DRPFits:
         # Set the attributes, forcing a known type
         self.plate = long(plate)
         self.ifudesign = long(ifudesign)
-        self.mode = str(mode)
-
-        if mode not in [ 'CUBE', 'RSS']:
-            raise ValueError('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
+        self._check_mode(mode)
+        self.mode = mode
 
         # Setup the directory path.
         if directory_path is None:
@@ -446,7 +454,7 @@ class DRPFits:
 
         # Try to define the BitMask object
         try:
-            self.bitmask = DRPFitsBitMask()
+            self.bitmask = DRPFitsBitMask(mode=self.mode)
         except:
             warnings.warn('Unable to define bit mask for DRP file.  Can only distinguish between'
                           'masked (values greater than 0) and unmasked (values of 0)')
@@ -465,11 +473,12 @@ class DRPFits:
         if self.mode == 'RSS':
             self.data_arrays += [ 'DISP', 'XPOS', 'YPOS' ]
         self.dispaxis = 2 if self.mode == 'CUBE' else 1
+        self.nwave = None
 
         # Read the file, if requested
         if read:
             self.open_hdu(checksum=self.checksum)
-        
+
 
     def __del__(self):
         """
@@ -493,6 +502,20 @@ class DRPFits:
         return self.hdu[key]
 
 
+    @staticmethod
+    def _check_mode(mode):
+        """
+        Check that the mode is valid.
+
+        Args:
+
+            mode (str): Mode value to check.  Valid modes are `CUBE` and
+            `RSS`.
+        """
+        if mode not in [ 'CUBE', 'RSS']:
+            raise ValueError('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
+        
+
     def _cube_dimensions_undefined(self):
         """Return True if any of the cube dimensions are None."""
         if self.xs is None:
@@ -513,7 +536,7 @@ class DRPFits:
 
         Args:
             pixelscale (float): Desired pixel scale in arcsec
-            recenter (bool): Flag to recenter the cooridinate system
+            recenter (bool): Flag to recenter the coordinate system
             width_buffer (int): Number of pixels to use as buffer for
                 the image reconstruction
 
@@ -594,7 +617,7 @@ class DRPFits:
 
         Args:
             pixelscale (float): Desired pixel scale in arcsec
-            recenter (bool): Flag to recenter the cooridinate system
+            recenter (bool): Flag to recenter the coordinate system
             width_buffer (int): Number of pixels to use as buffer for
                 the image reconstruction
             rlim (float): The limiting radius of the image
@@ -631,7 +654,7 @@ class DRPFits:
 
         Args:
             pixelscale (float): Desired pixel scale in arcsec
-            recenter (bool): Flag to recenter the cooridinate system
+            recenter (bool): Flag to recenter the coordinate system
             width_buffer (int): Number of pixels to use as buffer for
                 the image reconstruction
             rlim (float): The limiting radius of the image
@@ -708,12 +731,14 @@ class DRPFits:
         See: :attr:`pixelscale`, :attr:`recenter`, :attr:`width_buffer`.
 
         Args:
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate system
-            width_buffer (int): (Optional) Number of pixels to use as buffer for
-                the image reconstruction
-            redo (bool): (Optional) Force the recalculation of the cube
-                dimensions if they are already defined.
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            redo (bool): (**Optional**) Force the recalculation of the
+                cube dimensions if they are already defined.
         """
 
         # Make sure that the fits file is ready for reading
@@ -814,17 +839,18 @@ class DRPFits:
             sigma_rho (float): The sigma of the Gaussian function used
                 to approximate the trend of the correlation coefficient
                 with pixel separation.
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            redo (bool): (Optional) Force the recalculation of the cube
-                dimensions if they are already defined.
+            redo (bool): (**Optional**) Force the recalculation of the
+                cube dimensions if they are already defined.
         """
         # Set the default values for the input
         pixelscale, recenter, width_buffer, rlim, sigma = \
@@ -933,7 +959,30 @@ class DRPFits:
         # Set the coordinates to tuples in the ORIGINAL DRP fits file
         # (i.e., the DRP provides [lambda, y, x] whereas this class
         # transposes this order)
-        self.spatial_index[:] = [ (jj,ii) for ii, jj in zip(i,j) ]
+        self.spatial_index[:] = [ (ii,jj) for ii, jj in zip(i,j) ]
+
+
+    @staticmethod
+    def mode_options():
+        """
+        Return the allowed modes.
+
+        Returns:
+            list: List of the allowed DRP fits file modes.
+        """
+        return [ 'CUBE', 'RSS' ]
+
+
+    @staticmethod
+    def sampling_options():
+        """
+        Return the allowed wavelength sampling modes.
+
+        Returns:
+            list: List of the allowed DRP fits wavelength sampling
+            modes.
+        """
+        return [ 'LIN', 'LOG' ]
 
 
     def file_name(self):
@@ -967,7 +1016,7 @@ class DRPFits:
         data has already been read and returns to the calling process.
         
         Args:
-            checksum (bool): (Optional) Check for file corruption.
+            checksum (bool): (**Optional**) Check for file corruption.
 
         Raises:
             FileNotFoundError: Raised if the DRP file does not exist.
@@ -990,6 +1039,7 @@ class DRPFits:
         self.shape = self.hdu['FLUX'].data.shape
         self.spatial_shape = self.shape[:self.dispaxis] + self.shape[self.dispaxis+1:]
         self.nspec = numpy.prod(self.spatial_shape)
+        self.nwave = self.shape[self.dispaxis]
         self._generate_spatial_index()
 
 
@@ -999,7 +1049,7 @@ class DRPFits:
         print(self.hdu.info())
 
 
-    def select(self, t, ext='FLUX'):
+    def select(self, t, ext='FLUX', order='xy'):
         r"""
         Select a specific vector from the fits data arrays.  The spatial
         position within the original file accessed by index ``i`` is
@@ -1013,25 +1063,26 @@ class DRPFits:
             drpf = DRPFits(7495, 1901, 'CUBE', read=True)
             hdu = fits.open(drpf.file_path())
 
-            flux_direct = hdu['FLUX'].data[:,15,16]
-            flux_class = drpf.select( (15,16) )
-
             # should be no difference
+            flux_direct = hdu['FLUX'].data[:,15,16]
+            flux_class = drpf.select( (15,16), order='yx' )
             assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
+            # Or to use more natural x y order
+            flux_class = drpf.select( (16,15) )
+            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+                'Selection error!'
+
+            # Or select the spectrum based on its index
             for i,t in enumerate(drpf.spatial_index):
                 if t == (15,16):
-                    t = i
                     break
-
-            flux_class = drpf.select( t )
-
-            # should be no difference
+            flux_class = drpf.select(i)
             assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
-            # OR
+            # Or use index and the provided spatial_index tuple
             i = 550
             t = drpf.spatial_index[i]
             flux_direct = hdu['FLUX'].data[:,t[0],t[1]]
@@ -1048,8 +1099,8 @@ class DRPFits:
                 index of the spectrum to return.  If a tuple, this is
                 the position *within the original DRP file* for the
                 non-spectral axes.  See the examples above.
-            ext (str) : (Optional) Name of the extension from which to
-                draw the data.  Must be allowed for the current
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 ``'FLUX'``.
 
@@ -1061,32 +1112,35 @@ class DRPFits:
             KeyError : Raised if the selected extension cannot be used.
             ValueError : Raised if the input selection object is not an
                 int or a tuple.
+
+        .. todo::
+            Add select_near function that uses on-sky coordinates.
+
         """
         if ext not in self.data_arrays:
             raise KeyError('Cannot access {0} extension.'.format(ext))
         if isinstance(t, tuple):
             n = (self.shape[self.dispaxis-1],1) if self.mode == 'CUBE' else \
                     (self.shape[self.dispaxis-1],)
-            _t = numpy.dot(t[::-1],n)            # Needs to be reversed to match DRP output
+            _t = numpy.dot(t[::-1],n) if order == 'yx' else numpy.dot(t,n)
         elif isinstance(t, int):
             _t = t
         else:
             raise ValueError('Input must be int or tuple.')
-        return self.hdu[ext].data.reshape(-1,self.shape[self.dispaxis])[_t,:]
-
+        return self.hdu[ext].data.reshape(-1,self.nwave)[_t,:]
+        
 
     def wavelength_mask(self, waverange=None, array=False):
         r"""
-        Return a mask boolean array with flag for pixels that do not
+        Return a mask boolean array with flag for pixels that
         fall within the selected wavelength range.  If no wavelength
         range is provided, the function just returns a fully False array
         with the correct shape.
 
         Args:
-            waverange (array-like) : (Optional) A two-element array with
-                the minimum and maximum wavelength to include.
-
-            array (bool) : (Optional) Return an array with a shape
+            waverange (array-like) : (**Optional**) A two-element array
+                with the minimum and maximum wavelength to include.
+            array (bool) : (**Optional**) Return an array with a shape
                 :math:`N_{\rm spec} \times N_{\rm pix}` to match the
                 shape of the output of :func:`copy_to_array`.  Default
                 is to provide only the single vector.
@@ -1103,7 +1157,8 @@ class DRPFits:
             return numpy.full(outshape, False, dtype=numpy.bool)
         if len(waverange) != 2:
             raise ValueError('Input wavelength range must have 2 and only 2 elements!')
-        selected = (self.hdu['WAVE'].data > waverange[0]) & (self.hdu['WAVE'].data < waverange[1])
+        _waverange = waverange if waverange[0] < waverange[1] else [waverange[1], waverange[0]]
+        selected = (self.hdu['WAVE'].data < _waverange[0]) | (self.hdu['WAVE'].data > _waverange[1])
         return numpy.array([selected]*self.nspec).reshape(self.nspec,-1) if array else selected
 
 
@@ -1117,14 +1172,15 @@ class DRPFits:
         :attr:`spatial_index`.
 
         Args:
-            waverange (array-like) : (Optional) Two-element array with
-                the first and last wavelength to include in the
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
-            ext (str) : (Optional) Name of the extension from which to
-                draw the data.  Must be allowed for the current
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 ``'FLUX'``.
+
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
@@ -1135,9 +1191,9 @@ class DRPFits:
         if ext not in self.data_arrays:
             raise KeyError('Cannot access {0} extension.'.format(ext))
         if waverange is None:
-            return self.hdu[ext].data.reshape(-1,self.shape[self.dispaxis]).copy()
+            return self.hdu[ext].data.reshape(-1,self.nwave).copy()
         indx = numpy.invert(self.wavelength_mask(waverange=waverange, array=True))
-        return self.hdu[ext].data.reshape(-1,self.shape[self.dispaxis]).copy()[indx]
+        return self.hdu[ext].data.reshape(-1,self.nwave).copy()[indx]
 
 
     def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
@@ -1150,25 +1206,23 @@ class DRPFits:
         the `flag` option.
         
         Args:
-            waverange (array-like) : (Optional) Two-element array with
-                the first and last wavelength to include in the
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
-
-            ext (str) : (Optional) Name of the extension from which to
-                draw the data.  Must be allowed for the current
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 `'FLUX'`.
-
-            mask_ext (str) : (Optional) Name of the extension with the
-                mask bit data.  Must be allowed for the current
+            mask_ext (str) : (**Optional**) Name of the extension with
+                the mask bit data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 `'MASK'`.
-
-            flag (str or list): (Optional) (List of) Flag names that
+            flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
                 masked.  The names *must* be a valid bit name as defined
-                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).
+                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
+                not provided, *ANY* non-zero mask bit is omitted.
 
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
@@ -1183,17 +1237,16 @@ class DRPFits:
         if mask_ext not in self.data_arrays:
             raise KeyError('Cannot access {0} extension.'.format(mask_ext))
         # Determine which pixels should be masked
-        mask = self.hdu[mask_ext].data.reshape(-1,self.shape[self.dispaxis]) > 0 \
+        mask = self.hdu[mask_ext].data.reshape(-1,self.nwave) > 0 \
                     if flag is None or self.bitmask is None else \
                         self.bitmask.flagged(
-                            self.hdu[mask_ext].data.reshape(-1,self.shape[self.dispaxis]),
+                            self.hdu[mask_ext].data.reshape(-1,self.nwave),
                             flag=flag)
         # Add the wavelength range mask
         if waverange is not None:
             mask |= self.wavelength_mask(waverange=waverange, array=True)
         # Return the masked array
-        return numpy.ma.MaskedArray(self.hdu[ext].data.reshape(-1,self.shape[self.dispaxis]).copy(),
-                                    mask=mask)
+        return numpy.ma.MaskedArray(self.hdu[ext].data.reshape(-1,self.nwave).copy(), mask=mask)
 
 
     def object_data(self):
@@ -1273,12 +1326,14 @@ class DRPFits:
         See: :attr:`pixelscale`, :attr:`recenter`, :attr:`width_buffer`.
 
         Args:
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate system
-            width_buffer (int): (Optional) Number of pixels to use as buffer for
-                the image reconstruction
-            extent (bool): (Optional) Return a grid of the pixel *edges*
-                instead of the coordinates of the pixel centers.
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            extent (bool): (**Optional**) Return a grid of the pixel
+                *edges* instead of the coordinates of the pixel centers.
 
         Returns:
             numpy.ndarray: Two arrays with the pixel indices;
@@ -1320,10 +1375,12 @@ class DRPFits:
         See: :attr:`pixelscale`, :attr:`recenter`, :attr:`width_buffer`.
 
         Args:
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate system
-            width_buffer (int): (Optional) Number of pixels to use as buffer for
-                the image reconstruction
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
         
         Returns:
             numpy.ndarray: Two arrays with, respectively, the lower and
@@ -1440,13 +1497,13 @@ class DRPFits:
         if self.mode == 'RSS':
             # x and y are at the edges of the pixel
             x, y = self.pix_mesh_range()
-            print(x, y)
+#            print(x, y)
             # x0 is the front edge of the first pixel if not skyright an
             # the back edge of the last pixel if skyright
             x0 = self.xs+self.nx*self.pixelscale if skyright else self.xs
             dx = -self.pixelscale if skyright else self.pixelscale
-            print(x0, dx)
-            print((x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys)
+#            print(x0, dx)
+#            print((x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys)
             return (x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys
 
         if self.wcs is None:
@@ -1544,16 +1601,17 @@ class DRPFits:
         Args:
             channel (int): Index of the spectral channel for which
                 to calculate the transfer matrix.
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             `scipy.sparse.csr_matrix`_ : Transfer matrix :math:`{\mathbf
@@ -1712,16 +1770,17 @@ class DRPFits:
         Args:
             channel (int): Index of the spectral channel for which
                 to calculate the transfer matrix.
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             numpy.ndarray: The reconstructed image for the specified
@@ -1787,14 +1846,14 @@ class DRPFits:
             channel (int): Index of the spectral channel for which to
                 calculate the transfer matrix.
             pixelscale (float): Desired pixel scale in arcsec
-            recenter (bool): Flag to recenter the cooridinate system
+            recenter (bool): Flag to recenter the coordinate system
             width_buffer (int): Number of pixels to use as buffer for
                 the image reconstruction
             rlim (float): The limiting radius of the image
                 reconstruction kernel in arcseconds.
             sigma (float): The sigma of the image reconstruction kernel
                 in arcseconds.
-            csr (bool): (Optional) Instead of reaturning a
+            csr (bool): (**Optional**) Instead of reaturning a
                 :class:`mangadap.util.covariance.Covariance` object,
                 return the covariance matrix as a
                 `scipy.sparse.csr_matrix`_ object.  Primarily used by
@@ -1802,7 +1861,7 @@ class DRPFits:
                 matrix of each wavelength channel before combining them
                 into a single
                 :class:`mangadap.util.covariance.Covariance` object
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             :class:`mangadap.util.covariance.Covariance` or
@@ -1880,7 +1939,7 @@ class DRPFits:
             channel (int): Index of the spectral channel for which to
                 calculate the transfer matrix.
             pixelscale (float): Desired pixel scale in arcsec
-            recenter (bool): Flag to recenter the cooridinate system
+            recenter (bool): Flag to recenter the coordinate system
             width_buffer (int): Number of pixels to use as buffer for
                 the image reconstruction
             rlim (float): The limiting radius of the image
@@ -1890,7 +1949,7 @@ class DRPFits:
             sigma_rho (float): The sigma of the Gaussian function used
                 to approximate the trend of the correlation coefficient
                 with pixel separation.
-            csr (bool): (Optional) Instead of reaturning a
+            csr (bool): (**Optional**) Instead of reaturning a
                 :class:`mangadap.util.covariance.Covariance` object,
                 return the covariance matrix as a
                 `scipy.sparse.csr_matrix`_ object.  Primarily used by
@@ -1898,7 +1957,7 @@ class DRPFits:
                 matrix of each wavelength channel before combining them
                 into a single
                 :class:`mangadap.util.covariance.Covariance` object
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             :class:`mangadap.util.covariance.Covariance` or
@@ -2065,26 +2124,28 @@ class DRPFits:
         Args:
             channel (int): Index of the spectral channel for which
                 to calculate the transfer matrix.
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            sigma_rho (float): (Optional) The sigma of the Gaussian
+            sigma_rho (float): (**Optional**) The sigma of the Gaussian
                 function used to approximate the trend of the
                 correlation coefficient with pixel separation.
-            csr (bool): (Optional) Instead of reaturning a
-                :class:`mangadap.util.covariance.Covariance` object, return the
-                covariance matrix as a `scipy.sparse.csr_matrix`_
-                object.  Primarily used by :func:`covariance_cube` for
-                collating the covariance matrix of each wavelength
-                channel before combining them into a single
+            csr (bool): (**Optional**) Instead of reaturning a
+                :class:`mangadap.util.covariance.Covariance` object,
+                return the covariance matrix as a
+                `scipy.sparse.csr_matrix`_ object.  Primarily used by
+                :func:`covariance_cube` for collating the covariance
+                matrix of each wavelength channel before combining them
+                into a single
                 :class:`mangadap.util.covariance.Covariance` object
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             :class:`mangadap.util.covariance.Covariance` or
@@ -2095,6 +2156,10 @@ class DRPFits:
         Raises:
             ValueError: Raised for 'CUBE' files when the input
                 parameters are not the same as the defaults.
+
+        .. todo::
+            Need to make sure that the correct masks are being used for
+            the RSS files.  Should be 3DREJECT but nothing else?
         
         """
 
@@ -2116,19 +2181,20 @@ class DRPFits:
         :func:`covariance_matrix`.
         
         Args:
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            sigma_rho (float): (Optional) The sigma of the Gaussian
+            sigma_rho (float): (**Optional**) The sigma of the Gaussian
                 function used to approximate the trend of the
                 correlation coefficient with pixel separation.
-            csr (bool): (Optional) Instead of reaturning a
+            csr (bool): (**Optional**) Instead of reaturning a
                 :class:`mangadap.util.covariance.Covariance` object,
                 return a numpy.ndarray of the covariance matrices for
                 each channel, which are `scipy.sparse.csr_matrix`_
@@ -2136,7 +2202,7 @@ class DRPFits:
                 collating the covariance matrix of each wavelength
                 channel before combining them into a single
                 :class:`mangadap.util.covariance.Covariance` object
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             :class:`mangadap.util.covariance.Covariance` or
@@ -2172,17 +2238,16 @@ class DRPFits:
         self.open_hdu(checksum=self.checksum)
 
         if channels is None:
-            nc = self.shape[self.dispaxis]      # The number of wavelength channels
-            channels = numpy.arange(0,nc)
+            channels = numpy.arange(self.nwave)     # The number of wavelength channels
         else:
             if not isinstance(channels, list) and not isinstance(channels, numpy.ndarray):
                 channels = [channels]
             channels = numpy.array(channels)
-            nc = len(channels)
 
+        nc = len(channels)
         CovCube = numpy.empty(nc, dtype=sparse.csr.csr_matrix)   # Empty ndarray
 
-        for i in range(0,nc):
+        for i in range(nc):
             CovCube[i] = self.covariance_matrix(channels[i], pixelscale, recenter, width_buffer,
                                                 rlim, sigma, sigma_rho, csr=True, quiet=True)
             if not quiet:
@@ -2261,19 +2326,20 @@ class DRPFits:
         Args:
             channel (int): Index of the spectral channel for which to
                 calculate the transfer matrix.
-            dispersion_factor (float): (Optional) Artificially multiply
-                the dispersion measurements by this factor before
-                calculating the reconstructed dispersion.
-            pixelscale (float): (Optional) Desired pixel scale in arcsec
-            recenter (bool): (Optional) Flag to recenter the cooridinate
-                system
-            width_buffer (int): (Optional) Number of pixels to use as
-                buffer for the image reconstruction
-            rlim (float): (Optional) The limiting radius of the image
+            dispersion_factor (float): (**Optional**) Artificially
+                multiply the dispersion measurements by this factor
+                before calculating the reconstructed dispersion.
+            pixelscale (float): (**Optional**) Desired pixel scale in
+                arcsec
+            recenter (bool): (**Optional**) Flag to recenter the
+                coordinate system
+            width_buffer (int): (**Optional**) Number of pixels to use
+                as buffer for the image reconstruction
+            rlim (float): (**Optional**) The limiting radius of the
+                image reconstruction kernel in arcseconds.
+            sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
-            sigma (float): (Optional) The sigma of the image
-                reconstruction kernel in arcseconds.
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             numpy.ndarray: The reconstructed image for the specified
@@ -2345,18 +2411,18 @@ class DRPFits:
             in low-flux regimes.
 
         Args:
-            waverange (array-like) : (Optional) Two-element array with
-                the first and last wavelength to include in the
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
             offset (bool) : Offset the coordinates to the object
                 coordinates.
-            flag (str or list): (Optional) (List of) Flag names that
+            flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
                 masked.  The names *must* be a valid bit name as defined
                 by :attr:`bitmask` (see :class:`DRPFitsBitMask`).
-            fluxwgt (bool) : (Optional) Flag to weight by the flux when
-                determining the mean coordinates for the RSS spectra.
+            fluxwgt (bool) : (**Optional**) Flag to weight by the flux
+                when determining the mean coordinates for the RSS spectra.
 
         Returns:
             numpy.ndarray : A 1D array with the coordinates of each
@@ -2374,9 +2440,9 @@ class DRPFits:
             y = (y-self.hdu[0].header['OBJDEC'])
             return x.ravel()*3600., y.ravel()*3600.
 
-        xoff, yoff = self.pointing_offset()
         # The negative here is because the XPOS extension has negative
         # offsets going toward increasing RA.
+        xoff, yoff = self.pointing_offset() if offset else 0.0, 0.0
         xpos = xoff - self.copy_to_masked_array(ext='XPOS', flag=flag)
         ypos = yoff + self.copy_to_masked_array(ext='YPOS', flag=flag)
         if fluxwgt:
@@ -2400,7 +2466,6 @@ class DRPFits:
 
 
     def flux_stats(self, waverange=None, covar=False, correlation=False):
-        print('entered')
         # Grab the masked arrays
         flux = self.copy_to_masked_array(waverange=waverange)
         ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange)
@@ -2427,6 +2492,46 @@ class DRPFits:
             C.to_correlation()
         return signal, variance, snr, C
 
+
+    def binned_on_sky_area(self, bin_indx, x=None, y=None):
+        """
+
+        Compute the on-sky area of a set of binned spectra.  For CUBE
+        files, this is just the number of spaxels in the bin times the
+        spaxel area (as given by :attr:`pixelscale`).
+
+        """
+        unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
+        indx = ~(unique_bins < 0)
+        nbin = bin_count[indx]
+        if self.mode == 'CUBE':
+            if self.pixelscale is None:
+                self.pixelscale = default_cube_pixelscale()
+            return (nbin*numpy.square(self.pixelscale)).astype(float)
+
+        # For RSS files, try to calculate the overlapping area of the
+        # fibers
+
+        # The fibers "beams" are all renormalized to have an area of pi
+        # arcsec^2, so it's "radius" 1 arcsec
+        try:
+            if x is None or y is None:
+                x, y = self.mean_sky_coordinates()
+            good_bins = unique_bins[indx]
+
+            area = numpy.empty(nbin.shape, dtype=numpy.float)
+            for i, b in enumerate(good_bins):
+                _x = x[bin_indx == b]
+                _y = y[bin_indx == b]
+
+                area[i] = cascaded_union([ Point(xx,yy).buffer(1.0,64) \
+                                                        for xx, yy in zip(_x,_y) ]).area
+            return area
+        except:
+            warnings.warn('Could not use \'shapely\' package to compute overlapping fiber area.' \
+                          'Return the total fiber area.')
+            return (nbin*numpy.pi).astype(float)
+        
 
 #   def white_light(self, mask_list=None):
 #       """

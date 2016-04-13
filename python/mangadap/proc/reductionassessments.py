@@ -60,6 +60,7 @@ once per DRP data file.
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
         from ..drpfits import DRPFits
+        from .util import _select_proc_method
 
 .. warning::
 
@@ -119,7 +120,6 @@ import astropy.constants
 import time
 import numpy
 
-#from .options import covariance_options
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
@@ -128,6 +128,7 @@ from ..util.idlutils import airtovac
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..drpfits import DRPFits
+from .util import _select_proc_method
 
 from matplotlib import pyplot
 
@@ -181,7 +182,7 @@ def available_reduction_assessments(dapsrc=None):
         Function is currently only valid for Python 3.2 or greater!
 
     Args:
-        dapsrc (str): (Optional) Root path to the DAP source
+        dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.
 
@@ -262,75 +263,53 @@ class ReductionAssessment:
     file needed for handling of the data by the DAP.  These assessments
     need only be done once per DRP data file.
 
-    The data accessed via :attr:`hdu` is:
-
-        `ARRAYC` : Array coordinates in the DRP file; see
-        :attr:`mangadap.drpfits.DRPFits.spatial_index`.  For RSS files,
-        this is a single integer; for CUBE files it is a vector two
-        integers.
-
-        `SKYX`, `SKYY` : On-sky X,Y.  For CUBE files, this is the
-        position of the spaxel.  For RSS files, this is the
-        flux-weighted mean over the wavelength range of the calculation.
-
-        `ELLR`, `ELLA` : Elliptical (semi-major axis) radius and azimuth
-        angle from N through East wrt the photometric position angle;
-        uses the NSA ellipticity parameters (read from?).
-
-        `FGOODPIX` : Fraction of good pixels in each spectrum.
-
-        `MINEQMAX` : Flag that min(flux) = max(flux) in the spectrum;
-        i.e., the spaxel has no data.
-
-        `SIGNAL`, `VARIANCE`, `CORREL` : Median signal, flux variance,
-        and variance correlation matrix over the define wavelength
-        region; the method decides whether or not the correlation matrix
-        is provided.
+    See :func:`compute` for the provided data.
 
     Args:
+
         method_key (str): Keyword selecting the assessment method to
             use.
-        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file
-            (object) to use for the assessments.
-        pa (float): (Optional) On-sky position angle of the major axis
-            used to calculate elliptical, semi-major-axis coordinates,
-            defined as the angle from North through East and denoted
-            :math:`\phi_0`.  Default is 0.0.
-        ell (float): (Optional) Ellipticity defined as
+        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) to
+            use for the assessments.
+        pa (float): (**Optional**) On-sky position angle of the major
+            axis used to calculate elliptical, semi-major-axis
+            coordinates, defined as the angle from North through East
+            and denoted :math:`\phi_0`.  Default is 0.0.
+        ell (float): (**Optional**) Ellipticity defined as
             :math:`\varepsilon=1-b/a`, based on the semi-minor to
             semi-major axis ratio (:math:`b/a`) of the isophotal ellipse
             used to calculate elliptical, semi-major-axis coordinates.
             Default is 0.0.
-        method_list (list): (Optional) List of
+        method_list (list): (**Optional**) List of
             :class:`ReductionAssessmentDef` objects that define the
             parameters required to perform the assessments of the DRP
             file.  The *method_key* must select one of these objects.
-        dapver (str): (Optional) DAP version, which is used to define
-            the default DAP analysis path.  Default is defined by
+        dapver (str): (**Optional**) DAP version, which is used to
+            define the default DAP analysis path.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (str): (Optional) The path to the top level
+        analysis_path (str): (**Optional**) The path to the top level
             directory containing the DAP output files for a given DRP
             and DAP version.  Default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
-        directory_path (str): (Optional) The exact path for the output file.
-            Default is defined by
+        directory_path (str): (**Optional**) The exact path for the
+            output file.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_reference_path`.
-        output_file (str): (Optional) The name of the file for the
+        output_file (str): (**Optional**) The name of the file for the
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
             defined by
             :func:`mangadap.config.defaults.default_reduction_assessments_file`.
-        clobber (bool): (Optional) If the output file already exists,
-            this will force the assessments to be redone and the output
-            file to be overwritten.  Default is False.
-        verbose (int): (Optional) Verbosity level.  See
+        hardcopy (bool): (**Optional**) Flag to write the data to a fits
+            file.  Default is True.
+        clobber (bool): (**Optional**) If the output file already
+            exists, this will force the assessments to be redone and the
+            output file to be overwritten.  Default is False.
+        verbose (int): (**Optional**) Verbosity level.  See
             :func:`mangadap.survey.manga_dap`.
 
     Attributes:
         version (str): Version number
         method (str): Keyword of the selected method to use.
-        methodparset (:class:`ReductionAssessmentDef`):
-            Parameter set required to read and prepare the library.
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
         pa (float): On-sky position angle of the major axis used to
@@ -341,38 +320,35 @@ class ReductionAssessment:
             based on the semi-minor to semi-major axis ratio
             (:math:`b/a`) of the isophotal ellipse used to calculate
             elliptical, semi-major-axis coordinates.
-        dapsrc (str): (Optional) Root path to the DAP source directory.
-            If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
-        directory_path (str): (Optional) The exact path for the output file.
+        directory_path (str): The exact path for the output file.
             Default is defined by
             :func:`mangadap.config.defaults.default_dap_reference_path`.
-        output_file (str): (Optional) The name of the file for the
+        output_file (str): The name of the file for the
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
             defined by
             :func:`mangadap.config.defaults.default_reduction_assessments_file`.
-        clobber (bool): (Optional) If the output file already exists,
-            this will force the assessments to be redone and the output
-            file to be overwritten.  Default is False.
-        verbose (int): (Optional) Verbosity level.  See
-            :func:`mangadap.survey.manga_dap`.
-
+        hardcopy (bool): Flag to keep a hardcopy of the data by writing
+            the data to a fits file.
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList with the
             data, with columns as described above.
+        correlation (:class:`mangadap.util.covariance.Covariance`):
+            Covariance matrix for the mean flux measurements, if
+            calculated.
+        verbose (int): Verbosity level.  See
+            :func:`mangadap.survey.manga_dap`.
 
     """
 
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 clobber=False, verbose=0):
+                 hardcopy=True, clobber=False, verbose=0):
                  
         self.version = '1.0'
         self.verbose = verbose
 
         # Define the method properties
         self.method = None
-        self.methodparset = None
         self._define_method(method_key, method_list=method_list, dapsrc=dapsrc)
 
         # Set in compute via _set_paths
@@ -381,19 +357,18 @@ class ReductionAssessment:
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
+        self.hardcopy = None
 
         # Initialize the objects used in the assessments
         self.pa = None
         self.ell = None
         self.hdu = None
+        self.correlation = None
 
-        # Assess this DRPFits file
-        if not isinstance(drpf, DRPFits):
-            raise TypeError('Must provide a valid DRPFits object!')
         # Run the assessments of the DRP file
         self.compute(drpf, pa=pa, ell=ell, dapver=dapver, analysis_path=analysis_path,
-                     directory_path=directory_path, output_file=output_file, clobber=clobber,
-                     verbose=verbose)
+                     directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
+                     clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -413,56 +388,28 @@ class ReductionAssessment:
 
     def _define_method(self, method_key, method_list=None, dapsrc=None):
         """
-
         Select the assessment method from the provided list.  Used to set
-        :attr:`method` and :attr:`methodparset`.
+        :attr:`method` and :attr:`methodparset`; see
+        :func:`mangadap.proc.util._select_proc_method`.
 
         Args:
             method_key (str): Keyword of the selected method.  Available
                 methods are provided by
                 :func:`available_reduction_assessments`
-            method_list (list): (Optional) List of
+            method_list (list): (**Optional**) List of
                 :class:`ReductionAssessmentDef' objects that define the
                 parameters required to assess the reduced data.
-            dapsrc (str): (Optional) Root path to the DAP source
+            dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
-
-        Raises:
-            KeyError: Raised if the selected keyword is not among the
-                provided list or if the provided list has more than one
-                identical keyword.
-            TypeError: Raised if the input *method_list* object is not a
-                list or a :class:`ReductionAssessmentDef`.
-
         """
-        # Get the default libraries if no list provided
-        if method_list is None:
-            method_list = available_reduction_assessments(dapsrc=dapsrc)
-
-        # Make sure the input method_list has the right type, and force
-        # it to be a list
-        if not isinstance(method_list, list):
-            method_list = [method_list]
-        for l in method_list:
-            if not isinstance(l, ReductionAssessmentDef):
-                raise TypeError('Input method must be defined by a ReductionAssessmentDef' \
-                                ' object!')
-
-        # Find the selected library via its keyword
-        selected_method = [ l['key'] == method_key for l in method_list ]
-        if numpy.sum(selected_method) == 0:
-            raise KeyError('{0} is not a valid method!'.format(method_key))
-        if numpy.sum(selected_method) > 1:
-            raise KeyError('Reduction assessment method keywords are not all unique!')
-
-        # Save the parameters for this template library
-        indx = numpy.where(selected_method)[0][0]
-        self.method = method_key
-        self.methodparset = method_list[indx]
+        self.method = _select_proc_method(method_key, ReductionAssessmentDef,
+                                                method_list=method_list,
+                                                available_func=available_reduction_assessments,
+                                                dapsrc=dapsrc)
 
 
-    def _set_paths(self, drpf, directory_path, dapver, analysis_path, output_file):
+    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`output_file`.  If not
@@ -471,8 +418,6 @@ class ReductionAssessment:
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
-            drpf (:class:`mangadap.drpfits.DRPFits`): The container
-                object of the DRP file that is to be assessed
             directory_path (str): The exact path to the DAP reduction
                 assessments file.  See :attr:`directory_path`.
             dapver (str): DAP version.
@@ -481,10 +426,7 @@ class ReductionAssessment:
                 version.
             output_file (str): The name of the file with the reduction assessments.
                 See :func:`compute`.
-
         """
-        self.drpf = drpf
-
         # Set the output directory path
         self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
                                                          drpver=self.drpf.drpver,
@@ -494,7 +436,7 @@ class ReductionAssessment:
 
         # Set the output file
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.drpf.mode, self.method) \
+                                                 self.drpf.mode, self.method['key']) \
                                         if output_file is None else str(output_file)
 
     def _per_spectrum_dtype(self):
@@ -540,7 +482,7 @@ class ReductionAssessment:
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, clobber=False, verbose=0):
+                output_file=None, hardcopy=True, clobber=False, verbose=0):
         r"""
 
         Compute and output the main data products.  The list of HDUs
@@ -583,36 +525,37 @@ class ReductionAssessment:
         Args:
             drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object)
                 to use for the assessments.
-            pa (float): (Optional) On-sky position angle of the major
-                axis used to calculate elliptical, semi-major-axis
+            pa (float): (**Optional**) On-sky position angle of the
+                major axis used to calculate elliptical, semi-major-axis
                 coordinates, defined as the angle from North through
-                East and denoted :math:`\phi_0`.  Default is to use
-                :attr:`pa`.
-            ell (float): (Optional) Ellipticity defined as
+                East and denoted :math:`\phi_0`.  Default is 0.0.
+            ell (float): (**Optional**) Ellipticity defined as
                 :math:`\varepsilon=1-b/a`, based on the semi-minor to
                 semi-major axis ratio (:math:`b/a`) of the isophotal
                 ellipse used to calculate elliptical, semi-major-axis
-                coordinates.  Default is to use :attr:`ell`.
-            dapver (str): (Optional) DAP version, which is used to
+                coordinates.  Default is 0.0.
+            dapver (str): (**Optional**) DAP version, which is used to
                 define the default DAP analysis path.  Default is
                 defined by
                 :func:`mangadap.config.defaults.default_dap_version`
-            analysis_path (str): (Optional) The path to the top level
-                directory containing the DAP output files for a given
-                DRP and DAP version.  Default is defined by
+            analysis_path (str): (**Optional**) The path to the top
+                level directory containing the DAP output files for a
+                given DRP and DAP version.  Default is defined by
                 :func:`mangadap.config.defaults.default_analysis_path`.
-            directory_path (str): (Optional) The exact path for the
+            directory_path (str): (**Optional**) The exact path for the
                 output file.  Default is defined by
                 :func:`mangadap.config.defaults.default_dap_reference_path`.
-            output_file (str): (Optional) The name of the file for the
-                computed assessments.  The full path of the output file
-                will be :attr:`directory_path`/:attr:`output_file`.
+            output_file (str): (**Optional**) The name of the file for
+                the computed assessments.  The full path of the output
+                file will be :attr:`directory_path`/:attr:`output_file`.
                 Default is defined by
-                :func:`mangadap.config.defaults.default_dap_file_name`.
-            clobber (bool): (Optional) If the output file already
+                :func:`mangadap.config.defaults.default_reduction_assessments_file`.
+            hardcopy (bool): (**Optional**) Flag to write the data to a
+                fits file.  Default is True.
+            clobber (bool): (**Optional**) If the output file already
                 exists, this will force the assessments to be redone and
                 the output file to be overwritten.  Default is False.
-            verbose (int): (Optional) Verbosity level.  See
+            verbose (int): (**Optional**) Verbosity level.  See
                 :func:`mangadap.survey.manga_dap`.
     
         Raises:
@@ -621,12 +564,16 @@ class ReductionAssessment:
         """
         if drpf is None:
             raise ValueError('Must provide DRP file object to compute assessments.')
+        if not isinstance(drpf, DRPFits):
+            raise TypeError('Must provide a valid DRPFits object!')
         if drpf.hdu is None:
+            # Change to info via logging
             warnings.warn('Reading DRP file.')
             drpf.open_hdu()
+        self.drpf = drpf
 
         # Reset the output paths if necessary
-        self._set_paths(drpf, directory_path, dapver, analysis_path, output_file)
+        self._set_paths(directory_path, dapver, analysis_path, output_file)
         print(self.file_path())
         # Check that the path for or to the file is defined
         ofile = self.file_path()
@@ -635,6 +582,7 @@ class ReductionAssessment:
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
+            self.correlation = Covariance(ifile=ofile, primary_ext='COVAR')
             self.hdu = fits.open(ofile)
             self.pa = self.hdu['PRIMARY'].header['PA']
             if pa is not None and self.pa != pa:
@@ -644,6 +592,7 @@ class ReductionAssessment:
             if ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
+            return
 
         # (Re)Initialize some of the attributes
         if pa is not None:
@@ -655,7 +604,7 @@ class ReductionAssessment:
         spectrum_data = init_record_array(drpf.nspec, self._per_spectrum_dtype())
         spectrum_data['DRP_INDEX'] = numpy.asarray(tuple(drpf.spatial_index))
         spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1] \
-                = drpf.mean_sky_coordinates(waverange=self.methodparset['waverange'], offset=True)
+                = drpf.mean_sky_coordinates(waverange=self.method['waverange'], offset=True)
 
 #        pyplot.scatter(spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1], marker='.',
 #                       s=30, color='k', lw=0)
@@ -669,7 +618,7 @@ class ReductionAssessment:
 #                       s=30, color='k', lw=0)
 #        pyplot.show()
        
-        flux = drpf.copy_to_masked_array()
+        flux = drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
         spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(flux.mask), axis=1)/flux.shape[1]
        
         frange = numpy.ma.max(flux, axis=1)-numpy.ma.min(flux, axis=1)
@@ -683,9 +632,9 @@ class ReductionAssessment:
 #        pyplot.step(spectrum_data['FGOODPIX'][srt], grw, color='k')
 #        pyplot.show()
 
-        spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'], correlation \
-                = drpf.flux_stats(waverange=self.methodparset['waverange'],
-                                  covar=self.methodparset['covariance'], correlation=True)
+        spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'], self.correlation \
+                = drpf.flux_stats(waverange=self.method['waverange'],
+                                  covar=self.method['covariance'], correlation=True)
 
 #        if correlation is not None:
 #            correlation.show()
@@ -701,8 +650,9 @@ class ReductionAssessment:
         hdr['ELL'] = (self.ell, 'Isophotal ellipticity (1-b/a)')
 
         # Get the covariance columns; pulled directly from ../util/covariance.py
-        if self.methodparset['covariance']:
-            indx_col, covar_col, var_col, plane_col = correlation.binary_columns(hdr=hdr)
+        if self.method['covariance']:
+            cov_hdr = fits.Header()
+            indx_col, covar_col, var_col, plane_col = self.correlation.binary_columns(hdr=cov_hdr)
             if plane_col is not None:
                 raise ValueError('Correlation matrices should only be 2D in ReductionAssessments;' \
                                  ' code inconsistency!')
@@ -714,16 +664,18 @@ class ReductionAssessment:
                                   fits.BinTableHDU.from_columns( spectrum_cols, name='SPECTRUM') ])
 
         # Add the covariance information
-        if self.methodparset['covariance']:
+        if self.method['covariance']:
             self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
                                                             if var_col is None else \
                                                             [ indx_col, var_col, covar_col ]),
-                                                        name='COVAR') ]
+                                                        name='COVAR', header=cov_hdr) ]
 
         # Write the file
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hdu.writeto(ofile, clobber=clobber)
+        self.hardcopy = hardcopy
+        if self.hardcopy:
+            self.hdu.writeto(ofile, clobber=clobber, checksum=True)
 
         
 

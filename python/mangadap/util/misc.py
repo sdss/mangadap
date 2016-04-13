@@ -96,4 +96,28 @@ def where_not(indx, size):
     return (numpy.setdiff1d(numpy.arange(0,size), indx[0]),)
     
 
+def inverse_with_zeros(v, absolute=True):
+    """
+    Invert an array with zeros, and handle them by setting the inverse
+    to zero.
+
+    Args:
+        v (array-like): Array to invert
+        absolute (bool): Forces that the absolute value must be larger
+            than 0.  Otherwise, any non-positive value is also masked
+            with a zero.
+
+    Returns:
+        numpy.ndarray: Inverse of the array when the vector has values
+        that are greater than 0, otherwise set to 0.0.
+    """
+    if isinstance(v, numpy.ma.MaskedArray):
+        if not absolute:
+            v.mask |= numpy.invert(v > 0)
+        return 1.0/v
+    _v = numpy.asarray(v).astype(float)
+    indx = numpy.absolute(_v) > 0 if absolute else _v > 0
+    _v[indx] = 1.0/_v[indx]
+    _v[numpy.invert(indx)] = 0.0
+    return _v
 

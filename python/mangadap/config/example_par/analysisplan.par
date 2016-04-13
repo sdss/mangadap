@@ -1,0 +1,8 @@
+
+typedef struct {
+    char snrmode[8];
+} DAPPLAN;
+
+
+DAPPLAN  RFWHM  SPAXEL  MILES  GAUSN00  ELEXTND  SPFULL
+

@@ -28,7 +28,7 @@ run the DAP for a specific MaNGA observation.
         import warnings
         from .parset import ParSet
         from ..util.yanny import yanny
-        from ..proc.options import drp_3dmode_options
+        from ..drpfits import DRPFits
 
 *Class usage examples*:
     To define a set of observation parameteters::
@@ -61,7 +61,7 @@ import os.path
 import warnings
 from .parset import ParSet
 from ..util.yanny import yanny
-from ..proc.options import drp_3dmode_options
+from ..drpfits import DRPFits
 
 __author__ = 'Kyle B. Westfall'
 
@@ -81,7 +81,7 @@ class ObsInputPar(ParSet):
         plate (int) : Plate number; default is None.
         ifudesign (int) : IFU designation; default is None.
         mode (str) : DRP 3D mode; see
-            :func:`mangadap.proc.options.drp_3dmode_options`; default is
+            :func:`mangadap.drpfits.DRPFits.mode_options`; default is
             CUBE.
         vel (float) : Systemic velocity (km/s); default is None.
         vdisp (float) : Guess velocity dispersion (km/s); default is
@@ -91,13 +91,12 @@ class ObsInputPar(ParSet):
         pa (float) : Position angle (degrees) of the isophotal major
             axis; default is 0.
         reff (float) : Effective radius (arcsec); default is 1.0.
-
     """
     def __init__(self, plate, ifudesign, mode=None, vel=None, vdisp=None, ell=None, pa=None,
                  reff=None):
 
         in_fl = [ int, float ]
-        mode_keys = drp_3dmode_options()
+        mode_keys = DRPFits.mode_options()
 
         pars =     [ 'plate', 'ifudesign',    'mode', 'vel', 'vdisp', 'ell',  'pa', 'reff' ]
         values =   [   plate,   ifudesign,      mode,   vel,   vdisp,   ell,    pa,   reff ]

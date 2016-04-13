@@ -216,4 +216,81 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
     return hdu
 
 
+def _select_proc_method(method_key, method_type, method_list=None, available_func=None,
+                        dapsrc=None):
+    r"""
+
+    Select a method from a list.  One of method_list or available_func
+    must be provided.
+
+    Args:
+        method_key (str): Keyword used to select the method.
+        method_list (list): (Optional) List of methods from which to
+            find the selection keyword.  If none is provided,
+            *available_func* **must** be provided.
+        available_func (callable): (Optional) Callable function that
+            returns a list of default methods in place of *method_list.
+            For example, see
+            :func:`mangadap.proc.templatelibrary.available_template_libraries`.
+        dapsrc (str): (Optional) Root path to the DAP source
+            directory.  If not provided, the default is defined by
+            :func:`mangadap.config.defaults.default_dap_source`.
+
+    Returns:
+        :class:`mangadap.par.ParSet`: A set of parameters used to define
+        a method or database.
+
+    Raises:
+        KeyError: Raised if the selected keyword is not among the
+            provided list or if the provided list has more than one
+            identical keyword.
+        TypeError: Raised if the input *method_list* object is not a
+            list or *method_type*, or if available function is not a
+            callable function.
+    """
+    # Get the default methods if no list provided
+    if method_list is None:
+        if not callable(available_func):
+            raise TypeError('If not providing a list, must provide a callable function to ' \
+                            'produce the default list of methods/databases/libraries.')
+        method_list = available_func(dapsrc=dapsrc)
+
+    for m in method_list:
+        print(m['key'])
+
+    # Make sure the methods have the right type
+    if not isinstance(method_list, list):
+        method_list = [method_list]
+    for l in method_list:
+        if not isinstance(l, method_type):
+            raise TypeError('Input method/database/library must have type {0}')
+
+    # Find the selected method via its keyword
+    selected_method = [ l['key'] == method_key for l in method_list ]
+    if numpy.sum(selected_method) == 0:
+        raise KeyError('{0} is not a valid method/database/library!'.format(method_key))
+    if numpy.sum(selected_method) > 1:
+        raise KeyError('Keywords are not all unique!')
+
+    # Return the method selected via the input keyword
+    indx = numpy.where(selected_method)[0][0]
+    return method_list[indx]
+    
+
+def _fill_vector(v, length, missing, value):
+    _v = numpy.full(length, value, dtype=v.dtype)
+    diff = list(set( numpy.arange(length) ) - set(missing))
+    _v[diff] = v
+    return _v
+
+
+        # TODO: Requires a spectrum in each bin!
+#        if any(numpy.diff(bin_indx[srt]) > 1):
+#            rep = numpy.ones(bin_change.size, dtype=numpy.int)
+#            i = 1
+#            while any(numpy.diff(bin_indx[srt]) > i):
+#                rep[ numpy.where(numpy.diff(bin_indx[srt]) > i)[0]+1 == bin_change ] += 1
+#                i += 1
+#            bin_change = numpy.repeat(bin_change, rep)
+
 

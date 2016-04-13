@@ -51,6 +51,7 @@ support classes and functions.
         from ..util.idlutils import airtovac
         from ..util.yanny import yanny
         from ..par.parset import ParSet
+        from .util import _select_proc_method
 
 .. warning::
 
@@ -146,6 +147,7 @@ from ..config.util import validate_emission_line_config
 from ..util.idlutils import airtovac
 from ..util.yanny import yanny
 from ..par.parset import ParSet
+from .util import _select_proc_method
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -435,7 +437,9 @@ class EmissionLineDB:
     
     def read_database(self, database_key, emldb_list=None, dapsrc=None):
         """
-        Select and read the database from the provided list.
+        Select and read the database from the provided list.  Used to
+        set :attr:`database` and :attr:`dbparset`; see
+        :func:`mangadap.proc.util._select_proc_method`.
 
         Args:
             database_key (str): Keyword selecting the database to use.
@@ -447,39 +451,13 @@ class EmissionLineDB:
             dapsrc (str): (Optional) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
-
-        Raises:
-            KeyError: Raised if the selected keyword is not among the
-                provided list or if the provided list has more than one
-                identical keyword.
-            TypeError: Raised if the input *emldb_list* object is not a
-                list or a :class:`EmissionLineDBDef`.
         """
-        # Get the default libraries if no list provided
-        if emldb_list is None:
-            emldb_list = available_emission_line_databases(dapsrc=dapsrc)
-
-        # Make sure the input list has the right type, and force it to
-        # be a list
-        if type(emldb_list) != list:
-            emldb_list = [emldb_list]
-        for l in emldb_list:
-            if not isinstance(l, EmissionLineDBDef):
-                raise TypeError('Input emission-line database(s) must be EmissionLineDBDef '
-                                'object(s)!')
-
-        # Find the selected database via its keyword
-        selected_db = [ l['key'] == database_key for l in emldb_list ]
-        if numpy.sum(selected_db) == 0:
-            raise KeyError('{0} is not a valid emission-line database!'.format(database_key))
-        if numpy.sum(selected_db) > 1:
-            raise KeyError('Emission-line database keywords are not all unique!')
-
-        # Save the parameters for this emission-line database
-        indx = numpy.where(selected_db)[0][0]
+        # Get the details of the selected database
+        self.dbparset = _select_proc_method(database_key, EmissionLineDBDef, emldb_list=emldb_list,
+                                            available_func=available_emission_line_databases,
+                                            dapsrc=dapsrc)
         self.database = database_key
-        self.dbparset = emldb_list[indx]
-
+        
         # Check that the database exists
         if not os.path.isfile(self.dbparset['file_path']):
             raise FileNotFoundError('Database file {0} does not exist!'.format(

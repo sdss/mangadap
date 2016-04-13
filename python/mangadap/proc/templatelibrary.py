@@ -88,6 +88,7 @@ bitmasks for the template library spectra.
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+        from .util import _select_proc_method
 
 .. warning::
 
@@ -264,6 +265,7 @@ from ..util.idlutils import airtovac
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+from .util import _select_proc_method
 
 #from matplotlib import pyplot
 
@@ -442,9 +444,11 @@ class TemplateLibraryBitMask(BitMask):
     """
     def __init__(self, dapsrc=None):
         dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        t = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                  'bitmasks', 'spectral_template_bits.ini'))
-        BitMask.__init__(self, t.keys(), t.descr)
+        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+                                                     'bitmasks', 'spectral_template_bits.ini'))
+#        t = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
+#                                                  'bitmasks', 'spectral_template_bits.ini'))
+#        BitMask.__init__(self, t.keys(), t.descr)
 
 
 class TemplateLibrary:
@@ -543,10 +547,8 @@ class TemplateLibrary:
         version (str): Version number
         tplbm (BitMask): A BitMask object used to toggle mask values;
             see :func:`TemplateLibraryBitMask`.
-        library (str): Keyword of the selected library to use.
-        libparset
-            (:class:`TemplateLibraryDef`):
-            Parameter set required to read and prepare the library.
+        library (:class:`TemplateLibraryDef`): Parameter set required to
+            read and prepare the library.
         file_list (list): The list of files found using `glob.glob`_ and
             :attr:`file_search`.
         ntpl (int): Number of template spectra in the library
@@ -596,12 +598,6 @@ class TemplateLibrary:
         # Define the TemplateLibraryBitMask object
         self.tplbm = TemplateLibraryBitMask(dapsrc=dapsrc)
 
-        # Define the library properties
-        self.library = None
-        self.libparset = None
-        self.file_list = None
-        self.ntpl = None
-
         # Define the properties needed to modify the spectral resolution
         self.sres = None
         self.velocity_offset = None
@@ -617,7 +613,8 @@ class TemplateLibrary:
 
         # Define the library
         self.library = None
-        self.libparset = None
+        self.file_list = None
+        self.ntpl = None
         self._define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
 
         # Define the processed file and flag, and the HDUList used to
@@ -665,7 +662,8 @@ class TemplateLibrary:
     def _define_library(self, library_key, tpllib_list=None, dapsrc=None):
         """
         Select the library from the provided list.  Used to set
-        :attr:`library` and :attr:`libparset`.
+        :attr:`library`; see
+        :func:`mangadap.proc.util._select_proc_method`.
 
         Args:
             library_key (str): Keyword of the selected library.
@@ -678,40 +676,12 @@ class TemplateLibrary:
             dapsrc (str): (Optional) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
-
-        Raises:
-            KeyError: Raised if the selected keyword is not among the
-                provided list or if the provided list has more than one
-                identical keyword.
-            TypeError: Raised if the input *tpllib_list* object is not a
-                list or a
-                :class:`TemplateLibraryDef`.
-
         """
-        # Get the default libraries if no list provided
-        if tpllib_list is None:
-            tpllib_list = available_template_libraries(dapsrc=dapsrc)
-
-        # Make sure the input tpllib_list has the right type, and force
-        # it to be a list
-        if isinstance(tpllib_list, list):
-            tpllib_list = [tpllib_list]
-        for l in tpllib_list:
-            if not isinstance(l, TemplateLibraryDef):
-                raise TypeError('Input template library (libraries) must be defined by a ' \
-                                'TemplateLibraryDef object (or objects)!')
-
-        # Find the selected library via its keyword
-        selected_lib = [ l['key'] == library_key for l in tpllib_list ]
-        if numpy.sum(selected_lib) == 0:
-            raise KeyError('{0} is not a valid template library!'.format(library_key))
-        if numpy.sum(selected_lib) > 1:
-            raise KeyError('Template-library keywords are not all unique!')
-
-        # Save the parameters for this template library
-        indx = numpy.where(selected_lib)[0][0]
-        self.library = library_key
-        self.libparset = tpllib_list[indx]
+        # Get the details of the selected template library
+        self.library = _select_proc_method(library_key, TemplateLibraryDef,
+                                             tpllib_list=tpllib_list,
+                                             available_func=available_template_libraries,
+                                             dapsrc=dapsrc)
 
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
@@ -766,7 +736,7 @@ class TemplateLibrary:
 
         # Set the output file
         self.processed_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                    self.drpf.mode, self.library) \
+                                                    self.drpf.mode, self.library['key']) \
                                         if processed_file is None else str(processed_file)
 
 
@@ -776,9 +746,9 @@ class TemplateLibrary:
         library before it has been resolution and sampling matched to a
         DRP file.
         """
-        self.file_list = glob.glob(self.libparset['file_search'])
+        self.file_list = glob.glob(self.library['file_search'])
         self.ntpl = len(self.file_list)
-        print('Found {0} {1} templates'.format(self.ntpl, self.library))
+        print('Found {0} {1} templates'.format(self.ntpl, self.library['key']))
 
         npix = self._get_nchannels()
         print('Maximum number of wavelength channels: {0}'.format(npix))
@@ -860,30 +830,30 @@ class TemplateLibrary:
         # Read and save each spectrum and mask the unobserved
         # wavelengths
         for i in range(0,self.ntpl):
-            if self.libparset['sres_ext'] is None:
-                wave_, flux_ = readfits_1dspec(self.file_list[i], log10=self.libparset['log10'])
+            if self.library['sres_ext'] is None:
+                wave_, flux_ = readfits_1dspec(self.file_list[i], log10=self.library['log10'])
                 wave[i,0:wave_.size] = numpy.copy(wave_)
                 flux[i,0:wave_.size] = numpy.copy(flux_)
                 # Set the spectral resolution
-                sres = wave/self.libparset['fwhm']
+                sres = wave/self.library['fwhm']
             else:
                 wave_, flux_, sres_ = read_template_spectrum(self.file_list[i],
-                                                          sres_ext=self.libparset['sres_ext'],
-                                                          log10=self.libparset['log10'])
+                                                          sres_ext=self.library['sres_ext'],
+                                                          log10=self.library['log10'])
                 wave[i,0:wave_.size] = numpy.copy(wave_)
                 flux[i,0:wave_.size] = numpy.copy(flux_)
                 sres[i,0:wave_.size] = numpy.copy(sres_)
 
             if wave_.size != npix:
                 mask[i,wave_.size:] = self.tplbm.turn_on(mask[i,wave_.size:],'NO_DATA')
-            if self.libparset['lower_flux_limit'] is not None:
-                indx = numpy.invert( flux_ > self.libparset['lower_flux_limit'] )
+            if self.library['lower_flux_limit'] is not None:
+                indx = numpy.invert( flux_ > self.library['lower_flux_limit'] )
                 mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'FLUX_INVALID')
-            if self.libparset['wave_limit'][0] is not None:
-                indx = wave[i,:].ravel() < self.libparset['wave_limit'][0]
+            if self.library['wave_limit'][0] is not None:
+                indx = wave[i,:].ravel() < self.library['wave_limit'][0]
                 mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'WAVE_INVALID')
-            if self.libparset['wave_limit'][1] is not None:
-                indx = wave[i,:].ravel() > self.libparset['wave_limit'][1]
+            if self.library['wave_limit'][1] is not None:
+                indx = wave[i,:].ravel() > self.library['wave_limit'][1]
                 mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'WAVE_INVALID')
 
 
@@ -929,7 +899,7 @@ class TemplateLibrary:
         self.hdu.append(fits.ImageHDU(sres, name='SPECRES'))
         self.hdu.append(fits.ImageHDU(soff, name='SIGOFF'))
         self.hdu[0].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
-        self.hdu[0].header['LIBKEY'] = (self.library, 'Library identifier')
+        self.hdu[0].header['LIBKEY'] = (self.library['key'], 'Library identifier')
 
 
     def _wavelength_range(self, flag=None):
@@ -966,10 +936,10 @@ class TemplateLibrary:
 
         nspec = self.hdu['WAVE'].data.shape[0]
         minimum_step = spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
-                                     log=self.libparset['log10'])
+                                     log=self.library['log10'])
         for i in range(1,nspec):
             step = spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
-                                            log=self.libparset['log10'])
+                                            log=self.library['log10'])
             if minimum_step > step:
                 minimum_step = step
 
@@ -1006,7 +976,7 @@ class TemplateLibrary:
         mask_ex = self.tplbm.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(numpy.float64)
         wave, mask_ex = resample_vector(mask_ex, xRange=[self.hdu['WAVE'].data[i,0],
                                                          self.hdu['WAVE'].data[i,-1]],
-                                        inLog=self.libparset['log10'], newRange=fullRange,
+                                        inLog=self.library['log10'], newRange=fullRange,
                                         newLog=self.log10_sampling, dx=self.spectral_step,
                                         conserve=False) # flat=True!
 
@@ -1048,7 +1018,7 @@ class TemplateLibrary:
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                       self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
                                       self.sres.sres(), min_sig_pix=0.0,
-                                      log10=self.libparset['log10'], new_log10=True)
+                                      log10=self.library['log10'], new_log10=True)
         print('... done')
 
 #        pyplot.plot(oldwave, oldflux)
@@ -1082,7 +1052,7 @@ class TemplateLibrary:
         """
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
-        if not self.libparset['in_vacuum']:
+        if not self.library['in_vacuum']:
             self.hdu['WAVE'].data = airtovac(self.hdu['WAVE'].data)
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
 #        pyplot.show()
@@ -1136,7 +1106,7 @@ class TemplateLibrary:
             # Rebin the observed wavelength range
             wave, flux[i,:] = resample_vector(self.hdu['FLUX'].data[i,observed[i,:]].ravel(),
                                               xRange=[wave_in[0], wave_in[-1]],
-                                              inLog=self.libparset['log10'], newRange=fullRange,
+                                              inLog=self.library['log10'], newRange=fullRange,
                                               newLog=self.log10_sampling, dx=self.spectral_step,
                                               ext_value=min_flux-100., conserve=False, flat=False)
 
@@ -1355,8 +1325,7 @@ class TemplateLibrary:
         Args:
 
             library_key (str): (Optional) Keyword selecting the library
-                to use; default is to use existing :attr:`library` and
-                :attr:`libparset`.
+                to use; default is to use existing :attr:`library`.
             tpllib_list (list): (Optional) List of
                 :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
@@ -1470,7 +1439,7 @@ class TemplateLibrary:
         if os.path.isfile(ofile) and not force:
             print('Using existing file: {0}'.format(self.processed_file))
             self.hdu = fits.open(ofile)
-            self.file_list = glob.glob(self.libparset['file_search'])
+            self.file_list = glob.glob(self.library['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
             return
@@ -1512,7 +1481,7 @@ class TemplateLibrary:
             raise ValueError('Invalid index ({0})!  Library contains {1} spectra.'.format(i,
                                                                                         self.ntpl))
         wave = self.hdu['WAVE'].data if self.processed else self.hdu['WAVE'].data[i,:]
-        log = self.log10_sampling if self.processed else self.libparset['log10']
+        log = self.log10_sampling if self.processed else self.library['log10']
         writefits_1dspec(ofile, (numpy.log10(wave[0]) if log else wave[0]), self.spectral_step,
                          self.hdu['FLUX'].data[i,:], clobber=clobber)
 

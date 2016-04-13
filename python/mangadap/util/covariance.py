@@ -139,6 +139,10 @@ Defines a class used to store and interface with covariance matrices.
         Allow for a function that only returns the
         `astropy.io.fits.BinTableHDU`_ object with the coordinate-format
         covariance data.
+    | **06 Apr 2016**: (KBW) Allow :func:`Covariance.read` to read from
+        a file or an `astropy.io.fits.hdu.hdulist.HDUList`_ object, and
+        allow the specification of the extensions to read the header,
+        covariance, and plane data.
 
 .. todo::
     - Allow for calculation of the inverse of the covariance matrix.
@@ -150,6 +154,8 @@ Defines a class used to store and interface with covariance matrices.
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 .. _astropy.io.fits.BinTableHDU: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU
 .. _astropy.io.fits.Column: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.Column
+.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
+
 
 """
 
@@ -200,8 +206,21 @@ class Covariance:
             `scipy.sparse.triu`_ when setting the covariance matrix.
             Otherwise, the input matrix is **assumed** to only have the
             upper triangle of numbers.
-        ifile (str): (**Optional**) File from which to read the
-            covariance matrix.  See: :func:`write`.
+        source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):
+            (**Optional**) Initialize the object using an
+            `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to a
+            fits file.  See :func:`read`.
+        primary_ext (str): (**Optional**) If reading the data from
+            *source*, this is the name of the extension with the header
+            information needed to construct the :class:`Covariance`
+            object.  Default is 'PRIMARY'.  See :func:`read`.
+        covar_ext (str): (**Optional**) If reading the data from
+            *source*, this is the name of the extension with covariance
+            data.  Default is 'COVAR'.  See :func:`read`.
+        plane_ext (str): (**Optional**) If reading the data from
+            *source*, this is the name of the extension with the
+            covariance plane indices, if necessary.  Default is 'PLANE'.
+            See :func:`read`.
 
     Raises:
         TypeError: Raised if the input array is not one-dimensional or
@@ -238,12 +257,14 @@ class Covariance:
             saved as a variance vector and a correlation matrix.
 
     """
-    def __init__(self, inp=None, input_indx=None, impose_triu=False, ifile=None):
+    def __init__(self, inp=None, input_indx=None, impose_triu=False, source=None,
+                 primary_ext='PRIMARY', covar_ext='COVAR', plane_ext='PLANE'):
 
         # If a file is provided with the covariance matrix, read it and
         # return
-        if ifile is not None:
-            self.read(ifile, impose_triu=impose_triu)
+        if source is not None:
+            self.read(source, impose_triu=impose_triu, primary_ext=primary_ext,
+                      covar_ext=covar_ext, plane_ext=plane_ext)
             return
 
         # If no input is provided, free any existing data and return
@@ -651,7 +672,7 @@ class Covariance:
               :math:`(i,j,k)`.  To match the number of rows in the other
               columns, the off-diagonal elements are set to 0.0.
 
-        For 3D matrices, a third extension, ``COVPLANE``, is written
+        For 3D matrices, a third extension, ``PLANE``, is written
         containing a binary table with the list of pseudo indices for
         each of the provided covariance matrices. these indices are in
         the single column in this extension, ``INP_INDX``.
@@ -690,10 +711,11 @@ class Covariance:
             hdu.append(fits.BinTableHDU.from_columns([ plane_col ], name='PLANE'))
 
         # Write the file
-        hdu.writeto(ofile, clobber=clobber)
+        hdu.writeto(ofile, clobber=clobber, checksum=True)
 
 
-    def read(self, ifile, impose_triu=False, to_correlation=None, return_hdr=False, quiet=False):
+    def read(self, source, primary_ext='PRIMARY', covar_ext='COVAR', plane_ext='PLANE',
+             impose_triu=False, to_correlation=None, return_hdr=False, quiet=False):
         r"""
         Read an existing covariance object previously written to disk;
         see :func:`write`.  The class can read covariance data written
@@ -707,13 +729,18 @@ class Covariance:
         :class:`Covariance.binary_columns` is included to provide the
         columns and header data that can be placed in any fits file.
 
-        .. todo::
-            Allow the :func:`Covariance.read` function to specify the
-            various extensions needed to construct the covariance matrix
-            and the extension header with the appropriate metadata.
-        
         Args:
-            ifile (str): File name with the covariance data.
+            source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):
+                `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to
+                fits file with the covariance data.
+            primary_ext (str): (**Optional**) Name of the extension with
+                the header information needed to construct the
+                :class:`Covariance` object.  Default is 'PRIMARY'.
+            covar_ext (str): (**Optional**) Name of the extension with
+                covariance data.  Default is 'COVAR'.
+            plane_ext (str): (**Optional**) Name of the extension with
+                the covariance plane indices, if necessary.  Default is
+                'PLANE'.
             impose_triu (bool): (**Optional**) Flag to force the
                 `scipy.sparse.csr_matrix`_ object(s) to only contain
                 elements in their upper triangle.  The covariance matrix
@@ -735,33 +762,38 @@ class Covariance:
             extension, if requested.
         """
 
-        try:
-            hdu = fits.open(ifile)
-        except Exception as e:
-            print('Problem reading input file; covariance object unchanged.')
-            return
+        if isinstance(source, fits.HDUList):
+            hdu = source
+        else:
+            try:
+                hdu = fits.open(source)
+            except Exception as e:
+                print(e)
+                warnings.warn('Problem reading covariance from file.')
+                return
 
         # Erase anything that might already exist
         self._free()
 
         # Get the shape and type
-        self.shape = eval(hdu['PRIMARY'].header['COVSHAPE'])
+        self.shape = eval(hdu[primary_ext].header['COVSHAPE'])
         self.dim = len(self.shape)
-        self.nnz = hdu['COVAR'].header['NAXIS2']
-        self.is_correlation = hdu['PRIMARY'].header['COVTYPE'] == 'Correlation'
+        self.nnz = hdu[covar_ext].header['NAXIS2']
+        self.is_correlation = hdu[primary_ext].header['COVTYPE'] == 'Correlation'
         self.var = None
 
         # Read a 2D matrix
         if self.dim == 2:
-            self.cov = sparse.coo_matrix( (hdu['COVAR'].data['COVAR'], \
-                                          (hdu['COVAR'].data['INDX'][:,0], \
-                                          hdu['COVAR'].data['INDX'][:,1])), \
+            self.cov = sparse.coo_matrix( (hdu[covar_ext].data['COVAR'], \
+                                          (hdu[covar_ext].data['INDX'][:,0], \
+                                          hdu[covar_ext].data['INDX'][:,1])), \
                                           shape=self.shape).tocsr()
             # Read the variances if written as a correlation matrix
             if self.is_correlation:
                 self.var = numpy.zeros(self.shape[0], dtype=numpy.float)
-                indx = hdu['COVAR'].data['INDX'][:,0] == hdu['COVAR'].data['INDX'][:,1]
-                self.var[hdu['COVAR'].data['INDX'][indx,0]] = hdu['COVAR'].data['VARIANCE'][indx]
+                indx = hdu[covar_ext].data['INDX'][:,0] == hdu[covar_ext].data['INDX'][:,1]
+                self.var[hdu[covar_ext].data['INDX'][indx,0]] = \
+                        hdu[covar_ext].data['VARIANCE'][indx]
             self.input_indx = None
         # Read a 3D matrix
         else:
@@ -771,22 +803,22 @@ class Covariance:
                 self.var = numpy.zeros((self.shape[0], self.shape[1]), dtype=numpy.float)
             # Read each plane
             for i in range(self.shape[0]):
-                tt = numpy.where( hdu['COVAR'].data['INDX'][:,0].flatten() == i )[0]
+                tt = numpy.where( hdu[covar_ext].data['INDX'][:,0].flatten() == i )[0]
 
-                ii = hdu['COVAR'].data['INDX'][tt,1].flatten()
-                jj = hdu['COVAR'].data['INDX'][tt,2].flatten()
-                vv = hdu['COVAR'].data['COVAR'][tt]
+                ii = hdu[covar_ext].data['INDX'][tt,1].flatten()
+                jj = hdu[covar_ext].data['INDX'][tt,2].flatten()
+                vv = hdu[covar_ext].data['COVAR'][tt]
 
                 self.cov[i] = sparse.coo_matrix( (vv, (ii, jj)), shape=self.shape[1:]).tocsr()
 
                 # Read the variances if written as a correlation matrix
                 if self.is_correlation:
                     indx = ii == jj
-                    self.var[i,ii[indx]] = hdu['COVAR'].data['VARIANCE'][tt[indx]]
+                    self.var[i,ii[indx]] = hdu[covar_ext].data['VARIANCE'][tt[indx]]
 
             # Try to assign the pseudo-indices
             try:
-                self.input_indx = hdu['PLANE'].data['INP_INDX']
+                self.input_indx = hdu[plane_ext].data['INP_INDX']
             except KeyError:
                 self.input_indx = numpy.arange(self.shape[0])
 
@@ -807,7 +839,7 @@ class Covariance:
         # TODO: Convert report to use logging
         if not quiet:
             print('Read covariance cube:')
-            print('        input type: {0}'.format(hdu['PRIMARY'].header['COVTYPE']))
+            print('        input type: {0}'.format(hdu[primary_ext].header['COVTYPE']))
             print('       output type: {0}'.format('Correlation' \
                                                     if self.is_correlation else 'Covariance'))
             print('        dimensions: {0}'.format(self.dim))
@@ -818,7 +850,7 @@ class Covariance:
 
         # Return the header object if requested
         if return_hdr:
-            return hdu['PRIMARY'].header
+            return hdu[primary_ext].header
 
     
     def variance(self):

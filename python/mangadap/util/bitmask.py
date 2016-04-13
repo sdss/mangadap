@@ -85,6 +85,9 @@ Base class for handling bit masks by the DAP.
         :func:`BitMask._fill_sequence` static method.  This allows for
         :class:`BitMask` objects to be declared directly from the files,
         and allows the bit values to take on any number.
+    | **05 Apr 2016**: (KBW) Added parameters to initialization of
+        :class:`BitMask` objects to clean up some of the derived class
+        initialization.
 """
 
 from __future__ import division
@@ -130,9 +133,12 @@ class BitMask:
                  Bit: key3 = 4
 
     Args:
-        keys (str, list, numpy.ndarray): List of keys (or single key) to
+
+        keys (str, list, numpy.ndarray): (**Optional**) List of keys (or single key) to
             use as the bit name.  Each key is given a bit number ranging
-            from 0..N-1.
+            from 0..N-1.  If **not** provided, one of either *ini_file*
+            or *par_file* must be provided.
+
         descr (str, list, numpy.ndarray): (Optional) List of descriptions
             (or single discription) provided by :func:`info` for each bit.
 
@@ -142,16 +148,35 @@ class BitMask:
             type.
 
     Attributes:
-        nbits (int) : Number of bits
+        nbits (int): Number of bits
         bits (dict): A dictionary with the bit name and value
         descr (numpy.ndarray) : List of bit descriptions
         max_value (int): The maximum valid bitmask value given the
             number of bits.
 
     """
-    def __init__(self, keys, descr=None):
-        allowed_types = [str, list, numpy.ndarray]
-        if not any([isinstance(keys, t) for t in allowed_types]):
+    def __init__(self, keys=None, descr=None, ini_file=None, par_file=None, par_grp=None):
+
+        if keys is None and ini_file is None and par_file is None:
+            raise ValueError('BitMask undefined!')
+
+        if par_file is not None and par_grp is None:
+            raise ValueError('If reading from par file, must provide bit group flag.')
+
+        # Allow for file-based initialization
+        _self = None
+        if ini_file is not None:
+            _self = BitMask.from_ini_file(ini_file)
+        if par_file is not None :
+            _self = BitMask.from_par_file(par_file, par_grp)
+        if _self is not None:
+            self.nbits = _self.nbits
+            self.bits = _self.bits
+            self.descr = _self.descr
+            self.max_value = _self.max_value
+            return
+
+        if not isinstance(keys, (str, list, numpy.ndarray)):
             raise TypeError('Input argument \'keys\' incorrect type.')
         if not all([isinstance(k, str) for k in keys]):
             raise TypeError('Input keys must have string type.')
@@ -179,7 +204,7 @@ class BitMask:
         if descr is None:
             return
 
-        if not any([isinstance(descr, t) for t in allowed_types]):
+        if not isinstance(descr, (str, list, numpy.ndarray)):
             raise TypeError('Input argument \'descr\' incorrect type.')
         if not all([isinstance(d, str) for d in descr]):
             raise TypeError('Input keys must have string type.')
