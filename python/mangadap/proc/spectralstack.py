@@ -20,26 +20,17 @@ Stack some spectra!
         from __future__ import unicode_literals
 
         import sys
-        import warnings
         if sys.version > '3':
             long = int
         
-        import os.path
-        from os import remove, environ
+        import numpy
         from scipy import sparse
         from astropy.io import fits
         import astropy.constants
-        import time
-        import numpy
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
-        from ..util.idlutils import airtovac
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array
-        from ..drpfits import DRPFits
+        from ..util.covariance import Covariance
+        from ..util.misc import inverse_with_zeros
 
 *Class usage examples*:
 
@@ -61,12 +52,12 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import sys
-import warnings
 if sys.version > '3':
     long = int
 
 import numpy
 from scipy import sparse
+from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import ParSet
@@ -139,6 +130,18 @@ class SpectralStackPar(ParSet):
         hdr['STCKVREG'] = (str(self['vel_register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
+
+
+    def fromheader(self, hdr):
+        """
+        Copy the information from the header
+
+        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        """
+        self['operation'] = hdr['STCKOP']
+        self['vel_register'] = bool(hdr['STCKVREG'])
+        self['covar_mode'] = hdr['STCKCRMD']
+        self['covar_par'] = eval(hdr['STCKCRPR'])
 
 
 class SpectralStack():
@@ -219,7 +222,7 @@ class SpectralStack():
     def _get_input_mask(flux, ivar=None, mask=None, dtype=bool):
         inp_mask = numpy.full(flux.shape, False, dtype=bool) if mask is None else mask
         if isinstance(flux, numpy.ma.MaskedArray):
-            inp_mask |= flux.mask
+            inp_mask |= numpy.ma.getmaskarray(flux)
         if ivar is not None:
             inp_mask |= ~(ivar>0)
         return inp_mask.astype(dtype)
@@ -283,7 +286,7 @@ class SpectralStack():
         rt = self.rebin_T.toarray()
         self.flux = numpy.ma.dot(rt, flux)
         self.fluxsqr = numpy.ma.dot(rt, numpy.square(flux))
-        self.npix = numpy.ma.dot(rt, numpy.invert(flux.mask)).astype(int)
+        self.npix = numpy.ma.dot(rt, numpy.invert(numpy.ma.getmaskarray(flux))).astype(int)
 
         if ivar is None:
             return
@@ -333,7 +336,8 @@ class SpectralStack():
 #                pyplot.scatter(numpy.sqrt(self.covar[i].diagonal()), numpy.sqrt(1./self.ivar[:,j]),
 #                               marker='.', s=30, lw=0, color='k')
                 variance_ratio[:,i] = self.covar[i].diagonal() * self.ivar[:,j]
-                variance_ratio.mask[:,i] = self.ivar.mask[:,j]
+#                variance_ratio.mask[:,i] = self.ivar.mask[:,j]
+                variance_ratio[numpy.ma.getmaskarray(self.ivar)[:,j],i] = numpy.ma.masked
 #            pyplot.show()
 
 #            print(numpy.sum(variance_ratio.mask))
@@ -697,8 +701,8 @@ class SpectralStack():
 
         """
         wave = drpf['WAVE'].data
-        flux = drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
-        ivar = drpf.copy_to_masked_array(ext='IVAR', flag=['DONOTUSE', 'FORESTAR'])
+        flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
+        ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
 
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])

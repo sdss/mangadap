@@ -83,7 +83,6 @@ bitmasks for the template library spectra.
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_spectral_template_config
         from ..util.idlutils import airtovac
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
@@ -230,20 +229,22 @@ if sys.version > '3':
     try:
         from configparser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
+        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
     try:
         from configparser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
 else:
     try:
         from ConfigParser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
+        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
     try:
         from ConfigParser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
 
 import glob
 import os.path
@@ -260,12 +261,11 @@ from ..util.bitmask import BitMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
-from ..config.util import validate_spectral_template_config
 from ..util.idlutils import airtovac
-from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
+from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
-from .util import _select_proc_method
+from .util import _select_proc_method, HDUList_mask_wavelengths
 
 #from matplotlib import pyplot
 
@@ -312,6 +312,41 @@ class TemplateLibraryDef(ParSet):
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
 
+def validate_spectral_template_config(cnfg):
+    """ 
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a template library.
+
+    Args:
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the template library needed by
+            :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if key has unacceptable value.
+
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'file_search' not in cnfg.options('default'):
+        raise KeyError('Keyword \'file_search\' must be provided.')
+    if 'fwhm' not in cnfg.options('default') and 'sres_ext' not in cnfg.options('default'):
+        raise KeyError('Must provided keyword \'fwhm\' or \'sres_ext\'.')
+
+    # Put in default values
+    if 'in_vacuum' not in cnfg.options('default') or cnfg['default']['in_vacuum'] is None:
+        cnfg['default']['in_vacuum'] = 'False'
+    if 'wave_limit' not in cnfg.options('default') or cnfg['default']['wave_limit'] is None:
+        cnfg['default']['wave_limit'] = 'None, None'
+    if 'lower_flux_limit' not in cnfg.options('default') \
+      or cnfg['default']['lower_flux_limit'] is None:
+        cnfg['default']['lower_flux_limit'] = 'None'
+    if 'log10' not in cnfg.options('default') or cnfg['default']['log10'] is None:
+        cnfg['default']['log10'] = 'False'
+
+
 def available_template_libraries(dapsrc=None):
     """
     Return the list of library keys, the searchable string of the 1D
@@ -354,7 +389,7 @@ def available_template_libraries(dapsrc=None):
         Function is currently only valid for Python 3.2 or greater!
 
     Args:
-        dapsrc (str): (Optional) Root path to the DAP source
+        dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.
 
@@ -483,65 +518,65 @@ class TemplateLibrary:
     read=True.  If the DRP file is provided, the routine will check for
     the resolution matched fits file; if it doesn't exist and read is
     True, it will prepare the template library for use in analyzing the
-    DRP file and write the prepared library file.  If force=True, the
+    DRP file and write the prepared library file.  If clobber=True, the
     preparation and writing of the template library will be done even if
     the library already exists.
 
     Args:
         library_key (str): Keyword selecting the library to use.
-        tpllib_list (list): (Optional) List of
+        tpllib_list (list): (**Optional**) List of
             :class:`TemplateLibraryDef` objects that define the
             parameters required to read and interpret a template
             library.  The *library_key* must select one of the objects
             in this list.
-        dapsrc (str): (Optional) Root path to the DAP source directory.
-            If not provided, the default is defined by
+        dapsrc (str): (**Optional**) Root path to the DAP source
+            directory.  If not provided, the default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.
-        drpf (:class:`mangadap.drpfits.DRPFits`): (Optional) DRP file
-            (object) with which the template library is associated for
-            analysis
+        drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
+            file (object) with which the template library is associated
+            for analysis
         sres (:class:`mangadap.util.instrument.spectral_resolution`):
-            (Optional) The object is used simply to access the spectral
-            resolution and associated wavelength coordinate vector
-            needed when matching the spectral resolution of the template
-            library; this is used in place of the attributes in any
-            provided DRP file object.
-        velocity_offset (float): (Optional) Velocity offset to use when
-            matching the spectral resolution between the template
+            (**Optional**) The object is used simply to access the
+            spectral resolution and associated wavelength coordinate
+            vector needed when matching the spectral resolution of the
+            template library; this is used in place of the attributes in
+            any provided DRP file object.
+        velocity_offset (float): (**Optional**) Velocity offset to use
+            when matching the spectral resolution between the template
             library and the galaxy spectra.
-        spectral_step (float) : (Optional) Target logarithmic
+        spectral_step (float) : (**Optional**) Target logarithmic
             (*log*=True) or linear (*log*=False) step in wavelength for
             the template library.
-        log (bool) : (Optional) Flag to force the library to be
+        log (bool) : (**Optional**) Flag to force the library to be
             logarithmically sampled in wavelength.
-        wavelength_range (list or numpy.ndarray) : (Optional) Force the
-            template library to covert this spectral range.  Unobserved
-            spectral regions will be flagged.
-        renormalize (bool) : (Optional) After processing, renormalize
-            the flux to unity.
-        dapver (str): (Optional) DAP version, which is used to define
-            the default DAP analysis path.  Default is defined by
+        wavelength_range (list or numpy.ndarray) : (**Optional**) Force
+            the template library to covert this spectral range.
+            Unobserved spectral regions will be flagged.
+        renormalize (bool) : (**Optional**) After processing,
+            renormalize the flux to unity.
+        dapver (str): (**Optional**) DAP version, which is used to
+            define the default DAP analysis path.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (str): (Optional) The path to the top level
+        analysis_path (str): (**Optional**) The path to the top level
             directory containing the DAP output files for a given DRP
             and DAP version.  Default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
-        directory_path (str): (Optional) The exact path to the processed
-            template library file.  Default is defined by
+        directory_path (str): (**Optional**) The exact path to the
+            processed template library file.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_reference_path`.
-        processed_file (str): (Optional) The name of the file containing
-            the prepared template library output file.  The file should
-            be found at :attr:`directory_path`/:attr:`processed_file`.
-            Default is defined by
+        processed_file (str): (**Optional**) The name of the file
+            containing the prepared template library output file.  The
+            file should be found at
+            :attr:`directory_path`/:attr:`processed_file`.  Default is
+            defined by
             :func:`mangadap.config.defaults.default_dap_file_name`.
-        process (bool): (Optional) If :attr:`drpf` is defined and the
-            prepared template library does not exist, this will process
-            the template library in preparation for use in fitting the
-            provided DRP file.
-        force (bool): (Optional) If :attr:`drpf` is define and *process*
-            is True, this will force the template library to be
-            processed, even if the prepared template library already
-            exists.
+        process (bool): (**Optional**) If :attr:`drpf` is defined and
+            the prepared template library does not exist, this will
+            process the template library in preparation for use in
+            fitting the provided DRP file.
+        clobber (bool): (**Optional**) If :attr:`drpf` is define and
+            *process* is True, this will clobber any existing processed
+            template library.
 
     Attributes:
         version (str): Version number
@@ -586,12 +621,13 @@ class TemplateLibrary:
           binning!
         - Allow to process, where process is just to change the
           sampling or the resolution (not necessarily both).
+        - Include verbose level and logging
 
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
                  sres=None, velocity_offset=0.0, spectral_step=None, log=True,
                  wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
-                 directory_path=None, processed_file=None, read=True, process=True, force=False):
+                 directory_path=None, processed_file=None, read=True, process=True, clobber=False):
 
         self.version = '2.1'
 
@@ -641,7 +677,7 @@ class TemplateLibrary:
                                       wavelength_range=wavelength_range, renormalize=renormalize,
                                       dapver=dapver, analysis_path=analysis_path,
                                       directory_path=directory_path, processed_file=processed_file,
-                                      force=force)
+                                      clobber=clobber)
 
 
     def __del__(self):
@@ -669,19 +705,18 @@ class TemplateLibrary:
             library_key (str): Keyword of the selected library.
                 Available libraries are proved by
                 :func:`available__template_libraries`
-            tpllib_list (list): (Optional) List of 
+            tpllib_list (list): (**Optional**) List of 
                 :class:`TemplateLibraryDef'
                 objects that define the parameters required to read and
                 interpret a template library.
-            dapsrc (str): (Optional) Root path to the DAP source
+            dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
         """
         # Get the details of the selected template library
-        self.library = _select_proc_method(library_key, TemplateLibraryDef,
-                                             tpllib_list=tpllib_list,
-                                             available_func=available_template_libraries,
-                                             dapsrc=dapsrc)
+        self.library = _select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
+                                           available_func=available_template_libraries,
+                                           dapsrc=dapsrc)
 
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
@@ -728,15 +763,15 @@ class TemplateLibrary:
         self._can_set_paths(directory_path, drpf, processed_file)
 
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
-                                                         drpver=self.drpf.drpver,
+        self.directory_path = default_dap_reference_path(plate=drpf.plate,
+                                                         drpver=drpf.drpver,
                                                          dapver=dapver,
                                                          analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.processed_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                    self.drpf.mode, self.library['key']) \
+        self.processed_file = default_dap_file_name(drpf.plate, drpf.ifudesign,
+                                                    drpf.mode, self.library['key']) \
                                         if processed_file is None else str(processed_file)
 
 
@@ -891,15 +926,16 @@ class TemplateLibrary:
             self.hdu.close()
             self.hdu = None
 
-        self.hdu = fits.HDUList([fits.PrimaryHDU()])
-        self.hdu.append(fits.ImageHDU(wave, name='WAVE'))
-        self.hdu.append(fits.ImageHDU(flux, name='FLUX'))
-#        self.hdu.append(fits.ImageHDU(ivar, name='IVAR'))
-        self.hdu.append(fits.ImageHDU(mask, name='MASK'))
-        self.hdu.append(fits.ImageHDU(sres, name='SPECRES'))
-        self.hdu.append(fits.ImageHDU(soff, name='SIGOFF'))
-        self.hdu[0].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
-        self.hdu[0].header['LIBKEY'] = (self.library['key'], 'Library identifier')
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(),
+                                  fits.ImageHDU(wave, name='WAVE'),
+                                  fits.ImageHDU(flux, name='FLUX'),
+                                  fits.ImageHDU(mask, name='MASK'),
+                                  fits.ImageHDU(sres, name='SPECRES'),
+                                  fits.ImageHDU(soff, name='SIGOFF')
+                                ])
+
+        self.hdu['PRIMARY'].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
+        self.hdu['PRIMARY'].header['LIBKEY'] = (self.library['key'], 'Library identifier')
 
 
     def _wavelength_range(self, flag=None):
@@ -909,7 +945,7 @@ class TemplateLibrary:
         not considered.
 
         Args:
-            flag (str or list): (Optional) Flags to consider when
+            flag (str or list): (**Optional**) Flags to consider when
                 determining the wavelength range; see
                 :func:`mangadap.util.bitmasks.BitMask.flagged`.
 
@@ -1098,7 +1134,7 @@ class TemplateLibrary:
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        mask = numpy.zeros((self.ntpl, npix), dtype=numpy.uint8)
+        mask = numpy.zeros((self.ntpl, npix), dtype=self.tplbm.minimum_uint_dtype())
         print('Matching sampling ... ')
         for i in range(0,self.ntpl):
             # Observed wavelengths
@@ -1186,12 +1222,6 @@ class TemplateLibrary:
         self.processed = True
 
 
-    def _write_hdu(self):
-        """Write the HDUList to the output file."""
-        print('Writing: {0}'.format(self.file_path()))
-        self.hdu.writeto(self.file_path())
-
-
     def file_name(self):
         """Return the name of the processed file."""
         return self.processed_file
@@ -1264,13 +1294,13 @@ class TemplateLibrary:
         the object are used.
 
         Args:
-            library_key (str): (Optional) Keyword selecting the library
+            library_key (str): (**Optional**) Keyword selecting the library
                 to use.
-            tpllib_list (list): (Optional) List of
+            tpllib_list (list): (**Optional**) List of
                 :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
                 interpret a template library.
-            dapsrc (str): (Optional) Root path to the DAP source
+            dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
 
@@ -1285,7 +1315,7 @@ class TemplateLibrary:
                                  sres=None, velocity_offset=0.0, spectral_step=None, log=True,
                                  wavelength_range=None, renormalize=True, dapver=None,
                                  analysis_path=None, directory_path=None, processed_file=None,
-                                 force=False):
+                                 clobber=False):
         """
 
         Process the template library for use in analyzing object
@@ -1320,22 +1350,22 @@ class TemplateLibrary:
             The routine **does not** check that that an existing
             processed file or the existing object has been processed
             using the same DRPFits, velocity_offset, velscale, or sres
-            input.  If unsure, use force=True.
+            input.  If unsure, use clobber=True.
         
         Args:
 
-            library_key (str): (Optional) Keyword selecting the library
+            library_key (str): (**Optional**) Keyword selecting the library
                 to use; default is to use existing :attr:`library`.
-            tpllib_list (list): (Optional) List of
+            tpllib_list (list): (**Optional**) List of
                 :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
                 interpret a template library.  Input ignored if
                 *library_key* is None.
-            dapsrc (str): (Optional) Root path to the DAP source
+            dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
                 Input ignored if *library_key* is None.
-            drpf (:class:`mangadap.drpfits.DRPFits`): (Optional) DRP
+            drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
                 file (object) with which the template library is
                 associated for analysis.  **If not provided**, the user
                 must define *velscale* and *sres* such that the library
@@ -1343,44 +1373,43 @@ class TemplateLibrary:
                 *directory_path* and *processed_file* such that the
                 output file can be written.
             sres (:class:`mangadap.util.instrument.spectral_resolution`):
-                (Optional) The object is used simply to access the
+                (**Optional**) The object is used simply to access the
                 spectral resolution and associated wavelength coordinate
                 vector needed when matching the spectral resolution of
                 the template library.  This takes prededence over the
                 values provided by the DRP file object.
-            velocity_offset (float): (Optional) Velocity offset to use
+            velocity_offset (float): (**Optional**) Velocity offset to use
                 when matching the spectral resolution between the
                 template library and the galaxy spectra.
-            spectral_step (float) : (Optional) Target logarithmic
+            spectral_step (float) : (**Optional**) Target logarithmic
                 (*log*=True) or linear (*log*=False) step in wavelength for
                 the template library.
-            log (bool) : (Optional) Flag to force the library to be
+            log (bool) : (**Optional**) Flag to force the library to be
                 logarithmically sampled in wavelength.
-            wavelength_range (list or numpy.ndarray) : (Optional) Force the
+            wavelength_range (list or numpy.ndarray) : (**Optional**) Force the
                 template library to covert this spectral range.  Unobserved
                 spectral regions will be flagged.
-            renormalize (bool) : (Optional) After processing, renormalize
+            renormalize (bool) : (**Optional**) After processing, renormalize
                 the flux to unity.
-            dapver (str): (Optional) DAP version, which is used to
+            dapver (str): (**Optional**) DAP version, which is used to
                 define the default DAP analysis path.  Default is
                 defined by
                 :func:`mangadap.config.defaults.default_dap_version`
-            analysis_path (str): (Optional) The path to the top level
+            analysis_path (str): (**Optional**) The path to the top level
                 directory containing the DAP output files for a given
                 DRP and DAP version.  Default is defined by
                 :func:`mangadap.config.defaults.default_analysis_path`.
-            directory_path (str): (Optional) The exact path for the
+            directory_path (str): (**Optional**) The exact path for the
                 processed template library file.  Default is defined by
                 :func:`mangadap.config.defaults.default_dap_reference_path`.
-            processed_file (str): (Optional) The name of the file
+            processed_file (str): (**Optional**) The name of the file
                 containing (to contain) the prepared template library
                 output file.  The file should be found at
                 :attr:`directory_path`/:attr:`processed_file`.  Default
                 is defined by
                 :func:`mangadap.config.defaults.default_dap_file_name`.
-            force (bool): (Optional) Force the template library to be
-                processed, even if the prepared template library already
-                exists.
+            clobber (bool): (**Optional**) Clobber any existing processed
+                library.
 
         Raises:
             ValueError: If the velocity scale, spectral resolution, or
@@ -1436,7 +1465,7 @@ class TemplateLibrary:
 #            force = True
 
         # Read and use a pre-existing file
-        if os.path.isfile(ofile) and not force:
+        if os.path.isfile(ofile) and not clobber:
             print('Using existing file: {0}'.format(self.processed_file))
             self.hdu = fits.open(ofile)
             self.file_list = glob.glob(self.library['file_search'])
@@ -1454,7 +1483,7 @@ class TemplateLibrary:
         # Process the library
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
         # Write the fits file
-        self._write_hdu()
+        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True)
 
 
     def single_spec_to_fits(self, i, ofile, clobber=True):
@@ -1469,7 +1498,7 @@ class TemplateLibrary:
             i (int) : Index of the spectrum in the avaiable list to
                 output.
             ofile (str) : Name of the file to write
-            clobber (bool) : (Optional) Flag to clobber any existing
+            clobber (bool) : (**Optional**) Flag to clobber any existing
                 file of the same name.
 
         Raises:

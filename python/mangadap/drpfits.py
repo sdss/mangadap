@@ -89,7 +89,6 @@ the MaNGA Data Reduction Pipeline (DRP).
     - Reconstructed broad-band images and PSFs are *not* restructured in
       the CUBE files!  This is why the are transposed in
       :func:`mangadap.drpfits.DRPFits.gri_composite`.
-    - Change warnings.warn to logger warnings
     - Image reconstruction has transpose sense wrt DRP output!
 
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
@@ -122,7 +121,7 @@ try:
     from shapely.ops import cascaded_union
     from shapely.geometry import Point
 except ImportError:
-    warnings.warn('Could not import shapely!')
+    warnings.warn('Could not import shapely!', ImportWarning)
 
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
@@ -393,10 +392,10 @@ class DRPFits:
             you read the DRP CUBE fits file directly using
             `astropy.io.fits`_.  In ``RSS`` mode, this is just the index
             of the spectrum in the 2D array.  See: :func:`select`.
-        data_arrays (list) : List of viable keywords for the data arrays
-            in the DRP file.  For CUBE files, these are 'FLUX', 'IVAR',
-            and 'MASK'; for RSS files, this also includes 'DISP',
-            'XPOS', and 'YPOS'.
+        spectral_arrays (list) : List of viable keywords for the data
+            arrays in the DRP file.  For CUBE files, these are 'FLUX',
+            'IVAR', and 'MASK'; for RSS files, this also includes
+            'DISP', 'XPOS', and 'YPOS'.
         dispaxis (int) : Index of the axis with the spectral channels.
             The internal data structure always has :attr:`dispaxis` as
             the *last* axis in the array.  So :attr:`dispaxis` is 2 for
@@ -457,7 +456,7 @@ class DRPFits:
             self.bitmask = DRPFitsBitMask(mode=self.mode)
         except:
             warnings.warn('Unable to define bit mask for DRP file.  Can only distinguish between'
-                          'masked (values greater than 0) and unmasked (values of 0)')
+                          'masked (values greater than 0) and unmasked (values of 0).')
             self.bitmask = None
 
         # Setup the variables for the internal data structure
@@ -468,10 +467,10 @@ class DRPFits:
         self.spatial_shape = None       # Shape of the spatial axes
         self.nspec = None               # Total number of spectra (good or bad)
         self.spatial_index = None       # Abstracted spatial indexing
-        # A list of the extensions in the fits image with data arrays
-        self.data_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
+        # A list of the extensions in the fits image with spectral data
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
         if self.mode == 'RSS':
-            self.data_arrays += [ 'DISP', 'XPOS', 'YPOS' ]
+            self.spectral_arrays += [ 'DISP', 'XPOS', 'YPOS' ]
         self.dispaxis = 2 if self.mode == 'CUBE' else 1
         self.nwave = None
 
@@ -921,7 +920,8 @@ class DRPFits:
         self.hdu['FLUX'].header['CUNIT2'] = 'deg'
 
 
-    def _restructure_cube(self):
+    @staticmethod
+    def _restructure_cube(hdu, ext=['FLUX', 'IVAR', 'MASK'], inverse=False):
         """
         Restructure the cube such that the axes are [x, y, lambda].
 
@@ -929,20 +929,37 @@ class DRPFits:
             - Make sure this function remains current with DRP changes.
             - Function will return None if the fits file has not yet
               been read.
-        """
-        if self.hdu is None:
-            warnings.warn('Data not yet read.  Run open_hdu().')
-            return
 
-        self.hdu['FLUX'].data = numpy.asarray(self.hdu['FLUX'].data.T, order='C')
-        self.hdu['FLUX'].header['NAXIS1'], self.hdu['FLUX'].header['NAXIS2'], \
-            self.hdu['FLUX'].header['NAXIS3'] = self.hdu['FLUX'].data.shape
-        self.hdu['IVAR'].data = numpy.asarray(self.hdu['IVAR'].data.T, order='C')
-        self.hdu['IVAR'].header['NAXIS1'], self.hdu['IVAR'].header['NAXIS2'], \
-            self.hdu['IVAR'].header['NAXIS3'] = self.hdu['IVAR'].data.shape
-        self.hdu['MASK'].data = numpy.asarray(self.hdu['MASK'].data.T, order='C')
-        self.hdu['MASK'].header['NAXIS1'], self.hdu['MASK'].header['NAXIS2'], \
-            self.hdu['MASK'].header['NAXIS3'] = self.hdu['MASK'].data.shape
+        """
+        if hdu is None:
+            raise ValueError('Input HDUList object is None!')
+        if not isinstance(hdu, fits.HDUList):
+            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+        for i in range(len(ext)):
+            hdu[ext[i]].data = numpy.asarray(hdu[ext[i]].data.T, order=('F' if inverse else 'C'))
+            hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'], \
+                    hdu[ext[i]].header['NAXIS3'] = hdu[ext[i]].data.shape
+
+
+    @staticmethod
+    def _restructure_rss(hdu, ext=['FLUX', 'IVAR', 'MASK', 'DISP', 'XPOS', 'YPOS'], inverse=False):
+        """
+        Restructure the RSS file.  At this point, this only means fixing
+        the header.
+
+        .. warning::
+            - Make sure this function remains current with DRP changes.
+            - Function will return None if the fits file has not yet
+              been read.
+
+        """
+        if hdu is None:
+            raise ValueError('Input HDUList object is None!')
+        if not isinstance(hdu, fits.HDUList):
+            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+        for i in range(len(ext)):
+            hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'] \
+                    = hdu[ext[i]].data.T.shape if inverse else hdu[ext[i]].data.shape
 
 
     def _generate_spatial_index(self):
@@ -1035,18 +1052,30 @@ class DRPFits:
 
         # Reformat and initialize properties of the data
         if self.mode == 'CUBE':
-            self._restructure_cube()
+            DRPFits._restructure_cube(self.hdu)
+        elif self.mode == 'RSS':
+            DRPFits._restructure_rss(self.hdu)
         self.shape = self.hdu['FLUX'].data.shape
-        self.spatial_shape = self.shape[:self.dispaxis] + self.shape[self.dispaxis+1:]
+        self.spatial_shape = self._get_spatial_shape(self.shape, self.dispaxis)
         self.nspec = numpy.prod(self.spatial_shape)
         self.nwave = self.shape[self.dispaxis]
         self._generate_spatial_index()
+
+   
+    @staticmethod
+    def _get_spatial_shape(shape, dispaxis):
+        return shape[:dispaxis] + shape[dispaxis+1:]
 
 
     def info(self):
         """Print the HDU info page."""
         self.open_hdu(checksum=self.checksum)
+        warnings.warn('Shapes returned in \'Dimensions\' may be wrong!')
         print(self.hdu.info())
+
+
+    def do_not_stack_flags(self):
+        return ['DONOTUSE', 'FORESTAR']
 
 
     def select(self, t, ext='FLUX', order='xy'):
@@ -1101,7 +1130,7 @@ class DRPFits:
                 non-spectral axes.  See the examples above.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
                 ``'FLUX'``.
 
         Returns:
@@ -1117,7 +1146,7 @@ class DRPFits:
             Add select_near function that uses on-sky coordinates.
 
         """
-        if ext not in self.data_arrays:
+        if ext not in self.spectral_arrays:
             raise KeyError('Cannot access {0} extension.'.format(ext))
         if isinstance(t, tuple):
             n = (self.shape[self.dispaxis-1],1) if self.mode == 'CUBE' else \
@@ -1137,6 +1166,15 @@ class DRPFits:
         range is provided, the function just returns a fully False array
         with the correct shape.
 
+        .. todo::
+        
+            This method is used by other similar objects; see, e.g.,
+            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+
+            These and other such methods should be pulled out into a
+            base class that these common classes are derived from.  E.g.
+            :class:`MaNGAFits`?
+
         Args:
             waverange (array-like) : (**Optional**) A two-element array
                 with the minimum and maximum wavelength to include.
@@ -1152,16 +1190,19 @@ class DRPFits:
             ValueError: Raised if the input wavelength range does not
                 have two elements.
         """
+        outshape = self.shape if array else (self.nwave,)
         if waverange is None:
-            outshape = self.hdu['FLUX'].data.shape if array else self.hdu['WAVE'].data.shape
             return numpy.full(outshape, False, dtype=numpy.bool)
         if len(waverange) != 2:
             raise ValueError('Input wavelength range must have 2 and only 2 elements!')
+
+        if self.dispaxis is None:
+            self.dispaxis = len(outshape)-1
         _waverange = waverange if waverange[0] < waverange[1] else [waverange[1], waverange[0]]
         selected = (self.hdu['WAVE'].data < _waverange[0]) | (self.hdu['WAVE'].data > _waverange[1])
-        return numpy.array([selected]*self.nspec).reshape(self.nspec,-1) if array else selected
+        return numpy.array([selected]*self.nspec).reshape(outshape) if array else selected
 
-
+    
     def copy_to_array(self, waverange=None, ext='FLUX'):
         r"""
         Return a copy of the selected data array.  The array size is
@@ -1171,6 +1212,15 @@ class DRPFits:
         the original DRP file for each spectrum are given by tuples in
         :attr:`spatial_index`.
 
+        .. todo::
+        
+            This method is used by other similar objects; see, e.g.,
+            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+
+            These and other such methods should be pulled out into a
+            base class that these common classes are derived from.  E.g.
+            :class:`MaNGAFits`?
+
         Args:
             waverange (array-like) : (**Optional**) Two-element array
                 with the first and last wavelength to include in the
@@ -1178,7 +1228,7 @@ class DRPFits:
                 range.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
                 ``'FLUX'``.
 
         Returns:
@@ -1188,12 +1238,19 @@ class DRPFits:
         Raises:
             KeyError : Raised if `ext` is not a valid extension.
         """
-        if ext not in self.data_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(ext))
+        # Make sure extension is not a list
+        _ext = ext
+        if isinstance(ext, list):
+            if len(ext) > 1:
+                raise ValueError('Must provide only one extension.')
+            _ext = ext[0]
+        # Make sure the extension exists
+        if _ext not in self.spectral_arrays:
+            raise KeyError('Cannot access {0} extension.'.format(_ext))
         if waverange is None:
-            return self.hdu[ext].data.reshape(-1,self.nwave).copy()
+            return self.hdu[_ext].data.reshape(-1,self.nwave).copy()
         indx = numpy.invert(self.wavelength_mask(waverange=waverange, array=True))
-        return self.hdu[ext].data.reshape(-1,self.nwave).copy()[indx]
+        return self.hdu[_ext].data[indx].reshape(-1,self.nwave).copy()
 
 
     def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
@@ -1205,18 +1262,28 @@ class DRPFits:
         pixels that are considered to be masked can be specified using
         the `flag` option.
         
+        .. todo::
+        
+            This method is used by other similar objects; see, e.g.,
+            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+
+            These and other such methods should be pulled out into a
+            base class that these common classes are derived from.  E.g.
+            :class:`MaNGAFits`?
+
         Args:
             waverange (array-like) : (**Optional**) Two-element array
                 with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
+
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
                 `'FLUX'`.
             mask_ext (str) : (**Optional**) Name of the extension with
                 the mask bit data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
                 `'MASK'`.
             flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
@@ -1231,22 +1298,33 @@ class DRPFits:
         Raises:
             KeyError : Raised if `ext` is not a valid extension.
         """
+        # Make sure extension is not a list
+        _ext = ext
+        if isinstance(ext, list):
+            if len(ext) > 1:
+                raise ValueError('Must provide only one extension.')
+            _ext = ext[0]
+        _mask_ext = mask_ext
+        if isinstance(mask_ext, list):
+            if len(mask_ext) > 1:
+                raise ValueError('Must provide only one extension.')
+            _mask_ext = mask_ext[0]
         # Make sure the extensions exist
-        if ext not in self.data_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(ext))
-        if mask_ext not in self.data_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(mask_ext))
+        if _ext not in self.spectral_arrays:
+            raise KeyError('Cannot access {0} extension.'.format(_ext))
+        if _mask_ext not in self.spectral_arrays:
+            raise KeyError('Cannot access {0} extension.'.format(_mask_ext))
         # Determine which pixels should be masked
-        mask = self.hdu[mask_ext].data.reshape(-1,self.nwave) > 0 \
+        mask = self.hdu[_mask_ext].data.reshape(-1,self.nwave) > 0 \
                     if flag is None or self.bitmask is None else \
                         self.bitmask.flagged(
-                            self.hdu[mask_ext].data.reshape(-1,self.nwave),
+                            self.hdu[_mask_ext].data.reshape(-1,self.nwave),
                             flag=flag)
         # Add the wavelength range mask
         if waverange is not None:
-            mask |= self.wavelength_mask(waverange=waverange, array=True)
+            mask |= self.wavelength_mask(waverange=waverange,array=True).reshape(-1,self.nwave)
         # Return the masked array
-        return numpy.ma.MaskedArray(self.hdu[ext].data.reshape(-1,self.nwave).copy(), mask=mask)
+        return numpy.ma.MaskedArray(self.hdu[_ext].data.reshape(-1,self.nwave).copy(), mask=mask)
 
 
     def object_data(self):
@@ -1550,7 +1628,7 @@ class DRPFits:
 
 
     def regrid_transfer_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None,
-                               rlim=None, sigma=None, quiet=False):
+                               rlim=None, sigma=None, quiet=False, rej_flag='3DREJECT'):
         r"""
         Calculate the transfer matrix used to produce a reconstructed
         image of the fiber data at the specified wavelength channel.
@@ -1681,12 +1759,18 @@ class DRPFits:
         non_zero_pix = numpy.empty(0, dtype=numpy.int64)    # Holds triplet image index
         non_zero_wgt = numpy.empty(0, dtype=numpy.float64)  # Holds triplet weight
 
+        # Do not include any pixels with zero inverse variance or pixels
+        # that have been flagged with the provided mask bits
+        mask = ~(self.hdu['IVAR'].data[:,channel] > 0.0)
+        if rej_flag is not None:
+            _rej_flag = rej_flag if isinstance(rej_flag, list) or rej_flag != 'any' else None
+            mask |= self.bitmask.flagged(self.hdu['MASK'].data[:,channel], flag=_rej_flag)
+
 #       print(self.xs, self.nx, self.ys, self.ny)
 
         # TODO: Can optimize this further
-        for k in range(0,self.nspec):
-
-            if self.hdu['IVAR'].data[k,channel] <= 0.0:
+        for k in range(self.nspec):
+            if mask[k]:
                 continue
 
             # Fill spectrum index
@@ -2451,11 +2535,14 @@ class DRPFits:
         # Done this way so that computation of wavelength mask only done
         # once
         if waverange is not None:
-            wavemask = self.wavelength_mask(waverange=waverange, array=True)
-            xpos.mask |= wavemask
-            ypos.mask |= wavemask
+            wavemask = self.wavelength_mask(waverange=waverange, array=True).reshape(-1,self.nwave)
+#            xpos.mask |= wavemask
+#            ypos.mask |= wavemask
+            xpos[wavemask] = numpy.ma.masked
+            ypos[wavemask] = numpy.ma.masked
             if fluxwgt:
-                flux.mask |= wavemask
+#                flux.mask |= wavemask
+                flux[wavemask] = numpy.ma.masked
 
         # Get the normalization and return the flux- or un-weighted coordinates
         if fluxwgt:
@@ -2470,7 +2557,7 @@ class DRPFits:
         flux = self.copy_to_masked_array(waverange=waverange)
         ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange)
         snr = flux*numpy.ma.sqrt(ivar)
-        nsum = numpy.sum(numpy.invert(flux.mask), axis=1)
+        nsum = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)), axis=1)
 
         # Get the mean signal, variance, and signal-to-noise
         signal = numpy.ma.sum(flux, axis=1)/nsum
@@ -2529,7 +2616,7 @@ class DRPFits:
             return area
         except:
             warnings.warn('Could not use \'shapely\' package to compute overlapping fiber area.' \
-                          'Return the total fiber area.')
+                          'Return the total fiber area.', ImportWarning)
             return (nbin*numpy.pi).astype(float)
         
 

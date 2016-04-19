@@ -111,11 +111,12 @@ import time
 import os.path
 import numpy
 import glob
+import warnings
 
 try:
     import pbs.queue
 except:
-    print('WARNING: Could not import pbs.queue!  Any cluster submission will fail!')
+    warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
 from os import environ, makedirs
 from argparse import ArgumentParser
@@ -497,7 +498,7 @@ class rundap:
         # TODO: Does an error need to be thrown here, or just warn user.
         # Use warnings class?
         if self.clobber and not self.all:
-            print('Clobber keyword can only be set if all specified (-a,--all)!')
+            warnings.warn('Clobber keyword can only be set if all specified (-a,--all)!')
             self.clobber = None
 
         # If redo, platelist and ifudesignlist MUST be provided
@@ -998,7 +999,7 @@ class rundap:
         # A TEMPORARY PROVISION FOR THE DR13 QA!
         self.label = '{0}_dr13qa'.format(self.label)
         if self.qos is not None:
-            print('WARNING: USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
+            warnings.warn('USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
 
 #        self.label = '{0}_redo'.format(self.label)
 #        # In here, qos should never be anything but None; always set in daily

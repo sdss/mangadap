@@ -169,6 +169,8 @@ if sys.version > '3':
     long = int
 
 import numpy
+import warnings
+
 from scipy import sparse
 from astropy.io import fits
 from matplotlib import pyplot

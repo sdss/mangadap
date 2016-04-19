@@ -385,7 +385,7 @@ def default_dap_plan_file(output_mode, drpver=None, dapver=None, analysis_path=N
     return os.path.join(directory_path, plan_file)
 
 
-def default_dap_file_name(plate, ifudesign, mode, output_mode):
+def default_dap_file_name(plate, ifudesign, mode, output_mode, compressed=True):
     """
     Return the name of the DAP output fits file.
 
@@ -404,7 +404,7 @@ def default_dap_file_name(plate, ifudesign, mode, output_mode):
 #    siter = str(niter).zfill(3)
 #    return 'manga-{0}-{1}-LOG{2}_{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
 #    return '{0}_BIN-{1}-{2}.fits'.format(root, bintype, siter)
-    return '{0}-{1}.fits.gz'.format(root, output_mode)
+    return ('{0}-{1}.fits.gz' if compressed else '{0}-{1}.fits').format(root, output_mode)
 
 
 def default_plate_target_files():

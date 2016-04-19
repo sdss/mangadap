@@ -10,6 +10,10 @@
 #       or vacuum.  DAP assumes the input is in VACUUM if not specified
 #       in the definition of the database using
 #       :class:`EmissionLineDBDef`
+#   WAVEREF:
+#       Set the reference frame of the wavelengths provided to be in
+#       either air or vacuum using the keywords 'air' or 'vac',
+#       respectively.
 #   ACTION:
 #       Describes how the line should be treated.  Possible values are:
 #
@@ -47,4 +51,5 @@
 #       dispersion to be tied to a fitted line (MODE='f') with ID=N.
 #       One can also force only the velocities to be tied using 'vN' or
 #       only the velocity dispersions to be tied using 'sN'.
+#
 #------------------------------------------------------------------------

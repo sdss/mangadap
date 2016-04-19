@@ -145,7 +145,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
         img = numpy.transpose(img)
         mask = numpy.transpose(mask)
 
-    return ext, numpy.ma.masked_array(img, mask, fill_value=fill_value)
+    return ext, numpy.ma.MaskedArray(img, mask=mask, fill_value=fill_value)
 
 
 def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='coolwarm',

@@ -131,7 +131,6 @@ class BandPassFilterPar(ParSet):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         n = name.strip()
-        wave_opts = [ 'vac', 'air' ]
         unit_opts = [ 'ang', 'mag' ]
         integ_opts = [ 'flambda', 'fnu' ]
         order_opts = [ 'b_r', 'r_b' ]

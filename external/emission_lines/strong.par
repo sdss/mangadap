@@ -16,6 +16,7 @@ typedef struct {
     int index;
     char name[6];
     double lambda;
+    char waveref[3];
     char action;
     char line[6];
     double ampl;
@@ -24,13 +25,13 @@ typedef struct {
     char mode[6];
 } DAPEML;
 
-DAPEML  62  OIId    3728.4835       f      l   1.000      0      10      f  
-DAPEML  33  Hb      4862.691        f      l   1.000      0      10      f
-DAPEML  34  OIII    4960.295        f      l   1.000      0      10      f  
-DAPEML  35  OIII    5008.240        f      l   1.000      0      10      f  
-DAPEML  43  NII     6549.86         f      l   1.000      0      10      f  
-DAPEML  44  Ha      6564.632        f      l   1.000      0      10      f
-DAPEML  45  NII     6585.271        f      l   1.000      0      10      f
-DAPEML  46  SII     6718.294        f      l   1.000      0      10      f  
-DAPEML  47  SII     6732.674        f      l   1.000      0      10      f  
+DAPEML  62  OIId    3728.4835  vac  f      l   1.000      0      10      f  
+DAPEML  33  Hb      4862.691   vac  f      l   1.000      0      10      f
+DAPEML  34  OIII    4960.295   vac  f      l   1.000      0      10      f  
+DAPEML  35  OIII    5008.240   vac  f      l   1.000      0      10      f  
+DAPEML  43  NII     6549.86    vac  f      l   1.000      0      10      f  
+DAPEML  44  Ha      6564.632   vac  f      l   1.000      0      10      f
+DAPEML  45  NII     6585.271   vac  f      l   1.000      0      10      f
+DAPEML  46  SII     6718.294   vac  f      l   1.000      0      10      f  
+DAPEML  47  SII     6732.674   vac  f      l   1.000      0      10      f  
 

@@ -48,12 +48,21 @@ import sys
 if sys.version > '3':
     long = int
 
+import os
+import gzip
+import shutil
 import numpy
 from astropy.io import fits
 
 __author__ = 'Kyle B. Westfall'
 
+
 def wavelength_vector(npix, header, log10=False):
+    """
+    Return a vector with wavelength coordinates drawn from the WCS
+    coordinates in the header.  The function uses CRVAL1, CRPIX1,
+    CDELT1.
+    """
     crval = header['CRVAL1']
     crpix = header['CRPIX1']
     cdelt = header['CDELT1']
@@ -92,7 +101,7 @@ def readfits_1dspec(filename, log10=False):
     return wave, spec
 
 
-def writefits_1dspec(ofile, crval1, cdelt1, flux, clobber=True):
+def writefits_1dspec(ofile, crval1, cdelt1, flux, clobber=False):
     """
 
     Write a simple one-dimensional spectrum.
@@ -106,8 +115,8 @@ def writefits_1dspec(ofile, crval1, cdelt1, flux, clobber=True):
             pixel, which is included in the header with the keywords
             'CDELT1' and 'CD1_1'; 'CRPIX1' is always set to 1.
         flux (array): Vector of the flux values.
-        clobber (bool): (Optional) Flag to overwrite any existing file
-            of the same name.
+        clobber (bool): (**Optional**) Flag to overwrite any existing
+            file of the same name.
     """
     hdr = fits.Header()
     hdr['CRPIX1'] = 1
@@ -134,22 +143,18 @@ def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None
     
     Args:
         filename (str): Name of the fits file to read.
-
-        data_ext (str): (Optional) Name of the extension with the flux
-            data.  If None, default is 0.
-
-        ivar_ext (str): (Optional) Name of the extension with the
+        data_ext (str): (**Optional**) Name of the extension with the
+            flux data.  If None, default is 0.
+        ivar_ext (str): (**Optional**) Name of the extension with the
             inverse variance data.  If None, no inverse data are
             returned.
-
-        sres_ext (str): (Optional) Name of the extension with the
+        sres_ext (str): (**Optional**) Name of the extension with the
             specral resolution (:math:R=\lambda/\delta\lambda`)
             measurements.  If None, no spectral resolution data are
             returned.
-
-        log10 (bool): (Optional) Flag the WCS wavelength coordinates as
-            being in base-10 log wavelength, instead of linear.  Default
-            is to assume linear.
+        log10 (bool): (**Optional**) Flag the WCS wavelength coordinates
+            as being in base-10 log wavelength, instead of linear.
+            Default is to assume linear.
 
     Returns:
         numpy.ndarray : Up to four numpy.float64 arrays with the
@@ -234,4 +239,48 @@ def rec_to_fits_type(rec_element):
     # If it makes it here, assume its a string
     l = int(rec_element.dtype.str[rec_element.dtype.str.find('U')+1:])
     return '{0}A'.format(l)
-    
+
+
+def compress_file(ifile, clobber=False):
+    """
+    Compress a file using gzip.  The output file has the same name as
+    the input file with '.gz' appended.
+
+    Any existing file will be overwritten if clobber is true.
+
+    An error is raised if the input file name already has '.gz' appended
+    to the end.
+    """
+    if ifile.split('.')[-1] == 'gz':
+        raise ValueError('File appears to already have been compressed! {0}'.format(ifile))
+
+    ofile = '{0}.gz'.format(ifile)
+    if os.path.isfile(ofile) and not clobber:
+        raise FileExistsError('File already exists: {0}.\nTo overwrite, set clobber=True.'.format(
+                                ofile))
+
+    with open(ifile, 'rb') as f_in:
+        with gzip.open(ofile, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+
+def write_hdu(hdu, ofile, clobber=False, checksum=False):
+    """
+    Write an HDUList to an output file.
+    """
+    # Get the output file and determine if it should be compressed
+    compress = False
+    if ofile.split('.')[-1] == 'gz':
+        ofile = ofile[:ofile.rfind('.')] 
+        compress = True
+
+    # Write the data
+    print('writing')
+    hdu.writeto(ofile, clobber=clobber, checksum=checksum)
+    if compress:
+        # And compress it
+        print('compressing')
+        compress_file(ofile, clobber=clobber)
+        os.remove(ofile)
+
+

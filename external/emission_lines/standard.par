@@ -19,6 +19,7 @@ typedef struct {
     int index;
     char name[6];
     double lambda;
+    char waveref[3];
     char action;
     char line[6];
     double ampl;
@@ -27,67 +28,67 @@ typedef struct {
     char mode[6];
 } DAPEML;
 
-DAPEML   0  HeII    3204.038        f      l   1.000      0      10    t45  
-DAPEML   1  NeV     3346.783        f      l   1.000      0      10    t45  
-DAPEML   2  NeV     3346.783        f      l   1.000      0      10    t45  
-DAPEML   3  NeV     3426.863        f      l   1.000      0      10    t45  
-DAPEML   4  H25     3670.5154       i      l   1.000      0      10    t44
-DAPEML   5  H24     3672.5279       i      l   1.000      0      10    t44
-DAPEML   6  H23     3674.8109       i      l   1.000      0      10    t44
-DAPEML   7  H22     3677.4160       i      l   1.000      0      10    t44
-DAPEML   8  H21     3680.4065       i      l   1.000      0      10    t44
-DAPEML   9  H20     3683.8627       i      l   1.000      0      10    t44
-DAPEML  10  H19     3687.8870       i      l   1.000      0      10    t44
-DAPEML  11  H18     3692.6119       i      l   1.000      0      10    t44
-DAPEML  12  H17     3698.2104       i      l   1.000      0      10    t44
-DAPEML  13  H16     3704.9133       i      l   1.000      0      10    t44
-DAPEML  14  H15     3713.0334       i      l   1.000      0      10    t44
-DAPEML  15  H14     3723.0035       i      l   1.000      0      10    t44
-DAPEML  16  OII     3727.092        f      l   1.000      0      10    t45  
-DAPEML  17  OII     3729.875        f      l   1.000      0      10    t45  
-DAPEML  18  H13     3735.4365       i      l   1.000      0      10    t44
-DAPEML  19  H12     3751.2243       i      l   1.000      0      10    t44
-DAPEML  20  H11     3771.7080       i      l   1.000      0      10    t44
-DAPEML  21  H10     3798.9826       i      l   1.000      0      10    t44
-DAPEML  22  H9      3836.4790       i      l   1.000      0      10    t44
-DAPEML  23  NeIII   3869.86         f      l   1.000      0      10    t45  
-DAPEML  24  H8      3890.1576       f    d44   0.037      0      10    t44
-DAPEML  25  NeIII   3968.59         f      l   1.000      0      10    t45  
-DAPEML  26  Heps    3971.2020       f    d44   0.056      0      10    t44
-DAPEML  27  Hdel    4102.8991       f    d44   0.091      0      10    t44
-DAPEML  28  Hgam    4341.691        f    d44   0.164      0      10    t44
-DAPEML  29  OIII    4364.435        f      l   1.000      0      10    t45  
-DAPEML  30  HeII    4687.015        f      l   1.000      0      10    t45  
-DAPEML  31  ArIV    4712.58         f      l   1.000      0      10    t45  
-DAPEML  32  ArIV    4741.45         f      l   1.000      0      10    t45  
-DAPEML  33  Hb      4862.691        f    d44   0.350      0      10    t44
-DAPEML  34  OIII    4960.295        f    d35   0.350      0      10    t45  
-DAPEML  35  OIII    5008.240        f      l   1.000      0      10    t45  
-DAPEML  36  NI      5199.349        f      l   1.000      0      10    t45  
-DAPEML  37  NI      5201.705        f      l   1.000      0      10    t45  
-DAPEML  38  HeI     5877.243        f      l   1.000      0      10    t45  
-DAPEML  39  NaI     5891.583        f      l  -1.000      0      10      f
-DAPEML  40  NaI     5897.558        f      l  -1.000      0      10      f
-DAPEML  41  OI      6302.046        f      l   1.000      0      10    t45  
-DAPEML  42  OI      6365.535        f    d41   0.333      0      10    t45  
-DAPEML  43  NII     6549.86         f    d45   0.340      0      10    t45  
-DAPEML  44  Ha      6564.632        f      l   1.000      0      10      f
-DAPEML  45  NII     6585.271        f      l   1.000      0      10      f
-DAPEML  46  SII     6718.294        f      l   1.000      0      10    t45  
-DAPEML  47  SII     6732.674        f      l   1.000      0      10    t45  
-DAPEML  48  ArIII   7137.76         f      l   1.000      0      10    t45  
-DAPEML  49  ArIV    7172.68         f      l   1.000      0      10    t45  
-DAPEML  50  ArIV    7239.76         f      l   1.000      0      10    t45  
-DAPEML  51  ArIV    7265.33         f      l   1.000      0      10    t45  
-DAPEML  52  OII     7320.94         f      l   1.000      0      10    t45  
-DAPEML  53  OII     7322.01         f      l   1.000      0      10    t45  
-DAPEML  54  OII     7331.69         f      l   1.000      0      10    t45  
-DAPEML  55  OII     7332.75         f      l   1.000      0      10    t45  
-DAPEML  56  ArIV    7334.17         f      l   1.000      0      10    t45  
-DAPEML  57  ArIII   7753.24         f      l   1.000      0      10    t45  
-DAPEML  58  ArIII   8038.73         f      l   1.000      0      10    t45  
-DAPEML  59  SIII    8831.8          f      l   1.000      0      10    t45  
-DAPEML  60  SIII    9071.1          f      l   1.000      0      10    t45  
-DAPEML  61  SIII    9533.2          f      l   1.000      0      10    t45  
+DAPEML   0  HeII    3204.038   vac  f      l   1.000      0      10    t45  
+DAPEML   1  NeV     3346.783   vac  f      l   1.000      0      10    t45  
+DAPEML   2  NeV     3346.783   vac  f      l   1.000      0      10    t45  
+DAPEML   3  NeV     3426.863   vac  f      l   1.000      0      10    t45  
+DAPEML   4  H25     3670.5154  vac  i      l   1.000      0      10    t44
+DAPEML   5  H24     3672.5279  vac  i      l   1.000      0      10    t44
+DAPEML   6  H23     3674.8109  vac  i      l   1.000      0      10    t44
+DAPEML   7  H22     3677.4160  vac  i      l   1.000      0      10    t44
+DAPEML   8  H21     3680.4065  vac  i      l   1.000      0      10    t44
+DAPEML   9  H20     3683.8627  vac  i      l   1.000      0      10    t44
+DAPEML  10  H19     3687.8870  vac  i      l   1.000      0      10    t44
+DAPEML  11  H18     3692.6119  vac  i      l   1.000      0      10    t44
+DAPEML  12  H17     3698.2104  vac  i      l   1.000      0      10    t44
+DAPEML  13  H16     3704.9133  vac  i      l   1.000      0      10    t44
+DAPEML  14  H15     3713.0334  vac  i      l   1.000      0      10    t44
+DAPEML  15  H14     3723.0035  vac  i      l   1.000      0      10    t44
+DAPEML  16  OII     3727.092   vac  f      l   1.000      0      10    t45  
+DAPEML  17  OII     3729.875   vac  f      l   1.000      0      10    t45  
+DAPEML  18  H13     3735.4365  vac  i      l   1.000      0      10    t44
+DAPEML  19  H12     3751.2243  vac  i      l   1.000      0      10    t44
+DAPEML  20  H11     3771.7080  vac  i      l   1.000      0      10    t44
+DAPEML  21  H10     3798.9826  vac  i      l   1.000      0      10    t44
+DAPEML  22  H9      3836.4790  vac  i      l   1.000      0      10    t44
+DAPEML  23  NeIII   3869.86    vac  f      l   1.000      0      10    t45  
+DAPEML  24  H8      3890.1576  vac  f    d44   0.037      0      10    t44
+DAPEML  25  NeIII   3968.59    vac  f      l   1.000      0      10    t45  
+DAPEML  26  Heps    3971.2020  vac  f    d44   0.056      0      10    t44
+DAPEML  27  Hdel    4102.8991  vac  f    d44   0.091      0      10    t44
+DAPEML  28  Hgam    4341.691   vac  f    d44   0.164      0      10    t44
+DAPEML  29  OIII    4364.435   vac  f      l   1.000      0      10    t45  
+DAPEML  30  HeII    4687.015   vac  f      l   1.000      0      10    t45  
+DAPEML  31  ArIV    4712.58    vac  f      l   1.000      0      10    t45  
+DAPEML  32  ArIV    4741.45    vac  f      l   1.000      0      10    t45  
+DAPEML  33  Hb      4862.691   vac  f    d44   0.350      0      10    t44
+DAPEML  34  OIII    4960.295   vac  f    d35   0.350      0      10    t45  
+DAPEML  35  OIII    5008.240   vac  f      l   1.000      0      10    t45  
+DAPEML  36  NI      5199.349   vac  f      l   1.000      0      10    t45  
+DAPEML  37  NI      5201.705   vac  f      l   1.000      0      10    t45  
+DAPEML  38  HeI     5877.243   vac  f      l   1.000      0      10    t45  
+DAPEML  39  NaI     5891.583   vac  f      l  -1.000      0      10      f
+DAPEML  40  NaI     5897.558   vac  f      l  -1.000      0      10      f
+DAPEML  41  OI      6302.046   vac  f      l   1.000      0      10    t45  
+DAPEML  42  OI      6365.535   vac  f    d41   0.333      0      10    t45  
+DAPEML  43  NII     6549.86    vac  f    d45   0.340      0      10    t45  
+DAPEML  44  Ha      6564.632   vac  f      l   1.000      0      10      f
+DAPEML  45  NII     6585.271   vac  f      l   1.000      0      10      f
+DAPEML  46  SII     6718.294   vac  f      l   1.000      0      10    t45  
+DAPEML  47  SII     6732.674   vac  f      l   1.000      0      10    t45  
+DAPEML  48  ArIII   7137.76    vac  f      l   1.000      0      10    t45  
+DAPEML  49  ArIV    7172.68    vac  f      l   1.000      0      10    t45  
+DAPEML  50  ArIV    7239.76    vac  f      l   1.000      0      10    t45  
+DAPEML  51  ArIV    7265.33    vac  f      l   1.000      0      10    t45  
+DAPEML  52  OII     7320.94    vac  f      l   1.000      0      10    t45  
+DAPEML  53  OII     7322.01    vac  f      l   1.000      0      10    t45  
+DAPEML  54  OII     7331.69    vac  f      l   1.000      0      10    t45  
+DAPEML  55  OII     7332.75    vac  f      l   1.000      0      10    t45  
+DAPEML  56  ArIV    7334.17    vac  f      l   1.000      0      10    t45  
+DAPEML  57  ArIII   7753.24    vac  f      l   1.000      0      10    t45  
+DAPEML  58  ArIII   8038.73    vac  f      l   1.000      0      10    t45  
+DAPEML  59  SIII    8831.8     vac  f      l   1.000      0      10    t45  
+DAPEML  60  SIII    9071.1     vac  f      l   1.000      0      10    t45  
+DAPEML  61  SIII    9533.2     vac  f      l   1.000      0      10    t45  
 
 

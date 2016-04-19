@@ -113,7 +113,8 @@ def inverse_with_zeros(v, absolute=True):
     """
     if isinstance(v, numpy.ma.MaskedArray):
         if not absolute:
-            v.mask |= numpy.invert(v > 0)
+#            v.mask |= numpy.invert(v > 0)
+            v[numpy.invert(v > 0)] = numpy.ma.masked
         return 1.0/v
     _v = numpy.asarray(v).astype(float)
     indx = numpy.absolute(_v) > 0 if absolute else _v > 0

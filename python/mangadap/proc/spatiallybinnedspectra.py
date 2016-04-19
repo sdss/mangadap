@@ -49,7 +49,6 @@ procedures.
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
         from ..util.idlutils import airtovac
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
@@ -104,8 +103,7 @@ from .spectralstack import SpectralStackPar, SpectralStack
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
-from ..config.util import validate_spatial_binning_scheme_config
-from ..util.fileio import init_record_array, rec_to_fits_type
+from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
@@ -188,6 +186,80 @@ class SpatiallyBinnedSpectraDef(ParSet):
                                False,        True ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
+
+
+def validate_spatial_binning_scheme_config(cnfg):
+    """ 
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a spatial binning scheme.
+
+    Args:
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the binning method as needed by
+            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`.
+
+    Raises:
+        KeyError: Raised if any required keywords do not exist.
+        ValueError: Raised if keys have unacceptable values.
+        FileNotFoundError: Raised if a file is specified but could not
+            be found.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'method' not in cnfg.options('default'):
+        raise KeyError('Keyword \'method\' must be provided.')
+
+    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
+        cnfg['default']['minimum_snr']= '0.0'
+
+    if 'operation' not in cnfg.options('default') or cnfg['default']['operation'] is None:
+        cnfg['default']['operation'] = 'mean'
+
+    if 'velocity_register' not in cnfg.options('default') \
+            or cnfg['default']['velocity_register'] is None:
+        cnfg['default']['velocity_register'] = 'False'
+
+    if 'stack_covariance_mode' not in cnfg.options('default') \
+            or cnfg['default']['stack_covariance_mode'] is None:
+        cnfg['default']['stack_covariance_mode'] = 'none'
+
+    covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
+    if cnfg['default']['stack_covariance_mode'] in covar_par_needed_modes \
+            and ('stack_covariance_par' not in cnfg.options('default') \
+                    or cnfg['default']['stack_covariance_par'] is None):
+        raise ValueError('For covariance mode = {0}, must provide a parameter!'.format(
+                         cnfg['default']['stack_covariance_mode']))
+        
+    if 'stack_covariance_par' not in cnfg.options('default') \
+            or cnfg['default']['stack_covariance_par'] is None:
+        cnfg['default']['stack_covariance_par'] = 'none'
+
+    if cnfg['default']['method'] in [ 'none', 'global' ]:
+        return
+
+    if cnfg['default']['method'] == 'voronoi':
+        if 'target_snr' not in cnfg.options('default'):
+            raise KeyError('Keyword \'target_snr\' must be provided for Voronoi binning.')
+        return
+
+    if cnfg['default']['method'] == 'radial':
+        if 'center' not in cnfg.options('default'):
+            raise KeyError('Keyword \'center\' must be provided for radial binning.')
+        if 'pa' not in cnfg.options('default'):
+            raise KeyError('Keyword \'pa\' must be provided for radial binning.')
+        if 'ell' not in cnfg.options('default'):
+            raise KeyError('Keyword \'ell\' must be provided for radial binning.')
+        if 'radii' not in cnfg.options('default'):
+            raise KeyError('Keyword \'radii\' must be provided for radial binning.')
+
+        if 'radius_scale' not in cnfg.options('default') or cnfg['default']['radius_scale'] is None:
+            cnfg['default']['radius_scale'] = '1.0'
+        if 'log_step' not in cnfg.options('default') or cnfg['default']['log_step'] is None:
+            cnfg['default']['log_step'] = 'False'
+        return
+
+    raise ValueError('{0} is not a recognized binning method.'.format(cnfg['default']['method']))
 
 
 def available_spatial_binning_methods(dapsrc=None):
@@ -367,7 +439,7 @@ class SpatiallyBinnedSpectra:
     """
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, clobber=False, verbose=0):
+                 hardcopy=True, clobber=False, verbose=0, checksum=False):
 
         self.version = '1.0'
         self.verbose = verbose
@@ -378,19 +450,33 @@ class SpatiallyBinnedSpectra:
 
         self.drpf = None
         self.rdxqa = None
+        self.reff = None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
 
-        # Initialize the objects used in the assessments
-        self.reff = None
+        # Define the bitmask
         self.bitmask = SpatiallyBinnedSpectraBitMask(dapsrc=dapsrc)
-        self.hdu = None
-        self.correlation = None
 
-        # Run the assessments of the DRP file
+        # Initialize the main class attributes
+        self.hdu = None
+        self.checksum = checksum
+        self.shape = None
+        self.spatial_shape = None
+        self.nspec = None
+        self.spatial_index = None
+        self._assign_spectral_arrays()
+        self.dispaxis = None
+        self.nwave = None
+
+        self.nbins = None
+        self.missing_bins = None
+
+        self.covariance = None
+
+        # Bin the spectra
         self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
                          directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
                          clobber=clobber, verbose=verbose)
@@ -422,7 +508,6 @@ class SpatiallyBinnedSpectra:
                                           method_list=method_list,
                                           available_func=available_spatial_binning_methods,
                                           dapsrc=dapsrc)
-        print('method: ', self.method['key'])
 
 
     def _fill_method_par(self, good_spec):
@@ -497,12 +582,21 @@ class SpatiallyBinnedSpectra:
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
                                                  self.drpf.mode, method) \
                                         if output_file is None else str(output_file)
+                                                 #, compressed=False) \
 
 
     def _clean_drp_header(self, ext='FLUX'):
         """
+        Read and clean the header from the DRP fits file extension for
+        use in the output file for this class object.
+
+        .. todo::
+            - Currently just returns the existing header.  Need to
+              decide if/how to manipulate DRP header.
+
         """
         return self.drpf[ext].header
+
 
     def _initialize_header(self, hdr):
         """
@@ -515,6 +609,9 @@ class SpatiallyBinnedSpectra:
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['FSPECCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
+        hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
+        if len(self.missing_bins) > 0:
+            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
         return hdr
 
 
@@ -529,14 +626,15 @@ class SpatiallyBinnedSpectra:
     def _initialize_mask(self, good_fgoodpix, good_snr):
         """
 
-        Initialize the mask be setting the DIDNOTUSE, FORESTAR, LOW_SPEC_RANGE, and LOW_SNR masks
+        Initialize the mask be setting the DIDNOTUSE, FORESTAR, LOW_SPECCOV, and LOW_SNR masks
 
         """
         # Initialize to all zeros
-        mask = numpy.zeros( self.drpf['MASK'].data.shape, dtype=numpy.int64)
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_uint_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
-        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data, flag=['DONOTUSE','FORESTAR'])
+        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
+                                         flag=self.drpf.do_not_stack_flags())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
@@ -545,15 +643,16 @@ class SpatiallyBinnedSpectra:
 
         # Turn on the flag stating that the number of valid channels in
         # the spectrum was below the input fraction.
-        indx = numpy.array( [good_fgoodpix.reshape(self.drpf.spatial_shape).T]*self.drpf.nwave ).T
+        indx = numpy.array([numpy.invert(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SPECCOV')
-        
+
         # Turn on the flag stating that the S/N in the spectrum was
         # below the requested limit
-        indx = numpy.array( [good_snr.reshape(self.drpf.spatial_shape).T]*self.drpf.nwave ).T
+        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
 
         return mask
+
 
     def _per_bin_dtype(self):
         r"""
@@ -573,16 +672,17 @@ class SpatiallyBinnedSpectra:
                  ('SNR',numpy.float)
                ]
 
+
     def _unbinned_data(self, bin_indx):
         """
         Construct the output data table just using the unbinned data.
         """
         good_spec = bin_indx > -1
-        num_bins = numpy.amax(bin_indx)+1
-        bin_data = init_record_array(num_bins, self._per_bin_dtype())
+        self.nbins = numpy.amax(bin_indx)+1
+        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
 
-        bin_data['BIN_INDEX'] = numpy.arange(num_bins)
-        bin_data['NBIN'] = numpy.ones(num_bins, dtype=numpy.int)
+        bin_data['BIN_INDEX'] = numpy.arange(self.nbins)
+        bin_data['NBIN'] = numpy.ones(self.nbins, dtype=numpy.int)
         bin_data['SKY_COO'][:,0] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0]
         bin_data['SKY_COO'][:,1] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1]
         bin_data['LW_SKY_COO'] = bin_data['SKY_COO'].copy()
@@ -593,8 +693,8 @@ class SpatiallyBinnedSpectra:
         if self.drpf.pixelscale is None:
             self.drpf.pixelscale = default_cube_pixelscale()
 
-        bin_data['AREA'] = numpy.full(num_bins, self.drpf.pixelscale, dtype=numpy.float)
-        bin_data['AREA_FRAC'] = numpy.ones(num_bins, dtype=numpy.int)
+        bin_data['AREA'] = numpy.full(self.nbins, self.drpf.pixelscale, dtype=numpy.float)
+        bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=numpy.int)
 
         bin_data['SIGNAL'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]
         bin_data['VARIANCE'] = self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec]
@@ -603,6 +703,65 @@ class SpatiallyBinnedSpectra:
         return bin_data
 
 
+    def _fill_covariance(self, stack_covar, bin_indx):
+        nspec = len(bin_indx)
+        unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
+        indx = bin_indx > -1
+        nchan = stack_covar.shape[0]
+        self.covariance = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        for i in range(nchan):
+            j = stack_covar.input_indx[i]
+#            stack_covar.show(plane=j)
+
+            # Input spectrum and covariance indices
+            ii = unique_bins[reconstruct[indx]]
+            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+
+            # Output spectrum and covariance indices
+            oi = numpy.arange(nspec)[indx]
+            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+
+            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
+            _covar[oi_i, oi_j] = stack_covar.toarray(plane=j)[ii_i,ii_j]
+#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+#            pyplot.colorbar()
+#            pyplot.show()
+            self.covariance[i] = sparse.triu(_covar).tocsr()
+        self.covariance = Covariance(inp=self.covariance, input_indx=stack_covar.input_indx)
+
+
+    def _extract_stack_covariance(self, bin_indx):
+        nspec = len(bin_indx)
+        unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
+        self.nbins = numpy.amax(unique_bins)+1
+        indx = bin_indx > -1
+        nchan = self.covariance.shape[0]
+        _covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        for i in range(nchan):
+            j = self.covariance.input_indx[i]
+#            self.covariance.show(plane=j)
+
+            # Input spectrum and covariance indices
+            ii = unique_indx[1:]
+            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+
+            # Output spectrum and covariance indices
+            oi = unique_bins[1:]
+            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+
+            _covar = numpy.zeros((self.nbins, self.nbins), dtype=numpy.float)
+            _covar[oi_i, oi_j] = self.covariance.toarray(plane=j)[ii_i,ii_j]
+#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+#            pyplot.colorbar()
+#            pyplot.show()
+            _covar[i] = sparse.triu(_covar).tocsr()
+        return Covariance(inp=covar, input_indx=stack_covar.input_indx)
+
+
+    def _assign_spectral_arrays(self):
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'FLUXD', 'NPIX' ]
+
+    
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -613,6 +772,14 @@ class SpatiallyBinnedSpectra:
         if self.directory_path is None or self.output_file is None:
             return None
         return os.path.join(self.directory_path, self.output_file)
+
+    
+    def info(self):
+        return self.hdu.info()
+
+
+    def do_not_fit_flags(self):
+        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
 
     # TODO: This function needs to be broken up
@@ -631,10 +798,15 @@ class SpatiallyBinnedSpectra:
         if not isinstance(drpf, DRPFits):
             raise TypeError('Must provide a valid DRPFits object!')
         if drpf.hdu is None:
-            # Change to info via logging
-            warnings.warn('Reading DRP file.')
+            warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
         self.drpf = drpf
+        self.shape = self.drpf.shape
+        self.spatial_shape =self.drpf.spatial_shape
+        self.nspec = self.drpf.nspec
+        self.spatial_index = self.drpf.spatial_index.copy()
+        self.dispaxis = self.drpf.dispaxis
+        self.nwave = self.drpf.nwave
 
         # ReductionAssessment object always needed
         if rdxqa is None:
@@ -750,8 +922,10 @@ class SpatiallyBinnedSpectra:
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
-            raise NotImplementedError('Cannot read yet!')
-            self.read(ofile)
+            self.read(checksum=self.checksum)
+            if reff is not None and self.reff != reff:
+                warnings.warn('Provided effective radius different from available file; set ' \
+                              'clobber=True to overwrite.')
             return
 
         # Bin the spectra.  To be included in any bin, the spectra must
@@ -762,6 +936,8 @@ class SpatiallyBinnedSpectra:
         bin_indx = numpy.full(self.drpf.nspec, -1, dtype=numpy.int)
         bin_indx[good_spec] = self.method['binfunc'](x[good_spec], y[good_spec],
                                                      par=self.method['binpar'])
+
+        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
         # Stack the spectra in each bin
         print('Stacking spectra ...')
@@ -800,9 +976,9 @@ class SpatiallyBinnedSpectra:
         #   produces a spectrum for the unique bin IDs in the list
         #   provided.  Missing bins interspersed with other bins are
         #   filled in; however, expected bins with indices higher then
-        #   num_bins-1 will not be.
-        num_bins = numpy.amax(unique_bins)+1
-        missing_bins = list(set(numpy.arange(num_bins)) - set(unique_bins))
+        #   self.nbin-1 will not be.
+        self.nbins = numpy.amax(unique_bins)+1
+        self.missing_bins = list(set(numpy.arange(self.nbins)) - set(unique_bins))
 
         # Recalculate the mean signal, mean noise, and mean S/N of the
         # binned spectra
@@ -813,9 +989,10 @@ class SpatiallyBinnedSpectra:
 #        print(numpy.sum(stack_flux.mask))
 #        assert numpy.all(stack_ivar.mask == stack_flux.mask)
 
-        _mask = stack_flux.mask | stack_ivar.mask \
-                    | numpy.array([self.drpf.wavelength_mask(
-                            waverange=self.rdxqa.method['waverange'])]*stack_flux.shape[0])
+        _mask = numpy.ma.getmaskarray(stack_flux) | numpy.ma.getmaskarray(stack_ivar) \
+                    | numpy.array([
+                        self.drpf.wavelength_mask(waverange=self.rdxqa.method['waverange'])
+                                  ]*stack_flux.shape[0])
         _stack_flux = numpy.ma.MaskedArray(stack_flux.data, mask=_mask)
         _stack_ivar = numpy.ma.MaskedArray(stack_ivar.data, mask=_mask)
         stack_nsum = numpy.sum(numpy.invert(_mask), axis=1)
@@ -828,15 +1005,15 @@ class SpatiallyBinnedSpectra:
 #        pyplot.show()
 
         # Intialize the data for the binned spectra
-        bin_data = init_record_array(num_bins, self._per_bin_dtype())
-        bin_data['BIN_INDEX'] = numpy.arange(num_bins)
+        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+        bin_data['BIN_INDEX'] = numpy.arange(self.nbins)
 
-        bin_data['SIGNAL'] = _fill_vector(stack_signal, num_bins, missing_bins, -999) \
-                                if len(missing_bins) > 0 else stack_signal
-        bin_data['VARIANCE'] = _fill_vector(stack_variance, num_bins, missing_bins, -999) \
-                                if len(missing_bins) > 0 else stack_variance
-        bin_data['SNR'] = _fill_vector(stack_signal, num_bins, missing_bins, -999) \
-                            if len(missing_bins) > 0 else stack_snr
+        bin_data['SIGNAL'] = _fill_vector(stack_signal, self.nbins, self.missing_bins, -999) \
+                                if len(self.missing_bins) > 0 else stack_signal
+        bin_data['VARIANCE'] = _fill_vector(stack_variance, self.nbins, self.missing_bins, -999) \
+                                if len(self.missing_bins) > 0 else stack_variance
+        bin_data['SNR'] = _fill_vector(stack_snr, self.nbins, self.missing_bins, -999) \
+                            if len(self.missing_bins) > 0 else stack_snr
 
         # Sort the list of bin ids and determine where the spectra jump
         # between bins
@@ -876,26 +1053,26 @@ class SpatiallyBinnedSpectra:
         area = self.drpf.binned_on_sky_area(bin_indx, x=x, y=y)
 
         # Some bins may not have spectra; _fill_vector() inserts default values
-        bin_data['NBIN'] = _fill_vector(bn, num_bins, missing_bins, -999) \
-                            if len(missing_bins) > 0 else bn
-        bin_data['SKY_COO'][:,0] = _fill_vector(bx, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else bx
-        bin_data['SKY_COO'][:,1] = _fill_vector(by, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else by
-        bin_data['ELL_COO'][:,0] = _fill_vector(br, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else br
-        bin_data['ELL_COO'][:,1] = _fill_vector(bt, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else bt
-        bin_data['LW_SKY_COO'][:,0] = _fill_vector(wx, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else wx
-        bin_data['LW_SKY_COO'][:,1] = _fill_vector(wy, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else wy
-        bin_data['LW_ELL_COO'][:,0] = _fill_vector(wr, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else wr
-        bin_data['LW_ELL_COO'][:,1] = _fill_vector(wt, num_bins, missing_bins, -999) \
-                                    if len(missing_bins) > 0 else wt
-        bin_data['AREA'] = _fill_vector(area, num_bins, missing_bins, -999) \
-                            if len(missing_bins) > 0 else area
+        bin_data['NBIN'] = _fill_vector(bn, self.nbins, self.missing_bins, -999) \
+                            if len(self.missing_bins) > 0 else bn
+        bin_data['SKY_COO'][:,0] = _fill_vector(bx, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else bx
+        bin_data['SKY_COO'][:,1] = _fill_vector(by, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else by
+        bin_data['ELL_COO'][:,0] = _fill_vector(br, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else br
+        bin_data['ELL_COO'][:,1] = _fill_vector(bt, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else bt
+        bin_data['LW_SKY_COO'][:,0] = _fill_vector(wx, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else wx
+        bin_data['LW_SKY_COO'][:,1] = _fill_vector(wy, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else wy
+        bin_data['LW_ELL_COO'][:,0] = _fill_vector(wr, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else wr
+        bin_data['LW_ELL_COO'][:,1] = _fill_vector(wt, self.nbins, self.missing_bins, -999) \
+                                    if len(self.missing_bins) > 0 else wt
+        bin_data['AREA'] = _fill_vector(area, self.nbins, self.missing_bins, -999) \
+                            if len(self.missing_bins) > 0 else area
 
         # Calculate the fractional area of the bin covered by the
         # spectra, if possible; if not, the fractional area is unity
@@ -904,67 +1081,34 @@ class SpatiallyBinnedSpectra:
         except AttributeError as e:
             warnings.warn('Could not calculate nominal bin area:: AttributeError: {0}'.format(e))
             bin_area = bin_data['AREA']
-        bin_data['AREA_FRAC'] = bin_data['AREA']/bin_area[:num_bins]
-
-        # Convert the bin coordinates to semi-major axis polar
-        # coordinates.  Done this way instead of determining, e.g., flux
-        # weighted radii based on data in ReductionAssessment object.
-#        coord_conversion = SemiMajorAxisCoo(xc=0,yc=0, rot=0, pa=self.rdxqa.pa, ell=self.rdxqa.ell)
-#        bin_data['ELL_COO'][:,0], bin_data['ELL_COO'][:,1] = \
-#            coord_conversion.polar(bin_data['SKY_COO'][:,0], bin_data['SKY_COO'][:,1])
-#        bin_data['LW_ELL_COO'][:,0], bin_data['LW_ELL_COO'][:,1] = \
-#            coord_conversion.polar(bin_data['LW_SKY_COO'][:,0], bin_data['LW_SKY_COO'][:,1])
-        
-#        pyplot.scatter(wx[bn > 0], wy[bn > 0], marker='.', color='k', s=80, lw=0, c=wr[bn > 0])
-#        pyplot.scatter(bx[bn > 0], by[bn > 0], marker='x', color='k', s=80, lw=1, c=br[bn > 0])
-#        pyplot.show()
+        bin_data['AREA_FRAC'] = bin_data['AREA']/bin_area[:self.nbins]
 
         # Restructure the output to match the input DRP file
         indx = bin_indx > -1
-        output_shape = self.drpf.spatial_shape + (self.drpf.nwave,)
 
-        flux = numpy.zeros(output_shape, dtype=numpy.float)
-        flux.reshape(-1,self.drpf.nwave)[indx,:] = stack_flux[unique_bins[reconstruct[indx]],:]
+        flux = numpy.zeros(self.shape, dtype=numpy.float)
+        flux.reshape(-1,self.nwave)[indx,:] = stack_flux[unique_bins[reconstruct[indx]],:]
 
-        mask = numpy.zeros(output_shape, dtype=numpy.bool)
+        mask = numpy.zeros(self.shape, dtype=numpy.bool)
         if isinstance(stack_flux, numpy.ma.MaskedArray):
-            mask.reshape(-1,self.drpf.nwave)[indx,:] \
-                = stack_flux.mask[unique_bins[reconstruct[indx]],:]
+            mask.reshape(-1,self.nwave)[indx,:] \
+                = numpy.ma.getmaskarray(stack_flux)[unique_bins[reconstruct[indx]],:]
 
-        sdev = numpy.zeros(output_shape, dtype=numpy.float)
-        sdev.reshape(-1,self.drpf.nwave)[indx,:] = stack_sdev[unique_bins[reconstruct[indx]],:]
+        sdev = numpy.zeros(self.shape, dtype=numpy.float)
+        sdev.reshape(-1,self.nwave)[indx,:] = stack_sdev[unique_bins[reconstruct[indx]],:]
 
-        ivar = numpy.zeros(output_shape, dtype=numpy.float)
-        ivar.reshape(-1,self.drpf.nwave)[indx,:] = stack_ivar[unique_bins[reconstruct[indx]],:]
+        ivar = numpy.zeros(self.shape, dtype=numpy.float)
+        ivar.reshape(-1,self.nwave)[indx,:] = stack_ivar[unique_bins[reconstruct[indx]],:]
 
-        npix = numpy.zeros(output_shape, dtype=numpy.int )
-        npix.reshape(-1,self.drpf.nwave)[indx,:] = stack_npix[unique_bins[reconstruct[indx]],:]
+        npix = numpy.zeros(self.shape, dtype=numpy.int)
+        npix.reshape(-1,self.nwave)[indx,:] = stack_npix[unique_bins[reconstruct[indx]],:]
 
-        covar = None
+        self.covariance = None
         if stack_covar is not None:
-            nchan = stack_covar.shape[0]
-            covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-            for i in range(nchan):
-                j = stack_covar.input_indx[i]
-#                stack_covar.show(plane=j)
+            self._fill_covariance(stack_covar, bin_indx)
 
-                # Input spectrum and covariance indices
-                ii = unique_bins[reconstruct[indx]]
-                ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
-
-                # Output spectrum and covariance indices
-                oi = numpy.arange(self.drpf.nspec)[indx]
-                oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
-
-                _covar = numpy.zeros((self.drpf.nspec, self.drpf.nspec), dtype=numpy.float)
-                _covar[oi_i, oi_j] = stack_covar.toarray(plane=j)[ii_i,ii_j]
-#                pyplot.imshow(_covar, origin='lower', interpolation='nearest')
-#                pyplot.colorbar()
-#                pyplot.show()
-                covar[i] = sparse.triu(_covar).tocsr()
-            covar = Covariance(inp=covar, input_indx=stack_covar.input_indx)
-#            print(covar.input_indx)
-#            covar.show(plane=covar.input_indx[0])
+#        print(self.covariance.input_indx)
+#        self.covariance.show(plane=self.covariance.input_indx[0])
 
 #        pyplot.imshow(flux.reshape(self.drpf['FLUX'].shape)[:,:,1000].T, origin='lower',
 #                      interpolation='nearest')
@@ -1004,10 +1148,10 @@ class SpatiallyBinnedSpectra:
         mask_bit_values = self._initialize_mask(good_fgoodpix, good_snr)
 
         # Add flags based on the availability of pixels to stack
-        indx = ~(npix>0)
+        indx = numpy.invert(npix>0)
         mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx],
                                                      ['NONE_IN_STACK', 'NO_STDDEV'])
-        indx = ~(npix>1)
+        indx = numpy.invert(npix>1)
         mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx], 'NO_STDDEV')
 
         # DEBUG
@@ -1040,9 +1184,9 @@ class SpatiallyBinnedSpectra:
                                 ])
 
         # Fill the covariance matrix
-        if covar is not None:
+        if self.covariance is not None:
             cov_hdr = fits.Header()
-            indx_col, covar_col, var_col, plane_col = covar.binary_columns(hdr=cov_hdr)
+            indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
             self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
                                                             if var_col is None else \
                                                             [ indx_col, var_col, covar_col ]),
@@ -1055,21 +1199,181 @@ class SpatiallyBinnedSpectra:
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
         if self.hardcopy:
-            print('Writing data')
-            self.hdu.writeto(ofile, clobber=clobber, checksum=True)
+            self.write(clobber=clobber)
 
 
-    def read(ifile):
-        self.hdu = fits.open(ofile)
+    def write(self, clobber=False):
+        """
+        Write the hdu object to the file.
+        """
+
+        print('restructuring')
+        # Restructure the data to match the DRPFits file
+        if self.drpf.mode == 'CUBE':
+            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+        elif self.drpf.mode == 'RSS':
+            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+
+        # Get the output file and determine if it should be compressed
+        ofile = self.file_path()
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
+
+        # Revert the structure
+        print('reverting')
+        if self.drpf.mode == 'CUBE':
+            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+        elif self.drpf.mode == 'RSS':
+            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+
+
+    def read(self, ifile=None, strict=True, checksum=False):
+        """
+
+        Read an existing file with a previously binned set of spectra.
+
+        """
+        if ifile is None:
+            ifile = self.file_path()
+        if not os.path.isfile(ifile):
+            raise FileNotFoundError('File does not exist!: {0}'.format(ifile))
+
+        if self.hdu is not None:
+            self.hdu.close()
+
+        self.hdu = fits.open(ifile, checksum=checksum)
+
+        # Confirm that the internal method is the same as the method
+        # that was used in writing the file
+        if self.hdu['PRIMARY'].header['BINKEY'] != self.method['key']:
+            if strict:
+                raise ValueError('Keywords in header does not match specified method keyword!')
+            else:
+                warnings.warn('Keywords in header does not match specified method keyword!')
+        # TODO: "strict" should also check other aspects of the file to
+        # make sure that the details of the method are also the same,
+        # not just the keyword
+
+        if self.drpf.mode == 'CUBE':
+            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+        elif self.drpf.mode == 'RSS':
+            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+
+        # Attempt to read and construct the covariance object
+        try:
+            self.covariance = Covariance(source=self.hdu, primary_ext='COVAR',
+                                         plane_ext='COVAR_PLANE')
+        except:
+            warnings.warn('Unable to find/read covariance data.')
+            self.covariance = None
+
+        # Attempt to read the effective radius
         try:
             self.reff = self.hdu['PRIMARY'].header['REFF']
         except:
             warnings.warn('Unable to read effective radius from file header!')
             self.reff = None
-        if reff is not None and self.reff != reff:
-            warnings.warn('Provided effective radius different from available file; set ' \
-                          'clobber=True to overwrite.')
-        # Other checks that methods in header and requested by this
-        # function match?
-        return
+
+        # Attempt to read binning parameters
+        if self.method['binpar'] is not None and callable(self.method['binpar'].fromheader):
+            self.method['binpar'].fromheader(self.hdu['PRIMARY'].header)
+
+        # Attempt to stacking parameters
+        if self.method['stackpar'] is not None and callable(self.method['stackpar'].fromheader):
+            self.method['stackpar'].fromheader(self.hdu['PRIMARY'].header)
+
+        self.nbins = self.hdu['PRIMARY'].header['NBINS']
+        try:
+            self.missing_bins = eval(self.hdu['PRIMARY'].header['EMPTYBIN'])
+        except KeyError:
+            # Assume if this fails, it's because the keyword doesn't
+            # exist
+            self.missing_bins = []
+
+        print(self.missing_bins)
+
+
+    def unique_bins(self, index=False):
+        """
+        Get the unique bins or the indices of the unique bins in the
+        flattened spatial dimension.
+        """
+        unique_bins, first_occurrence = numpy.unique(self.hdu['BINID'].data.ravel(),
+                                                     return_index=True)
+        return first_occurrence[1:] if index else unique_bins[1:]
+
+
+    def copy_to_array(self, waverange=None, ext='FLUX'):
+        r"""
+        Return a copy of the selected data array.  The array size is
+        always :math:`N_{\rm bins} \times N_{\rm wavelength}`; i.e., the
+        data is always flattened to two dimensions and the unique
+        spectra are selected.  See :func:`unique_bins` and
+        :func:`mangadap.drpfits.DRPFits.copy_to_array`.
+
+        Args:
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                ``'FLUX'``.
+
+        Returns:
+            numpy.ndarray: A 2D array with a copy of the data from the
+            selected extension.
+        """
+        arr = DRPFits.copy_to_array(self, waverange=waverange, ext=ext)[
+                                                                self.unique_bins(index=True),:]
+        if len(self.missing_bins) == 0:
+            return arr
+        _arr = numpy.zeros( (self.nbins, self.nwave), dtype=self.hdu[ext].data.dtype)
+        _arr[self.unique_bins(),:] = arr
+        return _arr
+
+
+    def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
+        r"""
+
+        Return a copy of the selected data array as a masked array.
+        This is functionally identical to :func:`copy_to_array`,
+        except the output format is a `numpy.ma.MaskedArray`_.  The
+        pixels that are considered to be masked can be specified using
+        `flag`.
+        
+        Args:
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                `'FLUX'`.
+            mask_ext (str) : (**Optional**) Name of the extension with
+                the mask bit data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                `'MASK'`.
+            flag (str or list): (**Optional**) (List of) Flag names that
+                are considered when deciding if a pixel should be
+                masked.  The names *must* be a valid bit name as defined
+                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
+                not provided, *ANY* non-zero mask bit is omitted.
+
+        Returns:
+            numpy.ndarray: A 2D array with a copy of the data from the
+            selected extension.
+        """
+
+        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext)[
+                                                                self.unique_bins(index=True),:]
+        if len(self.missing_bins) == 0:
+            return arr
+        _arr = numpy.ma.zeros( (self.nbins, self.nwave), dtype=self.hdu[ext].data.dtype)
+        _arr[self.unique_bins(),:] = arr
+        _arr[self.missing_bins,:] = numpy.ma.masked
+        return _arr
+
+
 

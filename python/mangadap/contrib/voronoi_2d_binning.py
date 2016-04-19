@@ -338,10 +338,10 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
     w = signal/noise < targetSN
 
     # KBW edit:
-    sn_total_less_than_target = sn_func(signal, noise, np.where(w)[0])
-    maxnum = int(np.square(sn_total_less_than_target/targetSN) + np.sum(~w))
+    #sn_total_less_than_target = sn_func(signal, noise, np.where(w)[0])
+    #maxnum = int(np.square(sn_total_less_than_target/targetSN) + np.sum(~w))
     # Replaces:
-    #maxnum = int(np.sum((signal[w]/noise[w])**2)/targetSN**2 + np.sum(~w))
+    maxnum = int(np.sum((signal[w]/noise[w])**2)/targetSN**2 + np.sum(~w))
 
     # The first bin will be assigned CLASS = 1
     # With N pixels there will be at most N bins

@@ -391,15 +391,37 @@ class BitMask:
         """
         Print the list of bits and, if available, their descriptions.
         """
-        tr, tcols = numpy.array(os.popen('stty size', 'r').read().split()).astype(int)
-        tcols -= int(tcols*0.1)
+        try:
+            tr, tcols = numpy.array(os.popen('stty size', 'r').read().split()).astype(int)
+            tcols -= int(tcols*0.1)
+        except:
+            tr = None
+            tcols = None
+
         for k,v in sorted(self.bits.items(), key=lambda x:(x[1],x[0])):
             if k == 'NULL':
                 continue
             print('         Bit: {0} = {1}'.format(k,v))
             if self.descr is not None:
-                print(textwrap.fill(' Description: {0}'.format(self.descr[v]), tcols))
+                if tcols is not None:
+                    print(textwrap.fill(' Description: {0}'.format(self.descr[v]), tcols))
+                else:
+                    print(' Description: {0}'.format(self.descr[v]))
             print(' ')
+
+
+    def minimum_uint_dtype(self):
+        """
+        Return the smallest uint datatype that is needed to contain all
+        the bits in the mask.
+        """
+        if self.nbits < 8:
+            return numpy.uint8
+        if self.nbits < 16:
+            return numpy.uint16
+        if self.nbits < 32:
+            return numpy.uint32
+        return numpy.uint64
 
 
     def flagged(self, value, flag=None):

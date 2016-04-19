@@ -44,9 +44,12 @@ if sys.version > '3':
 
 import numpy
 from mangadap.par.ParSet import ParSet
-from mangadap.proc.options import spectral_analysis_options
 
 __author__ = 'Kyle B. Westfall'
+
+
+def spectral_analysis_options():
+    return [ 'STRCNT', 'EMLINE', 'SPINDX' ]
 
 
 class SpectralAnalysisPar(ParSet):

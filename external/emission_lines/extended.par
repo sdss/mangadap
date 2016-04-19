@@ -16,6 +16,7 @@ typedef struct {
     int index;
     char name[6];
     double lambda;
+    char waveref[3];
     char action;
     char line[6];
     double ampl;
@@ -24,25 +25,25 @@ typedef struct {
     char mode[6];
 } DAPEML;
 
-DAPEML  16  OII     3727.092        f      l   1.000      0      10      f  
-DAPEML  17  OII     3729.875        f      l   1.000      0      10    t16  
-DAPEML  62  OIId    3728.4835       f      l   1.000      0      10      f  
-DAPEML  26  Heps    3971.2020       f      l   1.000      0      10      f
-DAPEML  27  Hdel    4102.8991       f      l   1.000      0      10      f
-DAPEML  28  Hgam    4341.691        f      l   1.000      0      10      f
-DAPEML  30  HeII    4687.015        f      l   1.000      0      10      f  
-DAPEML  33  Hb      4862.691        f      l   1.000      0      10      f
-DAPEML  34  OIII    4960.295        f      l   1.000      0      10      f  
-DAPEML  35  OIII    5008.240        f      l   1.000      0      10      f  
-DAPEML  38  HeI     5877.243        f      l   1.000      0      10      f  
-DAPEML  41  OI      6302.046        f      l   1.000      0      10      f  
-DAPEML  42  OI      6365.535        f      l   1.000      0      10      f  
-DAPEML  43  NII     6549.86         f      l   1.000      0      10      f  
-DAPEML  44  Ha      6564.632        f      l   1.000      0      10      f
-DAPEML  45  NII     6585.271        f      l   1.000      0      10      f
-DAPEML  46  SII     6718.294        f      l   1.000      0      10      f  
-DAPEML  47  SII     6732.674        f      l   1.000      0      10      f  
-DAPEML  59  SIII    8831.8          f      l   1.000      0      10      f  
-DAPEML  60  SIII    9071.1          f      l   1.000      0      10      f  
-DAPEML  61  SIII    9533.2          f      l   1.000      0      10      f  
+DAPEML  16  OII     3727.092   vac  f      l   1.000      0      10      f  
+DAPEML  17  OII     3729.875   vac  f      l   1.000      0      10    t16  
+DAPEML  62  OIId    3728.4835  vac  f      l   1.000      0      10      f  
+DAPEML  26  Heps    3971.2020  vac  f      l   1.000      0      10      f
+DAPEML  27  Hdel    4102.8991  vac  f      l   1.000      0      10      f
+DAPEML  28  Hgam    4341.691   vac  f      l   1.000      0      10      f
+DAPEML  30  HeII    4687.015   vac  f      l   1.000      0      10      f  
+DAPEML  33  Hb      4862.691   vac  f      l   1.000      0      10      f
+DAPEML  34  OIII    4960.295   vac  f      l   1.000      0      10      f  
+DAPEML  35  OIII    5008.240   vac  f      l   1.000      0      10      f  
+DAPEML  38  HeI     5877.243   vac  f      l   1.000      0      10      f  
+DAPEML  41  OI      6302.046   vac  f      l   1.000      0      10      f  
+DAPEML  42  OI      6365.535   vac  f      l   1.000      0      10      f  
+DAPEML  43  NII     6549.86    vac  f      l   1.000      0      10      f  
+DAPEML  44  Ha      6564.632   vac  f      l   1.000      0      10      f
+DAPEML  45  NII     6585.271   vac  f      l   1.000      0      10      f
+DAPEML  46  SII     6718.294   vac  f      l   1.000      0      10      f  
+DAPEML  47  SII     6732.674   vac  f      l   1.000      0      10      f  
+DAPEML  59  SIII    8831.8     vac  f      l   1.000      0      10      f  
+DAPEML  60  SIII    9071.1     vac  f      l   1.000      0      10      f  
+DAPEML  61  SIII    9533.2     vac  f      l   1.000      0      10      f  
 

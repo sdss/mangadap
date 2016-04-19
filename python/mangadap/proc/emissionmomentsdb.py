@@ -119,20 +119,22 @@ if sys.version > '3':
     try:
         from configparser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
+        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
     try:
         from configparser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
 else:
     try:
         from ConfigParser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
+        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
     try:
         from ConfigParser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!', 
+                      ImportWarning)
 
 import os.path
 from os import environ

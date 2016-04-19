@@ -55,7 +55,6 @@ once per DRP data file.
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
         from ..util.idlutils import airtovac
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
@@ -96,20 +95,22 @@ if sys.version > '3':
     try:
         from configparser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
+        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
     try:
         from configparser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
 else:
     try:
         from ConfigParser import ConfigParser
     except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
+        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
     try:
         from ConfigParser import ExtendedInterpolation
     except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!', 
+                      ImportWarning)
 
 import glob
 import os.path
@@ -123,10 +124,10 @@ import numpy
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
-from ..config.util import validate_reduction_assessment_config
+from ..util.covariance import Covariance
 from ..util.idlutils import airtovac
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.fileio import init_record_array, rec_to_fits_type
+from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..drpfits import DRPFits
 from .util import _select_proc_method
 
@@ -163,6 +164,59 @@ class ReductionAssessmentDef(ParSet):
 
         #ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+
+
+def validate_reduction_assessment_config(cnfg):
+    """ 
+    Validate the `configparser.ConfigParser`_ object that is meant to
+    define a reduction assessment method.
+
+    Args:
+        cnfg (`configparser.ConfigParser`_): Object meant to contain
+            defining parameters of the reduction assessment method as
+            needed by
+            :class:`mangadap.proc.reductionassessments.ReductionAssessmentsDef`.
+
+    Returns:
+        bool: Booleans that specify how the reduction assessment should
+        be constructed.  The flags specify to use (1) the wavelength
+        range, (2) a bandpass filter parameter file, or (3) a file with
+        a filter response function.
+
+    Raises:
+        KeyError: Raised if required keyword does not exist.
+        ValueError: Raised if keys have unacceptable values.
+        FileNotFoundError: Raised if a file is specified but could not
+            be found.
+    """
+    # Check for required keywords
+    if 'key' not in cnfg.options('default'):
+        raise KeyError('Keyword \'key\' must be provided.')
+    if 'wave_limits' not in cnfg.options('default') \
+        and 'par_file' not in cnfg.options('default') \
+        and 'response_function_file' not in cnfg.options('default'):
+        raise KeyError('Method undefined.  Must provide \'wave_limits\' or \'par_file\' '
+                       'or \'response_function_file\'.')
+
+    def_range = ('wave_limits' in cnfg.options('default') \
+                    and cnfg['default']['wave_limits'] is not None)
+
+    def_par = ('par_file' in cnfg.options('default') and cnfg['default']['par_file'] is not None)
+
+    def_response = ('response_function_file' in cnfg.options('default') \
+                        and cnfg['default']['response_function_file'] is not None)
+
+    if numpy.sum([ def_range, def_par, def_response] ) != 1:
+        raise ValueError('Method undefined.  Must provide one and only one of \'wave1\' and '
+                         '\'wave2\' or \'par_file\' or \'response_function_file\'.')
+
+    if def_par and not os.path.isfile(cnfg['default']['par_file']):
+        raise FileNotFoundError('par_file does not exist: {0}'.format(cnfg['default']['par_file']))
+    if def_response and not os.path.isfile(cnfg['default']['response_function_file']):
+        raise FileNotFoundError('response_function_file does not exist: {0}'.format(
+                                cnfg['default']['response_function_file']))
+
+    return def_range, def_par, def_response
 
 
 def available_reduction_assessments(dapsrc=None):
@@ -463,12 +517,6 @@ class ReductionAssessment:
 #                 ('CORREL', numpy.float)
 #               ]
 
-    def _write_hdu(self):
-        """Write the HDUList to the output file."""
-        print('Writing: {0}'.format(self.file_path()))
-        self.hdu.writeto(self.file_path())
-
-
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -479,6 +527,10 @@ class ReductionAssessment:
         if self.directory_path is None or self.output_file is None:
             return None
         return os.path.join(self.directory_path, self.output_file)
+
+
+    def info(self):
+        return self.hdu.info()
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
@@ -567,8 +619,7 @@ class ReductionAssessment:
         if not isinstance(drpf, DRPFits):
             raise TypeError('Must provide a valid DRPFits object!')
         if drpf.hdu is None:
-            # Change to info via logging
-            warnings.warn('Reading DRP file.')
+            warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
         self.drpf = drpf
 
@@ -582,8 +633,8 @@ class ReductionAssessment:
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
-            self.correlation = Covariance(ifile=ofile, primary_ext='COVAR')
             self.hdu = fits.open(ofile)
+            self.correlation = Covariance(source=self.hdu, primary_ext='COVAR')
             self.pa = self.hdu['PRIMARY'].header['PA']
             if pa is not None and self.pa != pa:
                 warnings.warn('Provided position angle different from available file; set ' \
@@ -619,10 +670,11 @@ class ReductionAssessment:
 #        pyplot.show()
        
         flux = drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
-        spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(flux.mask), axis=1)/flux.shape[1]
+        spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)),axis=1) \
+                                            / flux.shape[1]
        
         frange = numpy.ma.max(flux, axis=1)-numpy.ma.min(flux, axis=1)
-        spectrum_data['MINEQMAX'] = (numpy.invert(frange.mask)) \
+        spectrum_data['MINEQMAX'] = (numpy.invert(numpy.ma.getmaskarray(frange))) \
                                         & (numpy.ma.absolute(frange) < 1e-10)
 #        print(spectrum_data['MINEQMAX'])
 #        print(drpf.nspec, numpy.sum(spectrum_data['MINEQMAX'] & (spectrum_data['FGOODPIX'] > 0.8)))
@@ -675,7 +727,7 @@ class ReductionAssessment:
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
         if self.hardcopy:
-            self.hdu.writeto(ofile, clobber=clobber, checksum=True)
+            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         
 

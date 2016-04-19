@@ -47,14 +47,18 @@ import sys
 if sys.version > '3':
     long = int
 
+import numpy
 import logging
 import resource
 import time
 import os
-from ..drpfits import DRPFits
+
 from ..util.log import init_DAP_logging, module_logging, log_output
+from ..drpfits import DRPFits
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
+#from ..proc.templatelibrary import TemplateLibrary
 
 from ..util.covariance import Covariance
 from matplotlib import pyplot
@@ -125,7 +129,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         int: Status flag
     """
 
-    init_DAP_logging(log)
+    init_DAP_logging(log)#, simple_warnings=False)
 
     # Start log
     loggers = module_logging(__name__, verbose)
@@ -161,27 +165,46 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         # S/N Assessments
         #-------------------------------------------------------------------
         snr = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
-                                  analysis_path=analysis_path, verbose=verbose, clobber=True)
+                                  analysis_path=analysis_path, verbose=verbose, clobber=False)
  
         #-------------------------------------------------------------------
         # Spatial Binning
         #-------------------------------------------------------------------
-        binned_spectra = SpatiallyBinnedSpectra('VOR10C', drpf, snr, reff=obs['reff'],
+        binned_spectra = SpatiallyBinnedSpectra('LOGR10C', drpf, snr, reff=obs['reff'],
                                                 dapsrc=dapsrc, analysis_path=analysis_path,
-                                                verbose=verbose, clobber=True)
-        pyplot.imshow(binned_spectra['FLUX'].data[:,:,1000].T, origin='lower',
-                      interpolation='nearest')
-        pyplot.show()
+                                                verbose=verbose, clobber=False)
 
-        c = Covariance(source=binned_spectra.hdu, primary_ext='COVAR', plane_ext='COVAR_PLANE')
-        c.show(plane=0)
- 
+#        print(binned_spectra['MASK'].data)
+#
+#        print(binned_spectra.method)
+#        flux = binned_spectra.copy_to_array()
+#        #flux = binned_spectra.copy_to_masked_array()
+#        print(numpy.sum(numpy.ma.getmaskarray(flux)))
+#        print(flux.shape)
+#        for i in range(binned_spectra.nbins):
+#            pyplot.step(binned_spectra['WAVE'].data, flux[i,:], where='mid', linestyle='-')
+#        pyplot.show()
+
+
         #-------------------------------------------------------------------
         # Stellar Continuum Fit
         #-------------------------------------------------------------------
-#       stellar_continuum = StellarContinuumFit(drpf, plan.continuum, snr=snr,
-#                                               binned_spectra=binned_spectra)
-#
+        stellar_continuum = StellarContinuumModel('GAU01-MILESTHIN', drpf, binned_spectra,
+                                                  guess_vel=obs['vel'], guess_sig=obs['vdisp'],
+                                                  dapsrc=dapsrc, analysis_path=analysis_path,
+                                                  verbose=verbose, clobber=False)#True)
+
+#        flux = binned_spectra.copy_to_array()
+        wave = binned_spectra['WAVE'].data
+        flux = binned_spectra.copy_to_masked_array()
+        model = stellar_continuum.copy_to_masked_array()
+#        print(numpy.sum(numpy.ma.getmaskarray(flux)))
+#        print(flux.shape)
+        for i in range(binned_spectra.nbins):
+            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=3)
+            pyplot.plot(wave, model[i,:], linestyle='-', color='b', lw=3, zorder=1, alpha=0.5)
+            pyplot.show()
+
 #       #-------------------------------------------------------------------
 #       # Emission-line Moment measurements
 #       #-------------------------------------------------------------------

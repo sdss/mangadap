@@ -20,30 +20,20 @@ Binning!
         from __future__ import unicode_literals
 
         import sys
-        import warnings
         if sys.version > '3':
             long = int
         
-        import os.path
-        from os import remove, environ
+        import numpy
         from scipy import sparse
         from astropy.io import fits
         import astropy.constants
-        import time
-        import numpy
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
-        from ..util.idlutils import airtovac
         from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array
-        from ..drpfits import DRPFits
+        from ..contrib.voronoi_2d_binning import voronoi_2d_binning
+        from ..util.covariance import Covariance
 
 *Class usage examples*:
-
-    .. todo::
         Add examples
 
 *Revision history*:
@@ -63,17 +53,13 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import sys
-import warnings
 if sys.version > '3':
     long = int
 
-import os.path
-from os import remove, environ
+import numpy
 from scipy import sparse
 from astropy.io import fits
 import astropy.constants
-import time
-import numpy
 
 from ..par.parset import ParSet
 from ..util.geometry import SemiMajorAxisCoo
@@ -177,6 +163,23 @@ class RadialBinningPar(ParSet):
         hdr['BINSCL'] = (self['radius_scale'], 'Radial binning radius scale (arcsec)')
         hdr['BINRAD'] = (str(list(self['radii'])), 'Radial binning radius sampling')
         hdr['BINLGR'] = (str(self['log_step']), 'Geometric step used by radial binning')
+
+
+    def fromheader(self, hdr):
+        """
+        Copy the information from the header.
+
+        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        """
+        if not isinstance(hdr, fits.Header):
+            raise TypeError('Input is not a astropy.io.fits.Header object!')
+
+        self['center'] = [ hdr['BINCX'], hdr['BINCY'] ]
+        self['pa'] = hdr['BINPA']
+        self['ell'] = hdr['BINELL']
+        self['radius_scale'] = hdr['BINSCL']
+        self['radii'] = eval(hdr['BINRAD'])
+        self['log_step'] = bool(hdr['BINLGR'])
 
 
 class RadialBinning(SpatialBinning):
@@ -363,6 +366,20 @@ class VoronoiBinningPar(ParSet):
             hdr['BINCOV'] = ('full', 'Voronoi binning S/N covariance type')
         else:
             hdr['BINCOV'] = ('none', 'Voronoi binning S/N covariance type')
+
+
+    def fromheader(self, hdr):
+        """
+        Copy the information from the header.
+
+        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        """
+        if not isinstance(hdr, fits.Header):
+            raise TypeError('Input is not a astropy.io.fits.Header object!')
+
+        self['target_snr'] = hdr['BINSNR']
+        if hdr['BINCOV'] == 'calib':
+            self['covar'] = hdr['NCALIB']
 
 
 class VoronoiBinning(SpatialBinning):
