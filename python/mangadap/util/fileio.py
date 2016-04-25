@@ -225,11 +225,11 @@ def rec_to_fits_type(rec_element):
     n = 1 if len(rec_element[0].shape) == 0 else rec_element[0].size
     if rec_element.dtype == numpy.uint8:
         return '{0}B'.format(n)
-    if rec_element.dtype == numpy.int16:
+    if rec_element.dtype == numpy.int16 or rec_element.dtype == numpy.uint16:
         return '{0}I'.format(n)
-    if rec_element.dtype == numpy.int32:
+    if rec_element.dtype == numpy.int32 or rec_element.dtype == numpy.uint32:
         return '{0}J'.format(n)
-    if rec_element.dtype == numpy.int64:
+    if rec_element.dtype == numpy.int64 or rec_element.dtype == numpy.uint64:
         return '{0}K'.format(n)
     if rec_element.dtype == numpy.float32:
         return '{0}E'.format(n)

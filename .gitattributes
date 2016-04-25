@@ -2684,6 +2684,7 @@ python/mangadap/config/absorption_indices/standard.ini -text
 python/mangadap/config/artifacts/sky.ini -text
 python/mangadap/config/bandhead_indices/standard.ini -text
 python/mangadap/config/bitmasks/spatially_binned_spectra_bits.ini -text
+python/mangadap/config/bitmasks/spectral_indices_bits.ini -text
 python/mangadap/config/bitmasks/spectral_template_bits.ini -text
 python/mangadap/config/bitmasks/stellar_continuum_model_bits.ini -text
 python/mangadap/config/defaults.py -text
@@ -2721,6 +2722,7 @@ python/mangadap/config/spatial_binning/vor10c.ini -text
 python/mangadap/config/spatial_binning/vor30.ini -text
 python/mangadap/config/spatial_binning/vor30c.ini -text
 python/mangadap/config/spatial_binning/vor50.ini -text
+python/mangadap/config/spectral_indices/standard.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
 python/mangadap/config/spectral_templates/m11_marcs.ini -text
 python/mangadap/config/spectral_templates/m11_miles.ini -text
@@ -2744,7 +2746,6 @@ python/mangadap/dapfile.py -text
 python/mangadap/drpfits.py -text
 python/mangadap/par/__init__.py -text
 python/mangadap/par/analysisplan.py -text
-python/mangadap/par/bandpassfilter.py -text
 python/mangadap/par/obsinput.py -text
 python/mangadap/par/parset.py -text
 python/mangadap/par/spectral_analysis.py -text
@@ -2786,6 +2787,7 @@ python/mangadap/proc/__init__.py -text
 python/mangadap/proc/absorptionindexdb.py -text
 python/mangadap/proc/artifactdb.py -text
 python/mangadap/proc/bandheadindexdb.py -text
+python/mangadap/proc/bandpassfilter.py -text
 python/mangadap/proc/emissionlinedb.py -text
 python/mangadap/proc/emissionmomentsdb.py -text
 python/mangadap/proc/pixelmask.py -text
@@ -2794,6 +2796,7 @@ python/mangadap/proc/spatialbinning.py -text
 python/mangadap/proc/spatiallybinnedspectra.py -text
 python/mangadap/proc/spectralfeaturedb.py -text
 python/mangadap/proc/spectralfitting.py -text
+python/mangadap/proc/spectralindices.py -text
 python/mangadap/proc/spectralstack.py -text
 python/mangadap/proc/stellarcontinuummodel.py -text
 python/mangadap/proc/templatelibrary.py -text

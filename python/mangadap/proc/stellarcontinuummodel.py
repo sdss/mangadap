@@ -8,7 +8,7 @@ A class hierarchy that performs the stellar-continuum fitting.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuumfit.py
+    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuummodel.py
 
 *Imports and python version compliance*:
     ::
@@ -31,32 +31,34 @@ A class hierarchy that performs the stellar-continuum fitting.
                 from ConfigParser import ConfigParser
             except ImportError:
                 warnings.warn('Unable to import ConfigParser!  Beware!')
-        
-        import glob
+
+        import numpy
         import os.path
-        from os import remove, environ
-        from scipy import sparse
+        import glob
         from astropy.io import fits
         import astropy.constants
-        import time
-        import numpy
 
+        from . import spectralfitting
+        from .artifactdb import ArtifactDB
+        from .emissionlinedb import EmissionLineDB
+        from .pixelmask import StellarContinuumPixelMask
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
-        from ..util.idlutils import airtovac
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array
+        from ..util.fileio import rec_to_fits_type, write_hdu
+        from ..util.instrument import spectrum_velocity_scale
+        from ..util.bitmask import BitMask
         from ..drpfits import DRPFits
+        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .templatelibrary import TemplateLibrary
+        from .util import _select_proc_method
 
 *Class usage examples*:
-
-    .. todo::
         Add examples
 
 *Revision history*:
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **19 Apr 2016**: (KBW) First version
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -84,14 +86,11 @@ else:
     except ImportError:
         warnings.warn('Unable to import ConfigParser!  Beware!')
 
-import glob
+import numpy
 import os.path
-from os import remove, environ
-from scipy import sparse
+import glob
 from astropy.io import fits
 import astropy.constants
-import time
-import numpy
 
 from . import spectralfitting
 from .artifactdb import ArtifactDB
@@ -99,13 +98,14 @@ from .emissionlinedb import EmissionLineDB
 from .pixelmask import StellarContinuumPixelMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
-from ..config.defaults import default_dap_file_name, default_cube_pixelscale
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..config.defaults import default_dap_file_name
+from ..util.fileio import rec_to_fits_type, write_hdu
+from ..util.instrument import spectrum_velocity_scale
 from ..util.bitmask import BitMask
 from ..drpfits import DRPFits
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
-from .util import _select_proc_method, _fill_vector, _pixel_scale
+from .util import _select_proc_method
 
 from matplotlib import pyplot
 
@@ -116,39 +116,41 @@ __author__ = 'Kyle B. Westfall'
 
 class StellarContinuumModelDef(ParSet):
     """
-    A class that holds the parameters necessary to perform the stellar
-    continuum fitting.
+    A class that holds the parameters necessary to perform the
+    stellar-continuum fitting.
 
+    The function use to fit the stellar continuum model must have the
+    form::
 
-    parameter set
-    class
-    function call
+        model_wave, model_flux, model_mask, model_par \
+                = fitfunc(self, binned_spectra, par=None)
 
-
-    function call has to be, e.g.:
-
-        fit(binned_spectra, template_library
-
-
+    where `binned_spectra` has type
+    :class:`mangadap.proc.spatiallybinnedspetra.SpatiallyBinnedSpectra`,
+    and the returned objects are the wavelength vector, the fitted model
+    flux, a bitmask for the model, and the set of model parameters.  For
+    example, see
+    :func:`mangadap.proc.spectralfitting.PPXFFit.fit_SpatiallyBinnedSpectra`.
 
     Args:
         key (str): Keyword used to distinguish between different spatial
             binning schemes.
         minimum_snr (bool): Minimum S/N of spectrum to fit
-        binpar (:class:`mangadap.par.parset.ParSet` or dict): The
-            parameter set defining how to place each spectrum in a bin.
-        binclass (object): Instance of class object to use for the
-            binning.  Needed in case binfunc is a non-static member
-            function of the class.
-        binfunc (callable): The function that determines which spectra
-            go into each bin.
-        stackpar (:class:`mangadap.par.parset.ParSet` or dict): The parameter
-            set defining how to stack the spectra in each bin.
-        stackclass (object): Instance of class object to used to stack
-            the spectra.  Needed in case stackfunc is a non-static
-            member function of the class.
-        stackfunc (callable): The function that stacks the spectra in a
-            given bin.
+        fit_type (str): Currently can be anything.  In the DAP, this is
+            used to identify the primary purpose of the fit as either
+            producing stellar kinematics, composition measurements, or
+            emission line fits; see
+            :mod:`mangadap.proc.spectralfitting'.  The purpose for this
+            type is to isolate the expected format of the binary table
+            data; see, e.g.,
+            :func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.
+        fitpar (:class:`mangadap.par.parset.ParSet` or dict): Any
+            additional parameters, aside from the spectra themselves,
+            required by the fitting function.
+        fitclass (object): Instance of class object to use for the
+            model fitting.  Needed in case fitfunc is a non-static member
+            function of a class.
+        fitfunc (callable): The function that models the spectra
     """
     def __init__(self, key, minimum_snr, fit_type, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
@@ -209,12 +211,13 @@ def validate_stellar_continuum_modeling_method_config(cnfg):
                 cnfg['default'][k] = 'None'
         return
 
-    raise ValueError('{0} is not a recognized binning method.'.format(cnfg['default']['method']))
+    raise ValueError('{0} is not a recognized fitting method.'.format(
+                                                                    cnfg['default']['fit_method']))
 
 
 def available_stellar_continuum_modeling_methods(dapsrc=None):
     """
-    Return the list of available stellar continuum modeling methods.
+    Return the list of available stellar-continuum modeling methods.
 
     pPXF methods:
 
@@ -259,6 +262,8 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
     # Build the list of library definitions
+    # TODO: Should only read the keywords for the pixel mask so that the
+    # artifact and emission-line databases are not read into memory
     modeling_methods = []
     for f in ini_files:
         # Read the config file
@@ -451,12 +456,6 @@ class StellarContinuumModel:
 
         """
 
-        if self.method['fitpar']['template_library_key'] is not None: 
-            self.method['fitpar']['template_library'] \
-                    = TemplateLibrary(self.method['fitpar']['template_library_key'],
-                                      drpf=self.drpf, dapsrc=dapsrc, analysis_path=analysis_path)
-                                      #, clobber=True)
-
         # Fill the guess kinematics
         c = astropy.constants.c.to('km/s').value
         if isinstance(self.guess_vel, (list, numpy.ndarray)):
@@ -479,6 +478,14 @@ class StellarContinuumModel:
             self.method['fitpar']['guess_dispersion'] = numpy.full(self.nmodels, self.guess_sig,
                                                                    dtype=numpy.float)
 
+        if self.method['fitpar']['template_library_key'] is not None: 
+            self.method['fitpar']['template_library'] \
+                    = TemplateLibrary(self.method['fitpar']['template_library_key'],
+                            velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
+                                      drpf=self.drpf, dapsrc=dapsrc, analysis_path=analysis_path)
+                                      #, clobber=True)
+
+
 
     def _clean_drp_header(self, ext='FLUX'):
         """
@@ -499,7 +506,7 @@ class StellarContinuumModel:
         Initialize the header.
 
         """
-        hdr['VSTEP'] = (_pixel_scale(self.binned_spectra['WAVE'].data),
+        hdr['VSTEP'] = (spectrum_velocity_scale(self.binned_spectra['WAVE'].data),
                         'Velocity step per spectral channel.')
         hdr['SCKEY'] = (self.method['key'], 'Stellar-continuum modeling method keyword')
         hdr['SCMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
@@ -566,6 +573,15 @@ class StellarContinuumModel:
         if self.directory_path is None or self.output_file is None:
             return None
         return os.path.join(self.directory_path, self.output_file)
+
+    
+    def info(self):
+        return self.hdu.info()
+
+
+    def all_except_emission_flags(self):
+        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'TPL_PIXELS',
+                'TRUNCATED' ]
 
 
     def fit(self, drpf, binned_spectra, guess_vel=None, guess_sig=None, dapsrc=None, dapver=None,
@@ -693,6 +709,7 @@ class StellarContinuumModel:
 
         # Save the data to the hdu attribute
         # TODO: Write the bitmask to the header?
+        # TODO: Convert some/all of the binary table data into images
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.ImageHDU(data=flux.data,
                                                 header=self.binned_spectra['FLUX'].header.copy(),
@@ -868,9 +885,8 @@ class StellarContinuumModel:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
         """
-
-        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext)[
-                                                                self.unique_models(index=True),:]
+        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext, mask_ext=mask_ext,
+                                           flag=flag)[self.unique_models(index=True),:]
         if len(self.missing_models) == 0:
             return arr
         _arr = numpy.ma.zeros( (self.nmodels, self.nwave), dtype=self.hdu[ext].data.dtype)
@@ -879,5 +895,20 @@ class StellarContinuumModel:
         return _arr
 
 
+    def construct_models(self, template_library=None, redshift_only=False):
+        if self.method['fitclass'] is None:
+            raise ValueError('No class object available for constructing the model!')
+        if not callable(self.method['fitclass'].construct_models):
+            raise AttributeError('Provided fit class object has no callable ' \
+                                 '\'construct_models\' attribute!')
+
+        _template_library = self.method['fitpar']['template_library'] \
+                    if template_library is None else template_library
+
+        return self.method['fitclass'].construct_models(self.binned_spectra, _template_library,
+                                                        self.hdu['PAR'].data,
+                                                        self.method['fitpar']['degree'],
+                                                        self.method['fitpar']['mdegree'],
+                                                        redshift_only=redshift_only)
 
 

@@ -157,6 +157,50 @@ def _fill_vector(v, length, missing, value):
     return _v
 
 
+def flux_to_fnu(wave, flambda, unit_norm=1e-17):
+    r"""
+
+    Convert a spectrum with flux per unit wavelength to flux per unit
+    frequency; i.e., calculate
+    
+    .. math::
+        
+        F_{\nu} = F_{\lambda} \frac{d\lambda}{d\nu} = F_{\lambda}
+        \frac{\lambda^2}{c},
+
+    where the first two arguments of the function are :math:`\lambda`
+    and :math:`F_{\lambda}`.  The input wavelength units are expected to
+    be angstroms, and the input flux units are expected to be :math:`n\
+    {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm A}^{-1}`, where :math:`n` is the
+    value of *unit_norm*.  The output flux units are microjanskys,
+    :math:`10^{-29} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm Hz}^{-1}`.
+
+    Args:
+        wave (numpy.ndarray, list): The vector with the wavelengths in
+            angstroms.
+        flambda (numpy.ndarray, list): The vector with the flux per unit
+            wavelength (angstroms).
+        unit_norm (float): (**Optional**) The unit normalization of the
+            flux.  For example, this is :math:`10^{-17}` when the flux
+            units are :math:`10^{-17} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\
+            {\rm A}^{-1}`.
+
+    Returns:
+        float,numpy.ndarray: The flux in units of microjanskys.
+
+    Raises:
+        ValueError: Raised if the arguments do not have the same shape.
+    """
+    _wave = [wave] if isinstance(wave, float) else wave
+    _wave = numpy.array(_wave) if isinstance(_wave, list) else _wave
+    _flambda = [flambda] if isinstance(flambda, float) else flambda
+    _flambda = numpy.array(_flambda) if isinstance(_flambda, list) else _flambda
+    if _wave.shape != _flambda.shape:
+        raise ValueError('Wavelength and flux arrays must have the same shape.')
+    fnu = _flambda*numpy.square(_wave)*unit_norm*1e30/astropy.constants.c.to('nm/s').value
+    return fnu[0] if isinstance(flambda, float) else fnu
+
+
         # TODO: Requires a spectrum in each bin!
 #        if any(numpy.diff(bin_indx[srt]) > 1):
 #            rep = numpy.ones(bin_change.size, dtype=numpy.int)
@@ -167,18 +211,18 @@ def _fill_vector(v, length, missing, value):
 #            bin_change = numpy.repeat(bin_change, rep)
 
 
-def _pixel_scale(wave, units='km/s', base=10.0):
-    """
-    Calculate the velocity scale per pixel.  Assumes the wavelengths
-    are logarithmically sampled.
-    """
-    if units == 'km/s':
-        return numpy.diff(numpy.log(wave[0:2]))[0]*astropy.constants.c.to('km/s').value
-    if units == 'logw':
-        return numpy.diff(numpy.log(wave[0:2]))[0]/numpy.log(base)
-    if units == 'ang':
-        return numpy.diff(wave[0:2])[0]
-
-    raise ValueError('Units should be km/s, logw, or ang.  Unknown unit: {0}'.format(units))
+#def _pixel_scale(wave, units='km/s', base=10.0):
+#    """
+#    Calculate the velocity scale per pixel.  Assumes the wavelengths
+#    are logarithmically sampled.
+#    """
+#    if units == 'km/s':
+#        return numpy.diff(numpy.log(wave[0:2]))[0]*astropy.constants.c.to('km/s').value
+#    if units == 'logw':
+#        return numpy.diff(numpy.log(wave[0:2]))[0]/numpy.log(base)
+#    if units == 'ang':
+#        return numpy.diff(wave[0:2])[0]
+#
+#    raise ValueError('Units should be km/s, logw, or ang.  Unknown unit: {0}'.format(units))
 
 

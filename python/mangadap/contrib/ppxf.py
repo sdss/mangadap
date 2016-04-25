@@ -35,7 +35,7 @@
 #   2) One can enforce smoothness on the template weights during the fit.
 #      This is useful to attach a physical meaning to the weights
 #      e.g. in terms of the star formation history of a galaxy.
-#   3) One can fit multple kinematic components for both the stars and the gas
+#   3) One can fit multiple kinematic components for both the stars and the gas
 #      emission lines. Both the stellar and gas LOSVD can be penalized
 #      and can be described by a general Gauss-Hermite series.
 #   4) Additive and/or multiplicative polynomials can be included to adjust
@@ -172,6 +172,9 @@
 #       If one uses my LOG_REBIN routine to rebin the spectrum before the PPXF fit:
 #           LOG_REBIN, lamRange, galaxy, galaxyNew, logLam
 #       the wavelength can be obtained as lam = np.exp(logLam).
+#   MASK: boolean vector of length GALAXY.size specifying with 1 the pixels
+#       that should be included in the fit.
+#       This keyword is just an alternative way of specifying the GOODPIXELS.
 #   MDEGREE: degree of the *multiplicative* Legendre polynomial (with mean of 1)
 #       used to correct the continuum shape during the fit (default: 0). The
 #       zero degree multiplicative polynomial is always included in the fit as
@@ -224,7 +227,7 @@
 #       This is useful when fitting stellar population together with gas emission lines.
 #       In that case the SSP spectral templates are given first and the gas emission
 #       templates are given last. In this situation one has to use the REG_DIM keyword
-#       (below), to give PPXF the dimenisons of the population parameters
+#       (below), to give PPXF the dimensions of the population parameters
 #       (e.g. nAge, nMetal, nAlpha).
 #       An usage example is given in ppxf_population_gas_example_sdss.py
 #     - The effect of the regularization scheme is to enforce the numerical second
@@ -258,7 +261,7 @@
 #       first one (COMPONENT=0). This is useful to fit the stellar population
 #       and gas emission together.
 #       In this situation one has to use the REG_DIM keyword, to give PPXF
-#       the dimenisons of the population parameters (e.g. nAge, nMetal, nAlpha).
+#       the dimensions of the population parameters (e.g. nAge, nMetal, nAlpha).
 #       One should creates the initial array of population templates like
 #       e.g. TEMPLATES[nPixels, nAge, nMetal, nAlpha] and define
 #           reg_dim = TEMPLATES.shape[1:] = np.array([nAge, nMetal, nAlpha])
@@ -350,9 +353,9 @@
 #       In this way pPXF returns meaningful velocities for nearby galaxies,
 #       or when a spectrum was de-redshifted before extracting the kinematics.
 #       However Vel is not a well-defined quantity at large redshifts.
-#       In that case Vel should be converted into redshift for meaninful results.
+#       In that case Vel should be converted into redshift for meaningful results.
 #       Given the above definition, the precise relation between the output pPXF 
-#       velocity and redshift is z = np.exp(Vel/c) - 1, which reduces to the well 
+#       velocity and redshift is Vel = c*np.log(1 + z), which reduces to the well
 #       known approximation z ~ Vel/c in the limit of small Vel.
 #     - I hardcoded the following safety limits on the fitting parameters:
 #         a) Vel is constrained to be +/-2000 km/s from the first input guess
@@ -536,6 +539,8 @@
 #           MC, Oxford, 9 November 2015
 #   V5.1.17: Expanded explanation of the relation between output velocity and redshift.
 #          MC, Oxford, 21 January 2016
+#   V5.1.18: Fixed deprecation warning in Numpy 1.11. Change order from 1 to 3 during
+#          oversampling. Warn if sigma is under-sampled. MC, Oxford, 20 April 2016
 #
 ################################################################################
 
@@ -589,12 +594,12 @@ def robust_sigma(y, zero=False):
     d = y if zero else y - np.median(y)
 
     mad = np.median(np.abs(d))
-    u2 = (d / (9.0*mad))**2 # c = 9
+    u2 = (d / (9.0*mad))**2  # c = 9
     good = u2 < 1.0
     u1 = 1.0 - u2[good]
     num = y.size * ((d[good]*u1**2)**2).sum()
     den = (u1*(1.0 - 5.0*u2[good])).sum()
-    sigma = np.sqrt(num/(den*(den - 1.0))) # see note in above reference
+    sigma = np.sqrt(num/(den*(den - 1.0)))  # see note in above reference
 
     return sigma
 
@@ -611,8 +616,8 @@ def reddening_curve(lam, ebv):
       wavelength has to be multiplied, to model the dust reddening effect.
 
     """
-    lam = 1e4/lam # Convert Angstrom to micrometres and take 1/lambda
-    rv = 4.05 # C+00 equation (5)
+    lam = 1e4/lam  # Convert Angstrom to micrometres and take 1/lambda
+    rv = 4.05  # C+00 equation (5)
 
     # C+00 equation (3) but extrapolate for lam>2.2
     # C+00 equation (4) but extrapolate for lam<0.12
@@ -660,7 +665,7 @@ def _rfft_templates(templates, vsyst, vlims, sigmax, factor, nspec):
     # Oversample all templates (if requested)
     #
     if factor > 1:
-        templates = ndimage.interpolation.zoom(templates, [factor, 1], order=1)
+        templates = ndimage.interpolation.zoom(templates, [factor, 1], order=3)
 
     nk = 2*dx*factor + 1
     nf = templates.shape[0]
@@ -678,7 +683,7 @@ def _rfft_templates(templates, vsyst, vlims, sigmax, factor, nspec):
 class ppxf(object):
 
     def __init__(self, templates, galaxy, noise, velScale, start,
-            bias=None, clean=False, degree=4, goodpixels=None, mdegree=0,
+            bias=None, clean=False, degree=4, goodpixels=None, mask=None, mdegree=0,
             moments=2, oversample=False, plot=False, quiet=False, sky=None,
             vsyst=0, regul=0, lam=None, reddening=None, component=0, reg_dim=None):
 
@@ -699,17 +704,19 @@ class ppxf(object):
         self.reg_dim = np.asarray(reg_dim)
 
         s1 = templates.shape
-        if len(s1) == 1: # Single template
+        if len(s1) == 1:  # Single template
             self.star = templates[:, None]
-        elif len(s1) == 2: # array of templates
+        elif len(s1) == 2:  # array of templates
             self.star = templates
-        elif len(s1) >= 3: # >1-dim regularization
+        elif len(s1) >= 3:  # >1-dim regularization
             self.star = templates.reshape(s1[0], -1)
             s1 = self.star.shape
 
-        component = np.atleast_1d(component).astype(int)
-        if component.size == 1 and len(s1) > 1: # component is a scalar
-            self.component = np.zeros(s1[1]).astype(int) # all templates have the same LOSVD
+        component = np.atleast_1d(component)
+        if component.dtype != int:
+            raise ValueError('COMPONENT must be integers')
+        if component.size == 1 and len(s1) > 1:  # component is a scalar
+            self.component = np.zeros(s1[1], dtype=int)  # all templates have the same LOSVD
         else:
             self.component = component
 
@@ -732,7 +739,7 @@ class ppxf(object):
                 raise ValueError('reg_dim must be specified')
 
         moments = np.atleast_1d(moments)
-        if moments.size == 1: # moments is scalar: all LOSVDs have same number of G-H moments
+        if moments.size == 1:  # moments is scalar: all LOSVDs have same number of G-H moments
             self.moments = np.full(self.ncomp, np.abs(moments), dtype=int)
         else:
             self.moments = np.abs(moments)
@@ -754,11 +761,11 @@ class ppxf(object):
         if len(s1) > 2 or len(s2) > 2 or len(s3) > 2:
             raise ValueError('Wrong input dimensions')
 
-        if len(s3) > 1 and s3[0] == s3[1]: # NOISE is a 2-dim covariance matrix
+        if len(s3) > 1 and s3[0] == s3[1]:  # NOISE is a 2-dim covariance matrix
             if s3[0] != s2[0]:
                 raise ValueError('Covariance Matrix must have size xpix*npix')
-            noise = linalg.cholesky(noise, lower=1) # Cholesky factor of symmetric, positive-definite covariance matrix
-            self.noise = linalg.solve_triangular(noise, np.identity(s3[0]), lower=1) # Invert Cholesky factor
+            noise = linalg.cholesky(noise, lower=1)  # Cholesky factor of symmetric, positive-definite covariance matrix
+            self.noise = linalg.solve_triangular(noise, np.identity(s3[0]), lower=1)  # Invert Cholesky factor
         else:   # NOISE is an error spectrum
             if not np.equal(s2, s3):
                 raise ValueError('GALAXY and NOISE must have the same size/type')
@@ -784,6 +791,16 @@ class ppxf(object):
         else:
             self.factor = oversample
 
+        if mask is not None:
+            if mask.dtype != bool:
+                raise ValueError('MASK must be a boolean vector')
+            if mask.shape != galaxy.shape:
+                raise ValueError('MASK and GALAXY must have the same size')
+            if goodpixels is None:
+                goodpixels = np.flatnonzero(mask)
+            else:
+                raise ValueError('GOODPIXELS and MASK cannot be used together')
+
         if goodpixels is None:
             self.goodpixels = np.arange(s2[0])
         else:
@@ -794,7 +811,7 @@ class ppxf(object):
             self.goodpixels = goodpixels
 
         if bias is None:
-            self.bias = 0.7*np.sqrt(500./np.size(self.goodpixels)) # pPXF paper pg.144 left
+            self.bias = 0.7*np.sqrt(500./np.size(self.goodpixels))  # pPXF paper pg.144 left
         else:
             self.bias = bias
 
@@ -839,7 +856,7 @@ class ppxf(object):
             parinfo[0+p]['limits'] = vlims[2*j:2*j+2] = vl
             parinfo[0+p]['step'] = 1e-2
             parinfo[1+p]['value'] = start1[1]
-            parinfo[1+p]['limits'] = np.array([0.1, 1e3/velScale])  # hard-coded velScale/10<sigma<1000 km/s
+            parinfo[1+p]['limits'] = np.array([0.1/3, 1e3/velScale])  # hard-coded velScale/10<sigma<1000 km/s
             parinfo[1+p]['step'] = 1e-2
             if s1[0] <= 2*(abs(self.vsyst + start1[0]) + 5.*start1[1]):
                 raise ValueError('Velocity shift too big: Adjust wavelength ranges of spectrum and templates')
@@ -910,6 +927,9 @@ class ppxf(object):
             print("Best Fit:       V     sigma        h3        h4        h5        h6")
             for j in range(self.ncomp):
                 print("comp.", j, "".join("%10.3g" % f for f in self.sol[j]))
+                if self.sol[j][1] < velScale/2 and oversample is False:
+                    print("Warning: sigma is under-sampled. Use 'oversample'"
+                          " or resample the input spectra")
             print("chi2/DOF: %.4g" % self.chi2)
             print('Function evaluations:', ncalls)
             nw = self.weights.size

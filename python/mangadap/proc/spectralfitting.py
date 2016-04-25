@@ -1,14 +1,14 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-A class hierarchy that performs the stellar-continuum fitting.
+A class hierarchy that performs spectral fits.
 
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuumfit.py
+    $MANGADAP_DIR/python/mangadap/proc/spectralfitting.py
 
 *Imports and python version compliance*:
     ::
@@ -22,41 +22,25 @@ A class hierarchy that performs the stellar-continuum fitting.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-        
-        import glob
-        import os.path
-        from os import remove, environ
-        from scipy import sparse
-        from astropy.io import fits
-        import astropy.constants
-        import time
+
         import numpy
+        import scipy.interpolate
+        import astropy.constants
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
-        from ..config.util import validate_reduction_assessment_config
-        from ..util.idlutils import airtovac
-        from ..util.geometry import SemiMajorAxisCoo
+        from ..util.bitmask import BitMask
         from ..util.fileio import init_record_array
-        from ..drpfits import DRPFits
+        from .templatelibrary import TemplateLibrary
+        from .pixelmask import PixelMask
+        from ..contrib.ppxf import ppxf
+        from ..util.instrument import spectrum_velocity_scale
 
 *Class usage examples*:
-
-    .. todo::
         Add examples
 
 *Revision history*:
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **19 Apr 2016**: (KBW) First version
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -74,26 +58,20 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import numpy
 import scipy.interpolate
+import scipy.signal
 import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask
+from ..util.fileio import init_record_array
+from ..util.instrument import spectrum_velocity_scale, resample_vector
+from ..contrib.ppxf import ppxf
+from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .pixelmask import PixelMask
-from ..contrib.ppxf import ppxf
-from .util import _pixel_scale
 
 from matplotlib import pyplot
 
@@ -133,6 +111,8 @@ class StellarKinematicsFit(SpectralFitting):
         extension.
         """
         return [ ('BIN_INDEX',numpy.int),
+                 ('BEGPIX', numpy.int),
+                 ('ENDPIX', numpy.int),
                  ('NPIXTOT',numpy.int),
                  ('NPIXFIT',numpy.int),
                  ('TPLWGT',numpy.float,ntpl),
@@ -250,7 +230,9 @@ class PPXFFitPar(ParSet):
 
 class PPXFFit(StellarKinematicsFit):
     """
-    Use pPXF to specifically fit the stellar kinematics.
+    Use pPXF to measure the stellar kinematics.  Although it can also
+    fit the composition and emission lines, for now just force it to be
+    a :class:`StellarKinematicsFit` objec.
     """
     def __init__(self, bitmask, par=None):
         StellarKinematicsFit.__init__(self, 'ppxf', bitmask, par=par)
@@ -403,6 +385,12 @@ class PPXFFit(StellarKinematicsFit):
         if self.par is None:
             raise ValueError('Required parameters for PPXFFit have not been defined.')
 
+        if not isinstance(binned_spectra, SpatiallyBinnedSpectra):
+            raise TypeError('Must provide a SpatiallyBinnedSpectra object for fitting.')
+        if self.par['template_library'] is None \
+                or not isinstance(self.par['template_library'], TemplateLibrary):
+            raise TypeError('Must provide a TemplateLibrary object for fitting.')
+
         _def = self.par._keyword_defaults()
         if self.par['regul'] != _def['regul'] \
                 or self.par['reddening'] != _def['reddening'] \
@@ -412,7 +400,7 @@ class PPXFFit(StellarKinematicsFit):
 
         # Get the spectra
         obj_wave = binned_spectra['WAVE'].data
-        velScale = _pixel_scale(obj_wave)
+        velScale = spectrum_velocity_scale(obj_wave)
         flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
         noise = numpy.ma.sqrt(numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
                                                     flag=binned_spectra.do_not_fit_flags()), -1.0))
@@ -429,16 +417,16 @@ class PPXFFit(StellarKinematicsFit):
         # Initialize the output arrays
         #  Model flux:
         model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
-        #  Model mask
+        #  Model mask:
         model_mask = self.par['pixelmask'].bits(self.bitmask, obj_wave, nspec=binned_spectra.nbins,
                                                 velocity_offsets=guess_kin[:,0])
         model_mask[numpy.ma.getmaskarray(flux)] \
                 = self.bitmask.turn_on(model_mask[numpy.ma.getmaskarray(flux)], 'DIDNOTUSE')
         #  Record array with model parameters
-        model_par = numpy.zeros(binned_spectra.nbins,
-                                dtype=self._per_stellar_kinematics_dtype(ntpl,
-                                                self.par['degree']+1, max(self.par['mdegree'],0),
-                                                self.par['moments']))
+        model_par = init_record_array(binned_spectra.nbins,
+                                      self._per_stellar_kinematics_dtype(ntpl, self.par['degree']+1,
+                                                                         max(self.par['mdegree'],0),
+                                                                         self.par['moments']))
         model_par['BIN_INDEX'] = numpy.arange(binned_spectra.nbins)
 
         # TODO: Need parameter keywords for max_velocity_range and
@@ -463,17 +451,20 @@ class PPXFFit(StellarKinematicsFit):
         end += 1
         print(start, end, len(obj_wave))
 
+        # Get the input pixel shift between the object and template
+        # wavelength vectors; interpretted by pPXF as a base velocity
+        # shift between the two
         base_velocity = self.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velScale)
         guess_kin[:,0] += base_velocity
         vsyst = numpy.mean(guess_kin[:,0])
 
-        print(base_velocity, vsyst)
-
+        # Determine the degrees of freedom of the fit, used for the
+        # brute force calculation of the reduced chi-square
         dof = self.par['moments']+max(self.par['mdegree'],0)
         if self.par['degree'] >= 0:
             dof += self.par['degree']+1
-        print(dof)
 
+        # Fit each binned spectrum:
         for i in range(binned_spectra.nbins):
             print('Fit: {0}/{1}'.format(i+1,binned_spectra.nbins), end='\r')
             # Get the list of good pixels
@@ -490,11 +481,12 @@ class PPXFFit(StellarKinematicsFit):
                                 binned_spectra['BINS'].data['SNR'][i], self.par['minimum_snr']))
                 continue
 
-            #pyplot.plot( obj_wave[start:end], flux[i,start:end]/numpy.ma.mean(flux[i,start:end]))
-            #pyplot.plot( tpl_wave*(1+(vsyst-base_velocity)/astropy.constants.c.to('km/s').value),
-            #                templates[31,:]/numpy.mean(templates[31,:]))
-            #pyplot.show()
+#            pyplot.plot( obj_wave[start:end], flux[i,start:end]/numpy.ma.mean(flux[i,start:end]))
+#            pyplot.plot( tpl_wave*(1+(vsyst-base_velocity)/astropy.constants.c.to('km/s').value),
+#                            templates[31,:]/numpy.mean(templates[31,:]))
+#            pyplot.show()
 
+            # Run ppxf
             ppxf_fit = ppxf(templates.T, flux.data[i,start:end], noise.data[i,start:end],
                             velScale, guess_kin[i,:], goodpixels=gpm, bias=self.par['bias'],
                             clean=self.par['clean'], degree=self.par['degree'],
@@ -511,6 +503,8 @@ class PPXFFit(StellarKinematicsFit):
                 self.bitmask.turn_on(model_mask[i,start:end][rejected_pixels], flag=self.rej_flag)
             # TODO: Turn on bits that flag as being rejected by pPXF,
             # failed pPXF, etc.
+            model_par['BEGPIX'][i] = start
+            model_par['ENDPIX'][i] = end
             model_par['NPIXTOT'][i] = end-start
             model_par['NPIXFIT'][i] = len(ppxf_fit.goodpixels)
 #            print(model_par['NPIXTOT'][i], model_par['NPIXFIT'][i])
@@ -526,7 +520,7 @@ class PPXFFit(StellarKinematicsFit):
             model_par['KININP'][i][0] -= base_velocity
 #            print(model_par['KININP'][i])
             model_par['KIN'][i] = ppxf_fit.sol
-            model_par['KIN'][i][0] -= base_velocity
+            model_par['KIN'][i][0] += vsyst - base_velocity
 #            print(model_par['KIN'][i])
             model_par['KINERR'][i] = ppxf_fit.error
 #            print(model_par['KINERR'][i])
@@ -573,14 +567,15 @@ class PPXFFit(StellarKinematicsFit):
 #            pyplot.show()
 #            exit()
 
-        self._convert_velocity(model_par)
+        model_par['KIN'][:,0], model_par['KINERR'][:,0] \
+                = self._convert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
 
         print('Fit: {0}/{0}'.format(binned_spectra.nbins))
         return binned_spectra['WAVE'].data, model_flux, model_mask, model_par
 
 
     @staticmethod
-    def _convert_velocity(model_par):
+    def _convert_velocity(v, verr):
         r"""
 
         Convert kinematics from pPXF from pixel shifts to redshifts.
@@ -623,17 +618,166 @@ class PPXFFit(StellarKinematicsFit):
             reconstruct the pPXF fitted model.
         """
         c=astropy.constants.c.to('km/s').value
-        model_par['KINERR'][:,0] *= numpy.absolute(numpy.exp(model_par['KIN'][:,0]/c))
-        model_par['KIN'][:,0] = (numpy.exp(model_par['KIN'][:,0]/c)-1.0)*c
+        return (numpy.exp(v/c)-1.0)*c, verr*numpy.absolute(numpy.exp(v/c))
 
 
     @staticmethod
-    def _revert_velocity(model_par):
+    def _revert_velocity(v,verr):
+        """
+        Revert the velocity back to the "pixelized" velocity returned by
+        pPXF.
+
+        Order matters here.  The error computation is NOT a true error
+        propagation; it's just the inverse of the "convert" operation
+        """
         c=astropy.constants.c.to('km/s').value
-        model_par['KIN'][:,0] = c*numpy.log(model_par['KIN'][:,0]/c+1.0)
-        # The order matters here.  This is NOT an error propagation and
-        # is just the inverse of the "convert" operation
-        model_par['KINERR'][:,0] /= numpy.exp(model_par['KIN'][:,0]/c)
+        _v = c*numpy.log(v/c+1.0)
+        return _v, verr/numpy.absolute(numpy.exp(_v/c))
+
+
+    @staticmethod
+    def _losvd_kernel(par, velScale, base_velocity=0.0):#, nwave):
+        """
+        Return the sampled kernel.
+
+        Meant to match computation of model in pPXF, see
+        :func:`mangadap.contrib.ppxf._fitfunc`
+
+        CURRENTLY WILL NOT WORK WITH:
+            - multiple kinematic components
+            - point-symmetric fits
+            - oversampling
+
+        Input expected to be the parameters *after* the pPXF velocities
+        had been converted to redshifts.
+
+        """
+        _par = par.copy()
+        _par[0], verr = PPXFFit._revert_velocity(_par[0], 1.0)
+        _par[0] += base_velocity
+        #_par[0] = 0.0
+        _par[0:2] /= velScale      # Convert to pixels
+
+        dx = int(abs(_par[0])+5.0*par[1])
+        nl = 2*dx+1
+        x = numpy.linspace(-dx,dx,nl)
+        w = (x - _par[0])/_par[1]
+        w2 = numpy.square(w)
+        gauss = numpy.exp(-0.5*w2)
+        losvd = gauss/numpy.sum(gauss)
+
+        # Add the higher order terms
+        if len(_par) > 2:
+            # h_3 h_4
+            poly = 1 + _par[2]/numpy.sqrt(3)*(w*(2*w2-3)) + _par[3]/numpy.sqrt(24)*(w2*(4*w2-12)+3)
+            if len(_par) > 4:
+                # h_5 h_6
+                poly += _par[4]/np.sqrt(60)*(w*(w2*(4*w2-20)+15)) \
+                            + _par[5]/np.sqrt(720)*(w2*(w2*(8*w2-60)+90)-15)
+            losvd *= poly
+
+        return _par[0]*velScale, losvd
+
+#        npad = int(2**np.ceil(np.log2(nwave + nl/2)))
+#        losvd_pad = numpy.zeros(npad)
+
+        
+
+
+    def construct_models(self, binned_spectra, template_library, model_par, degree, mdegree,
+                         redshift_only=False):
+        """
+
+        Construct models using the provided set of model parameters and
+        template library.  The number of template weights in the
+        provided model parameters must match the number of template
+        spectra.
+
+        If redshift_only is true, ignore the LOSVD and simply shift the
+        model to the correct redshift.
+
+        .. todo::
+
+            This doesn't appear to give exactly the correct
+            reconstruction of the pPXF models.
+
+        """
+        if not isinstance(binned_spectra, SpatiallyBinnedSpectra):
+            raise TypeError('Must provide a SpatiallyBinnedSpectra object.')
+        if not isinstance(template_library, TemplateLibrary):
+            raise TypeError('Must provide a TemplateLibrary object.')
+        if model_par['TPLWGT'].shape[1] != template_library.ntpl:
+            raise ValueError('The number of weights does not match the number of templates.')
+
+        velScale = spectrum_velocity_scale(binned_spectra['WAVE'].data)
+
+        tpl_wave = template_library['WAVE'].data
+        obj_wave = binned_spectra['WAVE'].data
+
+        outRange = obj_wave[ [0,-1] ]
+        outpix = binned_spectra.nwave
+
+        models = numpy.zeros((binned_spectra.nbins, binned_spectra.nwave), dtype=numpy.float)
+
+        for i in range(binned_spectra.nbins):
+            if i in binned_spectra.missing_bins:
+                continue
+
+            # Get the composite template
+            indx = model_par['TPLWGT'][i] > 0
+            composite_template = numpy.dot(model_par['TPLWGT'][i][indx],
+                                           template_library['FLUX'].data[indx,:])
+
+#            pyplot.step(tpl_wave, composite_template, where='mid', linestyle='-', lw=0.5,
+#                         color='k')
+#            pyplot.show()
+
+            redshift = model_par['KIN'][i,0]/astropy.constants.c.to('km/s').value
+            start = model_par['BEGPIX'][i]
+            end = model_par['ENDPIX'][i]
+
+            # Redshift and broadened using the LOSVD parameters
+            if redshift_only:
+                # Resample the redshifted template to the wavelength grid of
+                # the binned spectra
+                inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
+                _composite_template = composite_template
+            else:
+                base_velocity = self.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velScale)
+                vel, losvd = self._losvd_kernel(model_par['KIN'][i,:], velScale,
+                                                base_velocity=base_velocity)
+                _composite_template = scipy.signal.fftconvolve(composite_template, losvd,
+                                                               mode="same")
+                voff, verr = self._convert_velocity(-base_velocity, 1.0)
+                #inRange = tpl_wave[ [0,-1] ]*(1+redshift)
+                inRange = tpl_wave[[0,-1]] * (1.0 + voff/astropy.constants.c.to('km/s').value)
+                
+            # Resample the template to the galaxy wavelengths
+            wave, models[i,:] = resample_vector(_composite_template, xRange=inRange, inLog=True,
+                                                newRange=outRange, newpix=outpix, newLog=True,
+                                                flat=False)
+
+
+#            pyplot.plot(tpl_wave*(1+redshift), composite_template, linestyle='-', lw=1.5,
+#                        color='r', zorder=1, alpha=0.5)#, where='mid')
+#            pyplot.plot(wave, models[i,:], linestyle='-', lw=0.5, color='k', zorder=3)
+#                        #, where='mid')
+#            pyplot.show()
+
+            x = numpy.linspace(-1, 1, model_par['NPIXTOT'][i])
+            if mdegree > 0:
+                models[i,start:end] *= numpy.polynomial.legendre.legval(x,
+                                                        numpy.append(1.0,model_par['MULTCOEF'][i]))
+            if degree > -1:
+                model[i,start:end] += numpy.polynomial.legendre.legval(x, model_par['ADDCOEF'][i])
+
+        return models
+
+
+
+
+
+
 
 
 

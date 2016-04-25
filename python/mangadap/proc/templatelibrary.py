@@ -1049,8 +1049,10 @@ class TemplateLibrary:
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 #        pyplot.show()
 
-        # Match the resolution of the templates.
-        self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask = \
+        # Match the resolution of the templates.  ivar is returned, but
+        # is always None because ivar is not provided to
+        # match_spectral_resolution
+        self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, ivar = \
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                       self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
                                       self.sres.sres(), min_sig_pix=0.0,

@@ -283,6 +283,14 @@ class ParDatabase:
     
     """
     def __init__(self, inp):
+        """
+        nsets - number of parameter sets
+        npar - number of parameters in each parameter set
+        data - parameter set data
+        options - allowed options for values
+        dtype - allowed datatypes
+        can_call - parameter is a callable function
+        """
         _inp = [inp] if isinstance(inp, ParSet) else inp
         if not isinstance(_inp, list):
             raise TypeError('Input must be a list.')
@@ -290,9 +298,9 @@ class ParDatabase:
             if not isinstance(i, ParSet):
                 raise TypeError('Input must be a list of ParSet objects.')
         self.npar = _inp[0].npar
-        nsets = len(_inp)
+        self.nsets = len(_inp)
         keys = _inp[0].keys()
-        for i in range(1,nsets):
+        for i in range(1,self.nsets):
             if _inp[i].npar != self.npar:
                 raise ValueError('Not all ParSet objects have the same number of parameters.')
             if _inp[i].keys() != keys:
@@ -302,7 +310,7 @@ class ParDatabase:
         record_dtypes = self._set_dtypes(_inp, 0)
 
         data = []
-        for i in range(nsets):
+        for i in range(self.nsets):
             data += [ tuple([_inp[i][k] for k in keys]) ]
 
         # WARNING: None values are converted to nan if data type is

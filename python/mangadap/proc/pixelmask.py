@@ -8,7 +8,7 @@ A class heirarchy for pixel masks.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuumfit.py
+    $MANGADAP_DIR/python/mangadap/proc/pixelmask.py
 
 *Imports and python version compliance*:
     ::
@@ -24,7 +24,9 @@ A class heirarchy for pixel masks.
             long = int
 
         import numpy
+        import astropy.constants
 
+        from ..util.bitmask import BitMask
         from .artifactdb import ArtifactDB
         from .emissionlinedb import EmissionLineDB
 

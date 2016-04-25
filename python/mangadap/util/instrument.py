@@ -47,9 +47,12 @@ Provides a set of functions to handle instrumental effects.
                        allow for linear interpolation of flux density
                        across the pixel.
     | **04 Feb 2016**: (KBW) Further fixes to :func:`resample_vector`.
-                       Added :func:`spectral_coordiante_step`, and
+                       Added :func:`spectral_coordinate_step`, and
                        propagated change to
                        :func:`spectrum_velocity_scale`
+    | **21 Apr 2016**: (KBW) It's the Queen's 90th birthday!  Removed
+                       log10 keyword from
+                       :func:`spectrum_velocity_scale`.
 """
 
 from __future__ import division
@@ -85,40 +88,38 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
     Args: 
         wave (numpy.ndarray): Wavelength coordinates of each spectral
             channel in angstroms.
-        log (bool): (Optional) Input spectrum has been sampled
+        log (bool): (**Optional**) Input spectrum has been sampled
             geometrically.
-        base (float): (Optional) If sampled geometrically, the sampling
-            is done using a logarithm with this base.  For natural
-            logarithm, use numpy.exp(1).
+        base (float): (**Optional**) If sampled geometrically, the
+            sampling is done using a logarithm with this base.  For
+            natural logarithm, use numpy.exp(1).
 
     Returns:
         float: Spectral sampling step in either angstroms (log=False) or
         the step in log(angstroms).
     """
-    return ( numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]) )
+    return (numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]))[0]
 
 
-def spectrum_velocity_scale(wave, log10=False):
+def spectrum_velocity_scale(wave):
     """
     Determine the velocity sampling of an input wavelength coordinate
-    vector.  The wavelength vector is assumed to be logarithmically
-    sampled, but its units are in angstroms.
+    vector.
+    
+    .. note::
+        The wavelength vector is assumed to be geometrically sampled!
+        However, the input units expected to be in angstroms, not, e.g.,
+        log(angstrom).
 
     Args: 
         wave (numpy.ndarray): Wavelength coordinates of each spectral
             channel in angstroms.  It is expected that the spectrum has
-            been sampled geometrically.
-        log10 (bool): (Optional) Input spectrum has been sample
-            geometrically using the base 10 logarithm, instead of the
-            natural logarithm.
+            been sampled geometrically
 
     Returns:
         float: Velocity scale of the spectrum in km/s.
 
     """
-#    dl_over_l = (numpy.log10(wave[1])-numpy.log10(wave[0]))*numpy.log(10.0) if log10 else \
-#                numpy.log(wave[1])-numpy.log(wave[0])
-                
     return astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave, log=True,
                                                                          base=numpy.exp(1.))
 
@@ -132,7 +133,8 @@ class convolution_integral_element:
         y (numpy.ndarray): Vector to convolve
         sigma (numpy.ndarray): Coordinate-dependent standard deviation of the
             Gaussian kernel
-        ye (numpy.ndarray): (Optional) Error in the vector to convolve
+        ye (numpy.ndarray): (**Optional**) Error in the vector to
+            convolve
 
     Raises:
         ValueError: Raised if *y* is not a 1D vector, or if the shape of
@@ -276,7 +278,7 @@ def convolution_variable_sigma(y, sigma, ye=None):
         sigma (numpy.ndarray): The standard deviation of the Gaussian
             kernel sampled at the same positions as *y*.  The units of
             *sigma* **must** be in pixels.
-        ye (numpy.ndarray): (Optional) Errors in the function
+        ye (numpy.ndarray): (**Optional**) Errors in the function
             :math:`y(x)`.
 
     Returns:
@@ -311,10 +313,10 @@ class spectral_resolution:
         sres (numpy.ndarray): A 1D vector with the spectral resolution,
             :math:`R`, sampled at the positions of the provided
             wavelength vector.
-        log10 (bool): (Optional) Flag that the spectrum has been binned
-            logarithmically (base 10) in wavelength
-        interp_ext (int or str): (Optional) The value to pass as *ext*
-            to the interpolator, which defines its behavior when
+        log10 (bool): (**Optional**) Flag that the spectrum has been
+            binned logarithmically (base 10) in wavelength
+        interp_ext (int or str): (**Optional**) The value to pass as
+            *ext* to the interpolator, which defines its behavior when
             attempting to sample the spectral resolution beyond where it
             is defined.  See
             `scipy.interpolate.InterpolatedUnivariateSpline`_.  Default
@@ -394,7 +396,7 @@ class spectral_resolution:
         self.cnst = constants()
         self.c = astropy.constants.c.to('km/s').value
 
-        self.dv = spectrum_velocity_scale(wave, log10=True) if log10 else None
+        self.dv = spectrum_velocity_scale(wave) if log10 else None
         self.dw = None if log10 else wave[1] - wave[0]
 
         # No resolution matching calculated yet
@@ -417,7 +419,7 @@ class spectral_resolution:
         """
         indx = numpy.where(numpy.isclose(sig2_pd, 0.0))
         nindx = where_not(indx, sig2_pd.size)
-        self.sig_pd = numpy.copy(sig2_pd)
+        self.sig_pd = sig2_pd.copy()
         self.sig_pd[nindx] = sig2_pd[nindx]/numpy.sqrt(numpy.absolute(sig2_pd[nindx]))
         self.sig_pd[indx] = 0.0
         self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
@@ -600,16 +602,13 @@ class spectral_resolution:
         Args:
             new_sres (:class:`spectral_resolution`): Spectral resolution
                 to match to.
-
-            no_offset (bool): (Optional) Force :math:`\sigma^2_{v,o} =
-                0` by masking regions with :math:`\sigma_{p,d} <
+            no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}
+                = 0` by masking regions with :math:`\sigma_{p,d} <
                 -\epsilon_\sigma`; i.e., the value of this arguments
                 selects Option 1 (True) or Option 2 (False).
-
-            min_sig_pix (float): (Optional) Minimum value of the
+            min_sig_pix (float): (**Optional**) Minimum value of the
                 standard deviation allowed before assuming the kernel is
                 a Delta function.
-
         """
         # Save the minimum pixel sigma to allow
         self.min_sig = min_sig_pix
@@ -718,8 +717,8 @@ class spectral_resolution:
             R^{-2}_1\right]^{-1/2}\ . 
 
         Args:
-            indx (tuple): (Optional) Selection tuple used to return a
-                subset of the full resolution vector.
+            indx (tuple): (**Optional**) Selection tuple used to return
+                a subset of the full resolution vector.
 
         Returns:
             numpy.ndarray: The (full or selected) vector with the
@@ -744,8 +743,8 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                               min_sig_pix=0.0, no_offset=True, variable_offset=False, log10=False,
                               new_log10=False):
     r"""
-    Adjust the existing spectral resolution of to a **lower** resolution
-    as best as possible.  The primary functionality is in
+    Adjust the existing spectral resolution of a spectrum to a **lower**
+    resolution as best as possible.  The primary functionality is in
     :class:`spectral_resolution`, which determines the Gaussian kernel
     parameters needed to match the resolution, and
     :func:`convolve_variable_sigma`, which actually performs the
@@ -781,35 +780,39 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             set using *new_log10*.
         new_sres (numpy.ndarray): A 1D vector with the new resolution
             for the input spectra.
-        ivar (numpy.ndarray): (Optional) A 1D or 2D (:math:`N_{\rm
+        ivar (numpy.ndarray): (**Optional**) A 1D or 2D (:math:`N_{\rm
             spec}\times N_{\rm pix}`) array with the inverse variance of
-            the flux sampled at the provided wavelengths.  **Currently
-            never used and, if provided, the output inverse variances
-            are simply a carbon copy of this array.**
-        mask (numpy.ndarray): (Optional) A 1D or 2D (:math:`N_{\rm
+            the flux sampled at the provided wavelengths.  This vector
+            is used to estimate the noise in the resolution-matched
+            spectra.
+
+            .. warning::
+                The accuracy of the errors still remain untested!
+            
+        mask (numpy.ndarray): (**Optional**) A 1D or 2D (:math:`N_{\rm
             spec}\times N_{\rm pix}`) array with a *uint* mask for the
             flux sampled at the provided wavelengths.
-        no_offset (bool): (Optional) Force :math:`\sigma^2_{v,o} = 0` by
-            masking regions with :math:`\sigma_{p,d} <
+        no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o} =
+            0` by masking regions with :math:`\sigma_{p,d} <
             -\epsilon_\sigma`; i.e., the value of this arguments selects
             Option 1 (True) or Option 2 (False).  See
             :func:`spectral_resolution.GaussianKernelDifference`.
-        min_sig_pix (float): (Optional) Minimum value of the standard
-            deviation in pixels allowed before assuming the kernel is a
-            Delta function.
-        variable_offset (bool): (Optional) Flag to allow the offset
+        min_sig_pix (float): (**Optional**) Minimum value of the
+            standard deviation in pixels allowed before assuming the
+            kernel is a Delta function.
+        variable_offset (bool): (**Optional**) Flag to allow the offset
             applied to each spectrum (when the input contains more than
             one spectraum) to be tailored to each spectrum.  Otherwise
             (*variable_offset=False*) the offset is forced to be the
             same for all spectra.
-        log10 (bool): (Optional) Flag that the spectrum has been binned
-            logarithmically (base 10) in wavelength
-        new_log10 (bool): (Optional) Flag that the coordinates of the
-            new spectral resolution are  spectrum as been binned
+        log10 (bool): (**Optional**) Flag that the spectrum has been
+            binned logarithmically (base 10) in wavelength
+        new_log10 (bool): (**Optional**) Flag that the coordinates of
+            the new spectral resolution are  spectrum as been binned
             logarithmically (base 10) in wavelength.
 
     Returns: 
-        numpy.ndarray: Four or Five arrays are returned:
+        numpy.ndarray: Five objects are returned:
 
             - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array
               with the resolution-matched flux sampled at the input
@@ -827,11 +830,10 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
               resolution that was lower than the target resolution (up
               to some tolerance defined by *min_sig_pix*) is returned as
               masked.
-            - (Optional) A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm
-              pix}`) array with the inverse variance of the
-              resolution-matched flux sampled at the input wavelengths.
-              **Only output if *ivar* is provided, and in that case this
-              is just a carbon copy of the input array.**
+            - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array
+              with the inverse variance of the resolution-matched flux
+              sampled at the input wavelengths.  If *ivar*
+              is not provided, a 'None' returned as the last element
 
     Raises:
         ValueError: Raised if:
@@ -876,6 +878,9 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         raise ValueError('Input flux and mask arrays must have the same shape!')
     if (ivar is not None and ivar.shape != flux.shape):
         raise ValueError('Input flux and ivar arrays must have the same shape!')
+
+    if len(sres.shape) > len(flux.shape):
+        raise ValueError('Shape of the spectral resolution array must be <= to the flux array.')
         
     if len(new_sres_wave.shape) != 1 or len(new_sres.shape) != 1:
         raise ValueError('New spectral resolution and coordinate arrays must be 1D!')
@@ -889,25 +894,33 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                       ' provided input vectors!')
 
     # Initialize some variables
-    nspec = 1 if len(sres.shape) == 1 else sres.shape[0]
-    dim = len(sres.shape)
+    nspec = 1 if len(flux.shape) == 1 else flux.shape[0]
+    nsres = 1 if len(sres.shape) == 1 else sres.shape[0]
+    if sres_matrix and nspec != nsres:
+        raise ValueError('For 2D matrices, number of spectral resolution vectors must match the ' \
+                         'number of spectra.')
+    spec_dim = len(flux.shape)
+    sres_dim = len(sres.shape)
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
     new_res = spectral_resolution(new_sres_wave, new_sres, log10=new_log10)
-    res = []
+
+    res = numpy.empty(nspec, dtype=object)
 
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
-    if nspec == 1 and dim == 1:
-        res = [spectral_resolution(wave, sres, log10=log10)]
+    if nsres == 1 and sres_dim == 1:
+        res[0] = spectral_resolution(wave, sres, log10=log10)
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
+        for i in range(1,nspec):
+            res[i] = res[0]
 #        pyplot.plot(wave, res[0].sig_pd)
 #        pyplot.show()
     else:
-        for i in range(0,nspec):
+        for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
-            res = res + [spectral_resolution(_wave, _sres, log10=log10)]
+            res[i] = spectral_resolution(_wave, _sres, log10=log10)
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
 
@@ -919,25 +932,43 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             r.offset_GaussianKernelDifference(o)
 
     # Perform the convolutions
-    out_flux = numpy.copy(flux)
-    out_sres = numpy.copy(sres)
+    out_flux = flux.copy()
+    out_ivar = None if ivar is None else numpy.ma.MaskedArray(ivar.copy())
+    noise = None if ivar is None else numpy.ma.sqrt(1.0/out_ivar)
+    out_sres = sres.copy()
     if mask is None:
         mask = numpy.zeros(flux.shape, dtype=numpy.uint)
-    out_mask = numpy.copy(mask)
+    out_mask = mask.copy()
 
-    if nspec == 1 and dim == 1:
+    if nspec == 1 and spec_dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
-        out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
+        if ivar is None:
+            out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
+        else:
+            out_flux[indx], out_ivar[indx] \
+                    = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
+                                                 ye=None if ivar is None else noise[indx])
         out_sres[indx] = res[0].adjusted_resolution(indx=indx)
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:
         for i in range(0,nspec):
             print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
-            out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
-            out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
+            if ivar is None:
+                out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
+                                                              res[i].sig_pd[indx])
+            else:
+                out_flux[i,indx], out_ivar[i,indx] \
+                        = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx],
+                                                ye=None if ivar is None else noise[i,indx].ravel())
+#           out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
             out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (mask[i,:] == 1)).astype(numpy.uint)
+            if nsres == 1 and i == 0:
+                out_sres[indx] = res[i].adjusted_resolution(indx=indx)
+                continue
+            elif nsres > 1:
+                out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
         print('Matching resolution ... DONE         ')
 
     # TODO: Add this functionality from the IDL version?
@@ -950,14 +981,10 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # hard-wired and should be tested.
 
     if ivar is not None:
-        out_ivar = numpy.copy(ivar)
-        # Handle the inverse variances then return the answers
-        return out_flux, out_sres, sigma_offset, out_mask, out_ivar
-
-    return out_flux, out_sres, sigma_offset, out_mask
+        out_ivar = numpy.square(1.0/out_ivar)
+        return out_flux, out_sres, sigma_offset, out_mask, numpy.asarray(out_ivar)
+    return out_flux, out_sres, sigma_offset, out_mask, None
     
-
-
 
 def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=False,
               newRange=None, wave_in_ang=False, unobs=0.0):
@@ -1012,20 +1039,20 @@ def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=
             LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
             LAMRANGE[0] < LAMRANGE[1].
         spec (numpy.ndarray): Input spectrum.
-        oversample (int): (Optional) Oversampling can be done, not to
-            loose spectral resolution, especally for extended wavelength
-            ranges and to avoid aliasing.  Default is to provide the
-            same number of output pixels as input.
-        velscale (float): Velocity scale in km/s per pixels. If this
-            variable is not defined, then it will contain in output the
-            velocity scale.  If this variable is defined by the user it
-            will be used to set the output number of pixels and
-            wavelength scale.
-        flux (bool): (Optional) Set this keyword to preserve total flux.
-            In this case the log rebinning changes the pixels flux in
-            proportion to their dLam so the following command will show
-            large differences beween the spectral shape before and after
-            :func:`log_rebin`::
+        oversample (int): (**Optional**) Oversampling can be done, not
+            to loose spectral resolution, especally for extended
+            wavelength ranges and to avoid aliasing.  Default is to
+            provide the same number of output pixels as input.
+        velscale (float): (**Optional**) Velocity scale in km/s per
+            pixels. If this variable is not defined, then it will
+            contain in output the velocity scale.  If this variable is
+            defined by the user it will be used to set the output number
+            of pixels and wavelength scale.
+        flux (bool): (**Optional**) Set this keyword to preserve total
+            flux.  In this case the log rebinning changes the pixels
+            flux in proportion to their dLam so the following command
+            will show large differences beween the spectral shape before
+            and after :func:`log_rebin`::
      
                 # Plot log-rebinned spectrum
                 pyplot.plot(exp(logLam), specNew)
@@ -1035,15 +1062,16 @@ def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=
             By default, when this keyword is *not* set, the above two
             lines produce two spectra that almost perfectly overlap each
             other.
-        log10 (bool): (Optional) Flag that the spectrum should be binned
-            in units of base-10 log wavelength, instead of natural log
-        newRange (numpy.ndarray): (Optional) Force the spectrum to be
-            sampled to a new spectral range (lamRange is the *existing*
-            spectral range).
-        wave_in_ang (bool): (Optional) Return the wavelength coordinates
-            in angstroms, not log(angstroms)
-        unobs (float): (Optional) Default value for unobserved spectral
-            regions.
+        log10 (bool): (**Optional**) Flag that the spectrum should be
+            binned in units of base-10 log wavelength, instead of
+            natural log
+        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
+            be sampled to a new spectral range (lamRange is the
+            *existing* spectral range).
+        wave_in_ang (bool): (**Optional**) Return the wavelength
+            coordinates in angstroms, not log(angstroms)
+        unobs (float): (**Optional**) Default value for unobserved
+            spectral regions.
 
     Returns:
         numpy.ndarray, float: Returns three variables: logarithmically
@@ -1184,20 +1212,21 @@ def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newR
             LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
             LAMRANGE[0] < LAMRANGE[1].
         n (int): Number of pixels in the original spectrum.
-        oversample (int): (Optional) Oversampling can be done, not to
-            loose spectral resolution, especally for extended wavelength
-            ranges and to avoid aliasing.  Default is to provide the
-            same number of output pixels as input.
-        velscale (float): Velocity scale in km/s per pixels. If this
-            variable is not defined, then it will contain in output the
-            velocity scale.  If this variable is defined by the user it
-            will be used to set the output number of pixels and
-            wavelength scale.
-        log10 (bool): (Optional) Flag that the spectrum should be binned
-            in units of base-10 log wavelength, instead of natural log
-        newRange (numpy.ndarray): (Optional) Force the spectrum to be
-            sampled to a new spectral range (lamRange is the *existing*
-            spectral range).
+        oversample (int): (**Optional**) Oversampling can be done, not
+            to loose spectral resolution, especally for extended
+            wavelength ranges and to avoid aliasing.  Default is to
+            provide the same number of output pixels as input.
+        velscale (float): (**Optional**) Velocity scale in km/s per
+            pixels. If this variable is not defined, then it will
+            contain in output the velocity scale.  If this variable is
+            defined by the user it will be used to set the output number
+            of pixels and wavelength scale.
+        log10 (bool): (**Optional**) Flag that the spectrum should be
+            binned in units of base-10 log wavelength, instead of
+            natural log
+        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
+            be sampled to a new spectral range (lamRange is the
+            *existing* spectral range).
 
     Returns:
         float, int: Returns
@@ -1270,11 +1299,11 @@ def _pixel_borders(xlim, npix, log=False, base=10.0):
         xlim (numpy.ndarray) : (Geometric) Centers of the first and last
             pixel in the vector.
         npix (int) : Number of pixels in the vector.
-        log (bool) : (Optional) The input range is (to be)
+        log (bool) : (**Optional**) The input range is (to be)
             logarithmically sampled.
-        base (float) : (Optional) The base of the logarithmic sampling.
-            The default is 10.0; use numpy.exp(1.) for the natural
-            logarithm.
+        base (float) : (**Optional**) The base of the logarithmic
+            sampling.  The default is 10.0; use numpy.exp(1.) for the
+            natural logarithm.
 
     Returns:
         numpy.ndarray, float: A vector with the (npix+1) borders of the
@@ -1333,36 +1362,37 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
 
     Args:
         y (numpy.ndarray): Vector to resample.  Must be 1-D.
-        xRange (array): (Optional) A two-element array with the starting
-            and ending value for the coordinates of the centers of the
-            first and last pixels in y.  If not provided, the pixel
-            coordinates are used; i.e., xRange = [0,y.size-1].
-        inLog (bool): (Optional) Flag that the input vector is
+        xRange (array): (**Optional**) A two-element array with the
+            starting and ending value for the coordinates of the centers
+            of the first and last pixels in y.  If not provided, the
+            pixel coordinates are used; i.e., xRange = [0,y.size-1].
+        inLog (bool): (**Optional**) Flag that the input vector is
             logarithmically spaced within xRange.  Cannot be used if
             xRange is not provided!
-        newRange (array): (Optional) Coordinates for the centers of the
-            first and last pixel in the output vector.  If not provided,
-            assumed to be the same as the input range.
-        newpix (int): (Optional) Number of pixels for the output vector.
-            If not provided, assumed to be the same as the input vector.
-        newLog (bool): (Optional) The output vector should be
+        newRange (array): (**Optional**) Coordinates for the centers of
+            the first and last pixel in the output vector.  If not
+            provided, assumed to be the same as the input range.
+        newpix (int): (**Optional**) Number of pixels for the output
+            vector.  If not provided, assumed to be the same as the
+            input vector.
+        newLog (bool): (**Optional**) The output vector should be
             logarithmically binned in the x-coordinates.
-        dx (float): (Optional) The sampling step for the output vector.
-            If *newLog* is True, this has to be the change in the
-            logarithm of x for the output vector!  If not provided, the
-            sampling is set by the output range (see *newRange* above)
-            and number of pixels (see *newpix* above).
-        base (float): (Optional) When logarithmically binning the output
-            vector, use this as the base.  The default is 10.0; use
-            numpy.exp(1) for natural logarithm.
-        ext_value (float): (Optional) Set extrapolated values to the
+        dx (float): (**Optional**) The sampling step for the output
+            vector.  If *newLog* is True, this has to be the change in
+            the logarithm of x for the output vector!  If not provided,
+            the sampling is set by the output range (see *newRange*
+            above) and number of pixels (see *newpix* above).
+        base (float): (**Optional**) When logarithmically binning the
+            output vector, use this as the base.  The default is 10.0;
+            use numpy.exp(1) for natural logarithm.
+        ext_value (float): (**Optional**) Set extrapolated values to the
             provided float.
-        conserve (bool): (Optional) Conserve the integral of the input
-            vector.  For example, if the input vector is a spectrum in
-            flux units, you should conserve the flux in the resampling;
-            if the spectrum is in units of flux density, you do not want
-            to conserve the integral.
-        flat (bool): (Optional) Assume the 'true' y function is flat
+        conserve (bool): (**Optional**) Conserve the integral of the
+            input vector.  For example, if the input vector is a
+            spectrum in flux units, you should conserve the flux in the
+            resampling; if the spectrum is in units of flux density, you
+            do not want to conserve the integral.
+        flat (bool): (**Optional**) Assume the 'true' y function is flat
             across a pixel, as is done in M. Cappellari's log_rebin
             routine; this is the default behavior.  If set to False, the
             integration follows a basic linear interpolation across the

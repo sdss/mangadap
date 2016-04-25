@@ -52,7 +52,7 @@ moments.
         from ..util.idlutils import airtovac
         from ..util.yanny import yanny
         from ..par.parset import ParSet
-        from ..par.bandpassfilter import BandPassFilterPar
+        from ..proc.bandpassfilter import BandPassFilterPar
         from .util import _select_proc_method
 
 .. warning::
@@ -146,7 +146,7 @@ from ..config.util import validate_emission_bandpass_filter_config
 from ..util.idlutils import airtovac
 from ..util.yanny import yanny
 from ..par.parset import ParSet
-from ..par.bandpassfilter import BandPassFilterPar
+from ..proc.bandpassfilter import BandPassFilterPar
 from .util import _select_proc_method
 
 __author__ = 'Kyle B. Westfall'
@@ -194,7 +194,7 @@ def available_emission_bandpass_filter_databases(dapsrc=None):
     Returns:
         list: An list of :class:`EmissionMomentsDBDef` objects, each of
         which defines a unique set of emission-line bandpass filters
-        (see :class:`mangadap.par.bandpassfilter.BandPassFilterPar`),
+        (see :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`),
         which are used to construct the flux and velocity moments for a
         set of emission lines.
 
@@ -279,7 +279,7 @@ class EmissionMomentsDB:
         neml (int): Number of emission-line bandpass filters in the
             database
         data (:class:`numpy.array`) : Array of
-            :class:`mangadap.par.bandpassfilter.BandPassFilterPar`
+            :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`
             instances, one per emission line in the database.
 
     """
@@ -305,7 +305,7 @@ class EmissionMomentsDB:
                 range.
 
         Returns:
-            :class:`mangadap.par.bandpassfilter.BandPassFilterPar`:
+            :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`:
             Parameter set of the selected emission-line bandpass filter.
 
         Raises:

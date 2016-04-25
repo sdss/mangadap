@@ -58,6 +58,7 @@ from ..drpfits import DRPFits
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
+from ..proc.spectralindices import SpectralIndices
 #from ..proc.templatelibrary import TemplateLibrary
 
 from ..util.covariance import Covariance
@@ -192,19 +193,23 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         stellar_continuum = StellarContinuumModel('GAU01-MILESTHIN', drpf, binned_spectra,
                                                   guess_vel=obs['vel'], guess_sig=obs['vdisp'],
                                                   dapsrc=dapsrc, analysis_path=analysis_path,
-                                                  verbose=verbose, clobber=False)#True)
+                                                  verbose=verbose, clobber=False)
 
-#        flux = binned_spectra.copy_to_array()
-        wave = binned_spectra['WAVE'].data
-        flux = binned_spectra.copy_to_masked_array()
-        model = stellar_continuum.copy_to_masked_array()
-#        print(numpy.sum(numpy.ma.getmaskarray(flux)))
-#        print(flux.shape)
-        for i in range(binned_spectra.nbins):
-            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=3)
-            pyplot.plot(wave, model[i,:], linestyle='-', color='b', lw=3, zorder=1, alpha=0.5)
-            pyplot.show()
+#        flux = binned_spectra.copy_to_masked_array()
+#        model = stellar_continuum.copy_to_masked_array()
+#        wave = binned_spectra['WAVE'].data
+#        flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
+#        model = stellar_continuum.copy_to_masked_array(
+#                                                flag=stellar_continuum.all_except_emission_flags())
+#        disp_free = numpy.ma.MaskedArray(stellar_continuum.construct_models(redshift_only=True),
+#                                         mask=model.mask.copy())
+#        for i in range(binned_spectra.nbins):
+#            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=3)
+#            pyplot.plot(wave, model[i,:], linestyle='-', color='b', lw=3, zorder=1, alpha=0.5)
+#            pyplot.plot(wave, disp_free[i,:], linestyle='-', color='r', lw=1, zorder=1)
+#            pyplot.show()
 
+#
 #       #-------------------------------------------------------------------
 #       # Emission-line Moment measurements
 #       #-------------------------------------------------------------------
@@ -220,13 +225,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
 #                                              stellar_continuum=stellar_continuum,
 #                                              emission_line_moments=emission_line_moments)
 #
-#       #-------------------------------------------------------------------
-#       # Spectral-Index Measurements
-#       #-------------------------------------------------------------------
-#       spectral_indices = SpectraIndexMeasurements(drpf, plan, snr=snr,
-#                                                   binned_spectra=binned_spectra,
-#                                                   stellar_continuum=stellar_continuum,
-#                                                   emission_lines=emission_lines)
+        #-------------------------------------------------------------------
+        # Spectral-Index Measurements
+        #-------------------------------------------------------------------
+        spectral_indices = SpectralIndices('STANDARD', binned_spectra,
+                                           stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                           analysis_path=analysis_path, verbose=verbose,
+                                           clobber=False)
 
     #-------------------------------------------------------------------
     # Construct the main output file

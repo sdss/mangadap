@@ -937,6 +937,7 @@ class SpatiallyBinnedSpectra:
         bin_indx[good_spec] = self.method['binfunc'](x[good_spec], y[good_spec],
                                                      par=self.method['binpar'])
 
+        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
         bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
         # Stack the spectra in each bin
@@ -1366,8 +1367,8 @@ class SpatiallyBinnedSpectra:
             selected extension.
         """
 
-        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext)[
-                                                                self.unique_bins(index=True),:]
+        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext, mask_ext=mask_ext,
+                                           flag=flag)[self.unique_bins(index=True),:]
         if len(self.missing_bins) == 0:
             return arr
         _arr = numpy.ma.zeros( (self.nbins, self.nwave), dtype=self.hdu[ext].data.dtype)

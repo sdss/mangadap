@@ -28,50 +28,21 @@ spectra in an RSS or CUBE file.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        
+
         import os.path
-        from os import environ
-        import glob
         import numpy
-        
-        from ..config.defaults import default_dap_source
+
         from ..util.idlutils import airtovac
         from ..util.yanny import yanny
-        from ..par.parset import ParSet
+        from ..par.parset import ParSet, ParDatabase
+        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
         from .util import _select_proc_method
-
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_,
-    :func:`available_emission_line_databases` is not python 2
-    compiliant.
 
 *Class usage examples*:
     Add example usage!
 
 *Revision history*:
     | **16 Apr 2016**: Original implementation by K. Westfall (KBW)
-
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
-
 """
 
 from __future__ import division
@@ -83,37 +54,15 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import os.path
-from os import environ
-import glob
 import numpy
 
-from ..config.defaults import default_dap_source
 from ..util.idlutils import airtovac
 from ..util.yanny import yanny
 from ..par.parset import ParSet, ParDatabase
-from .util import _select_proc_method
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+from .util import _select_proc_method
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -214,7 +163,7 @@ class ArtifactDB(ParDatabase):
 
     Attributes:
         version (str): Version number
-        database (str): Keyword of the selected database to use.
+        database (:class:`mangadap.par.ParSet`): Database parameters.
         nart (int): Number of artifacts in the database
 
     """

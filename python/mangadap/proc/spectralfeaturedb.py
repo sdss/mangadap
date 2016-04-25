@@ -1,14 +1,20 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-Container class for databases of spectral features.
+
+Container class for databases of spectral features.  This is the base
+class used by :class:`mangadap.proc.artifactdb.ArtifactDB`,
+:class:`mangadap.proc.emissionlinedb.EmissionLineDB`,
+:class:`mangadap.proc.emissionmomentsdb.EmissionMomentsDB`,
+:class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`, and
+:class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`.
 
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/absorptionindexdb.py
+    $MANGADAP_DIR/python/mangadap/proc/spectralfeaturedb.py
 
 *Imports and python version compliance*:
     ::
@@ -25,33 +31,30 @@ Container class for databases of spectral features.
             try:
                 from configparser import ConfigParser
             except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
+                warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
             try:
                 from configparser import ExtendedInterpolation
             except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                            ImportWarning)
         else:
             try:
                 from ConfigParser import ConfigParser
             except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
+                warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
             try:
                 from ConfigParser import ExtendedInterpolation
             except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                            ImportWarning)
+
         import os.path
         from os import environ
         import glob
         import numpy
 
         from ..config.defaults import default_dap_source
-        from ..config.util import validate_absorption_index_config
-        from ..util.idlutils import airtovac
-        from ..util.yanny import yanny
         from ..par.parset import ParSet
-        from ..par.bandpassfilter import BandPassFilterPar
-        from .util import _select_proc_method
 
 .. warning::
 
@@ -61,45 +64,7 @@ Container class for databases of spectral features.
     compiliant.
 
 *Class usage examples*:
-    Absorption-line index databases are defined using SDSS parameter
-    files.  To define a database, you can use one of the default set of
-    available absorption-line index databases (see
-    :func:`available_absorption_index_databases`)::
-    
-        from mangadap.proc.absorptionindexdb import AbsorptionIndexDB
-        p = AbsorptionIndexDB('LICK')
-
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
-
-        from mangadap.proc.absorptionindexdb import AbsorptionIndexDB
-        p = AbsorptionIndexDB('LICK', dapsrc='/path/to/dap/source')
-
-    Finally, you can create your own SDSS parameter file (see
-    :class:`mangadap.util.yanny`) with your own absorption-line indices
-    to use.  Example files are provided in
-    ``$MANGADAP_DIR/external/absorption_indices`` with a companion
-    ``README`` file.  With your own file, you have to point to the file
-    using :class:`AbsorptionIndexDBDef`, which you can then pass to
-    :class:`AbsorptionIndexDB`::
-
-        from mangadap.proc.absorptionindexdb import AbsorptionIndexDBDef
-        from mangadap.proc.absorptionindexdb import AbsorptionIndexDB
-        d = AbsorptionIndexDBDef(key='USER',
-                                 file_path='/path/to/parameter/file')
-        p = AbsorptionIndexDB('USER', indxdb_list=d)
-
-    The reference frame of the absorption-line index can be different
-    *for each index*; a column in the SDSS parameter file is used to
-    specify either air or vacuum wavelengths.  This is different from,
-    e.g., the definition of an emission-line database (see
-    :class:`mangadap.proc.emissionlinedb.EmissionLineDB`), which only
-    allows you to set the reference frame for the entire database.
-    Conversely, :class:`AbsorptionIndexDB` will convert the input index
-    definition to vacuum on a case-by-case basis based on the SDSS
-    parameter file entries.  This means that the
-    :class:`AbsorptionIndexDB` object only provides vacuum wavelengths.
+    Add usage examples
     
 *Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
