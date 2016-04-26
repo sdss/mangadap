@@ -58,6 +58,7 @@ from ..drpfits import DRPFits
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
+from ..proc.emissionlinemoments import EmissionLineMoments
 from ..proc.spectralindices import SpectralIndices
 #from ..proc.templatelibrary import TemplateLibrary
 
@@ -209,14 +210,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
 #            pyplot.plot(wave, disp_free[i,:], linestyle='-', color='r', lw=1, zorder=1)
 #            pyplot.show()
 
-#
-#       #-------------------------------------------------------------------
-#       # Emission-line Moment measurements
-#       #-------------------------------------------------------------------
-#       emission_line_moments = EmissionLineMoments(drpf, plan.emission, snr=snr,
-#                                                   binned_spectra=binned_spectra,
-#                                                   stellar_continuum=stellar_continuum)
-#
+
+        #-------------------------------------------------------------------
+        # Emission-line Moment measurements
+        #-------------------------------------------------------------------
+        emission_line_moments = EmissionLineMoments('ELMFULL', binned_spectra,
+                                                    #stellar_continuum=stellar_continuum,
+                                                    dapsrc=dapsrc, analysis_path=analysis_path,
+                                                    verbose=verbose, clobber=False)
+
 #       #-------------------------------------------------------------------
 #       # Emission-line Fit
 #       #-------------------------------------------------------------------
@@ -228,7 +230,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         #-------------------------------------------------------------------
         # Spectral-Index Measurements
         #-------------------------------------------------------------------
-        spectral_indices = SpectralIndices('STANDARD', binned_spectra,
+        spectral_indices = SpectralIndices('EXTINDX', binned_spectra,
                                            stellar_continuum=stellar_continuum, dapsrc=dapsrc,
                                            analysis_path=analysis_path, verbose=verbose,
                                            clobber=False)

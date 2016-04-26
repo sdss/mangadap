@@ -125,8 +125,8 @@ class SpectralIndicesDef(ParSet):
     spectral-index measurements.
 
     Args:
-        key (str): Keyword used to distinguish between different spatial
-            binning schemes.
+        key (str): Keyword used to distinguish between different
+            spectral-index databases.
         minimum_snr (bool): Minimum S/N of spectrum to fit
         fwhm (bool): Resolution FWHM in angstroms at which to make the
             measurements.
@@ -152,10 +152,9 @@ def validate_spectral_indices_config(cnfg):
     define a set of spectral-index measurements.
 
     Args:
-
         cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the binning method as needed by
-            :class:`mangadap.proc.spectralindices.SpectralIndicesDef`
+            defining parameters of the spectral-index database as needed
+            by :class:`SpectralIndicesDef`
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -205,17 +204,16 @@ def available_spectral_index_databases(dapsrc=None):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-        list: A list of
-        :func:`mangadap.proc.spectralindices.SpectralIndicesDef`
-        objects, each defining a set of spectral index databases.
+        list: A list of :func:`SpectralIndicesDef` objects, each
+        defining a spectral-index database to measure.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
             *dapsrc* is not a directory.
-        OSError/IOError: Raised if no binning scheme configuration files
+        OSError/IOError: Raised if no spectral-index configuration files
             could be found.
-        KeyError: Raised if the binning method keywords are not all
-            unique.
+        KeyError: Raised if the spectral-index database keywords are not
+            all unique.
         NameError: Raised if ConfigParser is not correctly imported.
 
     .. todo::
@@ -401,15 +399,14 @@ class SpectralIndices:
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
-            directory_path (str): The exact path to the DAP reduction
-                assessments file.  See :attr:`directory_path`.
+            directory_path (str): The exact path to the DAP
+                spectral-index file.  See :attr:`directory_path`.
             dapver (str): DAP version.
             analysis_path (str): The path to the top-level directory
                 containing the DAP output files for a given DRP and DAP
                 version.
-            output_file (str): The name of the file with the reduction assessments.
-                See :func:`compute`.
-
+            output_file (str): The name of the file with spectral-index
+                moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
         self.directory_path = default_dap_reference_path(plate=self.binned_spectra.drpf.plate,
@@ -626,8 +623,7 @@ class SpectralIndices:
         """
         # Get the data arrays
         wave = self.binned_spectra['WAVE'].data
-        flux = self.binned_spectra.copy_to_masked_array(
-                                                        flag=self.binned_spectra.do_not_fit_flags())
+        flux = self.binned_spectra.copy_to_masked_array(flag=self.binned_spectra.do_not_fit_flags())
         ivar = self.binned_spectra.copy_to_masked_array(ext='IVAR',
                                                         flag=self.binned_spectra.do_not_fit_flags())
         indx = self.pixelmask.boolean(wave,nspec=self.nbins)
@@ -844,12 +840,14 @@ class SpectralIndices:
 
             # Calculate the pseudo-continuum
             pseudocontinuum, pseudocontinuum_error \
-                    = passband_integrated_mean(wave, _flux[i,:], _sidebands, err=_noise, log=True)
+                    = passband_integrated_mean(wave, _flux[i,:], passband=_sidebands, err=_noise,
+                                               log=True)
             # Calculate the pseudo-continuum (for integrals over f_nu)
             if fnu_bands:
                 pseudocontinuum[fnu_indx], fnu_pseudocontinuum_error \
-                        = passband_integrated_mean(wave, flux_fnu[i,:], _sidebands[fnu_indx],
-                                                   err=_noise, log=True)
+                        = passband_integrated_mean(wave, flux_fnu[i,:],
+                                                   passband=_sidebands[fnu_indx], err=_noise,
+                                                   log=True)
                 if noise is not None:
                     pseudocontinuum_error[fnu_indx] = fnu_pseudocontinuum_error
                 
@@ -864,7 +862,8 @@ class SpectralIndices:
                         = pseudocontinuum_error.reshape(-1,self.nindx)[1,:]
 
             # Check for the existence of valid pixels in the sideband
-            interval_frac = passband_integrated_width(wave, _flux[i,:], _sidebands, log=True) \
+            interval_frac = passband_integrated_width(wave, _flux[i,:], passband=_sidebands,
+                                                      log=True) \
                                     / numpy.diff(_sidebands, axis=1).ravel()
             # Passband is not fully covered by valid pixels
             blue_fraction = interval_frac.reshape(-1,self.nindx)[0,:]
@@ -1134,7 +1133,7 @@ class SpectralIndices:
                 *= numpy.abs(hdu_measurements['INDX_DISPCORR'][good_ang])
         hdu_measurements['INDX'][good_mag] += hdu_measurements['INDX_DISPCORR'][good_mag]
 
-        # Fill area for any missing binsPrep for writing
+        # Fill array for any missing bins in prep for writing to the HDU
         if len(hdu_measurements) < self.nbins:
             # Fill the full array for all bins
             _hdu_measurements = hdu_measurements.copy()
@@ -1277,14 +1276,6 @@ class SpectralIndices:
             self.missing_bins = []
 
         print(self.missing_bins)
-
-
-
-
-
-
-
-
 
 
     def unique_bins(self, index=False):

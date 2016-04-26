@@ -271,12 +271,45 @@ def passband_integrated_mean(x, y, passband=None, err=None, log=False, base=10.0
     interval = numpy.ma.MaskedArray(interval, mask=numpy.invert(numpy.absolute(interval) > 0))
 
     # Get the integral of y over the passband
-    integral = passband_integral(x, y, passband=passband, log=log, base=base)
-
+    integral = numpy.ma.MaskedArray(passband_integral(x, y, passband=passband, log=log, base=base))
+    
     # Return the integrated mean, and the error if possible
     if err is None:
-        return integral/interval, None
-    err_integral = passband_integral(x, numpy.square(err), passband=passband, log=log, base=base)
+        return interval/integral, None
+    err_integral = numpy.ma.MaskedArray(passband_integral(x, numpy.square(err), passband=passband,
+                                        log=log, base=base))
     return integral/interval, numpy.ma.sqrt(err_integral)/interval
+
+
+def passband_weighted_mean(x, y, z, passband=None, yerr=None, zerr=None, log=False, base=10.0):
+    """
+    Determine the y-weighted integral of z over the passband.  Nominal
+    errors are returned if err is provided.
+    """
+    # Get the passband interval, accounting for masked pixels
+    weighted_integral = passband_integral(x, z*y, passband=passband, log=log, base=base)
+    integral = passband_integral(x, y, passband=passband, log=log, base=base)
+    integral = numpy.ma.MaskedArray(integral, mask=numpy.invert(numpy.absolute(integral) > 0))
+
+    if yerr is None and zerr is None:
+        return weighted_integral/integral, None
+
+    weighted_integral = numpy.ma.MaskedArray(weighted_integral,
+                                        mask=numpy.invert(numpy.absolute(weighted_integral) > 0))
+
+    werr = numpy.zeros(z.shape)
+    if yerr is not None:
+        werr += z*numpy.square(yerr)
+    if zerr is not None:
+        werr += y*numpy.square(zerr)
+    weighted_integral_err = passband_integral(x, werr, passband=passband, log=log, base=base)
+
+    integral_err = 0 if yerr is None else passband_integral(x, numpy.square(yerr),
+                                                            passband=passband, log=log, base=base)
+    weighted_mean = weighted_integral/integral
+    weighted_mean_err = numpy.ma.sqrt(
+                            weighted_integral_err*numpy.square(weighted_mean/weighted_integral) \
+                                    + integral_err*numpy.square(weighted_mean/integral))
+    return weighted_mean, weighted_mean_err
 
 
