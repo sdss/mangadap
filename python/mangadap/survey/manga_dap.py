@@ -163,15 +163,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     # Iterate over plans:
     for i in range(n_plans):
 
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         # S/N Assessments
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         snr = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
                                   analysis_path=analysis_path, verbose=verbose, clobber=False)
  
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         # Spatial Binning
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         binned_spectra = SpatiallyBinnedSpectra('LOGR10C', drpf, snr, reff=obs['reff'],
                                                 dapsrc=dapsrc, analysis_path=analysis_path,
                                                 verbose=verbose, clobber=False)
@@ -188,9 +188,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
 #        pyplot.show()
 
 
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         # Stellar Continuum Fit
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         stellar_continuum = StellarContinuumModel('GAU01-MILESTHIN', drpf, binned_spectra,
                                                   guess_vel=obs['vel'], guess_sig=obs['vdisp'],
                                                   dapsrc=dapsrc, analysis_path=analysis_path,
@@ -210,37 +210,38 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
 #            pyplot.plot(wave, disp_free[i,:], linestyle='-', color='r', lw=1, zorder=1)
 #            pyplot.show()
 
-
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         # Emission-line Moment measurements
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         emission_line_moments = EmissionLineMoments('ELMFULL', binned_spectra,
-                                                    #stellar_continuum=stellar_continuum,
+                                                    stellar_continuum=stellar_continuum,
                                                     dapsrc=dapsrc, analysis_path=analysis_path,
                                                     verbose=verbose, clobber=False)
 
-#       #-------------------------------------------------------------------
-#       # Emission-line Fit
-#       #-------------------------------------------------------------------
-#       emission_lines_fits = EmissionLineFits(drpf, plan.emission, snr=snr,
-#                                              binned_spectra=binned_spectra,
-#                                              stellar_continuum=stellar_continuum,
-#                                              emission_line_moments=emission_line_moments)
-#
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
+        # Emission-line Fit
+        #---------------------------------------------------------------
+        emission_lines_fits = EmissionLineFits('ELFFULL', binned_spectra,
+                                               stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                               analysis_path=analysis_path, verbose=verbose,
+                                               clobber=True)#False)
+
+        #---------------------------------------------------------------
         # Spectral-Index Measurements
-        #-------------------------------------------------------------------
+        #---------------------------------------------------------------
         spectral_indices = SpectralIndices('EXTINDX', binned_spectra,
                                            stellar_continuum=stellar_continuum, dapsrc=dapsrc,
                                            analysis_path=analysis_path, verbose=verbose,
                                            clobber=False)
 
     #-------------------------------------------------------------------
-    # Construct the main output file
+    # Construct the main output file(s)
     #-------------------------------------------------------------------
 
 
+    #-------------------------------------------------------------------
     # End log
+    #-------------------------------------------------------------------
     log_output(loggers, 1, logging.INFO, '    FINISH: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
     if time.clock() - t < 60:
@@ -250,6 +251,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     else:
         tstr = '  DURATION: {0:.5f} hr'.format((time.clock() - t)/3600.)
     log_output(loggers, 1, logging.INFO, tstr)
+
 
     mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss \
             + resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
@@ -261,7 +263,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         mstr = 'MAX MEMORY: {0:.4f} Mbytes'.format(mem/1024/1024)
     else:
         mstr = 'MAX MEMORY: {0:.4f} Gbytes'.format(mem/1024/1024/1024)
-        
     log_output(loggers, 1, logging.INFO, mstr)
 
     return status

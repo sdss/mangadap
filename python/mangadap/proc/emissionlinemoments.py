@@ -13,12 +13,50 @@ A class hierarchy that measures moments of the observed emission lines.
 *Imports and python version compliance*:
     ::
 
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import configparser!  Beware!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import ConfigParser!  Beware!')
+
+        import glob
+        import os.path
+        import numpy
+        from astropy.io import fits
+        import astropy.constants
+
+        from ..par.parset import ParSet
+        from ..config.defaults import default_dap_source, default_dap_reference_path
+        from ..config.defaults import default_dap_file_name
+        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+        from ..util.bitmask import BitMask
+        from .artifactdb import ArtifactDB
+        from .emissionmomentsdb import EmissionMomentsDB
+        from .pixelmask import StellarContinuumPixelMask
+        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .stellarcontinuummodel import StellarContinuumModel
+        from .bandpassfilter import passband_integral, passband_integrated_width
+        from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
+        from .util import _select_proc_method
 
 *Class usage examples*:
     Add examples!
 
 *Revision history*:
-    | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **25 Apr 2016**: Implementation begun by K. Westfall (KBW)
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -52,7 +90,6 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
@@ -65,7 +102,7 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .bandpassfilter import passband_integral, passband_integrated_width
 from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
-from .util import _select_proc_method, flux_to_fnu
+from .util import _select_proc_method
 
 from matplotlib import pyplot
 

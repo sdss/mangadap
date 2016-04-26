@@ -5,6 +5,9 @@ Container class for the database of emission-line bandpass filters used
 for non-parameteric measurements of emission-line flux and velocity
 moments.
 
+.. todo::
+    Combine this with the main emissionlinemoments.py file.
+
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
