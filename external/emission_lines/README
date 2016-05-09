@@ -28,28 +28,46 @@
 #           's': defines a sky line that should be masked.  When masked,
 #                the wavelength of the line is NOT adjusted for the
 #                redshift of the object spectrum.
-#   LINE:
-#       Type of line, which can be either 'l' for a line or 'dN' for a
-#       doublet.  For doublets, the 'N' indicates the line ID of the
-#       other line in the doublet.  The line to which the doublet is
-#       tied should have LINE='l'; for example, if emission line with
-#       ID=4 has line='d3', then the emission line with ID=3 must have
-#       LINE='l'.
-#   AMPL:
-#       Relative intensity of the gas emission (positive) or absorption
-#       (negative) lines with respect to the doublet.  Therefore, this
-#       should most often be unity if LINE='l' and indicate the ratio of
-#       line INTENSITY if LINE='dN'.
-#   VEL:
-#       Guess for the velocity offset with respect to the galaxy
-#       systemic velocity (km/s).
-#   SIG:
-#       Guess for the velocity dispersion (km/s).
+#   FLUX:
+#       RELATIVE flux of the emission (positive) or absorption
+#       (negative) lines.  This should most often be unity when the flux
+#       is not tied to another line; see 'MODE'.
 #   MODE:
-#       Fitting mode for the line, which can be either 'f' to fit the
-#       line independently or 'tN' to set both the velocity and
-#       dispersion to be tied to a fitted line (MODE='f') with ID=N.
-#       One can also force only the velocities to be tied using 'vN' or
-#       only the velocity dispersions to be tied using 'sN'.
+#       Fitting mode for the line.  Possible values are:
 #
+#           'f': Fit the line independently of all others in its own
+#           window.
+#
+#           'wN': Fit the line with untied parameters, but use a window
+#           that includes both this line and the line with index N.
+#
+#           'xN': Fit the line with its flux tied to the line with index
+#           N.
+#
+#           'vN': Fit the line with the velocity tied to the line with
+#           index N.
+#
+#           'sN': Fit the line with the velocity dispersion tied to the
+#           line with index N.
+#
+#           'kN': Fit the line with the velocity and velocity dispersion
+#           tied to the line with index N.
+#
+#           'aN': Fit the line with the flux, velocity, and velocity
+#           dispersion tied to the line with index N.
+#   PAR:
+#       A list of the initial guess for the line profile parameters.
+#       The number of parameters must match the struct declaration at
+#       the top of the file.  The initial parameters are automatically
+#       adjusted to provide any designated flux ratios, and the center
+#       is automatically adjusted to the provided redshift for the
+#       spectrum.  For example, for a GaussianLineProfile, this is
+#       typically set to "{1.0 0.0 100.0}".
+#   FIX:
+#       A list of flags for fixing the input guess parameters during the
+#       fit.  Use 0 for a free parameter, 1 for a fixed parameter.  The
+#       parameter value is only fixed *AFTER* adjusted in the flux and
+#       or center based on the redshift and the implied tied parameters.
+#       For a free set of parameters using a GaussianLineProfile, this
+#       is set to "{ 0 0 0 }".
 #------------------------------------------------------------------------

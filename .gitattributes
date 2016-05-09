@@ -2683,6 +2683,7 @@ python/mangadap/config/absorption_indices/extindx.ini -text
 python/mangadap/config/absorption_indices/lickindx.ini -text
 python/mangadap/config/artifacts/badsky.ini -text
 python/mangadap/config/bandhead_indices/bhbasic.ini -text
+python/mangadap/config/bitmasks/emission_line_model_bits.ini -text
 python/mangadap/config/bitmasks/emission_line_moments_bits.ini -text
 python/mangadap/config/bitmasks/spatially_binned_spectra_bits.ini -text
 python/mangadap/config/bitmasks/spectral_indices_bits.ini -text
@@ -2691,6 +2692,8 @@ python/mangadap/config/bitmasks/stellar_continuum_model_bits.ini -text
 python/mangadap/config/defaults.py -text
 python/mangadap/config/emission_bandpass_filters/elbfull.ini -text
 python/mangadap/config/emission_bandpass_filters/elbstrong.ini -text
+python/mangadap/config/emission_line_modeling/elffull.ini -text
+python/mangadap/config/emission_line_modeling/elfstrong.ini -text
 python/mangadap/config/emission_line_moments/elmfull.ini -text
 python/mangadap/config/emission_line_moments/elmstrong.ini -text
 python/mangadap/config/emission_lines/elpext.ini -text
@@ -2791,9 +2794,12 @@ python/mangadap/proc/artifactdb.py -text
 python/mangadap/proc/bandheadindexdb.py -text
 python/mangadap/proc/bandpassfilter.py -text
 python/mangadap/proc/emissionlinedb.py -text
+python/mangadap/proc/emissionlinemodel.py -text
 python/mangadap/proc/emissionlinemoments.py -text
 python/mangadap/proc/emissionmomentsdb.py -text
+python/mangadap/proc/lineprofilefit.py -text
 python/mangadap/proc/pixelmask.py -text
+python/mangadap/proc/ppxffit.py -text
 python/mangadap/proc/reductionassessments.py -text
 python/mangadap/proc/spatialbinning.py -text
 python/mangadap/proc/spatiallybinnedspectra.py -text

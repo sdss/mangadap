@@ -64,7 +64,7 @@ support classes and functions.
 
         from mangadap.proc.emissionlinedb import EmissionLinePar
         p = EmissionLinePar(44, 'Ha', 6564.632, action='f', line='l',
-                            amp=1.0, vel=0.0, sig=10., mode='f')
+                            flux=1.0, vel=0.0, sig=10., mode='f')
 
     More often, however, you will want to define an emission-line
     database using an SDSS parameter file.  To do so, you can use one of
@@ -188,48 +188,91 @@ class EmissionLinePar(ParSet):
               redshift of the object spectrum.
 
             Default is ``'f'``.
-        line (str) : (**Optional**) Type of line, which can be either
-            ``l`` for a line or ``dN`` for a doublet.  For doublets, the
-            ``N`` indicates the *index* of the other line in the
-            doublet.  The line to which the doublet is tied should have
-            ``line='l'``; for example, if emission line with ``index=4``
-            has ``line='d3'``, then the emission line with ``index=3``
-            must have ``line='l'``.  Default is ``'l'``.
-        amp (float) : (**Optional**) Relative intensity of the gas
-            emission (positive) or absorption (negative) lines with
-            respect to the doublet.  Therefore, this should most often
-            be unity if ``line='l'`` and indicate the ratio of line
-            **intensity** if ``line='dN'``.   Default is 1.0.
-        vel (float) : (**Optional**) Guess for the velocity offset with
-            respect to the galaxy systemic velocity (km/s).  Default is
-            0.0.
-        sig (float) : (**Optional**) Guess for the velocity dispersion
-            (km/s). Default is 10.0.
-        mode (float) : (**Optional**) Fitting mode for the line, which
-            can be either ``'f'`` to fit the line independently or
-            ``'tN'`` to set both the velocity and dispersion to be tied
-            to a fitted line (``mode='f'``) with ``index=N``.  One can
-            also force only the velocities to be tied using ``'vN'`` or
-            only the velocity dispersions to be tied using ``'sN'``.
+        flux (float) : (**Optional**) **Relative** flux of the emission
+            (positive) or absorption (negative) lines.  This should most
+            often be unity if ``line='l'`` and indicates the ratio of
+            line flux if ``line='dN'``.  Default is 1.0.
+        mode (float) : (**Optional**) Fitting mode for the line.
+            Possible values are:
+                - ``'f'``: Fit the line independently of all others in
+                  its own window.
+                - ``'wN'``: Fit the line with untied parameters, but use
+                  a window that includes both this line and the line
+                  with index N.
+                - ``'xN'``: Fit the line with its flux tied to the line
+                  with index N.
+                - ``'vN'``: Fit the line with the velocity tied to the
+                  line with index N.
+                - ``'sN'``: Fit the line with the velocity dispersion
+                  tied to the line with index N.
+                - ``'kN'``: Fit the line with the velocity and velocity
+                  dispersion tied to the line with index N.
+                - ``'aN'``: Fit the line with the flux, velocity, and
+                  velocity dispersion tied to the line with index N.
             Default is ``'f'``.
+        profile (str): (**Optional**)  The class definition of the
+            profile shape.  This is kept as a string until it is used.
+            Once it is used, it is converted to the class name using::
+        
+                eval(profile)
+            
+            This line will fail if the profile type has not been
+            defined.  Default is ``'GaussianLineProfile'``.
+        ncomp (int): (**Optional**) The number of components (number of
+            separate line profiles) to use when fitting the line.
+            Default is 1.
+        output_model (bool): (**Optional**) Flag to include the
+            best-fitting model of the line in the emission-line model
+            spectrum. Default is True.
+        par (numpy.ndarray) : (**Optional**) A list of the initial guess
+            for the line profile parameters.  The number of parameters
+            must match the struct declaration at the top of the file.
+            The initial parameters are automatically adjusted to provide
+            any designated flux ratios, and the center is automatically
+            adjusted to the provided redshift for the spectrum.  For
+            example, for a GaussianLineProfile, this is typically set to
+            ``[1.0, 0.0, 100.0]``.
+        fix (numpy.ndarray) : (**Optional**) A list of flags for fixing
+            the input guess parameters during the fit.  Use 0 for a free
+            parameter, 1 for a fixed parameter.  The parameter value is
+            only fixed **after** adjusted in the flux and or center
+            based on the redshift and the implied tied parameters.  For
+            a free set of parameters using a GaussianLineProfile, this
+            is set to ``[ 0, 0, 0 ]``.
+        lobnd (numpy.ndarray(: (**Optional**) A list of lower bounds for
+            the parameters.  For each parameter, use None to indicate no
+            lower bound.  For a GaussianLineProfile with positive flux
+            and standard deviation, this is set to ``[ 0.0, None, 0.0
+            ]``.
+        hibnd (numpy.ndarray(: (**Optional**) A list of upper bounds for
+            the parameters.  For each parameter, use None to indicate no
+            upper bound.  For a GaussianLineProfile with maximum
+            standard deviation of 500 km/s, this is set to ``[ None,
+            None, 500.0 ]``.
     """
-    def __init__(self, index, name, restwave, action=None, line=None, amp=None, vel=None, sig=None,
-                 mode=None):
+    def __init__(self, index, name, restwave, action=None, flux=None, mode=None, profile=None,
+                 ncomp=None, output_model=None, par=None, fix=None, lobnd=None, hibnd=None):
         
         in_fl = [ int, float ]
         action_options = [ 'i', 'f', 'm', 's']
+        arr_like = [ numpy.ndarray, list ]
         
-        l = [ name, action, line, mode ]
+        l = [ name, action, mode ]
         for i in range(len(l)):
             if l[i] is None:
                 continue
             l[i] = l[i].strip()
 
-        pars =     [ 'index', 'name', 'restwave', 'action', 'line', 'amp', 'vel', 'sig', 'mode' ]
-        values =   [   index,   l[0],   restwave,     l[1],   l[2],   amp,   vel,   sig,   l[3] ]
-        defaults = [    None,   None,       None,      'f',    'l',   1.0,   0.0,  10.0,    'f' ]
-        options =  [    None,   None,       None, action_options, None, None, None, None,  None ]
-        dtypes =   [     int,    str,      in_fl,      str,    str, in_fl, in_fl, in_fl,    str ]
+        pars =     [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp',
+                     'output_model', 'par', 'fix', 'lobnd', 'hibnd' ]
+        values =   [   index,   l[0],   restwave,     l[1],   flux,   l[2],   profile,   ncomp,
+                       output_model, par,   fix,   lobnd,   hibnd ]
+        defaults = [ None, None, None, 'f', 1.0, 'f', 'GaussianLineProfile', 1, True, None, None,
+                     None, None ]
+        options =  [ None, None, None, action_options,  None,  None, None, None, None, None, None,
+                     None, None ]
+        dtypes =   [ int, str, in_fl, str, in_fl, str, str, int, bool, arr_like, arr_like,
+                     arr_like, arr_like ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -240,30 +283,27 @@ class EmissionLinePar(ParSet):
         """
         Check the parameter list:
 
-            - *line* must be either ``'l'`` or ``'dN'``.
             - Amplitude has to be larger than zero.
-            - Velocity dispersion has to be greater than 0.
-            - *mode* must be either ``'f'``, ``'tN'``, ``'vN'``, ``'sN'``
+            - *mode* must be either ``'f'``, ``'wN'``, ``'xN'``,
+              ``'vN'``, ``'sN'``, ``'kN'``, ``'aN'``
 
         .. todo::
             - Add check to __setitem__()?
+            - Add check of profile type
 
         Raises:
             ValueError: Raised if one of the conditions above are not
                 met.
         """
-        if self.data['line'][0] not in ['l', 'd']:
-            raise ValueError('Line must be either independent (l) or a double (d).')
-        if self.data['action'] != 'i' and not self.data['amp'] > 0:
-            warnings.warn('Emission-line amplitudes must be larger than 0.  Ignoring line with ' \
+        if self.data['action'] != 'i' and not self.data['flux'] > 0:
+            warnings.warn('Emission-line fluxes must be larger than 0.  Ignoring line with ' \
                           'index {0}'.format(self.data['index']))
             self.data['action'] = 'i'
-        if not self.data['sig'] > 0:
-            raise ValueError('The line velocity dispersion must be larger than 0.')
-        if self.data['mode'][0] not in ['f', 't', 'v', 's']:
-            raise ValueError('Mode must be either independent (f), fit with the velocity and '
-                             'velocity dispersion tied (t), only the velocity tied (v), or only '
-                             'the velocity dispersion tied (s).')
+        if self.data['mode'][0] not in ['f', 'w', 'x', 'v', 's', 'k', 'a']:
+            raise ValueError('Mode must be either independent (f), fit independently but in the ' \
+                             'same window (w), with a tied flux ratio (x), with a tied velocity ' \
+                             '(v), with a tied velocity dispersion (s), with both kinematics ' \
+                             'tied (k), or with the fluxes and kinematics tied (a).')
 
 
 def available_emission_line_databases(dapsrc=None):
@@ -312,7 +352,6 @@ class EmissionLineDB(ParDatabase):
 
     Args:
         database_key (str): Keyword selecting the database to use.
-
         emldb_list (list): (**Optional**) List of
             :class:`SpectralFeatureDBDef` objects that defines the
             unique key for the database and the path to the source SDSS
@@ -356,14 +395,22 @@ class EmissionLineDB(ParDatabase):
         parlist = []
         for i in range(self.neml):
             invac = par['DAPEML']['waveref'][i] == 'vac'
+            # Convert None's to +/- inf
+            lobnd = [ -numpy.inf if p == 'None' else float(p) \
+                            for p in par['DAPEML']['lower_bound'][i]]
+            hibnd = [ numpy.inf if p == 'None' else float(p) \
+                            for p in par['DAPEML']['upper_bound'][i] ]
             parlist += [ EmissionLinePar(par['DAPEML']['index'][i], par['DAPEML']['name'][i],
                     par['DAPEML']['lambda'][i] if invac else airtovac(par['DAPEML']['lambda'][i]),
                                          action=par['DAPEML']['action'][i],
-                                         line=par['DAPEML']['line'][i],
-                                         amp=par['DAPEML']['ampl'][i],
-                                         vel=par['DAPEML']['vel'][i],
-                                         sig=par['DAPEML']['sig'][i],
-                                         mode=par['DAPEML']['mode'][i]) ]
+                                         flux=par['DAPEML']['relative_flux'][i],
+                                         mode=par['DAPEML']['mode'][i],
+                                         profile=par['DAPEML']['profile'][i],
+                                         ncomp=par['DAPEML']['ncomp'][i],
+                                         output_model=bool(par['DAPEML']['output_model'][i]),
+                                         par=par['DAPEML']['par'][i],
+                                         fix=par['DAPEML']['fix'][i],
+                                         lobnd=lobnd, hibnd=hibnd) ]
 
         ParDatabase.__init__(self, parlist)
 

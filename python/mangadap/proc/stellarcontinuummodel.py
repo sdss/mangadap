@@ -38,10 +38,10 @@ A class hierarchy that performs the stellar-continuum fitting.
         from astropy.io import fits
         import astropy.constants
 
-        from . import spectralfitting
+        from .ppxffit import PPXFFitPar, PPXFFit
         from .artifactdb import ArtifactDB
         from .emissionlinedb import EmissionLineDB
-        from .pixelmask import StellarContinuumPixelMask
+        from .pixelmask import SpectralPixelMask
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
@@ -92,10 +92,10 @@ import glob
 from astropy.io import fits
 import astropy.constants
 
-from . import spectralfitting
+from .ppxffit import PPXFFitPar, PPXFFit
 from .artifactdb import ArtifactDB
 from .emissionlinedb import EmissionLineDB
-from .pixelmask import StellarContinuumPixelMask
+from .pixelmask import SpectralPixelMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
@@ -130,7 +130,7 @@ class StellarContinuumModelDef(ParSet):
     and the returned objects are the wavelength vector, the fitted model
     flux, a bitmask for the model, and the set of model parameters.  For
     example, see
-    :func:`mangadap.proc.spectralfitting.PPXFFit.fit_SpatiallyBinnedSpectra`.
+    :func:`mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra`.
 
     Args:
         key (str): Keyword used to distinguish between different spatial
@@ -206,7 +206,7 @@ def validate_stellar_continuum_modeling_method_config(cnfg):
             raise KeyError('Keyword \'template_library\' must be provided for pPXF fitting.')
         if 'sky_spectra' in cnfg.options('default') and cnfg['default']['sky_spectra'] != 'None':
             raise NotImplementedError('Cannot yet use sky spectra via a config file.')
-        for k in spectralfitting.PPXFFitPar._keyword_defaults().keys():
+        for k in PPXFFitPar._keyword_defaults().keys():
             if k not in cnfg.options('default'):
                 cnfg['default'][k] = 'None'
         return
@@ -279,23 +279,19 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                         if cnfg['default']['emission_line_mask'] != 'None' else None
 
         if cnfg['default']['fit_method'] == 'ppxf':
-            fitpar = spectralfitting.PPXFFitPar(cnfg['default']['template_library'], None, None,
-                                                None,
-                                                eval(cnfg['default']['minimum_snr']),
-                                            StellarContinuumPixelMask(artifacts, emission_lines,
-                                                    waverange=eval(cnfg['default']['waverange'])),
-                                                eval(cnfg['default']['bias']),
-                                                eval(cnfg['default']['clean']),
-                                                eval(cnfg['default']['degree']),
-                                                eval(cnfg['default']['mdegree']),
-                                                eval(cnfg['default']['moments']),
-                                                eval(cnfg['default']['oversample']),
-                                                None, # sky is always none for now
-                                                eval(cnfg['default']['regul']),
-                                                eval(cnfg['default']['reddening']),
-                                                eval(cnfg['default']['component']),
-                                                eval(cnfg['default']['reg_dim']) )
-            fitclass = spectralfitting.PPXFFit(StellarContinuumModelBitMask(dapsrc=dapsrc))
+            # sky is always none for now
+            fitpar = PPXFFitPar(cnfg['default']['template_library'], None, None, None,
+                                eval(cnfg['default']['minimum_snr']),
+                                SpectralPixelMask(artdb=artifacts, emldb=emission_lines,
+                                                  waverange=eval(cnfg['default']['waverange'])),
+                                eval(cnfg['default']['bias']), eval(cnfg['default']['clean']),
+                                eval(cnfg['default']['degree']), eval(cnfg['default']['mdegree']),
+                                eval(cnfg['default']['moments']),
+                                eval(cnfg['default']['oversample']), None,
+                                eval(cnfg['default']['regul']), eval(cnfg['default']['reddening']),
+                                eval(cnfg['default']['component']),
+                                eval(cnfg['default']['reg_dim']) )
+            fitclass = PPXFFit(StellarContinuumModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
         else:
             raise ValueError('Unknown fitting method: {0}'.format(cnfg['default']['fit_method']))
@@ -452,7 +448,7 @@ class StellarContinuumModel:
     def _fill_method_par(self, dapsrc=None, analysis_path=None):
         """
 
-        Fill in any remaining binning parameters.
+        Fill in any remaining modeling parameters.
 
         """
 
@@ -760,9 +756,8 @@ class StellarContinuumModel:
 
     def read(self, ifile=None, strict=True, checksum=False):
         """
-
-        Read an existing file with a previously binned set of spectra.
-
+        Read an existing file with an existing set of stellar-continuum
+        models.
         """
         if ifile is None:
             ifile = self.file_path()
@@ -790,7 +785,7 @@ class StellarContinuumModel:
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
-        # Attempt to read the effective radius
+        # Attempt to read the input guess velocity and sigma
         try:
             self.guess_vel = self.hdu['PRIMARY'].header['INPVEL']
             self.guess_sig = self.hdu['PRIMARY'].header['INPSIG']
@@ -799,7 +794,7 @@ class StellarContinuumModel:
             self.guess_vel = None
             self.guess_sig = None
 
-        # Attempt to read binning parameters
+        # Attempt to read the modeling parameters
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 

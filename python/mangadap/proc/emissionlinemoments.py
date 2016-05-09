@@ -45,7 +45,7 @@ A class hierarchy that measures moments of the observed emission lines.
         from ..util.bitmask import BitMask
         from .artifactdb import ArtifactDB
         from .emissionmomentsdb import EmissionMomentsDB
-        from .pixelmask import StellarContinuumPixelMask
+        from .pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .bandpassfilter import passband_integral, passband_integrated_width
@@ -97,7 +97,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from .artifactdb import ArtifactDB
 from .emissionmomentsdb import EmissionMomentsDB
-from .pixelmask import StellarContinuumPixelMask
+from .pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .bandpassfilter import passband_integral, passband_integrated_width
@@ -244,7 +244,7 @@ class EmissionLineMomentsBitMask(BitMask):
     A list of the bits and meanings are provided by the base class
     function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
 
-        from mangadap.proc.spectralindices import EmissionLineMomentsBitMask
+        from mangadap.proc.emissionlinemoments import EmissionLineMomentsBitMask
         bm = EmissionLineMomentsBitMask()
         bm.info()
 
@@ -336,8 +336,7 @@ class EmissionLineMoments:
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
                 ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
-        # TODO: Generalize the name of this object
-        self.pixelmask = StellarContinuumPixelMask(self.artdb, None)
+        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.momdb = None if self.database['passbands'] is None else \
                 EmissionMomentsDB(self.database['passbands'], emldb_list=bandpass_list,

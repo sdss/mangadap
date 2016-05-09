@@ -48,7 +48,7 @@ A class hierarchy that performs the spectral-index measurements.
         from .artifactdb import ArtifactDB
         from .absorptionindexdb import AbsorptionIndexDB
         from .bandheadindexdb import BandheadIndexDB
-        from .pixelmask import StellarContinuumPixelMask
+        from .pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .stellarcontinuummodel import StellarContinuumModel
@@ -105,7 +105,7 @@ from ..util.bitmask import BitMask
 from .artifactdb import ArtifactDB
 from .absorptionindexdb import AbsorptionIndexDB
 from .bandheadindexdb import BandheadIndexDB
-from .pixelmask import StellarContinuumPixelMask
+from .pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
@@ -380,7 +380,7 @@ class SpectralIndices:
         self.artdb = None if self.database['artifacts'] is None else \
                 ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
         # TODO: Generalize the name of this object
-        self.pixelmask = StellarContinuumPixelMask(self.artdb, None)
+        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.absdb = None if self.database['absindex'] is None else \
                 AbsorptionIndexDB(self.database['absindex'], indxdb_list=absorption_index_list,

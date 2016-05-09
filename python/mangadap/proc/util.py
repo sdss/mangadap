@@ -43,6 +43,9 @@ if sys.version > '3':
 
 import numpy
 import astropy.constants
+import scipy.interpolate
+
+from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 
@@ -224,5 +227,16 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #        return numpy.diff(wave[0:2])[0]
 #
 #    raise ValueError('Units should be km/s, logw, or ang.  Unknown unit: {0}'.format(units))
+
+def residual_growth(resid, growth_samples):
+    """
+    Interpolate the growth curve at distinct fractions, bracketed by the
+    minimum and maximum.
+    """
+    np = resid.size
+    grw = numpy.arange(np).astype(numpy.float)/np
+    resid_sort = numpy.sort(numpy.absolute(resid))
+    interp = scipy.interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
+    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
 
 

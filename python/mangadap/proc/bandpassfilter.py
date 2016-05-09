@@ -275,7 +275,7 @@ def passband_integrated_mean(x, y, passband=None, err=None, log=False, base=10.0
     
     # Return the integrated mean, and the error if possible
     if err is None:
-        return interval/integral, None
+        return integral/interval, None
     err_integral = numpy.ma.MaskedArray(passband_integral(x, numpy.square(err), passband=passband,
                                         log=log, base=base))
     return integral/interval, numpy.ma.sqrt(err_integral)/interval

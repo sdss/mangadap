@@ -220,9 +220,9 @@ def rec_to_fits_type(rec_element):
     Return the string representation of a fits binary table data type
     based on the provided record array element.
     """
-    if len(rec_element[0].shape) > 1:
-        raise TypeError('Cannot handle arrays with more than one dimension')
     n = 1 if len(rec_element[0].shape) == 0 else rec_element[0].size
+    if rec_element.dtype == numpy.bool:
+        return '{0}L'.format(n)
     if rec_element.dtype == numpy.uint8:
         return '{0}B'.format(n)
     if rec_element.dtype == numpy.int16 or rec_element.dtype == numpy.uint16:
@@ -239,6 +239,18 @@ def rec_to_fits_type(rec_element):
     # If it makes it here, assume its a string
     l = int(rec_element.dtype.str[rec_element.dtype.str.find('U')+1:])
     return '{0}A'.format(l)
+
+
+def rec_to_fits_col_dim(rec_element):
+    """
+    Return the string representation of the dimensions for the fits
+    table column based on the provided record array element.
+
+    The shape is inverted because the first element is supposed to be
+    the most rapidly varying; i.e. the shape is supposed to be written
+    as row-major, as opposed to the native column-major order in python.
+    """
+    return None if len(rec_element[0].shape) == 1 else str(rec_element[0].shape[::-1])
 
 
 def compress_file(ifile, clobber=False):

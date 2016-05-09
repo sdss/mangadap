@@ -59,6 +59,7 @@ from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMoments
+from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
 #from ..proc.templatelibrary import TemplateLibrary
 
@@ -131,7 +132,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         int: Status flag
     """
 
-    init_DAP_logging(log)#, simple_warnings=False)
+    init_DAP_logging(log, simple_warnings=False)
 
     # Start log
     loggers = module_logging(__name__, verbose)
@@ -166,13 +167,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         #---------------------------------------------------------------
         # S/N Assessments
         #---------------------------------------------------------------
-        snr = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
-                                  analysis_path=analysis_path, verbose=verbose, clobber=False)
+        rdxqa = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
+                                    analysis_path=analysis_path, verbose=verbose, clobber=False)
  
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------
-        binned_spectra = SpatiallyBinnedSpectra('LOGR10C', drpf, snr, reff=obs['reff'],
+        binned_spectra = SpatiallyBinnedSpectra('LOGR10C', drpf, rdxqa, reff=obs['reff'],
                                                 dapsrc=dapsrc, analysis_path=analysis_path,
                                                 verbose=verbose, clobber=False)
 
@@ -221,10 +222,10 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
-        emission_lines_fits = EmissionLineFits('ELFFULL', binned_spectra,
-                                               stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                               analysis_path=analysis_path, verbose=verbose,
-                                               clobber=True)#False)
+        emission_lines_model = EmissionLineModel('ELFFULL', binned_spectra, guess_vel=obs['vel'],
+                                                 stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                                 analysis_path=analysis_path, verbose=verbose,
+                                                 clobber=False)
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements

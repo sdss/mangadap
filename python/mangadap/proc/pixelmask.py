@@ -82,14 +82,14 @@ class PixelMask:
         return mask if nspec is None else numpy.array([mask]*nspec)
         
 
-class StellarContinuumPixelMask(PixelMask):
+class SpectralPixelMask(PixelMask):
     """
 
     Container that produces a mask for the stellar continuum based on a
     set of emission lines and artifacts.
 
     """
-    def __init__(self, artdb, emldb, waverange=None):
+    def __init__(self, artdb=None, emldb=None, waverange=None):
         if artdb is not None and not isinstance(artdb, ArtifactDB):
             raise TypeError('Must provide EmissionLineDB for emission-lines to mask.')
         self.artdb = artdb
@@ -183,6 +183,8 @@ class StellarContinuumPixelMask(PixelMask):
 
 
     def boolean(self, wave, nspec=None, velocity_offsets=0.0, sigma=250.0, nsigma=3.0):
+        if nspec is not None and not nspec > 0:
+            raise ValueError('Number of spectra must be larger than 0!')
         return self._waverange_mask(wave, nspec=nspec) | self._artifact_mask(wave, nspec=nspec) \
                 | self._emission_line_mask(wave, nspec=nspec, velocity_offsets=velocity_offsets,
                                            sigma=sigma, nsigma=nsigma)
@@ -195,6 +197,8 @@ class StellarContinuumPixelMask(PixelMask):
         # Check the bitmask type
         if not isinstance(bitmask, BitMask):
             raise TypeError('Must provide object of type BitMask.')
+        if nspec is not None and not nspec > 0:
+            raise ValueError('Number of spectra must be larger than 0!')
 
         # Get the wavelength range mask
         wavemask = self._waverange_mask(wave, nspec=nspec)
