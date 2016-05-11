@@ -61,6 +61,7 @@ A class hierarchy that performs the spectral-index measurements.
 
 *Revision history*:
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **09 May 2016**: (KBW) Add subtraction of emission-line models
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -109,6 +110,7 @@ from .pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
+from .emissionlinemodel import EmissionLineModel
 from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
 from .util import _select_proc_method, flux_to_fnu
 
@@ -291,10 +293,10 @@ class SpectralIndices:
 
     """
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
-                 database_list=None, artifact_list=None, absorption_index_list=None,
-                 bandhead_index_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0,
-                 checksum=False):
+                 emission_line_model=None, database_list=None, artifact_list=None,
+                 absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
+                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+                 clobber=False, verbose=0, checksum=False):
 
         self.version = '1.0'
         self.verbose = verbose
@@ -313,6 +315,7 @@ class SpectralIndices:
         self.binned_spectra = None
         self.redshift = None
         self.stellar_continuum = None
+        self.emission_line_model = None
         self.nindx = 0
         if self.absdb is not None:
             self.nindx += self.absdb.nsets
@@ -333,7 +336,10 @@ class SpectralIndices:
         self.spatial_shape = None
         self.nspec = None
         self.spatial_index = None
+        self.spectral_arrays = None
         self._assign_spectral_arrays()
+        self.image_arrays = None
+        self._assign_image_arrays()
         self.dispaxis = None
         self.nwave = None
 
@@ -342,9 +348,9 @@ class SpectralIndices:
 
         # Run the assessments of the DRP file
         self.measure(binned_spectra, redshift=redshift, stellar_continuum=stellar_continuum,
-                     dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
-                     directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                     clobber=clobber, verbose=verbose)
+                     emission_line_model=emission_line_model, dapsrc=dapsrc, dapver=dapver,
+                     analysis_path=analysis_path, directory_path=directory_path,
+                     output_file=output_file, hardcopy=hardcopy, clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -420,6 +426,8 @@ class SpectralIndices:
                                   self.binned_spectra.method['key'])
         if self.stellar_continuum is not None:
             method = '{0}-{1}'.format(method, self.stellar_continuum.method['key'])
+        if self.emission_line_model is not None:
+            method = '{0}-{1}'.format(method, self.emission_line_model.method['key'])
         method = '{0}-{1}'.format(method, self.database['key'])
 
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
@@ -438,7 +446,7 @@ class SpectralIndices:
               decide if/how to manipulate DRP header.
 
         """
-        return self.binned_spectra.drpf[ext].header
+        return self.binned_spectra.drpf[ext].header.copy()
 
 
     def _initialize_header(self, hdr):
@@ -454,7 +462,9 @@ class SpectralIndices:
         hdr['ABSDB'] = (self.database['absindex'], 'Absorption-index database keyword')
         hdr['BHDDB'] = (self.database['bandhead'], 'Bandhead-index database keyword')
         if self.stellar_continuum is not None:
-            hdr['SCTPL'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
+            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
+        if self.emission_line_model is not None:
+            hdr['EMLKEY'] = (self.emission_line_model.method['key'], 'Emission-line model keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
@@ -558,6 +568,10 @@ class SpectralIndices:
         self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
 
 
+    def _assign_image_arrays(self):
+        self.image_arrays = [ 'BINID' ]
+
+
     def _check_snr(self):
         # binned_spectra['BINS'].data['SNR'] has length
         # binned_spectra.nbins
@@ -595,21 +609,15 @@ class SpectralIndices:
                                  'number of binned spectra, or match the total number of DRP ' \
                                  'spectra.')
             if len(_redshift) == 1:
-                print('single')
                 self.redshift[:] = redshift
             elif len(_redshift) == self.nspec:
-                print('nspec')
                 self.redshift = _redshift[ self.unique_bins(index=True) ]
             else:   # Has length nbins
-                print('nbin')
                 self.redshift = _redshift
         elif self.stellar_continuum is not None:
-            print('from stellar continuum')
             self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
                                 / astropy.constants.c.to('km/s').value
-
         self.redshift = self.redshift[self._bins_to_measure()]
-        print(self.redshift)
 
 
     def _spectra_for_measurements(self):
@@ -629,6 +637,10 @@ class SpectralIndices:
         indx = self.pixelmask.boolean(wave,nspec=self.nbins)
         flux[indx] = numpy.ma.masked
         ivar[indx] = numpy.ma.masked
+
+        if self.emission_line_model is not None:
+            eml_model = self.emission_line_model.copy_to_array()
+            flux -= eml_model
 
         mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_uint_dtype())
         flux_mask = numpy.ma.getmaskarray(flux)
@@ -962,9 +974,6 @@ class SpectralIndices:
                                                     flag=self.binned_spectra.do_not_fit_flags())
         mask = numpy.ma.getmaskarray(flux) | self.pixelmask.boolean(wave, nspec=self.nbins)
 
-        print(self.database['fwhm'])
-        print(self.stellar_continuum.method['fitpar']['template_library_key'])
-
         # Get the template library
         template_library = None if self.database['fwhm'] < 0  \
                 or self.stellar_continuum.method['fitpar']['template_library_key'] is None else \
@@ -1033,9 +1042,9 @@ class SpectralIndices:
         return os.path.join(self.directory_path, self.output_file)
 
 
-    def measure(self, binned_spectra, redshift=None, stellar_continuum=None, dapsrc=None,
-                dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                hardcopy=True, clobber=False, verbose=0):
+    def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
+                emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
+                directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0):
         """
 
         Measure the spectral indices using the binned spectra.
@@ -1059,6 +1068,14 @@ class SpectralIndices:
             if stellar_continuum.hdu is None:
                 raise ValueError('Provided StellarContinuumModel is undefined!')
             self.stellar_continuum = stellar_continuum
+
+        # EmissionLineModel object used to subtract emission lines
+        if emission_line_model is not None:
+            if not isinstance(emission_line_model, EmissionLineModel):
+                raise TypeError('Provided emission line models must be of type EmissionLineModel.')
+            if emission_line_model.hdu is None:
+                raise ValueError('Provided EmissionLineModel is undefined!')
+            self.emission_line_model = emission_line_model
 
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
@@ -1185,15 +1202,16 @@ class SpectralIndices:
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.ImageHDU(data=flux.data,
-                                                header=self.binned_spectra['FLUX'].header,
+                                                header=self.binned_spectra['FLUX'].header.copy(),
                                                 name='FLUX'),
                                   fits.ImageHDU(data=ivar.data,
-                                                header=self.binned_spectra['IVAR'].header,
+                                                header=self.binned_spectra['IVAR'].header.copy(),
                                                 name='IVAR'),
                                   fits.ImageHDU(data=mask,
-                                                header=self.binned_spectra['MASK'].header,
+                                                header=self.binned_spectra['MASK'].header.copy(),
                                                 name='MASK'),
-                                  self.binned_spectra['WAVE'],
+                                  self.binned_spectra['WAVE'].copy(),
+                                  self.binned_spectra['BINID'].copy(),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                         format=rec_to_fits_type(hdu_database[n]),
                                 array=hdu_database[n]) for n in hdu_database.dtype.names ],
@@ -1216,10 +1234,10 @@ class SpectralIndices:
         """
         Write the hdu object to the file.
         """
-        print('restructuring')
         # Restructure the data to match the DRPFits file
         if self.binned_spectra.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.binned_spectra.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
 
@@ -1228,9 +1246,9 @@ class SpectralIndices:
         write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         # Revert the structure
-        print('reverting')
         if self.binned_spectra.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -1264,6 +1282,7 @@ class SpectralIndices:
 
         if self.binned_spectra.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -1274,8 +1293,6 @@ class SpectralIndices:
             # Assume if this fails, it's because the keyword doesn't
             # exist
             self.missing_bins = []
-
-        print(self.missing_bins)
 
 
     def unique_bins(self, index=False):

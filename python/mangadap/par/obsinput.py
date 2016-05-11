@@ -27,7 +27,7 @@ run the DAP for a specific MaNGA observation.
         import os.path
         import warnings
         from .parset import ParSet
-        from ..util.yanny import yanny
+        from pydl.pydlutils.yanny import yanny
         from ..drpfits import DRPFits
 
 *Class usage examples*:
@@ -37,13 +37,19 @@ run the DAP for a specific MaNGA observation.
         p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
                         vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
 
-    Or declare the parameter object by reading a yanny parameter file::
+    Or declare the parameter object by reading an `SDSS-style parameter
+    file`_:
 
         from mangadap.par.obsinput import ObsInputPar
         p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
 
 *Revision history*:
     | **15 Mar 2016**: Original implementation by K. Westfall (KBW)
+    | **11 May 2016**: Switch to using `pydl.pydlutils.yanny`_ instead
+        of internal yanny reader
+
+.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
+.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
 
 """
 
@@ -60,7 +66,8 @@ import numpy
 import os.path
 import warnings
 from .parset import ParSet
-from ..util.yanny import yanny
+#from ..util.yanny import yanny
+from pydl.pydlutils.yanny import yanny
 from ..drpfits import DRPFits
 
 __author__ = 'Kyle B. Westfall'
@@ -169,7 +176,8 @@ class ObsInputPar(ParSet):
             raise FileNotFoundError('Could not open {0}!'.format(f))
    
         # Read the file
-        par = yanny(f)
+#        par = yanny(f)
+        par = yanny(filename=f, raw=True)
 
         # Check the number of entries
         if len(par['DAPPAR']['plate']) > 1:

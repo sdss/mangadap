@@ -26,8 +26,8 @@ Container class for the database of absorption-line indices to measure.
         import os.path
         import numpy
 
-        from ..util.idlutils import airtovac
-        from ..util.yanny import yanny
+        from pydl.goddard.astro import airtovac
+        from pydl.pydlutils.yanny import yanny
         from ..par.parset import ParDatabase
         from ..proc.bandpassfilter import BandPassFilterPar
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
@@ -50,10 +50,9 @@ Container class for the database of absorption-line indices to measure.
         from mangadap.proc.absorptionindexdb import AbsorptionIndexDB
         p = AbsorptionIndexDB('LICK', dapsrc='/path/to/dap/source')
 
-    Finally, you can create your own SDSS parameter file (see
-    :class:`mangadap.util.yanny`) with your own absorption-line indices
-    to use.  Example files are provided in
-    ``$MANGADAP_DIR/external/absorption_indices`` with a companion
+    Finally, you can create your own `SDSS-style parameter file`_ with
+    your own absorption-line indices to use.  Example files are provided
+    in ``$MANGADAP_DIR/external/absorption_indices`` with a companion
     ``README`` file.  With your own file, you have to point to the file
     using :class:`SpectralFeatureDBDef`, which you can then pass to
     :class:`AbsorptionIndexDB`::
@@ -74,7 +73,12 @@ Container class for the database of absorption-line indices to measure.
     
 *Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
+    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
+        `pydl.goddard.astro.airtovac`_ instead of internal functions
 
+.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
+.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
+.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
 """
 
 from __future__ import division
@@ -90,8 +94,10 @@ if sys.version > '3':
 import os.path
 import numpy
 
-from ..util.idlutils import airtovac
-from ..util.yanny import yanny
+#from ..util.idlutils import airtovac
+#from ..util.yanny import yanny
+from pydl.goddard.astro import airtovac
+from pydl.pydlutils.yanny import yanny
 from ..par.parset import ParDatabase
 from ..proc.bandpassfilter import BandPassFilterPar
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
@@ -185,9 +191,11 @@ class AbsorptionIndexDB(ParDatabase):
                                                                     self.database['file_path']))
 
         # Read the yanny file
-        par = yanny(self.database['file_path'])
+#        par = yanny(self.database['file_path'])
+        par = yanny(filename=self.database['file_path'], raw=True)
         if len(par['DAPABI']['index']) == 0:
-            raise ValueError('Could not find DAPABI entries in {0}!'.self.database['file_path'])
+            raise ValueError('Could not find DAPABI entries in {0}!'.format(
+                                                                    self.database['file_path']))
 
         # Setup the array of absorption-line index database parameters
         self.nindx = len(par['DAPABI']['index'])

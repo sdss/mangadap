@@ -293,7 +293,10 @@ class EmissionLineModel:
         self.spatial_shape = None
         self.nspec = None
         self.spatial_index = None
+        self.spectral_arrays = None
         self._assign_spectral_arrays()
+        self.image_arrays = None
+        self._assign_image_arrays()
         self.dispaxis = None
         self.nwave = None
 
@@ -436,16 +439,12 @@ class EmissionLineModel:
                                  'number of model spectra, or match the total number of DRP ' \
                                  'spectra.')
             if len(_redshift) == 1:
-                print('single')
                 self.redshift[:] = redshift
             elif len(_redshift) == self.nspec:
-                print('nspec')
-                self.redshift = _redshift[ self.unique_bins(index=True) ]
+                self.redshift = _redshift[ self.unique_models(index=True) ]
             else:   # Has length nmodels
-                print('nmodel')
                 self.redshift = _redshift
         elif self.stellar_continuum is not None:
-            print('from stellar continuum')
             self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
                                 / astropy.constants.c.to('km/s').value
 
@@ -457,13 +456,10 @@ class EmissionLineModel:
                                  'number of model spectra, or match the total number of DRP ' \
                                  'spectra.')
             if len(_disperison) == 1:
-                print('single')
                 self.dispersion[:] = dispersion
             elif len(_redshift) == self.nspec:
-                print('nspec')
-                self.dispersion = _dispersion[ self.unique_bins(index=True) ]
+                self.dispersion = _dispersion[ self.unique_models(index=True) ]
             else:   # Has length nmodels
-                print('nmodel')
                 self.dispersion = _dispersion
 
 
@@ -492,7 +488,7 @@ class EmissionLineModel:
               decide if/how to manipulate DRP header.
 
         """
-        return self.binned_spectra.drpf[ext].header
+        return self.binned_spectra.drpf[ext].header.copy()
 
 
     def _initialize_header(self, hdr):
@@ -545,6 +541,10 @@ class EmissionLineModel:
 
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'MASK' ]
+
+
+    def _assign_image_arrays(self):
+        self.image_arrays = [ 'BINID' ]
 
 
     def _missing_flags(self):
@@ -617,8 +617,6 @@ class EmissionLineModel:
 
         # Fill in any remaining binning parameters
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
-        print(self.method['fitpar']['guess_redshift'])
-        print(self.method['fitpar']['guess_dispersion'])
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)
@@ -642,22 +640,26 @@ class EmissionLineModel:
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_mask, model_fit_par, model_eml_par = \
             self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'])
+
+#        pyplot.step(model_wave, model_flux[0,:], where='mid')
+#        pyplot.show()
+#        exit()
         
         # Compile the information on the suite of measured indices
         hdu_database = self._compile_database()
 
         # Get the unique bins and how to reconstruct them
-        unique_bins, reconstruct = numpy.unique(self.binned_spectra.hdu['BINID'].data.ravel(),
+        unique_models, reconstruct = numpy.unique(self.binned_spectra.hdu['BINID'].data.ravel(),
                                                 return_inverse=True)
 
         # Restructure the output to match the input DRP file
         indx = self.binned_spectra.hdu['BINID'].data.ravel() > -1
 
         flux = numpy.zeros(self.shape, dtype=numpy.float)
-        flux.reshape(-1,self.nwave)[indx,:] = model_flux[unique_bins[reconstruct[indx]],:]
+        flux.reshape(-1,self.nwave)[indx,:] = model_flux[unique_models[reconstruct[indx]],:]
 
         mask = self._initialize_mask()
-        mask.reshape(-1,self.nwave)[indx,:] = model_mask[unique_bins[reconstruct[indx]],:]
+        mask.reshape(-1,self.nwave)[indx,:] = model_mask[unique_models[reconstruct[indx]],:]
 
         # Initialize the header keywords
         hdr = self._clean_drp_header(ext='PRIMARY')
@@ -691,6 +693,10 @@ class EmissionLineModel:
                                                 name='MASK'),
                                   self.binned_spectra['WAVE'].copy(),
                                   self.binned_spectra['BINID'].copy(),
+                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
+                                                        format=rec_to_fits_type(hdu_database[n]),
+                                        array=hdu_database[n]) for n in hdu_database.dtype.names ],
+                                                         name='PAR'),
                                   fits.BinTableHDU.from_columns([fits.Column(name=n,
                                                         format=rec_to_fits_type(model_fit_par[n]),
                                                         dim=rec_to_fits_col_dim(model_fit_par[n]),
@@ -715,10 +721,10 @@ class EmissionLineModel:
         """
         Write the hdu object to the file.
         """
-        print('restructuring')
         # Restructure the data to match the DRPFits file
         if self.binned_spectra.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.binned_spectra.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
         
@@ -727,9 +733,9 @@ class EmissionLineModel:
         write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         # Revert the structure
-        print('reverting')
         if self.binned_spectra.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -760,6 +766,12 @@ class EmissionLineModel:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
+        if self.binned_spectra.drpf.mode == 'CUBE':
+            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+        elif self.binned_spectra.drpf.mode == 'RSS':
+            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+
         # Attempt to read the modeling parameters
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
@@ -773,13 +785,88 @@ class EmissionLineModel:
             self.missing_models = []
 
 
-    def unique_bins(self, index=False):
+    def unique_models(self, index=False):
         """
-        Get the unique bins or the indices of the unique bins in the
+        Get the unique models or the indices of the unique models in the
         flattened spatial dimension.
         """
-        unique_bins, first_occurrence = numpy.unique(self.binned_spectra['BINID'].data.ravel(),
-                                                     return_index=True)
-        return first_occurrence[1:] if index else unique_bins[1:]
+        unique_models, first_occurrence = numpy.unique(self.hdu['BINID'].data.ravel(),
+                                                       return_index=True)
+        return first_occurrence[1:] if index else unique_models[1:]
+
+
+    def copy_to_array(self, waverange=None, ext='FLUX'):
+        r"""
+        Return a copy of the selected data array.  The array size is
+        always :math:`N_{\rm models} \times N_{\rm wavelength}`; i.e., the
+        data is always flattened to two dimensions and the unique
+        spectra are selected.  See :func:`unique_models` and
+        :func:`mangadap.drpfits.DRPFits.copy_to_array`.
+
+        Args:
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                ``'FLUX'``.
+
+        Returns:
+            numpy.ndarray: A 2D array with a copy of the data from the
+            selected extension.
+        """
+        arr = DRPFits.copy_to_array(self, waverange=waverange, ext=ext)[
+                                                                self.unique_models(index=True),:]
+        if len(self.missing_models) == 0:
+            return arr
+        _arr = numpy.zeros( (self.nmodels, self.nwave), dtype=self.hdu[ext].data.dtype)
+        _arr[self.unique_models(),:] = arr
+        return _arr
+
+
+    def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
+        r"""
+
+        Return a copy of the selected data array as a masked array.
+        This is functionally identical to :func:`copy_to_array`,
+        except the output format is a `numpy.ma.MaskedArray`_.  The
+        pixels that are considered to be masked can be specified using
+        `flag`.
+        
+        Args:
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            ext (str) : (**Optional**) Name of the extension from which
+                to draw the data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                `'FLUX'`.
+            mask_ext (str) : (**Optional**) Name of the extension with
+                the mask bit data.  Must be allowed for the current
+                :attr:`mode`; see :attr:`data_arrays`.  Default is
+                `'MASK'`.
+            flag (str or list): (**Optional**) (List of) Flag names that
+                are considered when deciding if a pixel should be
+                masked.  The names *must* be a valid bit name as defined
+                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
+                not provided, *ANY* non-zero mask bit is omitted.
+
+        Returns:
+            numpy.ndarray: A 2D array with a copy of the data from the
+            selected extension.
+        """
+        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext, mask_ext=mask_ext,
+                                           flag=flag)[self.unique_models(index=True),:]
+        if len(self.missing_models) == 0:
+            return arr
+        _arr = numpy.ma.zeros( (self.nmodels, self.nwave), dtype=self.hdu[ext].data.dtype)
+        _arr[self.unique_models(),:] = arr
+        _arr[self.missing_models,:] = numpy.ma.masked
+        return _arr
+
+
 
 

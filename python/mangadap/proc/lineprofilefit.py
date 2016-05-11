@@ -1282,6 +1282,8 @@ class Elric(EmissionLineFit):
                        guess_dispersion=guess_dispersion, record_output=True)
         
         _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
+        _model_flux[good_spec,:] = model_flux
+
         _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_uint_dtype())
 
         _model_mask[numpy.ma.getmaskarray(flux)] \
@@ -1291,7 +1293,17 @@ class Elric(EmissionLineFit):
                                                 for b in numpy.arange(binned_spectra.nbins)]))
         _model_mask[bad_snr,:] = self.bitmask.turn_on(_model_mask[bad_snr,:], 'LOW_SNR')
 
-        return model_wave, _model_flux, _model_mask, model_fit_par, model_eml_par
+        _model_mask[good_spec,:] = model_mask
+
+        _model_fit_par = init_record_array(flux.shape[0], model_fit_par.dtype)
+        _model_fit_par[good_spec] = model_fit_par
+        _model_fit_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
+
+        _model_eml_par = init_record_array(flux.shape[0], model_eml_par.dtype)
+        _model_eml_par[good_spec] = model_eml_par
+        _model_eml_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
+
+        return model_wave, _model_flux, _model_mask, _model_fit_par, _model_eml_par
 
 
     def fit(self, wave, flux, emission_lines, error=None, mask=None, stellar_continuum=None,

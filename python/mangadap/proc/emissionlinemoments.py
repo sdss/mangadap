@@ -390,7 +390,7 @@ class EmissionLineMoments:
               decide if/how to manipulate DRP header.
 
         """
-        return self.binned_spectra.drpf[ext].header
+        return self.binned_spectra.drpf[ext].header.copy()
 
 
     def _initialize_header(self, hdr):
@@ -511,21 +511,15 @@ class EmissionLineMoments:
                                  'number of binned spectra, or match the total number of DRP ' \
                                  'spectra.')
             if len(_redshift) == 1:
-                print('single')
                 self.redshift[:] = redshift
             elif len(_redshift) == self.nspec:
-                print('nspec')
                 self.redshift = _redshift[ self.unique_bins(index=True) ]
             else:   # Has length nbins
-                print('nbin')
                 self.redshift = _redshift
         elif self.stellar_continuum is not None:
-            print('from stellar continuum')
             self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
                                 / astropy.constants.c.to('km/s').value
-
         self.redshift = self.redshift[self._bins_to_measure()]
-        print(self.redshift)
 
 
     def _spectra_for_measurements(self):
@@ -697,7 +691,6 @@ class EmissionLineMoments:
 
         # No flux in the passband
         if not numpy.absolute(flux) > 0.0:
-            print('div by zero')
             mask = self.bitmask.turn_on(mask, 'DIVBYZERO')
             return flux, fluxerr, None, None, None, None, mask
 
@@ -822,10 +815,8 @@ class EmissionLineMoments:
             noise = numpy.ma.sqrt(1.0 /_ivar)
 
         if model_subtracted_flux is None:
-            print('no model-subtracted flux')
             _model_subtracted_flux = None
         else:
-            print('use model-subtracted flux')
             _model_subtracted_flux = model_subtracted_flux \
                         if isinstance(model_subtracted_flux, numpy.ma.MaskedArray) else \
                             numpy.ma.MaskedArray(model_subtracted_flux,
@@ -836,7 +827,7 @@ class EmissionLineMoments:
         # subtracted from it
         _no_model = None if no_model is None else numpy.ma.MaskedArray(numpy.ones(no_model.shape),
                                                                        mask=no_model)
-        print('no_model exists:', _no_model is not None)
+#        print('no_model exists:', _no_model is not None)
             
         # Measure the pseudo-continuum in the sidebands
         sidebands = numpy.append(self.momdb['blueside'], self.momdb['redside'], axis=0)
@@ -1072,8 +1063,6 @@ class EmissionLineMoments:
             # Assume if this fails, it's because the keyword doesn't
             # exist
             self.missing_bins = []
-
-        print(self.missing_bins)
 
 
     def unique_bins(self, index=False):

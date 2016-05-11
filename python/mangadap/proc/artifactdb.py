@@ -33,7 +33,7 @@ spectra in an RSS or CUBE file.
         import numpy
 
         from ..util.idlutils import airtovac
-        from ..util.yanny import yanny
+        from pydl.pydlutils.yanny import yanny
         from ..par.parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
         from .util import _select_proc_method
@@ -43,6 +43,12 @@ spectra in an RSS or CUBE file.
 
 *Revision history*:
     | **16 Apr 2016**: Original implementation by K. Westfall (KBW)
+    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
+        `pydl.goddard.astro.airtovac`_ instead of internal functions
+
+.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
+.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
+
 """
 
 from __future__ import division
@@ -58,8 +64,10 @@ if sys.version > '3':
 import os.path
 import numpy
 
-from ..util.idlutils import airtovac
-from ..util.yanny import yanny
+#from ..util.idlutils import airtovac
+#from ..util.yanny import yanny
+from pydl.goddard.astro import airtovac
+from pydl.pydlutils.yanny import yanny
 from ..par.parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
 from .util import _select_proc_method
@@ -187,9 +195,11 @@ class ArtifactDB(ParDatabase):
                                                                     self.database['file_path']))
 
         # Read the yanny file
-        par = yanny(self.database['file_path'])
+#        par = yanny(self.database['file_path'])
+        par = yanny(filename=self.database['file_path'], raw=True)
         if len(par['DAPART']['index']) == 0:
-            raise ValueError('Could not find DAPART entries in {0}!'.self.database['file_path'])
+            raise ValueError('Could not find DAPART entries in {0}!'.format(
+                                                                    self.database['file_path']))
 
         # Setup the array of emission line database parameters
         self.nart = len(par['DAPART']['index'])

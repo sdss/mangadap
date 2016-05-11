@@ -61,6 +61,7 @@ from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMoments
 from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
+from ..dapmaps import construct_maps_file
 #from ..proc.templatelibrary import TemplateLibrary
 
 from ..util.covariance import Covariance
@@ -145,6 +146,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     log_output(loggers, 1, logging.INFO, ' IFUDESIGN: {0}'.format(obs['ifudesign']))
     log_output(loggers, 1, logging.INFO, '   3D MODE: {0}\n'.format(obs['mode']))
 
+    log_output(loggers, 1, logging.INFO, '   N PLANS: {0}\n'.format(plan.nplans))
+    # TODO: Print plan details
+
     status = 0
 
     #-------------------------------------------------------------------
@@ -158,87 +162,73 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     if not os.path.isdir(analysis_path):
         os.makedirs(analysis_path)
 
-#    n_plans = plan.complete_plans
-    n_plans = 1
-
     # Iterate over plans:
-    for i in range(n_plans):
+    for i in range(plan.nplans):
 
         #---------------------------------------------------------------
         # S/N Assessments
         #---------------------------------------------------------------
-        rdxqa = ReductionAssessment('RFWHMC', drpf, pa=obs['pa'], ell=obs['ell'], dapsrc=dapsrc,
-                                    analysis_path=analysis_path, verbose=verbose, clobber=False)
+        rdxqa = None if plan['drpqa_key'][i] is None else \
+                    ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
+                                        dapsrc=dapsrc, analysis_path=analysis_path, verbose=verbose,
+                                        clobber=plan['drpqa_clobber'][i])
  
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------
-        binned_spectra = SpatiallyBinnedSpectra('LOGR10C', drpf, rdxqa, reff=obs['reff'],
-                                                dapsrc=dapsrc, analysis_path=analysis_path,
-                                                verbose=verbose, clobber=False)
-
-#        print(binned_spectra['MASK'].data)
-#
-#        print(binned_spectra.method)
-#        flux = binned_spectra.copy_to_array()
-#        #flux = binned_spectra.copy_to_masked_array()
-#        print(numpy.sum(numpy.ma.getmaskarray(flux)))
-#        print(flux.shape)
-#        for i in range(binned_spectra.nbins):
-#            pyplot.step(binned_spectra['WAVE'].data, flux[i,:], where='mid', linestyle='-')
-#        pyplot.show()
-
+        binned_spectra = None if plan['bin_key'][i] is None else \
+                    SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
+                                           dapsrc=dapsrc, analysis_path=analysis_path,
+                                           verbose=verbose, clobber=plan['bin_clobber'][i])
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit
         #---------------------------------------------------------------
-        stellar_continuum = StellarContinuumModel('GAU01-MILESTHIN', drpf, binned_spectra,
-                                                  guess_vel=obs['vel'], guess_sig=obs['vdisp'],
-                                                  dapsrc=dapsrc, analysis_path=analysis_path,
-                                                  verbose=verbose, clobber=False)
-
-#        flux = binned_spectra.copy_to_masked_array()
-#        model = stellar_continuum.copy_to_masked_array()
-#        wave = binned_spectra['WAVE'].data
-#        flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-#        model = stellar_continuum.copy_to_masked_array(
-#                                                flag=stellar_continuum.all_except_emission_flags())
-#        disp_free = numpy.ma.MaskedArray(stellar_continuum.construct_models(redshift_only=True),
-#                                         mask=model.mask.copy())
-#        for i in range(binned_spectra.nbins):
-#            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=3)
-#            pyplot.plot(wave, model[i,:], linestyle='-', color='b', lw=3, zorder=1, alpha=0.5)
-#            pyplot.plot(wave, disp_free[i,:], linestyle='-', color='r', lw=1, zorder=1)
-#            pyplot.show()
+        stellar_continuum = None if plan['continuum_key'][i] is None else \
+                    StellarContinuumModel(plan['continuum_key'][i], drpf, binned_spectra,
+                                          guess_vel=obs['vel'], guess_sig=obs['vdisp'],
+                                          dapsrc=dapsrc, analysis_path=analysis_path,
+                                          verbose=verbose, clobber=plan['continuum_clobber'][i])
 
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
-        emission_line_moments = EmissionLineMoments('ELMFULL', binned_spectra,
-                                                    stellar_continuum=stellar_continuum,
-                                                    dapsrc=dapsrc, analysis_path=analysis_path,
-                                                    verbose=verbose, clobber=False)
+        emission_line_moments = None if plan['elmom_key'][i] is None else \
+                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+                                        stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                        analysis_path=analysis_path, verbose=verbose,
+                                        clobber=plan['elmom_clobber'][i])
 
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
-        emission_lines_model = EmissionLineModel('ELFFULL', binned_spectra, guess_vel=obs['vel'],
-                                                 stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                                 analysis_path=analysis_path, verbose=verbose,
-                                                 clobber=False)
+        emission_line_model = None if plan['elfit_key'][i] is None else \
+                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, guess_vel=obs['vel'],
+                                      stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                      analysis_path=analysis_path, verbose=verbose,
+                                      clobber=plan['elfit_clobber'][i])
+
+        # Still need to add equivalent-width measurements
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements
         #---------------------------------------------------------------
-        spectral_indices = SpectralIndices('EXTINDX', binned_spectra,
-                                           stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                           analysis_path=analysis_path, verbose=verbose,
-                                           clobber=False)
+        spectral_indices = None if plan['spindex_key'][i] is None else \
+                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
+                                    stellar_continuum=stellar_continuum,
+                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
+                                    analysis_path=analysis_path, verbose=verbose,
+                                    clobber=plan['spindex_clobber'][i])
 
-    #-------------------------------------------------------------------
-    # Construct the main output file(s)
-    #-------------------------------------------------------------------
-
+        #-------------------------------------------------------------------
+        # Construct the main output file(s)
+        #-------------------------------------------------------------------
+        construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
+                            stellar_continuum=stellar_continuum,
+                            emission_line_moments=emission_line_moments,
+                            emission_line_model=emission_line_model,
+                            spectral_indices=spectral_indices, dapsrc=dapsrc,
+                            analysis_path=analysis_path, clobber=True)#clobber)
 
     #-------------------------------------------------------------------
     # End log

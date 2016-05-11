@@ -1,8 +1,18 @@
 
 typedef struct {
-    char snrmode[8];
+    char drpqa_key[8];
+    int drpqa_clobber;
+    char bin_key[8];
+    int bin_clobber;
+    char continuum_key[8];
+    int continuum_clobber;
+    char elmom_key[8];
+    int elmom_clobber;
+    char elfit_key[8];
+    int elfit_clobber;
+    char spindex_key[8];
+    int spindex_clobber;
 } DAPPLAN;
 
-
-DAPPLAN  RFWHM  SPAXEL  MILES  GAUSN00  ELEXTND  SPFULL
+DAPPLAN  RFWHMC  0    VOR05C  0    GAU01-MILESTHIN  0    ELMFULL 0    ELFFULL 0    EXTINDX  0
 

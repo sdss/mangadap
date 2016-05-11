@@ -240,7 +240,7 @@ CUBE files:
     some column with a flag that selects the "default" products, and/or
     perhaps create a separate DAPall_default file that only includes the
     default data and put it in the default directory (TBD).
-            
+
 Covariance:
 
     The only remaining thing that the DAP produces is the covariance

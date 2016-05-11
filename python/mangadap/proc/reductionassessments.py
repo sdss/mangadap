@@ -52,10 +52,10 @@ once per DRP data file.
         import time
         import numpy
 
+        from pydl.goddard.astro import airtovac
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..util.idlutils import airtovac
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
         from ..drpfits import DRPFits
@@ -76,11 +76,13 @@ once per DRP data file.
 *Revision history*:
     | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
 
+    | **11 May 2016**: (KBW) Switch to using
+        `pydl.goddard.astro.airtovac`_ instead of internal function
+
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
-
-
+.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 """
 
 from __future__ import division
@@ -121,11 +123,12 @@ import astropy.constants
 import time
 import numpy
 
+from pydl.goddard.astro import airtovac
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
 from ..util.covariance import Covariance
-from ..util.idlutils import airtovac
+#from ..util.idlutils import airtovac
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..drpfits import DRPFits
@@ -175,7 +178,7 @@ def validate_reduction_assessment_config(cnfg):
         cnfg (`configparser.ConfigParser`_): Object meant to contain
             defining parameters of the reduction assessment method as
             needed by
-            :class:`mangadap.proc.reductionassessments.ReductionAssessmentsDef`.
+            :class:`mangadap.proc.reductionassessments.ReductionAssessmentDef`.
 
     Returns:
         bool: Booleans that specify how the reduction assessment should
@@ -363,7 +366,8 @@ class ReductionAssessment:
 
     Attributes:
         version (str): Version number
-        method (str): Keyword of the selected method to use.
+        method (:class:`mangadap.par.ParSet`):  Parameters defining the
+            method to use for the reduction assessments.
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
         pa (float): On-sky position angle of the major axis used to
@@ -625,11 +629,14 @@ class ReductionAssessment:
 
         # Reset the output paths if necessary
         self._set_paths(directory_path, dapver, analysis_path, output_file)
-        print(self.file_path())
         # Check that the path for or to the file is defined
         ofile = self.file_path()
         if ofile is None:
             raise ValueError('File path for output file is undefined!')
+
+        print('Output path: ', self.directory_path)
+        print('Output file: ', self.output_file)
+
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
@@ -656,6 +663,13 @@ class ReductionAssessment:
         spectrum_data['DRP_INDEX'] = numpy.asarray(tuple(drpf.spatial_index))
         spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1] \
                 = drpf.mean_sky_coordinates(waverange=self.method['waverange'], offset=True)
+
+#        print(spectrum_data['DRP_INDEX'].shape)
+#        print(spectrum_data['DRP_INDEX'][0:drpf.nx,0])
+#        print(spectrum_data['DRP_INDEX'][0:drpf.nx,1])
+#        print(spectrum_data['SKY_COO'].shape)
+#        print(spectrum_data['SKY_COO'][0:drpf.nx,0])
+#        print(spectrum_data['SKY_COO'][0:drpf.nx,1])
 
 #        pyplot.scatter(spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1], marker='.',
 #                       s=30, color='k', lw=0)
@@ -698,6 +712,7 @@ class ReductionAssessment:
 
         # Construct header
         hdr = fits.Header()
+        hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
         hdr['PA'] = (self.pa, 'Isophotal position angle')
         hdr['ELL'] = (self.ell, 'Isophotal ellipticity (1-b/a)')
 
@@ -706,7 +721,7 @@ class ReductionAssessment:
             cov_hdr = fits.Header()
             indx_col, covar_col, var_col, plane_col = self.correlation.binary_columns(hdr=cov_hdr)
             if plane_col is not None:
-                raise ValueError('Correlation matrices should only be 2D in ReductionAssessments;' \
+                raise ValueError('Correlation matrices should only be 2D in ReductionAssessment;' \
                                  ' code inconsistency!')
 
         # Get the main extension columns and construct the HDUList
@@ -729,5 +744,4 @@ class ReductionAssessment:
         if self.hardcopy:
             write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
-        
 

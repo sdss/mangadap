@@ -49,7 +49,6 @@ procedures.
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..util.idlutils import airtovac
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
         from ..drpfits import DRPFits
@@ -467,7 +466,10 @@ class SpatiallyBinnedSpectra:
         self.spatial_shape = None
         self.nspec = None
         self.spatial_index = None
+        self.spectral_arrays = None
         self._assign_spectral_arrays()
+        self.image_arrays = None
+        self._assign_image_arrays()
         self.dispaxis = None
         self.nwave = None
 
@@ -595,7 +597,7 @@ class SpatiallyBinnedSpectra:
               decide if/how to manipulate DRP header.
 
         """
-        return self.drpf[ext].header
+        return self.drpf[ext].header.copy()
 
 
     def _initialize_header(self, hdr):
@@ -608,7 +610,7 @@ class SpatiallyBinnedSpectra:
             hdr['REFF'] = self.reff
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['FSPECCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
+        hdr['FSPCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
@@ -761,7 +763,36 @@ class SpatiallyBinnedSpectra:
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'FLUXD', 'NPIX' ]
 
-    
+
+    def _assign_image_arrays(self):
+        self.image_arrays = [ 'BINID' ]
+
+
+    @staticmethod
+    def _restructure_map(hdu, ext=['BINID'], inverse=False):
+        """
+        Restructure a mapped quantity such that the axes are [x, y].
+
+        .. warning::
+            - Make sure this function remains current with DRP changes.
+            - Function will return None if the fits file has not yet
+              been read.
+        """
+        if ext is None:
+            raise ValueError('Must provide extensions to restructure.')
+        _ext = ext if isinstance(ext, list) else [ext]
+        if hdu is None:
+            raise ValueError('Input HDUList object is None!')
+        if not isinstance(hdu, fits.HDUList):
+            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+        for i in range(len(_ext)):
+            if len(hdu[_ext[i]].data.shape) != 2:
+                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
+        for i in range(len(_ext)):
+            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
+            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] = hdu[_ext[i]].data.shape
+
+
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -866,15 +897,18 @@ class SpatiallyBinnedSpectra:
             bin_data = self._unbinned_data(bin_indx.ravel())
 
             # Set the HDUList just based on the original DRP data
-            print('Building HDUList...', end='\r')
+#            print('Building HDUList...', end='\r')
             self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr), self.drpf['FLUX'],
                                       self.drpf['IVAR'], 
-                                      fits.ImageHDU(data=mask, header=self.drpf['MASK'].header,
+                                      fits.ImageHDU(data=mask,
+                                                    header=self.drpf['MASK'].header.copy(),
                                                     name='MASK'),
                                       self.drpf['WAVE'],
                                       fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
-                                                    header=self.drpf['FLUX'].header, name='FLUXD'),
-                                      fits.ImageHDU(data=npix, header=self.drpf['FLUX'].header,
+                                                    header=self.drpf['FLUX'].header.copy(),
+                                                    name='FLUXD'),
+                                      fits.ImageHDU(data=npix,
+                                                    header=self.drpf['FLUX'].header.copy(),
                                                     name='NPIX'),
                                       fits.ImageHDU(data=bin_indx, name='BINID'),
                                       fits.BinTableHDU.from_columns( [ fits.Column(name=n,
@@ -882,7 +916,7 @@ class SpatiallyBinnedSpectra:
                                                 array=bin_data[n]) for n in bin_data.dtype.names ],
                                                                name='BINS')
                                       ])
-            print('Building HDUList... done')
+#            print('Building HDUList... done')
 
             # Try to add the covariance data if requested
             if self.method['stackpar']['covar_mode'] not in ['none', None]:
@@ -937,8 +971,9 @@ class SpatiallyBinnedSpectra:
         bin_indx[good_spec] = self.method['binfunc'](x[good_spec], y[good_spec],
                                                      par=self.method['binpar'])
 
-        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
-        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
+        # Done for testing missing bins
+#        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
+#        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
         # Stack the spectra in each bin
         print('Stacking spectra ...')
@@ -1166,16 +1201,21 @@ class SpatiallyBinnedSpectra:
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.ImageHDU(data=flux.data,
-                                                header=self.drpf['FLUX'].header, name='FLUX'),
+                                                header=self.drpf['FLUX'].header.copy(),
+                                                name='FLUX'),
                                   fits.ImageHDU(data=ivar.data,
-                                                header=self.drpf['IVAR'].header, name='IVAR'),
+                                                header=self.drpf['IVAR'].header.copy(),
+                                                name='IVAR'),
                                   fits.ImageHDU(data=mask_bit_values,
-                                                header=self.drpf['MASK'].header, name='MASK'),
+                                                header=self.drpf['MASK'].header.copy(),
+                                                name='MASK'),
                                   self.drpf['WAVE'],
                                   fits.ImageHDU(data=sdev.data,
-                                                header=self.drpf['FLUX'].header, name='FLUXD'),
+                                                header=self.drpf['FLUX'].header.copy(),
+                                                name='FLUXD'),
                                   fits.ImageHDU(data=npix.data,
-                                                header=self.drpf['FLUX'].header, name='NPIX'),
+                                                header=self.drpf['FLUX'].header.copy(),
+                                                name='NPIX'),
                                   fits.ImageHDU(data=bin_indx.reshape(self.drpf.spatial_shape),
                                                 name='BINID'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
@@ -1207,22 +1247,21 @@ class SpatiallyBinnedSpectra:
         """
         Write the hdu object to the file.
         """
-
-        print('restructuring')
         # Restructure the data to match the DRPFits file
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-
+        
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
         write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         # Revert the structure
-        print('reverting')
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -1256,6 +1295,7 @@ class SpatiallyBinnedSpectra:
 
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -1289,8 +1329,6 @@ class SpatiallyBinnedSpectra:
             # Assume if this fails, it's because the keyword doesn't
             # exist
             self.missing_bins = []
-
-        print(self.missing_bins)
 
 
     def unique_bins(self, index=False):

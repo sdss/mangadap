@@ -384,7 +384,7 @@ class PPXFFit(StellarKinematicsFit):
         # Determine the starting and ending pixels
         start, end = numpy.where(fit_indx)[0][ [0,-1] ]
         end += 1
-        print(start, end, len(obj_wave))
+#        print(start, end, len(obj_wave))
 
         # Get the input pixel shift between the object and template
         # wavelength vectors; interpretted by pPXF as a base velocity
@@ -485,7 +485,7 @@ class PPXFFit(StellarKinematicsFit):
             # Get growth statistics for the fractional residuals
             model_par['FRAC_RESID'][i] = residual_growth(frac_resid[_goodpixels],
                                                          [0.25, 0.50, 0.75, 0.90, 0.99])
-            print(model_par['FRAC_RESID'][i])
+#            print(model_par['FRAC_RESID'][i])
 
 #            pyplot.step(obj_wave, flux[i,:], where='mid', linestyle='-', lw=0.5, color='k',
 #                        zorder=3)

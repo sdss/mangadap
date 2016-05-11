@@ -13,10 +13,10 @@ wavelength.  The reference frame of the template wavelengths must be
 defined as either vacuum or air.  It is expected that the object spectra
 to be fit are calibrated to vacuum wavelengths.  When preparing the
 template spectra for analysis, this class will use
-:func:`mangadap.util.idlutils.airtovac` to convert the template
-wavelengths to vacuum.  Finally, one can specify that the template
-library is only valid within a certain wavelength range and above a
-certian flux limit; see :class:`TemplateLibraryDef`.
+`pydl.goddard.astro.airtovac`_ to convert the template wavelengths to
+vacuum.  Finally, one can specify that the template library is only
+valid within a certain wavelength range and above a certian flux limit;
+see :class:`TemplateLibraryDef`.
 
 Preparation of the template library for use in stellar-continuum fitting
 consists of a number of steps as described in the documentation of
@@ -78,12 +78,12 @@ bitmasks for the template library spectra.
         import numpy
 
         from scipy.interpolate import InterpolatedUnivariateSpline
+        from pydl.goddard.astro import airtovac
 
         from ..util.bitmask import BitMask
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_reference_path
         from ..config.defaults import default_dap_file_name
-        from ..util.idlutils import airtovac
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
@@ -107,7 +107,7 @@ bitmasks for the template library spectra.
         drpf = DRPFits(7495, 12703, 'CUBE')
 
         # Build the template library
-        tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
+        tpl_lib = TemplateLibrary('M11MILES', drpf=drpf, directory_path='.')
         # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
 
         # Plot one of the spectra
@@ -131,7 +131,7 @@ bitmasks for the template library spectra.
         from matplotlib import pyplot
 
         # Read the raw template library
-        tpl_lib = TemplateLibrary('M11-MILES', process=False)
+        tpl_lib = TemplateLibrary('M11MILES', process=False)
         # Nothing should be written to disk
 
         # Plot one of the spectra
@@ -213,8 +213,7 @@ bitmasks for the template library spectra.
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
-
-
+.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 """
 
 from __future__ import division
@@ -256,12 +255,13 @@ import time
 import numpy
 
 from scipy.interpolate import InterpolatedUnivariateSpline
+from pydl.goddard.astro import airtovac
 
 from ..util.bitmask import BitMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_reference_path
 from ..config.defaults import default_dap_file_name
-from ..util.idlutils import airtovac
+#from ..util.idlutils import airtovac
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
@@ -1037,12 +1037,12 @@ class TemplateLibrary:
 
         # Mask wavelengths where the spectral resolution will have to be
         # extrapolated.
-        print('Masking extrapolation wavelengths ... ')
+        print('    Masking extrapolation wavelengths ... ')
         sres_wave = self.sres.wave()
         wavelim = numpy.array([ sres_wave[0]/(1.+redshift), sres_wave[-1]/(1.+redshift) ])
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.tplbm, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
-        print('... done.')
+        print('    ... done.')
 
 #        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
 #        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
@@ -1091,7 +1091,8 @@ class TemplateLibrary:
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
         if not self.library['in_vacuum']:
-            self.hdu['WAVE'].data = airtovac(self.hdu['WAVE'].data)
+            self.hdu['WAVE'].data \
+                    = airtovac(self.hdu['WAVE'].data.ravel()).reshape(self.hdu['WAVE'].data.shape)
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
 #        pyplot.show()
 
@@ -1477,7 +1478,7 @@ class TemplateLibrary:
 
         # Warn the user that the file will be overwritten
         if os.path.isfile(ofile):
-            print('WARNING: Overwriting existing file: {0}'.format(self.processed_file))
+            warnings.warn('Overwriting existing file: {0}'.format(self.processed_file))
             remove(ofile)
 
         # Read the raw data

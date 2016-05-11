@@ -288,6 +288,37 @@ def default_dap_reference_path(plate=None, drpver=None, dapver=None, analysis_pa
                 if plate is None else os.path.join(analysis_path, 'ref', str(plate))
 
 
+def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysis_path=None):
+    """
+    Return the path to the top-level path for specific DAP method and a
+    given plate.
+
+    Args:
+        method_dir (str): Name to give subdirectory for the specific
+            method used to create the data.  This is completely
+            unconstrained, except that it must have non-zero length.
+        plate (int): (**Optional**) Plate number, for reference
+            directory of a specific plate.
+        drpver (str): (**Optional**) DRP version.  Default is to use
+            :func:`default_drp_version`.
+        dapver (str): (**Optional**) DAP version.  Default is to use
+            :func:`default_dap_version`.
+        analysis_path (str): (**Optional**) Path to the root analysis
+            directory.  Default is to use :func:`default_analysis_path`
+
+    Returns:
+        str: Path to the directory with DAP output files
+    """
+    if len(method_dir) == 0:
+        raise ValueError('method_dir undefined!')
+
+    # Make sure the DRP version is set
+    if analysis_path is None:
+        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+
+    return os.path.join(analysis_path, method_dir, str(plate))
+
+
 def default_manga_fits_root(plate, ifudesign, mode):
     """
     Generate the main root name for the output MaNGA fits files for a

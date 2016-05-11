@@ -936,6 +936,9 @@ class DRPFits:
         if not isinstance(hdu, fits.HDUList):
             raise TypeError('Input must be an astropy.io.fits.HDUList object.')
         for i in range(len(ext)):
+            if len(hdu[ext[i]].data.shape) != 3:
+                raise ValueError('Selected extension is not three-dimensional: {0}'.format(ext[i]))
+        for i in range(len(ext)):
             hdu[ext[i]].data = numpy.asarray(hdu[ext[i]].data.T, order=('F' if inverse else 'C'))
             hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'], \
                     hdu[ext[i]].header['NAXIS3'] = hdu[ext[i]].data.shape
@@ -957,6 +960,9 @@ class DRPFits:
             raise ValueError('Input HDUList object is None!')
         if not isinstance(hdu, fits.HDUList):
             raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+        for i in range(len(ext)):
+            if len(hdu[ext[i]].data.shape) != 2:
+                raise ValueError('Selected extension is not two-dimensional: {0}'.format(ext[i]))
         for i in range(len(ext)):
             hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'] \
                     = hdu[ext[i]].data.T.shape if inverse else hdu[ext[i]].data.shape
@@ -1071,7 +1077,7 @@ class DRPFits:
         """Print the HDU info page."""
         self.open_hdu(checksum=self.checksum)
         warnings.warn('Shapes returned in \'Dimensions\' may be wrong!')
-        print(self.hdu.info())
+        return self.hdu.info()
 
 
     def do_not_stack_flags(self):
@@ -1531,6 +1537,12 @@ class DRPFits:
         xy = numpy.array([x.reshape(self.nx*self.ny),y.reshape(self.nx*self.ny)]).transpose()
         XY = self.wcs.all_pix2world(xy, 1)
         return XY[:,0].reshape(self.nx, self.ny), XY[:,1].reshape(self.nx, self.ny)
+#        print(self.wcs)
+#        print(xy[0:self.nx,0])
+#        print(xy[0:self.nx,1])
+#        print(XY[0:self.nx,0])
+#        print(XY[0:self.nx,1])
+
 
 
     def world_mesh_range(self, skyright=True):

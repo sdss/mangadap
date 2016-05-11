@@ -34,7 +34,7 @@ Base class for handling bit masks by the DAP.
         import numpy
         import os
         import textwrap
-        from .yanny import yanny
+        from pydl.pydlutils.yanny import yanny
 
 *Class usage examples*:
     Here is an example of reading/creating a TemplateLibrary, then
@@ -88,6 +88,12 @@ Base class for handling bit masks by the DAP.
     | **05 Apr 2016**: (KBW) Added parameters to initialization of
         :class:`BitMask` objects to clean up some of the derived class
         initialization.
+    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
+        instead of internal yanny reader
+
+.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
+.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+
 """
 
 from __future__ import division
@@ -111,7 +117,8 @@ else:
 import numpy
 import os
 import textwrap
-from .yanny import yanny
+from pydl.pydlutils.yanny import yanny
+#from .yanny import yanny
 
 __author__ = 'Kyle B. Westfall'
 
@@ -276,7 +283,7 @@ class BitMask:
     @classmethod
     def from_par_file(cls, f, name):
         r"""
-        Define the object using an SDSS (yanny) parameter file.  This
+        Define the object using an `SDSS-style parameter file`_.  This
         has been tailored to work with the sdssMaskbits.par file in
         IDLUTILS; however, it can work with other like files.
         
@@ -302,7 +309,8 @@ class BitMask:
             raise FileNotFoundError('Could not find ini file: {0}'.format(f))
 
         # Read the full yanny file and only select the maskbits typedef
-        bits = yanny(f)['MASKBITS']
+#        bits = yanny(f)['MASKBITS']
+        bits = yanny(filename=f, raw=True)['MASKBITS']
 
         # Find the bits with the correct designation
         indx = numpy.array(bits['flag']) == name

@@ -371,7 +371,10 @@ class StellarContinuumModel:
         self.spatial_shape = None
         self.nspec = None
         self.spatial_index = None
+        self.spectral_arrays = None
         self._assign_spectral_arrays()
+        self.image_arrays = None
+        self._assign_image_arrays()
         self.dispaxis = None
         self.nwave = None
 
@@ -493,7 +496,7 @@ class StellarContinuumModel:
               decide if/how to manipulate DRP header.
 
         """
-        return self.drpf[ext].header
+        return self.drpf[ext].header.copy()
 
 
     def _initialize_header(self, hdr):
@@ -537,10 +540,6 @@ class StellarContinuumModel:
 
         # Turn on the flag stating that the S/N in the spectrum was
         # below the requested limit
-        print(good_snr.shape)
-        print(good_snr.size)
-        print(self.spatial_shape)
-        print(numpy.prod(self.spatial_shape))
         indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
 
@@ -557,6 +556,10 @@ class StellarContinuumModel:
 
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'MASK' ]
+
+
+    def _assign_image_arrays(self):
+        self.image_arrays = [ 'BINID' ]
 
 
     def file_name(self):
@@ -623,9 +626,6 @@ class StellarContinuumModel:
             raise ValueError('Must provide initial guess velocity.')
         self.guess_sig = 100.0 if guess_sig is None else guess_sig
 
-        print(self.guess_vel)
-        print(self.guess_sig)
-
         # Get the good spectra
         #   - Must have sufficienct S/N, as defined by the input par
         good_snr = self._check_snr()
@@ -635,8 +635,6 @@ class StellarContinuumModel:
 
         # Fill in any remaining binning parameters
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
-        print(self.method['fitpar']['guess_redshift'])
-        print(self.method['fitpar']['guess_dispersion'])
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)
@@ -735,10 +733,10 @@ class StellarContinuumModel:
         Write the hdu object to the file.
         """
 
-        print('restructuring')
         # Restructure the data to match the DRPFits file
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
 
@@ -747,9 +745,9 @@ class StellarContinuumModel:
         write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         # Revert the structure
-        print('reverting')
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
@@ -782,6 +780,7 @@ class StellarContinuumModel:
 
         if self.drpf.mode == 'CUBE':
             DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
+            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
             DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
 
