@@ -1,28 +1,33 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Provides a set of parsing utility functions.
 
+*License*:
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/parser.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    from mangadap.util.exception_tools import print_frame
+        from .exception_tools import print_frame
 
-*TODO*:
+.. todo::
     - Add function that will parse the default MaNGA fits file name (see
-      :func:`mangadap.util.defaults.default_manga_fits_root`.
+      :func:`mangadap.config.defaults.default_manga_fits_root`.
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
@@ -40,7 +45,7 @@ import sys
 if sys.version > '3':
     long = int
 
-from mangadap.util.exception_tools import print_frame
+from .exception_tools import print_frame
 
 def arginp_to_list(inp, evaluate=False, quiet=True):
     """
@@ -54,7 +59,7 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
         quiet (bool): (Optional) Suppress terminal output
 
     Returns:
-        list : The list of the comma-separated values
+        list: The list of the comma-separated values
     """
     out = inp
 
@@ -106,8 +111,8 @@ def list_to_csl_string(flist):
         flist (list): List to convert to a comma-separated string
 
     Returns:
-        str : String with the values in the input list converted to
-            string, using :func:`str`, separated by commas
+        str: String with the values in the input list converted to
+        string, using :func:`str`, separated by commas
     """
     n = len(flist)
     out=str(flist[0])
@@ -125,21 +130,21 @@ def parse_drp_file_name(name):
         name (str): Name of the DRP file.
 
     Returns:
-        int, int, str : The plate, ifudesign, and mode ('RSS' or 'CUBE')
+        int, int, str: The plate, ifudesign, and mode ('RSS' or 'CUBE')
         of the DRP file pulled from the file name.
 
     Raises:
-        Exception: Raised if *name* is not a string or if the file name
-            does not look like a DRP file because it does not include
-            'manga-', '-LOG', or '.fits.gz'.
-
+        TypeError: Raised if *name* is not a string.
+        ValueError: Raised if if the file name does not look like a DRP
+            file because it does not include 'manga-', '-LOG', or
+            '.fits.gz'.
     """
 
     if (type(name) != str):
-        raise Exception("File name must be a string.")
+        raise TypeError("File name must be a string.")
     if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1 or 
         str.find(name, '.fits.gz') == -1):
-        raise Exception("String does not look like a DRP fits file name.")
+        raise ValueError("String does not look like a DRP fits file name.")
 
     plate_start = str.find(name, '-')+1
     plate_end = str.find(name,'-',plate_start)
@@ -164,20 +169,20 @@ def parse_dap_file_name(name):
 
     Returns:
         int, int, str, str, int : The plate, ifudesign, mode ('RSS' or
-            'CUBE'), bin type, and iteration number of the DAP file,
-            pulled from the name of the file.
+        'CUBE'), bin type, and iteration number of the DAP file, pulled
+        from the name of the file.
 
     Raises:
-        Exception: Raised if *name* is not a string or if the file name
-            does not look like a DAP file because it does not include
-            'manga-', '-LOG', 'BIN-', or '.fits'.
-
+        TypeError: Raised if *name* is not a string.
+        ValueError: Raised if if the file name does not look like a DRP
+            file because it does not include 'manga-', '-BIN', or
+            '.fits'.
     """
     if (type(name) != str):
-        raise Exception("File name must be a string.")
+        raise TypeError("File name must be a string.")
     if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1
         or str.find(name, 'BIN-') == -1 or str.find(name, '.fits') == -1):
-        raise Exception("String does not look like a DAP fits file name.")
+        raise ValueError("String does not look like a DAP fits file name.")
 
     plate_start = str.find(name, '-')+1
     plate_end = str.find(name,'-',plate_start)

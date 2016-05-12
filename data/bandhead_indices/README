@@ -1,0 +1,27 @@
+#------------------------------------------------------------------------
+# Columns in the parameter files with a given bandhead-index bandpass
+# filter database are:
+#
+#   INDEX:      
+#       Unique integer identifier of the bandhead.
+#   NAME:
+#       Name of the index, read as a string.
+#   BLUESIDE:   
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass toward the blue of the bandhead feature.
+#   REDSIDE:
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass toward the red of the bandhead feature.
+#   WAVEREF:
+#       Set the reference frame of the wavelengths provided to be in
+#       either air or vacuum using the keywords 'air' or 'vac',
+#       respectively.
+#   INTEGRAND:
+#       Integrand within the passband for the construction of the index,
+#       which must be either 'fnu' or 'flambda'.
+#   ORDER:
+#       Define the order to use when constructing the index.  The
+#       options are either a ratio of red-to-blue or blue-to-red, which
+#       are respectively selected using 'r_b' or 'b_r'.
+#
+#------------------------------------------------------------------------

@@ -65,7 +65,7 @@ PRO MDAP_DEFINE_AVAILABLE_SPECTRAL_INDEX_PARAMETERS, $
         abs_vacuum_wave = intarr(nabs_files)
 
         abs_line_keys[0] = 'LICK'
-        absorption_line_parameters[0] = dapsrc+'/external/absorption_line_indices_definition.dat'
+        absorption_line_parameters[0] = dapsrc+'/external/legacy/absorption_line_indices_definition.dat'
         abs_vacuum_wave[0] = 0
 
 END

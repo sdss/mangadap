@@ -1,25 +1,31 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Provides a set of tools that the MaNGA DAP uses to handle/report raised
 exceptions.
 
+*License*:
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/exception_tools.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import inspect
+        import inspect
+        from os import environ
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)

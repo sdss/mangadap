@@ -1,37 +1,38 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Provides a set of utility function that should **only be used for the
 survey-level execution of the DAP**.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews, Joel Brownstein
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/survey/util.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import subprocess
-    from os import environ
-    from mangadap.util.exception_tools import print_frame
+        import subprocess
+        from os import environ
+        from ..util.exception_tools import print_frame
 
 *Revision history*:
     | **?? ??? 2014**: Original implementation by K. Westfall (KBW).
         Functions pulled (unedited) from file provided by J. Brownstein.
     | **27 Aug 2015**: (KBW) Sphinx documentation.
 """
-# Python 2/3 compliance
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -41,10 +42,9 @@ import sys
 if sys.version > '3':
     long = int
 
-# Main imports
 import subprocess
 from os import environ
-from mangadap.util.exception_tools import print_frame
+from ..util.exception_tools import print_frame
 
 def product_version(product='mangadap', simple=False):
     """

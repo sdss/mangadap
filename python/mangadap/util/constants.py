@@ -1,26 +1,31 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 Defines a catch-all class for useful constants.  These are meant to be
 values that are **not** available elsewhere, such as
 `astropy.constants`_.
 
+*License*:
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/constants.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
+        import numpy
 
 *Revision history*:
     | **28 May 2015**: Original implementation by K. Westfall (KBW)

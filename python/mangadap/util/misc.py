@@ -1,24 +1,29 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 
 A catch-all module with miscellaneous utility functions.
 
+*License*:
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
+
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/misc.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import numpy
+        import numpy
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
@@ -60,8 +65,8 @@ def line_coeff(p1, p2):
             of the two points on the line.
 
     Returns:
-        real, real: Respectively, the slope (:math:`m`) and intercept
-            (:math:`b`) of the line.
+        float: The slope (:math:`m`) and intercept (:math:`b`) of the
+        line, respectively.
 
     .. warning:: 
         Performs **no** checks of the input.
@@ -91,4 +96,29 @@ def where_not(indx, size):
     return (numpy.setdiff1d(numpy.arange(0,size), indx[0]),)
     
 
+def inverse_with_zeros(v, absolute=True):
+    """
+    Invert an array with zeros, and handle them by setting the inverse
+    to zero.
+
+    Args:
+        v (array-like): Array to invert
+        absolute (bool): Forces that the absolute value must be larger
+            than 0.  Otherwise, any non-positive value is also masked
+            with a zero.
+
+    Returns:
+        numpy.ndarray: Inverse of the array when the vector has values
+        that are greater than 0, otherwise set to 0.0.
+    """
+    if isinstance(v, numpy.ma.MaskedArray):
+        if not absolute:
+#            v.mask |= numpy.invert(v > 0)
+            v[numpy.invert(v > 0)] = numpy.ma.masked
+        return 1.0/v
+    _v = numpy.asarray(v).astype(float)
+    indx = numpy.absolute(_v) > 0 if absolute else _v > 0
+    _v[indx] = 1.0/_v[indx]
+    _v[numpy.invert(indx)] = 0.0
+    return _v
 

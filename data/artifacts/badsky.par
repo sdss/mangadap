@@ -1,0 +1,19 @@
+# Created by: Kyle Westfall (KBW)
+# Date: 14 Apr 2016
+#
+# Line wavelengths are in: VACUUM
+#
+# The columns are described in README.
+#
+#   Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[8];
+    double waverange[2];
+    char waveref[3];
+} DAPART;
+
+DAPART  0  SKY  { 5570.0 5586.0 }  vac
+

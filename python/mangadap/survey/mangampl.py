@@ -1,3 +1,5 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Defines a class to keep track of MaNGA MPL dependencies and versioning.
 
@@ -7,8 +9,8 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     module files.  So, even as it is, this class has little utility.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/mangampl.py
@@ -137,13 +139,15 @@ class mangampl:
         """
         Return a list of the available MPLs to analyze, and printing it if requested.
 
+        .. todo:
+            Have this read a config file!
+
         Args:
             write (bool): Write the list of available MPLs to the
             stdout.
 
         Returns:
-            numpy.array : A string array with the MPL dependencies
-
+            numpy.array: A string array with the MPL dependencies
         """
         nmpl = 5
         #                             MPL SDSS_ACCESS  IDLUTILS      CORE       DRP
@@ -173,9 +177,8 @@ class mangampl:
             listed in the above table have an associated module file.
 
         Returns:
-            str : Name of the manga module to load.  E.g. 'manga/mpl3'
-                for MPL-3.
-
+            str: Name of the manga module to load.  E.g. 'manga/mpl3'
+            for MPL-3.
         """
         if self.mplver == 'MPL-1':
             return 'manga/westfall3_mpl1'

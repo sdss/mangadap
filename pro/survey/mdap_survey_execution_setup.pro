@@ -256,12 +256,12 @@
 ;                                Spectral
 ;                 KEY    resolution (ang)                                   DATA
 ;       -------------    ----------------   ------------------------------------
-;           M11-MARCS                2.73    dapsrc/external/templates/m11_marcs
-;          M11-STELIB                3.40   dapsrc/external/templates/m11_stelib
-;          M11-ELODIE                0.55   dapsrc/external/templates/m11_elodie
-;           M11-MILES                2.54    dapsrc/external/templates/m11_miles
-;               MILES                2.50        dapsrc/external/templates/miles
-;              STELIB                3.40       dapsrc/external/templates/stelib
+;           M11-MARCS                2.73    dapsrc/data/stellar_templates/m11_marcs
+;          M11-STELIB                3.40   dapsrc/data/stellar_templates/m11_stelib
+;          M11-ELODIE                0.55   dapsrc/data/stellar_templates/m11_elodie
+;           M11-MILES                2.54    dapsrc/data/stellar_templates/m11_miles
+;               MILES                2.50        dapsrc/data/stellar_templates/miles
+;              STELIB                3.40       dapsrc/data/stellar_templates/stelib
 ;
 ;       See dapsrc/pro/fileio/mdap_read_template_library.pro.  See
 ;       dapsrs/pro/usr/mdap_define_available_template_libraries.pro for
@@ -277,7 +277,7 @@
 ;
 ;                 KEY     FILE
 ;       -------------    -------------------------------------------------------
-;            STANDARD       dapsrc/external/manga_emission_line_list_nominal.par
+;            STANDARD       dapsrc/external/legacy/manga_emission_line_list_nominal.par
 ;
 ;===============================================================================
 ;===============================================================================
@@ -290,7 +290,7 @@
 ;
 ;                 KEY     FILE
 ;       -------------    -------------------------------------------------------
-;                LICK     dapsrc/external/absorption_line_indices_definition.dat
+;                LICK     dapsrc/external/legacy/absorption_line_indices_definition.dat
 ;
 ;===============================================================================
 ;===============================================================================

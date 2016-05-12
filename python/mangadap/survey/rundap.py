@@ -1,54 +1,56 @@
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """
 Defines the class used to automate the execution of the MaNGA DAP at
 Utah.
 
 *License*:
-    Copyright (c) 2015, Kyle B. Westfall, Brett H. Andrews, Joel Brownstein
-    Licensed under BSD 3-clause license - see LICENSE.rst
+    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+        Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
     $MANGADAP_DIR/python/mangadap/survey/rundap.py
 
-*Python2/3 compliance*::
+*Imports and python version compliance*:
+    ::
 
-    from __future__ import division
-    from __future__ import print_function
-    from __future__ import absolute_import
-    from __future__ import unicode_literals
-    
-    import sys
-    if sys.version > '3':
-        long = int
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
 
-*Imports*::
+        import sys
+        if sys.version > '3':
+            long = int
 
-    import subprocess
-    import time
-    import os.path
-    import pbs.queue
-    import numpy
-    import glob
+        import subprocess
+        import time
+        import os.path
+        import numpy
+        import glob
 
-    from os import environ, makedirs
-    from argparse import ArgumentParser
+        try:
+            import pbs.queue
+        except:
+            print('WARNING: Could not import pbs.queue!  Any cluster submission will fail!')
 
-    from mangadap.survey.drpcomplete import DRPComplete
-    from mangadap.drpfits import DRPFits
-    from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-    from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-    from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
-    from mangadap.util.defaults import default_dap_par_file, default_dap_file_name
-    from mangadap.util.defaults import default_dap_source, default_cube_covariance_file
-    from mangadap.util.exception_tools import print_frame
-    from mangadap.util.parser import arginp_to_list
-    from mangadap.survey.mangampl import mangampl
-    from mangadap.survey import util
+        from os import environ, makedirs
+        from argparse import ArgumentParser
+
+        from .drpcomplete import DRPComplete
+        from ..drpfits import DRPFits
+        from ..config.defaults import default_redux_path, default_drp_directory_path
+        from ..config.defaults import default_analysis_path, default_dap_reference_path
+        from ..config.defaults import default_dap_file_root, default_dap_plan_file
+        from ..config.defaults import default_dap_par_file, default_dap_file_name
+        from ..config.defaults import default_dap_source, default_cube_covariance_file
+        from ..util.exception_tools import print_frame
+        from ..util.parser import arginp_to_list
+        from .mangampl import mangampl
+        from . import util
 
 *Class usage examples*:
-
-    .. todo::
-
-        Add some usage comments here!
+    Add some usage comments here!
 
 *Revision history*:
     | **?? Nov 2014**: Architecture setup by J. Brownstein
@@ -73,7 +75,7 @@ Utah.
         anything before, commented out _write_module_commands for the
         time-being; removed file_root() and parameter_file() functions
         in favor of adding/using functions from
-        :mod:`mangadap.util.defaults`; version number set to 1_1_0.
+        :mod:`mangadap.config.defaults`; version number set to 1_1_0.
     | **06 Oct 2015**: (KBW) Added functionality to select the types of
         additional output.  Minor changes to allow for DR13 QA plots.
     | **22 Oct 2015**: (KBW) Added check that the selected MPL versions match
@@ -109,27 +111,27 @@ import time
 import os.path
 import numpy
 import glob
+import warnings
 
 try:
     import pbs.queue
 except:
-    print('WARNING: Could not import pbs.queue!  Any cluster submission will fail!')
+    warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
 from os import environ, makedirs
 from argparse import ArgumentParser
 
-# DAP imports
-from mangadap.survey.drpcomplete import DRPComplete
-from mangadap.drpfits import DRPFits
-from mangadap.util.defaults import default_redux_path, default_drp_directory_path
-from mangadap.util.defaults import default_analysis_path, default_dap_directory_path
-from mangadap.util.defaults import default_dap_file_root, default_dap_plan_file
-from mangadap.util.defaults import default_dap_par_file, default_dap_file_name
-from mangadap.util.defaults import default_dap_source, default_cube_covariance_file
-from mangadap.util.exception_tools import print_frame
-from mangadap.util.parser import arginp_to_list
-from mangadap.survey.mangampl import mangampl
-from mangadap.survey import util
+from .drpcomplete import DRPComplete
+from ..drpfits import DRPFits
+from ..config.defaults import default_redux_path, default_drp_directory_path
+from ..config.defaults import default_analysis_path, default_dap_reference_path
+from ..config.defaults import default_dap_file_root, default_dap_plan_file
+from ..config.defaults import default_dap_par_file, default_dap_file_name
+from ..config.defaults import default_dap_source, default_cube_covariance_file
+from ..util.exception_tools import print_frame
+from ..util.parser import arginp_to_list
+from .mangampl import mangampl
+from . import util
 
 __author__ = 'Kyle Westfall'
 
@@ -147,7 +149,7 @@ class rundap:
 
     .. todo::
 
-        - Have :func:`read_arg` return the boolean for :attra:`version`
+        - Have :func:`_read_arg` return the boolean for :attr:`version`
           instead of keeping it as an attribute.
 
     Args:
@@ -179,16 +181,16 @@ class rundap:
                 
         redux_path (str): (Optional) The top-level path with the DRP
             files used to override the default defined by
-            :func:`mangadap.util.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.default_redux_path`.
         dapver (str): (Optional) The DAP version to use for the
             analysis, used to override the default defined by
-            :func:`mangadap.util.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.default_dap_version`.
         analysis_path (str): (Optional) The top-level path for the DAP
             output files, used to override the default defined by
-            :func:`mangadap.util.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.default_analysis_path`.
         plan_file (str): (Optional) Name of the plan file to use for ALL
             DRP data in this run, used to override the default defined
-            by :func:`mangadap.util.defaults.default_dap_plan_file`.
+            by :func:`mangadap.config.defaults.default_dap_plan_file`.
         platelist (int or str): (Optional) List of plates to analyze;
             default is to search the :attr:`redux_path` for any DRP
             files.
@@ -219,7 +221,7 @@ class rundap:
         platetargets (str or list): (Optional) List of platetargets
             files to search through to find any given plate-ifudesign
             combination.  Default is returned as the first element in
-            :func:`mangadap.util.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.default_plate_target_files`.
         covar (bool): (Optional) Calculate and output the covariance
             matrix. Default is True.
         dapproc (bool): (Optional) Flag to execute the main DAP
@@ -496,7 +498,7 @@ class rundap:
         # TODO: Does an error need to be thrown here, or just warn user.
         # Use warnings class?
         if self.clobber and not self.all:
-            print('Clobber keyword can only be set if all specified (-a,--all)!')
+            warnings.warn('Clobber keyword can only be set if all specified (-a,--all)!')
             self.clobber = None
 
         # If redo, platelist and ifudesignlist MUST be provided
@@ -787,18 +789,18 @@ class rundap:
 #       exit()
 
 
-    def _check_path(self, plate, ifudesign):
+    def _check_path(self, plate):
         """
         Check if the output path exists for a given plate and ifudesign.
         If not, create it.  The output path is set using
-        :func:`mangadap.util.defaults.default_dap_directory_path`.
+        :func:`mangadap.config.defaults.default_dap_reference_path`.
 
         Args:
             plate (int): Plate number
             ifudesign (int): ifudesign number
         """
-        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
-                                          ifudesign)
+        path = default_dap_reference_path(plate=plate, drpver=self.mpl.drpver, dapver=self.dapver,
+                                          analysis_path=self.analysis_path)
         if not os.path.isdir(path):
             makedirs(path)
 
@@ -824,7 +826,7 @@ class rundap:
         cluster queues both at Utah and using the sciama cluster at
         Portsmouth.  The available queues are:
 
-        +===========+========+======+===========+
+        +-----------+--------+------+-----------+
         |     Queue |  Nodes |  PPN |   GB/core |
         +===========+========+======+===========+
         | sciama1.q |     80 |   12 |         2 |
@@ -929,7 +931,7 @@ class rundap:
         the 3D stage.  Ideally, this is automatically run by crontab.
 
         Raises:
-            Exception - *Always* raised because daily mode is currently
+            Exception: *Always* raised because daily mode is currently
                 unavailable for the DAP.
         """
 
@@ -966,7 +968,7 @@ class rundap:
             performed.
 
         Raises:
-            Exception - Raised if qos is requested; this mode is only
+            Exception: Raised if qos is requested; this mode is only
                 allowed for the daily run.
         """
         self.label = '{0}_clobber'.format(self.label) if clobber else '{0}_all'.format(self.label)
@@ -991,13 +993,13 @@ class rundap:
         any existing results and is called manually.
 
         Raises:
-            Exception - Raised if qos is requested; this mode is only
+            Exception: Raised if qos is requested; this mode is only
                 allowed for the daily run.
         """
         # A TEMPORARY PROVISION FOR THE DR13 QA!
         self.label = '{0}_dr13qa'.format(self.label)
         if self.qos is not None:
-            print('WARNING: USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
+            warnings.warn('USE OF sdss-fast WITH --redo SHOULD ONLY BE PROVISIONAL FOR DR13 QA!')
 
 #        self.label = '{0}_redo'.format(self.label)
 #        # In here, qos should never be anything but None; always set in daily
@@ -1031,7 +1033,7 @@ class rundap:
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
-        :func:`mangadap.util.defaults.default_dap_file_root`.
+        :func:`mangadap.config.defaults.default_dap_file_root`.
 
         Args:
             plate (int): Plate number
@@ -1042,8 +1044,8 @@ class rundap:
         """
         # Get the name of the status file        
         root = default_dap_file_root(plate, ifudesign, mode)
-        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path, plate,
-                                          ifudesign)
+        path = default_dap_reference_path(plate=plate, drpver=self.mpl.drpver, dapver=self.dapver,
+                                          analysis_path=self.analysis_path)
         statfile = os.path.join(path, '{0}.{1}'.format(root,status))
 
         # Touch the file by opening and closing it
@@ -1069,11 +1071,10 @@ class rundap:
                 used to pass the plate, ifudesign, and mode values.
 
         Returns:
-            bool : Flag that the DAP has finished (True) or not (False).
-
+            bool: Flag that the DAP has finished (True) or not (False).
         """
-        path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
-                                          drpf.plate, drpf.ifudesign)
+        path = default_dap_reference_path(plate=drpf.plate, drpver=self.mpl.drpver,
+                                          dapver=self.dapver, analysis_path=self.analysis_path)
         if not os.path.isdir(path):
             return False
 
@@ -1100,7 +1101,7 @@ class rundap:
               very close to the combination of all=True, clobber=False.
 
         Raises:
-            Exception - **Always** raised because function is not
+            Exception: **Always** raised because function is not
                 correctly implemented.
         """
 
@@ -1131,9 +1132,8 @@ class rundap:
                 output.
 
         Returns:
-            list : A list of :class:`mangadap.drpfits.DRPFits` objects
-                defining the DRP files that should be analyzed.
-
+            list: A list of :class:`mangadap.drpfits.DRPFits` objects
+            defining the DRP files that should be analyzed.
         """
 
         # Get the full list of available DRP files that can be processed
@@ -1161,8 +1161,8 @@ class rundap:
         implicitly True.
 
         Returns:
-            list : A list of :class:`mangadap.drpfits.DRPFits` objects
-                defining the DRP files that should be analyzed.
+            list: A list of :class:`mangadap.drpfits.DRPFits` objects
+            defining the DRP files that should be analyzed.
         """
         return self.selected_drpfile_list()
 
@@ -1175,8 +1175,8 @@ class rundap:
         creation of the DRPComplete object (:attr:`drpc`).
 
         Returns:
-            list : A list of :class:`mangadap.drpfits.DRPFits` objects
-                defining the available DRP files.
+            list: A list of :class:`mangadap.drpfits.DRPFits` objects
+            defining the available DRP files.
         """
         # Number of plates (CUBE only)
         n_plates = len(self.drpc.data['PLATE'])
@@ -1210,8 +1210,8 @@ class rundap:
         (:attr:`drpc`).
 
         Returns:
-            list : A list of :class:`mangadap.drpfits.DRPFits` objects
-                defining the selected DRP files.
+            list: A list of :class:`mangadap.drpfits.DRPFits` objects
+            defining the selected DRP files.
         """
         # Number of plates (CUBE only); self.drpc.platelist and
         # self.drpc.ifudesignlist should be the same size!
@@ -1283,9 +1283,9 @@ class rundap:
                 files.
 
         Returns:
-            str : Three strings with the name of the written script
-                file, the file for the output sent to STDOUT, and the
-                file for the output sent to STDERR.
+            str: Three strings with the name of the written script file,
+            the file for the output sent to STDOUT, and the file for the
+            output sent to STDERR.
 
         Raises:
             Exception: Raised if DAP module version is not correctly
@@ -1293,15 +1293,16 @@ class rundap:
         """
 
         # Check the path exists, creating it if not
-        self._check_path(plate, ifudesign)
+        self._check_path(plate)
 
         # TODO: Check that *.ready file exists?
 
         # Generate the DRP input and DAP output paths, and the DAP
         # source path
         drppath = default_drp_directory_path(self.mpl.drpver, self.redux_path, plate)
-        output_path = default_dap_directory_path(self.mpl.drpver, self.dapver, self.analysis_path,
-                                                 plate, ifudesign)
+        output_path = default_dap_reference_path(plate=plate, drpver=self.mpl.drpver,
+                                                 dapver=self.dapver,
+                                                 analysis_path=self.analysis_path)
         dap_source = default_dap_source()
         file_root = default_dap_file_root(plate, ifudesign, mode)
             
@@ -1463,14 +1464,13 @@ class rundap:
                 files.
         
         Returns:
-            str : Three strings with the name of the written script
-                file, the file for the output sent to STDOUT, and the
-                file for the output sent to STDERR, as provided by the
-                call to :func:`write_compute_script`.
-
+            str: Three strings with the name of the written script file,
+            the file for the output sent to STDOUT, and the file for the
+            output sent to STDERR, as provided by the call to
+            :func:`write_compute_script`.
         """
         # Check that the path exists, creating it if not
-        self._check_path(drpf.plate, drpf.ifudesign)
+        self._check_path(drpf.plate)
 
         # Create the parameter file
         parfile = default_dap_par_file(self.mpl.drpver, self.dapver, self.analysis_path, None,

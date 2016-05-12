@@ -1,0 +1,14 @@
+# Columns in the artifact parameter files are:
+#
+#   INDEX:
+#       Unique integer identifier for the artifact.
+#   NAME:
+#       Name of the artifact.  Does not need to be unique.
+#   WAVERANGE:
+#       The observed wavelength range affected by the artifact.
+#   WAVEREF:
+#       Set the reference frame of the wavelengths provided to be in
+#       either air or vacuum using the keywords 'air' or 'vac',
+#       respectively.
+#
+#------------------------------------------------------------------------
