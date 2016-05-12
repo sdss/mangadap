@@ -1,0 +1,37 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+MIUSCAT-THIN TEMPLATE LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+Library downloaded from:
+
+http://miles.iac.es/pages/webtools/tune-ssp-models.php
+
+setting SSP models to 'MIUSCAT' and leaving the rest as the default
+values.  This returns the included set of 200 SSP templates.  These are
+the templates provided in the ../miuscat/ library.  This library
+downselects the available parameters by ignoring the lowest metallicity
+group and removing every other age with age < 13.8 Gyr.  The resulting
+parameter space is:
+
+    - Salpeter IMF (unimodel IMF with slope=1.3)
+    - [M/H] = -0.4, 0.0, 0.22
+    - Age = 0.0631, 0.0794, 0.1000, 0.1259, 0.1585, 0.1995, 0.2512,
+            0.3162, 0.3981, 0.5012, 0.6310, 0.7943, 1.0000, 1.2589,
+            1.5849, 1.9953, 2.5119, 3.1623, 3.9811, 5.0119, 6.3096,
+            7.9433, 10.0000, 12.5893
+
+This yields a total of 72 templates.
+
+As with the data in ../miuscat, these spectra have been downloaded from
+the website and included without modification in the DAP.  The name of
+the file provides the parameters directly, and the fits header provides
+much more information.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall, 26 Apr 2015
+------------------------------------------------------------------------
+
+

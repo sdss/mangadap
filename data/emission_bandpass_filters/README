@@ -1,0 +1,28 @@
+#------------------------------------------------------------------------
+# Columns in the emission-line bandpass filter database parameter files
+# are:
+#
+#   INDEX:      
+#       Unique integer identifier of the emission line.  Used when tying
+#       lines together.
+#   NAME:
+#       Name of the element, read as a string.
+#   LAMBDA:
+#       Rest frame wavelength of the emission line to analyze.
+#   WAVEREF:
+#       Set the reference frame of the wavelengths provided to be in
+#       either air or vacuum using the keywords 'air' or 'vac',
+#       respectively.
+#   PRIMARY:   
+#       A two-element vector with the starting and ending wavelength for
+#       the primary bandpass surrounding the emission line(s).
+#   BLUESIDE:   
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass to the blue of the primary band.  Used to set the
+#       continuum level near the emission line.
+#   REDSIDE:
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass to the red of the primary band.  Used to set the
+#       continuum level near the emission line.
+#
+#------------------------------------------------------------------------

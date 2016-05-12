@@ -1,0 +1,179 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+M11-STELIB TEMPLATE LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+From README_M11.txt:
+------------------------------------------------------------------------
+
+THIS README DESCRIBES THE FILES CONTAINING THE STELLAR POPULATION MODELS
+OF MARASTON & STROMBACK (2011, MNRAS). MODELS ARE AVAILABLE AT
+WWW.MARASTON.EU/M11/.
+ 
+These models have the same stellar energetics and atmospheric parameters
+as the standard Maraston (2005, M05) models. The difference is in the
+individual stellar spectra that are assigned to the various synthetic
+stars according to their effective temperatures and gravities (Teff and
+log). These spectra can be either empirical or theoretical, and in some
+cases a mixture of them. 
+
+In particular, the empirically-based models have been extended in
+wavelength coverage into the UV, using the high-resolution models
+published in Maraston et al. (2009, 493, 425), which are based on the
+theoretical spectral library UVBLUE (Rodrigues-Merino et al. 2005). This
+extension was made at various metallicities in case of the MILES-based
+models, and at solar metallicity for STELIB and ELODIE.  The UV-extended
+models will be indicated using the addition 'UVextended' to the file
+name (see below).
+
+We also provide a version of the Pickles-based models, which extend to
+the UV, using the models with the theoretical UV. In this case since is
+not an extension we call then 'UVtheoretical'.
+
+In general, models should be chosen according to the spectral resolution
+that is needed by observations, though differences induced by the use of
+different spectral libraries exist.  See the paper for a description or
+contact the authors. 
+
+GENERAL NAMING:
+
+------------------------------------------------------------------------
+ssp_M11'_'library'_'any eventual extension'.'imf''zxxx'.'HB morphology': 
+------------------------------------------------------------------------
+
+  * 'ssp_M11': Simple Stellar Populations by Maraston & Stromback  2011
+
+  * 'library': reference to the adopted stellar library, e.g. Pickles,
+    MILES, STELIB, ELODIE,   MARCS, see below for a detailed
+    description. 					
+  
+  * 'any eventual extension': it refers to whether the models have been
+                              extended in wavelength coverage by merging
+                              with other models or have been revised
+                              with respect to the original library.
+                              Cases are:
+
+     'UVextended': models extended into the UV by merging with
+                   theoretically-based SSPs
+
+     'UVtheoretical': only for Pickles-based models. The Pickles-based
+                      UV as been substituted with the theoretical UV
+     'nearIRextended': 
+     'revisednearIRslope': only for MILES-based models of solar
+                           metallicity. The slope of the models longward
+                           6000 AA has been slightly revised as
+                           described in the Appendix of the paper.
+
+  * 'imf': Initial Mass Funcion,IMF, namely:
+
+    '.ss' ==> Salpeter IMF
+    '.kr' ==> Kroupa IMF
+    '.cha' ==> Chabrier IMF
+
+    (Other IMFs could be obtained contacting the authors)
+
+  * 'zxxx': chemical composition, as it follows (notation identical to
+            M05)
+
+     z10m4=0.0001
+     z0001=0.001
+     z001=0.01
+     z002=0.02 (solar metallicity)
+     z004=0.04 	
+
+  *  'Horizontal Branch morphology': following the notation of M05 this
+                                     can be rhb=intermediate-red and
+                                     bhb=intermediate-blue. Relevant to
+                                     sub-solar metallicities.
+
+
+------------------------------------------------------------------------
+STELIB-BASED MODELS: These models are based on the stellar library
+                     STELIB by Le Borgne et al. (2003).
+
+                  * Cool high-resolution theoretical stars (Gustafsson
+                    et al. 2008) have been added to counter inadequacies
+                    in the STELIB library. 
+
+                  * Many spectra in the library are not complete over
+                    the quoted wavelength
+                    range, which limits the actual wavelength range of
+                    the youngest ages at solar, and all ages at
+                    non-solar metallicities.
+
+                  * Somewhat coarse sampling of stellar parameter space
+                    at non-solar metallicities may affect the
+                    reliability of these models.
+
+			        Resolution: 3.1-3.4 AA (fwhm)
+			        0.5 AA sampling
+
+
+ssp_M11_STELIB.'imf'z001: 24 ages, 200 Myr to 15 Gyr
+				          3201.0 - 9296.5 AA
+				          12192 flux points
+				          !Usable wavelength range for all ages is
+				            3201.0 - 7900.0 AA!
+
+ssp_M11_STELIB_UVextended.ssz001: 21 ages, 200 Myr to 12 Gyr
+				                  1001.0 - 9296.5 AA
+				                  16952 flux points
+
+                                  !Usable wavelength range for all ages
+                                    is 1001.0 - 7900.0 AA!
+
+ssp_M11_STELIB.'imf'z002: 39 ages, 30 Myr to 15 Gyr
+				          3201.0 - 9296.5 AA
+				          12192 flux points
+
+ssp_M11_STELIB_UVextended.ssz002: 36 ages, 30 Myr to 12 Gyr
+				                  1001.0 - 9296.5 AA 
+				                  16592 flux points
+                                  UV-extended version, models merged
+                                      around 3750 AA.
+
+ssp_M11_STELIB.'imf'z004: 22 ages, 400 Myr to 15 Gyr
+				          3201.0 - 9296.5 AA
+				          12192 flux points
+				          !Usable wavelength range for all ages is
+                            3201.0 - 7900.0 AA!
+
+ssp_M11_STELIB_UVextended.ssz004: 18 ages, 400 Myr to 12 Gyr
+				                  1001.0 - 9296.5 AA
+				                  16952 flux points
+                                  !Usable wavelength range for all ages
+                                    is 1001.0 - 7900.0 AA!
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+DAP NOTES:
+
+This library only contains the following templates:
+
+    ssp_M11_MILES.ss.z002
+
+That is, this template set only contains the solar metallicity models,
+largely included as a separate template library to take advantage of the
+extended spectral range of these models.  Models with other
+metallicities have a limited spectral range based on the note in the
+README_M11.txt file.
+
+!Usable wavelength range for all ages is 3201.0 - 7900.0 AA!
+
+The original library has a sampling of 0.5 A/pixel, and a FWHM of the
+resolution element of 3.1 angstroms.  I resampled this to 1 A/pixel to
+reduce the oversampling of the spectra.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall, 07 Oct 2015
+------------------------------------------------------------------------
+
