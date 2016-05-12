@@ -67,62 +67,62 @@ PRO MDAP_DEFINE_AVAILABLE_TEMPLATE_LIBRARIES, $
 
         i = 0
         tpl_library_keys[i] = 'M11-MARCS'
-        template_libraries[i] = dapsrc+'/external/templates/m11_marcs/*_s.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/m11_marcs/*_s.fits'
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'M11-STELIB'
-        template_libraries[i] = dapsrc+'/external/templates/m11_stelib/*_s.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/m11_stelib/*_s.fits'
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'M11-STELIB-ZSOL'
-        template_libraries[i] = dapsrc+'/external/templates/m11_stelib_zsol/*_s.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/m11_stelib_zsol/*_s.fits'
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'M11-ELODIE'
-        template_libraries[i] = dapsrc+'/external/templates/m11_elodie/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/m11_elodie/*.fits'
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'M11-MILES'
-        template_libraries[i] = dapsrc+'/external/templates/m11_miles/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/m11_miles/*.fits'
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'MILES'
-        template_libraries[i] = dapsrc+'/external/templates/miles/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/miles/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'MILES-AVG'
-        template_libraries[i] = dapsrc+'/external/templates/miles_avg/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/miles_avg/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'MILES-THIN'
-        template_libraries[i] = dapsrc+'/external/templates/miles_thin/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/miles_thin/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'STELIB'
-        template_libraries[i] = dapsrc+'/external/templates/stelib/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/stelib/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'MIUSCAT'
-        template_libraries[i] = dapsrc+'/external/templates/miuscat/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/miuscat/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++
 
         tpl_library_keys[i] = 'MIUSCAT-THIN'
-        template_libraries[i] = dapsrc+'/external/templates/miuscat_thin/*.fits'
+        template_libraries[i] = dapsrc+'/data/stellar_templates/miuscat_thin/*.fits'
         ; TODO: Unknown if this library is in vacuum or in air
         tpl_vacuum_wave[i] = 0
         i++

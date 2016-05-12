@@ -52,7 +52,7 @@ Container class for the database of absorption-line indices to measure.
 
     Finally, you can create your own `SDSS-style parameter file`_ with
     your own absorption-line indices to use.  Example files are provided
-    in ``$MANGADAP_DIR/external/absorption_indices`` with a companion
+    in ``$MANGADAP_DIR/data/absorption_indices`` with a companion
     ``README`` file.  With your own file, you have to point to the file
     using :class:`SpectralFeatureDBDef`, which you can then pass to
     :class:`AbsorptionIndexDB`::

@@ -83,7 +83,7 @@ support classes and functions.
 
     Finally, you can create your own `SDSS-style parameter file`_ with
     your own emission lines to fit.  Example files are provided in
-    ``$MANGADAP_DIR/external/emission_lines`` with a companion
+    ``$MANGADAP_DIR/data/emission_lines`` with a companion
     ``README`` file.  With your own file, you have to point to the file
     using :class:`EmissionLineDBDef`, which you can then pass to
     :class:`EmissionLineDB`::

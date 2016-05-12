@@ -833,6 +833,10 @@ class EmissionLineMoments:
         sidebands = numpy.append(self.momdb['blueside'], self.momdb['redside'], axis=0)
         bandpass = numpy.append(self.momdb['primary'], self.momdb['redside'], axis=0)
         for i in range(nspec):
+
+            print('Measuring emission-line moments in spectrum: {0}/{1}'.format(i+1,nspec),
+                  end='\r')
+
             # Shift the sidebands to the appropriate redshift
             _sidebands = sidebands*(1.0+redshift[i])
             _mainbands = self.momdb['primary']*(1.0+redshift[i])
@@ -893,6 +897,7 @@ class EmissionLineMoments:
                             = self.bitmask.turn_on(hdu_measurements['MASK'][i,:],
                                                    'NO_ABSORPTION_CORRECTION')
 
+        print('Measuring emission-line moments in spectrum: {0}/{0}'.format(nspec))
         return hdu_measurements
         
 

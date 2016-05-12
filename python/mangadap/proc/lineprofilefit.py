@@ -227,20 +227,6 @@ class NCompLineProfile:
                     if self.par is None else self.profile_class(*self.par[i])
 
 
-    def _assign_par(self, par):
-        _par = par.ravel() if len(par.shape) == 2 else par
-        if len(_par) != self.npar:
-            raise ValueError('Incorrect number of parameters provided')
-        self.par = _par.reshape(self.ncomp,-1)
-
-
-    def _assign_err(self, err):
-        _err = err.ravel() if len(err.shape) == 2 else err
-        if len(_err) != self.npar:
-            raise ValueError('Incorrect number of parameters provided')
-        self.err = _err.reshape(self.ncomp,-1)
-
-
     def __call__(self, x, par=None):
         return self.sample(x,par)
 
@@ -260,24 +246,38 @@ class NCompLineProfile:
         return x*x*self._quick_sample(x)
     
 
+    def assign_par(self, par):
+        _par = par.ravel() if len(par.shape) == 2 else par
+        if len(_par) != self.npar:
+            raise ValueError('Incorrect number of parameters provided')
+        self.par = _par.copy().reshape(self.ncomp,-1)
+
+
+    def assign_err(self, err):
+        _err = err.ravel() if len(err.shape) == 2 else err
+        if len(_err) != self.npar:
+            raise ValueError('Incorrect number of parameters provided')
+        self.err = _err.copy().reshape(self.ncomp,-1)
+
+
     def sample(self, x, par=None):
         if par is not None:
-            self._assign_par(par)
+            self.assign_par(par)
         return self._quick_sample(x)
 
 
     def flux(self, par=None):
         if par is not None:
-            self._assign_par(par)
+            self.assign_par(par)
         return numpy.sum( [ self.profile_class.flux(*p) \
                             for p in numpy.take(self.par,numpy.arange(self.ncomp),axis=0) ] )
 
 
     def flux_err(self, par=None, err=None):
         if par is not None:
-            self._assign_par(par)
+            self.assign_par(par)
         if err is not None:
-            self._assign_err(err)
+            self.assign_err(err)
         return numpy.sum([ self.profile_class.flux_err(*p, *e) \
                            for p,e in zip(numpy.take(self.par,numpy.arange(self.ncomp),axis=0),
                                           numpy.take(self.err,numpy.arange(self.ncomp),axis=0)) ] )
@@ -289,7 +289,7 @@ class NCompLineProfile:
             impose some reasonable limits for the integrals
         """
         if par is not None:
-            self._assign_par(par)
+            self.assign_par(par)
 
         if self.ncomp == 1:
             return self.profile_class.moment(order, *self.par[0,:])
@@ -314,9 +314,9 @@ class NCompLineProfile:
             return 0.0
 
         if par is not None:
-            self._assign_par(par)
+            self.assign_par(par)
         if err is not None:
-            self._assign_err(err)
+            self.assign_err(err)
 
         if self.ncomp == 1:
             return self.profile_class.moment_err(order, *self.par[0,:], *self.err[0,:])
@@ -581,17 +581,21 @@ class LineProfileFit:
         return (self.y-ymodel)
 
 
-    def _calculate_covariance_matrix(self):
+    def _calculate_covariance_matrix(self, verbose=0):
         if self.result is None or self.err is None:
             if self.result is not None:
                 warnings.warn('Cannot calculate covariance matrix without error vector!')
             return None
         invsig = numpy.array([numpy.ma.power(self.err,-1.)]*self.result.jac.shape[1]).T
         a = (invsig.ravel()*self.result.jac.ravel()).reshape(self.result.jac.shape)
+        a = numpy.dot(a.T,a)
+        if verbose > 0:
+            print('Curvature:')
+            print('    ', a)
         try:
-            return numpy.linalg.inv(numpy.dot(a.T,a))
+            return numpy.linalg.inv(a)
         except:
-            return numpy.linalg.pinv(numpy.dot(a.T,a))
+            return numpy.linalg.pinv(a)
 
 
     def _quick_sample(self, x):
@@ -647,6 +651,7 @@ class LineProfileFit:
                                              self.par, bounds=self.bounds, jac='2-point',
                                              #method='lm', loss='linear', verbose=1)
                                              method='trf', loss='linear', verbose=verbose)
+
 #        try:
 #            self.result = optimize.least_squares(self._resid if self.err is None else self._chi,
 #                                                 self.par, bounds=self.bounds, jac='2-point',
@@ -662,7 +667,14 @@ class LineProfileFit:
 
         self.cov = None
         if construct_covariance:
-            self.cov = self._calculate_covariance_matrix()
+            self.cov = self._calculate_covariance_matrix(verbose=verbose)
+
+        if verbose > 0:
+            print('Result: ')
+            print('    ', self.result.x)
+            if self.cov is not None:
+                print('Covariance: ')
+                print('    ', self.cov)
 
 
 class ElricPar(ParSet):
@@ -766,11 +778,52 @@ class ElricFittingWindow:
         self.line_index = line_index
         self.restwave = restwave
         self.profile_set = profile_set
+        self.init_par = numpy.array([ p.par.copy().ravel() for p in self.profile_set ])
         self.fixed_par = fixed_par
         self.bounds = bounds
         self.output_model = output_model
         self.tied_pairs = tied_pairs
         self.tied_funcs = tied_funcs
+
+
+    def append(self, db_indx, line_index, restwave, profile, fixed_par, bounds, output_model):
+        """
+        Append another line to the fitting window.  Must be a single line!
+        """
+
+        # Check that input is for a single line
+        if not isinstance(db_indx, int) or not isinstance(line_index, (int, numpy.int64)):
+            raise TypeError('Appended index must be a single integer.')
+        if not isinstance(restwave, float):
+            raise TypeError('Appended restwavelength must be a single float.')
+        if not isinstance(profile, NCompLineProfile):
+            raise TypeError('Appended profile must have type NCompLineProfile.')
+        if len(fixed_par.shape) != 1 or len(fixed_par) != profile.npar:
+            raise TypeError('Appended fixed parameter must be a vector with the correct length.')
+        if len(bounds.shape) != 2 or bounds.shape[0] != profile.npar or bounds.shape[1] != 2:
+            raise TypeError('Appended bounds must have shape: {0}'.format(tuple(profile.npar,2)))
+        if not isinstance(output_model, bool):
+            raise TypeError('Flag to output model must be boolean.')
+        
+        self.nlines += 1
+        self.db_indx = numpy.append(self.db_indx, db_indx)
+        self.line_index = numpy.append(self.line_index, line_index)
+        self.restwave = numpy.append(self.restwave, restwave)
+        self.profile_set = numpy.append(self.profile_set, profile)
+        self.init_par = numpy.append(self.init_par, profile.par.copy(), axis=0)
+        self.fixed_par = numpy.append(self.fixed_par, fixed_par.astype(bool).reshape(1,-1), axis=0)
+        self.bounds = numpy.append(self.bounds, bounds.reshape(1,-1,2), axis=0)
+        self.output_model &= output_model
+
+
+    def reset_init_mean(self, indx, newmean):
+        self.profile_set[indx].set_mean(newmean)
+        self.init_par[indx,:] = self.profile_set[indx].par
+
+
+    def reinit_profiles(self):
+        for i in range(self.nlines):
+            self.profile_set[i].assign_par(self.init_par[i,:])
 
 
 class Elric(EmissionLineFit):
@@ -945,30 +998,15 @@ class Elric(EmissionLineFit):
             base_indx = numpy.where( primary_index == tied_index)[0][0]
 
             # Append the line to this fitting window
-            self.fitting_window[base_indx].nlines += 1
-            self.fitting_window[base_indx].db_indx = numpy.append(
-                                        self.fitting_window[base_indx].db_indx, i)
-            self.fitting_window[base_indx].line_index = numpy.append(
-                                        self.fitting_window[base_indx].line_index, e['index'])
-            self.fitting_window[base_indx].restwave = numpy.append(
-                                        self.fitting_window[base_indx].restwave, e['restwave'])
-            self.fitting_window[base_indx].fixed_par = numpy.append(
-                                            self.fitting_window[base_indx].fixed_par,
-                                            e['fix'].astype(bool).reshape(1,-1), axis=0)
-            self.fitting_window[base_indx].bounds = numpy.append(
-                    self.fitting_window[base_indx].bounds, numpy.array([ [l,u] \
-                    for l,u in zip(e['lobnd'], e['hibnd']) ]).reshape(1,-1,2), axis=0)
-
-            self.fitting_window[base_indx].output_model &= e['output_model']
-
-            # Append the profile
-            self.fitting_window[base_indx].profile_set = numpy.append(
-                                        self.fitting_window[base_indx].profile_set,
+            self.fitting_window[base_indx].append(i, e['index'], e['restwave'],
                                                   NCompLineProfile(e['ncomp'], par=e['par'],
-                                                                   profile=eval(e['profile'])) )
-            # But set the guess velocity based on the velocity relative
-            # to the main line
-            self.fitting_window[base_indx].profile_set[-1].set_mean(
+                                                                   profile=eval(e['profile'])),
+                                                  e['fix'],
+                    numpy.array([ [l,u] for l,u in zip(e['lobnd'], e['hibnd']) ]).reshape(-1,2),
+                                                  bool(e['output_model']))
+            # Set the guess velocity of the profile based on the
+            # velocity relative to the main line
+            self.fitting_window[base_indx].reset_init_mean(-1,
                             self._line_velocity_offset(self.fitting_window[base_indx].restwave[-1],
                                                        self.fitting_window[base_indx].restwave[0]))
 
@@ -1113,8 +1151,14 @@ class Elric(EmissionLineFit):
         model_fit_par['FIXED'][i,j,npar:] = True
         model_fit_par['ERR'][i,j,:npar] = numpy.zeros(npar, dtype=numpy.float)
         if self.error is not None:
-            model_fit_par['ERR'][i,j,~(model_fit_par['FIXED'][i,j])] \
-                    = numpy.sqrt(numpy.diag(self.bestfit[i,j].cov))
+            tmperr = numpy.diag(self.bestfit[i,j].cov)
+            if ~numpy.any(tmperr < 0):
+                model_fit_par['ERR'][i,j,~(model_fit_par['FIXED'][i,j])] \
+                        = numpy.sqrt(numpy.diag(self.bestfit[i,j].cov))
+            else:
+                model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
+                                                                  'UNDEFINED_COVAR')
+
 
 #        print('PAR: ', model_fit_par['PAR'][i,j,:npar])
 #        print('ERR: ', model_fit_par['ERR'][i,j,:npar])
@@ -1213,14 +1257,15 @@ class Elric(EmissionLineFit):
 #        print('RESID: ', model_fit_par['RESID'][i,j])
 
         fit = self.bestfit[i,j].sample(self.bestfit[i,j].x, par)
-        indx = numpy.absolute(fit) > 0
+        indx = numpy.absolute(fit) > 1e-4
         if numpy.sum(indx) > 0:
             frac_resid = resid[indx]/fit[indx]
             model_fit_par['FRAC_RMS'][i,j] = numpy.sqrt(numpy.mean(numpy.square(frac_resid)))
 #            print('FRMS:', model_fit_par['FRAC_RMS'][i,j])
-            model_fit_par['FRAC_RESID'][i,j] = residual_growth(frac_resid,
+            if numpy.sum(indx) > 1:
+                model_fit_par['FRAC_RESID'][i,j] = residual_growth(frac_resid,
                                                                [0.25, 0.50, 0.75, 0.90, 0.99])
-#            print('FRAC_RESID: ', model_fit_par['FRAC_RESID'][i,j])
+#                print('FRAC_RESID: ', model_fit_par['FRAC_RESID'][i,j])
 
 
 
@@ -1443,7 +1488,16 @@ class Elric(EmissionLineFit):
         # Do the fit
         velocity = self._velocity_vectors(self.wave, self.fitting_window)
         self.bestfit = numpy.empty((self.nspec,self.nwindows), dtype=object)
-        for i in range(self.nspec):
+        for i in range(440,self.nspec):
+
+#            for j in range(self.nwindows):
+#                print('Window: {0}/{1}'.format(j+1, self.nwindows))
+#                for p in self.fitting_window[j].profile_set:
+#                    print(p.par)
+#            if i > 441:
+#                exit()
+
+#            print('Fitting emission lines in spectrum: {0}/{1}'.format(i+1,self.nspec), end='\r')
 
             # Get the fitting mask for each emission-line in each window
             fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.guess_redshift[i],
@@ -1459,8 +1513,14 @@ class Elric(EmissionLineFit):
                         for fm in numpy.take(fitting_mask, numpy.arange(self.nwindows), axis=0) ])
             spec_to_fit = numpy.ma.array([ self.flux[i,:] if mj else self.fluxnc[i,:] \
                                             for mj in model_jump ])
+
+            cz = self.guess_redshift[i]*astropy.constants.c.to('km/s').value
+
             # Fit each window
             for j in range(self.nwindows):
+
+                # Rest the profile to the initial parameters
+                self.fitting_window[j].reinit_profiles()
 
 #                pyplot.step(velocity[j,:], spec_to_fit[j,:], where='mid', color='k', linestyle='-')
 #                pyplot.show()
@@ -1469,18 +1529,17 @@ class Elric(EmissionLineFit):
                 # adjust the guess flux
                 # TODO: Use emission-line moment results for the
                 # guesses, if provided
-                v = self.guess_redshift[i]*astropy.constants.c.to('km/s').value
                 for p in self.fitting_window[j].profile_set:
-                    p.shift_mean(v)
+                    p.shift_mean(cz)
                     vi = numpy.argsort(numpy.absolute(velocity[j,:]-p.moment(order=1)))[0]
                     p.set_flux((spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0 else 0.1) \
                                     * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
 
                 # Setup the guess parameters and bounds
-                _guess_par = numpy.array([ p.par.ravel() \
+                _guess_par = numpy.array([ p.par.copy().ravel() \
                                             for p in self.fitting_window[j].profile_set ]).ravel()
                 _fixed_par = self.fitting_window[j].fixed_par.ravel().copy()
-                _bounds = self.fitting_window[j].bounds.reshape(-1,2)
+                _bounds = self.fitting_window[j].bounds.copy().reshape(-1,2)
 
                 # For individual lines, bound the line mean to be within
                 # the fitting window
@@ -1517,6 +1576,40 @@ class Elric(EmissionLineFit):
                     _bounds = numpy.append(_bounds,
                           numpy.array([-numpy.inf,numpy.inf]*(base_order+1)).reshape(-1,2),axis=0)
 
+                if ~numpy.all(_bounds[:,0]<_bounds[:,1]):
+
+                    _bounds = self.fitting_window[j].bounds.reshape(-1,2)
+                    print('input')
+                    print(_bounds)
+                    if self.fitting_window[j].nlines == 1:
+                        indx = self.fitting_window[j].profile_set[0].mean_indx()
+                        _bounds[indx,0] = velocity[j,fitting_mask[j,:]][0]
+                        _bounds[indx,1] = velocity[j,fitting_mask[j,:]][-1]
+                    else:
+                        indx = numpy.array(self.fitting_window[j].profile_set[0].mean_indx())
+                        for k in range(1,self.fitting_window[j].nlines):
+                            indx = numpy.append(indx,
+                                numpy.array(self.fitting_window[j].profile_set[0].mean_indx()) \
+                                + sum([self.fitting_window[j].profile_set[kk].npar
+                                    for kk in range(k)]))
+                        srt = numpy.argsort(_guess_par[indx])
+                        borders = []
+                        for k in range(len(indx)-1):
+                            diff = _guess_par[indx][srt[k+1]]-_guess_par[indx][srt[k]]
+                            borders += [ _guess_par[indx][srt[k]] + 2.0*diff/3.0,
+                                        _guess_par[indx][srt[k]] + diff/3.0 ]
+                        borders = numpy.array([ velocity[j,fitting_mask[j,:]][0], *borders,
+                                                velocity[j,fitting_mask[j,:]][-1] ])
+                        print('borders')
+                        print(borders)
+                        _bounds[indx,0] = borders[2*srt]
+                        _bounds[indx,1] = borders[2*srt+1]
+
+                    print('output')
+                    print(_bounds)
+
+                    exit()
+
 #                print(_guess_par)
 #                print(_bounds)
 #                pyplot.errorbar(velocity[j,fitting_mask[j,:]], spec_to_fit[j,fitting_mask[j,:]],
@@ -1527,6 +1620,7 @@ class Elric(EmissionLineFit):
 #                print('N valid pixels: {0}'.format(
 #                                               len(spec_to_fit[j,fitting_mask[j,:]].compressed())))
                 
+                # Check there is sufficient data to perform the fit
                 model_fit_par['NPIXFIT'][i,j] = len(spec_to_fit[j,fitting_mask[j,:]].compressed())
                 if model_fit_par['NPIXFIT'][i,j] <= _guess_par.size:
                     warnings.warn('Insufficient data points ({0}) to fit with this function ' \
@@ -1538,7 +1632,11 @@ class Elric(EmissionLineFit):
                     model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                                       'INSUFFICIENT_DATA')
                     continue
+
                 # Run the fit
+#                print('guess par: {0} {1}'.format(i, j))
+#                print(_guess_par)
+#                print(' ')
                 self.bestfit[i,j] = LineProfileFit(velocity[j,:], spec_to_fit[j,:],
                                                    self.fitting_window[j].profile_set.tolist(),
                                             error=None if self.error is None else self.error[i,:],
@@ -1573,11 +1671,9 @@ class Elric(EmissionLineFit):
 #                pyplot.title('Spec: {0}; Line (set): {1}'.format(i+1,j+1))
 #                pyplot.show()
 
-                for p in self.fitting_window[j].profile_set:
-                    p.shift_mean(-v)
-
 #            pyplot.plot(wave, model_flux[i,:], linestyle='-', color='g')
 #            pyplot.show()
+        print('Fitting emission lines in spectrum: {0}/{0}'.format(self.nspec))
 
         print('  DURATION: {0:.5f} sec'.format((time.clock() - t)))
 

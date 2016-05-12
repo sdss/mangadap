@@ -159,7 +159,7 @@ bitmasks for the template library spectra.
         from matplotlib import pyplot
 
         # Define the search string for the library
-        search_str = default_dap_source()+'/external/templates/miles/*.fits'
+        search_str = default_dap_source()+'/data/stellar_templates/miles/*.fits'
 
         # Define the template library parameters
         tpl_par = TemplateLibraryDef(key='MILES',    # Unique keyword for the library

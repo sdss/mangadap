@@ -94,7 +94,7 @@ PRO MDAP_DEFINE_AVAILABLE_EMISSION_LINE_PARAMETERS, $
         ems_vacuum_wave = intarr(neml_files)
 
         ems_line_keys[0] = 'STANDARD'
-        emission_line_parameters[0] = dapsrc+'/external/manga_emission_line_list_nominal.par'
+        emission_line_parameters[0] = dapsrc+'/external/legacy/manga_emission_line_list_nominal.par'
         ems_vacuum_wave[0] = 1
 
 ;       ems_line_keys[1] = 'NODOUBLETS'

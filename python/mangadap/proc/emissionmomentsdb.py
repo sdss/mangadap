@@ -56,7 +56,7 @@ moments.
 
     Finally, you can create your own `SDSS-style parameter file`_ with
     your own emission line passbands to use.  Example files are provided
-    in ``$MANGADAP_DIR/external/emission_bandpass_filters`` with a
+    in ``$MANGADAP_DIR/data/emission_bandpass_filters`` with a
     companion ``README`` file.  With your own file, you have to point to
     the file using :class:`SpectralFeatureDBDef`, which you can then
     pass to :class:`EmissionMomentsDB`::
