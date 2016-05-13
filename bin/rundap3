@@ -11,9 +11,3 @@ except ImportError as e:
 if validation:
     rundap = rundap(console=True)
 
-"""example usage:
-    rundap --daily
-    rundap --all
-    rundap --all --clobber
-    rundap --redo
-"""

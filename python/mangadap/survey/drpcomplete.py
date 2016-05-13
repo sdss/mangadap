@@ -34,15 +34,15 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         if sys.version > '3':
             long = int
 
-        import os.path
-        from os import walk
+        import os
         import numpy
+        import warnings
         from astropy.io import fits
-        from astropy import constants
-        from ..util.yanny import yanny, read_yanny
+        import astropy.constants
+        from pydl.pydlutils.yanny import yanny
+
         from ..config import defaults
         from . import drpfits
-        from . import dapfile
         from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
         from ..util.exception_tools import print_frame
 
@@ -83,11 +83,15 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     | **17 Feb 2016**: (KBW) Converted the name of the class to
         DRPComplete
     | **29 Feb 2016**: (KBW) Import drpfits, not drpfile
-
+    | **13 May 2016**: Switch to using `pydl.pydlutils.yanny`_ instead
+        of internal yanny reader.  Incorporated changes to plateTargets
+        column names defined for DR13.
+    
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
 .. _SDSS parameter files: http://www.sdss.org/dr12/software/par/
 .. _DAP at Utah: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/Utah
+.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 
 """
 
@@ -100,15 +104,15 @@ import sys
 if sys.version > '3':
     long = int
 
-import os.path
-from os import walk
+import os
 import numpy
+import warnings
 from astropy.io import fits
-from astropy import constants
-from ..util.yanny import yanny, read_yanny
+import astropy.constants
+from pydl.pydlutils.yanny import yanny
+
 from ..config import defaults
 from .. import drpfits
-from .. import dapfile
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from ..util.exception_tools import print_frame
 
@@ -134,7 +138,7 @@ class DRPComplete:
             :func:`mangadap.config.defaults.default_plate_target_files`.
         catid (str or list): (Optional) List of target catalog ID
             numbers.  Default is returned as the second element in
-            :func:`mangadap.config.defaults.kdefault_plate_target_files`.
+            :func:`mangadap.config.defaults.default_plate_target_files`.
         drpver (str): (Optional) DRP version, which is:
                 - used to define the default DRP redux path
                 - used when declaring a drpfits instance
@@ -219,8 +223,8 @@ class DRPComplete:
 
         if (platetargets is not None and catid is None) or \
            (platetargets is None and catid is not None):
-            raise Exception('To overwrite default platetargets files, must provide both '
-                            'platetargets and catid.')
+            raise ValueError('To use user-provided platetargets files, must provide both '
+                             'platetargets and catid.')
 
         if platetargets is not None:
             self.platetargets = numpy.array( arginp_to_list(platetargets) )
@@ -296,9 +300,8 @@ class DRPComplete:
 
     def _read_platetargets(self, quiet=True):
         """
-        Read all the platetargets files using
-        :class:`mangadap.util.yanny.yanny` and return a list of yanny
-        structures.
+        Read all the platetargets files using `pydl.pydlutils.yanny`_
+        and return a list of yanny structures.
 
         Args:
             quiet (bool): (Optional) Suppress terminal output (NOT USED)
@@ -309,18 +312,34 @@ class DRPComplete:
         Raises:
             FileNotFoundError: Raised if cannot open one or more
                 platetargets files.
+
+        .. todo::
+            This should be made more efficient by collating the required
+            plateTargets data into a single record array!
         """
+
+
+#        from matplotlib import pyplot
+#        print(self.platetargets[0])
+#        plttrg_data = yanny(filename=self.platetargets[0])
+#        pyplot.scatter(plttrg_data['PLTTRGT']['nsa_elpetro_phi'],
+#                       plttrg_data['PLTTRGT']['nsa_sersic_phi'], marker='.', color='k', s=30)
+#        pyplot.show()
+#        pyplot.scatter(plttrg_data['PLTTRGT']['nsa_elpetro_ba'],
+#                       plttrg_data['PLTTRGT']['nsa_sersic_ba'], marker='.', color='k', s=30)
+#        pyplot.show()
+#        exit()
+
         plttrg_data = []
 
-        print('Reading plateTargets file(s)...', end='\r')
         for p in self.platetargets:
+            print('Reading plateTargets file: {0}'.format(p), end='\r')
             # Check that the file exists
             if not os.path.exists(p):
                 raise FileNotFoundError('Cannot open {0}!'.format(p))
             # Read and append the data
-            plttrg_data.append( yanny(p, np=True) )
-
-        print('Reading plateTargets file(s)...DONE')
+            plttrg_data.append( yanny(filename=p) )
+        print('\nReading plateTargets file: DONE')
 
         return plttrg_data
 
@@ -408,8 +427,8 @@ class DRPComplete:
                     break
 
             if len(indx[0]) == 0:
-                print('WARNING: Could not find {0}-{1} in any plateTargets file!'.format(
-                            self.platelist[i], self.ifudesignlist[i]))
+                warnings.warn('Could not find {0}-{1} in any plateTargets file!'.format(
+                                                        self.platelist[i], self.ifudesignlist[i]))
                 mangaid = mangaid + ['NULL']
                 continue
             mangaid.append(plttrg_data[plttrg_j]['PLTTRGT']['mangaid'][indx][0].decode("ascii"))
@@ -426,9 +445,9 @@ class DRPComplete:
             # nsa_v1_0_0.fits without any matching required."
             catid[i] = numpy.int32(mangaid[i].split('-')[0])
             if catid[i] != self.catid[plttrg_j]:
-                print('WARNING: {0}-{1} (MaNGA ID={2}) found in {3} (CAT={4})!'.format(
-                      self.platelist[i], self.ifudesignlist[i], mangaid_i, self.platetargets[j],
-                      self.catid[j]))
+                warnings.warn('{0}-{1} (MaNGA ID={2}) found in {3} (CAT={4})!'.format(
+                                self.platelist[i], self.ifudesignlist[i], mangaid_i,
+                                self.platetargets[j], self.catid[j]))
             catindx[i] = numpy.int32(mangaid[i].split('-')[1])
 
             try:
@@ -438,7 +457,7 @@ class DRPComplete:
                 trg_version.append('NULL')
 
             try:
-                trg_id[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_id'][indx][0]
+                trg_id[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_nsaid'][indx][0]
             except:
                 trg_id[i] = -9999
                 
@@ -453,25 +472,32 @@ class DRPComplete:
                 manga_trg3[i] = -9999
 
             try:
-                vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_redshift'][indx][0] \
-                         * constants.c.to('km/s').value
+                vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0] \
+                            * astropy.constants.c.to('km/s').value
             except:
                 vel[i] = -9999.0
 
             try:
-                ell[i] = 1.0-plttrg_data[plttrg_j]['PLTTRGT']['nsa_ba'][indx][0]
+                if plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_ba'][indx][0] < 0:
+                    raise
+                ell[i] = 1.0-plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_ba'][indx][0]
             except:
                 ell[i] = -9999.0
+                warnings.warn('Ellipticity for {0}-{1} is bogus!'.format(self.platelist[i],
+                                                                         self.ifudesignlist[i]))
 
             try:
                 # THERE'S A BUG IN THE MANGACORE/V1_2_0 PLATETARGETS FILES
-#                pa[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_phi'][indx][0]
-                pa[i] = 180-plttrg_data[plttrg_j]['PLTTRGT']['nsa_phi'][indx][0]
+                pa[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_phi'][indx][0]
+                if pa[i] < 0:
+                    raise
             except:
                 pa[i] = -9999.0
+                warnings.warn('PA for {0}-{1} is bogus!'.format(self.platelist[i],
+                                                                self.ifudesignlist[i]))
 
             try:
-                Reff[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_petro_th50_el'][indx][0]
+                Reff[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_th50_r'][indx][0]
             except:
                 Reff[i] = -9999.0
 
@@ -482,9 +508,9 @@ class DRPComplete:
 
             # Correct for known nan issue
             if numpy.isnan(ell[i]):
-                ell[i] = -9999.0
+                raise ValueError('nan encountered!')
             if numpy.isnan(pa[i]):
-                pa[i] = -9999.0
+                raise ValueError('nan encountered!')
 
         print('Searching platetargets file for observed galaxies...DONE')
 
@@ -617,7 +643,7 @@ class DRPComplete:
 #        print(path)
         print('Searching for completed DRP CUBE files...', end='\r')
         # Otherwise generate the lists
-        for root, dir, files in walk(path):
+        for root, dir, files in os.walk(path):
             for file in files:
                 if file.endswith('-LOGCUBE.fits.gz'):
                     p, b, m = parse_drp_file_name(file)
@@ -926,8 +952,11 @@ class DRPComplete:
             raise AttributeError('drpcomplete fits file was opened as read-only!')
 
         out=self.file_path()
-        if os.path.exists(out) and not clobber:
+        if os.path.isfile(out) and not clobber:
             raise FileExistsError('DRP complete file already exists: {0}'.format(out))
+
+        if not os.path.isdir(self.analysis_path):
+            os.makedirs(self.analysis_path)
 
         # Create the primary header
         nplttrg = len(self.platetargets)
@@ -970,7 +999,7 @@ class DRPComplete:
 
         # TODO: Make directory if it doesn't exist?
         print('Writing to disk: {0}'.format(out))
-        hdulist.writeto(out, clobber=True)
+        hdulist.writeto(out, clobber=clobber)
 
 
     def grab_data(self, plate=None, ifudesign=None, index=None, reread=False):

@@ -26,8 +26,9 @@ run the DAP for a specific MaNGA observation.
         import numpy
         import os.path
         import warnings
-        from .parset import ParSet
         from pydl.pydlutils.yanny import yanny
+
+        from .parset import ParSet
         from ..drpfits import DRPFits
 
 *Class usage examples*:
@@ -65,9 +66,10 @@ if sys.version > '3':
 import numpy
 import os.path
 import warnings
-from .parset import ParSet
-#from ..util.yanny import yanny
 from pydl.pydlutils.yanny import yanny
+
+#from ..util.yanny import yanny
+from .parset import ParSet
 from ..drpfits import DRPFits
 
 __author__ = 'Kyle B. Westfall'

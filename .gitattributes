@@ -13,7 +13,6 @@ bin/edit_dap_plan -text
 bin/manga_dap -text
 bin/mangadap_version -text
 bin/matched_template_library -text
-bin/rundap -text
 bin/rundap3 -text
 bin/write_dap_par -text
 data/absorption_indices/README -text

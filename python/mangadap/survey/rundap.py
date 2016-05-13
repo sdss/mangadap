@@ -25,17 +25,15 @@ Utah.
 
         import subprocess
         import time
-        import os.path
+        import os
         import numpy
         import glob
+        from argparse import ArgumentParser
 
         try:
             import pbs.queue
         except:
-            print('WARNING: Could not import pbs.queue!  Any cluster submission will fail!')
-
-        from os import environ, makedirs
-        from argparse import ArgumentParser
+            warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
         from .drpcomplete import DRPComplete
         from ..drpfits import DRPFits
@@ -89,6 +87,8 @@ Utah.
     | **17 Feb 2016**: (KBW) Added try/except block for importing
         pbs.queue; converted old drpfile to new DRPFits, and drpcomplete
         to new DRPComplete
+    | **13 May 2016**: (KBW) Substantial changes to accommodate
+        conversion of DAP from IDL to python
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -108,18 +108,16 @@ if sys.version > '3':
 
 import subprocess
 import time
-import os.path
+import os
 import numpy
 import glob
 import warnings
+from argparse import ArgumentParser
 
 try:
     import pbs.queue
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
-
-from os import environ, makedirs
-from argparse import ArgumentParser
 
 from .drpcomplete import DRPComplete
 from ..drpfits import DRPFits
@@ -145,7 +143,7 @@ class rundap:
         This is purely a survey-level utility for running the DAP at
         Utah, including submitting jobs to the cluster.  No user-level
         usage of the DAP should be considered here, apart from not
-        hindering such usage of the primary IDL/python programs!
+        hindering such usage of the primary python programs!
 
     .. todo::
 
@@ -153,18 +151,20 @@ class rundap:
           instead of keeping it as an attribute.
 
     Args:
-        daily (bool): (Optional) Execute daily update of analyses
-        all (bool): (Optional) Analyze all existing DRP data.
-        clobber (bool): (Optional) **Only used with :attr:`all`**.
+        daily (bool): (**Optional**) Execute daily update of analyses
+        all (bool): (**Optional**) Analyze all existing DRP data.
+        clobber (bool): (**Optional**) **Only used with :attr:`all`**.
             Clobber and redo any existing analysis.
-        redo (bool): (Optional) Redo an existing set of analyses; must
-            be accompanied by a list of plates, ifus, and modes to
+        redo (bool): (**Optional**) Redo an existing set of analyses;
+            must be accompanied by a list of plates, ifus, and modes to
             analyze.  **clobber** is implicitly true.
-        console (bool): (Optional) The class has been executed from the
-            terminal with command-line arguments that should be parsed.
-        quiet (bool): (Optional) Suppress output
-        version (bool): (Optional) Print the class version and return
-        mplver (str): (Optional) MPL version to analyze.  Used with
+        console (bool): (**Optional**) The class has been executed from
+            the terminal with command-line arguments that should be
+            parsed.
+        quiet (bool): (**Optional**) Suppress output
+        version (bool): (**Optional**) Print the class version and
+            return
+        mplver (str): (**Optional**) MPL version to analyze.  Used with
             mangampl class to set the idlutils version and the DRP
             version.  Ideally, this controls the modules that are loaded
             before execution of the DAP.  The default version (selected
@@ -179,67 +179,65 @@ class rundap:
                 cluster, which is the functionality of the SLURM job
                 scheduler.
                 
-        redux_path (str): (Optional) The top-level path with the DRP
+        redux_path (str): (**Optional**) The top-level path with the DRP
             files used to override the default defined by
             :func:`mangadap.config.defaults.default_redux_path`.
-        dapver (str): (Optional) The DAP version to use for the
+        dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.default_dap_version`.
-        analysis_path (str): (Optional) The top-level path for the DAP
-            output files, used to override the default defined by
+        analysis_path (str): (**Optional**) The top-level path for the
+            DAP output files, used to override the default defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
-        plan_file (str): (Optional) Name of the plan file to use for ALL
-            DRP data in this run, used to override the default defined
-            by :func:`mangadap.config.defaults.default_dap_plan_file`.
-        platelist (int or str): (Optional) List of plates to analyze;
+        plan_file (str): (**Optional**) Name of the plan file to use for
+            *all* DRP data in this run, used to override the default
+            defined by
+            :func:`mangadap.config.defaults.default_dap_plan_file`.
+        platelist (int, str): (**Optional**) List of plates to analyze;
             default is to search the :attr:`redux_path` for any DRP
             files.
-        ifudesignlist (int or str): (Optional) List of ifudesigns to
+        ifudesignlist (int, str): (**Optional**) List of ifudesigns to
             analyze: default is to search the :attr:`redux_path` for any
             DRP files.
-        modelist (str): (Optional) DRP 3D modes ('RSS' or 'CUBE') to
+        modelist (str): (**Optional**) DRP 3D modes ('RSS' or 'CUBE') to
             analyze; default is to analyze both.
-        combinatorics (bool): (Optional) Use all unique combinations of
-            the entered plate/ifudesign/mode lists to create the full
+        combinatorics (bool): (**Optional**) Use all unique combinations
+            of the entered plate/ifudesign/mode lists to create the full
             list of DRP files to analyze.  See
             :func:`mangadap.drpfits.drpfits_list`.
-        prior_mode (str): (Optional) Used to construct a plate-ifu
+        prior_mode (str): (**Optional**) Used to construct a plate-ifu
             specific prior fits file name to replace an existing value
             in the plan file.  This sets the mode ('RSS' or 'CUBE') of
             the fits file.
-        prior_bin (str): (Optional) Used to construct a plate-ifu
+        prior_bin (str): (**Optional**) Used to construct a plate-ifu
             specific prior fits file name to replace an existing value
             in the plan file.  This sets the binning type of the fits
             file.
-        prior_iter (int): (Optional) Used to construct a plate-ifu
+        prior_iter (int): (**Optional**) Used to construct a plate-ifu
             specific prior fits file name to replace an existing value
             in the plan file.  This sets the iteration number of the
             fits file.
-        prior_old (str): (Optional) The value of the existing prior in
-            the plan file that should be replaced by the prior fits file
-            constructed using the other "prior_*" attributes.
-        platetargets (str or list): (Optional) List of platetargets
+        prior_old (str): (**Optional**) The value of the existing prior
+            in the plan file that should be replaced by the prior fits
+            file constructed using the other "prior_*" attributes.
+        platetargets (str, list): (**Optional**) List of platetargets
             files to search through to find any given plate-ifudesign
             combination.  Default is returned as the first element in
             :func:`mangadap.config.defaults.default_plate_target_files`.
-        covar (bool): (Optional) Calculate and output the covariance
-            matrix. Default is True.
-        dapproc (bool): (Optional) Flag to execute the main DAP
+        dapproc (bool): (**Optional**) Flag to execute the main DAP
             processing. Default is True.
-        plots (bool): (Optional) Create the QA plots. Default is True.
-        maps (bool): (Optional) Create the MAP fits files. Default is
+        plots (bool): (**Optional**) Create the QA plots. Default is
             True.
-        label (str): (Optional) Label to use in cluster queue.  Default
-            is mangadap and the run mode (daily, etc).
-        nodes (int): (Optional) Number of cluster nodes to use.  Default
-            is 18.
-        qos (str): (Optional) Select a specific processor (only None for
-            daily run).  This option is ignored if :attr:`q` is set.
-        umask (str): (Optional) umask to set for output. Default is
+        label (str): (**Optional**) Label to use in cluster queue.
+            Default is mangadap and the run mode (daily, etc).
+        nodes (int): (**Optional**) Number of cluster nodes to use.
+            Default is 18.
+        qos (str): (**Optional**) Select a specific processor (only None
+            for daily run).  This option is ignored if :attr:`q` is set.
+        umask (str): (**Optional**) umask to set for output. Default is
             0027.
-        walltime (str): (Optional) Maximum wall time for cluster job.
-            Default is 10 days ('240:00:00').
-        hard (bool): (Optional) Same as hard keyword in cluster
+        walltime (str): (**Optional**) Maximum wall time for cluster
+            job.  Default is 10 days ('240:00:00').
+        hard (bool): (**Optional**) Same as hard keyword in cluster
             submission; see :func:`pbs.queue.commit`.
 
             .. note::
@@ -248,21 +246,19 @@ class rundap:
                 "--toughness" command-line options; i.e. including
                 --toughness on the command line sets hard=False.
 
-        submit (bool): (Optional) If True (default), submit all jobs to
-            the cluster.
+        submit (bool): (**Optional**) If True (default), submit all jobs
+            to the cluster.
 
             .. note::
 
                 This keyword is in the **opposite** sense of the
                 "--submit" command-line options; i.e. including
                 --submit on the command line sets submit=False.
-
-        queue (str): (Optional) Name of the destination queue.  When
+        queue (str): (**Optional**) Name of the destination queue.  When
             submitting jobs at Utah, this should **not** be set (leaving
             it at the default of None).  When submitting jobs at
             Portsmouth, this can be used to select either sciama1.q,
             cluster.q (default), or sciama3.q.
-        idl_cmnd (str): (Optional) IDL command.  Default: idl.
 
     Attributes:
         daily (bool): Execute daily update of analyses
@@ -304,10 +300,8 @@ class rundap:
             constructed using the other "prior_*" attributes.
         platetargets (list): List of platetargets files to search
             through to find any given plate-ifudesign combination.
-        covar (bool): Calculate and output the covariance matrix
         dapproc (bool): Flag to execute the main DAP processing
         plots (bool): Create the QA plots
-        maps (bool): Create the MAP fits file
         label (str): Label to use in cluster queue.
         nodes (int): Number of cluster nodes to use.
         qos (str): Specific processor to use (Utah specific)
@@ -317,7 +311,6 @@ class rundap:
             :func:`pbs.queue.commit`.
         submit (bool): Submit all jobs to the cluster.
         q (str): Queue destination (Portsmouth specific)
-        idl_cmnd (str): The specific IDL command to use
         drpc (:class:`mangadap.survey.drpcomplete.DRPComplete`):
             Database of the available DRP files and the parameters
             necessary to write the DAP par files.
@@ -337,10 +330,10 @@ class rundap:
                 # Databases with input parameter information
                 platetargets=None,
                 # Flags to create additional output files
-                covar=True, dapproc=True, plots=True, maps=True,
+                dapproc=True, plots=True,
                 # Cluster options
                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                submit=True, queue=None, idl_cmnd='idl'):
+                submit=True, queue=None):
 
         # Save run-mode options
         self.daily = daily
@@ -374,10 +367,8 @@ class rundap:
         self.platetargets = arginp_to_list(platetargets)
 
         # Set the options for output
-        self.covar = covar
         self.dapproc = dapproc
         self.plots = plots
-        self.maps = maps
 
         # Cluster queue keywords
         self.label = label
@@ -389,7 +380,6 @@ class rundap:
         self.submit = submit
 
         self.q = queue
-        self.idl_cmnd = idl_cmnd
 
         # Read and parse command-line arguments
         if console:
@@ -398,24 +388,18 @@ class rundap:
         # Make sure there's something to be done
         nproc = 0
         processes = []
-        if self.covar:
-            nproc += 1
-            processes += [ 'Covariance' ]
         if self.dapproc:
             nproc += 1
             processes += [ 'Main DAP blocks' ]
         if self.plots:
             nproc += 1
             processes += [ 'QA plots' ]
-        if self.maps:
-            nproc += 1
-            processes += [ 'DAP maps' ]
         if nproc < 1:
             raise ValueError('No processing steps requested!')
 
         # Only print the version of the DAP
         if self.version:
-            print('This is version 1_1_0.')
+            print('This is version 2.0')
             return
 
         # Make sure the selected MPL version is available
@@ -443,25 +427,21 @@ class rundap:
         print('        {0}'.format(processes))
 
         # Check the environment matches the selected MPL
-#        idlver_env = None
-#        for m in environ['LOADEDMODULES'].split(':'):
-#            if 'idlutils' in m:
-#                idlver_env = m.split('/')[1]
         # These will throw KeyErrors if the appropriate environmental variables do not exist
         try:
-            accessver_env = environ['SDSS_ACCESS_DIR'].split('/')[-1]
+            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
         except KeyError:
             accessver_env = None
-        idlver_env = environ['IDLUTILS_DIR'].split('/')[-1]
+        idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
 
-#        print('mpl.accessver: {0}'.format(self.mpl.accessver))
-#        print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
-#        print('mpl.idlver: {0}'.format(self.mpl.idlver))
-#        print('IDLUTILS_VER: {0}'.format(idlver_env))
-#        print('mpl.corever: {0}'.format(self.mpl.corever))
-#        print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
-#        print('mpl.drpver: {0}'.format(self.mpl.drpver))
-#        print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+        print('mpl.accessver: {0}'.format(self.mpl.accessver))
+        print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
+        print('mpl.idlver: {0}'.format(self.mpl.idlver))
+        print('IDLUTILS_VER: {0}'.format(idlver_env))
+        print('mpl.corever: {0}'.format(self.mpl.corever))
+        print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+        print('mpl.drpver: {0}'.format(self.mpl.drpver))
+        print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
 
         if self.mpl.accessver != accessver_env:
             print('mpl.accessver: {0}'.format(self.mpl.accessver))
@@ -473,13 +453,13 @@ class rundap:
             print('IDLUTILS_VER: {0}'.format(idlver_env))
             raise EnvironmentError('MPL IDLUTILS version does not match current environment;'
                                    ' see above')
-        if self.mpl.corever != environ['MANGACORE_VER']:
+        if self.mpl.corever != os.environ['MANGACORE_VER']:
             print('mpl.corever: {0}'.format(self.mpl.corever))
-            print('MANGACORE_VER: {0}'.format(environ['MANGACORE_VER']))
+            print('MANGACORE_VER: {0}'.format(os.environ['MANGACORE_VER']))
             raise EnvironmentError('MPL CORE version does not match current environment; see above')
-        if self.mpl.drpver != environ['MANGADRP_VER']:
+        if self.mpl.drpver != os.environ['MANGADRP_VER']:
             print('mpl.drpver: {0}'.format(self.mpl.drpver))
-            print('MANGADRP_VER: {0}'.format(environ['MANGADRP_VER']))
+            print('MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
             raise EnvironmentError('MPL DRP version does not match current environment; see above')
 
         # If setting qos, the number of nodes must be 1
@@ -495,8 +475,6 @@ class rundap:
             raise Exception('Must request one (and only one) run mode!')
 
         # Check argument combination makes sense
-        # TODO: Does an error need to be thrown here, or just warn user.
-        # Use warnings class?
         if self.clobber and not self.all:
             warnings.warn('Clobber keyword can only be set if all specified (-a,--all)!')
             self.clobber = None
@@ -508,7 +486,6 @@ class rundap:
         # If not redo, platelist, ifudesignlist, and modelist should be
         # ignored
         # TODO: Does an error need to be thrown here, or just warn user.
-        # Use warnings class?
         if not self.redo and (self.platelist or self.ifudesignlist or self.modelist):
             raise Exception('platelist/ifudesignlist/modelist only allowed for redo!')
 
@@ -552,7 +529,7 @@ class rundap:
         # TODO: Should this also be done from within the DRPComplete
         # class?
         if not os.path.isdir(self.analysis_path):
-            makedirs(self.analysis_path)
+            os.makedirs(self.analysis_path)
 
         # Update the DRPComplete list; force an update if platetarget
         # files are provided
@@ -802,7 +779,7 @@ class rundap:
         path = default_dap_reference_path(plate=plate, drpver=self.mpl.drpver, dapver=self.dapver,
                                           analysis_path=self.analysis_path)
         if not os.path.isdir(path):
-            makedirs(path)
+            os.makedirs(path)
 
 
     # Files:
@@ -851,7 +828,7 @@ class rundap:
         Args:
             drpfiles (list): The list of DRP file objects that define
                 the DRP fits files to analyze.
-            clobber (bool): (Optional) Overwrite any existing script
+            clobber (bool): (**Optional**) Overwrite any existing script
                 files.
         """
         # If submitting to the queue, create the queue object.  The
@@ -962,10 +939,10 @@ class rundap:
         Analyze all existing DRP files.  This mode is called manually.
    
         Args:
-            clobber (bool): (Optional) If True, all analyses will be
-            run, regardless of their current state.  If false, only
-            those analyses not currently running or done will be
-            performed.
+            clobber (bool): (**Optional**) If True, all analyses will be
+                run, regardless of their current state.  If false, only
+                those analyses not currently running or done will be
+                performed.
 
         Raises:
             Exception: Raised if qos is requested; this mode is only
@@ -1039,8 +1016,8 @@ class rundap:
             plate (int): Plate number
             ifudesign (int): IFU design number
             mode (str): DRP 3D mode, 'RSS' or 'CUBE'
-            status (str): (Optional) That status signifier for the touch
-                file.
+            status (str): (**Optional**) That status signifier for the
+                touch file.
         """
         # Get the name of the status file        
         root = default_dap_file_root(plate, ifudesign, mode)
@@ -1128,8 +1105,8 @@ class rundap:
         have completed a run of DAP analysis.
 
         Args:
-            clobber (bool): (Optional) Overwrite any existing analysis
-                output.
+            clobber (bool): (**Optional**) Overwrite any existing
+                analysis output.
 
         Returns:
             list: A list of :class:`mangadap.drpfits.DRPFits` objects
@@ -1268,18 +1245,18 @@ class rundap:
             plate (int): Plate number
             ifudesign (int): IFU design number
             mode (int): DRP 3D mode ('RSS' or 'CUBE')
-            covar (bool): (Optional) If mode is 'CUBE', include commands
-                needed to produce the covariance matrix for 11
+            covar (bool): (**Optional**) If mode is 'CUBE', include
+                commands needed to produce the covariance matrix for 11
                 wavelength channels spread over the full wavelength
                 range of the spectra.  Does not require DAP output!
-            dapproc (bool): (Optional) Flag to execute the main DAP
+            dapproc (bool): (**Optional**) Flag to execute the main DAP
                 processing. Default is True.
-            plots (bool): (Optional) Create the QA plots. Default is
+            plots (bool): (**Optional**) Create the QA plots. Default is
                 True.
-            maps (bool): (Optional) If mode is 'CUBE', include the
+            maps (bool): (**Optional**) If mode is 'CUBE', include the
                 command needed to produce the fits file with maps of the
                 measured quantities. Default is False.
-            clobber (bool): (Optional) Flag to clobber any existing
+            clobber (bool): (**Optional**) Flag to clobber any existing
                 files.
 
         Returns:
@@ -1460,8 +1437,8 @@ class rundap:
         Args:
             drpf (:class:`mangadap.drpfits.DRPFits`): Object defining
                 the DRP file to analyze.
-            clobber (bool): (Optional) Flag to overwrite any existing
-                files.
+            clobber (bool): (**Optional**) Flag to overwrite any
+                existing files.
         
         Returns:
             str: Three strings with the name of the written script file,

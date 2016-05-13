@@ -654,7 +654,7 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}', qual=True),
                                 name='STELLAR_VEL_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=None,
+        hdus += [ fits.ImageHDU(data=numpy.zeros(data.shape, dtype=numpy.uint8),
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_VEL',
                                                                  hduclas2='QUALITY', err=True,
@@ -682,7 +682,7 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}', qual=True),
                                 name='STELLAR_SIGMA_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=None,
+        hdus += [ fits.ImageHDU(data==numpy.zeros(data.shape, dtype=numpy.uint8),
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_SIGMA',
                                                                  hduclas2='QUALITY', err=True,
