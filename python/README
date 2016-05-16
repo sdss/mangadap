@@ -269,28 +269,25 @@ $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/
     # Read by MPLPlan and used to create the AnalysisPlan output files
     mangadap-plan-$MANGADAP_VER.par
 
-    symlinks in ref directory below
     ref/
-        # Read by AnalysisPlan
-        mangadap-plan-${bin2Dmode}-${tpl}-${contmode}.par
-
         ${plate}/
-            # Main observational input parameter file
-            mangadap-${plate}-${ifudesign}-LOG${mode}.par
+            ${ifudesign}/
+                # Main observational input parameter file
+                mangadap-${plate}-${ifudesign}-LOG${mode}.par
 
-            # Resolution/sampling matched template library
-            manga-${plate}-${ifudesign}-LOG${mode}-${tpl}.fits.gz
+                # Resolution/sampling matched template library
+                manga-${plate}-${ifudesign}-LOG-${tpl}.fits.gz
 
-            # S/N and other DRP assessments
-            manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}.fits.gz
+                # S/N and other DRP assessments
+                manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}.fits.gz
 
-            # Binned spectra; only if binmode is not SPXL
-            manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}.fits.gz
+                # Binned spectra; only if binmode is not SPXL
+                manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}.fits.gz
 
 
-    ${bin2Dmode}_${tpl}_${contmode}/
+    ${binmode}-${contmode}-${tpl}/
         ${plate}/
-            manga-${plate}-${ifudesign}-LOG${mode}-${bin2Dmode}-${tpl}-${contmode}.fits.gz
+            manga-${plate}-${ifudesign}-${binmode}-${contmode}-${tpl}.fits.gz
             qa/
                 ${ifudesign}/
                     gradients/
@@ -298,15 +295,23 @@ $MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/
                     spectra/
             ref/
                 ${ifudesign}/
-
+                    SYMLINKS to top-level ref/:
+                        mangadap-${plate}-${ifudesign}-LOG${mode}.par
+                        manga-${plate}-${ifudesign}-LOG-${tpl}.fits.gz
+                        manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}.fits.gz
+                        manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}.fits.gz
+                        
                     # pPXF fit to binned spectra
-                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}.fits.gz
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${contmode}-${tpl}.fits.gz
 
-                    # Emission-line moments and parameterized fits
-                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}-${emldb}.fits.gz
+                    # Emission-line moments
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${contmode}-${tpl}-${elmom}.fits.gz
+
+                    # Emission-line profile fits
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${contmode}-${tpl}-${elfit}.fits.gz
 
                     # Aborption-line and bandhead index measurements
-                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${tpl}-${contmode}-${emldb}-${spindxdb}.fits.gz
+                    manga-${plate}-${ifudesign}-LOG${mode}-${snrmode}-${binmode}-${contmode}-${tpl}-${elfit}-${spindxdb}.fits.gz
 
 
     SNR modes are:

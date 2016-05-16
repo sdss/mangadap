@@ -276,23 +276,32 @@ def compress_file(ifile, clobber=False):
             shutil.copyfileobj(f_in, f_out)
 
 
-def write_hdu(hdu, ofile, clobber=False, checksum=False):
+def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, verbose=True):
     """
     Write an HDUList to an output file.
     """
     # Get the output file and determine if it should be compressed
     compress = False
     if ofile.split('.')[-1] == 'gz':
-        ofile = ofile[:ofile.rfind('.')] 
+        _ofile = ofile[:ofile.rfind('.')] 
         compress = True
+    else:
+        _ofile = ofile
 
     # Write the data
-    print('writing')
-    hdu.writeto(ofile, clobber=clobber, checksum=checksum)
+    if verbose:
+        print('Writing: {0}'.format(_ofile))
+    hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
     if compress:
+        if verbose:
+            print('Compressing: {0}'.format(ofile))
         # And compress it
-        print('compressing')
-        compress_file(ofile, clobber=clobber)
-        os.remove(ofile)
+        compress_file(_ofile, clobber=clobber)
+        os.remove(_ofile)
 
+    # Create the symlink if requested
+    if symlink_dir is not None:
+        if verbose:
+            print('Creating symlink: {0}'.format(os.path.join(symlink_dir, ofile.split('/')[-1])))
+        os.symlink(ofile, os.path.join(symlink_dir, ofile.split('/')[-1]))
 

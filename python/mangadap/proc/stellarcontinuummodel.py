@@ -43,8 +43,8 @@ A class hierarchy that performs the stellar-continuum fitting.
         from .emissionlinedb import EmissionLineDB
         from .pixelmask import SpectralPixelMask
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
+        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import rec_to_fits_type, write_hdu
         from ..util.instrument import spectrum_velocity_scale
         from ..util.bitmask import BitMask
@@ -97,8 +97,8 @@ from .artifactdb import ArtifactDB
 from .emissionlinedb import EmissionLineDB
 from .pixelmask import SpectralPixelMask
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
-from ..config.defaults import default_dap_file_name
+from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import rec_to_fits_type, write_hdu
 from ..util.instrument import spectrum_velocity_scale
 from ..util.bitmask import BitMask
@@ -342,8 +342,8 @@ class StellarContinuumModel:
     """
     def __init__(self, method_key, drpf, binned_spectra, guess_vel=None, guess_sig=None,
                  method_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0,
-                 checksum=False):
+                 directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
+                 clobber=False, verbose=0, checksum=False):
 
         self.version = '1.0'
         self.verbose = verbose
@@ -361,6 +361,7 @@ class StellarContinuumModel:
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
+        self.tpl_symlink_dir = None
 
         # Initialize the objects used in the assessments
         self.bitmask = StellarContinuumModelBitMask(dapsrc=dapsrc)
@@ -384,7 +385,8 @@ class StellarContinuumModel:
         # Run the assessments of the DRP file
         self.fit(drpf, binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig, dapsrc=dapsrc,
                  dapver=dapver, analysis_path=analysis_path, directory_path=directory_path,
-                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, verbose=verbose)
+                 output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
+                 clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -419,7 +421,7 @@ class StellarContinuumModel:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_method_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -434,17 +436,18 @@ class StellarContinuumModel:
 
         """
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
-                                                         drpver=self.drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        method = default_dap_method(binned_spectra=self.binned_spectra, stellar_continuum=self)
+        #method = '{0}-{1}'.format(self.binned_spectra.method['key'], self.method['key'])
+        self.directory_path = default_dap_method_path(method, plate=self.drpf.plate,
+                                                      ifudesign=self.drpf.ifudesign,
+                                                      ref=True, drpver=self.drpf.drpver,
+                                                      dapver=dapver, analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        method = '{0}-{1}-{2}'.format(self.binned_spectra.rdxqa.method['key'],
+        ref_method = '{0}-{1}-{2}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'], self.method['key'])
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.drpf.mode, method) \
+        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
@@ -481,7 +484,8 @@ class StellarContinuumModel:
             self.method['fitpar']['template_library'] \
                     = TemplateLibrary(self.method['fitpar']['template_library_key'],
                             velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
-                                      drpf=self.drpf, dapsrc=dapsrc, analysis_path=analysis_path)
+                                      drpf=self.drpf, dapsrc=dapsrc, analysis_path=analysis_path,
+                                      symlink_dir=self.tpl_symlink_dir)
                                       #, clobber=True)
 
 
@@ -584,8 +588,8 @@ class StellarContinuumModel:
 
 
     def fit(self, drpf, binned_spectra, guess_vel=None, guess_sig=None, dapsrc=None, dapver=None,
-            analysis_path=None, directory_path=None, output_file=None, hardcopy=True, clobber=False,
-            verbose=0):
+            analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+            tpl_symlink_dir=None, clobber=False, verbose=0):
         """
 
         Fit the binned spectra
@@ -634,6 +638,7 @@ class StellarContinuumModel:
         print('With good S/N: ', numpy.sum(good_snr))
 
         # Fill in any remaining binning parameters
+        self.tpl_symlink_dir = tpl_symlink_dir
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
 
         # (Re)Set the output paths

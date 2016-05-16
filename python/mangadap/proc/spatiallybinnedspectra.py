@@ -438,7 +438,7 @@ class SpatiallyBinnedSpectra:
     """
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, clobber=False, verbose=0, checksum=False):
+                 hardcopy=True, symlink_dir=None, clobber=False, verbose=0, checksum=False):
 
         self.version = '1.0'
         self.verbose = verbose
@@ -455,6 +455,7 @@ class SpatiallyBinnedSpectra:
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
+        self.symlink_dir = None
 
         # Define the bitmask
         self.bitmask = SpatiallyBinnedSpectraBitMask(dapsrc=dapsrc)
@@ -481,7 +482,7 @@ class SpatiallyBinnedSpectra:
         # Bin the spectra
         self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
                          directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                         clobber=clobber, verbose=verbose)
+                         symlink_dir=symlink_dir, clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -574,6 +575,7 @@ class SpatiallyBinnedSpectra:
         """
         # Set the output directory path
         self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
+                                                         ifudesign=self.drpf.ifudesign,
                                                          drpver=self.drpf.drpver,
                                                          dapver=dapver,
                                                          analysis_path=analysis_path) \
@@ -581,10 +583,8 @@ class SpatiallyBinnedSpectra:
 
         # Set the output file
         method = '{0}-{1}'.format(self.rdxqa.method['key'], self.method['key'])
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.drpf.mode, method) \
+        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign, method) \
                                         if output_file is None else str(output_file)
-                                                 #, compressed=False) \
 
 
     def _clean_drp_header(self, ext='FLUX'):
@@ -815,7 +815,8 @@ class SpatiallyBinnedSpectra:
 
     # TODO: This function needs to be broken up
     def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
-                    directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0):
+                    directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
+                    clobber=False, verbose=0):
         """
 
         Bin and stack the spectra.
@@ -1239,6 +1240,7 @@ class SpatiallyBinnedSpectra:
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
+        self.symlink_dir = symlink_dir
         if self.hardcopy:
             self.write(clobber=clobber)
 
@@ -1256,7 +1258,7 @@ class SpatiallyBinnedSpectra:
         
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir)
 
         # Revert the structure
         if self.drpf.mode == 'CUBE':

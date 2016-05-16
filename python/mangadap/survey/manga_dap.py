@@ -53,6 +53,8 @@ import resource
 import time
 import os
 
+from ..config.defaults import default_drp_version, default_dap_version
+from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..drpfits import DRPFits
 from ..proc.reductionassessments import ReductionAssessment
@@ -75,8 +77,8 @@ __license__ = 'BSD3'
 __version__ = 2.0
 __status__ = 'Development'
 
-def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc=None,
-              directory_path=None, analysis_path=None):
+def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
+              directory_path=None, dapver=None, dapsrc=None, analysis_path=None):
     """
     Main wrapper function for the MaNGA DAP.
 
@@ -108,24 +110,31 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         3. Same as above, with figures.
 
     Args:
-        obs (:class:`mangadap.par.obsinput.ObsInputPar`): Object with the input
-            parameters.
-        plan (:class:`mangadap.par.analysisplan.AnalysisPlan`): Object with the
-            analysis plan to implement.
-        dbg (bool) : (Optional) Flag to run the DAP in debug mode, see
-            above; default is False.
-        log (str) : (Optional) File name for log output, see above; no
-            log file is produced by default.
-        verbose (int) : (Optional) Verbosity level, see above; default
-            is 0.
-        redux_path (str) : (Optional) Top-level directory with the DRP
+        obs (:class:`mangadap.par.obsinput.ObsInputPar`): Object with
+            the input parameters.
+        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
+            Object with the analysis plan to implement.
+        dbg (bool) : (**Optional**) Flag to run the DAP in debug mode,
+            see above; default is False.
+        log (str) : (**Optional**) File name for log output, see above;
+            no log file is produced by default.
+        verbose (int) : (**Optional**) Verbosity level, see above;
+            default is 0.
+        drpver (str): (**Optional**) DRP version.  Default determined by
+            :func:`mangadap.config.defaults.default_drp_version`.
+
+        redux_path (str) : (**Optional**) Top-level directory with the DRP
             products; default is defined by
             :func:`mangadap.config.defaults.default_redux_path`.
-        directory_path (str) : (Optional) Direct path to directory
+        directory_path (str) : (**Optional**) Direct path to directory
             containing the DRP output file; default is defined by
             :func:`mangadap.config.defaults.default_drp_directory_path`
-
-        analysis_path (str) : (Optional) Top-level directory for the DAP
+        dapver (str): (**Optional**) DAP version.  Default determined by
+            :func:`mangadap.config.defaults.default_dap_version`.
+        dapsrc (str): (**Optional**) Source directory of the DAP.
+            Default determined by
+            :func:`mangadap.config.defaults.default_dap_source`.
+        analysis_path (str) : (**Optional**) Top-level directory for the DAP
             output data; default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
 
@@ -133,7 +142,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         int: Status flag
     """
 
-    init_DAP_logging(log, simple_warnings=False)
+    init_DAP_logging(log)#, simple_warnings=False)
 
     # Start log
     loggers = module_logging(__name__, verbose)
@@ -154,9 +163,10 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     #-------------------------------------------------------------------
     # Declare the DRP fits file
     #-------------------------------------------------------------------
-    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], redux_path=redux_path,
-#    drpf = DRPFits(obs['plate'], obs['ifudesign'], 'RSS', redux_path=redux_path,
-                   directory_path=directory_path)
+    _drpver = default_drp_version() if drpver is None else drpver
+    _dapver = default_dap_version() if dapver is None else dapver
+    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
+                   redux_path=redux_path, directory_path=directory_path)
     log_output(loggers, 1, logging.INFO, ' Read DRP file: {0}\n'.format(drpf.file_path()))
 
     if not os.path.isdir(analysis_path):
@@ -165,13 +175,17 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
     # Iterate over plans:
     for i in range(plan.nplans):
 
+        plan_ref_dir = default_dap_method_path(default_dap_method(plan=plan[i]), plate=obs['plate'],
+                                               ifudesign=obs['ifudesign'], ref=True, drpver=drpver,
+                                               dapver=dapver, analysis_path=analysis_path)
+
         #---------------------------------------------------------------
         # S/N Assessments
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
                                         dapsrc=dapsrc, analysis_path=analysis_path, verbose=verbose,
-                                        clobber=plan['drpqa_clobber'][i])
+                                        symlink_dir=plan_ref_dir, clobber=plan['drpqa_clobber'][i])
  
         #---------------------------------------------------------------
         # Spatial Binning
@@ -179,7 +193,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
                                            dapsrc=dapsrc, analysis_path=analysis_path,
-                                           verbose=verbose, clobber=plan['bin_clobber'][i])
+                                           verbose=verbose, symlink_dir=plan_ref_dir,
+                                           clobber=plan['bin_clobber'][i])
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit
@@ -188,7 +203,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, redux_path=None, dapsrc
                     StellarContinuumModel(plan['continuum_key'][i], drpf, binned_spectra,
                                           guess_vel=obs['vel'], guess_sig=obs['vdisp'],
                                           dapsrc=dapsrc, analysis_path=analysis_path,
-                                          verbose=verbose, clobber=plan['continuum_clobber'][i])
+                                          verbose=verbose, tpl_symlink_dir=plan_ref_dir,
+                                          clobber=plan['continuum_clobber'][i])
 
         #---------------------------------------------------------------
         # Emission-line Moment measurements

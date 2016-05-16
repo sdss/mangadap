@@ -45,7 +45,7 @@ from astropy.io import fits
 from .util.log import init_DAP_logging, module_logging, log_output
 from .util.fileio import write_hdu
 from .drpfits import DRPFits
-from .config.defaults import default_dap_method_path, default_dap_file_name
+from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
 from .proc.reductionassessments import ReductionAssessment
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .proc.stellarcontinuummodel import StellarContinuumModel
@@ -76,10 +76,6 @@ class construct_maps_file:
         if directory_path is None and (binned_spectra is None or stellar_continuum is None):
             raise ValueError('Could not define output directory path.')
 
-        self.method = '{0}-{1}'.format(binned_spectra.method['key'],
-                                       stellar_continuum.method['key']) \
-                                if directory_path is None else None
-
         # Type checking
         if not isinstance(drpf, DRPFits):
             raise TypeError('Input must have type DRPFits.')
@@ -103,6 +99,9 @@ class construct_maps_file:
 
         # Set the output directory path
         # TODO: Get DAP version from __version__ string
+        self.method = default_dap_method(binned_spectra=binned_spectra,
+                                         stellar_continuum=stellar_continuum) \
+                                if directory_path is None else None
         self.directory_path = default_dap_method_path(self.method, self.drpf.plate,
                                                       drpver=self.drpf.drpver, dapver=dapver,
                                                       analysis_path=analysis_path) \
@@ -110,7 +109,7 @@ class construct_maps_file:
 
         # Set the output file
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.drpf.mode, self.method) \
+                                                 self.method) \
                                     if output_file is None else str(output_file)
 
         ofile = os.path.join(self.directory_path, self.output_file)
@@ -682,7 +681,7 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}', qual=True),
                                 name='STELLAR_SIGMA_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data==numpy.zeros(data.shape, dtype=numpy.uint8),
+        hdus += [ fits.ImageHDU(data=numpy.zeros(data.shape, dtype=numpy.uint8),
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_SIGMA',
                                                                  hduclas2='QUALITY', err=True,

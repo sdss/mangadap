@@ -39,8 +39,8 @@ A class hierarchy that measures moments of the observed emission lines.
         import astropy.constants
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
+        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
         from ..util.bitmask import BitMask
         from .artifactdb import ArtifactDB
@@ -91,8 +91,8 @@ from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
-from ..config.defaults import default_dap_file_name
+from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from .artifactdb import ArtifactDB
@@ -361,22 +361,23 @@ class EmissionLineMoments:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.binned_spectra.drpf.plate,
-                                                         drpver=self.binned_spectra.drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        method = default_dap_method(binned_spectra=self.binned_spectra,
+                                    stellar_continuum=self.stellar_continuum)
+        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
+                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                      ref=True,
+                                                      drpver=self.binned_spectra.drpf.drpver,
+                                                      dapver=dapver, analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
-                                  self.binned_spectra.method['key'])
+        ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
+                                      self.binned_spectra.method['key'])
         if self.stellar_continuum is not None:
-            method = '{0}-{1}'.format(method, self.stellar_continuum.method['key'])
-        method = '{0}-{1}'.format(method, self.database['key'])
-
+            ref_method = '{0}-{1}'.format(method, self.stellar_continuum.method['key'])
+        ref_method = '{0}-{1}'.format(method, self.database['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign,
-                                                 self.binned_spectra.drpf.mode, method) \
+                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 

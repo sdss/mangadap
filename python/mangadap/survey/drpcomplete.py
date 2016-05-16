@@ -92,6 +92,7 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
 .. _SDSS parameter files: http://www.sdss.org/dr12/software/par/
 .. _DAP at Utah: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/Utah
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
+.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 
 """
 
@@ -175,20 +176,23 @@ class DRPComplete:
         platelist (list) : List of plates to search for, see above.
         ifudesignlist (list) : List of IFU designs to search for, see
             above.
-        platetargets (numpy.ndarray) : List of platetargets files to
+        platetargets (numpy.ndarray): List of platetargets files to
             search through, see above
-        catid (numpy.ndarray) : List of target catalog IDs, see above
-        drpver (str) : DRP version, see above.
-        redux_path (str) : Path to the top level of directory for the
+        catid (numpy.ndarray): List of target catalog IDs, see above
+        drpver (str): DRP version, see above.
+        redux_path (str): Path to the top level of directory for the
             DRP output, see above.
         dapver (str) : DAP version, see above.
-        analysis_path (str) : Path to the top level directory for the
+        analysis_path (str): Path to the top level directory for the
             DAP output files, see above.
+        directory_path (str): Direct path to the output file produced
+            using
+            :func:`mangadap.config.defaults.default_dap_reference_path`
         readonly (bool) : Flag that the drpcomplete fits file is only
             opened for reading, not for updating.
-        data (dict) : Data storage structure.  *Need to check exact data
-            type*.
-        nrows (int) : Number of rows in the data structure.
+        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits data with
+            binary table data.
+        nobs (int) : Number of observations in the file
 
     """
     def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, catid=None,
@@ -201,12 +205,14 @@ class DRPComplete:
         self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
         self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
+        self.directory_path = defaults.default_dap_reference_path(drpver=self.drpver,
+                                            dapver=self.dapver, analysis_path=self.analysis_path)
         
+        self.hdu = None
+        self.nobs = None
         if os.path.exists(self.file_path()):
-            self._read_data()
-        else:
-            self.data = None
-            self.nrows = None
+            print('READING')
+            self._read()
 
         if readonly:
             self.readonly=True
@@ -231,6 +237,10 @@ class DRPComplete:
             self.catid = numpy.array( arginp_to_list(catid) ).astype(numpy.int)
         else:
             self.platetargets, self.catid = defaults.default_plate_target_files()
+
+
+    def __getitem__(self, key):
+        return self.hdu['DRPC'].data[key]
 
 
     # ******************************************************************
@@ -546,13 +556,14 @@ class DRPComplete:
         return True
 
 
-    def _read_data(self):
+    def _read(self):
         """Read the data in the existing file at :func:`file_path`."""
-        hdu = fits.open(self.file_path())
-        self.data = hdu[1].data
-        self.nrows = hdu[1].header['NAXIS2']
-        hdu.close()
-        print('Read data: %d rows' % self.nrows)
+        if self.hdu is not None:
+            self.hdu.close()
+            self.hdu = None
+        self.hdu = fits.open(self.file_path())
+        self.nobs = self.hdu['DRPC'].header['NAXIS2']
+        print('Read data: {0} rows'.format(self.nobs))
 
 
     def _confirm_access(self, reread):
@@ -570,8 +581,8 @@ class DRPComplete:
         inp = self.file_path()
         if not os.path.exists(inp):
             raise FileNotFoundError('Cannot open file: {0}'.format(inp))
-        if self.data is None or reread:
-            self._read_data()
+        if self.hdu is None or reread:
+            self._read()
 
 
     def _find_completed_reductions(self, mindesign=19, combinatorics=False):
@@ -709,7 +720,7 @@ class DRPComplete:
         print('Checking for RSS counterparts...', end='\r')
         for i in range(0,n_drp):
             drpf = drpfits.DRPFits(drplist[i].plate, drplist[i].ifudesign, 'RSS',
-                                   drpver=drplist[i].drpver)
+                                   drpver=drplist[i].drpver, redux_path=self.redux_path)
             modes[i] = 2 if os.path.exists(drpf.file_path()) else 1
         print('Checking for RSS counterparts...DONE.')
         return modes
@@ -747,11 +758,13 @@ class DRPComplete:
 
         """
         ostream.write('DAPPAR {0:4d} {1:5d} {2:4s} {3:14.7e} {4:14.7e} {5:14.7e} {6:14.7e}'
-                      ' {7:14.7e}\n'.format(self.data['PLATE'][index],
-                                            self.data['IFUDESIGN'][index], mode,
-                                            self.data['VEL'][index], self.data['VDISP'][index],
-                                            self.data['ELL'][index], self.data['PA'][index],
-                                            self.data['REFF'][index]))
+                      ' {7:14.7e}\n'.format(self.hdu['DRPC'].data['PLATE'][index],
+                                            self.hdu['DRPC'].data['IFUDESIGN'][index], mode,
+                                            self.hdu['DRPC'].data['VEL'][index],
+                                            self.hdu['DRPC'].data['VDISP'][index],
+                                            self.hdu['DRPC'].data['ELL'][index],
+                                            self.hdu['DRPC'].data['PA'][index],
+                                            self.hdu['DRPC'].data['REFF'][index]))
 
 
     # ******************************************************************
@@ -764,7 +777,7 @@ class DRPComplete:
 
     def file_path(self):
         """Return the full pat to the DRP complete database."""
-        return os.path.join(self.analysis_path, self.file_name())
+        return os.path.join(self.directory_path, self.file_name())
 
 
     def update(self, platelist=None, ifudesignlist=None, combinatorics=False, force=False,
@@ -834,7 +847,7 @@ class DRPComplete:
         drplist = drpfits.drpfits_list(self.platelist, self.ifudesignlist, modelist,
                                        drpver=self.drpver)
 
-        # By running _all_data_exists() the self.data and self.nrows
+        # By running _all_data_exists() the self.hdu and self.nobs
         # attributes will be populated if they haven't been already!
         if not force and self._all_data_exists():
             print('{0} up to date.'.format(self.file_path()))
@@ -861,9 +874,6 @@ class DRPComplete:
                    [drplist[i].ifudesign for i in range(0,nn)], modes, mangaid, objra, objdec,
                    catid, catindx, trg_version, trg_id, manga_trg1, manga_trg3, vel, veldisp, ell,
                    pa, Reff)
-
-        # Read the data in from disk and save it within the object
-        self._read_data()
 
 
     def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx,
@@ -955,8 +965,8 @@ class DRPComplete:
         if os.path.isfile(out) and not clobber:
             raise FileExistsError('DRP complete file already exists: {0}'.format(out))
 
-        if not os.path.isdir(self.analysis_path):
-            os.makedirs(self.analysis_path)
+        if not os.path.isdir(self.directory_path):
+            os.makedirs(self.directory_path)
 
         # Create the primary header
         nplttrg = len(self.platetargets)
@@ -995,11 +1005,11 @@ class DRPComplete:
         cols.append(fits.Column(name='REFF', format='1D', array=Reff))
 
         # Create the HDUList and write it to the fits file
-        hdulist = fits.HDUList([ fits.PrimaryHDU(header=hdr), fits.BinTableHDU.from_columns(cols) ])
-
-        # TODO: Make directory if it doesn't exist?
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
+                                  fits.BinTableHDU.from_columns(cols, name='DRPC') ])
         print('Writing to disk: {0}'.format(out))
-        hdulist.writeto(out, clobber=clobber)
+        self.hdu.writeto(out, clobber=clobber)
+        self.nobs = self.hdu['DRPC'].header['NAXIS2']
 
 
     def grab_data(self, plate=None, ifudesign=None, index=None, reread=False):
@@ -1033,16 +1043,20 @@ class DRPComplete:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
             self._confirm_access(reread)
-            if index >= self.nrows:
+            if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
-        return [ self.data['PLATE'][index], self.data['IFUDESIGN'][index],
-                 self.data['MODES'][index], self.data['MANGAID'][index], self.data['OBJRA'][index],
-                 self.data['OBJDEC'][index], self.data['CATID'][index], self.data['CATINDX'][index],
-                 self.data['TRG_VERSION'][index], self.data['TRG_ID'][indx],
-                 self.data['NSA_V100_ID'][index], self.data['VEL'][index],
-                 self.data['VDISP'][index], self.data['ELL'][index], self.data['PA'][index],
-                 self.data['REFF'][index] ]
+        # TODO: Can't I just select index, i.e.,
+        # self.hdu[1].data[index]?
+
+        return [ self.hdu['DRPC'].data['PLATE'][index], self.hdu['DRPC'].data['IFUDESIGN'][index],
+                 self.hdu['DRPC'].data['MODES'][index], self.hdu['DRPC'].data['MANGAID'][index],
+                 self.hdu['DRPC'].data['OBJRA'][index], self.hdu['DRPC'].data['OBJDEC'][index],
+                 self.hdu['DRPC'].data['CATID'][index], self.hdu['DRPC'].data['CATINDX'][index],
+                 self.hdu['DRPC'].data['TRG_VERSION'][index], self.hdu['DRPC'].data['TRG_ID'][indx],
+                 self.hdu['DRPC'].data['NSA_V100_ID'][index], self.hdu['DRPC'].data['VEL'][index],
+                 self.hdu['DRPC'].data['VDISP'][index], self.hdu['DRPC'].data['ELL'][index],
+                 self.hdu['DRPC'].data['PA'][index], self.hdu['DRPC'].data['REFF'][index] ]
 
 
     def write_par(self, ofile, mode, plate=None, ifudesign=None, index=None, reread=False,
@@ -1089,12 +1103,13 @@ class DRPComplete:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
             self._confirm_access(reread)
-            if index >= self.nrows:
+            if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
-        if mode is 'RSS' and self.data['MODES'][index] != 2:
+        if mode is 'RSS' and self.hdu['DRPC'].data['MODES'][index] != 2:
             raise ValueError('RSS mode not available for plate={0},ifudesign={1} !'.format(
-                                    self.data['PLATE'][index], self.data['IFUDESIGN'][index]))
+                                                        self.hdu['DRPC'].data['PLATE'][index],
+                                                        self.hdu['DRPC'].data['IFUDESIGN'][index]))
 
         # Write the SDSS parameter file
         ostream = open(ofile, 'w')
@@ -1127,12 +1142,13 @@ class DRPComplete:
         """
         self._confirm_access(reread)
 
-        for i in range(self.nrows):
-            if self.data['PLATE'][i] == plate and self.data['IFUDESIGN'][i] == ifudesign:
+        for i in range(self.nobs):
+            if self.hdu['DRPC'].data['PLATE'][i] == plate \
+                    and self.hdu['DRPC'].data['IFUDESIGN'][i] == ifudesign:
                 return i
 
-        raise Exception('Could not find plate={0},ifudesign={1} in drpcomplete file!'.format(plate,
-                        ifudesign))
+        raise ValueError('Could not find plate={0},ifudesign={1} in drpcomplete file!'.format(
+                                plate, ifudesign))
 
 
 

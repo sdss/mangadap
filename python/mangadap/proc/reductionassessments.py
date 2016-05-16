@@ -358,6 +358,8 @@ class ReductionAssessment:
             :func:`mangadap.config.defaults.default_reduction_assessments_file`.
         hardcopy (bool): (**Optional**) Flag to write the data to a fits
             file.  Default is True.
+        symlink_dir (str): (**Optional**) Create a symlink to the file
+            in this directory.  Default is for no symlink.
         clobber (bool): (**Optional**) If the output file already
             exists, this will force the assessments to be redone and the
             output file to be overwritten.  Default is False.
@@ -388,6 +390,7 @@ class ReductionAssessment:
             :func:`mangadap.config.defaults.default_reduction_assessments_file`.
         hardcopy (bool): Flag to keep a hardcopy of the data by writing
             the data to a fits file.
+        symlink_dir (str): Symlink created to the file in this directory
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList with the
             data, with columns as described above.
         correlation (:class:`mangadap.util.covariance.Covariance`):
@@ -400,7 +403,7 @@ class ReductionAssessment:
 
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, clobber=False, verbose=0):
+                 hardcopy=True, symlink_dir=None, clobber=False, verbose=0):
                  
         self.version = '1.0'
         self.verbose = verbose
@@ -416,6 +419,7 @@ class ReductionAssessment:
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
+        self.symlink_dir = None
 
         # Initialize the objects used in the assessments
         self.pa = None
@@ -426,7 +430,7 @@ class ReductionAssessment:
         # Run the assessments of the DRP file
         self.compute(drpf, pa=pa, ell=ell, dapver=dapver, analysis_path=analysis_path,
                      directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                     clobber=clobber, verbose=verbose)
+                     symlink_dir=symlink_dir, clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -487,6 +491,7 @@ class ReductionAssessment:
         """
         # Set the output directory path
         self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
+                                                         ifudesign=self.drpf.ifudesign,
                                                          drpver=self.drpf.drpver,
                                                          dapver=dapver,
                                                          analysis_path=analysis_path) \
@@ -494,7 +499,7 @@ class ReductionAssessment:
 
         # Set the output file
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.drpf.mode, self.method['key']) \
+                                                 self.method['key']) \
                                         if output_file is None else str(output_file)
 
     def _per_spectrum_dtype(self):
@@ -538,7 +543,7 @@ class ReductionAssessment:
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, hardcopy=True, clobber=False, verbose=0):
+                output_file=None, hardcopy=True, symlink_dir=None, clobber=False, verbose=0):
         r"""
 
         Compute and output the main data products.  The list of HDUs
@@ -608,6 +613,8 @@ class ReductionAssessment:
                 :func:`mangadap.config.defaults.default_reduction_assessments_file`.
             hardcopy (bool): (**Optional**) Flag to write the data to a
                 fits file.  Default is True.
+            symlink_dir (str): (**Optional**) Create a symlink to the
+                file in this directory.  Default is for no symlink.
             clobber (bool): (**Optional**) If the output file already
                 exists, this will force the assessments to be redone and
                 the output file to be overwritten.  Default is False.
@@ -741,7 +748,8 @@ class ReductionAssessment:
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
+        self.symlink_dir = symlink_dir
         if self.hardcopy:
-            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
+            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir)
 
 

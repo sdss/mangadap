@@ -1488,7 +1488,7 @@ class Elric(EmissionLineFit):
         # Do the fit
         velocity = self._velocity_vectors(self.wave, self.fitting_window)
         self.bestfit = numpy.empty((self.nspec,self.nwindows), dtype=object)
-        for i in range(440,self.nspec):
+        for i in range(self.nspec):
 
 #            for j in range(self.nwindows):
 #                print('Window: {0}/{1}'.format(j+1, self.nwindows))
@@ -1497,7 +1497,7 @@ class Elric(EmissionLineFit):
 #            if i > 441:
 #                exit()
 
-#            print('Fitting emission lines in spectrum: {0}/{1}'.format(i+1,self.nspec), end='\r')
+            print('Fitting emission lines in spectrum: {0}/{1}'.format(i+1,self.nspec), end='\r')
 
             # Get the fitting mask for each emission-line in each window
             fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.guess_redshift[i],

@@ -182,20 +182,20 @@ def default_regrid_sigma():
     return 0.7
 
 
-def default_cube_covariance_file(plate, ifudesign):
-    """
-    Return the default name for the covariance calculated for a 'CUBE'
-    fits file.
-
-    Args:
-        plate (int): Plate number
-        ifudesign (int): IFU design number
-    
-    Returns:
-        str: The default name of the covariance file.
-    """
-    root = default_manga_fits_root(plate, ifudesign, 'CUBE')
-    return ('{0}_COVAR.fits'.format(root))
+#def default_cube_covariance_file(plate, ifudesign):
+#    """
+#    Return the default name for the covariance calculated for a 'CUBE'
+#    fits file.
+#
+#    Args:
+#        plate (int): Plate number
+#        ifudesign (int): IFU design number
+#    
+#    Returns:
+#        str: The default name of the covariance file.
+#    """
+#    root = default_manga_fits_root(plate, ifudesign, 'CUBE')
+#    return ('{0}_COVAR.fits'.format(root))
 
 
 def default_dap_source():
@@ -263,13 +263,15 @@ def default_analysis_path(drpver=None, dapver=None):
 #        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 #
 #    return os.path.join(analysis_path, str(plate), str(ifudesign))
-def default_dap_reference_path(plate=None, drpver=None, dapver=None, analysis_path=None):
+def default_dap_reference_path(plate=None, ifudesign=None, drpver=None, dapver=None,
+                               analysis_path=None):
     """
     Return the path to the top-level reference path for a given plate.
 
     Args:
         plate (int): (**Optional**) Plate number, for reference
             directory of a specific plate.
+        ifudesign (int): (**Optional**)  IFU design number.
         drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (**Optional**) DAP version.  Default is to use
@@ -278,27 +280,64 @@ def default_dap_reference_path(plate=None, drpver=None, dapver=None, analysis_pa
             directory.  Default is to use :func:`default_analysis_path`
 
     Returns:
-        str: Path to the directory with DAP output files
+        str: Path to the directory with DAP reference files
+
+    Raises:
+        ValueError: Raised if IFU design is provided and plate is not.
     """
-    # Make sure the DRP version is set
+    # For heirarchy, if ifudesign is given, plate must also be given
+    if plate is None and ifudesign is not None:
+        raise ValueError('For IFU design subdirectory, must provide plate number.')
+
+    # Get the main analysis path
     if analysis_path is None:
         analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 
-    return os.path.join(analysis_path, 'ref') \
-                if plate is None else os.path.join(analysis_path, 'ref', str(plate))
+    output_path = os.path.join(analysis_path, 'ref')
+    if plate is None:
+        return output_path
+    output_path = os.path.join(output_path, str(plate))
+    return output_path if ifudesign is None else os.path.join(output_path, str(ifudesign))
 
 
-def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysis_path=None):
+def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None):
     """
-    Return the path to the top-level path for specific DAP method and a
-    given plate.
+    Return the method for a provided plan.  The name is currently built
+    using the keyword used to identify the methods for building the
+    binned spectra and the stellar continuum models.
+    """
+    if plan is not None:
+        if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
+            raise ValueError('Must only provide a single plan.')
+        if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
+            raise ValueError('Must only provide a single plan.')
+        binning_method = str(plan['bin_key'])
+        continuum_method = str(plan['continuum_key'])
+    else:
+        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
+        continuum_method = 'None' if stellar_continuum is None else stellar_continuum.method['key']
+    return '{0}-{1}'.format(binning_method, continuum_method)
+
+
+def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False,
+                            drpver=None, dapver=None, analysis_path=None):
+    """
+    Return the path to the designated subdirectory built using the plan
+    key identifiers or directly using the provided method.
+
+    The "method" identifying each plan is currently build using the
+    keywords for the binning type and the continuum-fitting key.
+    Nominally, the latter should include the template set used.
 
     Args:
-        method_dir (str): Name to give subdirectory for the specific
-            method used to create the data.  This is completely
-            unconstrained, except that it must have non-zero length.
-        plate (int): (**Optional**) Plate number, for reference
-            directory of a specific plate.
+        method (str): String defining the method identifier for a set of
+            DAP output files.  These should be built using
+            :func:`default_dap_method`.
+        plate (int): (**Optional**) Plate number.
+        ifudesign (int): (**Optional**)  IFU design number.
+        qa (bool): (**Optional**) Give the path to the qa/ subdirectory
+        ref (bool): (**Optional**) Give the path to the ref/
+            subdirectory
         drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (**Optional**) DAP version.  Default is to use
@@ -307,19 +346,69 @@ def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysi
             directory.  Default is to use :func:`default_analysis_path`
 
     Returns:
-        str: Path to the directory with DAP output files
-    """
-    if len(method_dir) == 0:
-        raise ValueError('method_dir undefined!')
+        str: Path to the plan subdirectory
 
-    # Make sure the DRP version is set
+    Raises:
+        ValueError: Raised if IFU design is provided and plate is not,
+            or if either qa or ref are true and one or both of plate and
+            IFU design are not provided..
+    """
+    # For heirarchy, if ifudesign is given, plate must also be given
+    if plate is None and ifudesign is not None:
+        raise ValueError('For IFU design subdirectory, must provide plate number.')
+    if (qa or ref) and (plate is None or ifudesign is None):
+        raise ValueError('For qa/ and ref/ subdirectories, must provide plate/ifudesign.')
+    if not qa and not ref and ifudesign is not None:
+        raise ValueError('Must designate qa or ref for IFU design subdirectory.')
+    if qa and ref:
+        raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
+
+    # Get the main analysis path
     if analysis_path is None:
         analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 
-    return os.path.join(analysis_path, method_dir, str(plate))
+    # Build the plan subirectory
+    output_path = os.path.join(analysis_path, method)
+    if plate is None:
+        return output_path
+    output_path = os.path.join(output_path, str(plate))
+    if ifudesign is None:
+        return output_path
+    return os.path.join(output_path, ('qa' if qa else 'ref'), str(ifudesign))
 
 
-def default_manga_fits_root(plate, ifudesign, mode):
+#def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysis_path=None):
+#    """
+#    Return the path to the top-level path for specific DAP method and a
+#    given plate.
+#
+#    Args:
+#        method_dir (str): Name to give subdirectory for the specific
+#            method used to create the data.  This is completely
+#            unconstrained, except that it must have non-zero length.
+#        plate (int): (**Optional**) Plate number, for reference
+#            directory of a specific plate.
+#        drpver (str): (**Optional**) DRP version.  Default is to use
+#            :func:`default_drp_version`.
+#        dapver (str): (**Optional**) DAP version.  Default is to use
+#            :func:`default_dap_version`.
+#        analysis_path (str): (**Optional**) Path to the root analysis
+#            directory.  Default is to use :func:`default_analysis_path`
+#
+#    Returns:
+#        str: Path to the directory with DAP output files
+#    """
+#    if len(method_dir) == 0:
+#        raise ValueError('method_dir undefined!')
+#
+#    # Make sure the DRP version is set
+#    if analysis_path is None:
+#        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+#
+#    return os.path.join(analysis_path, method_dir, str(plate))
+
+
+def default_manga_fits_root(plate, ifudesign, mode=None):
     """
     Generate the main root name for the output MaNGA fits files for a
     given plate/ifudesign/mode.
@@ -330,16 +419,18 @@ def default_manga_fits_root(plate, ifudesign, mode):
     Args:
         plate (int): Plate number
         ifudesign (int): IFU design number
-        mode (str): Mode of the DRP reduction; either RSS or CUBE
+        mode (str): (**Optional**) Mode of the DRP reduction; either RSS
+            or CUBE.  Default is to leave the mode out of the name.
 
     Returns:
         str: Root name for a MaNGA fits file:
         `manga-[PLATE]-[IFUDESIGN]-LOG[MODE]`
     """
-    return 'manga-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
+    return 'manga-{0}-{1}'.format(plate, ifudesign) if mode is None else \
+                    'manga-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
 
-def default_dap_file_root(plate, ifudesign, mode):
+def default_dap_file_root(plate, ifudesign, mode=None):
     """
     Generate the root name of the MaNGA DAP parameter and script files
     for a given plate/ifudesign/mode.
@@ -347,24 +438,32 @@ def default_dap_file_root(plate, ifudesign, mode):
     Args:
         plate (int): Plate number
         ifudesign (int): IFU design number
-        mode (str): Mode of the DRP reduction; either RSS or CUBE
+        mode (str): (**Optional**) Mode of the DRP reduction; either RSS
+            or CUBE.  If None (default), the mode is excluded from the
+            file root.
 
     Returns:
-        str: Root name for the DAP file:
-        `mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]`
+        str: Root name for the DAP file: `mangadap-[PLATE]-[IFUDESIGN]`
+        or `mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE]`
     """
-    return 'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
+    return 'mangadap-{0}-{1}'.format(plate, ifudesign) if mode is None else \
+                    'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
 
-def default_dap_par_file(plate, ifudesign, mode, drpver=None, dapver=None, analysis_path=None,
-                         directory_path=None):
+def default_dap_par_file(plate, ifudesign, mode, partype='inpt', drpver=None, dapver=None,
+                         analysis_path=None, directory_path=None):
     """
-    Return the full path to the DAP par file.
+    Return the full path to a par file used by the DAP to analyze the
+    specified DRP output file.
 
     Args:
         plate (int): Plate number
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
+        partype (str):  An "unregulated" type for the parameter file.
+            The default is ``'inpt'``, signifying the input set of
+            observational parameters; see
+            :class:`mangadap.par.obsinput.ObsInputPar`.
         drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (**Optional**) DAP version.  Default is to use
@@ -380,61 +479,56 @@ def default_dap_par_file(plate, ifudesign, mode, drpver=None, dapver=None, analy
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_reference_path(plate=plate, drpver=drpver, dapver=dapver,
+        directory_path = default_dap_reference_path(plate=plate, ifudesign=ifudesign,
+                                                    drpver=drpver, dapver=dapver,
                                                     analysis_path=analysis_path)
     # Set the name of the par file; put this in its own function?
-    par_file = '{0}.par'.format(default_dap_file_root(plate, ifudesign, mode))
+    par_file = '{0}-input.par'.format(default_dap_file_root(plate, ifudesign, mode))
     return os.path.join(directory_path, par_file)
 
     
-def default_dap_plan_file(output_mode, drpver=None, dapver=None, analysis_path=None,
-                          directory_path=None):
+def default_dap_plan_file(drpver=None, dapver=None, analysis_path=None):
     """
     Return the full path to the DAP plan file.
 
     Args:
-        output_mode (str): Mode of the DAP output; see AnalysisPlan
         drpver (str): (**Optional**) DRP version.  Default is to use
             :func:`default_drp_version`.
         dapver (str): (**Optional**) DAP version.  Default is to use
             :func:`default_dap_version`.
         analysis_path (str): (**Optional**) Path to the root analysis
             directory.  Default is to use :func:`default_analysis_path`
-        directory_path (str): (**Optional**) Path to the directory with
-            the DAP output files.  Default is to use
-            :func:`default_dap_reference_path`
 
     Returns:
         str: Full path to the DAP plan file
     """
-    # Make sure the directory path is defined
-    if directory_path is None:
-        directory_path = default_dap_reference_path(drpver=drpver, dapver=dapver,
-                                                    analysis_path=analysis_path)
-    # Set the name of the plan file; put this in its own function?
-    plan_file = 'mangadap-plan-{0}.par'.format(output_mode)
-    return os.path.join(directory_path, plan_file)
+    # Get the main analysis path
+    if dapver is None:
+        dapver = default_dap_version()
+    if analysis_path is None:
+        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+    
+    # Set the name of the plan file
+    plan_file = 'mangadap-plan-{0}.par'.format(dapver)
+    return os.path.join(analysis_path, plan_file)
 
 
-def default_dap_file_name(plate, ifudesign, mode, output_mode, compressed=True):
+def default_dap_file_name(plate, ifudesign, output_mode, mode=None, compressed=True):
     """
     Return the name of the DAP output fits file.
 
     Args:
         plate (int): Plate number
         ifudesign (int): IFU design number
-        mode (str): Mode of the DRP reduction; either RSS or CUBE
         output_mode (str) : Output mode designation
+        mode (str): (**Optional**) Mode of the DRP reduction; either RSS
+            or CUBE.  Default is to leave the mode out of the name.
 
     Returns:
         str: Name of the DAP output file.
     """
     # Number of spaces provided for iteration number is 3
-    root = default_manga_fits_root(plate, ifudesign, mode)
-    # TODO: ? Use default_dap_file_root() or change to:
-#    siter = str(niter).zfill(3)
-#    return 'manga-{0}-{1}-LOG{2}_{3}-{4}.fits'.format(plate, ifudesign, mode, bintype, siter)
-#    return '{0}_BIN-{1}-{2}.fits'.format(root, bintype, siter)
+    root = default_manga_fits_root(plate, ifudesign, mode=mode)
     return ('{0}-{1}.fits.gz' if compressed else '{0}-{1}.fits').format(root, output_mode)
 
 

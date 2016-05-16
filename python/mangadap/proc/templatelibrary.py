@@ -574,6 +574,10 @@ class TemplateLibrary:
             the prepared template library does not exist, this will
             process the template library in preparation for use in
             fitting the provided DRP file.
+        hardcopy (bool): (**Optional**) Flag to keep a hardcopy of the
+            processed template library.  Default is True.
+        symlink_dir (str): (**Optional**) Create a symlink to the file
+            in this directory.  Default is for no symlink.
         clobber (bool): (**Optional**) If :attr:`drpf` is define and
             *process* is True, this will clobber any existing processed
             template library.
@@ -613,6 +617,9 @@ class TemplateLibrary:
             :attr:`directory_path`/:attr:`processed_file`.
         processed (bool): Flag that the template library has been
             prepared for use in the DAP.
+        hardcopy (bool): Flag to keep a hardcopy of the processed
+            template library.
+        symlink_dir (str): Symlink created to the file in this directory
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
             the DAP file
 
@@ -627,7 +634,8 @@ class TemplateLibrary:
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
                  sres=None, velocity_offset=0.0, spectral_step=None, log=True,
                  wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
-                 directory_path=None, processed_file=None, read=True, process=True, clobber=False):
+                 directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
+                 symlink_dir=None, clobber=False):
 
         self.version = '2.1'
 
@@ -658,6 +666,8 @@ class TemplateLibrary:
         self.directory_path = None
         self.processed_file = None
         self.processed = False
+        self.hardcopy = True
+        self.symlink_dir = None
         self.hdu = None
 
         # Do not read the library
@@ -677,7 +687,7 @@ class TemplateLibrary:
                                       wavelength_range=wavelength_range, renormalize=renormalize,
                                       dapver=dapver, analysis_path=analysis_path,
                                       directory_path=directory_path, processed_file=processed_file,
-                                      clobber=clobber)
+                                      hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber)
 
 
     def __del__(self):
@@ -764,6 +774,7 @@ class TemplateLibrary:
 
         # Set the output directory path
         self.directory_path = default_dap_reference_path(plate=drpf.plate,
+                                                         ifudesign=drpf.ifudesign,
                                                          drpver=drpf.drpver,
                                                          dapver=dapver,
                                                          analysis_path=analysis_path) \
@@ -771,7 +782,7 @@ class TemplateLibrary:
 
         # Set the output file
         self.processed_file = default_dap_file_name(drpf.plate, drpf.ifudesign,
-                                                    drpf.mode, self.library['key']) \
+                                                    self.library['key']) \
                                         if processed_file is None else str(processed_file)
 
 
@@ -1318,7 +1329,7 @@ class TemplateLibrary:
                                  sres=None, velocity_offset=0.0, spectral_step=None, log=True,
                                  wavelength_range=None, renormalize=True, dapver=None,
                                  analysis_path=None, directory_path=None, processed_file=None,
-                                 clobber=False):
+                                 hardcopy=True, symlink_dir=None, clobber=False):
         """
 
         Process the template library for use in analyzing object
@@ -1411,6 +1422,10 @@ class TemplateLibrary:
                 :attr:`directory_path`/:attr:`processed_file`.  Default
                 is defined by
                 :func:`mangadap.config.defaults.default_dap_file_name`.
+            hardcopy (bool): (**Optional**) Flag to keep a hardcopy of
+                the processed template library.  Default is True.
+            symlink_dir (str): (**Optional**) Create a symlink to the
+                file in this directory.  Default is for no symlink.
             clobber (bool): (**Optional**) Clobber any existing processed
                 library.
 
@@ -1456,6 +1471,8 @@ class TemplateLibrary:
         processed_file = self.processed_file if processed_file is None else processed_file
         if self._can_set_paths(directory_path, drpf, processed_file, quiet=True):
             self._set_paths(directory_path, dapver, analysis_path, drpf, processed_file)
+        self.hardcopy = hardcopy
+        self.symlink_dir = symlink_dir
 
         # Check that the path for or to the file is defined
         ofile = self.file_path()
@@ -1486,7 +1503,9 @@ class TemplateLibrary:
         # Process the library
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
         # Write the fits file
-        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True)
+        if self.hardcopy:
+            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                      symlink_dir=self.symlink_dir)
 
 
     def single_spec_to_fits(self, i, ofile, clobber=True):

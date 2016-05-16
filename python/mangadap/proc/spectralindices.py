@@ -39,8 +39,8 @@ A class hierarchy that performs the spectral-index measurements.
         import astropy.constants
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
-        from ..config.defaults import default_dap_file_name
+        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.instrument import spectral_resolution, match_spectral_resolution
         from ..util.instrument import spectral_coordinate_step
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -97,8 +97,8 @@ import astropy.constants
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
-from ..config.defaults import default_dap_file_name
+from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.instrument import spectral_resolution, match_spectral_resolution
 from ..util.instrument import spectral_coordinate_step
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -415,24 +415,26 @@ class SpectralIndices:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.binned_spectra.drpf.plate,
-                                                         drpver=self.binned_spectra.drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        method = default_dap_method(binned_spectra=self.binned_spectra,
+                                    stellar_continuum=self.stellar_continuum)
+        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
+                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                      ref=True,
+                                                      drpver=self.binned_spectra.drpf.drpver,
+                                                      dapver=dapver, analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
-                                  self.binned_spectra.method['key'])
+        ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
+                                      self.binned_spectra.method['key'])
         if self.stellar_continuum is not None:
-            method = '{0}-{1}'.format(method, self.stellar_continuum.method['key'])
+            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         if self.emission_line_model is not None:
-            method = '{0}-{1}'.format(method, self.emission_line_model.method['key'])
-        method = '{0}-{1}'.format(method, self.database['key'])
+            ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
+        ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
 
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign,
-                                                 self.binned_spectra.drpf.mode, method) \
+                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
@@ -846,6 +848,9 @@ class SpectralIndices:
                                  numpy.append(self.absdb['redside'],
                                               self.bhddb['redside'],axis=0), axis=0)
         for i in range(nspec):
+
+            print('Measuring spectral indices in spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
+
             # Shift the sidebands to the appropriate redshift
             _sidebands = sidebands*(1.0+redshift[i])
             _noise = None if noise is None else noise[i,:]
@@ -911,6 +916,8 @@ class SpectralIndices:
             # Perform the absorption-line measurements
             self._absorption_indices(wave, flux[i,:], hdu_measurements[i], err=_noise)
 
+        print('Measuring spectral indices in spectrum: {0}/{0}'.format(nspec))
+
 #        x = numpy.append(center, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
 #        _x = numpy.ma.MaskedArray(x, mask=x==-100)
 #        print(_x)
@@ -967,6 +974,8 @@ class SpectralIndices:
     def _calculate_dispersion_corrections(self, redshift, dapsrc=None):
         if self.stellar_continuum is None:
             return None
+
+        print('Calculating dispersion corrections using stellar continuum model...')
 
         # Get the wavelength and mask arrays
         wave = self.binned_spectra['WAVE'].data
@@ -1125,6 +1134,7 @@ class SpectralIndices:
         hdu_database = self._compile_database()
 
         # Perform the measurements on the galaxy spectra
+        print('Measuring spectral indices in observed spectra...')
         hdu_measurements = self._measure_indices(self.redshift, flux, ivar=ivar, mask=mask)
 
         # Get the corrections by performing the measurements on the

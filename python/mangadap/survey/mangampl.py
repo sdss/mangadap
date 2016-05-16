@@ -62,7 +62,7 @@ import numpy
 
 # TODO: Add DAP version
 
-class mangampl:
+class MaNGAMPL:
     """
 
     Create an object that keeps track of IDLUTILS, SDSS_ACCESS, MANGACORE, and
@@ -104,7 +104,7 @@ class mangampl:
             string in the table listed above. Default: MPL-5.
 
     Raises:
-        Exception: Raised if the provided *version* is not one of the
+        ValueError: Raised if the provided *version* is not one of the
             MPL values in the above table.
 
     Attributes:
@@ -126,7 +126,7 @@ class mangampl:
         mpli = numpy.where(mpls[:,0] == self.mplver)
         if len(mpli[0]) == 0:
             mpls = self._available_mpls(write=True)
-            raise Exception('{0} is not an available MPL!'.format(self.mplver))
+            raise ValueError('{0} is not an available MPL!'.format(self.mplver))
            
         n = mpls.shape[0] 
         i = 0
@@ -165,7 +165,7 @@ class mangampl:
                                 ['v1_2_0',      None, 'v5_5_19', 'v1_1_0', 'v1_2_0',     None ],
                                 [ 'MPL-3',      None, 'v5_5_22', 'v1_1_0', 'v1_3_3', 'v1_0_0' ],
                                 [ 'MPL-4',   '0.0.0', 'v5_5_23', 'v1_2_0', 'v1_5_1',  '1.1.1' ],
-                                [ 'MPL-5',   '0.2.0',   'trunk',  'trunk',  'trunk',  'trunk' ]
+                                [ 'MPL-5',   '0.2.0',   'trunk',  'trunk',  'trunk.2',  'trunk' ]
                               ])
         nmpl = mpl_def.shape[1]
         if write:
@@ -206,7 +206,7 @@ class mangampl:
     def show(self):
         """Print the available MPL versions to stdout."""
 
-        print('{0}: SDSS_ACCESS:{1}; IDLUTILS:{2}; COREVER:{3}; DRPVER:{4}; DAPVER:{4}'.format(
+        print('{0}: SDSS_ACCESS:{1}; IDLUTILS:{2}; COREVER:{3}; DRPVER:{4}; DAPVER:{5}'.format(
               self.mplver, self.accessver, self.idlver, self.corever, self.drpver, self.dapver))
 
 
