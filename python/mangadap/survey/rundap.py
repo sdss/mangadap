@@ -1230,7 +1230,10 @@ class rundap:
                                                ifudesign=ifudesign, ref=True,
                                                drpver=self.mpl.drpver, dapver=self.dapver,
                                                analysis_path=self.analysis_path)
-                os.symlink(parfile, os.path.join(path,parfile.split('/')[-1]))
+                olink = os.path.join(path,parfile.split('/')[-1])
+                if os.path.isfile(olink):
+                    os.remove(olink)
+                os.symlink(parfile, olink)
 
         # Generate the DRP input and DAP output paths, and the DAP
         # source path
@@ -1368,6 +1371,8 @@ class rundap:
         
         # Write the compute script (write_compute_script also checks the
         # path exists!)
+#        sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode, dapproc=self.dapproc, plots=self.plots,
+#                                               clobber=clobber)
         try:
             sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
                                                    dapproc=self.dapproc, plots=self.plots,

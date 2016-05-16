@@ -165,7 +165,7 @@ class MaNGAMPL:
                                 ['v1_2_0',      None, 'v5_5_19', 'v1_1_0', 'v1_2_0',     None ],
                                 [ 'MPL-3',      None, 'v5_5_22', 'v1_1_0', 'v1_3_3', 'v1_0_0' ],
                                 [ 'MPL-4',   '0.0.0', 'v5_5_23', 'v1_2_0', 'v1_5_1',  '1.1.1' ],
-                                [ 'MPL-5',   '0.2.0',   'trunk',  'trunk',  'trunk.2',  'trunk' ]
+                                [ 'MPL-5',   '0.2.0',   'trunk',  'trunk',  'trunk',  'trunk' ]
                               ])
         nmpl = mpl_def.shape[1]
         if write:
