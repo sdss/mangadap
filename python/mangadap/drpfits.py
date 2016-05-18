@@ -132,6 +132,7 @@ from .config.defaults import default_cube_recenter, default_regrid_rlim
 from .config.defaults import default_regrid_sigma
 from .config.defaults import default_manga_fits_root
 from .util.bitmask import BitMask
+from .mangafits import MaNGAFits
 
 #from matplotlib import pyplot
 
@@ -248,7 +249,7 @@ class DRPFitsBitMask(BitMask):
     Structure with the DRP mask bits.
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
-        DRPFits._check_mode(mode)
+        MaNGAFits.check_mode(mode)
         sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
                         if sdss_maskbits is None else sdss_maskbits
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
@@ -413,7 +414,7 @@ class DRPFits:
         # Set the attributes, forcing a known type
         self.plate = long(plate)
         self.ifudesign = long(ifudesign)
-        self._check_mode(mode)
+        MaNGAFits.check_mode(mode)
         self.mode = mode
 
         # Setup the directory path.
@@ -500,20 +501,6 @@ class DRPFits:
         self.open_hdu(checksum=self.checksum)
         return self.hdu[key]
 
-
-    @staticmethod
-    def _check_mode(mode):
-        """
-        Check that the mode is valid.
-
-        Args:
-
-            mode (str): Mode value to check.  Valid modes are `CUBE` and
-            `RSS`.
-        """
-        if mode not in [ 'CUBE', 'RSS']:
-            raise ValueError('{0} is not a viable mode.  Must be RSS or CUBE.'.format(mode))
-        
 
     def _cube_dimensions_undefined(self):
         """Return True if any of the cube dimensions are None."""
@@ -920,54 +907,6 @@ class DRPFits:
         self.hdu['FLUX'].header['CUNIT2'] = 'deg'
 
 
-    @staticmethod
-    def _restructure_cube(hdu, ext=['FLUX', 'IVAR', 'MASK'], inverse=False):
-        """
-        Restructure the cube such that the axes are [x, y, lambda].
-
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
-
-        """
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        for i in range(len(ext)):
-            if len(hdu[ext[i]].data.shape) != 3:
-                raise ValueError('Selected extension is not three-dimensional: {0}'.format(ext[i]))
-        for i in range(len(ext)):
-            hdu[ext[i]].data = numpy.asarray(hdu[ext[i]].data.T, order=('F' if inverse else 'C'))
-            hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'], \
-                    hdu[ext[i]].header['NAXIS3'] = hdu[ext[i]].data.shape
-
-
-    @staticmethod
-    def _restructure_rss(hdu, ext=['FLUX', 'IVAR', 'MASK', 'DISP', 'XPOS', 'YPOS'], inverse=False):
-        """
-        Restructure the RSS file.  At this point, this only means fixing
-        the header.
-
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
-
-        """
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        for i in range(len(ext)):
-            if len(hdu[ext[i]].data.shape) != 2:
-                raise ValueError('Selected extension is not two-dimensional: {0}'.format(ext[i]))
-        for i in range(len(ext)):
-            hdu[ext[i]].header['NAXIS1'], hdu[ext[i]].header['NAXIS2'] \
-                    = hdu[ext[i]].data.T.shape if inverse else hdu[ext[i]].data.shape
-
-
     def _generate_spatial_index(self):
         """
         Generate the tuples with the list of original indices in the
@@ -983,29 +922,6 @@ class DRPFits:
         # (i.e., the DRP provides [lambda, y, x] whereas this class
         # transposes this order)
         self.spatial_index[:] = [ (ii,jj) for ii, jj in zip(i,j) ]
-
-
-    @staticmethod
-    def mode_options():
-        """
-        Return the allowed modes.
-
-        Returns:
-            list: List of the allowed DRP fits file modes.
-        """
-        return [ 'CUBE', 'RSS' ]
-
-
-    @staticmethod
-    def sampling_options():
-        """
-        Return the allowed wavelength sampling modes.
-
-        Returns:
-            list: List of the allowed DRP fits wavelength sampling
-            modes.
-        """
-        return [ 'LIN', 'LOG' ]
 
 
     def file_name(self):
@@ -1058,21 +974,16 @@ class DRPFits:
 
         # Reformat and initialize properties of the data
         if self.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu)
+            MaNGAFits.restructure_cube(self.hdu)
         elif self.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu)
+            MaNGAFits.restructure_rss(self.hdu)
         self.shape = self.hdu['FLUX'].data.shape
-        self.spatial_shape = self._get_spatial_shape(self.shape, self.dispaxis)
+        self.spatial_shape = MaNGAFits.get_spatial_shape(self.shape, self.dispaxis)
         self.nspec = numpy.prod(self.spatial_shape)
         self.nwave = self.shape[self.dispaxis]
         self._generate_spatial_index()
 
    
-    @staticmethod
-    def _get_spatial_shape(shape, dispaxis):
-        return shape[:dispaxis] + shape[dispaxis+1:]
-
-
     def info(self):
         """Print the HDU info page."""
         self.open_hdu(checksum=self.checksum)

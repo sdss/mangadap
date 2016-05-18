@@ -1470,9 +1470,13 @@ class TemplateLibrary:
         directory_path = self.directory_path if directory_path is None else directory_path
         processed_file = self.processed_file if processed_file is None else processed_file
         if self._can_set_paths(directory_path, drpf, processed_file, quiet=True):
+#            print('setting paths')
             self._set_paths(directory_path, dapver, analysis_path, drpf, processed_file)
         self.hardcopy = hardcopy
         self.symlink_dir = symlink_dir
+
+        print('TemplateLibrary output path: {0}'.format(self.directory_path))
+        print('TemplateLibrary output file: {0}'.format(self.processed_file))
 
         # Check that the path for or to the file is defined
         ofile = self.file_path()

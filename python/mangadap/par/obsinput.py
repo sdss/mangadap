@@ -29,7 +29,7 @@ run the DAP for a specific MaNGA observation.
         from pydl.pydlutils.yanny import yanny
 
         from .parset import ParSet
-        from ..drpfits import DRPFits
+        from ..mangafits import MaNGAFits
 
 *Class usage examples*:
     To define a set of observation parameteters::
@@ -70,7 +70,7 @@ from pydl.pydlutils.yanny import yanny
 
 #from ..util.yanny import yanny
 from .parset import ParSet
-from ..drpfits import DRPFits
+from ..mangafits import MaNGAFits
 
 __author__ = 'Kyle B. Westfall'
 
@@ -90,7 +90,7 @@ class ObsInputPar(ParSet):
         plate (int) : Plate number; default is None.
         ifudesign (int) : IFU designation; default is None.
         mode (str) : DRP 3D mode; see
-            :func:`mangadap.drpfits.DRPFits.mode_options`; default is
+            :func:`mangadap.mangafits.MaNGAFits.mode_options`; default is
             CUBE.
         vel (float) : Systemic velocity (km/s); default is None.
         vdisp (float) : Guess velocity dispersion (km/s); default is
@@ -105,7 +105,7 @@ class ObsInputPar(ParSet):
                  reff=None):
 
         in_fl = [ int, float ]
-        mode_keys = DRPFits.mode_options()
+        mode_keys = MaNGAFits.mode_options()
 
         pars =     [ 'plate', 'ifudesign',    'mode', 'vel', 'vdisp', 'ell',  'pa', 'reff' ]
         values =   [   plate,   ifudesign,      mode,   vel,   vdisp,   ell,    pa,   reff ]

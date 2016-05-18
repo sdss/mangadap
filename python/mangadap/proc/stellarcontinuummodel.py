@@ -92,6 +92,7 @@ import glob
 from astropy.io import fits
 import astropy.constants
 
+from ..mangafits import MaNGAFits
 from .ppxffit import PPXFFitPar, PPXFFit
 from .artifactdb import ArtifactDB
 from .emissionlinedb import EmissionLineDB
@@ -740,10 +741,10 @@ class StellarContinuumModel:
 
         # Restructure the data to match the DRPFits file
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
 
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
@@ -751,10 +752,10 @@ class StellarContinuumModel:
 
         # Revert the structure
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -784,10 +785,10 @@ class StellarContinuumModel:
         # not just the keyword
 
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
         # Attempt to read the input guess velocity and sigma
         try:

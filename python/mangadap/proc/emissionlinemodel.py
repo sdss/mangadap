@@ -52,6 +52,7 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
+from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_file_name
@@ -725,10 +726,10 @@ class EmissionLineModel:
         """
         # Restructure the data to match the DRPFits file
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MANGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
         
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
@@ -736,10 +737,10 @@ class EmissionLineModel:
 
         # Revert the structure
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -769,10 +770,10 @@ class EmissionLineModel:
         # not just the keyword
 
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
         # Attempt to read the modeling parameters
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):

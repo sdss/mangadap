@@ -71,7 +71,6 @@ from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 __email__ = 'kbwestfall@gmail.com'
-__credits__ = [ 'Kyle Westfall', 'Lodovico Coccato', 'Brett Andrews' ]
 __copyright__ = 'Copyright 2016, SDSS-IV/MaNGA Pipeline Group'
 __license__ = 'BSD3'
 __version__ = 2.0
@@ -234,6 +233,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
                                     analysis_path=analysis_path, verbose=verbose,
+                                    tpl_symlink_dir=plan_ref_dir,
                                     clobber=plan['spindex_clobber'][i])
 
         #-------------------------------------------------------------------

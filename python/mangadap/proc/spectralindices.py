@@ -41,6 +41,7 @@ A class hierarchy that performs the spectral-index measurements.
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
+        from ..config.defaults import default_dap_reference_path
         from ..util.instrument import spectral_resolution, match_spectral_resolution
         from ..util.instrument import spectral_coordinate_step
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -95,10 +96,12 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
+from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
+from ..config.defaults import default_dap_reference_path
 from ..util.instrument import spectral_resolution, match_spectral_resolution
 from ..util.instrument import spectral_coordinate_step
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -296,7 +299,7 @@ class SpectralIndices:
                  emission_line_model=None, database_list=None, artifact_list=None,
                  absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-                 clobber=False, verbose=0, checksum=False):
+                 tpl_symlink_dir=None, clobber=False, verbose=0, checksum=False):
 
         self.version = '1.0'
         self.verbose = verbose
@@ -326,6 +329,7 @@ class SpectralIndices:
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
+        self.tpl_symlink_dir = None
 
         # Initialize the objects used in the assessments
         self.bitmask = SpectralIndicesBitMask(dapsrc=dapsrc)
@@ -350,7 +354,8 @@ class SpectralIndices:
         self.measure(binned_spectra, redshift=redshift, stellar_continuum=stellar_continuum,
                      emission_line_model=emission_line_model, dapsrc=dapsrc, dapver=dapver,
                      analysis_path=analysis_path, directory_path=directory_path,
-                     output_file=output_file, hardcopy=hardcopy, clobber=clobber, verbose=verbose)
+                     output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
+                     clobber=clobber, verbose=verbose)
 
 
     def __del__(self):
@@ -417,11 +422,13 @@ class SpectralIndices:
         # Set the output directory path
         method = default_dap_method(binned_spectra=self.binned_spectra,
                                     stellar_continuum=self.stellar_continuum)
+        self.analysis_path = default_analysis_path if analysis_path is None else str(analysis_path)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
                                                       drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver, analysis_path=analysis_path) \
+                                                      dapver=dapver,
+                                                      analysis_path=self.analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
@@ -688,6 +695,8 @@ class SpectralIndices:
         new_flux, sres, sigoff, new_mask, new_ivar \
                 = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
                                             log10=True, new_log10=True)
+#        new_flux = flux.copy()
+#        new_mask = mask.copy()
 
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5)
 #        pyplot.step(wave, new_flux[0,:], where='mid', linestyle='-', color='r', lw=2.5)
@@ -945,7 +954,7 @@ class SpectralIndices:
         return angu, magu
 
 
-    def _resolution_matched_template_library(self, dapsrc=None):
+    def _resolution_matched_template_library(self, dapver=None, dapsrc=None):
         """
         Get a version of the template library that has had its
         resolution matched to that of the spectral-index database.
@@ -962,16 +971,22 @@ class SpectralIndices:
         # Set the output file name
         processed_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                self.binned_spectra.drpf.ifudesign,
-                                               self.binned_spectra.drpf.mode, designation)
+                                               designation)
+
+        directory_path = default_dap_reference_path(plate=self.binned_spectra.drpf.plate,
+                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                    drpver=self.binned_spectra.drpf.drpver,
+                                                    dapver=dapver,
+                                                    analysis_path=self.analysis_path)
         # Return the template library object
         return TemplateLibrary(self.stellar_continuum.method['fitpar']['template_library_key'],
                                sres=sres, velocity_offset=velocity_offset,
                                spectral_step=spectral_coordinate_step(wave, log=True), log=True,
-                               dapsrc=dapsrc, directory_path=self.directory_path,
-                               processed_file=processed_file)
+                               dapsrc=dapsrc, directory_path=directory_path,
+                               symlink_dir=self.tpl_symlink_dir, processed_file=processed_file)
     
 
-    def _calculate_dispersion_corrections(self, redshift, dapsrc=None):
+    def _calculate_dispersion_corrections(self, redshift, dapver=None, dapsrc=None):
         if self.stellar_continuum is None:
             return None
 
@@ -986,7 +1001,7 @@ class SpectralIndices:
         # Get the template library
         template_library = None if self.database['fwhm'] < 0  \
                 or self.stellar_continuum.method['fitpar']['template_library_key'] is None else \
-                    self._resolution_matched_template_library(dapsrc=dapsrc)
+                    self._resolution_matched_template_library(dapver=dapver, dapsrc=dapsrc)
 
         # Get the broadened stellar-continuum model
         good_bins = self._bins_to_measure()
@@ -1053,7 +1068,8 @@ class SpectralIndices:
 
     def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
                 emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
-                directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0):
+                directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
+                clobber=False, verbose=0):
         """
 
         Measure the spectral indices using the binned spectra.
@@ -1140,8 +1156,10 @@ class SpectralIndices:
         # Get the corrections by performing the measurements on the
         # best-fitting continuum models, with and without the velocity
         # dispersion broadening
+        self.tpl_symlink_dir = tpl_symlink_dir
         hdu_measurements['INDX_DISPCORR'], good_ang, good_mag \
-                = self._calculate_dispersion_corrections(self.redshift, dapsrc=dapsrc)
+                = self._calculate_dispersion_corrections(self.redshift, dapver=dapver,
+                                                         dapsrc=dapsrc)
 
         # Flag bad corrections
         angu, magu = self._unit_selection()
@@ -1246,10 +1264,10 @@ class SpectralIndices:
         """
         # Restructure the data to match the DRPFits file
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
 
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
@@ -1257,10 +1275,10 @@ class SpectralIndices:
 
         # Revert the structure
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1291,10 +1309,10 @@ class SpectralIndices:
         # not just the keyword
 
         if self.binned_spectra.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.binned_spectra.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         try:

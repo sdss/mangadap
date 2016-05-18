@@ -2744,6 +2744,7 @@ python/mangadap/legacy/generalUtils.py -text
 python/mangadap/legacy/idlutils.py -text
 python/mangadap/legacy/projected_disk_plane.py -text
 python/mangadap/legacy/yanny.py -text
+python/mangadap/mangafits.py -text
 python/mangadap/par/__init__.py -text
 python/mangadap/par/analysisplan.py -text
 python/mangadap/par/obsinput.py -text

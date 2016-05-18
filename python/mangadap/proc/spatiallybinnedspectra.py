@@ -96,6 +96,7 @@ import astropy.constants
 import time
 import numpy
 
+from ..mangafits import MaNGAFits
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
@@ -768,31 +769,6 @@ class SpatiallyBinnedSpectra:
         self.image_arrays = [ 'BINID' ]
 
 
-    @staticmethod
-    def _restructure_map(hdu, ext=['BINID'], inverse=False):
-        """
-        Restructure a mapped quantity such that the axes are [x, y].
-
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
-        """
-        if ext is None:
-            raise ValueError('Must provide extensions to restructure.')
-        _ext = ext if isinstance(ext, list) else [ext]
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        for i in range(len(_ext)):
-            if len(hdu[_ext[i]].data.shape) != 2:
-                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
-        for i in range(len(_ext)):
-            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
-            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] = hdu[_ext[i]].data.shape
-
-
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -1251,10 +1227,10 @@ class SpatiallyBinnedSpectra:
         """
         # Restructure the data to match the DRPFits file
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
         
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
@@ -1262,10 +1238,10 @@ class SpatiallyBinnedSpectra:
 
         # Revert the structure
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1296,10 +1272,10 @@ class SpatiallyBinnedSpectra:
         # not just the keyword
 
         if self.drpf.mode == 'CUBE':
-            DRPFits._restructure_cube(self.hdu, ext=self.spectral_arrays)
-            SpatiallyBinnedSpectra._restructure_map(self.hdu, ext=self.image_arrays)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
         elif self.drpf.mode == 'RSS':
-            DRPFits._restructure_rss(self.hdu, ext=self.spectral_arrays)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
 
         # Attempt to read and construct the covariance object
         try:
