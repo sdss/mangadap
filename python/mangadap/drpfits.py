@@ -256,6 +256,16 @@ class DRPFitsBitMask(BitMask):
                                                         if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
 
 
+class DRPQuality3DBitMask(BitMask):
+    r"""
+    Structure with the definition of the DRP3QUAL mask bits.
+    """
+    def __init__(self, sdss_maskbits=None):
+        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
+                        if sdss_maskbits is None else sdss_maskbits
+        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3QUAL')
+
+
 class DRPFits:
     r"""
     A general purpose class used to interface with a MaNGA DRP file.

@@ -214,7 +214,7 @@ class SpectralPixelMask(PixelMask):
                                            sigma=sigma, nsigma=nsigma)
 
         # Construct and return the mask
-        _mask = numpy.zeros(wavemask.shape, dtype=bitmask.minimum_uint_dtype()) \
+        _mask = numpy.zeros(wavemask.shape, dtype=bitmask.minimum_dtype()) \
                     if mask is None else mask
 
         _mask[wavemask] = bitmask.turn_on(_mask[wavemask], flag=waverange_flag)

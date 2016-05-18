@@ -2682,6 +2682,8 @@ python/mangadap/config/absorption_indices/extindx.ini -text
 python/mangadap/config/absorption_indices/lickindx.ini -text
 python/mangadap/config/artifacts/badsky.ini -text
 python/mangadap/config/bandhead_indices/bhbasic.ini -text
+python/mangadap/config/bitmasks/dap_maps_bits.ini -text
+python/mangadap/config/bitmasks/dap_quality_bits.ini -text
 python/mangadap/config/bitmasks/emission_line_model_bits.ini -text
 python/mangadap/config/bitmasks/emission_line_moments_bits.ini -text
 python/mangadap/config/bitmasks/spatially_binned_spectra_bits.ini -text

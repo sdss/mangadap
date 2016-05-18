@@ -1329,7 +1329,7 @@ class Elric(EmissionLineFit):
         _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
         _model_flux[good_spec,:] = model_flux
 
-        _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_uint_dtype())
+        _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_dtype())
 
         _model_mask[numpy.ma.getmaskarray(flux)] \
                 = self.bitmask.turn_on(_model_mask[numpy.ma.getmaskarray(flux)], 'DIDNOTUSE')
@@ -1465,7 +1465,7 @@ class Elric(EmissionLineFit):
         #  Model flux:
         model_flux = numpy.zeros(self.flux.shape, dtype=numpy.float)
         #  Model mask:
-        model_mask = numpy.zeros(self.flux.shape, dtype=self.bitmask.minimum_uint_dtype())
+        model_mask = numpy.zeros(self.flux.shape, dtype=self.bitmask.minimum_dtype())
         indx = numpy.ma.getmaskarray(self.flux)
         model_mask[indx] = self.bitmask.turn_on(model_mask[indx], 'DIDNOTUSE')
         model_mask[self.no_continuum] = self.bitmask.turn_on(model_mask[self.no_continuum],
@@ -1475,13 +1475,13 @@ class Elric(EmissionLineFit):
 #        print('max-npar:', max_npar)
         model_fit_par = init_record_array(self.nspec,
                                           self._per_fitting_window_dtype(self.nwindows, max_npar,
-                                                                self.bitmask.minimum_uint_dtype()))
+                                                                self.bitmask.minimum_dtype()))
         model_fit_par['BIN_INDEX'] = numpy.arange(self.nspec)
 
         # Emission-line parameters
         model_eml_par = init_record_array(self.nspec,
                                           self._per_emission_line_dtype(self.neml, 2,
-                                                                self.bitmask.minimum_uint_dtype()))
+                                                                self.bitmask.minimum_dtype()))
         model_eml_par['BIN_INDEX'] = numpy.arange(self.nspec)
 
         t = time.clock()

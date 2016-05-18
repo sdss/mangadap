@@ -263,8 +263,8 @@ def default_analysis_path(drpver=None, dapver=None):
 #        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 #
 #    return os.path.join(analysis_path, str(plate), str(ifudesign))
-def default_dap_reference_path(plate=None, ifudesign=None, drpver=None, dapver=None,
-                               analysis_path=None):
+def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None,
+                            analysis_path=None):
     """
     Return the path to the top-level reference path for a given plate.
 
@@ -293,7 +293,7 @@ def default_dap_reference_path(plate=None, ifudesign=None, drpver=None, dapver=N
     if analysis_path is None:
         analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
 
-    output_path = os.path.join(analysis_path, 'ref')
+    output_path = os.path.join(analysis_path, 'common')
     if plate is None:
         return output_path
     output_path = os.path.join(output_path, str(plate))
@@ -354,12 +354,8 @@ def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=Fa
             IFU design are not provided..
     """
     # For heirarchy, if ifudesign is given, plate must also be given
-    if plate is None and ifudesign is not None:
-        raise ValueError('For IFU design subdirectory, must provide plate number.')
-    if (qa or ref) and (plate is None or ifudesign is None):
-        raise ValueError('For qa/ and ref/ subdirectories, must provide plate/ifudesign.')
-    if not qa and not ref and ifudesign is not None:
-        raise ValueError('Must designate qa or ref for IFU design subdirectory.')
+    if (plate is not None and ifudesign is None) or (plate is None and ifudesign is not None):
+        raise ValueError('Must provide both plate and ifudesign, if providing either.')
     if qa and ref:
         raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
@@ -371,10 +367,10 @@ def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=Fa
     output_path = os.path.join(analysis_path, method)
     if plate is None:
         return output_path
-    output_path = os.path.join(output_path, str(plate))
-    if ifudesign is None:
+    output_path = os.path.join(output_path, str(plate), str(ifudesign))
+    if not qa and not ref:
         return output_path
-    return os.path.join(output_path, ('qa' if qa else 'ref'), str(ifudesign))
+    return os.path.join(output_path, ('qa' if qa else 'ref'))
 
 
 #def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysis_path=None):
@@ -472,16 +468,16 @@ def default_dap_par_file(plate, ifudesign, mode, partype='inpt', drpver=None, da
             directory.  Default is to use :func:`default_analysis_path`
         directory_path (str): (**Optional**) Path to the directory with
             the DAP output files.  Default is to use
-            :func:`default_dap_reference_path`
+            :func:`default_dap_common_path`
 
     Returns:
         str: Full path to the DAP par file
     """
     # Make sure the directory path is defined
     if directory_path is None:
-        directory_path = default_dap_reference_path(plate=plate, ifudesign=ifudesign,
-                                                    drpver=drpver, dapver=dapver,
-                                                    analysis_path=analysis_path)
+        directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
+                                                 drpver=drpver, dapver=dapver,
+                                                 analysis_path=analysis_path)
     # Set the name of the par file; put this in its own function?
     par_file = '{0}-input.par'.format(default_dap_file_root(plate, ifudesign, mode))
     return os.path.join(directory_path, par_file)

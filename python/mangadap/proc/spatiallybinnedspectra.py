@@ -47,7 +47,7 @@ procedures.
         import numpy
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
+        from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
@@ -101,7 +101,7 @@ from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
+from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
@@ -560,7 +560,7 @@ class SpatiallyBinnedSpectra:
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -575,11 +575,10 @@ class SpatiallyBinnedSpectra:
 
         """
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
-                                                         ifudesign=self.drpf.ifudesign,
-                                                         drpver=self.drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        self.directory_path = default_dap_common_path(plate=self.drpf.plate,
+                                                      ifudesign=self.drpf.ifudesign,
+                                                      drpver=self.drpf.drpver, dapver=dapver,
+                                                      analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
@@ -633,7 +632,7 @@ class SpatiallyBinnedSpectra:
 
         """
         # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_uint_dtype())
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
         indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
@@ -674,6 +673,12 @@ class SpatiallyBinnedSpectra:
                  ('VARIANCE',numpy.float),
                  ('SNR',numpy.float)
                ]
+
+#                 ('MASK',self.bitmask.minimum_unit_dtype()),
+#
+# There is no mask for the table data.  However, could add masks for:
+#   - Insufficient good wavelength channels in the spectrum.
+#   - Variance in flux in bin is too large.
 
 
     def _unbinned_data(self, bin_indx):

@@ -13,6 +13,45 @@ A class hierarchy that fits the emission lines.
 *Imports and python version compliance*:
     ::
 
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+            try:
+                from configparser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import configparser!  Beware!')
+        else:
+            try:
+                from ConfigParser import ConfigParser
+            except ImportError:
+                warnings.warn('Unable to import ConfigParser!  Beware!')
+
+        import glob
+        import os.path
+        import numpy
+        from astropy.io import fits
+        import astropy.constants
+
+        from ..mangafits import MaNGAFits
+        from ..drpfits import DRPFits
+        from ..par.parset import ParSet
+        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import default_dap_method, default_dap_method_path
+        from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
+        from ..util.bitmask import BitMask
+        from .artifactdb import ArtifactDB
+        from .emissionlinedb import EmissionLineDB
+        from .pixelmask import SpectralPixelMask
+        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .stellarcontinuummodel import StellarContinuumModel
+        from .lineprofilefit import Elric, ElricPar, GaussianLineProfile
+        from .util import _select_proc_method
 
 *Class usage examples*:
     Add examples!
@@ -351,7 +390,7 @@ class EmissionLineModel:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_method_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -521,7 +560,7 @@ class EmissionLineModel:
 
         """
         # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_uint_dtype())
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
@@ -727,7 +766,7 @@ class EmissionLineModel:
         # Restructure the data to match the DRPFits file
         if self.binned_spectra.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            MANGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
         elif self.binned_spectra.drpf.mode == 'RSS':
             MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
         

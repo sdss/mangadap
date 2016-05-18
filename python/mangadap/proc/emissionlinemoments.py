@@ -347,7 +347,7 @@ class EmissionLineMoments:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_method_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -374,8 +374,8 @@ class EmissionLineMoments:
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
         if self.stellar_continuum is not None:
-            ref_method = '{0}-{1}'.format(method, self.stellar_continuum.method['key'])
-        ref_method = '{0}-{1}'.format(method, self.database['key'])
+            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
+        ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
@@ -458,7 +458,7 @@ class EmissionLineMoments:
         """
         return [ ('BIN_INDEX',numpy.int),
                  ('REDSHIFT', numpy.float),
-                 ('MASK', self.bitmask.minimum_uint_dtype(), self.nmom),
+                 ('MASK', self.bitmask.minimum_dtype(), self.nmom),
                  ('BCEN', numpy.float, self.nmom), 
                  ('BCONT', numpy.float, self.nmom), 
                  ('BCONTERR', numpy.float, self.nmom),
@@ -541,7 +541,7 @@ class EmissionLineMoments:
         ivar[indx] = numpy.ma.masked
 
         mask = numpy.zeros((self.nbins,self.binned_spectra.nwave),
-                           dtype=self.bitmask.minimum_uint_dtype())
+                           dtype=self.bitmask.minimum_dtype())
         flux_mask = numpy.ma.getmaskarray(flux)
         mask[flux_mask] = self.bitmask.turn_on(mask[flux_mask], 'DIDNOTUSE')
 

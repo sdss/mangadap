@@ -187,7 +187,7 @@ class DRPComplete:
             DAP output files, see above.
         directory_path (str): Direct path to the output file produced
             using
-            :func:`mangadap.config.defaults.default_dap_reference_path`
+            :func:`mangadap.config.defaults.default_dap_common_path`
         readonly (bool) : Flag that the drpcomplete fits file is only
             opened for reading, not for updating.
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits data with
@@ -205,7 +205,7 @@ class DRPComplete:
         self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
         self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
-        self.directory_path = defaults.default_dap_reference_path(drpver=self.drpver,
+        self.directory_path = defaults.default_dap_common_path(drpver=self.drpver,
                                             dapver=self.dapver, analysis_path=self.analysis_path)
         
         self.hdu = None
@@ -716,7 +716,7 @@ class DRPComplete:
             numpy.array: Array of modes for each input DRP file.
         """
         n_drp = len(drplist)
-        modes = numpy.empty(n_drp, dtype=numpy.uint8)
+        modes = numpy.empty(n_drp, dtype=numpy.int8)
         print('Checking for RSS counterparts...', end='\r')
         for i in range(0,n_drp):
             drpf = drpfits.DRPFits(drplist[i].plate, drplist[i].ifudesign, 'RSS',

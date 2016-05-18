@@ -418,18 +418,18 @@ class BitMask:
             print(' ')
 
 
-    def minimum_uint_dtype(self):
+    def minimum_dtype(self, asuint=False):
         """
-        Return the smallest uint datatype that is needed to contain all
-        the bits in the mask.
+        Return the smallest int datatype that is needed to contain all
+        the bits in the mask.  Output as an unsigned int if requested.
         """
         if self.nbits < 8:
-            return numpy.uint8
+            return numpy.uint8 if asuint else numpy.int8
         if self.nbits < 16:
-            return numpy.uint16
+            return numpy.uint16 if asuint else numpy.int16
         if self.nbits < 32:
-            return numpy.uint32
-        return numpy.uint64
+            return numpy.uint32 if asuint else numpy.int32
+        return numpy.uint64 if asuint else numpy.int64
 
 
     def flagged(self, value, flag=None):

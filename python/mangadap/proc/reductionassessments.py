@@ -28,36 +28,39 @@ once per DRP data file.
             try:
                 from configparser import ConfigParser
             except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
+                warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
             try:
                 from configparser import ExtendedInterpolation
             except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                            ImportWarning)
         else:
             try:
                 from ConfigParser import ConfigParser
             except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
+                warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
             try:
                 from ConfigParser import ExtendedInterpolation
             except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        
+                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!', 
+                            ImportWarning)
+
         import glob
-        import os.path
-        from os import remove, environ
-        from scipy import sparse
-        from astropy.io import fits
-        import astropy.constants
+        import os
         import time
         import numpy
 
+        from scipy import sparse
         from pydl.goddard.astro import airtovac
+        from astropy.io import fits
+        import astropy.constants
+
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
+        from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
+        from ..util.covariance import Covariance
         from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array
+        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
         from ..drpfits import DRPFits
         from .util import _select_proc_method
 
@@ -69,13 +72,10 @@ once per DRP data file.
     2 compiliant.
     
 *Class usage examples*:
-
-    .. todo::
-        Add examples
+    Add examples!
 
 *Revision history*:
     | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
-
     | **11 May 2016**: (KBW) Switch to using
         `pydl.goddard.astro.airtovac`_ instead of internal function
 
@@ -115,20 +115,19 @@ else:
                       ImportWarning)
 
 import glob
-import os.path
-from os import remove, environ
-from scipy import sparse
-from astropy.io import fits
-import astropy.constants
+import os
 import time
 import numpy
 
+from scipy import sparse
 from pydl.goddard.astro import airtovac
+from astropy.io import fits
+import astropy.constants
+
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
+from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.covariance import Covariance
-#from ..util.idlutils import airtovac
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..drpfits import DRPFits
@@ -227,11 +226,14 @@ def available_reduction_assessments(dapsrc=None):
     Return the list of available reduction assessment methods.  The
     following methods are available with the DAP.
 
+    .. todo::
+        The table below needs to be updated.
+
     +------------+---------------+---------+---------+
     |            |    Wavelength |    In   |         |
     |        Key |   Range (ang) | Vacuum? |   Covar |
     +============+===============+=========+=========+
-    |      RFWHM | 5600.1-6750.0 |    True |   False |
+    |       SNRR | 5600.1-6750.0 |    True |    True |
     +------------+---------------+---------+---------+
 
     .. warning::
@@ -282,7 +284,7 @@ def available_reduction_assessments(dapsrc=None):
     assessment_methods = []
     for f in ini_files:
         # Read the config file
-        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
+        cnfg = ConfigParser(os.environ, allow_no_value=True, interpolation=ExtendedInterpolation())
         cnfg.read(f)
         # Ensure it has the necessary elements to define the template
         # library
@@ -350,7 +352,7 @@ class ReductionAssessment:
             :func:`mangadap.config.defaults.default_analysis_path`.
         directory_path (str): (**Optional**) The exact path for the
             output file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_reference_path`.
+            :func:`mangadap.config.defaults.default_dap_common_path`.
         output_file (str): (**Optional**) The name of the file for the
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
@@ -382,7 +384,7 @@ class ReductionAssessment:
             elliptical, semi-major-axis coordinates.
         directory_path (str): The exact path for the output file.
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_reference_path`.
+            :func:`mangadap.config.defaults.default_dap_common_path`.
         output_file (str): The name of the file for the
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
@@ -476,7 +478,7 @@ class ReductionAssessment:
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -490,11 +492,10 @@ class ReductionAssessment:
                 See :func:`compute`.
         """
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=self.drpf.plate,
-                                                         ifudesign=self.drpf.ifudesign,
-                                                         drpver=self.drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        self.directory_path = default_dap_common_path(plate=self.drpf.plate,
+                                                      ifudesign=self.drpf.ifudesign,
+                                                      drpver=self.drpf.drpver, dapver=dapver,
+                                                      analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
@@ -605,7 +606,7 @@ class ReductionAssessment:
                 :func:`mangadap.config.defaults.default_analysis_path`.
             directory_path (str): (**Optional**) The exact path for the
                 output file.  Default is defined by
-                :func:`mangadap.config.defaults.default_dap_reference_path`.
+                :func:`mangadap.config.defaults.default_dap_common_path`.
             output_file (str): (**Optional**) The name of the file for
                 the computed assessments.  The full path of the output
                 file will be :attr:`directory_path`/:attr:`output_file`.

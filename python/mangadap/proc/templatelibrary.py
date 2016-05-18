@@ -82,7 +82,7 @@ bitmasks for the template library spectra.
 
         from ..util.bitmask import BitMask
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_reference_path
+        from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
@@ -259,7 +259,7 @@ from pydl.goddard.astro import airtovac
 
 from ..util.bitmask import BitMask
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_reference_path
+from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 #from ..util.idlutils import airtovac
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
@@ -563,7 +563,7 @@ class TemplateLibrary:
             :func:`mangadap.config.defaults.default_analysis_path`.
         directory_path (str): (**Optional**) The exact path to the
             processed template library file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_reference_path`.
+            :func:`mangadap.config.defaults.default_dap_common_path`.
         processed_file (str): (**Optional**) The name of the file
             containing the prepared template library output file.  The
             file should be found at
@@ -584,7 +584,7 @@ class TemplateLibrary:
 
     Attributes:
         version (str): Version number
-        tplbm (BitMask): A BitMask object used to toggle mask values;
+        bitmask (BitMask): A BitMask object used to toggle mask values;
             see :func:`TemplateLibraryBitMask`.
         library (:class:`TemplateLibraryDef`): Parameter set required to
             read and prepare the library.
@@ -610,7 +610,7 @@ class TemplateLibrary:
             logarithmically sampled in wavelength.
         directory_path (str): The exact path to the processed template
             library file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_reference_path`.
+            :func:`mangadap.config.defaults.default_dap_common_path`.
         processed_file (str): The name of the file containing (to
             contain) the prepared template library output file.  The
             file should be found at
@@ -640,7 +640,7 @@ class TemplateLibrary:
         self.version = '2.1'
 
         # Define the TemplateLibraryBitMask object
-        self.tplbm = TemplateLibraryBitMask(dapsrc=dapsrc)
+        self.bitmask = TemplateLibraryBitMask(dapsrc=dapsrc)
 
         # Define the properties needed to modify the spectral resolution
         self.sres = None
@@ -752,7 +752,7 @@ class TemplateLibrary:
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`processed_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -773,11 +773,9 @@ class TemplateLibrary:
         self._can_set_paths(directory_path, drpf, processed_file)
 
         # Set the output directory path
-        self.directory_path = default_dap_reference_path(plate=drpf.plate,
-                                                         ifudesign=drpf.ifudesign,
-                                                         drpver=drpf.drpver,
-                                                         dapver=dapver,
-                                                         analysis_path=analysis_path) \
+        self.directory_path = default_dap_common_path(plate=drpf.plate, ifudesign=drpf.ifudesign,
+                                                      drpver=drpf.drpver, dapver=dapver,
+                                                      analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
@@ -868,7 +866,7 @@ class TemplateLibrary:
         wave = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        mask = numpy.zeros((self.ntpl, npix), dtype=numpy.uint8)
+        mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
         soff = numpy.zeros(self.ntpl, dtype=numpy.float64)
 #        ivar = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
 #        ivar[:] = 1.0
@@ -891,16 +889,16 @@ class TemplateLibrary:
                 sres[i,0:wave_.size] = numpy.copy(sres_)
 
             if wave_.size != npix:
-                mask[i,wave_.size:] = self.tplbm.turn_on(mask[i,wave_.size:],'NO_DATA')
+                mask[i,wave_.size:] = self.bitmask.turn_on(mask[i,wave_.size:],'NO_DATA')
             if self.library['lower_flux_limit'] is not None:
                 indx = numpy.invert( flux_ > self.library['lower_flux_limit'] )
-                mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'FLUX_INVALID')
+                mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'FLUX_INVALID')
             if self.library['wave_limit'][0] is not None:
                 indx = wave[i,:].ravel() < self.library['wave_limit'][0]
-                mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'WAVE_INVALID')
+                mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
             if self.library['wave_limit'][1] is not None:
                 indx = wave[i,:].ravel() > self.library['wave_limit'][1]
-                mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'WAVE_INVALID')
+                mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
 
 
         # (Re)Set the HDUList object
@@ -965,7 +963,7 @@ class TemplateLibrary:
             first and last valid pixels.
         """
 
-        indx = numpy.where(numpy.invert(self.tplbm.flagged(self.hdu['MASK'].data, flag=flag)))
+        indx = numpy.where(numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag=flag)))
         return numpy.array([ numpy.amin(self.hdu['WAVE'].data[indx]),
                              numpy.amax(self.hdu['WAVE'].data[indx])])
 
@@ -1020,7 +1018,7 @@ class TemplateLibrary:
             that should be masked.
         """
 
-        mask_ex = self.tplbm.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(numpy.float64)
+        mask_ex = self.bitmask.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(numpy.float64)
         wave, mask_ex = resample_vector(mask_ex, xRange=[self.hdu['WAVE'].data[i,0],
                                                          self.hdu['WAVE'].data[i,-1]],
                                         inLog=self.library['log10'], newRange=fullRange,
@@ -1051,7 +1049,7 @@ class TemplateLibrary:
         print('    Masking extrapolation wavelengths ... ')
         sres_wave = self.sres.wave()
         wavelim = numpy.array([ sres_wave[0]/(1.+redshift), sres_wave[-1]/(1.+redshift) ])
-        self.hdu = HDUList_mask_wavelengths(self.hdu, self.tplbm, 'SPECRES_EXTRAP', wavelim,
+        self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
         print('    ... done.')
 
@@ -1078,7 +1076,7 @@ class TemplateLibrary:
         # match to the galaxy resolution
         print('Masking low spectral resolution ... ')
         self.hdu['MASK'].data[res_mask == 1] = \
-            self.tplbm.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
+            self.bitmask.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
         print('... done')
 
 #        pyplot.plot(oldwave, oldflux)
@@ -1143,12 +1141,12 @@ class TemplateLibrary:
         # identified afterward.  The minimum flux is:
         min_flux = numpy.amin(self.hdu['FLUX'].data.ravel())
         # the observed pixels are
-        observed = numpy.invert(self.tplbm.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
+        observed = numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
         
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        mask = numpy.zeros((self.ntpl, npix), dtype=self.tplbm.minimum_uint_dtype())
+        mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
         print('Matching sampling ... ')
         for i in range(0,self.ntpl):
             # Observed wavelengths
@@ -1169,7 +1167,7 @@ class TemplateLibrary:
             # flag them as having no data
             indx = numpy.where(flux[i,:] < min_flux-10.)
             flux[i,indx] = 0.0
-            mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'NO_DATA')
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'NO_DATA')
 
             # Resample the spectral resolution by simple interpolation.
             # Select the good pixels
@@ -1183,18 +1181,18 @@ class TemplateLibrary:
             # Finally, rebin the masks:
             # Pixels outside the wavelength limits
             indx = self._rebin_masked(i, 'WAVE_INVALID', fullRange, rmsk_lim=0.1)
-            mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'WAVE_INVALID')
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
             # Pixels below the flux limit
             indx = self._rebin_masked(i, 'FLUX_INVALID', fullRange, rmsk_lim=0.1)
-            mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'FLUX_INVALID')
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'FLUX_INVALID')
             # Pixels that required an extrapolation of the spectral
             # resolution
             indx = self._rebin_masked(i, 'SPECRES_EXTRAP', fullRange, rmsk_lim=0.1)
-            mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'SPECRES_EXTRAP')
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_EXTRAP')
             # Pixels that had a spectral resolution that was too low to
             # match the galaxy resolution
             indx = self._rebin_masked(i, 'SPECRES_LOW', fullRange, rmsk_lim=0.1)
-            mask[i,indx] = self.tplbm.turn_on(mask[i,indx], 'SPECRES_LOW')
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_LOW')
             
 #            pyplot.plot(oldwave, oldflux)
 #            pyplot.plot(wave, flux[i,:], 'g')
@@ -1209,7 +1207,7 @@ class TemplateLibrary:
         # Normalize the templates to the mean flux value after excluding
         # any flagged pixels.
         if renormalize:
-            indx = numpy.invert(self.tplbm.flagged(mask))
+            indx = numpy.invert(self.bitmask.flagged(mask))
             if numpy.sum(indx) == 0:
                 warnings.warn('All pixels masked.  Unable to renormalize TemplateLibrary.')
                 flux_norm = 1.0
@@ -1415,7 +1413,7 @@ class TemplateLibrary:
                 :func:`mangadap.config.defaults.default_analysis_path`.
             directory_path (str): (**Optional**) The exact path for the
                 processed template library file.  Default is defined by
-                :func:`mangadap.config.defaults.default_dap_reference_path`.
+                :func:`mangadap.config.defaults.default_dap_common_path`.
             processed_file (str): (**Optional**) The name of the file
                 containing (to contain) the prepared template library
                 output file.  The file should be found at

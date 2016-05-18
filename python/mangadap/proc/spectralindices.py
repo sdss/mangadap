@@ -38,10 +38,11 @@ A class hierarchy that performs the spectral-index measurements.
         from astropy.io import fits
         import astropy.constants
 
+        from ..mangafits import MaNGAFits
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..config.defaults import default_dap_reference_path
+        from ..config.defaults import default_dap_common_path
         from ..util.instrument import spectral_resolution, match_spectral_resolution
         from ..util.instrument import spectral_coordinate_step
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -97,11 +98,10 @@ from astropy.io import fits
 import astropy.constants
 
 from ..mangafits import MaNGAFits
-from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
-from ..config.defaults import default_dap_reference_path
+from ..config.defaults import default_dap_common_path
 from ..util.instrument import spectral_resolution, match_spectral_resolution
 from ..util.instrument import spectral_coordinate_step
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
@@ -406,7 +406,7 @@ class SpectralIndices:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_reference_path` and
+        :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -489,7 +489,7 @@ class SpectralIndices:
 
         """
         # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_uint_dtype())
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
@@ -562,7 +562,7 @@ class SpectralIndices:
         """
         return [ ('BIN_INDEX',numpy.int),
                  ('REDSHIFT', numpy.float),
-                 ('MASK', self.bitmask.minimum_uint_dtype(), self.nindx),
+                 ('MASK', self.bitmask.minimum_dtype(), self.nindx),
                  ('BCONT', numpy.float, self.nindx), 
                  ('BCONTERR', numpy.float, self.nindx),
                  ('RCONT', numpy.float, self.nindx), 
@@ -651,7 +651,7 @@ class SpectralIndices:
             eml_model = self.emission_line_model.copy_to_array()
             flux -= eml_model
 
-        mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_uint_dtype())
+        mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_dtype())
         flux_mask = numpy.ma.getmaskarray(flux)
         mask[flux_mask] = self.bitmask.turn_on(mask[flux_mask], 'DIDNOTUSE')
 
@@ -973,11 +973,10 @@ class SpectralIndices:
                                                self.binned_spectra.drpf.ifudesign,
                                                designation)
 
-        directory_path = default_dap_reference_path(plate=self.binned_spectra.drpf.plate,
-                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                    drpver=self.binned_spectra.drpf.drpver,
-                                                    dapver=dapver,
-                                                    analysis_path=self.analysis_path)
+        directory_path = default_dap_common_path(plate=self.binned_spectra.drpf.plate,
+                                                 ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                 drpver=self.binned_spectra.drpf.drpver,
+                                                 dapver=dapver, analysis_path=self.analysis_path)
         # Return the template library object
         return TemplateLibrary(self.stellar_continuum.method['fitpar']['template_library_key'],
                                sres=sres, velocity_offset=velocity_offset,
@@ -1194,7 +1193,7 @@ class SpectralIndices:
             _ivar = numpy.ma.MaskedArray(numpy.zeros((self.nbins,self.nwave), dtype=numpy.float))
             _ivar[good_snr,:] = ivar
 
-            _mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_uint_dtype())
+            _mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_dtype())
             _mask[good_snr,:] = mask
             _mask[~good_snr,:] = self.bitmask.turn_on(_mask[~good_snr,:], 'DIDNOTUSE')
         else:

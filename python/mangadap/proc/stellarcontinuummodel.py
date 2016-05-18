@@ -38,6 +38,7 @@ A class hierarchy that performs the stellar-continuum fitting.
         from astropy.io import fits
         import astropy.constants
 
+        from ..mangafits import MaNGAFits
         from .ppxffit import PPXFFitPar, PPXFFit
         from .artifactdb import ArtifactDB
         from .emissionlinedb import EmissionLineDB
@@ -532,7 +533,7 @@ class StellarContinuumModel:
 
         """
         # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_uint_dtype())
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
         indx = self.binned_spectra.bitmask.flagged(self.drpf['MASK'].data,
