@@ -422,9 +422,15 @@ class BitMask:
         """
         Return the smallest int datatype that is needed to contain all
         the bits in the mask.  Output as an unsigned int if requested.
+
+        .. warning::
+            uses int16 if the number of bits is less than 8 and
+            asuint=False because of issue astropy.io.fits has writing
+            int8 values.
+
         """
         if self.nbits < 8:
-            return numpy.uint8 if asuint else numpy.int8
+            return numpy.uint8 if asuint else numpy.int16
         if self.nbits < 16:
             return numpy.uint16 if asuint else numpy.int16
         if self.nbits < 32:
