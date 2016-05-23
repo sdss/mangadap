@@ -994,7 +994,7 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='EMLINE_GFLUX_MASK') ]
-            hdus = [ fits.ImageHDU(data=None,
+            hdus += [ fits.ImageHDU(data=None,
                                    header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                     'EMLINE_GVEL', err=True,
                                                                     qual=True,
@@ -1012,7 +1012,7 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='EMLINE_GVEL_MASK') ]
-            hdus = [ fits.ImageHDU(data=None,
+            hdus += [ fits.ImageHDU(data=None,
                                    header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                     'EMLINE_GSIGMA', err=True,
                                                                     qual=True,
