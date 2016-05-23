@@ -22,6 +22,7 @@ Container class that defines a bandpass filter.
         if sys.version > '3':
             long = int
 
+        import warnings
         import numpy
         from .parset import ParSet
 
@@ -54,6 +55,7 @@ import sys
 if sys.version > '3':
     long = int
 
+import warnings
 import numpy
 from ..par.parset import ParSet
 from ..util.instrument import _pixel_borders
@@ -190,6 +192,38 @@ class BandPassFilterPar(ParSet):
             raise ValueError('Blue sideband must have two and only two elements.')
         if len(self.data['redside']) != 2:
             raise ValueError('Red sideband must have two and only two elements.')
+
+
+def passband_median(x, y, passband=None):
+    """
+    Determine the median of the y values within the passband
+    """
+
+    # Ensure that y is a numpy array and compress it if it's a masked
+    # array
+    _x = x if isinstance(x, numpy.ma.MaskedArray) else numpy.ma.MaskedArray(x)
+    _y = y if isinstance(y, numpy.ma.MaskedArray) else numpy.ma.MaskedArray(y)
+    if len(_x.shape) != 1 or len(_y.shape) != 1:
+        raise ValueError('Can only provide one-dimensional vectors.')
+    mask = numpy.ma.getmaskarray(_x) | numpy.ma.getmaskarray(_y)
+    _y[mask] = numpy.ma.masked
+    _y = _y.compressed()
+    if _y.size == 0:
+        warnings.warn('No elements remain in the passband.')
+        return 0.0
+
+    if passband is None:
+        return numpy.median(_y)
+
+    _x[mask] = numpy.ma.masked
+    _x = _x.compressed()
+
+    indx = numpy.array([ numpy.arange(_x.size)[numpy.logical_and(_x > p[0], _x < p[1])]
+                                for p in passband ])
+    nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
+    if numpy.any(nonzero):
+        warnings.warn('Returning empty passbands with median values of 0!')
+    return numpy.array([ 0.0 if len(ii) == 0 else numpy.median(_y[ii]) for ii in indx ])
 
 
 def pixel_fraction_in_passband(x, passband, dx):

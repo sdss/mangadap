@@ -48,6 +48,7 @@ once per DRP data file.
         import glob
         import os
         import time
+        import logging
         import numpy
 
         from scipy import sparse
@@ -55,13 +56,14 @@ once per DRP data file.
         from astropy.io import fits
         import astropy.constants
 
+        from ..drpfits import DRPFits
         from ..par.parset import ParSet
         from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.covariance import Covariance
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
-        from ..drpfits import DRPFits
+        from ..util.log import log_output
         from .util import _select_proc_method
 
 .. warning::
@@ -78,11 +80,15 @@ once per DRP data file.
     | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using
         `pydl.goddard.astro.airtovac`_ instead of internal function
+    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
+        to :class:`ReductionAssessment`, removed verbose 
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
+
 """
 
 from __future__ import division
@@ -117,6 +123,7 @@ else:
 import glob
 import os
 import time
+import logging
 import numpy
 
 from scipy import sparse
@@ -124,13 +131,14 @@ from pydl.goddard.astro import airtovac
 from astropy.io import fits
 import astropy.constants
 
+from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
-from ..drpfits import DRPFits
+from ..util.log import log_output
 from .util import _select_proc_method
 
 from matplotlib import pyplot
@@ -365,8 +373,12 @@ class ReductionAssessment:
         clobber (bool): (**Optional**) If the output file already
             exists, this will force the assessments to be redone and the
             output file to be overwritten.  Default is False.
-        verbose (int): (**Optional**) Verbosity level.  See
-            :func:`mangadap.survey.manga_dap`.
+        loggers (list): (**Optional**) List of `logging.Logger`_ objects
+            to log progress; ignored if quiet=True.  Logging is done
+            using :func:`mangadap.util.log.log_output`.  Default is no
+            logging.
+        quiet (bool): (**Optional**) Suppress all terminal and logging
+            output.  Default is False.
 
     Attributes:
         version (str): Version number
@@ -398,17 +410,21 @@ class ReductionAssessment:
         correlation (:class:`mangadap.util.covariance.Covariance`):
             Covariance matrix for the mean flux measurements, if
             calculated.
-        verbose (int): Verbosity level.  See
-            :func:`mangadap.survey.manga_dap`.
+        loggers (list): List of `logging.Logger`_ objects to log
+            progress; ignored if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.
+        quiet (bool): Suppress all terminal and logging output.
 
     """
 
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, symlink_dir=None, clobber=False, verbose=0):
+                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
                  
         self.version = '1.0'
-        self.verbose = verbose
+        self.loggers = None
+        self.quiet = False
 
         # Define the method properties
         self.method = None
@@ -427,12 +443,13 @@ class ReductionAssessment:
         self.pa = None
         self.ell = None
         self.hdu = None
+        self.checksum = checksum
         self.correlation = None
 
         # Run the assessments of the DRP file
         self.compute(drpf, pa=pa, ell=ell, dapver=dapver, analysis_path=analysis_path,
                      directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                     symlink_dir=symlink_dir, clobber=clobber, verbose=verbose)
+                     symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
     def __del__(self):
@@ -544,7 +561,8 @@ class ReductionAssessment:
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
-                output_file=None, hardcopy=True, symlink_dir=None, clobber=False, verbose=0):
+                output_file=None, hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
+                quiet=False):
         r"""
 
         Compute and output the main data products.  The list of HDUs
@@ -619,19 +637,29 @@ class ReductionAssessment:
             clobber (bool): (**Optional**) If the output file already
                 exists, this will force the assessments to be redone and
                 the output file to be overwritten.  Default is False.
-            verbose (int): (**Optional**) Verbosity level.  See
-                :func:`mangadap.survey.manga_dap`.
-    
+            loggers (list): (**Optional**) List of `logging.Logger`_
+                objects to log progress; ignored if quiet=True.  Default
+                is no logging.
+            quiet (bool): (**Optional**) Suppress all terminal and
+                logging output.  Default is False.
+
         Raises:
             ValueError: Raise if no DRPFits object is provided or if
                 the output file is undefined.
         """
+
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
+
         if drpf is None:
             raise ValueError('Must provide DRP file object to compute assessments.')
         if not isinstance(drpf, DRPFits):
             raise TypeError('Must provide a valid DRPFits object!')
         if drpf.hdu is None:
-            warnings.warn('DRP file previously unopened.  Reading now.')
+            if not self.quiet:
+                warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
         self.drpf = drpf
 
@@ -642,22 +670,32 @@ class ReductionAssessment:
         if ofile is None:
             raise ValueError('File path for output file is undefined!')
 
-        print('Output path: ', self.directory_path)
-        print('Output file: ', self.output_file)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'REDUCTION ASSESSMENT COMPUTATIONS:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
 
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
-            self.hdu = fits.open(ofile)
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Using exiting file')
+            self.hdu = fits.open(ofile, checksum=self.checksum)
             self.correlation = Covariance(source=self.hdu, primary_ext='COVAR')
             self.pa = self.hdu['PRIMARY'].header['PA']
-            if pa is not None and self.pa != pa:
+            if not self.quiet and pa is not None and self.pa != pa:
                 warnings.warn('Provided position angle different from available file; set ' \
                               'clobber=True to overwrite.')
             self.ell = self.hdu['PRIMARY'].header['ELL']
-            if ell is not None and self.ell != ell:
+            if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
         # (Re)Initialize some of the attributes
@@ -751,6 +789,9 @@ class ReductionAssessment:
         self.hardcopy = hardcopy
         self.symlink_dir = symlink_dir
         if self.hardcopy:
-            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir)
+            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir,
+                      loggers=self.loggers)
 
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
 

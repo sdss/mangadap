@@ -338,7 +338,6 @@ class DRPComplete:
 #        pyplot.scatter(plttrg_data['PLTTRGT']['nsa_elpetro_ba'],
 #                       plttrg_data['PLTTRGT']['nsa_sersic_ba'], marker='.', color='k', s=30)
 #        pyplot.show()
-#        exit()
 
         plttrg_data = []
 

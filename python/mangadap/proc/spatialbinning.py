@@ -485,12 +485,10 @@ class VoronoiBinning(SpatialBinning):
 #                               plot=True, covar=self.covar, quiet=False)
                                
         #pyplot.show()
-        #exit()
 
         #pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker='.',
                        #color='k', s=40, lw=0)
         #pyplot.show()
-        #exit()
 
         return binid
 

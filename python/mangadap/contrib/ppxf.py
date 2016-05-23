@@ -856,7 +856,7 @@ class ppxf(object):
             parinfo[0+p]['limits'] = vlims[2*j:2*j+2] = vl
             parinfo[0+p]['step'] = 1e-2
             parinfo[1+p]['value'] = start1[1]
-            parinfo[1+p]['limits'] = np.array([0.1/3, 1e3/velScale])  # hard-coded velScale/10<sigma<1000 km/s
+            parinfo[1+p]['limits'] = np.array([0.1, 1e3/velScale])  # hard-coded velScale/10<sigma<1000 km/s
             parinfo[1+p]['step'] = 1e-2
             if s1[0] <= 2*(abs(self.vsyst + start1[0]) + 5.*start1[1]):
                 raise ValueError('Velocity shift too big: Adjust wavelength ranges of spectrum and templates')
@@ -898,6 +898,9 @@ class ppxf(object):
             tmp = self._fitfunc(mp.params)
             if np.array_equal(goodOld, self.goodpixels):
                 break
+
+        # KBW: Keep returned mpfit structure as part of class
+        self.mp = mp
 
         # Evaluate scatter at the bestfit (with BIAS=0)
         # and also get the output bestfit and weights.

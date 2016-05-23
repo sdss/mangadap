@@ -44,6 +44,9 @@ if sys.version > '3':
     long = int
 
 import time
+import os
+import logging
+
 import numpy
 from scipy import interpolate, integrate, optimize
 import astropy.constants
@@ -52,6 +55,7 @@ from astropy.modeling import FittableModel, Parameter
 from ..par.parset import ParSet
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, resample_vector
+from ..util.log import log_output
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .pixelmask import PixelMask, SpectralPixelMask
@@ -841,8 +845,8 @@ class Elric(EmissionLineFit):
     """
     def __init__(self, bitmask, wave=None, flux=None, emission_lines=None, error=None, mask=None,
                  stellar_continuum=None, base_order=-1, window_buffer=25, guess_redshift=None,
-                 guess_dispersion=None, default_dispersion=20.0, run_fit=False,
-                 record_output=False):
+                 guess_dispersion=None, default_dispersion=20.0, run_fit=False, loggers=None,
+                 quiet=False):
 
         EmissionLineFit.__init__(self, 'elric', bitmask)
         # Attributes kept by SpectralFitting:
@@ -852,6 +856,9 @@ class Elric(EmissionLineFit):
 
         # Declare the attributes kept for convenience
         self.default_dispersion = default_dispersion
+
+        self.loggers=None
+        self.quiet=None
 
         self.nspec = None
         self.nwave = None
@@ -886,7 +893,7 @@ class Elric(EmissionLineFit):
         self.fit(wave, flux, emission_lines, error=error, mask=mask,
                  stellar_continuum=stellar_continuum, base_order=base_order,
                  window_buffer=window_buffer, guess_redshift=guess_redshift,
-                 guess_dispersion=guess_dispersion, record_output=record_output)
+                 guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
 
 
     @staticmethod
@@ -953,7 +960,11 @@ class Elric(EmissionLineFit):
         primary_line = self.emission_lines['mode'] == 'f'
         primary_index = self.emission_lines['index'][primary_line]
         self.nwindows = numpy.sum(primary_line)
-#        print(self.neml, self.nwindows)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission lines to fit: {0}'.format(self.neml))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of fitting windows: {0}'.format(self.nwindows))
 
         # Set up the primary line data using the guess parameters from
         # the database
@@ -1269,7 +1280,7 @@ class Elric(EmissionLineFit):
 
 
 
-    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None):
+    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
 
         This is a basic interface that is geared for the DAP that
@@ -1324,7 +1335,7 @@ class Elric(EmissionLineFit):
             = self.fit(wave, _flux, par['emission_lines'], error=noise, mask=par['pixelmask'],
                        stellar_continuum=continuum, base_order=par['base_order'],
                        window_buffer=par['window_buffer'], guess_redshift=guess_redshift,
-                       guess_dispersion=guess_dispersion, record_output=True)
+                       guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
         
         _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
         _model_flux[good_spec,:] = model_flux
@@ -1353,12 +1364,10 @@ class Elric(EmissionLineFit):
 
     def fit(self, wave, flux, emission_lines, error=None, mask=None, stellar_continuum=None,
             base_order=-1, window_buffer=25, guess_redshift=None, guess_dispersion=None,
-            record_output=False):
-            #, sres=None):
+            loggers=None, quiet=False):
 
         """
-
-        The flux vector is expected to have size Nspec x Nwave.
+        The flux array is expected to have size Nspec x Nwave.
 
         Raises:
             ValueError: Raised if the length of the spectra, errors, or
@@ -1367,13 +1376,17 @@ class Elric(EmissionLineFit):
                 are not 1D vectors; and raised if the number of
                 redshifts or dispersions is not a single value or the
                 same as the number of input spectra.
-
         """
         # Check the input emission-line database
         self._check_db(emission_lines)
         self.emission_lines = emission_lines
         self.neml = self.emission_lines.nsets
 
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
+        
         # Check the input
         if len(wave.shape) != 1:
             raise ValueError('Input wavelengths must be a vector; all flux vectors should have' \
@@ -1424,7 +1437,7 @@ class Elric(EmissionLineFit):
             self.guess_dispersion = numpy.full(self.nspec, self.default_dispersion,
                                                dtype=numpy.float)
 
-        # Subtract the stellar continuum if it has provided
+        # Subtract the stellar continuum if it has been provided
         if stellar_continuum is not None:
             if stellar_continuum.shape != self.flux.shape:
                 raise ValueError('Shape of the stellar continuum array must match the flux array.')
@@ -1472,7 +1485,6 @@ class Elric(EmissionLineFit):
                                                              'NOCONTINUUM')
 
         # Model parameters and fit quality
-#        print('max-npar:', max_npar)
         model_fit_par = init_record_array(self.nspec,
                                           self._per_fitting_window_dtype(self.nwindows, max_npar,
                                                                 self.bitmask.minimum_dtype()))
@@ -1494,10 +1506,8 @@ class Elric(EmissionLineFit):
 #                print('Window: {0}/{1}'.format(j+1, self.nwindows))
 #                for p in self.fitting_window[j].profile_set:
 #                    print(p.par)
-#            if i > 441:
-#                exit()
-
-            print('Fitting emission lines in spectrum: {0}/{1}'.format(i+1,self.nspec), end='\r')
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nspec))
 
             # Get the fitting mask for each emission-line in each window
             fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.guess_redshift[i],
@@ -1576,6 +1586,7 @@ class Elric(EmissionLineFit):
                     _bounds = numpy.append(_bounds,
                           numpy.array([-numpy.inf,numpy.inf]*(base_order+1)).reshape(-1,2),axis=0)
 
+                # TODO: Get rid of this debugging issue...
                 if ~numpy.all(_bounds[:,0]<_bounds[:,1]):
 
                     _bounds = self.fitting_window[j].bounds.reshape(-1,2)
@@ -1607,8 +1618,7 @@ class Elric(EmissionLineFit):
 
                     print('output')
                     print(_bounds)
-
-                    exit()
+                    raise ValueError('WTF')
 
 #                print(_guess_par)
 #                print(_bounds)
@@ -1673,9 +1683,10 @@ class Elric(EmissionLineFit):
 
 #            pyplot.plot(wave, model_flux[i,:], linestyle='-', color='g')
 #            pyplot.show()
-        print('Fitting emission lines in spectrum: {0}/{0}'.format(self.nspec))
 
-        print('  DURATION: {0:.5f} sec'.format((time.clock() - t)))
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
+                       (time.clock() - t)/60))
 
         return self.wave, model_flux, model_mask, model_fit_par, model_eml_par
 

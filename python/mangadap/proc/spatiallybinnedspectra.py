@@ -60,11 +60,14 @@ procedures.
 
 *Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
-
+    | **19 May 2016**: (KBW) Include SPECRES and SPECRESD extensions
+        from DRP file in output. Added loggers and quiet keyword
+        arguments to :class:`SpatiallyBinnedSpectra`, removed verbose 
+        
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
-
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
 
@@ -88,26 +91,28 @@ else:
         warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
-import os.path
-from os import remove, environ
+import os
+import time
+import logging
+import numpy
+
 from scipy import sparse
 from astropy.io import fits
 import astropy.constants
-import time
-import numpy
 
 from ..mangafits import MaNGAFits
-from . import spatialbinning
-from .reductionassessments import ReductionAssessment
-from .spectralstack import SpectralStackPar, SpectralStack
+from ..drpfits import DRPFits
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_common_path
-from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..drpfits import DRPFits
+from ..util.log import log_output
+from ..config.defaults import default_dap_source, default_dap_common_path
+from ..config.defaults import default_dap_file_name, default_cube_pixelscale
+from . import spatialbinning
+from .reductionassessments import ReductionAssessment
+from .spectralstack import SpectralStackPar, SpectralStack
 from .util import _select_proc_method, _fill_vector
 
 from matplotlib import pyplot
@@ -432,6 +437,21 @@ class SpatiallyBinnedSpectra:
 
     Class that holds spatially binned spectra.
 
+    Args:
+        loggers (list): (**Optional**) List of `logging.Logger`_ objects
+            to log progress; ignored if quiet=True.  Logging is done
+            using :func:`mangadap.util.log.log_output`.  Default is no
+            logging.
+        quiet (bool): (**Optional**) Suppress all terminal and logging
+            output.  Default is False.
+
+    Attributes:
+         loggers (list): List of `logging.Logger`_ objects to log
+            progress; ignored if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.
+        quiet (bool): Suppress all terminal and logging output.
+
+
     .. todo::
 
         - Add prior with velocity offsets for spaxels.
@@ -439,10 +459,12 @@ class SpatiallyBinnedSpectra:
     """
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, symlink_dir=None, clobber=False, verbose=0, checksum=False):
+                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.version = '1.0'
-        self.verbose = verbose
+        self.loggers = None
+        self.quiet = False
 
         # Define the method properties
         self.method = None
@@ -483,7 +505,7 @@ class SpatiallyBinnedSpectra:
         # Bin the spectra
         self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
                          directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                         symlink_dir=symlink_dir, clobber=clobber, verbose=verbose)
+                         symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
     def __del__(self):
@@ -797,7 +819,7 @@ class SpatiallyBinnedSpectra:
     # TODO: This function needs to be broken up
     def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
-                    clobber=False, verbose=0):
+                    clobber=False, loggers=None, quiet=False):
         """
 
         Bin and stack the spectra.
@@ -805,13 +827,20 @@ class SpatiallyBinnedSpectra:
         .. todo::
             - Allow to weight by S/N?
         """
+
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
+
         # DRPFits object always needed
         if drpf is None:
             raise ValueError('Must provide DRP file object to compute assessments.')
         if not isinstance(drpf, DRPFits):
             raise TypeError('Must provide a valid DRPFits object!')
         if drpf.hdu is None:
-            warnings.warn('DRP file previously unopened.  Reading now.')
+            if not self.quiet:
+                warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
         self.drpf = drpf
         self.shape = self.drpf.shape
@@ -842,11 +871,21 @@ class SpatiallyBinnedSpectra:
         good_snr = self._check_snr()
         # Good spectra have both these criteria
         good_spec = good_fgoodpix & good_snr
+
         # Report
-        print('Total spectra: ', len(good_fgoodpix))
-        print('With 80% coverage: ', numpy.sum(good_fgoodpix))
-        print('With good S/N: ', numpy.sum(good_snr))
-        print('Good spectra: ', numpy.sum(good_spec))
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'SPATIALLY BINNING SPECTRA:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+            log_output(self.loggers, 1, logging.INFO, 'Total spectra: {0}'.format(
+                                                                            len(good_fgoodpix)))
+            log_output(self.loggers, 1, logging.INFO, 'With 80% spectral coverage: {0}'.format(
+                                                                        numpy.sum(good_fgoodpix)))
+            log_output(self.loggers, 1, logging.INFO, 'With good S/N: {0}'.format(
+                                                                            numpy.sum(good_snr)))
+            log_output(self.loggers, 1, logging.INFO, 'Number of good spectra: {0}'.format(
+                                                                            numpy.sum(good_spec)))
 
         # Fill in any remaining binning parameters
         self._fill_method_par(good_spec)
@@ -859,6 +898,10 @@ class SpatiallyBinnedSpectra:
         if self.method['binpar'] is None and self.method['binclass'] is None \
                 and self.method['binfunc'] is None:
         
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO,
+                            'No binning requested; \'Binned\' spectra same as in DRP file.')
+
             # Initialize the header keywords
             hdr = self._clean_drp_header(ext='PRIMARY')
             self._initialize_header(hdr)
@@ -880,12 +923,14 @@ class SpatiallyBinnedSpectra:
 
             # Set the HDUList just based on the original DRP data
 #            print('Building HDUList...', end='\r')
-            self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr), self.drpf['FLUX'],
-                                      self.drpf['IVAR'], 
+            self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr), self.drpf['FLUX'].copy(),
+                                      self.drpf['IVAR'].copy(), 
                                       fits.ImageHDU(data=mask,
                                                     header=self.drpf['MASK'].header.copy(),
                                                     name='MASK'),
-                                      self.drpf['WAVE'],
+                                      self.drpf['WAVE'].copy(),
+                                      self.drpf['SPECRES'].copy(),
+                                      self.drpf['SPECRESD'].copy(),
                                       fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
                                                     header=self.drpf['FLUX'].header.copy(),
                                                     name='FLUXD'),
@@ -902,12 +947,17 @@ class SpatiallyBinnedSpectra:
 
             # Try to add the covariance data if requested
             if self.method['stackpar']['covar_mode'] not in ['none', None]:
+                if not self.quiet:
+                    log_output(self.loggers, 1, logging.INFO, 'Attempting to compute covariance.')
+
                 try:
                     covar = self.method['stackclass'].build_covariance_data_DRPFits(self.drpf,
                                                         self.method['stackpar']['covar_mode'], 
                                                         self.method['stackpar']['covar_par'])
                 except AttributeError as e:
-                    warnings.warn('Could not build covariance data:: AttributeError: {0}'.format(e))
+                    if not self.quiet:
+                        warnings.warn('Could not build covariance data:: '
+                                      'AttributeError: {0}'.format(e))
                     covar = None
 
                 if isinstance(covar, Covariance):
@@ -921,6 +971,9 @@ class SpatiallyBinnedSpectra:
                         self.hdu += [ fits.BinTableHDU.from_columns([plane_col],
                                                                     name='COVAR_PLANE') ]
 
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, '-'*50)
+
             # Never save a hard copy of the per-spectrum data; already
             # saved in the ReductionAssessment and DRPFits objects
             self.hardcopy = False
@@ -932,21 +985,29 @@ class SpatiallyBinnedSpectra:
             raise ValueError('File path for output file is undefined!')
 
         # Report
-        print('Output path: ', self.directory_path)
-        print('Output file: ', self.output_file)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
 
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
             self.read(checksum=self.checksum)
-            if reff is not None and self.reff != reff:
+            if not self.quiet and reff is not None and self.reff != reff:
                 warnings.warn('Provided effective radius different from available file; set ' \
                               'clobber=True to overwrite.')
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
         # Bin the spectra.  To be included in any bin, the spectra must
         # be selected as 'good' according to the selections made above.
-        print('Binning spectra ...')
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Binning spectra ...')
         x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
         y = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
         bin_indx = numpy.full(self.drpf.nspec, -1, dtype=numpy.int)
@@ -958,7 +1019,8 @@ class SpatiallyBinnedSpectra:
 #        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
         # Stack the spectra in each bin
-        print('Stacking spectra ...')
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Stacking spectra ...')
         stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
                 self.method['stackfunc'](self.drpf, bin_indx, par=self.method['stackpar'])
 
@@ -978,6 +1040,9 @@ class SpatiallyBinnedSpectra:
 
 #        pyplot.scatter(stack_signal, stack_noise, marker='.', color='k', s=40, lw=0)
 #        pyplot.show()
+
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Constructing data ...')
 
         # Get the unique bins, how to reconstruct the bins from the
         # unique set, and the number of spectra in each bin
@@ -1097,7 +1162,9 @@ class SpatiallyBinnedSpectra:
         try:
             bin_area = self.method['binclass'].bin_area()
         except AttributeError as e:
-            warnings.warn('Could not calculate nominal bin area:: AttributeError: {0}'.format(e))
+            if not self.quiet:
+                warnings.warn('Could not calculate nominal bin area:: '
+                              'AttributeError: {0}'.format(e))
             bin_area = bin_data['AREA']
         bin_data['AREA_FRAC'] = bin_data['AREA']/bin_area[:self.nbins]
 
@@ -1142,12 +1209,12 @@ class SpatiallyBinnedSpectra:
             try:
                 hdr['BINTYPE'] = (self.method['binclass'].bintype, 'Binning method')
             except AttributeError:
-                if hardcopy:
+                if not self.quiet and hardcopy:
                     warnings.warn('Binning parameter class has no attribute bintype.  No type ' \
                                   'written to the header of the output fits file.')
 
         if self.method['binpar'] is not None:
-            if hardcopy and not callable(self.method['binpar'].toheader):
+            if not self.quiet and hardcopy and not callable(self.method['binpar'].toheader):
                 warnings.warn('Binning parameter class does not have toheader() function.  ' \
                               'No binning parameters written to the header of the output ' \
                               'fits file.')
@@ -1155,7 +1222,7 @@ class SpatiallyBinnedSpectra:
                 self.method['binpar'].toheader(hdr)
 
         if self.method['stackpar'] is not None:
-            if hardcopy and not callable(self.method['stackpar'].toheader):
+            if not self.quiet and hardcopy and not callable(self.method['stackpar'].toheader):
                 warnings.warn('Stacking parameter class does not have toheader() function.  ' \
                               'No stacking parameters written to the header of the output ' \
                               'fits file.')
@@ -1191,7 +1258,9 @@ class SpatiallyBinnedSpectra:
                                   fits.ImageHDU(data=mask_bit_values,
                                                 header=self.drpf['MASK'].header.copy(),
                                                 name='MASK'),
-                                  self.drpf['WAVE'],
+                                  self.drpf['WAVE'].copy(),
+                                  self.drpf['SPECRES'].copy(),
+                                  self.drpf['SPECRESD'].copy(),
                                   fits.ImageHDU(data=sdev.data,
                                                 header=self.drpf['FLUX'].header.copy(),
                                                 name='FLUXD'),
@@ -1224,6 +1293,8 @@ class SpatiallyBinnedSpectra:
         self.symlink_dir = symlink_dir
         if self.hardcopy:
             self.write(clobber=clobber)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
 
 
     def write(self, clobber=False):
@@ -1231,6 +1302,8 @@ class SpatiallyBinnedSpectra:
         Write the hdu object to the file.
         """
         # Restructure the data to match the DRPFits file
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Restructuring data to match DRP.')
         if self.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
@@ -1239,9 +1312,12 @@ class SpatiallyBinnedSpectra:
         
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir)
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir,
+                  loggers=self.loggers, quiet=self.quiet)
 
         # Revert the structure
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
         if self.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
@@ -1270,12 +1346,14 @@ class SpatiallyBinnedSpectra:
         if self.hdu['PRIMARY'].header['BINKEY'] != self.method['key']:
             if strict:
                 raise ValueError('Keywords in header does not match specified method keyword!')
-            else:
+            elif not self.quiet:
                 warnings.warn('Keywords in header does not match specified method keyword!')
         # TODO: "strict" should also check other aspects of the file to
         # make sure that the details of the method are also the same,
         # not just the keyword
 
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
         if self.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
@@ -1287,14 +1365,16 @@ class SpatiallyBinnedSpectra:
             self.covariance = Covariance(source=self.hdu, primary_ext='COVAR',
                                          plane_ext='COVAR_PLANE')
         except:
-            warnings.warn('Unable to find/read covariance data.')
+            if not self.quiet:
+                warnings.warn('Unable to find/read covariance data.')
             self.covariance = None
 
         # Attempt to read the effective radius
         try:
             self.reff = self.hdu['PRIMARY'].header['REFF']
         except:
-            warnings.warn('Unable to read effective radius from file header!')
+            if not self.quiet:
+                warnings.warn('Unable to read effective radius from file header!')
             self.reff = None
 
         # Attempt to read binning parameters

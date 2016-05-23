@@ -23,7 +23,12 @@ Provides a set of file I/O routines.
         if sys.version > '3':
             long = int
 
+        import os
+        import gzip
+        import shutil
+        import logging
         import numpy
+
         from astropy.io import fits
 
 *Revision history*:
@@ -34,8 +39,11 @@ Provides a set of file I/O routines.
     | **09 Feb 2016**: (KBW) Added :func:`writefits_1dspec`.
     | **28 Mar 2016**: (KBW) Added function :func:`init_record_array`
         and :func:`rec_to_fits_type`
+    | **19 May 2016**: (KBW) In :func:`write_hdu`, removed verbose and
+        added loggers and quiet.
 
 .. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
 
@@ -51,8 +59,11 @@ if sys.version > '3':
 import os
 import gzip
 import shutil
+import logging
 import numpy
+
 from astropy.io import fits
+from .log import log_output
 
 __author__ = 'Kyle B. Westfall'
 
@@ -276,7 +287,8 @@ def compress_file(ifile, clobber=False):
             shutil.copyfileobj(f_in, f_out)
 
 
-def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, verbose=True):
+def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, loggers=None,
+              quiet=False):
     """
     Write an HDUList to an output file.
     """
@@ -289,19 +301,22 @@ def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, verbo
         _ofile = ofile
 
     # Write the data
-    if verbose:
-        print('Writing: {0}'.format(_ofile))
+    if not quiet:
+        log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
     hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
     if compress:
-        if verbose:
-            print('Compressing: {0}'.format(ofile))
+        if not quiet:
+            log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
         # And compress it
         compress_file(_ofile, clobber=clobber)
         os.remove(_ofile)
 
     # Create the symlink if requested
     if symlink_dir is not None:
-        if verbose:
-            print('Creating symlink: {0}'.format(os.path.join(symlink_dir, ofile.split('/')[-1])))
-        os.symlink(ofile, os.path.join(symlink_dir, ofile.split('/')[-1]))
+        olink = os.path.join(symlink_dir, ofile.split('/')[-1])
+        if os.path.isfile(olink):
+            os.remove(olink)
+        if not quiet:
+            log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink))
+        os.symlink(ofile, olink)
 

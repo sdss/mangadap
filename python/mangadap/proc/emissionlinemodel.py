@@ -45,6 +45,7 @@ A class hierarchy that fits the emission lines.
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
         from ..util.bitmask import BitMask
+        from ..util.log import log_output
         from .artifactdb import ArtifactDB
         from .emissionlinedb import EmissionLineDB
         from .pixelmask import SpectralPixelMask
@@ -86,7 +87,9 @@ else:
         warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
-import os.path
+import os
+import logging
+
 import numpy
 from astropy.io import fits
 import astropy.constants
@@ -98,6 +101,7 @@ from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
 from ..util.bitmask import BitMask
+from ..util.log import log_output
 from .artifactdb import ArtifactDB
 from .emissionlinedb import EmissionLineDB
 from .pixelmask import SpectralPixelMask
@@ -296,11 +300,12 @@ class EmissionLineModel:
     def __init__(self, method_key, binned_spectra, guess_vel=None, guess_sig=None,
                  stellar_continuum=None, method_list=None, artifact_list=None,
                  emission_line_db_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False, verbose=0,
-                 checksum=False):
+                 directory_path=None, output_file=None, hardcopy=True, clobber=False,
+                 checksum=False, loggers=None, quiet=False):
 
         self.version = '1.0'
-        self.verbose = verbose
+        self.loggers = None
+        self.quiet = False
 
         # Define the database properties
         self.method = None
@@ -347,7 +352,8 @@ class EmissionLineModel:
         self.fit(binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig,
                  stellar_continuum=stellar_continuum, dapsrc=dapsrc, dapver=dapver,
                  analysis_path=analysis_path, directory_path=directory_path,
-                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, verbose=verbose)
+                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
+                 quiet=quiet)
 
 
     def __del__(self):
@@ -581,6 +587,13 @@ class EmissionLineModel:
         return self.binned_spectra['BINS'].data['SNR'] > self.method['minimum_snr']
 
 
+    def _bins_to_fit(self):
+        """Return flags for the bins to fit."""
+        return (self._check_snr()) \
+                    & ~(numpy.array([ b in self.binned_spectra.missing_bins \
+                                        for b in numpy.arange(self.binned_spectra.nbins)]))
+
+
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'MASK' ]
 
@@ -611,12 +624,16 @@ class EmissionLineModel:
 
     def fit(self, binned_spectra, guess_vel=None, guess_sig=None, stellar_continuum=None,
             dapsrc=None, dapver=None, analysis_path=None, directory_path=None, output_file=None,
-            hardcopy=True, clobber=False, verbose=0):
+            hardcopy=True, clobber=False, loggers=None, quiet=False):
         """
 
         Fit the emission lines.
 
         """
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
 
         # SpatiallyBinnedSpectra object always needed
         if binned_spectra is None:
@@ -650,12 +667,19 @@ class EmissionLineModel:
         dispersion = None if guess_sig is None else guess_sig
         self._assign_input_kinematics(redshift, dispersion)
 
-        # Get the good spectra
-        #   - Must have sufficienct S/N, as defined by the input par
-        good_snr = self._check_snr()
         # Report
-        print('Total spectra: ', len(good_snr))
-        print('With good S/N: ', numpy.sum(good_snr))
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'EMISSION-LINE PROFILE FITTING:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Total bins: {0}'.format(
+                                                            self.binned_spectra.nbins))
+            log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
+                                                            len(self.binned_spectra.missing_bins)))
+            log_output(self.loggers, 1, logging.INFO, 'With good S/N: {0}'.format(
+                                                            numpy.sum(self._check_snr())))
+            log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
+                                                            numpy.sum(self._bins_to_fit())))
 
         # Fill in any remaining binning parameters
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
@@ -669,23 +693,30 @@ class EmissionLineModel:
             raise ValueError('File path for output file is undefined!')
 
         # Report
-        print('Output path: ', self.directory_path)
-        print('Output file: ', self.output_file)
-
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
+        
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Using existing file')
             self.read()
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
         # Fit the spectra
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_mask, model_fit_par, model_eml_par = \
-            self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'])
+            self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
+                                   loggers=self.loggers, quiet=self.quiet)
 
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
-#        exit()
         
         # Compile the information on the suite of measured indices
         hdu_database = self._compile_database()
@@ -757,6 +788,8 @@ class EmissionLineModel:
         self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
 
 
     def write(self, clobber=False):
@@ -764,6 +797,8 @@ class EmissionLineModel:
         Write the hdu object to the file.
         """
         # Restructure the data to match the DRPFits file
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Restructuring data to match DRP.')
         if self.binned_spectra.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
@@ -775,6 +810,8 @@ class EmissionLineModel:
         write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
 
         # Revert the structure
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
         if self.binned_spectra.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
@@ -808,6 +845,8 @@ class EmissionLineModel:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
         if self.binned_spectra.drpf.mode == 'CUBE':
             MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
             MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)

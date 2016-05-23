@@ -27,6 +27,8 @@ Logging routines.
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW)
 
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
+
 """
 
 from __future__ import division
@@ -43,7 +45,7 @@ import warnings
 
 __author__ = 'Kyle Westfall'
 
-def init_DAP_logging(log, simple_warnings=True):
+def init_DAP_logging(log, simple_warnings=True, append=False):
     """
     .. todo::
         - Use a file with the logging configuration.  See:
@@ -69,7 +71,7 @@ def init_DAP_logging(log, simple_warnings=True):
 
     # Add file handler if wanted
     if log is not None:
-        logfile = logging.FileHandler(log, mode='w')
+        logfile = logging.FileHandler(log, mode=('a' if append else 'w'))
         logfile.setFormatter(
                 logging.Formatter('%(asctime)s %(name)-10s %(levelname)-8s ::  %(message)s'))
         logfile.setLevel(logging.DEBUG)
@@ -77,6 +79,10 @@ def init_DAP_logging(log, simple_warnings=True):
 
 
 def module_logging(name, verbose):
+    """
+    Return a number of `logging.Logger`_ objects, one for each verbosity
+    level.
+    """
     if verbose == 0:
         return None
     loggers = []
@@ -86,8 +92,13 @@ def module_logging(name, verbose):
     
     
 def log_output(loggers, v, lvl, message):
-    if loggers is None or len(loggers) < v:
+    if loggers is None:
+        print(message)
         return
+
+    if len(loggers) < v:
+        return
+
     loggers[v-1].log(lvl,message)
 
 

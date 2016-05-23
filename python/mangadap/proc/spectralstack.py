@@ -298,7 +298,6 @@ class SpectralStack():
 #        pyplot.plot(self.wave, ivar[20*44+20,:])
 #        pyplot.plot(self.wave, self.ivar[0,:])
 #        pyplot.show()
-#        exit()
 
 
     def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None):
@@ -606,8 +605,10 @@ class SpectralStack():
         dw = (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
                     if log else (wave[1] - wave[0])
         # Output number of pixels
-        nwave = wave.size if keep_range else \
-                            resample_vector_npix(outRange=outRange, dx=dw, log=log, base=base)
+        if keep_range:
+            nwave = wave.size
+        else:
+            nwave, outRange = resample_vector_npix(outRange=outRange, dx=dw, log=log, base=base)
         
         #Initialize the output arrays
         nspec = flux.shape[0]
@@ -833,7 +834,6 @@ class SpectralStack():
 #        pyplot.plot(wave, ivar[20*44+20,:])
 #        pyplot.plot(self.wave, self.ivar[0,:])
 #        pyplot.show()
-#        exit()
 
         # Calculate the standard deviation in the flux, even if the flux
         # operation is to sum the data

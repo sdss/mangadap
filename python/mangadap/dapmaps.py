@@ -481,7 +481,6 @@ class construct_maps_file:
 #        pyplot.show()
 #        pyplot.imshow(self.drpf['FLUX'].data[:,:,1000].T, origin='lower', interpolation='nearest')
 #        pyplot.show()
-#        exit()
 
 #    def binning_mask(self, binned_spectra):
 #        """

@@ -90,6 +90,7 @@ the MaNGA Data Reduction Pipeline (DRP).
       the CUBE files!  This is why the are transposed in
       :func:`mangadap.drpfits.DRPFits.gri_composite`.
     - Image reconstruction has transpose sense wrt DRP output!
+    - Add logging
 
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html

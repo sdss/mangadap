@@ -38,21 +38,23 @@ Provides a set of functions to handle instrumental effects.
 
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
-                       based on downgrader_MANGA.f provided by D.
-                       Thomas, O. Steele, D.  Wilkinson, D. Goddard.
+        based on downgrader_MANGA.f provided by D.  Thomas, O. Steele,
+        D.  Wilkinson, D. Goddard.
     | **13 Jun 2015**: D.Wilkinson edit to not calculate unimportant
-                       convolution terms -> runs 5x faster.
+        convolution terms -> runs 5x faster.
     | **03 Feb 2016**: (KBW) Generalized M. Cappellari's
-                       :func:`log_rebin` to :func:`resample_vector` to
-                       allow for linear interpolation of flux density
-                       across the pixel.
+        :func:`log_rebin` to :func:`resample_vector` to allow for linear
+        interpolation of flux density across the pixel.
     | **04 Feb 2016**: (KBW) Further fixes to :func:`resample_vector`.
-                       Added :func:`spectral_coordinate_step`, and
-                       propagated change to
-                       :func:`spectrum_velocity_scale`
+        Added :func:`spectral_coordinate_step`, and propagated change to
+        :func:`spectrum_velocity_scale`
     | **21 Apr 2016**: (KBW) It's the Queen's 90th birthday!  Removed
-                       log10 keyword from
-                       :func:`spectrum_velocity_scale`.
+        log10 keyword from :func:`spectrum_velocity_scale`.
+    | **20 May 2016**: (KBW) Corrected match between number of pixels
+        and output range computed in :func:`resample_vector_npix`; now
+        returns an adjusted range to make sure that the sampling and
+        range results in an exact integer number of pixels.
+
 """
 
 from __future__ import division
@@ -1289,8 +1291,6 @@ def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newR
     return dLam, m, logscale, velscale
 
 
-
-
 def _pixel_borders(xlim, npix, log=False, base=10.0):
     """
     Determine the borders of the pixels in a vector.
@@ -1339,17 +1339,27 @@ def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=N
             returned if either *outRange* or *dx* are not provided.
 
     Returns:
-        int: The number of pixels to cover *outRange* with pixels of
-        width *dx*.
+        int, numpy.ndarray: Returns two objects: The number of pixels to
+        cover *outRange* with pixels of width *dx* and the adjusted
+        range such that number of pixels of size dx is the exact integer.
+
+    Raises:
+        ValueError: Raised if the range is not a two-element vector
     """
     # If the range or sampling are not provided, the number of pixels is
     # already set
     if outRange is None or dx is None:
-        return default
+        return default, outRange
+    if len(outRange) != 2:
+        raise ValueError('Output range must be a 2-element vector.')
 
-    outRange = numpy.array(outRange)
-    return ( int( numpy.diff(numpy.log(outRange))/numpy.log(base) / dx) + 1 if log else \
-                int(numpy.diff(outRange)/dx + 1) )
+    outRange = numpy.atleast_1d(outRange)
+    npix = int( numpy.diff(numpy.log(outRange))/numpy.log(base) / dx) + 1 if log else \
+                int(numpy.diff(outRange)/dx) + 1
+    _outRange = outRange
+    _outRange[1] = numpy.power(base, numpy.log(outRange[0])/numpy.log(base) + dx*(npix-1)) \
+                            if log else outRange[0] + dx*(npix-1)
+    return npix, _outRange
 
 
 def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, newLog=True,
@@ -1430,8 +1440,9 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
     # Set the output range, number of pixels, pixel borders, and output
     # coordinate vector
     outRange = inRange if newRange is None else numpy.array(newRange)
-    m = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=dx,
-                             default=(n if newpix is None else newpix))
+    m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=dx,
+                                        default=(n if newpix is None else newpix))
+    outRange = outRange if _outRange is None else _outRange
     outBorders, outPscale = _pixel_borders(outRange, m, log=newLog, base=base)
     outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \
             else (outBorders[1:]+outBorders[:-1])/2.0

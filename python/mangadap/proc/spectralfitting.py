@@ -82,12 +82,13 @@ class StellarKinematicsFit(SpectralFitting):
         self.fit_method = fit_method
 
     @staticmethod
-    def _per_stellar_kinematics_dtype(ntpl, nadd, nmult, nkin):
+    def _per_stellar_kinematics_dtype(ntpl, nadd, nmult, nkin, mask_dtype):
         r"""
         Construct the record array data type for the output fits
         extension.
         """
         return [ ('BIN_INDEX',numpy.int),
+                 ('MASK',mask_dtype),
                  ('BEGPIX', numpy.int),
                  ('ENDPIX', numpy.int),
                  ('NPIXTOT',numpy.int),

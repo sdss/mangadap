@@ -62,6 +62,8 @@ Utah.
         :class:`mangadap.survey.drpcomplete.DRPComplete`.
     | **13 May 2016**: (KBW) Substantial changes to accommodate
         conversion of DAP from IDL to python
+    | **19 May 2016**: (KBW) Added command-line options for including
+        log file
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -81,6 +83,7 @@ if sys.version > '3':
 
 import subprocess
 import time
+import shutil
 import os
 import numpy
 import glob
@@ -304,7 +307,7 @@ class rundap:
                 # Databases with input parameter information
                 platetargets=None,
                 # Flags for script contents
-                dapproc=True, plots=True, verbose=0,
+                log=False, dapproc=True, plots=True, verbose=0,
                 # Cluster options
                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
                 create=False, submit=False, queue=None):
@@ -341,6 +344,7 @@ class rundap:
         self.platetargets = arginp_to_list(platetargets)
 
         # Set the options for output
+        self.log = log
         self.dapproc = dapproc
         self.plots = plots
         self.verbose = verbose
@@ -391,12 +395,29 @@ class rundap:
         self.analysis_path = default_analysis_path(self.mpl.drpver, self.dapver) \
                              if self.analysis_path is None else str(self.analysis_path)
 
+        # Set the subdirectory from which the scripts are sourced and
+        # the various log files are written.  Currently based on start
+        # UTC; e.g., analysis_path/log/19May2016T09.17.42UTC
+        self.calling_path = os.path.join(self.analysis_path, 'log',
+                                         time.strftime('%d%b%YT%H.%M.%SUTC',time.gmtime()))
+
         # Make sure there is an analysis plan
         if self.plan_file is None:
             self.plan_file = default_dap_plan_file(drpver=self.mpl.drpver, dapver=self.dapver,
                                                    analysis_path=self.analysis_path)
         if not os.path.isfile(self.plan_file):
             raise FileNotFoundError('No file: {0}'.format(self.plan_file))
+
+        # Create the calling path and copy the plan file into the top
+        # level of that directory; existence tests are run, even though
+        # time stamp should mean that calling_path never exists
+        # TODO: allow argument to set calling_path directly?
+        if not os.path.isdir(self.calling_path):
+            os.makedirs(self.calling_path)
+        _plan_file = self.plan_file
+        self.plan_file = os.path.join(self.calling_path, self.plan_file.split('/')[-1])
+        if not os.path.isfile(self.plan_file):
+            shutil.copy2(_plan_file, self.plan_file)
 
         # Alert the user of the versions to be used
         if self.q is not None:
@@ -406,6 +427,8 @@ class rundap:
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
+        print('    CALLING: {0}'.format(self.calling_path))
+        print('  PLAN FILE: {0}'.format(self.plan_file))
         print('Processing steps added to scripts:')
         print('        {0}'.format(processes))
 
@@ -610,10 +633,13 @@ class rundap:
         parser.add_argument("--plttargets", type=str, help="path to plateTargets file(s); "
                             "if provided will force update to drpcomplete fits file", default=None)
 
+        parser.add_argument("--log", help="Have the main DAP executable produce a log file",
+                            action="store_true", default=False)
         parser.add_argument("--no_proc", help="Do NOT perform the main DAP processing steps",
                             action="store_true", default=False)
         parser.add_argument("--no_plots", help="Do NOT create QA plots", action="store_true",
                             default=False)
+
 
         # Read arguments specific to the cluster submission behavior
         parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
@@ -699,6 +725,7 @@ class rundap:
         # NOTE: This execution means that all 4 steps will default to
         # True if not specified on the command line.  This matches the
         # default set by __init__()
+        self.log = arg.log
         self.dapproc = not arg.no_proc
         self.plots = not arg.no_plots
         if self.verbose < arg.verbose:
@@ -736,6 +763,8 @@ class rundap:
         Check if the output paths exists for a given plate and ifudesign.
         If not, create them.  The necessary output paths are:
 
+            - The callind path that contains a copy of the plan, the
+              script input and output files, and the touch files
             - The main common path defined by
               :func:`mangadap.config.defaults.default_dap_common_path`.
             - The plan-based subdirectories based on the plan file
@@ -744,6 +773,11 @@ class rundap:
             plate (int): Plate number
             ifudesign (int): ifudesign number
         """
+        # Generate the calling path for this plate/ifudesign
+        path = os.path.join(self.calling_path, str(plate), str(ifudesign))
+        if not os.path.isdir(path):
+            os.makedirs(path)
+
         # Generate the main common path
         path = default_dap_common_path(plate=plate, ifudesign=ifudesign, drpver=self.mpl.drpver,
                                        dapver=self.dapver, analysis_path=self.analysis_path)
@@ -759,7 +793,6 @@ class rundap:
                                            dapver=self.dapver, analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
-
 
 
     # Files:
@@ -847,7 +880,7 @@ class rundap:
             if self.create:
                 self.queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
                                   errfile=stderrfile)
-                self.set_status(drpf.plate, drpf.ifudesign, drpf.mode, status='queued')
+                self.set_status(drpf.plate, drpf.ifudesign, status='queued') #, mode=drpf.mode
             else:
                 print('Preparing for analysis...{0:.1f}%'.format((i+1)*100/ndrp), end='\r')
                 i += 1
@@ -952,7 +985,7 @@ class rundap:
     # ******************************************************************
     # Management
     # ******************************************************************
-    def set_status(self, plate, ifudesign, mode, status='queued'):
+    def set_status(self, plate, ifudesign, mode=None, status='queued'):
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
@@ -961,15 +994,14 @@ class rundap:
         Args:
             plate (int): Plate number
             ifudesign (int): IFU design number
-            mode (str): DRP 3D mode, 'RSS' or 'CUBE'
+            mode (str): (**Optional**) DRP 3D mode, 'RSS' or 'CUBE'
             status (str): (**Optional**) That status signifier for the
                 touch file.
         """
         # Get the name of the status file        
-        root = default_dap_file_root(plate, ifudesign, mode)
-        path = default_dap_common_path(plate=plate, ifudesign=ifudesign, drpver=self.mpl.drpver,
-                                       dapver=self.dapver, analysis_path=self.analysis_path)
-        statfile = os.path.join(path, '{0}.{1}'.format(root,status))
+        root = default_dap_file_root(plate, ifudesign, mode=mode)
+        statfile = os.path.join(self.calling_path, str(plate), str(ifudesign),
+                                '{0}.{1}'.format(root,status))
 
         # Touch the file by opening and closing it
         file = open(statfile,'w')
@@ -1235,25 +1267,28 @@ class rundap:
                     os.remove(olink)
                 os.symlink(parfile, olink)
 
-        # Generate the DRP input and DAP output paths, and the DAP
-        # source path
-        drppath = default_drp_directory_path(plate, drpver=self.mpl.drpver,
-                                             redux_path=self.redux_path)
-        output_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                              drpver=self.mpl.drpver, dapver=self.dapver,
-                                              analysis_path=self.analysis_path)
+#        # Generate the DRP input and DAP output paths, and the DAP
+#        # source path
+#        drppath = default_drp_directory_path(plate, drpver=self.mpl.drpver,
+#                                             redux_path=self.redux_path)
+#        output_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
+#                                              drpver=self.mpl.drpver, dapver=self.dapver,
+#                                              analysis_path=self.analysis_path)
 #        dap_source = default_dap_source()
-        scr_file_root = default_dap_file_root(plate, ifudesign)#, mode)
-            
-        # Get module name
-        module_version = self.dapver
 
-        # Fault if no module version is available
+        # Set the root path for the scripts, inputs, outputs, and logs
+        _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))
+
+        scr_file_root = default_dap_file_root(plate, ifudesign)#, mode)
+
+        # TODO: Why is this check here?!?
+        # Get module name and fault if no module version is available
+        module_version = self.dapver
         if module_version is None:
             raise ValueError('No DAP module version!')
         
         # Set the names for the script, stdout, and stderr files
-        scriptfile = os.path.join(output_path, scr_file_root)
+        scriptfile = os.path.join(_calling_path, scr_file_root)
         stdoutfile = '{0}.out'.format(scriptfile)
         stderrfile = '{0}.err'.format(scriptfile)
 
@@ -1286,6 +1321,8 @@ class rundap:
         if dapproc:
             command = 'manga_dap {0} {1} -r {2} -a {3}'.format(parfile, self.plan_file,
                                                                self.redux_path, self.analysis_path)
+            if self.log:
+                command += (' --log {0}.log'.format(scriptfile))
             if self.verbose > 0:
                 command += (' -'+'v'*self.verbose )
             file.write('{0}\n'.format(command))
@@ -1385,7 +1422,7 @@ class rundap:
             return None, None, None
 
         # Set the status to ready
-        self.set_status(drpf.plate, drpf.ifudesign, drpf.mode, status='ready')
+        self.set_status(drpf.plate, drpf.ifudesign, status='ready') #, mode=drpf.mode
 
         # Return the list of script, stdout, and stderr files
         return sf, of, ef

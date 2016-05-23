@@ -81,8 +81,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     """
     Main wrapper function for the MaNGA DAP.
 
-    This should be called once per ${plate}-${ifudesign} (set by obs),
-    ${binmode}_${tpl}_${contmode} (set by plan) combination.
+    .. todo::
+
+        The aim is for this to be called once per ${plate}-${ifudesign}
+        (set by obs), ${binmode}_${tpl}_${contmode} (set by plan)
+        combination.  I.e., any set of plans are only done to construct
+        a *single* consolidated file.  However, at the moment, each
+        individual plan creates the consolidated file.  Incorporating
+        the results from multiple plans into a single consolidated file
+        requires some development.
 
     The procedure is as follows:
 
@@ -97,8 +104,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             - Fit parameterized line profiles to the emission lines
             - Subtract the fitted emission-line models and measure the
               spectral indices
-
-        - Construct the primary output file based on the plan results.
+            - Construct the primary output file based on the plan results.
 
     Verbose levels:
 
@@ -107,6 +113,10 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
            minor progress within blocks.
         2. Block-level and sub-function updates.
         3. Same as above, with figures.
+
+        .. warning::
+
+            The above is still in development.
 
     Args:
         obs (:class:`mangadap.par.obsinput.ObsInputPar`): Object with
@@ -121,9 +131,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             default is 0.
         drpver (str): (**Optional**) DRP version.  Default determined by
             :func:`mangadap.config.defaults.default_drp_version`.
-
-        redux_path (str) : (**Optional**) Top-level directory with the DRP
-            products; default is defined by
+        redux_path (str) : (**Optional**) Top-level directory with the
+            DRP products; default is defined by
             :func:`mangadap.config.defaults.default_redux_path`.
         directory_path (str) : (**Optional**) Direct path to directory
             containing the DRP output file; default is defined by
@@ -139,6 +148,10 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 
     Returns:
         int: Status flag
+
+        .. todo::
+            Need to make this status flag meaningful
+
     """
 
     init_DAP_logging(log)#, simple_warnings=False)
@@ -146,15 +159,17 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     # Start log
     loggers = module_logging(__name__, verbose)
 
+    log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '   DAPVERS: {0}'.format(__version__))
     log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
     t = time.clock()
     log_output(loggers, 1, logging.INFO, '     PLATE: {0}'.format(obs['plate']))
     log_output(loggers, 1, logging.INFO, ' IFUDESIGN: {0}'.format(obs['ifudesign']))
-    log_output(loggers, 1, logging.INFO, '   3D MODE: {0}\n'.format(obs['mode']))
-
-    log_output(loggers, 1, logging.INFO, '   N PLANS: {0}\n'.format(plan.nplans))
+    log_output(loggers, 1, logging.INFO, '   3D MODE: {0}'.format(obs['mode']))
+    log_output(loggers, 1, logging.INFO, '   N PLANS: {0}'.format(plan.nplans))
+    log_output(loggers, 1, logging.INFO, '-'*50)
     # TODO: Print plan details
 
     status = 0
@@ -166,44 +181,48 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     _dapver = default_dap_version() if dapver is None else dapver
     drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
                    redux_path=redux_path, directory_path=directory_path)
-    log_output(loggers, 1, logging.INFO, ' Read DRP file: {0}\n'.format(drpf.file_path()))
+    log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
 
-    if not os.path.isdir(analysis_path):
-        os.makedirs(analysis_path)
+    # Set the the analysis path and make sure it exists
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                            if analysis_path is None else analysis_path
+    if not os.path.isdir(_analysis_path):
+        os.makedirs(_analysis_path)
 
     # Iterate over plans:
     for i in range(plan.nplans):
 
         plan_ref_dir = default_dap_method_path(default_dap_method(plan=plan[i]), plate=obs['plate'],
                                                ifudesign=obs['ifudesign'], ref=True, drpver=drpver,
-                                               dapver=dapver, analysis_path=analysis_path)
+                                               dapver=dapver, analysis_path=_analysis_path)
 
         #---------------------------------------------------------------
         # S/N Assessments
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
-                                        dapsrc=dapsrc, analysis_path=analysis_path, verbose=verbose,
-                                        symlink_dir=plan_ref_dir, clobber=plan['drpqa_clobber'][i])
+                                        dapsrc=dapsrc, analysis_path=_analysis_path,
+                                        symlink_dir=plan_ref_dir, clobber=plan['drpqa_clobber'][i],
+                                        loggers=loggers)
  
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
-                                           dapsrc=dapsrc, analysis_path=analysis_path,
-                                           verbose=verbose, symlink_dir=plan_ref_dir,
-                                           clobber=plan['bin_clobber'][i])
+                                           dapsrc=dapsrc, analysis_path=_analysis_path,
+                                           symlink_dir=plan_ref_dir, clobber=plan['bin_clobber'][i],
+                                           loggers=loggers)
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit
         #---------------------------------------------------------------
         stellar_continuum = None if plan['continuum_key'][i] is None else \
-                    StellarContinuumModel(plan['continuum_key'][i], drpf, binned_spectra,
+                    StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
                                           guess_vel=obs['vel'], guess_sig=obs['vdisp'],
-                                          dapsrc=dapsrc, analysis_path=analysis_path,
-                                          verbose=verbose, tpl_symlink_dir=plan_ref_dir,
-                                          clobber=plan['continuum_clobber'][i])
+                                          dapsrc=dapsrc, analysis_path=_analysis_path,
+                                          tpl_symlink_dir=plan_ref_dir,
+                                          clobber=plan['continuum_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Emission-line Moment measurements
@@ -211,8 +230,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                        analysis_path=analysis_path, verbose=verbose,
-                                        clobber=plan['elmom_clobber'][i])
+                                        analysis_path=_analysis_path,
+                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Emission-line Fit
@@ -220,21 +239,22 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         emission_line_model = None if plan['elfit_key'][i] is None else \
                     EmissionLineModel(plan['elfit_key'][i], binned_spectra, guess_vel=obs['vel'],
                                       stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                      analysis_path=analysis_path, verbose=verbose,
-                                      clobber=plan['elfit_clobber'][i])
+                                      analysis_path=_analysis_path,
+                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
         # Still need to add equivalent-width measurements
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements
         #---------------------------------------------------------------
-        spectral_indices = None if plan['spindex_key'][i] is None else \
-                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
-                                    stellar_continuum=stellar_continuum,
-                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
-                                    analysis_path=analysis_path, verbose=verbose,
-                                    tpl_symlink_dir=plan_ref_dir,
-                                    clobber=plan['spindex_clobber'][i])
+#        spectral_indices = None if plan['spindex_key'][i] is None else \
+#                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
+#                                    stellar_continuum=stellar_continuum,
+#                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
+#                                    analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
+#                                    clobber=plan['spindex_clobber'][i], loggers=loggers)
+#        exit()
+        spectral_indices=None
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)
@@ -244,11 +264,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, dapsrc=dapsrc,
-                            analysis_path=analysis_path, clobber=True)#clobber)
+                            analysis_path=_analysis_path, clobber=True)#clobber)
 
     #-------------------------------------------------------------------
     # End log
     #-------------------------------------------------------------------
+    log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, 'EXECUTION SUMMARY')
+    log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '    FINISH: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
     if time.clock() - t < 60:
@@ -271,6 +294,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     else:
         mstr = 'MAX MEMORY: {0:.4f} Gbytes'.format(mem/1024/1024/1024)
     log_output(loggers, 1, logging.INFO, mstr)
+    log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, '-'*50)
 
     return status
 
