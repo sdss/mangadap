@@ -112,7 +112,7 @@ def readfits_1dspec(filename, log10=False):
     return wave, spec
 
 
-def writefits_1dspec(ofile, crval1, cdelt1, flux, clobber=False):
+def writefits_1dspec(ofile, crval1, cdelt1, flux, hdr=None, clobber=False):
     """
 
     Write a simple one-dimensional spectrum.
@@ -129,12 +129,12 @@ def writefits_1dspec(ofile, crval1, cdelt1, flux, clobber=False):
         clobber (bool): (**Optional**) Flag to overwrite any existing
             file of the same name.
     """
-    hdr = fits.Header()
-    hdr['CRPIX1'] = 1
-    hdr['CRVAL1'] = crval1
-    hdr['CDELT1'] = cdelt1
-    hdr['CD1_1'] = hdr['CDELT1']
-    fits.HDUList([ fits.PrimaryHDU(flux, header=hdr) ]).writeto(ofile, clobber=clobber)
+    _hdr = fits.Header() if hdr is None else hdr
+    _hdr['CRPIX1'] = 1
+    _hdr['CRVAL1'] = crval1
+    _hdr['CDELT1'] = cdelt1
+    _hdr['CD1_1'] = _hdr['CDELT1']
+    fits.HDUList([ fits.PrimaryHDU(flux, header=_hdr) ]).writeto(ofile, clobber=clobber)
 
 
 def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None, log10=False):

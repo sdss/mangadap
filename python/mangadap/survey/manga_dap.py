@@ -227,23 +227,23 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
-#        emission_line_moments = None if plan['elmom_key'][i] is None else \
-#                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
-#                                        stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-#                                        analysis_path=_analysis_path,
-#                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
-        emission_line_moments=None
+        emission_line_moments = None if plan['elmom_key'][i] is None else \
+                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+                                        stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                        analysis_path=_analysis_path,
+                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
+#        emission_line_moments=None
 
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
-#        emission_line_model = None if plan['elfit_key'][i] is None else \
-#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, guess_vel=obs['vel'],
-#                                      stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-#                                      analysis_path=_analysis_path,
-#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+        emission_line_model = None if plan['elfit_key'][i] is None else \
+                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, guess_vel=obs['vel'],
+                                      stellar_continuum=stellar_continuum, dapsrc=dapsrc,
+                                      analysis_path=_analysis_path,
+                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
-        emission_line_model=None
+#        emission_line_model=None
         # Still need to add equivalent-width measurements
 
         #---------------------------------------------------------------

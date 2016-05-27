@@ -164,7 +164,7 @@ class SpectralPixelMask(PixelMask):
             return self._empty_mask(wave, nspec=nspec)
 
 
-        if (isinstance(velocity_offsets, (list, numpy.ndarray)) and len(velocity_offsets) > 1): 
+        if isinstance(velocity_offsets, (list, numpy.ndarray)) and len(velocity_offsets) > 1: 
             _velocity_offsets = numpy.asarray(velocity_offsets)
             if len(_velocity_offsets) != nspec:
                 raise ValueError('Velocity offsets do not match the number of spectra.')
@@ -175,8 +175,12 @@ class SpectralPixelMask(PixelMask):
                                                           sigma=sigma, nsigma=nsigma)
                 mask[i,:] = self._mask_wavelength_ranges(wave, waverange)
             return mask
+
+        _velocity_offsets = velocity_offsets[0] \
+                if isinstance(velocity_offsets, (list, numpy.ndarray)) \
+                        and len(velocity_offsets) == 1 else velocity_offsets
         
-        waverange = self._get_emission_line_bands(velocity_offsets=velocity_offsets, sigma=sigma,
+        waverange = self._get_emission_line_bands(velocity_offsets=_velocity_offsets, sigma=sigma,
                                                   nsigma=nsigma)
         return self._mask_wavelength_ranges(wave, waverange, nspec=nspec)
         

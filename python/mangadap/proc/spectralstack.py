@@ -283,6 +283,9 @@ class SpectralStack():
         """
         # Calculate the sum of the flux, flux^2, and determine the
         # number of pixels in the sum
+        # NOTE: In these numpy.ma expressions, masked values are
+        # ignored, and output values are masked only if all values in
+        # the arithmetic expression are masked
         rt = self.rebin_T.toarray()
         self.flux = numpy.ma.dot(rt, flux)
         self.fluxsqr = numpy.ma.dot(rt, numpy.square(flux))

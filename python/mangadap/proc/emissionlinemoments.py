@@ -717,6 +717,7 @@ class EmissionLineMoments:
             hdu_measurements['BCONTERR'] = pseudocontinuum_error.reshape(-1,self.nmom)[0,:]
             hdu_measurements['RCONTERR'] = pseudocontinuum_error.reshape(-1,self.nmom)[1,:]
 
+
 #        if len(spec.shape) > 1:
 #            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
 #            pyplot.step(wave, spec[1], where='mid', color='g', lw=0.5, zorder=2)
@@ -727,6 +728,7 @@ class EmissionLineMoments:
 #        pyplot.scatter(hdu_measurements['RCEN'], hdu_measurements['RCONT'], marker='.', s=50,
 #                       color='r', lw=0, zorder=3)
 #        pyplot.show()
+#        exit()
 
         # Passband is not fully covered by valid pixels
         blue_fraction = interval_frac.reshape(-1,self.nmom)[0,:]

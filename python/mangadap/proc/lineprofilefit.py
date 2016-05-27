@@ -651,6 +651,9 @@ class LineProfileFit:
             raise ValueError('Insufficient data points ({0}) to fit with this function ' \
                              '(npar={1})!'.format(self.y.size, self.npar))
 
+#        print('Initial guess parameters inside LineProfileFit:')
+#        print(self.par)
+#        print(self.bounds)
         self.result = optimize.least_squares(self._resid if self.err is None else self._chi,
                                              self.par, bounds=self.bounds, jac='2-point',
                                              #method='lm', loss='linear', verbose=1)
@@ -1528,11 +1531,26 @@ class Elric(EmissionLineFit):
 
             # Fit each window
             for j in range(self.nwindows):
-
                 # Rest the profile to the initial parameters
                 self.fitting_window[j].reinit_profiles()
+#                print('Fitting: ', self.emission_lines['name'][self.fitting_window[j].db_indx])
 
-#                pyplot.step(velocity[j,:], spec_to_fit[j,:], where='mid', color='k', linestyle='-')
+                # No observed pixels in fitting window
+#                print('Sum of fitting mask: {0}'.format(numpy.sum(fitting_mask[j,:])))
+                if numpy.sum(fitting_mask[j,:]) == 0:
+                    model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
+                                                                      'INSUFFICIENT_DATA')
+                    continue
+
+#                w,h = pyplot.figaspect(1)
+#                fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+#                ax = fig.add_axes([0.1, 0.3, 0.8, 0.4])
+#                ax.set_xlim(velocity[j,0], velocity[j,-1])
+#                ax.step(velocity[j,:], spec_to_fit[j,:], where='mid', color='k', linestyle='-',
+#                        lw=0.5)
+#                ax.plot(velocity[j,:], fitting_mask[j,:], color='r')
+#                axt = ax.twiny()
+#                axt.set_xlim(self.wave[0], self.wave[-1])
 #                pyplot.show()
 
                 # Shift the guess velocity based on the redshift and
@@ -1585,6 +1603,19 @@ class Elric(EmissionLineFit):
                                               numpy.zeros(base_order+1).astype(bool))
                     _bounds = numpy.append(_bounds,
                           numpy.array([-numpy.inf,numpy.inf]*(base_order+1)).reshape(-1,2),axis=0)
+
+                # Make sure that the guess is still in the bounds:
+                # TODO: How do I deal with this:
+                #   - throw a warning and adjust the guess
+                #   - as above and include a mask bit
+                #   - don't perform the fit because it will be bogus
+                indx = numpy.logical_or( _guess_par < _bounds[:,0], _guess_par > _bounds[:,1])
+                if numpy.sum(indx) > 0:
+                    warnings.warn('Initial guess outside bounds for line(s) {0} ({1}).  '
+                                  'Adjusted to center of bounds.'.format(
+                                    self.fitting_window[j].line_index,
+                                    self.emission_lines['name'][self.fitting_window[j].db_indx]))
+                    _guess_par[indx] = numpy.mean(_bounds[indx,:], axis=1)
 
                 # TODO: Get rid of this debugging issue...
                 if ~numpy.all(_bounds[:,0]<_bounds[:,1]):

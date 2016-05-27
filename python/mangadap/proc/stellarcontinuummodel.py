@@ -715,7 +715,7 @@ class StellarContinuumModel:
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_mask, model_par \
                 = self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                         loggers=self.loggers, quiet=self.quiet)
+                                         loggers=self.loggers, quiet=self.quiet, iterative=True)
         
         assert numpy.sum(model_wave - self.binned_spectra['WAVE'].data) == 0, \
                     'Incorrect wavelength range'
