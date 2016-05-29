@@ -2737,6 +2737,7 @@ python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/contrib/cap_mpfit.py -text
 python/mangadap/contrib/ppxf.py -text
+python/mangadap/contrib/ppxf_util.py -text
 python/mangadap/contrib/voronoi_2d_binning.py -text
 python/mangadap/dap_access.py -text
 python/mangadap/dapfile.py -text
