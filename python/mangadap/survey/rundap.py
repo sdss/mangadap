@@ -968,9 +968,9 @@ class rundap:
                 allowed for the daily run.
         """
         self.label = '{0}_redo'.format(self.label)
-        # In here, qos should never be anything but None; always set in daily
-        if self.qos is not None:
-            raise ValueError('This qos is reserved for single-node usage.')
+#        # In here, qos should never be anything but None; always set in daily
+#        if self.qos is not None:
+#            raise ValueError('This qos is reserved for single-node usage.')
 
         drpfiles = self.select_redo()
         print('Number of DRP files to process: {0}'.format(len(drpfiles)))
