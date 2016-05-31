@@ -42,8 +42,6 @@ DAPEML  44  Ha      6564.632   vac  f   1.000    f  GaussianLineProfile  1  1  {
 DAPEML  45  NII     6585.271   vac  f   1.000  w44  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  46  SII     6718.294   vac  f   1.000  w47  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  47  SII     6732.674   vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
-DAPEML  16  OII     3727.092   vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
-DAPEML  17  OII     3729.875   vac  f   1.000  w16  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  26  Heps    3971.2020  vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  27  Hdel    4102.8991  vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  28  Hgam    4341.691   vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
@@ -52,4 +50,6 @@ DAPEML  38  HeI     5877.243   vac  f   1.000    f  GaussianLineProfile  1  1  {
 DAPEML  59  SIII    8831.8     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  60  SIII    9071.1     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 DAPEML  61  SIII    9533.2     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
+DAPEML  16  OII     3727.092   vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
+DAPEML  17  OII     3729.875   vac  f   1.000  w16  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None  0.0 }  { None None 500. }
 
