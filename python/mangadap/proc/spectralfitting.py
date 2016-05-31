@@ -103,9 +103,9 @@ class StellarKinematicsFit(SpectralFitting):
                  ('RCHI2',numpy.float),
                  ('ROBUST_RCHI2',numpy.float),
                  ('RMS',numpy.float),
-                 ('RESID',numpy.float,7),
-                 ('FRAC_RMS',numpy.float),
-                 ('FRAC_RESID',numpy.float,7)
+                 ('ABSRESID',numpy.float,5),
+                 ('FRMS',numpy.float),
+                 ('FABSRESID',numpy.float,5)
                ]
 
 # ----------------------------------------------------------------------

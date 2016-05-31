@@ -893,18 +893,17 @@ class PPXFFit(StellarKinematicsFit):
             model_par['RMS'][i] = numpy.sqrt(numpy.ma.mean( numpy.square(
                                                                 resid[ppxf_fit.goodpixels]) ))
             # Get growth statistics for the residuals
-            model_par['RESID'][i] = residual_growth(resid[ppxf_fit.goodpixels],
-                                                        [0.25, 0.50, 0.75, 0.90, 0.99])
+            model_par['ABSRESID'][i] = residual_growth(resid[ppxf_fit.goodpixels],
+                                                       [0.68, 0.95, 0.99])
 
             indx = numpy.absolute(ppxf_fit.bestfit) > 0
             _goodpixels = numpy.intersect1d(numpy.arange(len(resid))[indx], ppxf_fit.goodpixels,
                                                 assume_unique=True)
             if len(_goodpixels) > 0:
                 frac_resid = resid[_goodpixels]/ppxf_fit.bestfit[_goodpixels]
-                model_par['FRAC_RMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
+                model_par['FRMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
                 if len(_goodpixels) > 1:
-                    model_par['FRAC_RESID'][i] = residual_growth(frac_resid,
-                                                                 [0.25, 0.50, 0.75, 0.90, 0.99])
+                    model_par['FABSRESID'][i] = residual_growth(frac_resid, [0.68, 0.95, 0.99])
 
 #            pyplot.step(obj_wave, flux[i,:], where='mid', linestyle='-', lw=0.5, color='k',
 #                        zorder=3)
@@ -1406,18 +1405,17 @@ class PPXFFit(StellarKinematicsFit):
             model_par['RMS'][i] = numpy.sqrt(numpy.ma.mean( numpy.square(
                                                                 resid[ppxf_fit.goodpixels]) ))
             # Get growth statistics for the residuals
-            model_par['RESID'][i] = residual_growth(resid[ppxf_fit.goodpixels],
-                                                        [0.25, 0.50, 0.75, 0.90, 0.99])
+            model_par['ABSRESID'][i] = residual_growth(resid[ppxf_fit.goodpixels],
+                                                       [0.68, 0.95, 0.99])
 
             indx = numpy.absolute(ppxf_fit.bestfit) > 0
             _goodpixels = numpy.intersect1d(numpy.arange(len(resid))[indx], ppxf_fit.goodpixels,
                                                 assume_unique=True)
             if len(_goodpixels) > 0:
                 frac_resid = resid[_goodpixels]/ppxf_fit.bestfit[_goodpixels]
-                model_par['FRAC_RMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
+                model_par['FRMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
                 if len(_goodpixels) > 1:
-                    model_par['FRAC_RESID'][i] = residual_growth(frac_resid,
-                                                                 [0.25, 0.50, 0.75, 0.90, 0.99])
+                    model_par['FABSRESID'][i] = residual_growth(frac_resid, [0.68, 0.95, 0.99])
 
 #            pyplot.step(obj_wave, flux[i,:], where='mid', linestyle='-', lw=0.5, color='k',
 #                        zorder=3)

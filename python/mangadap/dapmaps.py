@@ -693,6 +693,14 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='STELLAR_SIGMA_MASK') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'STELLAR_CONT_FRESID'),
+                                    name='STELLAR_CONT_FRESID') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'STELLAR_CONT_RCHI2'),
+                                    name='STELLAR_CONT_RCHI2') ]
             return hdus
 
         # Add data to the primary header
@@ -785,6 +793,24 @@ class construct_maps_file:
                                                                  bit_type=numpy.bool),
                                 name='STELLAR_SIGMA_MASK') ]
 
+        # Continuum fit statistics
+        s = numpy.array([False, True, False, True, False])
+        data = numpy.zeros(stellar_continuum.spatial_shape+(2,), dtype=numpy.float)
+        data.reshape(-1,2)[indx,:] \
+                = stellar_continuum['PAR'].data['FABSRESID'][unique_bins[reconstruct[indx]],:][:,s]
+        hdr = self._add_channel_names(self.multichannel_maphdr, ['68th percentile',
+                                                                 '99th percentile'])
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'STELLAR_CONT_FRESID'),
+                                name='STELLAR_CONT_FRESID') ]
+
+        data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
+        data.ravel()[indx] = stellar_continuum['PAR'].data['RCHI2'][unique_bins[reconstruct[indx]]]
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                 'STELLAR_CONT_RCHI2'),
+                                name='STELLAR_CONT_RCHI2') ]
+
         return hdus
 
 
@@ -866,6 +892,23 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='EMLINE_SFLUX_MASK') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'EMLINE_SEW', err=True,
+                                                                     qual=True, bunit='ang'),
+                                    name='EMLINE_SEW') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'EMLINE_SEW',
+                                                                     bunit='(ang)^{-2}',
+                                                                     hduclas2='ERROR', qual=True),
+                                    name='EMLINE_SEW_IVAR') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'EMLINE_SEW',
+                                                                     hduclas2='QUALITY', err=True,
+                                                                     bit_type=numpy.bool),
+                                    name='EMLINE_SEW_MASK') ]
             return hdus
 
         # Add data to the primary header
@@ -924,6 +967,42 @@ class construct_maps_file:
                                                                  hduclas2='QUALITY', err=True,
                                                                  bit_type=data.dtype.type),
                                 name='EMLINE_SFLUX_MASK') ]
+
+        # Equivalent width
+        data = numpy.zeros((*emission_line_moments.spatial_shape, emission_line_moments.nmom),
+                           dtype=numpy.float)
+        data.reshape(-1, emission_line_moments.nmom)[indx,:] \
+                = emission_line_moments['ELMMNTS'].data['EW'][unique_bins[reconstruct[indx]],:]
+        # TODO: Convert wavelengths to air for column names?
+        cols = [ '{0}-{1}'.format(n,int(w)) \
+                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
+                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+        hdr = self._add_channel_names(self.multichannel_maphdr, cols)
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'EMLINE_SEW', err=True,
+                                                                 qual=True, bunit='ang'),
+                                name='EMLINE_SEW') ]
+        # Inverse variance
+        data = numpy.zeros((*emission_line_moments.spatial_shape, emission_line_moments.nmom),
+                           dtype=numpy.float)
+        data.reshape(-1, emission_line_moments.nmom)[indx,:] \
+                = emission_line_moments['ELMMNTS'].data['EWERR'][unique_bins[reconstruct[indx]],:]
+        pos = data > 0
+        data[pos] = numpy.square(1.0/data[pos])
+        data[numpy.invert(pos)] = 0.0
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'EMLINE_SEW',
+                                                                 hduclas2='ERROR', qual=True,
+                                                                 bunit='(ang)^{-2}'),
+                                name='EMLINE_SEW_IVAR') ]
+        # Bitmask
+        data = self._emission_line_moment_mask_to_map_mask(emission_line_moments, unique_bins,
+                                                           reconstruct, indx)
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'EMLINE_SEW',
+                                                                 hduclas2='QUALITY', err=True,
+                                                                 bit_type=data.dtype.type),
+                                name='EMLINE_SEW_MASK') ]
         return hdus
 
 

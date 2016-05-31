@@ -1159,15 +1159,19 @@ class EmissionLineMoments:
         hdu_measurements['REDSHIFT'] = self.redshift
 
         # Perform the moment measurements
-        self._measure_moments(hdu_measurements[good_bins], flux[good_bins,:].copy(),
-                              ivar=ivar[good_bins,:].copy(), mask=mask[good_bins,:].copy(),
-                              model_subtracted_flux=model_subtracted_flux[good_bins,:].copy(),
-                              no_model=no_model[good_bins].copy())
+        hdu_measurements[good_bins] \
+                = self._measure_moments(hdu_measurements[good_bins], flux[good_bins,:].copy(),
+                                        ivar=ivar[good_bins,:].copy(),
+                                        mask=mask[good_bins,:].copy(),
+                                    model_subtracted_flux=model_subtracted_flux[good_bins,:].copy(),
+                                        no_model=no_model[good_bins].copy())
 
         # Perform the equivalent width measurements
-        self._measure_equivalent_widths(hdu_measurements[good_bins], flux[good_bins,:].copy(),
-                                        ivar=ivar[good_bins,:].copy(),
-                                        mask=mask[good_bins,:].copy())
+        hdu_measurements[good_bins] \
+                = self._measure_equivalent_widths(hdu_measurements[good_bins],
+                                                  flux[good_bins,:].copy(),
+                                                  ivar=ivar[good_bins,:].copy(),
+                                                  mask=mask[good_bins,:].copy())
 
         # Flag the missing bins and the bins with low S/N
         if len(self.missing_bins) > 0:
