@@ -175,7 +175,7 @@ class construct_maps_file:
         # Emission-line models:
         self.elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
         # Spectral indices:
-        self.sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
+#        self.sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Determine if there's a foreground star
         if numpy.sum(binned_spectra.bitmask.flagged(binned_spectra['MASK'].data,
@@ -191,8 +191,7 @@ class construct_maps_file:
                                   *self.bspeclist,
                                   *self.contlist,
                                   *self.emlmomlist,
-                                  *self.elmodlist,
-                                  *self.sindxlist ])
+                                  *self.elmodlist ]) #, *self.sindxlist ])
 
         # Write the file
         if not os.path.isdir(self.directory_path):
@@ -895,7 +894,7 @@ class construct_maps_file:
         data.reshape(-1, emission_line_moments.nmom)[indx,:] \
                 = emission_line_moments['ELMMNTS'].data['FLUX'][unique_bins[reconstruct[indx]],:]
         # TODO: Convert wavelengths to air for column names?
-        cols = [ '{0}-{1:.0f}'.format(n,w) \
+        cols = [ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
                                        emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
         hdr = self._add_channel_names(self.multichannel_maphdr, cols)
