@@ -1050,7 +1050,7 @@ class construct_maps_file:
 
         # Channel identifiers (units are all the same)
         # TODO: Convert wavelengths to air for column names?
-        cols = [ '{0}-{1:.0f}'.format(n,w) \
+        cols = [ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(emission_line_model['PAR'].data['NAME'],
                                        emission_line_model['PAR'].data['RESTWAVE']) ]
         hdr = self._add_channel_names(self.multichannel_maphdr, cols)
