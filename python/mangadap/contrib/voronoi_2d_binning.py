@@ -96,7 +96,7 @@ KEYWORDS:
               this can take a long times when (X, Y) have many elements.
               In those cases the PIXSIZE keyword should be given.
      SN_FUNC: Generic function to calculate the S/N of a bin with spaxels
-              "index" with the form: "sn = func(signal, noise, index)".
+              "index" with the form: "sn = func(index, signal, noise)".
               If this keyword is not set, or is set to None, the program
               uses the _sn_func(), included in the program file, but
               another function can be adopted if needed.
@@ -225,7 +225,7 @@ MODIFICATION HISTORY:
       V3.0.4: Included keyword "sn_func" to pass a function which
           calculates the S/N of a bin, rather than editing _sn_func().
           Additional test to prevent the addition of a pixel from
-          decreasing the S/N of good bins during accretion stage.
+          ever decreasing the S/N during the accretion stage.
           MC, Oxford, 12 April 2016
 
 """
@@ -236,12 +236,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance
 from scipy import ndimage
-# KBW edit: Include warnings
-import warnings
 
 #----------------------------------------------------------------------------
 
-def _sn_func(signal, noise, index):
+def _sn_func(index, signal=None, noise=None):
     """
     Default function to calculate the S/N of a bin with spaxels "index".
 
@@ -264,11 +262,12 @@ def _sn_func(signal, noise, index):
     Of course an analytic approximation of S/N, like the one below,
     speeds up the calculation.
 
-    NOTE: "index" is passed either as boolean vector or as indices.
-        This implies that index.size cannot be used to give the
-        number of spaxels in the bin. Instead one can use
-        "nspax = signal[index].size" if needed.
-
+    :param index: integer vector of length N containing the indices of
+        the spaxels for which the combined S/N has to be returned.
+        The indices refer to elements of the vectors signal and noise.
+    :param signal: vector of length M>N with the signal of all spaxels.
+    :param noise: vector of length M>N with the noise of all spaxels.
+    :return: scalar S/N or another quantity that needs to be equalized.
     """
 
     sn = np.sum(signal[index])/np.sqrt(np.sum(noise[index]**2))
@@ -278,7 +277,7 @@ def _sn_func(signal, noise, index):
     # Eq.(1) from http://adsabs.harvard.edu/abs/2015A%26A...576A.135G
     # Note however that the formula is not accurate for large bins.
     #
-    # sn /= 1 + 1.07*np.log10(signal[index].size)
+    # sn /= 1 + 1.07*np.log10(index.size)
 
     return  sn
 
@@ -336,11 +335,6 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
     # remaining computation time when binning very big dataset.
     #
     w = signal/noise < targetSN
-
-    # KBW edit:
-    #sn_total_less_than_target = sn_func(signal, noise, np.where(w)[0])
-    #maxnum = int(np.square(sn_total_less_than_target/targetSN) + np.sum(~w))
-    # Replaces:
     maxnum = int(np.sum((signal[w]/noise[w])**2)/targetSN**2 + np.sum(~w))
 
     # The first bin will be assigned CLASS = 1
@@ -361,7 +355,7 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
 
             # Find the unbinned pixel closest to the centroid of the current bin
             #
-            unBinned = np.where(classe == 0)[0]
+            unBinned = np.flatnonzero(classe == 0)
             k = np.argmin((x[unBinned] - xBar)**2 + (y[unBinned] - yBar)**2)
 
             # (1) Find the distance from the closest pixel to the current bin
@@ -377,7 +371,7 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
             # the CANDIDATE pixel to the current bin
             #
             SNOld = SN
-            SN = sn_func(signal, noise, nextBin)
+            SN = sn_func(nextBin, signal, noise)
 
             # Test whether (1) the CANDIDATE pixel is connected to the
             # current bin, (2) whether the POSSIBLE new bin is round enough
@@ -409,7 +403,7 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
         # Find the closest unbinned pixel to the centroid of all
         # the binned pixels, and start a new bin from that pixel.
         #
-        unBinned = np.where(classe == 0)[0]
+        unBinned = np.flatnonzero(classe == 0)
         k = np.argmin((x[unBinned] - xBar)**2 + (y[unBinned] - yBar)**2)
         currentBin = unBinned[k]    # The bin is initially made of one pixel
         SN = signal[currentBin]/noise[currentBin]
@@ -484,11 +478,11 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, sn_func):
         #
         good = np.unique(classe)
         for k in good:
-            index = classe == k   # Find subscripts of pixels in bin k.
+            index = np.flatnonzero(classe == k)   # Find subscripts of pixels in bin k.
             xnode[k], ynode[k] = _weighted_centroid(x[index], y[index], dens[index]**2)
             if wvt:
-                sn = sn_func(signal, noise, index)
-                scale[k] = np.sqrt(index.sum()/sn)  # Eq. (4) of Diehl & Statler (2006)
+                sn = sn_func(index, signal, noise)
+                scale[k] = np.sqrt(index.size/sn)  # Eq. (4) of Diehl & Statler (2006)
 
         diff = np.sum((xnode - xnodeOld)**2 + (ynode - ynodeOld)**2)
 
@@ -541,10 +535,10 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, sn_
     area = np.empty_like(xnode)
     good = np.unique(classe)
     for k in good:
-        index = classe == k   # Boolean vector of pixels in bin k.
+        index = np.flatnonzero(classe == k)   # index of pixels in bin k.
         xbar[k], ybar[k] = _weighted_centroid(x[index], y[index], signal[index])
-        sn[k] = sn_func(signal, noise, index)
-        area[k] = index.sum()
+        sn[k] = sn_func(index, signal, noise)
+        area[k] = index.size
 
     return classe, xbar, ybar, sn, area
 
@@ -566,17 +560,14 @@ def _display_pixels(x, y, counts, pixelSize):
     k = np.round((y - ymin)/pixelSize).astype(int)
     img[j, k] = counts
 
-    # KBW edit:
+    # KBW edit: for backend compatibility
+#    plt.imshow(np.rot90(img), interpolation='none', cmap='prism',
     plt.imshow(np.rot90(img), interpolation='nearest', cmap='prism',
-    # Replaces:
-    #plt.imshow(np.rot90(img), interpolation='none', cmap='prism',
                extent=[xmin - pixelSize/2, xmax + pixelSize/2,
                        ymin - pixelSize/2, ymax + pixelSize/2])
 
 #----------------------------------------------------------------------
 
-# KBW
-# TODO: Change quiet to verbose and use logging
 def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
                          pixelsize=None, plot=True, quiet=True,
                          sn_func=None, wvt=True):
@@ -616,40 +607,20 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
 
     # Perform basic tests to catch common input errors
     #
-#    if np.sum(signal)/np.sqrt(np.sum(noise**2)) < targetSN:
-#        raise ValueError("""Not enough S/N in the whole set of pixels.
-#            Many pixels may have noise but virtually no signal.
-#            They should not be included in the set to bin,
-#            or the pixels should be optimally weighted.
-#            See Cappellari & Copin (2003, Sec.2.1) and README file.""")
-#    if np.min(signal/noise) > targetSN:
-#        raise ValueError('All pixels have enough S/N and binning is not needed')
-
-    # KBW edit, replaces above:
-    # Change calculation of total S/N
-    # If can't reach total S/N, just return all pixels in same bin
-    sn_total = sn_func(signal, noise, np.arange(signal.size))
-    if not quiet:
-        print('Total S/N:', sn_total)
-    if sn_total < targetSN:
-        warnings.warn('Cannot reach target S/N using all data.')
-        return (np.zeros(signal.size),) + (None,)*7
-    # If all spaxels have S/N greater than target, just return each
-    # pixel in its own bin
+    if np.sum(signal)/np.sqrt(np.sum(noise**2)) < targetSN:
+        raise ValueError("""Not enough S/N in the whole set of pixels.
+            Many pixels may have noise but virtually no signal.
+            They should not be included in the set to bin,
+            or the pixels should be optimally weighted.
+            See Cappellari & Copin (2003, Sec.2.1) and README file.""")
     if np.min(signal/noise) > targetSN:
-        warnings.warn('All pixels have enough S/N. Binning is not needed')
-        return (np.arange(signal.size),) + (None,)*7
+        raise ValueError('All pixels have enough S/N and binning is not needed')
 
     # Prevent division by zero for pixels with signal=0 and
     # noise=sqrt(signal)=0 as can happen with X-ray data
     #
-    # KBW edit:
-    # Check that pixels with positive noise exist
-    noise = noise.clip(np.min(noise[noise > 0])*1e-9) if any(noise > 0) else np.ones(x.size)
-    # Replaces:
-    #noise = noise.clip(np.min(noise[noise > 0])*1e-9)
+    noise = noise.clip(np.min(noise[noise > 0])*1e-9)
 
-    # KBW edit: Apply quiet strictly
     if not quiet:
         print('Bin-accretion...')
     classe, pixelsize = _accretion(x, y, signal, noise, targetSN, pixelsize, quiet, sn_func)

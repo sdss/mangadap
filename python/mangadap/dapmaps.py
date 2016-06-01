@@ -175,7 +175,7 @@ class construct_maps_file:
         # Emission-line models:
         self.elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
         # Spectral indices:
-#        self.sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
+        self.sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Determine if there's a foreground star
         if numpy.sum(binned_spectra.bitmask.flagged(binned_spectra['MASK'].data,
@@ -191,7 +191,8 @@ class construct_maps_file:
                                   *self.bspeclist,
                                   *self.contlist,
                                   *self.emlmomlist,
-                                  *self.elmodlist ]) #, *self.sindxlist ])
+                                  *self.elmodlist,
+                                  *self.sindxlist ])
 
         # Write the file
         if not os.path.isdir(self.directory_path):

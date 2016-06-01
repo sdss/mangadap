@@ -135,7 +135,7 @@ from .config.defaults import default_manga_fits_root
 from .util.bitmask import BitMask
 from .mangafits import MaNGAFits
 
-#from matplotlib import pyplot
+from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 
@@ -1698,6 +1698,9 @@ class DRPFits:
         mask = ~(self.hdu['IVAR'].data[:,channel] > 0.0)
         if rej_flag is not None:
             _rej_flag = rej_flag if isinstance(rej_flag, list) or rej_flag != 'any' else None
+#            print('rejected pixels')
+#            print(numpy.sum(self.bitmask.flagged(self.hdu['MASK'].data[:,channel],
+#                                                  flag=_rej_flag)))
             mask |= self.bitmask.flagged(self.hdu['MASK'].data[:,channel], flag=_rej_flag)
 
 #       print(self.xs, self.nx, self.ys, self.ny)
@@ -2486,7 +2489,14 @@ class DRPFits:
         return numpy.ma.mean(xpos, axis=1), numpy.ma.mean(ypos, axis=1)
 
 
-    def flux_stats(self, waverange=None, covar=False, correlation=False):
+    def flux_stats(self, waverange=None, covar=False, correlation=False, covar_wave=None,
+                   average_covar=False):
+        """
+        Compute the flux, noise, S/N, and covariance.
+        """
+        if waverange is not None and len(waverange) != 2:
+            raise ValueError('Provided wavelength range must be a two-element vector.')
+
         # Grab the masked arrays
         flux = self.copy_to_masked_array(waverange=waverange)
         ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange)
@@ -2502,15 +2512,42 @@ class DRPFits:
         if self.mode == 'RSS' or not covar:
             return signal, variance, snr, None
 
-        # Get the central wavelength of the used spectral channels,
-        center_wave = (self.hdu['WAVE'].data[0]+self.hdu['WAVE'].data[1])/2. \
-                        if waverange is None else (numpy.sum(waverange)/2.)
-        channel = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - center_wave) )[0]
+        if average_covar:
+            if waverange is None:
+                warnings.warn('Calculating average covariance over *all* channels.  Sit tight...')
+            start_wave = self.hdu['WAVE'].data[0] if waverange is None else waverange[0]
+            end_wave = self.hdu['WAVE'].data[-1] if waverange is None else waverange[1]
+            start = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - start_wave) )[0]
+            end = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - end_wave) )[0]+1
+            C = self.covariance_cube(channels=numpy.arange(start,end))
+            if correlation:
+                C.to_correlation()
+            meanC = numpy.mean(C.toarray(), axis=0)
+            i, j = numpy.meshgrid(numpy.arange(C.shape[1]), numpy.arange(C.shape[2]))
+            C = Covariance(inp=sparse.coo_matrix((meanC[meanC > 0].ravel(),
+                                                    (i[meanC > 0].ravel(), j[meanC > 0].ravel())),
+                                                 shape=C.shape[1:]).tocsr())
+            return signal, variance, snr, C
+
+        # Only calculate the covariance at the central, or input, wavelength
+        _covar_wave = ((self.hdu['WAVE'].data[0]+self.hdu['WAVE'].data[-1])/2. \
+                        if waverange is None else (numpy.sum(waverange)/2.)) \
+                            if covar_wave is None else covar_wave
+        channel = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - _covar_wave) )[0]
+
+#        t = self.bitmask.flagged(self.hdu['MASK'].data[:,:,channel],
+#                                 flag=['NOCOV', 'LOWCOV', 'DEADFIBER'])
+#        tt = self.bitmask.flagged(self.hdu['MASK'].data[:,:,channel],
+#                                  flag=['FORESTAR', 'DONOTUSE'])
+#        print(numpy.sum(t))
+#        print(numpy.sum(tt))
+#        print(numpy.sum(t & ~tt))
 
         # Return the nominal stats and the covariance matrix
         C = self.covariance_matrix(channel)
         if correlation:
             C.to_correlation()
+
         return signal, variance, snr, C
 
 

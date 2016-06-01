@@ -601,10 +601,10 @@ class SpectralIndices:
         They must not be designated as "missing" and they must have
         sufficient S/N.
         """
-        good_bins = (self._check_snr()) & ~(self._missing_flags())
-        good_bins[2] = False
-        return good_bins
-#        return (self._check_snr()) & ~(self._missing_flags())
+        return (self._check_snr()) & ~(self._missing_flags())
+#        good_bins = (self._check_snr()) & ~(self._missing_flags())
+#        good_bins[2] = False
+#        return good_bins
 
 
     def _assign_redshifts(self, redshift):
@@ -631,9 +631,10 @@ class SpectralIndices:
             else:   # Has length nbins
                 self.redshift = _redshift
         elif self.stellar_continuum is not None:
+            # Make this a function in StellarContinuumModel
             self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
                                 / astropy.constants.c.to('km/s').value
-        self.redshift = self.redshift[self._bins_to_measure()]
+#        self.redshift = self.redshift[self._bins_to_measure()]
 
 
     def _spectra_for_measurements(self):
@@ -688,6 +689,7 @@ class SpectralIndices:
             # Linearly interpolate both the flux and inverse variance
             flux[i,mp] = numpy.interp(wave[mp], wave[up], flux[i,up])
             ivar[i,mp] = numpy.interp(wave[mp], wave[up], ivar[i,up])
+
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='r', lw=0.5)
 #        pyplot.show()
 
@@ -697,13 +699,13 @@ class SpectralIndices:
         existing_sres = self.binned_spectra.drpf['SPECRES'].data
         new_sres = wave/self.database['fwhm']
         
-#        new_flux, sres, sigoff, new_mask, new_ivar \
-#                = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
-#                                            log10=True, new_log10=True)
+        new_flux, sres, sigoff, new_mask, new_ivar \
+                = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
+                                            log10=True, new_log10=True)
 
-        # FOR DEBUGGING
-        new_flux = flux.copy()
-        new_mask = mask.copy()
+#        # FOR DEBUGGING
+#        new_flux = flux.copy()
+#        new_mask = mask.copy()
 
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5)
 #        pyplot.step(wave, new_flux[0,:], where='mid', linestyle='-', color='r', lw=2.5)
@@ -756,14 +758,19 @@ class SpectralIndices:
                 numpy.square(nerr[indx]*hdu_measurements['INDX'][self.absdb.nsets:][indx]/n[indx])
               + numpy.square(derr[indx]*hdu_measurements['INDX'][self.absdb.nsets:][indx]/d[indx]) )
 
+        return hdu_measurements
 
 
-    def _absorption_indices(self, wave, flux, hdu_measurements, err=None):
+
+    def _absorption_indices(self, redshift, wave, flux, hdu_measurements, err=None):
 
         # Get the redshifted passband centers
         # TODO: This does NOT account for masked pixels...
-        blue_center = numpy.mean((1.0+hdu_measurements['REDSHIFT'])*self.absdb['blueside'], axis=1)
-        red_center = numpy.mean((1.0+hdu_measurements['REDSHIFT'])*self.absdb['redside'], axis=1)
+        blue_center = numpy.mean((1.0+redshift)*self.absdb['blueside'], axis=1)
+#        _blue_center = numpy.mean(self.absdb['blueside'], axis=1)
+#        print(_blue_center)
+#        print(blue_center)
+        red_center = numpy.mean((1.0+redshift)*self.absdb['redside'], axis=1)
         # Get the parameters for the linear continuum across the
         # primary passband
         continuum_m = (hdu_measurements['RCONT'][:self.absdb.nsets] 
@@ -772,7 +779,7 @@ class SpectralIndices:
         continuum_b = hdu_measurements['BCONT'][:self.absdb.nsets] - blue_center*continuum_m
 
         # Get the redshifted passband and its width
-        primaryband = (1.0+hdu_measurements['REDSHIFT'])*self.absdb['primary']
+        primaryband = (1.0+redshift)*self.absdb['primary']
         primaryband_width = numpy.diff(primaryband, axis=1).reshape(primaryband.shape[0])
 
         # Compute the continuum normalize indices.  This has to be a for
@@ -788,6 +795,7 @@ class SpectralIndices:
                 hdu_measurements['INDXERR'][i] = passband_integral(wave, numpy.square(err/cont),
                                                                    passband=p, log=True)
 
+            # TODO: Should these flags be set elsewhere?
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty
             interval = passband_integrated_width(wave, integrand, passband=p, log=True)
@@ -815,22 +823,16 @@ class SpectralIndices:
                                                     / hdu_measurements['INDX'][i]/numpy.log(10.0))
                     hdu_measurements['INDX'][i] = -2.5 * numpy.ma.log10(hdu_measurements['INDX'][i] 
                                                                         / interval)
+        return hdu_measurements
 
 
-    def _measure_indices(self, redshift, flux, ivar=None, mask=None):
+    def _measure_indices(self, redshift, wave, flux, ivar=None, mask=None):
         """
         Measure the indices.
 
         If not input as masked arrays, flux is converted to one.
 
         """
-        # Instatiate the table data that will be saved with the index
-        # measurements
-        nspec = flux.shape[0]
-        wave = self.binned_spectra['WAVE'].data
-        hdu_measurements = init_record_array(nspec, self._per_bin_dtype())
-        hdu_measurements['REDSHIFT'] = redshift
-
         # Convert the input arrays to masked arrays
         _flux = flux if isinstance(flux, numpy.ma.MaskedArray) else \
                     numpy.ma.MaskedArray(flux, mask=(None if mask is None else mask > 0))
@@ -840,6 +842,7 @@ class SpectralIndices:
             _ivar = ivar if isinstance(ivar, numpy.ma.MaskedArray) else \
                         numpy.ma.MaskedArray(ivar, mask=(None if mask is None else mask > 0))
             noise = numpy.ma.sqrt(1.0 /_ivar)
+        nspec = _flux.shape[0]
             
         # Get the list of bands that integrate over f_nu, not f_lambda,
         # and create the f_nu spectra
@@ -863,6 +866,8 @@ class SpectralIndices:
                                               self.bhddb['blueside'],axis=0),
                                  numpy.append(self.absdb['redside'],
                                               self.bhddb['redside'],axis=0), axis=0)
+
+        hdu_measurements = init_record_array(nspec, self._per_bin_dtype())
         for i in range(nspec):
 
             if not self.quiet:
@@ -929,10 +934,11 @@ class SpectralIndices:
 #            pyplot.show()
 
             # Perform the bandhead measurements
-            self._bandhead_indices(hdu_measurements[i])
+            hdu_measurements[i] = self._bandhead_indices(hdu_measurements[i])
 
             # Perform the absorption-line measurements
-            self._absorption_indices(wave, flux[i,:], hdu_measurements[i], err=_noise)
+            hdu_measurements[i] = self._absorption_indices(redshift[i], wave, flux[i,:],
+                                                           hdu_measurements[i], err=_noise)
 
 #        print('Measuring spectral indices in spectrum: {0}/{0}'.format(nspec))
 
@@ -968,6 +974,7 @@ class SpectralIndices:
         Get a version of the template library that has had its
         resolution matched to that of the spectral-index database.
         """
+#        return self.stellar_continuum.method['fitpar']['template_library']
         wave = self.binned_spectra['WAVE'].data
         # Set the spectral resolution
         sres = spectral_resolution(wave, wave/self.database['fwhm'], log10=True)
@@ -986,6 +993,7 @@ class SpectralIndices:
                                                  ifudesign=self.binned_spectra.drpf.ifudesign,
                                                  drpver=self.binned_spectra.drpf.drpver,
                                                  dapver=dapver, analysis_path=self.analysis_path)
+
         # Return the template library object
         return TemplateLibrary(self.stellar_continuum.method['fitpar']['template_library_key'],
                                sres=sres, velocity_offset=velocity_offset,
@@ -995,9 +1003,13 @@ class SpectralIndices:
                                loggers=self.loggers, quiet=self.quiet)
     
 
-    def _calculate_dispersion_corrections(self, redshift, dapver=None, dapsrc=None):
+    def _calculate_dispersion_corrections(self, dapver=None, dapsrc=None):
+        """
+        Calculate the dispersion corrections using the best-fitting
+        template models.
+        """
         if self.stellar_continuum is None:
-            return None
+            return None, None, None
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
@@ -1020,33 +1032,30 @@ class SpectralIndices:
         nspec = numpy.sum(good_models)
         broadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                 template_library=template_library), mask=mask)
-        broadened_models = broadened_models[good_models,:]
-        broadened_model_measurements = self._measure_indices(redshift[good_models],
-                                                             broadened_models)
 
         # Get the unbroadened version
         unbroadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
-                                                  template_library=template_library,
-                                                  redshift_only=True), mask=flux.mask.copy())
-        unbroadened_models = unbroadened_models[good_models,:]
-        unbroadened_model_measurements = self._measure_indices(redshift[good_models],
-                                                               unbroadened_models)
+                                                            template_library=template_library,
+                                                            redshift_only=True),
+                                                  mask=mask)
 
-#        gflux = self.binned_spectra.copy_to_masked_array(
-#                                                    flag=self.binned_spectra.do_not_fit_flags())
-#        gflux[mask] = numpy.ma.masked
-#        gflux = gflux[good_bins,:]
-#
-#        flux = self.binned_spectra.copy_to_masked_array(
-#                                                    flag=self.binned_spectra.do_not_fit_flags())
-#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=3)
-#        pyplot.step(wave, broadened_models[0,:], where='mid', linestyle='-', color='r', lw=1.5,
-#                    zorder=1, alpha=0.5)
-#        pyplot.step(wave, unbroadened_models[0,:], where='mid', linestyle='-', color='g', lw=1.5,
-#                    zorder=2, alpha=0.5)
+#        model_flux = self.stellar_continuum.copy_to_masked_array(
+#                                    flag=self.stellar_continuum.all_except_emission_flags())
+#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=1)
+#        pyplot.plot(wave, model_flux[0,:], linestyle='-', color='r', lw=1.5, zorder=2, alpha=0.5)
+#        pyplot.plot(wave, broadened_models[0,:], linestyle='-', color='g', lw=1.0, zorder=3,
+#                    alpha=0.5)
+#        pyplot.plot(wave, unbroadened_models[0,:], linestyle='-', color='b', lw=1.0, zorder=3,
+#                    alpha=0.5)
 #        pyplot.show()
+#        exit()
 
         # Measure the indices for both sets of spectra
+        broadened_model_measurements = self._measure_indices(self.redshift[good_models],
+                                                             wave, broadened_models[good_models])
+        unbroadened_model_measurements = self._measure_indices(self.redshift[good_models],
+                                                               wave,
+                                                               unbroadened_models[good_models])
 
         # Do not apply the correction if any of the bands were empty or
         # would have had to divide by zero
@@ -1127,9 +1136,6 @@ class SpectralIndices:
         self.nbins = self.binned_spectra.nbins
         self.missing_bins = self.binned_spectra.missing_bins
 
-#        pyplot.scatter(numpy.arange(self.nspec), self.redshift, marker='.', s=50, color='k', lw=0)
-#        pyplot.show()
-            
         # Report
         good_bins = self._bins_to_measure()
         if not self.quiet:
@@ -1152,6 +1158,9 @@ class SpectralIndices:
         # Get the redshifts to apply
         self._assign_redshifts(redshift)
 
+#        pyplot.scatter(numpy.arange(self.nbins), self.redshift, marker='.', s=50, color='k', lw=0)
+#        pyplot.show()
+            
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)
 
@@ -1178,33 +1187,37 @@ class SpectralIndices:
             return
 
         # Get the spectra to use for the measurements
-        flux, ivar, mask = self._spectra_for_measurements()
+        _flux, _ivar, _mask = self._spectra_for_measurements()
 
         # Compile the information on the suite of measured indices
         hdu_database = self._compile_database()
 
         # Instatiate the table data that will be saved with the index
         # measurements
-        nspec = flux.shape[0]
-        wave = self.binned_spectra['WAVE'].data
-        hdu_measurements = init_record_array(nspec, self._per_bin_dtype())
-        hdu_measurements['REDSHIFT'] = redshift
+        hdu_measurements = init_record_array(self.nbins, self._per_bin_dtype())
+        hdu_measurements['BIN_INDEX'] = numpy.arange(self.nbins)
+        hdu_measurements['REDSHIFT'] = self.redshift
+        hdu_measurements['MASK'][~good_bins] \
+                = self.bitmask.turn_on(hdu_measurements['MASK'][~good_bins], 'NO_MEASUREMENT')
 
         # Perform the measurements on the galaxy spectra
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Measuring spectral indices in observed spectra...')
-        hdu_measurements = self._measure_indices(self.redshift[good_bins], flux[good_bins,:].copy(),
-                                                 ivar=ivar[good_bins,:].copy(),
-                                                 mask=mask[good_bins,:].copy())
+        hdu_measurements[good_bins] = self._measure_indices(self.redshift[good_bins],
+                                                            self.binned_spectra['WAVE'].data,
+                                                            _flux[good_bins,:].copy(),
+                                                            ivar=_ivar[good_bins,:].copy(),
+                                                            mask=_mask[good_bins,:].copy())
 
         # Get the corrections by performing the measurements on the
         # best-fitting continuum models, with and without the velocity
         # dispersion broadening
+        good_ang = numpy.zeros((self.nbins,self.nindx), dtype=numpy.bool)
+        good_mag = numpy.zeros((self.nbins,self.nindx), dtype=numpy.bool)
         self.tpl_symlink_dir = tpl_symlink_dir
-        hdu_measurements['INDX_DISPCORR'][good_bins], good_ang, good_mag \
-                = self._calculate_dispersion_corrections(self.redshift, dapver=dapver,
-                                                         dapsrc=dapsrc)
+        hdu_measurements['INDX_DISPCORR'][good_bins], good_ang[good_bins,:], good_mag[good_bins,:] \
+                = self._calculate_dispersion_corrections(dapver=dapver, dapsrc=dapsrc)
 
         # Flag bad corrections
         angu, magu = self._unit_selection()
@@ -1224,33 +1237,6 @@ class SpectralIndices:
         hdu_measurements['INDX'][good_mag] += hdu_measurements['INDX_DISPCORR'][good_mag]
 
         # Fill array for any missing bins in prep for writing to the HDU
-        if len(hdu_measurements) < self.nbins:
-            # Fill the full array for all bins
-            _hdu_measurements = hdu_measurements.copy()
-            hdu_measurements = init_record_array(self.nbins, self._per_bin_dtype())
-            if len(self.missing_bins) > 0:
-                hdu_measurements['MASK'][self.missing_bins] \
-                    = self.bitmask.turn_on(hdu_measurements['MASK'][self.missing_bins], 'DIDNOTUSE')
-            hdu_measurements[good_bins] = _hdu_measurements
-
-            _flux = numpy.ma.MaskedArray(numpy.zeros((self.nbins,self.nwave), dtype=numpy.float))
-            _flux[good_bins,:] = flux
-
-            _ivar = numpy.ma.MaskedArray(numpy.zeros((self.nbins,self.nwave), dtype=numpy.float))
-            _ivar[good_bins,:] = ivar
-
-            _mask = numpy.zeros((self.nbins,self.nwave), dtype=self.bitmask.minimum_dtype())
-            _mask[good_bins,:] = mask
-            _mask[~good_bins,:] = self.bitmask.turn_on(_mask[~good_bins,:], 'DIDNOTUSE')
-        else:
-            _flux = flux.copy()
-            _ivar = ivar.copy()
-            _mask = mask.copy()
-
-        hdu_measurements['BIN_INDEX'] = numpy.arange(self.nbins)
-        hdu_measurements['MASK'][~(good_bins)] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][~(good_bins)], 'LOW_SNR') 
-
         bin_indx = self.binned_spectra['BINID'].data.ravel()
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
@@ -1261,12 +1247,11 @@ class SpectralIndices:
         ivar = numpy.zeros(self.shape, dtype=numpy.float)
         ivar.reshape(-1,self.nwave)[indx,:] = _ivar[unique_bins[reconstruct[indx]],:]
    
-        _good_bins = numpy.full(numpy.prod(self.spatial_shape), False, dtype=numpy.bool)
+        _good_bins = numpy.zeros(numpy.prod(self.spatial_shape), dtype=numpy.bool)
         _good_bins[indx] = good_bins[unique_bins[reconstruct[indx]]]
    
         mask = self._initialize_mask(_good_bins)
         mask.reshape(-1,self.nwave)[indx,:] = _mask[unique_bins[reconstruct[indx]],:]
-
 
         # Initialize the header keywords
         hdr = self._clean_drp_header(ext='PRIMARY')

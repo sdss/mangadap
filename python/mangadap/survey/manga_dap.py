@@ -249,14 +249,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Spectral-Index Measurements
         #---------------------------------------------------------------
-#        spectral_indices = None if plan['spindex_key'][i] is None else \
-#                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
-#                                    stellar_continuum=stellar_continuum,
-#                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
-#                                    analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
-#                                    clobber=plan['spindex_clobber'][i], loggers=loggers)
-#        exit()
-        spectral_indices=None
+        spectral_indices = None if plan['spindex_key'][i] is None else \
+                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
+                                    stellar_continuum=stellar_continuum,
+                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
+                                    analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
+                                    clobber=plan['spindex_clobber'][i], loggers=loggers)
+#        spectral_indices=None
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)

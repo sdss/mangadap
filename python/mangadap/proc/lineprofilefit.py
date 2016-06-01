@@ -1196,6 +1196,13 @@ class Elric(EmissionLineFit):
                     = self.fitting_window[j].profile_set[k].moment_err(order=0,
                                                                        par=par[pl:pl+nlinepar[k]],
                                                     err=model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]])
+            # Flux unit conversion
+#            print(astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k])
+#            exit()
+            model_eml_par['FLUX'][i,emlj] \
+                    /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
+            model_eml_par['FLUXERR'][i,emlj] \
+                    /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
 
             model_eml_par['KIN'][i,emlj,0] \
                     = self.fitting_window[j].profile_set[k].moment(order=1,

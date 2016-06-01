@@ -562,12 +562,15 @@ class SpatiallyBinnedSpectra:
             if self.rdxqa.correlation is not None:
                 # Overwrite any existing calibration coefficient
                 self.rdxqa.correlation.revert_correlation()
+#                self.rdxqa.correlation.show()
                 covar = self.rdxqa.correlation.toarray()[good_spec,:][:,good_spec]
                 self.rdxqa.correlation.to_correlation()
                 i, j = numpy.meshgrid(numpy.arange(covar.shape[0]), numpy.arange(covar.shape[1]))
-                self.method['binpar']['covar'] = Covariance(inp=sparse.coo_matrix(
-                                                (covar[covar > 0], (i[covar > 0], j[covar > 0])),
-                                                shape=covar.shape).tocsr())
+                self.method['binpar']['covar'] = Covariance(
+                                inp=sparse.coo_matrix((covar[covar > 0].ravel(),
+                                                      (i[covar > 0].ravel(), j[covar > 0].ravel())),
+                                                      shape=covar.shape).tocsr())
+#                self.method['binpar']['covar'].show()
             else:
                 self.method['binpar']['noise'] \
                         = numpy.sqrt(self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec])
@@ -901,6 +904,10 @@ class SpatiallyBinnedSpectra:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
                             'No binning requested; \'Binned\' spectra same as in DRP file.')
+
+            # Set the number of bins
+            self.nbins = numpy.sum(good_spec)       # Number same as good number of bins
+            self.missing_bins = []                  # No missing bins
 
             # Initialize the header keywords
             hdr = self._clean_drp_header(ext='PRIMARY')

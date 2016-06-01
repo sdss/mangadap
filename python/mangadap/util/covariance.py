@@ -146,6 +146,8 @@ Defines a class used to store and interface with covariance matrices.
 
 .. todo::
     - Allow for calculation of the inverse of the covariance matrix.
+    - Instead of 3D covariance cubes being an array of sparse objects,
+      make the whole thing a sparse array.
 
 .. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
 .. _scipy.sparse.coo_matrix: http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.coo_matrix.html
@@ -511,7 +513,14 @@ class Covariance:
         Returns:
             numpy.array: Dense array with the full covariance matrix.
         """
-        return (self._with_lower_triangle(plane)).toarray()
+        if self.dim == 2 or plane is not None:
+            return (self._with_lower_triangle(plane=plane)).toarray()
+        
+        arr = numpy.empty(self.shape, dtype=numpy.float)
+        for i in range(self.shape[0]):
+            indx = i if self.input_indx is None else self.input_indx[i]
+            arr[i,:,:] = (self._with_lower_triangle(plane=indx)).toarray()
+        return arr
         
 
     def find(self, plane=None):
@@ -529,7 +538,7 @@ class Covariance:
             and *j* contain the index coordinates of the non-zero
             values, and *c* contains the values themselves.
         """
-        return sparse.find(self._with_lower_triangle(plane))
+        return sparse.find(self._with_lower_triangle(plane=plane))
 
 
 #    def issingular(self):

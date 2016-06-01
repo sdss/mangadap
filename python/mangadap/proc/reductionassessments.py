@@ -155,6 +155,10 @@ class ReductionAssessmentDef(ParSet):
 
     See :class:`mangadap.par.parset.ParSet` for attributes.
 
+    .. todo::
+
+        - Allow for different ways of calculating covariance?
+
     Args:
         key (str): Keyword to distinguish the assessment method.
         waverange (numpy.ndarray, list) : A two-element vector with the
@@ -683,7 +687,7 @@ class ReductionAssessment:
         # file
         if os.path.isfile(ofile) and not clobber:
             if not self.quiet:
-                log_output(self.loggers, 1, logging.INFO, 'Using exiting file')
+                log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
             self.hdu = fits.open(ofile, checksum=self.checksum)
             self.correlation = Covariance(source=self.hdu, primary_ext='COVAR')
             self.pa = self.hdu['PRIMARY'].header['PA']
@@ -744,9 +748,78 @@ class ReductionAssessment:
 #        pyplot.step(spectrum_data['FGOODPIX'][srt], grw, color='k')
 #        pyplot.show()
 
+        # Get the wavelength range
+        waverange = [ drpf['WAVE'].data[0], drpf['WAVE'].data[-1] ] \
+                        if self.method['waverange'] is None else self.method['waverange']
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Wavelength range for S and N calculation: {0:.1f} -- {1:.1f}'.format(
+                                *waverange))
+
+        # If calculating covariance, make sure that all the pixels in
+        # the channel used and selected for analysis (at minimum based
+        # on fraction of valid pixels in the spectrum - FGOODPIX) have
+        # covariance measurements.  This is done by first assuming the
+        # channel at the center of the wavelength range and then
+        # flipping back and forth across this channel until a valid
+        # channel is found or you reach the limits of the defined
+        # wavelength range.  In the latter case, and exception is
+        # raised!
+        if self.method['covariance']:
+            covar_wave = numpy.sum(self.method['waverange'])/2.
+            covar_channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data - covar_wave) )[0]
+            # TODO: Make this fraction an input parameter!
+            goodfrac = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8)
+
+            off = 1
+            sign = 1
+            while covar_wave > waverange[0] and covar_wave < waverange[1] \
+                    and numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)) > 0:
+                covar_channel += sign*off
+                covar_wave = drpf['WAVE'].data[covar_channel]
+#                print(covar_wave, covar_channel, off, sign,
+#                      numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)))
+                sign *= -1
+                off += 1
+
+            if numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)) > 0:
+                raise ValueError('Unable to find wavelength channel within fully valid data.')
+            
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Covariance measured at wavelength: {0} (channel {1})'.format(
+                                covar_wave, covar_channel))
+        else:
+            covar_wave = None
+
         spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'], self.correlation \
                 = drpf.flux_stats(waverange=self.method['waverange'],
-                                  covar=self.method['covariance'], correlation=True)
+                                  covar=self.method['covariance'], correlation=True,
+                                  covar_wave=covar_wave)
+
+#        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
+#                        (drpf.bitmask.flagged(drpf['MASK'].data[:,:,covar_channel],
+#                                             flag=['DONOTUSE', 'FORESTAR']))
+#        print(numpy.sum(t))
+#
+#        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
+#                        ~(drpf['IVAR'].data[:,:,covar_channel] > 0)
+#        print(numpy.sum(t))
+#
+#        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
+#                        ~(drpf['FLUX'].data[:,:,covar_channel] > 0)
+#        print(numpy.sum(t))
+#
+#        goodpix_im = spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape)
+#        m = drpf['FLUX'].data[:,:,covar_channel]
+#        pyplot.imshow(m, origin='lower', interpolation='nearest')
+#        pyplot.colorbar()
+#        pyplot.show()
+#
+#        maskedm = numpy.ma.MaskedArray(m, mask=~t)
+#        pyplot.imshow(maskedm, origin='lower', interpolation='nearest')
+#        pyplot.colorbar()
+#        pyplot.show()
 
 #        if correlation is not None:
 #            correlation.show()
@@ -761,6 +834,10 @@ class ReductionAssessment:
         hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
         hdr['PA'] = (self.pa, 'Isophotal position angle')
         hdr['ELL'] = (self.ell, 'Isophotal ellipticity (1-b/a)')
+        hdr['COVWAVE'] = ( '{0:.1f}'.format(covar_wave) if self.method['covariance'] else 'None',
+                            'Wavelength of covariance channel')
+        hdr['COVINDX'] = ( '{0:.1f}'.format(covar_channel) if self.method['covariance'] else 'None',
+                            'Index of covariance channel')
 
         # Get the covariance columns; pulled directly from ../util/covariance.py
         if self.method['covariance']:

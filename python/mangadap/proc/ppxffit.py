@@ -96,7 +96,7 @@ class PPXFFitPar(ParSet):
     
         arr = [ numpy.ndarray, list ]                   # sky, p0, lam, component
         arr_in_fl = [ numpy.ndarray, list, int, float ] # component, reg_dim
-        in_fl = [ int, float ]                          # Reddening, bias, regul, vsyst
+        in_fl = [ int, float ]                          # Reddening, bias, regul
 
         _def = self._keyword_defaults()
         
@@ -206,7 +206,6 @@ class PPXFFit(StellarKinematicsFit):
         self.guess_kin = None
         self.dof = None
         self.base_velocity = None
-#        self.vsyst = None
 
 
     @staticmethod
@@ -789,7 +788,7 @@ class PPXFFit(StellarKinematicsFit):
 #            log_output(self.loggers, 2, logging.INFO,
 #                       'Systemic velocity offset provided to pPXF: {0:.2f}'.format(self.vsyst))
 
-        _oversample = False if oversample is None else oversample
+#        _oversample = False if oversample is None else oversample
 
         if not self.quiet:
             log_output(self.loggers, 2, logging.INFO, '{0:>5}'.format('INDX')
@@ -798,8 +797,8 @@ class PPXFFit(StellarKinematicsFit):
 
         # Fit each binned spectrum:
         for i in range(self.nobj):
-            if not self.quiet:
-                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
+#            if not self.quiet:
+#                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
 
             # Get the list of good pixels
             gpm = numpy.where( ~(self.obj_flux.mask[i,start:end]))[0]
@@ -834,7 +833,7 @@ class PPXFFit(StellarKinematicsFit):
             ppxf_fit = ppxf(self.tpl_flux.T, self.obj_flux.data[i,start:end],
                             self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
                             goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=_oversample,
+                            mdegree=mdegree, moments=moments, oversample=oversample,
                             vsyst=self.base_velocity, quiet=True)#, plot=True)
 #                            vsyst=self.vsyst, quiet=True, plot=True)
 
@@ -1159,7 +1158,7 @@ class PPXFFit(StellarKinematicsFit):
 #            log_output(self.loggers, 2, logging.INFO,
 #                       'Systemic velocity offset provided to pPXF: {0:.2f}'.format(self.vsyst))
 
-        _oversample = False if oversample is None else oversample
+#        _oversample = False if oversample is None else oversample
 
 #        pyplot.imshow(self.obj_flux, origin='lower', interpolation='nearest', aspect='auto')
 #        pyplot.colorbar()
@@ -1185,7 +1184,7 @@ class PPXFFit(StellarKinematicsFit):
         ppxf_fit = ppxf(self.tpl_flux.T, global_spectrum.data[start:end],
                         global_spectrum_err.data[start:end], self.velScale, self.guess_kin[0,:],
                         goodpixels=gpm, bias=bias, clean=clean, degree=degree, mdegree=mdegree,
-                        moments=moments, oversample=_oversample,
+                        moments=moments, oversample=oversample,
                         vsyst=-self.base_velocity, quiet=True)#False, plot=True)
                         #, quiet=False, plot=True)
 #        print(ppxf_fit.sol[0] + self.base_velocity)
@@ -1202,7 +1201,7 @@ class PPXFFit(StellarKinematicsFit):
         ppxf_fit = ppxf(self.tpl_flux.T, global_spectrum.data[start:end],
                         global_spectrum_err.data[start:end], self.velScale, ppxf_fit.sol[0:2],
                         goodpixels=gpm, bias=bias, clean=clean, degree=degree, mdegree=mdegree,
-                        moments=moments, oversample=_oversample,
+                        moments=moments, oversample=oversample,
                         vsyst=-self.base_velocity, quiet=True)#, plot=True)
          #, quiet=False, plot=True)
 #        print(ppxf_fit.sol[0] + self.base_velocity)
@@ -1243,8 +1242,8 @@ class PPXFFit(StellarKinematicsFit):
 
         # Fit each binned spectrum:
         for i in range(self.nobj):
-            if not self.quiet:
-                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
+#            if not self.quiet:
+#                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
 
             # Get the list of good pixels
             # TODO: Use the gpm from the fit to the global template
@@ -1286,7 +1285,7 @@ class PPXFFit(StellarKinematicsFit):
             ppxf_fit = ppxf(global_template, self.obj_flux.data[i,start:end],
                             self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
                             goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=_oversample,
+                            mdegree=mdegree, moments=moments, oversample=oversample,
                             vsyst=-self.base_velocity, quiet=True)#, plot=True)
 #                            vsyst=self.vsyst, quiet=True, plot=True)
 
@@ -1297,7 +1296,7 @@ class PPXFFit(StellarKinematicsFit):
             ppxf_fit = ppxf(global_template, self.obj_flux.data[i,start:end],
                             self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
                             goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=_oversample,
+                            mdegree=mdegree, moments=moments, oversample=oversample,
                             vsyst=-self.base_velocity, quiet=True)#False, plot=True)
 #            print('Stellar only weight: {0}'.format(ppxf_fit.weights[0]))
 #            pyplot.show()
@@ -1332,7 +1331,7 @@ class PPXFFit(StellarKinematicsFit):
 #            ppxf_fit = ppxf(stars_gas_templates, self.obj_flux.data[i,start:end],
 #                            self.obj_ferr.data[i,start:end], self.velScale, gk,
 #                            goodpixels=gpm_emission, bias=bias, clean=clean, degree=-1,
-#                            mdegree=8, moments=moments_gas, oversample=_oversample,
+#                            mdegree=8, moments=moments_gas, oversample=oversample,
 #                            vsyst=-self.base_velocity, quiet=False, plot=True, component=component)
 #            print('W/ emission lines: {0}'.format(ppxf_fit.weights[0]))
 #            pyplot.show()
@@ -1345,7 +1344,7 @@ class PPXFFit(StellarKinematicsFit):
 #            ppxf_fit = ppxf(self.tpl_flux[nonzero_templates,:].T, self.obj_flux.data[i,start:end],
 #                            self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
 #                            goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-#                            mdegree=mdegree, moments=moments, oversample=_oversample,
+#                            mdegree=mdegree, moments=moments, oversample=oversample,
 #                            quiet=True)
 
             # TODO: Add the status to the output table?
@@ -1389,9 +1388,9 @@ class PPXFFit(StellarKinematicsFit):
                 model_par['MULTCOEF'][i] = ppxf_fit.mpolyweights
 
             model_par['KININP'][i] = self.guess_kin[i,:]
-            model_par['KININP'][i][0] += self.base_velocity
+#            model_par['KININP'][i][0] += self.base_velocity
             model_par['KIN'][i] = ppxf_fit.sol
-            model_par['KIN'][i][0] += self.base_velocity
+#            model_par['KIN'][i][0] += self.base_velocity
             model_par['KINERR'][i] = ppxf_fit.error
 
             resid = self.obj_flux[i,start:end] - ppxf_fit.bestfit
@@ -1503,7 +1502,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def _losvd_kernel(par, velScale, base_velocity=0.0):#, nwave):
+    def _losvd_kernel(par, velScale, vsyst=0.0):
         """
         Return the sampled kernel.
 
@@ -1521,8 +1520,7 @@ class PPXFFit(StellarKinematicsFit):
         """
         _par = par.copy()
         _par[0], verr = PPXFFit._revert_velocity(_par[0], 1.0)
-        _par[0] += base_velocity
-        #_par[0] = 0.0
+        _par[0] += vsyst
         _par[0:2] /= velScale      # Convert to pixels
 
         dx = int(abs(_par[0])+5.0*par[1])
@@ -1543,6 +1541,7 @@ class PPXFFit(StellarKinematicsFit):
                             + _par[5]/np.sqrt(720)*(w2*(w2*(8*w2-60)+90)-15)
             losvd *= poly
 
+#        return losvd
         return _par[0]*velScale, losvd
 
 #        npad = int(2**np.ceil(np.log2(nwave + nl/2)))
@@ -1554,7 +1553,6 @@ class PPXFFit(StellarKinematicsFit):
     def construct_models(binned_spectra, template_library, model_par, degree, mdegree,
                          redshift_only=False):
         """
-
         Construct models using the provided set of model parameters and
         template library.  The number of template weights in the
         provided model parameters must match the number of template
@@ -1580,13 +1578,12 @@ class PPXFFit(StellarKinematicsFit):
 
         tpl_wave = template_library['WAVE'].data
         obj_wave = binned_spectra['WAVE'].data
+        obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
 
         outRange = obj_wave[ [0,-1] ]
         outpix = binned_spectra.nwave
 
         models = numpy.ma.zeros((binned_spectra.nbins, binned_spectra.nwave), dtype=numpy.float)
-
-#        model_valid = numpy.zeros(binned_spectra.nbins, dtype=numpy.bool)
 
         for i in range(binned_spectra.nbins):
             if i in binned_spectra.missing_bins:
@@ -1615,39 +1612,30 @@ class PPXFFit(StellarKinematicsFit):
                 # Resample the redshifted template to the wavelength grid of
                 # the binned spectra
                 inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
-                _composite_template = composite_template
+                wave, models[i,:] = resample_vector(composite_template, xRange=inRange, inLog=True,
+                                                    newRange=outRange, newpix=outpix, newLog=True,
+                                                    flat=False)
             else:
 #                print('{0}/{1}'.format(i+1,binned_spectra.nbins))
 #                print('Start,End: ', start, end)
 #                print(obj_wave[start:end].shape)
 #                print(tpl_wave.shape)
-                base_velocity = PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velScale)
-                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velScale,
-                                                   base_velocity=base_velocity)
-                _composite_template = scipy.signal.fftconvolve(composite_template, losvd,
-                                                               mode="same")
-                voff, verr = PPXFFit._convert_velocity(-base_velocity, 1.0)
-                #inRange = tpl_wave[ [0,-1] ]*(1+redshift)
-                inRange = tpl_wave[[0,-1]] * (1.0 + voff/astropy.constants.c.to('km/s').value)
-                
-            # Resample the template to the galaxy wavelengths
-            wave, models[i,:] = resample_vector(_composite_template, xRange=inRange, inLog=True,
-                                                newRange=outRange, newpix=outpix, newLog=True,
-                                                flat=False)
+                vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velScale)
+                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velScale, vsyst=vsyst)
+                models[i,start:end] = scipy.signal.fftconvolve(composite_template, losvd,
+                                                               mode="same")[:end-start]
 
-
-#            pyplot.plot(tpl_wave*(1+redshift), composite_template, linestyle='-', lw=1.5,
-#                        color='r', zorder=1, alpha=0.5)#, where='mid')
-#            pyplot.plot(wave, models[i,:], linestyle='-', lw=0.5, color='k', zorder=3)
-#                        #, where='mid')
-#            pyplot.show()
-
+            # Account for the polynomial
             x = numpy.linspace(-1, 1, model_par['NPIXTOT'][i])
             if mdegree > 0:
                 models[i,start:end] *= numpy.polynomial.legendre.legval(x,
                                                         numpy.append(1.0,model_par['MULTCOEF'][i]))
             if degree > -1:
-                model[i,start:end] += numpy.polynomial.legendre.legval(x, model_par['ADDCOEF'][i])
+                models[i,start:end] += numpy.polynomial.legendre.legval(x, model_par['ADDCOEF'][i])
+
+#            pyplot.plot(numpy.arange(end-start), obj_flux[i,start:end])
+#            pyplot.plot(numpy.arange(end-start), models[i,start:end])
+#            pyplot.show()
 
         return models
 

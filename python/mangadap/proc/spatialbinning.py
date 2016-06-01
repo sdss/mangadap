@@ -53,6 +53,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import sys
+import warnings
 if sys.version > '3':
     long = int
 
@@ -390,7 +391,8 @@ class VoronoiBinning(SpatialBinning):
         SpatialBinning.__init__(self, 'voronoi', par=par)
         self.covar = None
 
-    def sn_calculation_no_covariance(self, signal, noise, index): 
+#    def sn_calculation_no_covariance(self, signal, noise, index): 
+    def sn_calculation_no_covariance(self, index, signal, noise): 
         """
         S/N calculation built to match the requirements of
         :func:`mangadap.contrib.voronoi_2d_binning`.
@@ -401,7 +403,8 @@ class VoronoiBinning(SpatialBinning):
         return  numpy.sum(signal[index]) / numpy.sqrt(numpy.sum(numpy.square(noise[index])))
 
 
-    def sn_calculation_covariance_matrix(self, signal, noise, index):
+#    def sn_calculation_covariance_matrix(self, signal, noise, index):
+    def sn_calculation_covariance_matrix(self, index, signal, noise):
         """
         Calculate the S/N using a full covariance matrix.
         """
@@ -410,7 +413,8 @@ class VoronoiBinning(SpatialBinning):
         return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[i,j]))
 
 
-    def sn_calculation_calibrate_noise(self, signal, noise, index):
+#    def sn_calculation_calibrate_noise(self, signal, noise, index):
+    def sn_calculation_calibrate_noise(self, index, signal, noise):
         r"""
         Calculate the S/N using a calibration of the S/N following:
 
@@ -457,6 +461,7 @@ class VoronoiBinning(SpatialBinning):
                     self.par['covar'].revert_correlation()
             # Fill the full array if necessary
             if not isinstance(self.par['covar'], (numpy.ndarray,float)):
+#                self.par['covar'].show()
                 self.covar = self.par['covar'].toarray()
                 sn_func = self.sn_calculation_covariance_matrix
             else:
@@ -477,18 +482,35 @@ class VoronoiBinning(SpatialBinning):
         if _noise.size != self.par['signal'].size:
             raise ValueError('Dimensionality of noise does not match signal.')
 
-        # Call the contributed code and return the bin index
-        binid, xNode, yNode, xBar, yBar, sn, area, scale = \
-            voronoi_2d_binning(x, y, self.par['signal'], _noise, self.par['target_snr'],
-                               plot=False, sn_func=sn_func)
-                               #plot=True, quiet=False, sn_func=sn_func)
-#                               plot=True, covar=self.covar, quiet=False)
-                               
-        #pyplot.show()
+        # All spaxels have S/N greater than threshold, so return each
+        # spaxel in its own "bin"
+        if numpy.min(self.par['signal']/_noise) > self.par['target_snr']:
+            warnings.warn('All pixels have enough S/N. Binning is not needed')
+            return numpy.arange(self.par['signal'].size)
 
-        #pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker='.',
+        # Cannot reach the S/N using all spaxels, so return all spaxels
+        # in a single bin
+        sn_total = sn_func(numpy.arange(self.par['signal'].size), self.par['signal'], _noise)
+        if sn_total < self.par['target_snr']:
+            warnings.warn('Cannot reach target S/N using all data.')
+            exit()
+            return numpy.zeros(self.par['signal'].size)
+
+        # Call the contributed code and return the bin index
+#        pyplot.scatter(x, _noise, s=30, marker='.', color='k')
+#        pyplot.show()
+        try:
+            binid, xNode, yNode, xBar, yBar, sn, area, scale = \
+                voronoi_2d_binning(x, y, self.par['signal'], _noise, self.par['target_snr'],
+                                   sn_func=sn_func, plot=False) #quiet=False)
+#            pyplot.show()
+#            pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker='.',
                        #color='k', s=40, lw=0)
-        #pyplot.show()
+#            pyplot.show()
+        except:
+            warnings.warn('Binning algorithm has raised an exception.  Assume this is because '
+                          'all the spaxels should be in the same bin.')
+            binid = numpy.zeros(self.par['signal'].size)
 
         return binid
 
