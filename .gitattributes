@@ -2828,6 +2828,7 @@ python/mangadap/util/bitmask.py -text
 python/mangadap/util/constants.py -text
 python/mangadap/util/covariance.py -text
 python/mangadap/util/exception_tools.py -text
+python/mangadap/util/extinction.py -text
 python/mangadap/util/fileio.py -text
 python/mangadap/util/geometry.py -text
 python/mangadap/util/instrument.py -text
