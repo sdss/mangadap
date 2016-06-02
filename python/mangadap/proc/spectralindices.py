@@ -703,7 +703,7 @@ class SpectralIndices:
                 = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
                                             log10=True, new_log10=True)
 
-#        # FOR DEBUGGING
+        # FOR DEBUGGING
 #        new_flux = flux.copy()
 #        new_mask = mask.copy()
 
@@ -961,10 +961,11 @@ class SpectralIndices:
         angu = numpy.full(self.nindx, False, dtype=numpy.bool)
         angu[:self.absdb.nsets] = self.absdb['units'] == 'ang'
         magu = numpy.invert(angu)
-        # Bandhead indices are unitless, but the correction follow the
+        # Bandhead indices are unitless, but the correction follows the
         # same operation as for the absorption-line indices with
         # angstrom units
         magu[self.absdb.nsets:] = False
+        angu[self.absdb.nsets:] = True
 
         return angu, magu
 
@@ -1029,7 +1030,6 @@ class SpectralIndices:
         # Get the broadened stellar-continuum model
         good_bins = self._bins_to_measure()
         good_models = good_bins & (self.stellar_continuum['PAR'].data['MASK'] == 0)
-        nspec = numpy.sum(good_models)
         broadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                 template_library=template_library), mask=mask)
 
@@ -1051,25 +1051,34 @@ class SpectralIndices:
 #        exit()
 
         # Measure the indices for both sets of spectra
-        broadened_model_measurements = self._measure_indices(self.redshift[good_models],
-                                                             wave, broadened_models[good_models])
-        unbroadened_model_measurements = self._measure_indices(self.redshift[good_models],
-                                                               wave,
-                                                               unbroadened_models[good_models])
+        broadened_model_measurements = init_record_array(self.nbins, self._per_bin_dtype())
+        broadened_model_measurements[good_models] \
+                = self._measure_indices(self.redshift[good_models], wave,
+                                        broadened_models[good_models])
+
+        unbroadened_model_measurements = init_record_array(self.nbins, self._per_bin_dtype())
+        unbroadened_model_measurements[good_models] \
+                = self._measure_indices(self.redshift[good_models], wave,
+                                        unbroadened_models[good_models])
 
         # Do not apply the correction if any of the bands were empty or
         # would have had to divide by zero
-        bad = self.bitmask.flagged(broadened_model_measurements['MASK'],
-                                   flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ])
-        bad |= self.bitmask.flagged(unbroadened_model_measurements['MASK'],
-                                    flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ])
+        bad_measurement = numpy.array([~good_models]*self.nindx).T
+        bad_measurement |= self.bitmask.flagged(broadened_model_measurements['MASK'],
+                                                flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
+                                                       'DIVBYZERO' ])
+        bad_measurement |= self.bitmask.flagged(unbroadened_model_measurements['MASK'],
+                                                flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
+                                                       'DIVBYZERO' ])
+
+        # Determine which indices have tood measurements
         angu, magu = self._unit_selection()
+        good_ang = ~bad_measurement & (numpy.array([angu]*self.nbins)) \
+                                    & (numpy.absolute(broadened_model_measurements['INDX']) > 0)
+        good_mag = ~bad_measurement & (numpy.array([magu]*self.nbins))
 
-        good_ang = ~bad & (numpy.array([angu]*nspec)) \
-                        & (numpy.absolute(broadened_model_measurements['INDX']) > 0)
-        good_mag = ~bad & (numpy.array([magu]*nspec))
-
-        corrections = numpy.zeros((nspec, self.nindx), dtype=numpy.float)
+        # Determine and return the corrections to apply
+        corrections = numpy.zeros((self.nbins, self.nindx), dtype=numpy.float)
         corrections[good_ang] = unbroadened_model_measurements['INDX'][good_ang] \
                                     / broadened_model_measurements['INDX'][good_ang]
         corrections[good_mag] = unbroadened_model_measurements['INDX'][good_mag] \
@@ -1213,19 +1222,16 @@ class SpectralIndices:
         # Get the corrections by performing the measurements on the
         # best-fitting continuum models, with and without the velocity
         # dispersion broadening
-        good_ang = numpy.zeros((self.nbins,self.nindx), dtype=numpy.bool)
-        good_mag = numpy.zeros((self.nbins,self.nindx), dtype=numpy.bool)
         self.tpl_symlink_dir = tpl_symlink_dir
-        hdu_measurements['INDX_DISPCORR'][good_bins], good_ang[good_bins,:], good_mag[good_bins,:] \
-                = self._calculate_dispersion_corrections(dapver=dapver, dapsrc=dapsrc)
+        hdu_measurements['INDX_DISPCORR'], good_ang, good_mag \
+                    = self._calculate_dispersion_corrections(dapver=dapver, dapsrc=dapsrc)
 
         # Flag bad corrections
-        angu, magu = self._unit_selection()
-        bad_ang = (numpy.array([angu]*good_ang.shape[0])) & ~good_ang
+        bad_ang = (numpy.array([good_bins]*self.nindx).T) & ~good_ang
         hdu_measurements['MASK'][bad_ang] \
                 = self.bitmask.turn_on(hdu_measurements['MASK'][bad_ang],
                                        'NO_DISPERSION_CORRECTION')
-        bad_mag = (numpy.array([magu]*good_mag.shape[0])) & ~good_mag
+        bad_mag = (numpy.array([good_bins]*self.nindx).T) & ~good_mag
         hdu_measurements['MASK'][bad_mag] \
                 = self.bitmask.turn_on(hdu_measurements['MASK'][bad_mag],
                                        'NO_DISPERSION_CORRECTION')

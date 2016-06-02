@@ -442,10 +442,6 @@ class PPXFFit(StellarKinematicsFit):
         obj_ferr = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
                                                     flag=binned_spectra.do_not_fit_flags()), -0.5)
 
-#        pyplot.plot(obj_wave, obj_flux[0,:])
-#        pyplot.plot(obj_wave, obj_ferr[0,:])
-#        pyplot.show()
-
         # Select the spectra that meet the selection criteria
         # TODO: Link this to the StellarContinuumModel._bins_to_fit()
         # function...
@@ -455,6 +451,12 @@ class PPXFFit(StellarKinematicsFit):
 #        print(good_spec)
 #        good_spec[2:] = False
 #        print(good_spec)
+
+#        for i in range(510,515):
+#            pyplot.plot(obj_wave, obj_flux[good_spec,:][i,:])
+#            pyplot.plot(obj_wave, obj_ferr[good_spec,:][i,:])
+#            pyplot.show()
+#        exit()
 
         # Perform the fit
         func = self.iterative_fit if iterative else self.fit
@@ -638,7 +640,6 @@ class PPXFFit(StellarKinematicsFit):
             ValueError: Raised if the input arrays are not of the
                 correct shape or if the pixel scale of the template and
                 object spectra is greater than the specified tolerance.
-        """
         # Initialize the reporting
         if loggers is not None:
             self.loggers = loggers
@@ -927,6 +928,9 @@ class PPXFFit(StellarKinematicsFit):
 
         return self.obj_wave, model_flux, model_mask, model_par
 
+        """
+        raise NotImplementedError('Do the iterative fit!')
+
 
     def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9):
         """
@@ -1027,8 +1031,8 @@ class PPXFFit(StellarKinematicsFit):
                                     else numpy.ma.MaskedArray(obj_flux)
         if obj_ferr is not None and obj_ferr.shape != self.obj_flux.shape:
             raise ValueError('The shape of any provided error array must match the flux array.')
-        self.obj_ferr = obj_ferr if isinstance(obj_ferr, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(obj_ferr)
+        self.obj_ferr = obj_ferr.copy() if isinstance(obj_ferr, numpy.ma.MaskedArray) \
+                                    else numpy.ma.MaskedArray(obj_ferr.copy())
         self.nobj = self.obj_flux.shape[0]
 
         # Get the pixel scale
@@ -1085,9 +1089,10 @@ class PPXFFit(StellarKinematicsFit):
                                                            moments, self.bitmask.minimum_dtype()))
         model_par['BIN_INDEX'] = numpy.arange(self.nobj)
 
-        # TODO: Need parameter keywords for max_velocity_range and
-        # alias_window
+        # Assess the regions that need to be masked during fitting
         try:
+            # TODO: Need parameter keywords for max_velocity_range and
+            # alias_window
             fit_indx, waverange_mask, npix_mask, alias_mask \
                 = self._fitting_mask(self.tpl_wave, self.obj_wave, self.velScale, _cz,
                                      waverange=waverange, loggers=self.loggers, quiet=self.quiet)
@@ -1097,13 +1102,23 @@ class PPXFFit(StellarKinematicsFit):
             model_par['MASK'] = self.bitmask.turn_on(model_par['MASK'], 'NO_FIT')
             return obj_wave, model_flux, model_mask, model_par
 
-        # Add to the mask
+        # Add these regions to the mask
         model_mask[:,waverange_mask] = self.bitmask.turn_on(model_mask[:,waverange_mask],
                                                             self.rng_flag)
         model_mask[:,npix_mask] = self.bitmask.turn_on(model_mask[:,npix_mask], self.tpl_flag)
         model_mask[:,alias_mask] = self.bitmask.turn_on(model_mask[:,alias_mask], self.trunc_flag)
-        # And update the internal mask of the data
+
+        # Make sure that the errors are valid
+        indx = ~(self.obj_ferr.data > 0) | ~(numpy.isfinite(self.obj_ferr.data))
+        if numpy.sum(indx) > 0:
+            model_mask[indx] = self.bitmask.turn_on(model_mask[indx], 'INVALID_ERROR')
+        
+        # Update the internal mask of the data.
         self.obj_flux[model_mask > 0] = numpy.ma.masked
+
+        # To avoid having pPXF throw an exception, make sure that all
+        # the masked errors are set to unity
+        self.obj_ferr[model_mask > 0] = 1.0
         self.obj_ferr[model_mask > 0] = numpy.ma.masked
 
         # Determine the starting and ending pixels
@@ -1239,6 +1254,9 @@ class PPXFFit(StellarKinematicsFit):
             log_output(self.loggers, 2, logging.INFO, '{0:>5}'.format('INDX')
                     + (' {:>14}'*moments).format(*(['KIN{0}'.format(i+1) for i in range(moments)]))
                     + ' {0:>5} {1:>9} {2:>9} {3:>4}'.format('NZTPL', 'CHI2', 'RCHI2', 'STAT'))
+
+        indx = ~(self.obj_ferr > 0) | ~(numpy.isfinite(self.obj_ferr))
+        print(numpy.sum(indx))
 
         # Fit each binned spectrum:
         for i in range(self.nobj):
@@ -1381,7 +1399,10 @@ class PPXFFit(StellarKinematicsFit):
             # TODO: Store template weights sparsely?
 #            model_par['TPLWGT'][i][nonzero_templates] = ppxf_fit.weights[0:ntpl_in_fit]
             model_par['TPLWGT'][i] = ppxf_fit.weights[0]*global_weights
-
+            # TODO: Does negative weights mean the fit failed?
+            if ppxf_fit.weights[0] < 0:
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
+                                                            'NEGATIVE_WEIGHTS')
             if degree >= 0:
                 model_par['ADDCOEF'][i] = ppxf_fit.polyweights
             if mdegree > 0:
