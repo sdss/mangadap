@@ -807,7 +807,8 @@ class EmissionLineModel:
         
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
 
         # Revert the structure
         if not self.quiet:

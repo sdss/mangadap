@@ -242,7 +242,7 @@ def available_reduction_assessments(dapsrc=None):
         The table below needs to be updated.
 
     +------------+---------------+---------+---------+
-    |            |    Wavelength |    In   |         |
+    |            |    Wavelength |      In |         |
     |        Key |   Range (ang) | Vacuum? |   Covar |
     +============+===============+=========+=========+
     |       SNRR | 5600.1-6750.0 |    True |    True |
@@ -868,7 +868,6 @@ class ReductionAssessment:
         if self.hardcopy:
             write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir,
                       loggers=self.loggers)
-
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

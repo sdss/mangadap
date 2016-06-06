@@ -283,6 +283,9 @@ class EmissionLineMoments:
             :func:`mangadap.util.log.log_output`.
         quiet (bool): Suppress all terminal and logging output.
 
+    .. todo::
+        Save model subtracted spectra to the output file?
+
     """
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  database_list=None, artifact_list=None, bandpass_list=None, dapsrc=None,
@@ -1213,7 +1216,8 @@ class EmissionLineMoments:
         """
         # Get the output file and determine if it should be compressed
         ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
 
 
     def read(self, ifile=None, strict=True, checksum=False):

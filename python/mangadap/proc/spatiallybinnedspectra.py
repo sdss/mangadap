@@ -150,7 +150,7 @@ class SpatiallyBinnedSpectraDef(ParSet):
     same!  This is why the wavelengths are not returned!
 
     As long as they are mutable, the values in par can change, meaning
-    that some products of teh bin algorithm can be passed to the stack
+    that some products of the bin algorithm can be passed to the stack
     algorithm.  For example, if you want to weight the inclusion of the
     spectrum in the bin, you'd have to provide both the binning and
     stacking routines.  Actually, if that's the case, you're better off

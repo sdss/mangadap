@@ -22,6 +22,10 @@ There has to be a better way to construct the file(s)!
 
 *Revision history*:
     | **09 May 2016**: Original Implementation by K. Westfall (KBW)
+
+.. todo::
+    Do something different than add an empty extension when the data are
+    not available?
 """
 
 from __future__ import division
@@ -43,7 +47,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 from .util.bitmask import BitMask
-from .util.log import init_DAP_logging, module_logging, log_output
+from .util.log import log_output
 from .util.fileio import write_hdu
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
@@ -86,7 +90,7 @@ class construct_maps_file:
     def __init__(self, drpf, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
                  dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True):
+                 output_file=None, clobber=True, loggers=None, quiet=False):
 
         # The output method directory is, for now, the combination of
         # the binned_spectrum and stellar_continuum method keys
@@ -112,9 +116,13 @@ class construct_maps_file:
         if spectral_indices is not None and not isinstance(spectral_indices, SpectralIndices):
             raise TypeError('Input must have type SpectralIndices.')
 
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
+
         self.drpf = drpf
         self.spatial_shape = self.drpf.spatial_shape
-        print(self.spatial_shape)
 
         # Set the output directory path
         # TODO: Get DAP version from __version__ string
@@ -132,28 +140,39 @@ class construct_maps_file:
                                                  self.method) \
                                     if output_file is None else str(output_file)
 
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'CONSTRUCTING OUTPUT MAPS:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
+            log_output(self.loggers, 1, logging.INFO, 'Output maps have shape {0}'.format(
+                                                                            self.spatial_shape))
+
         ofile = os.path.join(self.directory_path, self.output_file)
         if os.path.isfile(ofile) and not clobber:
             # TODO: Perform some checks to make sure the existing file
             # has the correct content?
-            warnings.warn('File exists: {0}!  Set clobber=True to overwrite.'.format(ofile))
+            warnings.warn('Output file exists!  Set clobber=True to overwrite.')
             return
-
-        # Report
-        print('Output path: ', self.directory_path)
-        print('Output file: ', self.output_file)
 
         # Initialize the primary header
         self.dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
         self.drp3qualbm = DRPQuality3DBitMask()
         self.dapqual = self.dapqualbm.minimum_dtype()(0)    # Original flag value is 0
-        print(type(self.dapqual))
         prihdr = self._primary_header()
 
         # Initialize the DAP quality flag
         if self.drp3qualbm.flagged(prihdr['DRP3QUAL'], flag='CRITICAL'):
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'CRITICAL')
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'DRPCRIT')
+        if binned_spectra.method['binclass'].bintype == 'voronoi' and binned_spectra.nbins == 1:
+            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'SINGLEBIN')
 
         # Get the base map header
         self.multichannel_maphdr = self._map_header(nchannels=2)
@@ -197,8 +216,10 @@ class construct_maps_file:
         # Write the file
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True)
-
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
 
 
     @staticmethod
@@ -409,6 +430,10 @@ class construct_maps_file:
         """
         Transposes are necessary to keep x,y orientation consistent with
         DRP output.
+
+        .. todo::
+            Add the spaxel correlation data.
+
         """
 
         # Add data to the primary header
@@ -429,7 +454,7 @@ class construct_maps_file:
         # Elliptical coordinates
         hdr = self._add_channel_names(self.multichannel_maphdr,
                                       ['Elliptical radius', 'Elliptical azimuth'],
-                                      ['arcsec', 'degrees'])
+                                      units=['arcsec', 'degrees'])
         if rdxqa is not None:
             hdr['PA'] = (rdxqa.pa, 'Isophotal position angle')
             hdr['ELL'] = (rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
@@ -440,13 +465,16 @@ class construct_maps_file:
                                                                  nchannels=2),
                                 name='SPXL_ELLCOO') ]
 
-        # Spectral coverage and SNR assessments of the DRP data
+        # Spectral coverage
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['FGOODPIX'].reshape(self.drpf.spatial_shape).T
         hdus += [ fits.ImageHDU(data=data,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'SPXL_SPCOV'),
                                 name='SPXL_SPCOV') ]
+
+
+        # SNR assessments of the DRP data
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['SIGNAL'].reshape(self.drpf.spatial_shape).T
         hdus += [ fits.ImageHDU(data=data,
@@ -525,15 +553,20 @@ class construct_maps_file:
                                     header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                      'BIN_MFLUX',
                                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel',
-                                                                     err=True),
+                                                                     err=True, qual=True),
                                     name='BIN_MFLUX') ]
-           
             hdus += [ fits.ImageHDU(data=None,
                                     header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                      'BIN_MFLUX', hduclas2='ERROR',
-                                                        bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}'),
+                                                        bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}',
+                                                                     qual=True),
                                     name='BIN_MFLUX_IVAR') ]
-
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'BIN_MFLUX',
+                                                                     hduclas2='QUALITY', err=True,
+                                                                     bit_type=numpy.bool),
+                                    name='BIN_MFLUX_MASK') ]
             hdus += [ fits.ImageHDU(data=None,
                                     header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                      'BIN_SNR'),
@@ -592,7 +625,7 @@ class construct_maps_file:
         hdr = self._add_channel_names(self.multichannel_maphdr,
                                       ['Lum. weighted elliptical radius',
                                        'Lum. weighted elliptical azimuth'],
-                                      ['arcsec', 'degrees'])
+                                      units=['arcsec', 'degrees'])
         if binned_spectra.rdxqa is not None:
             hdr['PA'] = (binned_spectra.rdxqa.pa, 'Isophotal position angle')
             hdr['ELL'] = (binned_spectra.rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
@@ -628,7 +661,7 @@ class construct_maps_file:
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'BIN_MFLUX',
                                                              bunit='1E-17 erg/s/cm^2/ang/spaxel',
-                                                                 err=True),
+                                                                 err=True, qual=True),
                                 name='BIN_MFLUX') ]
         # Inverse variance in the mean flux
         data = numpy.zeros(binned_spectra.spatial_shape, dtype=numpy.float)
@@ -639,8 +672,19 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'BIN_MFLUX', hduclas2='ERROR',
+                                                                 qual=True,
                                                         bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}'),
                                 name='BIN_MFLUX_IVAR') ]
+
+        # Bitmask
+        mask = self.common_mask.copy()
+        hdus += [ fits.ImageHDU(data=mask.T,
+                                header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                 'BIN_MFLUX',
+                                                                 hduclas2='QUALITY', err=True,
+                                                                 bit_type=mask.dtype.type),
+                                name='BIN_MFLUX_MASK') ]
+
         # Signal-to-noise in the bin
         data = numpy.zeros(binned_spectra.spatial_shape, dtype=numpy.float)
         data.ravel()[indx] = binned_spectra['BINS'].data['SNR'][unique_bins[reconstruct[indx]]]
@@ -650,6 +694,53 @@ class construct_maps_file:
                                 name='BIN_SNR') ]
 
         return hdus
+
+
+    def _stellar_continuum_mask_to_map_mask(self, stellar_continuum, unique_bins, reconstruct,
+                                            indx):
+        """
+        Propagate and consolidate the stellar-continuum masks to the map
+        pixel mask.
+
+        DIDNOTUSE, FORESTAR propagated from already existing mask (self.common_mask)
+
+        LOW_SNR, NO_FIT, INSUFFICIENT_DATA propagated to NOVALUE
+
+        FIT_FAILED, NEAR_BOUND propagated to BADFIT
+
+        NEGATIVE_WEIGHTS propagated to BADVALUE
+
+        """
+
+        # Construct the existing mask data
+        bit_type = stellar_continuum.bitmask.minimum_dtype()
+        output_shape = stellar_continuum.spatial_shape
+        sc_mask = numpy.zeros(output_shape, dtype=bit_type)
+        sc_mask.ravel()[indx] \
+                = stellar_continuum['PAR'].data['MASK'][unique_bins[reconstruct[indx]]]
+
+        # Copy the common mask
+        mask = self.common_mask.copy()
+
+        # Find the low S/N bins
+        snmask = numpy.all(stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data,
+                                                             flag='LOW_SNR'), axis=2)
+        if numpy.sum(snmask) > 0:
+            mask[snmask] = self.bitmask.turn_on(mask[snmask], 'NOVALUE')
+
+        # Consolidate to NOVALUE
+        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Consolidate to BADFIT
+        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['FIT_FAILED', 'NEAR_BOUND'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
+
+        # Consolidate to BADVALUE
+        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['NEGATIVE_WEIGHTS'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
+
+        return mask
 
 
     def stellar_continuum_maps(self, prihdr, stellar_continuum):
@@ -734,9 +825,8 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
-        # Copy the mask
-        mask = self.common_mask.copy()
-        # ... and add things to it based on the table data: TBD
+        # The extensions share a common mask
+        mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins,
 
         # Stellar velocity
         data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
@@ -763,7 +853,7 @@ class construct_maps_file:
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_VEL',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=numpy.bool),
+                                                                 bit_type=mask.dtype.type),
                                 name='STELLAR_VEL_MASK') ]
 
         # Stellar velocity dispersion
@@ -791,7 +881,7 @@ class construct_maps_file:
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_SIGMA',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=numpy.bool),
+                                                                 bit_type=mask.dtype.type),
                                 name='STELLAR_SIGMA_MASK') ]
 
         # Continuum fit statistics
@@ -928,9 +1018,9 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
-        # Copy the mask
-        mask = self.common_mask.copy()
-        # ... and add things to it based on the table data: TBD
+        # The mask is common to all extensions
+        mask = self._emission_line_moment_mask_to_map_mask(emission_line_moments, unique_bins,
+                                                           reconstruct, indx)
 
         # Integrated flux
         data = numpy.zeros((*emission_line_moments.spatial_shape, emission_line_moments.nmom),
@@ -961,12 +1051,10 @@ class construct_maps_file:
                                                             bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}'),
                                 name='EMLINE_SFLUX_IVAR') ]
         # Bitmask
-        data = self._emission_line_moment_mask_to_map_mask(emission_line_moments, unique_bins,
-                                                           reconstruct, indx)
-        hdus += [ fits.ImageHDU(data=data.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SFLUX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=data.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='EMLINE_SFLUX_MASK') ]
 
         # Equivalent width
@@ -997,12 +1085,10 @@ class construct_maps_file:
                                                                  bunit='(ang)^{-2}'),
                                 name='EMLINE_SEW_IVAR') ]
         # Bitmask
-        data = self._emission_line_moment_mask_to_map_mask(emission_line_moments, unique_bins,
-                                                           reconstruct, indx)
-        hdus += [ fits.ImageHDU(data=data.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SEW',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=data.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='EMLINE_SEW_MASK') ]
         return hdus
 
@@ -1015,13 +1101,10 @@ class construct_maps_file:
 
         INSUFFICIENT_DATA propagated to NOVALUE
 
-        NEAR_BOUND propagated to BADVALUE
-
-        FIT_FAILED, UNDEFINED_COVAR propagated to BADFIT
+        FIT_FAILED, NEAR_BOUND, UNDEFINED_COVAR propagated to BADFIT
         """
 
         # Construct the existing mask data
-
         bit_type = emission_line_model.bitmask.minimum_dtype()
         elf_mask = numpy.zeros((*emission_line_model.spatial_shape, emission_line_model.neml),
                                dtype=bit_type)
@@ -1035,13 +1118,9 @@ class construct_maps_file:
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['INSUFFICIENT_DATA'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
-        # Consolidate to BADVALUE
-        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['NEAR_BOUND'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
-
         # Consolidate to BADFIT
-        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['FIT_FAILED',
-                                                                     'UNDEFINED_COVAR'])
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['NEAR_BOUND', 'FIT_FAILED',
+                                                                   'UNDEFINED_COVAR'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
 
         return mask
@@ -1128,6 +1207,10 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
+        # The extensions share a common mask
+        mask = self._emission_line_model_mask_to_map_mask(emission_line_model, unique_bins,
+                                                          reconstruct, indx)
+
         # Channel identifiers (units are all the same)
         # TODO: Convert wavelengths to air for column names?
         cols = [ '{0}-{1}'.format(n,int(w)) \
@@ -1160,12 +1243,10 @@ class construct_maps_file:
                                                             bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}'),
                                 name='EMLINE_GFLUX_IVAR') ]
         # Bitmask
-        fit_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, unique_bins,
-                                                              reconstruct, indx)
-        hdus += [ fits.ImageHDU(data=fit_mask.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GFLUX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=fit_mask.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='EMLINE_GFLUX_MASK') ]
 
         # Velocity
@@ -1192,10 +1273,10 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}'),
                                 name='EMLINE_GVEL_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=fit_mask.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=fit_mask.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='EMLINE_GVEL_MASK') ]
 
         # Velocity dispersion
@@ -1222,10 +1303,10 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}'),
                                 name='EMLINE_GSIGMA_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=fit_mask.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GSIGMA',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=fit_mask.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='EMLINE_GSIGMA_MASK') ]
         return hdus
 
@@ -1319,6 +1400,10 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
+        # The extensions share a common mask
+        mask = self._spectral_index_mask_to_map_mask(spectral_indices, unique_bins, reconstruct,
+                                                     indx)
+
         # Channel identifiers and units
         hdr = self._add_channel_names(self.multichannel_maphdr,
                                       spectral_indices['SIPAR'].data['NAME'],
@@ -1352,12 +1437,10 @@ class construct_maps_file:
                                                                  hduclas2='ERROR', qual=True),
                                 name='SPECINDEX_IVAR') ]
         # Bitmask
-        fit_mask = self._spectral_index_mask_to_map_mask(spectral_indices, unique_bins,
-                                                         reconstruct, indx)
         hdus += [ fits.ImageHDU(data=fit_mask.T,
                                 header=self._finalize_map_header(hdr, 'SPECINDEX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=fit_mask.dtype.type),
+                                                                 bit_type=mask.dtype.type),
                                 name='SPECINDEX_MASK') ]
 
         return hdus

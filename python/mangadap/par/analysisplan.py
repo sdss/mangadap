@@ -32,7 +32,8 @@ Classes to handle MaNGA DAP analysis plans.
 
 *Revision history*:
     | **11 May 2016**: Original implementation by K. Westfall (KBW)
-
+    | **03 Jun 2016**: (KBW) Any key with value 'None' is converted to
+        NoneType
 """
 
 from __future__ import division
@@ -61,13 +62,19 @@ class AnalysisPlan(ParSet):
                  elfit_key=None, elfit_clobber=False, spindex_key=None, spindex_clobber=False):
 
         # TODO: Include covariance keys that is applied to each/some analyses
+        _drpqa_key = None if drpqa_key == 'None' or drpqa_key is None else drpqa_key
+        _bin_key = None if bin_key == 'None' or bin_key is None else bin_key
+        _continuum_key = None if continuum_key == 'None' or continuum_key is None else continuum_key
+        _elmom_key = None if elmom_key == 'None' or elmom_key is None else elmom_key
+        _elfit_key = None if elfit_key == 'None' or elfit_key is None else elfit_key
+        _spindex_key = None if spindex_key == 'None' or spindex_key is None else spindex_key
 
         pars =   [ 'drpqa_key', 'drpqa_clobber', 'bin_key', 'bin_clobber', 'continuum_key',
                    'continuum_clobber', 'elmom_key', 'elmom_clobber', 'elfit_key', 'elfit_clobber',
-                 'spindex_key', 'spindex_clobber' ]
-        values = [ drpqa_key, drpqa_clobber, bin_key, bin_clobber, continuum_key, continuum_clobber,
-                   elmom_key, elmom_clobber, elfit_key, elfit_clobber, spindex_key,
-                   spindex_clobber ]
+                   'spindex_key', 'spindex_clobber' ]
+        values = [ _drpqa_key, drpqa_clobber, _bin_key, bin_clobber, _continuum_key,
+                   continuum_clobber, _elmom_key, elmom_clobber, _elfit_key, elfit_clobber,
+                   _spindex_key, spindex_clobber ]
         dtypes = [ str, bool, str, bool, str, bool, str, bool, str, bool, str, bool ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)

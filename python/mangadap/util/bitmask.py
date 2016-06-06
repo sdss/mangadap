@@ -529,7 +529,7 @@ class BitMask:
         """
         if flag == 'NULL':
             raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, list) or isinstance(flag, numpy.ndarray):
+        if isinstance(flag, (list, numpy.ndarray)):
             _value = value
             for f in flag:
                 if not isinstance(f, str):
@@ -561,7 +561,7 @@ class BitMask:
         """
         if flag == 'NULL':
             raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, list) or isinstance(flag, numpy.ndarray):
+        if isinstance(flag, (list, numpy.ndarray)):
             _value = value
             for f in flag:
                 if not isinstance(f, str):
@@ -599,7 +599,7 @@ class BitMask:
         """
         if flag == 'NULL':
             raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, list) or isinstance(flag, numpy.ndarray):
+        if isinstance(flag, (list, numpy.ndarray)):
             _value = value
             for f in flag:
                 if not isinstance(f, str):
