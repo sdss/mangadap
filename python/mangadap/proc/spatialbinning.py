@@ -493,7 +493,6 @@ class VoronoiBinning(SpatialBinning):
         sn_total = sn_func(numpy.arange(self.par['signal'].size), self.par['signal'], _noise)
         if sn_total < self.par['target_snr']:
             warnings.warn('Cannot reach target S/N using all data.')
-            exit()
             return numpy.zeros(self.par['signal'].size)
 
         # Call the contributed code and return the bin index
