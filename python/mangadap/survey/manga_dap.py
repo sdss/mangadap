@@ -157,7 +157,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 
     """
 
-    init_DAP_logging(log, simple_warnings=False)
+    init_DAP_logging(log)#, simple_warnings=False)
 
     # Start log
     loggers = module_logging(__name__, verbose)
