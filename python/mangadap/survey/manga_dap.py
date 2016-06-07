@@ -47,11 +47,14 @@ import sys
 if sys.version > '3':
     long = int
 
-import numpy
 import logging
 import resource
 import time
 import os
+import warnings
+import numpy
+
+import astropy.constants
 
 from ..config.defaults import default_drp_version, default_dap_version
 from ..config.defaults import default_dap_method, default_dap_method_path
@@ -154,7 +157,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 
     """
 
-    init_DAP_logging(log)#, simple_warnings=False)
+    init_DAP_logging(log, simple_warnings=False)
 
     # Start log
     loggers = module_logging(__name__, verbose)
@@ -208,11 +211,17 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------
+        warnings.warn('Turn on de-reddening!')
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
-                                           dapsrc=dapsrc, analysis_path=_analysis_path,
-                                           symlink_dir=plan_ref_dir, clobber=plan['bin_clobber'][i],
-                                           loggers=loggers)
+                                           deredden=False, dapsrc=dapsrc,
+                                           analysis_path=_analysis_path, symlink_dir=plan_ref_dir,
+                                           clobber=plan['bin_clobber'][i], loggers=loggers)
+
+#        pyplot.plot(drpf['WAVE'].data, drpf['FLUX'].data[28,28,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[28,28,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[28,28,:]/binned_spectra['REDCORR'].data)
+#        pyplot.show()
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit
@@ -264,8 +273,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
-                            spectral_indices=spectral_indices, dapsrc=dapsrc,
-                            analysis_path=_analysis_path, clobber=True)#clobber)
+                            spectral_indices=spectral_indices,
+                            nsa_redshift=obs['vel']/astropy.constants.c.to('km/s').value,
+                            dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True)#clobber)
 
     #-------------------------------------------------------------------
     # End log

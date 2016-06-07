@@ -221,7 +221,7 @@ def passband_median(x, y, passband=None):
     indx = numpy.array([ numpy.arange(_x.size)[numpy.logical_and(_x > p[0], _x < p[1])]
                                 for p in passband ])
     nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
-    if numpy.any(nonzero):
+    if ~numpy.all(nonzero):
         warnings.warn('Returning empty passbands with median values of 0!')
     return numpy.array([ 0.0 if len(ii) == 0 else numpy.median(_y[ii]) for ii in indx ])
 

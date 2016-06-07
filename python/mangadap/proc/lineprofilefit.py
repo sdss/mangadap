@@ -56,6 +56,7 @@ from ..par.parset import ParSet
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, resample_vector
 from ..util.log import log_output
+from ..util.constants import constants
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .pixelmask import PixelMask, SpectralPixelMask
@@ -872,6 +873,7 @@ class Elric(EmissionLineFit):
         self.fitting_window = None
 
         self.wave = None
+        self.sres = None
         self.flux = None
         self.fluxnc = None
         self.error = None
@@ -1289,6 +1291,61 @@ class Elric(EmissionLineFit):
 #                print('FRAC_RESID: ', model_fit_par['FRAC_RESID'][i,j])
 
 
+    def _instrumental_dispersion_correction(self, model_eml_par):
+        if self.sres is None:
+            return
+        interpolator = interpolate.interp1d(self.wave, self.sres, fill_value='extrapolate',
+                                            assume_sorted=True)
+        restwave = numpy.array([self.emission_lines['restwave']]*self.nspec)
+        cnst = constants()
+
+        # Get the instrumental dispersion at each (valid)line center
+        indx = ~self.bitmask.flagged(model_eml_par['MASK'],
+                                     flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
+                                           'UNDEFINED_COVAR' ])
+        model_eml_par['SINST'][indx] = astropy.constants.c.to('km/s') \
+                                            / interpolator((model_eml_par['KIN'][indx,0] 
+                                                        / astropy.constants.c.to('km/s').value+1.0)
+                                                                *restwave[indx])/cnst.sig2fwhm
+
+#        z = model_eml_par['KIN'][indx,0] / astropy.constants.c.to('km/s').value
+#        pyplot.scatter(restwave[indx]*(1.0+z), model_eml_par['SINST'][indx], marker='.', s=30,
+#                       color='k')
+#        pyplot.show()
+#
+#        pyplot.scatter(model_eml_par['SINST'][indx], model_eml_par['KIN'][indx,1], marker='.',
+#                       s=30, color='k')
+#        pyplot.show()
+
+        # Correct the second moments for the instrumental dispersion
+        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
+        defined[indx] = model_eml_par['SINST'][indx] < model_eml_par['KIN'][indx,1]
+        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
+        nonzero[indx] = numpy.absolute(model_eml_par['SINST'][indx] 
+                                            - model_eml_par['KIN'][indx,1]) > 0
+
+#        orig = model_eml_par['KIN'].copy()
+
+        model_eml_par['KINERR'][nonzero,1] \
+                    = 2.0*model_eml_par['KIN'][nonzero,1]*model_eml_par['KINERR'][nonzero,1]
+        model_eml_par['KIN'][nonzero,1] = numpy.square(model_eml_par['KIN'][nonzero,1]) \
+                                                - numpy.square(model_eml_par['SINST'][nonzero])
+        model_eml_par['KIN'][nonzero,1] = model_eml_par['KIN'][nonzero,1] \
+                            / numpy.sqrt(numpy.absolute(model_eml_par['KIN'][nonzero,1]))
+        model_eml_par['KINERR'][nonzero,1] /= numpy.absolute(2.*model_eml_par['KIN'][nonzero,1])
+
+        # Flag undefined values
+        model_eml_par['MASK'][indx & ~defined] \
+                = self.bitmask.turn_on(model_eml_par['MASK'][indx & ~defined], 'UNDEFINED_SIGMA')
+
+#        flg = self.bitmask.flagged(model_eml_par['MASK'], flag='UNDEFINED_SIGMA')
+#        pyplot.scatter(orig[nonzero & flg,1], model_eml_par['KIN'][nonzero & flg,1], marker='.',
+#                       s=30, color='0.8')
+#        pyplot.scatter(orig[nonzero & ~flg,1], model_eml_par['KIN'][nonzero & ~flg,1], marker='.',
+#                       s=30, color='k')
+#        pyplot.show()
+#        exit()
+
 
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
@@ -1322,6 +1379,7 @@ class Elric(EmissionLineFit):
 
         # Get the data arrays to fit
         wave = binned_spectra['WAVE'].data
+        sres = binned_spectra['SPECRES'].data
         flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
         ivar = binned_spectra.copy_to_masked_array(ext='IVAR',
                                                         flag=binned_spectra.do_not_fit_flags())
@@ -1343,7 +1401,7 @@ class Elric(EmissionLineFit):
 
         model_wave, model_flux, model_mask, model_fit_par, model_eml_par \
             = self.fit(wave, _flux, par['emission_lines'], error=noise, mask=par['pixelmask'],
-                       stellar_continuum=continuum, base_order=par['base_order'],
+                       sres=sres, stellar_continuum=continuum, base_order=par['base_order'],
                        window_buffer=par['window_buffer'], guess_redshift=guess_redshift,
                        guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
         
@@ -1372,10 +1430,9 @@ class Elric(EmissionLineFit):
         return model_wave, _model_flux, _model_mask, _model_fit_par, _model_eml_par
 
 
-    def fit(self, wave, flux, emission_lines, error=None, mask=None, stellar_continuum=None,
-            base_order=-1, window_buffer=25, guess_redshift=None, guess_dispersion=None,
-            loggers=None, quiet=False):
-
+    def fit(self, wave, flux, emission_lines, error=None, mask=None, sres=None,
+            stellar_continuum=None, base_order=-1, window_buffer=25, guess_redshift=None,
+            guess_dispersion=None, loggers=None, quiet=False):
         """
         The flux array is expected to have size Nspec x Nwave.
 
@@ -1403,18 +1460,30 @@ class Elric(EmissionLineFit):
                              'the same wavelength solution.')
         self.wave = wave
         self.nwave = len(self.wave)
-        if flux.shape[1] != self.nwave:
+
+        self.sres = None
+        if sres is not None:
+            if len(sres.shape) != 1:
+                raise ValueError('Input spectral resolution must be a vector; all flux vectors ' \
+                                 'should have the same spectral resolution.')
+            if len(sres) != self.nwave:
+                raise ValueError('Spectral resolution vector length must match the wavelength ' \
+                                 'vector.')
+            self.sres = sres
+
+        _flux = flux.reshape(1,-1) if len(flux.shape) != 2 else flux
+        if _flux.shape[1] != self.nwave:
             raise ValueError('The spectra have to have the same length as the wavelength vector.')
-        if error is not None and error.shape != flux.shape:
+        if error is not None and error.shape != _flux.shape:
             raise ValueError('The shape of any provided error array must match the flux array.')
 
         # Set the input to masked arrays, if they aren't already
-        self.flux = flux if isinstance(flux, numpy.ma.MaskedArray) else numpy.ma.MaskedArray(flux)
+        self.flux = _flux if isinstance(_flux,numpy.ma.MaskedArray) else numpy.ma.MaskedArray(_flux)
         self.nspec = self.flux.shape[0]
         # Include the mask, if provided
         if mask is not None:
             if isinstance(mask, numpy.ndarray) and numpy.issubdtype(mask.dtype,bool):
-                if mask is not None and mask.shape != flux.shape:
+                if mask is not None and mask.shape != self.flux.shape:
                     raise ValueError('The shape of the mask array must match the flux array.')
                 self.flux[mask] = numpy.ma.masked
             if isinstance(mask, SpectralPixelMask):
@@ -1564,11 +1633,11 @@ class Elric(EmissionLineFit):
                 # adjust the guess flux
                 # TODO: Use emission-line moment results for the
                 # guesses, if provided
-                for p in self.fitting_window[j].profile_set:
+                for k,p in enumerate(self.fitting_window[j].profile_set):
                     p.shift_mean(cz)
                     vi = numpy.argsort(numpy.absolute(velocity[j,:]-p.moment(order=1)))[0]
                     p.set_flux((spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0 else 0.1) \
-                                    * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
+                                * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
 
                 # Setup the guess parameters and bounds
                 _guess_par = numpy.array([ p.par.copy().ravel() \
@@ -1709,18 +1778,27 @@ class Elric(EmissionLineFit):
                     model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                                       'EXCLUDED_FROM_MODEL')
 
-#                pyplot.errorbar(velocity[j,fitting_mask[j,:]], spec_to_fit[j,fitting_mask[j,:]],
-#                                yerr=self.error[i,fitting_mask[j,:]], marker='.', color='k',
-#                                linestyle='', capsize=0)
-#                pyplot.plot(velocity[j,fitting_mask[j,:]],
-#                            self.bestfit[i,j].sample(velocity[j,fitting_mask[j,:]],
-#                                                     par=self.bestfit[i,j].result.x),
-#                            linestyle='-', color='r')
-#                pyplot.title('Spec: {0}; Line (set): {1}'.format(i+1,j+1))
-#                pyplot.show()
+#                if 44 in self.fitting_window[j].line_index:
+#                    pyplot.errorbar(velocity[j,fitting_mask[j,:]], spec_to_fit[j,fitting_mask[j,:]],
+#                                    yerr=self.error[i,fitting_mask[j,:]], marker='.', color='k',
+#                                    linestyle='', capsize=0)
+#                    pyplot.plot(velocity[j,fitting_mask[j,:]],
+#                                self.bestfit[i,j].sample(velocity[j,fitting_mask[j,:]],
+#                                par=self.bestfit[i,j].result.x), linestyle='-', color='g')
+#                    pyplot.plot(velocity[j,fitting_mask[j,:]],
+#                                self.bestfit[i,j].sample(velocity[j,fitting_mask[j,:]],
+#                                par=_guess_par), linestyle='-', color='r')
+#                    print(_guess_par)
+#                    print(self.bestfit[i,j].result.x)
+#                    pyplot.title('Spec: {0}; Line (set): {1}'.format(i+1,j+1))
+#                    pyplot.show()
 
 #            pyplot.plot(wave, model_flux[i,:], linestyle='-', color='g')
 #            pyplot.show()
+
+
+        # Determine the instrumental dispersion at the line centers
+        self._instrumental_dispersion_correction(model_eml_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(

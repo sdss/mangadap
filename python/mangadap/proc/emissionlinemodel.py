@@ -665,7 +665,7 @@ class EmissionLineModel:
         # Get the guess kinematics
         redshift = None if guess_vel is None else guess_vel / astropy.constants.c.to('km/s').value
         dispersion = None if guess_sig is None else guess_sig
-        self._assign_input_kinematics(redshift, dispersion)
+        self._assign_input_kinematics(redshift if stellar_continuum is None else None, dispersion)
 
         # Report
         if not self.quiet:

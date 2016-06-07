@@ -107,6 +107,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
+from ..util.extinction import reddening_vector_fm
 from ..util.log import log_output
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
@@ -457,10 +458,10 @@ class SpatiallyBinnedSpectra:
         - Add prior with velocity offsets for spaxels.
    
     """
-    def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
-                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, method_key, drpf, rdxqa, reff=None, deredden=False, method_list=None,
+                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, hardcopy=True, symlink_dir=None, clobber=False, checksum=False,
+                 loggers=None, quiet=False):
 
         self.version = '1.0'
         self.loggers = None
@@ -473,6 +474,7 @@ class SpatiallyBinnedSpectra:
         self.drpf = None
         self.rdxqa = None
         self.reff = None
+        self.deredden = False
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -503,9 +505,10 @@ class SpatiallyBinnedSpectra:
         self.covariance = None
 
         # Bin the spectra
-        self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
-                         directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                         symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
+        self.bin_spectra(drpf, rdxqa, reff=reff, deredden=deredden, dapver=dapver,
+                         analysis_path=analysis_path, directory_path=directory_path,
+                         output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
+                         clobber=clobber, loggers=loggers, quiet=quiet)
 
 
     def __del__(self):
@@ -799,6 +802,22 @@ class SpatiallyBinnedSpectra:
         self.image_arrays = [ 'BINID' ]
 
 
+    def _get_reddening_corr(self):
+            red_hdr = fits.Header()
+            red_hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
+            red_hdr['RVGAL'] = (3.1, 'Ratio of total to selective extinction (Rv)')
+            red_hdr['GEXTCRV'] = ('FMExtinction', 'Assumed Galactic extinction curve')
+
+#            red = reddening_vector_fm(self.drpf['WAVE'].data,
+#                                                self.drpf['PRIMARY'].header['EBVGAL'], rv=3.1)
+#            print(numpy.sum(numpy.ma.getmaskarray(red)))
+#            pyplot.plot(self.drpf['WAVE'].data, red)
+#            pyplot.plot(self.drpf['WAVE'].data, red.data)
+#            pyplot.show()
+            return red_hdr, reddening_vector_fm(self.drpf['WAVE'].data,
+                                                self.drpf['PRIMARY'].header['EBVGAL'], rv=3.1).data
+
+
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -820,7 +839,7 @@ class SpatiallyBinnedSpectra:
 
 
     # TODO: This function needs to be broken up
-    def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
+    def bin_spectra(self, drpf, rdxqa, reff=None, deredden=False, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
                     clobber=False, loggers=None, quiet=False):
         """
@@ -865,6 +884,7 @@ class SpatiallyBinnedSpectra:
         # binning approach
         if reff is not None:
             self.reff = reff
+        self.deredden = deredden
 
         # Get the good spectra
         #   - Must have valid pixels over more than 80% of the spectral
@@ -889,6 +909,9 @@ class SpatiallyBinnedSpectra:
                                                                             numpy.sum(good_snr)))
             log_output(self.loggers, 1, logging.INFO, 'Number of good spectra: {0}'.format(
                                                                             numpy.sum(good_spec)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Dereddening spectra assuming E(B-V) = {0}'.format(
+                                self.drpf['PRIMARY'].header['EBVGAL'] if self.deredden else 0.0))
 
         # Fill in any remaining binning parameters
         self._fill_method_par(good_spec)
@@ -913,6 +936,19 @@ class SpatiallyBinnedSpectra:
             hdr = self._clean_drp_header(ext='PRIMARY')
             self._initialize_header(hdr)
 
+            # Generate the reddening correction
+            red_hdr, reddening_correction = self._get_reddening_corr()
+
+            # Get the flux and errors, including the reddening
+            # correction if requested
+            flux = self.drpf['FLUX'].data.copy()
+            ivar = self.drpf['IVAR'].data.copy()
+            if self.deredden:
+                c = numpy.array([reddening_correction]*numpy.prod(self.spatial_shape)).reshape(
+                                                                            *self.spatial_shape,-1)
+                flux *= c
+                ivar /= numpy.square(c)
+
             # Initialize the basics of the mask
             mask = self._initialize_mask(good_fgoodpix, good_snr)
             npix = numpy.ones(self.drpf['FLUX'].data.shape, dtype=numpy.int)
@@ -930,14 +966,21 @@ class SpatiallyBinnedSpectra:
 
             # Set the HDUList just based on the original DRP data
 #            print('Building HDUList...', end='\r')
-            self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr), self.drpf['FLUX'].copy(),
-                                      self.drpf['IVAR'].copy(), 
+            self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
+                                      fits.ImageHDU(data=flux,
+                                                    header=self.drpf['FLUX'].header.copy(),
+                                                    name='FLUX'),
+                                      fits.ImageHDU(data=ivar,
+                                                    header=self.drpf['IVAR'].header.copy(),
+                                                    name='IVAR'),
                                       fits.ImageHDU(data=mask,
                                                     header=self.drpf['MASK'].header.copy(),
                                                     name='MASK'),
                                       self.drpf['WAVE'].copy(),
                                       self.drpf['SPECRES'].copy(),
                                       self.drpf['SPECRESD'].copy(),
+                                      fits.ImageHDU(data=reddening_correction, header=red_hdr,
+                                                    name='REDCORR'),
                                       fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
                                                     header=self.drpf['FLUX'].header.copy(),
                                                     name='FLUXD'),
@@ -948,7 +991,7 @@ class SpatiallyBinnedSpectra:
                                       fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                              format=rec_to_fits_type(bin_data[n]),
                                                 array=bin_data[n]) for n in bin_data.dtype.names ],
-                                                               name='BINS')
+                                                                    name='BINS')
                                       ])
 #            print('Building HDUList... done')
 
@@ -970,6 +1013,12 @@ class SpatiallyBinnedSpectra:
                 if isinstance(covar, Covariance):
                     cov_hdr = fits.Header()
                     indx_col, covar_col, var_col, plane_col = covar.binary_columns(hdr=cov_hdr)
+                    
+                    # Include reddening correction in covariance
+                    if self.deredden:
+                        for i,j in enumerate(covar.input_indx):
+                            covar.cov[i] *= numpy.square(reddening_correction[j])
+
                     self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
                                                                   if var_col is None else \
                                                                 [ indx_col, var_col, covar_col ]),
@@ -1030,6 +1079,23 @@ class SpatiallyBinnedSpectra:
             log_output(self.loggers, 1, logging.INFO, 'Stacking spectra ...')
         stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
                 self.method['stackfunc'](self.drpf, bin_indx, par=self.method['stackpar'])
+
+        if stack_covar is not None and stack_covar.is_correlation:
+            raise ValueError('Unexpected to have stack covariance be a correlation matrix.')
+
+        # Generate the reddening correction
+        red_hdr, reddening_correction = self._get_reddening_corr()
+
+        # And apply it if requested
+        if self.deredden:
+            c = numpy.array([reddening_correction]*stack_flux.shape[0])
+            stack_flux *= c
+            stack_sdev *= c
+            if stack_ivar is not None:
+                stack_ivar /= numpy.square(c)
+            if stack_covar is not None:
+                for i,j in enumerate(stack_covar.input_indx):
+                    stack_covar.cov[i] *= numpy.square(reddening_correction[j])
 
 #        print(stack_covar.input_indx)
 #        stack_covar.show(plane=0)
@@ -1268,6 +1334,8 @@ class SpatiallyBinnedSpectra:
                                   self.drpf['WAVE'].copy(),
                                   self.drpf['SPECRES'].copy(),
                                   self.drpf['SPECRESD'].copy(),
+                                  fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
+                                                name='REDCORR'),
                                   fits.ImageHDU(data=sdev.data,
                                                 header=self.drpf['FLUX'].header.copy(),
                                                 name='FLUXD'),

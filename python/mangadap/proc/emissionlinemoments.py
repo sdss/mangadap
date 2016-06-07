@@ -95,6 +95,7 @@ import os
 import logging
 import numpy
 
+from scipy.interpolate import interp1d
 from astropy.io import fits
 import astropy.constants
 
@@ -103,6 +104,7 @@ from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
 from ..util.log import log_output
+from ..util.constants import constants
 from ..par.parset import ParSet
 from .artifactdb import ArtifactDB
 from .emissionmomentsdb import EmissionMomentsDB
@@ -520,6 +522,8 @@ class EmissionLineMoments:
         +----------+--------------------------------------------+
         |  MOM2ERR | Second velocity moment error               |
         +----------+--------------------------------------------+
+        |    SINST | Instrumental dispersion at mom1            |
+        +----------+--------------------------------------------+
         |     BMED | Median flux in the blue band used for EW   |
         +----------+--------------------------------------------+
         |     RMED | Median flux in the red band used for EW    |
@@ -547,6 +551,7 @@ class EmissionLineMoments:
                  ('MOM1ERR', numpy.float, self.nmom),
                  ('MOM2', numpy.float, self.nmom), 
                  ('MOM2ERR', numpy.float, self.nmom),
+                 ('SINST', numpy.float, self.nmom),
                  ('BMED', numpy.float, self.nmom), 
                  ('RMED', numpy.float, self.nmom), 
                  ('EWCONT', numpy.float, self.nmom), 
@@ -648,12 +653,12 @@ class EmissionLineMoments:
         return flux, ivar, mask, model_subtracted_flux, no_model
 
 
-    def _sideband_pseudocontinua(self, spec, sidebands, hdu_measurements, spec_n=None,
-                                 noise=None, mom=True):
+    @staticmethod
+    def _sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, noise=None):
         """Get the side-band integrals."""
 
         # Calculate the pseudo-continua in the sidebands
-        wave = self.binned_spectra['WAVE'].data
+        nbands = sidebands.shape[0]
 
         # If more than one spectrum entered, use spec_n to decide which
         # spectrum to use for the integrals
@@ -662,15 +667,15 @@ class EmissionLineMoments:
             # the code to continue with a warning
             if spec_n is None:
                 warnings.warn('Multiple spectra entered, but no designation for which to use!')
-                _spec_n = numpy.zeros(self.nmom*2, dtype=numpy.int)
+                _spec_n = numpy.zeros(nbands, dtype=numpy.int)
             else:
-                _spec_n = numpy.append(spec_n, spec_n)
+                _spec_n = spec_n
 
             # Instantiate the arrays
-            pseudocontinuum = numpy.zeros(self.nmom*2)
-            pseudocontinuum_error = None if noise is None else numpy.zeros(self.nmom*2)
-            flux_weighted_center = numpy.zeros(self.nmom*2)
-            interval_frac = numpy.zeros(self.nmom*2)
+            pseudocontinuum = numpy.zeros(nbands, dtype=numpy.float)
+            pseudocontinuum_error = None if noise is None else numpy.zeros(nbands,dtype=numpy.float)
+            flux_weighted_center = numpy.zeros(nbands, dtype=numpy.float)
+            interval_frac = numpy.zeros(nbands, dtype=numpy.float)
 
             # Use the binned spectrum
             pseudocontinuum[_spec_n==0], _pseudocontinuum_error \
@@ -709,59 +714,46 @@ class EmissionLineMoments:
             # Calculate the fraction of the band that is covered by
             # unmasked pixels
             interval_frac = passband_integrated_width(wave, spec, passband=sidebands, log=True) \
-                                / numpy.diff(sidebands, axis=1).ravel()
-
-        # Save the results to the main output array
-        hdu_measurements['BCEN'] = flux_weighted_center.reshape(-1,self.nmom)[0,:] - 1.0
-        hdu_measurements['RCEN'] = flux_weighted_center.reshape(-1,self.nmom)[1,:] - 1.0
-        hdu_measurements['BCONT'] = pseudocontinuum.reshape(-1,self.nmom)[0,:]
-        hdu_measurements['RCONT'] = pseudocontinuum.reshape(-1,self.nmom)[1,:]
-        if pseudocontinuum_error is not None:
-            hdu_measurements['BCONTERR'] = pseudocontinuum_error.reshape(-1,self.nmom)[0,:]
-            hdu_measurements['RCONTERR'] = pseudocontinuum_error.reshape(-1,self.nmom)[1,:]
-
+                                / numpy.diff(sidebands, axis=1)
 
 #        if len(spec.shape) > 1:
 #            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
 #            pyplot.step(wave, spec[1], where='mid', color='g', lw=0.5, zorder=2)
 #        else:
 #            pyplot.step(wave, spec, where='mid', color='k', lw=0.5, zorder=1)
-#        pyplot.scatter(hdu_measurements['BCEN'], hdu_measurements['BCONT'], marker='.', s=50,
+#        pyplot.scatter(flux_weighted_center-1.0, pseudocontinuum, marker='.', s=50,
 #                       color='b', lw=0, zorder=3)
-#        pyplot.scatter(hdu_measurements['RCEN'], hdu_measurements['RCONT'], marker='.', s=50,
-#                       color='r', lw=0, zorder=3)
 #        pyplot.show()
-#        exit()
 
-        # Passband is not fully covered by valid pixels
-        blue_fraction = interval_frac.reshape(-1,self.nmom)[0,:]
-#        print(blue_fraction)
-        hdu_measurements['MASK'][blue_fraction < 1.0] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][blue_fraction < 1.0], 'BLUE_INCOMP')
-        red_fraction = interval_frac.reshape(-1,self.nmom)[1,:]
-#        print(red_fraction)
-        hdu_measurements['MASK'][red_fraction < 1.0] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][red_fraction < 1.0], 'RED_INCOMP')
-        # Passband is empty
-        hdu_measurements['MASK'][~(blue_fraction > 0.0)] \
-            = self.bitmask.turn_on(hdu_measurements['MASK'][~(blue_fraction > 0.0)], 'BLUE_EMPTY')
-        hdu_measurements['MASK'][~(red_fraction > 0.0)] \
-            = self.bitmask.turn_on(hdu_measurements['MASK'][~(red_fraction > 0.0)], 'RED_EMPTY')
+        return flux_weighted_center-1.0, pseudocontinuum, pseudocontinuum_error, \
+                            interval_frac < 1.0, ~(interval_frac > 0.0)
 
 
-    def _single_band_moments(self, wave, spec, passband, restwave, mask, noise=None):
+
+    @staticmethod
+    def _single_band_moments(wave, spec, passband, restwave, noise=None):
         """
         Measure the moments for a single band.
+
+        Returns:
+            flux
+            fluxerr
+            mom1
+            mom1err
+            mom2
+            mom2err
+            incomplete band
+            empty band
+            division by zero
+            undefined 2nd moment
         """
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
-        if interval_frac < 1.0:
-            mask = self.bitmask.turn_on(mask, 'MAIN_INCOMP')
-        if not interval_frac > 0.0:
-            mask = self.bitmask.turn_on(mask, 'MAIN_EMPTY')
-            # Nothing in the passband to integrate!
-            return None, None, None, None, None, None, mask
+        incomplete = interval_frac < 1.0
+        empty = ~(interval_frac > 0.0)
+        if empty:
+            return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, incomplete, empty, False, False
 
         # Get the redshift vector
         cz = astropy.constants.c.to('km/s').value*(wave/restwave-1)
@@ -772,10 +764,9 @@ class EmissionLineMoments:
                     numpy.ma.sqrt( passband_integral(wave, numpy.square(noise), passband=passband,
                                                      log=True))
 
-        # No flux in the passband
+        # No flux in the passband, meaning division by zero will occur!
         if not numpy.absolute(flux) > 0.0:
-            mask = self.bitmask.turn_on(mask, 'DIVBYZERO')
-            return flux, fluxerr, None, None, None, None, mask
+            return flux, fluxerr, 0.0, 0.0, 0.0, 0.0, incomplete, empty, True, False
 
         # Get the first and second moments; saved to a temporary
         # variable for use in the error calculations (if possible)
@@ -792,8 +783,7 @@ class EmissionLineMoments:
             mom1 = _mom1
                 
             if _mom2 < numpy.square(mom1):
-                mask = self.bitmask.turn_on(mask, 'UNDEFINED_MOM2')
-                return flux, fluxerr, mom1, mom1err, None, None, mask
+                return flux, fluxerr, mom1, mom1err, 0.0, 0.0, incomplete, empty, False, True
 
             mom2err = passband_integral(wave, numpy.square(cz*noise), passband=passband, log=True)
             mom2err = numpy.ma.sqrt(mom2err * numpy.square(_mom2/mom2)
@@ -806,36 +796,37 @@ class EmissionLineMoments:
             mom1err = None
 
             if _mom2 < numpy.square(mom1):
-                mask = self.bitmask.turn_on(mask, 'UNDEFINED_MOM2')
-                return flux, fluxerr, mom1, mom1err, None, None, mask
+                return flux, fluxerr, mom1, mom1err, 0.0, 0.0, incomplete, empty, False, True
 
             mom2 = numpy.ma.sqrt(_mom2 - numpy.square(mom1))
             mom2err = None
 
-        return flux, fluxerr, mom1, mom1err, mom2, mom2err, mask
+        return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, False
 
 
-    def _continuum_subtracted_moments(self, spec, mainbands, hdu_measurements, spec_n=None,
-                                      noise=None):
+    @staticmethod
+    def _continuum_subtracted_moments(wave, spec, mainbands, restwave, bcen, bcont, rcen, rcont,
+                                      spec_n=None, noise=None):
         """
         Calculate the continuum-subtracted moments
         """
 
         # Get the parameters for the linear continuum across the
         # primary passband
+        nbands = mainbands.shape[0]
+        flux = numpy.zeros(nbands, dtype=numpy.float)
+        fluxerr = numpy.zeros(nbands, dtype=numpy.float)
+        mom1 = numpy.zeros(nbands, dtype=numpy.float)
+        mom1err = numpy.zeros(nbands, dtype=numpy.float)
+        mom2 = numpy.zeros(nbands, dtype=numpy.float)
+        mom2err = numpy.zeros(nbands, dtype=numpy.float)
+        incomplete = numpy.zeros(nbands, dtype=numpy.bool)
+        empty = numpy.zeros(nbands, dtype=numpy.bool)
+        divbyzero = numpy.zeros(nbands, dtype=numpy.bool)
+        undefined_mom2 = numpy.zeros(nbands, dtype=numpy.bool)
 
-        indx = numpy.invert(self.bitmask.flagged(hdu_measurements['MASK'],
-                                    flag=[ 'BLUE_EMPTY', 'RED_EMPTY', 'BLUE_JUMP', 'RED_JUMP' ]))
-
-        hdu_measurements['CNTSLOPE'][indx] \
-                = (hdu_measurements['RCONT'][indx] - hdu_measurements['BCONT'][indx]) \
-                        / (hdu_measurements['RCEN'][indx] - hdu_measurements['BCEN'][indx])
-        continuum_b = hdu_measurements['BCONT'] \
-                                - hdu_measurements['BCEN']*hdu_measurements['CNTSLOPE']
-
-        wave = self.binned_spectra['WAVE'].data
-
-        moment_keys = numpy.array(['FLUX', 'FLUXERR', 'MOM1', 'MOM1ERR', 'MOM2', 'MOM2ERR', 'MASK'])
+        cntm = (rcont - bcont) / (rcen - bcen)
+        cntb = bcont - bcen*cntm
 
         # If more than one spectrum entered, use spec_n to decide which
         # spectrum to use for the integrals
@@ -848,27 +839,18 @@ class EmissionLineMoments:
             else:
                 _spec_n = spec_n
 
-            # Get the moments for all the main passbands
-            for i,p in enumerate(mainbands):
-                cont = continuum_b[i] + hdu_measurements['CNTSLOPE'][i]*wave
-                _spec = spec[_spec_n[i],:] - cont
-                moments = list(self._single_band_moments(wave, _spec, p, self.momdb['restwave'][i],
-                                                         hdu_measurements['MASK'][i], noise=noise))
-                for j,k in enumerate(moment_keys):
-                    if moments[j] is None:
-                        continue
-                    hdu_measurements[k][i] = moments[j]
-        else:
-            # Get the moments for all the main passbands
-            for i,p in enumerate(mainbands):
-                cont = continuum_b[i] + hdu_measurements['CNTSLOPE'][i]*wave
-                _spec = spec - cont
-                moments = list(self._single_band_moments(wave, _spec, p, self.momdb['restwave'][i],
-                                                         hdu_measurements['MASK'][i], noise=noise))
-                for j,k in enumerate(moment_keys):
-                    if moments[j] is None:
-                        continue
-                    hdu_measurements[k][i] = moments[j]
+        # Get the moments for all the main passbands
+        for i,p in enumerate(mainbands):
+            cont = cntb[i] + cntm[i]*wave
+            _spec = spec - cont if len(spec.shape) == 1 else spec[_spec_n[i],:] - cont
+
+            flux[i], fluxerr[i], mom1[i], mom1err[i], mom2[i], mom2err[i], incomplete[i], \
+                    empty[i], divbyzero[i], undefined_mom2[i] \
+                        = EmissionLineMoments._single_band_moments(wave, _spec, p, restwave[i],
+                                                                   noise=noise)
+
+        return cntm, cntb, flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, \
+                    divbyzero, undefined_mom2
 
 
     def _measure_moments(self, hdu_measurements, flux, ivar=None, mask=None,
@@ -908,32 +890,47 @@ class EmissionLineMoments:
         _no_model = None if no_model is None else numpy.ma.MaskedArray(numpy.ones(no_model.shape),
                                                                        mask=no_model)
 #        print('no_model exists:', _no_model is not None)
-            
-        # Measure the pseudo-continuum in the sidebands
-        sidebands = numpy.append(self.momdb['blueside'], self.momdb['redside'], axis=0)
+
+        # Common arrays used for each spectrum
+        blue_fraction = numpy.zeros(self.nmom, dtype=numpy.float)
+        red_fraction = numpy.zeros(self.nmom, dtype=numpy.float)
+
+        incomplete = numpy.zeros(self.nmom, dtype=numpy.bool)
+        empty = numpy.zeros(self.nmom, dtype=numpy.bool)
+        divbyzero = numpy.zeros(self.nmom, dtype=numpy.bool)
+        undefined_mom2 = numpy.zeros(self.nmom, dtype=numpy.bool)
+
         nspec = _flux.shape[0]
         for i in range(nspec):
 
             print('Measuring emission-line moments in spectrum: {0}/{1}'.format(i+1,nspec),
                   end='\r')
 
+            incomplete[:] = False
+            empty[:] = False
+            divbyzero[:] = False
+            undefined_mom2[:] = False
+
             # Shift the sidebands to the appropriate redshift
             # TODO: Redshift is actually in hdu_measurements already
-            _sidebands = sidebands*(1.0+self.redshift[i])
-            _mainbands = self.momdb['primary']*(1.0+self.redshift[i])
+            _bluebands = self.momdb['blueside'][~self.momdb.dummy]*(1.0+self.redshift[i])
+            _redbands = self.momdb['redside'][~self.momdb.dummy]*(1.0+self.redshift[i])
             _noise = None if noise is None else noise[i,:]
 
             # Check if the model was subtracted over the full range of
             # the sidebands, or if the model was subtracted in one
             # sideband but not the other
             if _no_model is not None:
-                interval_frac = passband_integrated_width(wave, _no_model[i,:], passband=_sidebands,
-                                        log=True) / numpy.diff(_sidebands, axis=1).ravel()
-                blue_fraction = interval_frac.reshape(-1,self.nmom)[0,:]
+                blue_fraction[~self.momdb.dummy] \
+                        = passband_integrated_width(wave, _no_model[i,:], passband=_bluebands,
+                                                log=True) / numpy.diff(_bluebands, axis=1).ravel()
                 indx = numpy.logical_and(blue_fraction > 0.0, blue_fraction < 1.0)
                 hdu_measurements['MASK'][i,indx] \
                         = self.bitmask.turn_on(hdu_measurements['MASK'][i,indx], 'BLUE_JUMP')
-                red_fraction = interval_frac.reshape(-1,self.nmom)[1,:]
+
+                red_fraction[~self.momdb.dummy] \
+                        = passband_integrated_width(wave, _no_model[i,:], passband=_redbands,
+                                                log=True) / numpy.diff(_redbands, axis=1).ravel()
                 indx = numpy.logical_and(red_fraction > 0.0, red_fraction < 1.0)
                 hdu_measurements['MASK'][i,indx] \
                         = self.bitmask.turn_on(hdu_measurements['MASK'][i,indx], 'RED_JUMP')
@@ -953,23 +950,15 @@ class EmissionLineMoments:
                                        _model_subtracted_flux[i,:].reshape(1,-1), axis=0)
                 spec_n = numpy.zeros(self.nmom, dtype=numpy.int)
                 spec_n[~(jumps)] = 1
-                self._sideband_pseudocontinua(spec, _sidebands, hdu_measurements[i],
-                                              spec_n=spec_n, noise=_noise)
-
-                self._continuum_subtracted_moments(spec, _mainbands, hdu_measurements[i],
-                                                   spec_n=spec_n, noise=_noise)
 
                 # Flag moment calculations as having not corrected for
                 # stellar absorption
                 hdu_measurements['MASK'][i,spec_n == 0] \
                             = self.bitmask.turn_on(hdu_measurements['MASK'][i,spec_n == 0],
                                                    'NO_ABSORPTION_CORRECTION')
-
             else:
                 spec = _flux[i,:] if _model_subtracted_flux is None else _model_subtracted_flux[i,:]
-                self._sideband_pseudocontinua(spec, _sidebands, hdu_measurements[i], noise=_noise)
-                self._continuum_subtracted_moments(spec, _mainbands, hdu_measurements[i],
-                                                   noise=_noise)
+                spec_n = None
 
                 # Flag moment calculations as having not corrected for
                 # stellar aborption
@@ -978,6 +967,80 @@ class EmissionLineMoments:
                             = self.bitmask.turn_on(hdu_measurements['MASK'][i,:],
                                                    'NO_ABSORPTION_CORRECTION')
 
+            # Get the blue pseudo continuum
+            hdu_measurements['BCEN'][i,~self.momdb.dummy], \
+                hdu_measurements['BCONT'][i,~self.momdb.dummy], conterr, \
+                incomplete[~self.momdb.dummy], empty[~self.momdb.dummy] \
+                    = self._sideband_pseudocontinua(wave, spec, _bluebands,
+                                                    spec_n=spec_n[~self.momdb.dummy], noise=_noise)
+            if _noise is not None:
+                hdu_measurements['BCONTERR'][i,~self.momdb.dummy] = conterr
+            if numpy.sum(incomplete) > 0:
+                hdu_measurements['MASK'][i,incomplete] \
+                        = self.bitmask.turn_on(hdu_measurements['MASK'][i,incomplete],'BLUE_INCOMP')
+            if numpy.sum(empty) > 0:
+                hdu_measurements['MASK'][i,empty] \
+                        = self.bitmask.turn_on(hdu_measurements['MASK'][i,empty], 'BLUE_EMPTY')
+
+            # Get the red pseudo continuum
+            hdu_measurements['RCEN'][i,~self.momdb.dummy], \
+                hdu_measurements['RCONT'][i,~self.momdb.dummy], conterr, \
+                incomplete[~self.momdb.dummy], empty[~self.momdb.dummy] \
+                    = self._sideband_pseudocontinua(wave, spec, _redbands,
+                                                    spec_n=spec_n[~self.momdb.dummy], noise=_noise)
+            if _noise is not None:
+                hdu_measurements['RCONTERR'][i,~self.momdb.dummy] = conterr
+            if numpy.sum(incomplete) > 0:
+                hdu_measurements['MASK'][i,incomplete] \
+                        = self.bitmask.turn_on(hdu_measurements['MASK'][i,incomplete], 'RED_INCOMP')
+            if numpy.sum(empty) > 0:
+                hdu_measurements['MASK'][i,empty] \
+                        = self.bitmask.turn_on(hdu_measurements['MASK'][i,empty], 'RED_EMPTY')
+
+            # Get the main passband integral after subtracting the
+            # continuum
+            indx = ~self.momdb.dummy & numpy.invert(
+                                                self.bitmask.flagged(hdu_measurements['MASK'][i,:],
+                                        flag=['BLUE_EMPTY', 'RED_EMPTY', 'BLUE_JUMP', 'RED_JUMP']))
+
+            _mainbands = self.momdb['primary'][indx]*(1.0+self.redshift[i])
+
+            hdu_measurements['CNTSLOPE'][i,indx], cntb, hdu_measurements['FLUX'][i,indx], \
+                    hdu_measurements['FLUXERR'][i,indx], hdu_measurements['MOM1'][i,indx], \
+                    hdu_measurements['MOM1ERR'][i,indx], hdu_measurements['MOM2'][i,indx], \
+                    hdu_measurements['MOM2ERR'][i,indx], incomplete[indx], empty[indx], \
+                    divbyzero[indx], undefined_mom2[indx] = \
+                            self._continuum_subtracted_moments(wave, spec, _mainbands,
+                                                               self.momdb['restwave'][indx],
+                                                               hdu_measurements['BCEN'][i,indx],
+                                                               hdu_measurements['BCONT'][i,indx],
+                                                               hdu_measurements['RCEN'][i,indx],
+                                                               hdu_measurements['RCONT'][i,indx],
+                                                               spec_n=spec_n[indx], noise=_noise) 
+
+            # Turn on any necessary bits
+            hdu_measurements['MASK'][i,incomplete] = \
+                    self.bitmask.turn_on(hdu_measurements['MASK'][i,incomplete], 'MAIN_INCOMP')
+            hdu_measurements['MASK'][i,empty] = \
+                    self.bitmask.turn_on(hdu_measurements['MASK'][i,empty], 'MAIN_EMPTY')
+            hdu_measurements['MASK'][i,divbyzero] = \
+                    self.bitmask.turn_on(hdu_measurements['MASK'][i,divbyzero], 'DIVBYZERO')
+            hdu_measurements['MASK'][i,undefined_mom2] = \
+                    self.bitmask.turn_on(hdu_measurements['MASK'][i,undefined_mom2],
+                                         'UNDEFINED_MOM2')
+
+#        if len(spec.shape) > 1:
+#            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
+#            pyplot.step(wave, spec[1], where='mid', color='g', lw=0.5, zorder=2)
+#        else:
+#            pyplot.step(wave, spec, where='mid', color='k', lw=0.5, zorder=1)
+#        pyplot.scatter(hdu_measurements['BCEN'], hdu_measurements['BCONT'], marker='.', s=50,
+#                       color='b', lw=0, zorder=3)
+#        pyplot.scatter(hdu_measurements['RCEN'], hdu_measurements['RCONT'], marker='.', s=50,
+#                       color='r', lw=0, zorder=3)
+#        pyplot.show()
+#        exit()
+
         print('Measuring emission-line moments in spectrum: {0}/{0}'.format(nspec))
         return hdu_measurements
         
@@ -985,7 +1048,8 @@ class EmissionLineMoments:
     def _measure_equivalent_widths(self, hdu_measurements, flux, ivar=None, mask=None):
         """
         This MUST follow the moment measurements such that the
-        emission-line fluxes have already been calculated.
+        emission-line fluxes have already been calculated.  And bits for
+        empty bands should have also been set.
 
         If not input as masked arrays, flux is converted to one.
         """
@@ -1005,40 +1069,61 @@ class EmissionLineMoments:
             noise = numpy.ma.sqrt(1.0 /_ivar)
 
         # Measure the pseudo-continuum in the sidebands
-        sidebands = numpy.append(self.momdb['blueside'], self.momdb['redside'], axis=0)
         nspec = _flux.shape[0]
         for i in range(nspec):
 
             print('Measuring emission-line equivalent widths in spectrum: {0}/{1}'.format(
                                             i+1,nspec), end='\r')
 
-            # Shift the sidebands to the appropriate redshift
-            # TODO: Redshift is actually in hdu_measurements already
-            _sidebands = sidebands*(1.0+self.redshift[i])
-            sideband_med = passband_median(wave, _flux[i,:], passband=_sidebands)
-            sideband_cen = numpy.mean(_sidebands, axis=1)
+            # Spectra to use
+            spec = _flux[i,:]
+            _noise = None if noise is None else noise[i,:]
 
-            hdu_measurements['BMED'][i] = sideband_med.reshape(-1,self.nmom)[0,:]
-            hdu_measurements['RMED'][i] = sideband_med.reshape(-1,self.nmom)[1,:]
-            bcen = sideband_cen.reshape(-1,self.nmom)[0,:]
-            rcen = sideband_cen.reshape(-1,self.nmom)[1,:]
+            # Bands to use
+            indx = ~self.momdb.dummy & numpy.invert(
+                                                self.bitmask.flagged(hdu_measurements['MASK'][i,:],
+                                                flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
-            indx = (hdu_measurements['RMED'][i] > 0) & (hdu_measurements['BMED'][i] > 0)
+            # Shift the bands to the appropriate redshift
+            _bluebands = self.momdb['blueside'][indx]*(1.0+self.redshift[i])
+            _redbands = self.momdb['redside'][indx]*(1.0+self.redshift[i])
 
-            m = (hdu_measurements['RMED'][i][indx] - hdu_measurements['BMED'][i][indx]) \
-                            / (rcen[indx] - bcen[indx])
-            b = hdu_measurements['BMED'][i][indx] - bcen[indx]*m
-
+            # Center of each band
+            bcen = numpy.mean(self.momdb['blueside']*(1.0+self.redshift[i]), axis=1)
+            rcen = numpy.mean(self.momdb['redside']*(1.0+self.redshift[i]), axis=1)
             pcen = numpy.mean(self.momdb['primary']*(1.0+self.redshift[i]), axis=1)
-            hdu_measurements['EWCONT'][i][indx] = m*pcen[indx] + b
 
-            hdu_measurements['EW'][i][indx] \
-                        = hdu_measurements['FLUX'][i][indx] / hdu_measurements['EWCONT'][i][indx]
-            hdu_measurements['EWERR'][i][indx] \
-                        = hdu_measurements['FLUXERR'][i][indx] / hdu_measurements['EWCONT'][i][indx]
+            # Median of each band
+            hdu_measurements['BMED'][i,indx] = passband_median(wave, _flux[i,:],
+                                                               passband=_bluebands)
+            hdu_measurements['RMED'][i,indx] = passband_median(wave, _flux[i,:], passband=_redbands)
 
-            # TODO: Need to make sure the empty passbands are
-            # appropriately flagged!
+            # Construct the continuum level at the center of the main
+            # band
+            pos = indx & (hdu_measurements['RMED'][i,:] > 0) & (hdu_measurements['BMED'][i,:] > 0)
+
+#            print( numpy.sum( ~(hdu_measurements['RMED'][i,indx] > 0) 
+#                                | ~(hdu_measurements['BMED'][i,indx] > 0)))
+
+            # Flag non-positive measurements
+            hdu_measurements['MASK'][i,indx & ~pos] \
+                        = self.bitmask.turn_on(hdu_measurements['MASK'][i,indx & ~pos],
+                                               'NON_POSITIVE_CONTINUUM')
+
+#            print(numpy.sum(self.bitmask.flagged(hdu_measurements['MASK'][i,indx],
+#                                                 flag='NON_POSITIVE_CONTINUUM')))
+
+            m = (hdu_measurements['RMED'][i,pos] - hdu_measurements['BMED'][i,pos]) \
+                            / (rcen[pos] - bcen[pos])
+            b = hdu_measurements['BMED'][i,pos] - bcen[pos]*m
+
+            hdu_measurements['EWCONT'][i,pos] = m*pcen[pos] + b
+
+            # Compute the equivalent width
+            hdu_measurements['EW'][i,pos] = hdu_measurements['FLUX'][i,pos] \
+                                                    / hdu_measurements['EWCONT'][i,pos]
+            hdu_measurements['EWERR'][i,pos] = hdu_measurements['FLUXERR'][i,pos] \
+                                                    / hdu_measurements['EWCONT'][i,pos]
 
 #            pyplot.step(wave, _flux[i,:], where='mid', color='k', lw=0.5, zorder=1)
 #            pyplot.scatter(bcen, hdu_measurements['BMED'][i], marker='.', s=50, color='b', lw=0,
@@ -1160,6 +1245,17 @@ class EmissionLineMoments:
         hdu_measurements = init_record_array(flux.shape[0], self._per_bin_dtype())
         hdu_measurements['BIN_INDEX'] = numpy.arange(self.nbins)
         hdu_measurements['REDSHIFT'] = self.redshift
+        hdu_measurements['MASK'][:,self.momdb.dummy] \
+                    = self.bitmask.turn_on(hdu_measurements['MASK'][:,self.momdb.dummy],
+                                           'UNDEFINED_BANDS')
+
+        # Flag the missing bins and the bins with low S/N
+        if len(self.missing_bins) > 0:
+            hdu_measurements['MASK'][self.missing_bins] \
+                    = self.bitmask.turn_on(hdu_measurements['MASK'][self.missing_bins], 'DIDNOTUSE')
+        if numpy.sum(~(good_snr)) > 0:
+            hdu_measurements['MASK'][~(good_snr)] \
+                    = self.bitmask.turn_on(hdu_measurements['MASK'][~(good_snr)], 'LOW_SNR') 
 
         # Perform the moment measurements
         hdu_measurements[good_bins] \
@@ -1169,20 +1265,59 @@ class EmissionLineMoments:
                                     model_subtracted_flux=model_subtracted_flux[good_bins,:].copy(),
                                         no_model=no_model[good_bins].copy())
 
+        # Calculate the instrumental dispersion at each line center
+        indx = ~self.bitmask.flagged(hdu_measurements['MASK'],
+                                     flag=['DIDNOTUSE', 'LOW_SNR', 'MAIN_EMPTY', 'BLUE_EMPTY',
+                                           'RED_EMPTY', 'DIVBYZERO', 'MAIN_JUMP', 'BLUE_JUMP',
+                                           'RED_JUMP', 'JUMP_BTWN_SIDEBANDS', 'UNDEFINED_MOM2',
+                                           'UNDEFINED_BANDS'])
+        interpolator = interp1d(self.binned_spectra['WAVE'].data,
+                                self.binned_spectra['SPECRES'].data, fill_value='extrapolate',
+                                assume_sorted=True)
+        restwave = numpy.array([self.momdb['restwave']]*self.nbins)
+        cnst = constants()
+
+        # Get the instrumental dispersion at each line center
+        hdu_measurements['SINST'][indx] = astropy.constants.c.to('km/s') \
+                                            / interpolator((hdu_measurements['MOM1'][indx] 
+                                                        / astropy.constants.c.to('km/s').value+1.0)
+                                                                *restwave[indx])/cnst.sig2fwhm
+
+        # Correct the second moments for the instrumental dispersion
+        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
+        defined[indx] = hdu_measurements['SINST'][indx] < hdu_measurements['MOM2'][indx]
+        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
+        nonzero[indx] = numpy.absolute(hdu_measurements['SINST'][indx] 
+                                            - hdu_measurements['MOM2'][indx]) > 0
+
+#        orig = hdu_measurements['MOM2'].copy()
+
+        hdu_measurements['MOM2ERR'][nonzero] \
+                    = 2.0*hdu_measurements['MOM2'][nonzero]*hdu_measurements['MOM2ERR'][nonzero]
+        hdu_measurements['MOM2'][nonzero] = numpy.square(hdu_measurements['MOM2'][nonzero]) \
+                                                - numpy.square(hdu_measurements['SINST'][nonzero])
+        hdu_measurements['MOM2'][nonzero] = hdu_measurements['MOM2'][nonzero] \
+                            / numpy.sqrt(numpy.absolute(hdu_measurements['MOM2'][nonzero]))
+        hdu_measurements['MOM2ERR'][nonzero] /= numpy.absolute(2.*hdu_measurements['MOM2'][nonzero])
+
+        # Flag undefined values
+        hdu_measurements['MASK'][indx & ~defined] \
+                = self.bitmask.turn_on(hdu_measurements['MASK'][indx & ~defined], 'UNDEFINED_MOM2')
+
+#        flg = self.bitmask.flagged(hdu_measurements['MASK'], flag='UNDEFINED_MOM2')
+#        pyplot.scatter(orig[nonzero & flg], hdu_measurements['MOM2'][nonzero & flg], marker='.',
+#                       s=30, color='0.8')
+#        pyplot.scatter(orig[nonzero & ~flg], hdu_measurements['MOM2'][nonzero & ~flg], marker='.',
+#                       s=30, color='k')
+#        pyplot.show()
+#        exit()
+
         # Perform the equivalent width measurements
         hdu_measurements[good_bins] \
                 = self._measure_equivalent_widths(hdu_measurements[good_bins],
                                                   flux[good_bins,:].copy(),
                                                   ivar=ivar[good_bins,:].copy(),
                                                   mask=mask[good_bins,:].copy())
-
-        # Flag the missing bins and the bins with low S/N
-        if len(self.missing_bins) > 0:
-            hdu_measurements['MASK'][self.missing_bins] \
-                    = self.bitmask.turn_on(hdu_measurements['MASK'][self.missing_bins], 'DIDNOTUSE')
-        if numpy.sum(~(good_snr)) > 0:
-            hdu_measurements['MASK'][~(good_snr)] \
-                    = self.bitmask.turn_on(hdu_measurements['MASK'][~(good_snr)], 'LOW_SNR') 
 
         # Initialize the header keywords
         hdr = self._clean_drp_header(ext='PRIMARY')

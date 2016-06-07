@@ -194,6 +194,15 @@ class EmissionMomentsDB(ParDatabase):
             raise ValueError('Could not find DAPELB entries in {0}!'.format(
                                                                     self.database['file_path']))
 
+        # Check if any of the bands are dummy bands and warn the user
+        self.dummy = numpy.any(numpy.array(par['DAPELB']['blueside']) < 0, axis=1)
+        self.dummy |= numpy.any(numpy.array(par['DAPELB']['redside']) < 0, axis=1)
+        self.dummy |= numpy.any(numpy.array(par['DAPELB']['primary']) < 0, axis=1)
+        if numpy.sum(self.dummy) > 0:
+            warnings.warn('Bands with negative wavelengths are used to insert dummy values.'
+                          '  Ignoring input bands with indices: {0}'.format(
+                                                numpy.array(par['DAPELB']['index'])[self.dummy]))
+
         # Setup the array of absorption-line index database parameters
         self.neml = len(par['DAPELB']['index'])
         parlist = []

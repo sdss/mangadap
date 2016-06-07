@@ -45,6 +45,7 @@ import os
 
 from astropy.wcs import WCS
 from astropy.io import fits
+import astropy.constants
 
 from .util.bitmask import BitMask
 from .util.log import log_output
@@ -89,8 +90,8 @@ class construct_maps_file:
     """
     def __init__(self, drpf, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False):
+                 nsa_redshift=None, dapsrc=None, dapver=None, analysis_path=None,
+                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False):
 
         # The output method directory is, for now, the combination of
         # the binned_spectrum and stellar_continuum method keys
@@ -117,12 +118,13 @@ class construct_maps_file:
             raise TypeError('Input must have type SpectralIndices.')
 
         # Initialize the reporting
-        if loggers is not None:
-            self.loggers = loggers
+        self.loggers = None if loggers is None else loggers
         self.quiet = quiet
 
         self.drpf = drpf
         self.spatial_shape = self.drpf.spatial_shape
+
+        self.nsa_redshift = nsa_redshift
 
         # Set the output directory path
         # TODO: Get DAP version from __version__ string
@@ -151,6 +153,7 @@ class construct_maps_file:
                                                                             self.output_file))
             log_output(self.loggers, 1, logging.INFO, 'Output maps have shape {0}'.format(
                                                                             self.spatial_shape))
+            log_output(self.loggers, 1, logging.INFO, 'NSA redshift: {0}'.format(self.nsa_redshift))
 
         ofile = os.path.join(self.directory_path, self.output_file)
         if os.path.isfile(ofile) and not clobber:
@@ -220,6 +223,13 @@ class construct_maps_file:
                   quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+
+    @staticmethod
+    def _convert_to_Newtonian_velocity(v, redshift, ivar=False):
+        if ivar:
+            return v*numpy.square(1.0+redshift)
+        return (v-astropy.constants.c.to('km/s').value*redshift)/(1.0+redshift)
 
 
     @staticmethod
@@ -729,15 +739,15 @@ class construct_maps_file:
             mask[snmask] = self.bitmask.turn_on(mask[snmask], 'NOVALUE')
 
         # Consolidate to NOVALUE
-        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
         # Consolidate to BADFIT
-        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['FIT_FAILED', 'NEAR_BOUND'])
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['FIT_FAILED', 'NEAR_BOUND'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
 
         # Consolidate to BADVALUE
-        flgd = stellar_continuum.bitmask.flagged(elm_mask, flag=['NEGATIVE_WEIGHTS'])
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NEGATIVE_WEIGHTS'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
 
         return mask
@@ -826,11 +836,14 @@ class construct_maps_file:
         indx = bin_indx > -1
 
         # The extensions share a common mask
-        mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins,
+        mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins, reconstruct,
+                                                        indx)
 
         # Stellar velocity
         data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
         data.ravel()[indx] = stellar_continuum['PAR'].data['KIN'][unique_bins[reconstruct[indx]],0]
+        # Convert redshift to Newtonian velocity
+        data = self._convert_to_Newtonian_velocity(data, self.nsa_redshift)
         hdus = [ fits.ImageHDU(data=data.T,
                                header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                 'STELLAR_VEL', bunit='km/s',
@@ -843,6 +856,7 @@ class construct_maps_file:
         pos = data > 0
         data[pos] = numpy.square(1.0/data[pos])
         data[numpy.invert(pos)] = 0.0
+        data = self._convert_to_Newtonian_velocity(data, self.nsa_redshift, ivar=True)
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_VEL', hduclas2='ERROR',
@@ -913,7 +927,7 @@ class construct_maps_file:
 
         DIDNOTUSE, FORESTAR propagated from already existing mask (self.common_mask)
 
-        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY propagated to NOVALUE
+        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
         MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to BADFIT
 
@@ -938,7 +952,7 @@ class construct_maps_file:
 
         # Consolidate to NOVALUE
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
-                                                                                    'RED_EMPTY' ])
+                                                                'RED_EMPTY', 'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
         # Consolidate to BADFIT
@@ -1094,7 +1108,7 @@ class construct_maps_file:
 
 
     def _emission_line_model_mask_to_map_mask(self, emission_line_model, unique_bins, reconstruct,
-                                              indx):
+                                              indx, dispersion=False):
         """
         Propagate and consolidate the emission-line moment masks to the map
         pixel mask.
@@ -1102,6 +1116,8 @@ class construct_maps_file:
         INSUFFICIENT_DATA propagated to NOVALUE
 
         FIT_FAILED, NEAR_BOUND, UNDEFINED_COVAR propagated to BADFIT
+
+        UNDEFINED_SIGMA propagated to BADVALUE
         """
 
         # Construct the existing mask data
@@ -1122,6 +1138,11 @@ class construct_maps_file:
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['NEAR_BOUND', 'FIT_FAILED',
                                                                    'UNDEFINED_COVAR'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
+
+        # Consolidate to BADVALUE; currently only done for the dispersion
+        if dispersion:
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA'])
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
 
         return mask
 
@@ -1207,7 +1228,7 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
-        # The extensions share a common mask
+        # The extensions share a common mask, except for the dispersion
         mask = self._emission_line_model_mask_to_map_mask(emission_line_model, unique_bins,
                                                           reconstruct, indx)
 
@@ -1254,6 +1275,7 @@ class construct_maps_file:
                            dtype=numpy.float)
         data.reshape(-1, emission_line_model.neml)[indx,:] \
                 = emission_line_model['EMLDATA'].data['KIN'][unique_bins[reconstruct[indx]],:,0]
+        data = self._convert_to_Newtonian_velocity(data, self.nsa_redshift)
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL', err=True,
                                                                  qual=True,
@@ -1267,6 +1289,7 @@ class construct_maps_file:
         pos = data > 0
         data[pos] = numpy.square(1.0/data[pos])
         data[numpy.invert(pos)] = 0.0
+        data = self._convert_to_Newtonian_velocity(data, self.nsa_redshift, ivar=True)
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL',
                                                                  hduclas2='ERROR', qual=True,
@@ -1303,11 +1326,24 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}'),
                                 name='EMLINE_GSIGMA_IVAR') ]
         # Bitmask
+        mask = self._emission_line_model_mask_to_map_mask(emission_line_model, unique_bins,
+                                                          reconstruct, indx, dispersion=True)
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GSIGMA',
                                                                  hduclas2='QUALITY', err=True,
                                                                  bit_type=mask.dtype.type),
                                 name='EMLINE_GSIGMA_MASK') ]
+
+        # Instrumental dispersion
+        data = numpy.zeros((*emission_line_model.spatial_shape, emission_line_model.neml),
+                           dtype=numpy.float)
+        data.reshape(-1, emission_line_model.neml)[indx,:] \
+                = emission_line_model['EMLDATA'].data['SINST'][unique_bins[reconstruct[indx]],:]
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'EMLINE_INSTSIGMA',
+                                                                 bunit='km/s'),
+                                name='EMLINE_INSTSIGMA') ]
+
         return hdus
 
 
@@ -1437,7 +1473,7 @@ class construct_maps_file:
                                                                  hduclas2='ERROR', qual=True),
                                 name='SPECINDEX_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=fit_mask.T,
+        hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'SPECINDEX',
                                                                  hduclas2='QUALITY', err=True,
                                                                  bit_type=mask.dtype.type),
