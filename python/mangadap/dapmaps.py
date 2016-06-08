@@ -182,10 +182,13 @@ class construct_maps_file:
                 log_output(self.loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'CRITICAL')
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'DRPCRIT')
-        if binned_spectra.method['binclass'] is not None \
-                and binned_spectra.method['binclass'].bintype == 'voronoi' \
-                and binned_spectra.nbins == 1:
-            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'SINGLEBIN')
+
+#       Excluded from 2.0 tag to allow for dependency of DAP to be on
+#       IDLUTILS v5_5_25
+#        if binned_spectra.method['binclass'] is not None \
+#                and binned_spectra.method['binclass'].bintype == 'voronoi' \
+#                and binned_spectra.nbins == 1:
+#            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'SINGLEBIN')
 
         # Get the base map header
         self.multichannel_maphdr = self._map_header(nchannels=2)
