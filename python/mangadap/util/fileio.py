@@ -287,8 +287,8 @@ def compress_file(ifile, clobber=False):
             shutil.copyfileobj(f_in, f_out)
 
 
-def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, loggers=None,
-              quiet=False):
+def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+              loggers=None, quiet=False):
     """
     Write an HDUList to an output file.
     """
@@ -313,10 +313,12 @@ def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, logge
 
     # Create the symlink if requested
     if symlink_dir is not None:
-        olink = os.path.join(symlink_dir, ofile.split('/')[-1])
-        if os.path.isfile(olink):
-            os.remove(olink)
+        olink_dest = os.path.join(symlink_dir, ofile.split('/')[-1])
+        olink_src = os.path.relpath(ofile, start=os.path.dirname(olink_dest)) \
+                        if relative_symlink else ofile
+        if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
+            os.remove(olink_dest)
         if not quiet:
-            log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink))
-        os.symlink(ofile, olink)
+            log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink_dest))
+        os.symlink(olink_src, olink_dest)
 
