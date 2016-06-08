@@ -265,7 +265,8 @@ from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.log import log_output
-from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
+from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
+from ..util.fileio import write_hdu, create_symlink
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
 from .util import _select_proc_method, HDUList_mask_wavelengths

@@ -103,7 +103,7 @@ import astropy.constants
 from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create_symlink
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo

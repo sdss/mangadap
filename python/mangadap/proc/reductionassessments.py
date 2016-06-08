@@ -137,7 +137,7 @@ from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create_symlink
 from ..util.log import log_output
 from .util import _select_proc_method
 
