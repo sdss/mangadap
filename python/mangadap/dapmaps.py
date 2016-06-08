@@ -65,6 +65,10 @@ from matplotlib import pyplot
 __author__ = 'Kyle Westfall'
 
 class DAPQualityBitMask(BitMask):
+    """
+    .. todo::
+        - Force read IDLUTILS version as opposed to internal one?
+    """
     def __init__(self, dapsrc=None):
         dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
@@ -72,6 +76,10 @@ class DAPQualityBitMask(BitMask):
 
 
 class DAPMapsBitMask(BitMask):
+    """
+    .. todo::
+        - Force read IDLUTILS version as opposed to internal one?
+    """
     def __init__(self, dapsrc=None):
         dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',

@@ -446,7 +446,7 @@ def default_dap_file_root(plate, ifudesign, mode=None):
                     'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
 
-def default_dap_par_file(plate, ifudesign, mode, partype='inpt', drpver=None, dapver=None,
+def default_dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=None,
                          analysis_path=None, directory_path=None):
     """
     Return the full path to a par file used by the DAP to analyze the
@@ -457,7 +457,7 @@ def default_dap_par_file(plate, ifudesign, mode, partype='inpt', drpver=None, da
         ifudesign (int): IFU design number
         mode (str): Mode of the DRP reduction; either RSS or CUBE
         partype (str):  An "unregulated" type for the parameter file.
-            The default is ``'inpt'``, signifying the input set of
+            The default is ``'input'``, signifying the input set of
             observational parameters; see
             :class:`mangadap.par.obsinput.ObsInputPar`.
         drpver (str): (**Optional**) DRP version.  Default is to use
@@ -479,7 +479,7 @@ def default_dap_par_file(plate, ifudesign, mode, partype='inpt', drpver=None, da
                                                  drpver=drpver, dapver=dapver,
                                                  analysis_path=analysis_path)
     # Set the name of the par file; put this in its own function?
-    par_file = '{0}-input.par'.format(default_dap_file_root(plate, ifudesign, mode))
+    par_file = '{0}-{1}.par'.format(default_dap_file_root(plate, ifudesign, mode), partype)
     return os.path.join(directory_path, par_file)
 
     
