@@ -1267,7 +1267,8 @@ class rundap:
                                                ifudesign=ifudesign, ref=True,
                                                drpver=self.mpl.drpver, dapver=self.dapver,
                                                analysis_path=self.analysis_path)
-                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber)
+                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
+                               quiet=True)
 
 #        # Generate the DRP input and DAP output paths, and the DAP
 #        # source path
