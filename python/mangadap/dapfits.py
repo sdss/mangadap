@@ -138,7 +138,6 @@ class DAPFits:
                                                       drpver=self.drpver, dapver=self.dapver,
                                                       analysis_path=self.analysis_path) \
                                     if reference_path is None else reference_path
-        print(self.reference_path)
 
         # drpver, dapver, and analysis_path can be None and par_file
         # will still only use the above defined directory_path
@@ -154,6 +153,7 @@ class DAPFits:
 
         # Read in the data
         self.hdu = None
+        self.spatial_shape = None
         self.smap_ext = []      # Extensions with single maps
         self.mmap_ext = []      # Extensions with multiple maps
         self.par = None
@@ -215,6 +215,9 @@ class DAPFits:
         # Open the fits file with the requested read/write permission
         #check = self.checksum if checksum is None else checksum
         self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
+
+        self.spatial_shape = self.hdu['BINID'].data.shape
+        print(self.spatial_shape)
 
         if not restructure:
             return
@@ -412,4 +415,17 @@ class DAPFits:
 #        self.read_par()
 #        return self.par['vel']
 
+    def unique(self, ext):
+        """
+        Select out data from the extention that have been derived from
+        unique bins.
+        """
+        if self.hdu is None:
+            self.open_hdu(checksum=self.checksum)
+
+        unique_bins, indx = numpy.unique(self.hdu['BINID'].data.ravel(), return_index=True)
+        indx = indx[unique_bins > -1]
+
+        return self.hdu[ext].data.ravel()[indx] if len(self.hdu[ext].data.shape) == 2 \
+                    else self.hdu[ext].data.reshape(-1, self.hdu[ext].data.shape[2])[indx,:]
 
