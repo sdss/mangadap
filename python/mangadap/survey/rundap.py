@@ -1217,7 +1217,8 @@ class rundap:
         return drplist
 
 
-    def write_compute_script(self, plate, ifudesign, mode, dapproc=True, plots=True, clobber=False):
+    def write_compute_script(self, plate, ifudesign, mode, dapproc=True, plots=True,
+                             clobber=False, relative_symlink=True):
         """
         Write the MaNGA DAP script file that is sent to a single CPU to
         analyze a single DRP file with a given plate, ifudesign, and
@@ -1233,6 +1234,9 @@ class rundap:
                 True.
             clobber (bool): (**Optional**) Flag to clobber any existing
                 files.
+            relative_symlink (bool): (**Optional**) Set the symlink to
+                the par file to be a relative path instead of the
+                absolute path.
 
         Returns:
             str: Three strings with the name of the written script file,
@@ -1262,10 +1266,12 @@ class rundap:
                                                ifudesign=ifudesign, ref=True,
                                                drpver=self.mpl.drpver, dapver=self.dapver,
                                                analysis_path=self.analysis_path)
-                olink = os.path.join(path,parfile.split('/')[-1])
-                if os.path.isfile(olink):
-                    os.remove(olink)
-                os.symlink(parfile, olink)
+                olink_dest = os.path.join(path,parfile.split('/')[-1])
+                olink_src = os.path.relpath(parfile, start=os.path.dirname(olink_dest)) \
+                                if relative_symlink else parfile
+                if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
+                    os.remove(olink_dest)
+                os.symlink(olink_src, olink_dest)
 
 #        # Generate the DRP input and DAP output paths, and the DAP
 #        # source path

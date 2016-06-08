@@ -2741,6 +2741,7 @@ python/mangadap/contrib/ppxf_util.py -text
 python/mangadap/contrib/voronoi_2d_binning.py -text
 python/mangadap/dap_access.py -text
 python/mangadap/dapfile.py -text
+python/mangadap/dapfits.py -text
 python/mangadap/dapmaps.py -text
 python/mangadap/drpfits.py -text
 python/mangadap/legacy/generalUtils.py -text
