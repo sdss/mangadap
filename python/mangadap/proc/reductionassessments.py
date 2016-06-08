@@ -685,7 +685,9 @@ class ReductionAssessment:
 
         # If the file already exists, and not clobbering, just read the
         # file
+        self.symlink_dir = symlink_dir
         if os.path.isfile(ofile) and not clobber:
+            self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
             self.hdu = fits.open(ofile, checksum=self.checksum)
@@ -698,6 +700,9 @@ class ReductionAssessment:
             if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
+            # Make sure the symlink exists
+            if self.symlink_dir is not None:
+                create_symlink(ofile, self.symlink_dir, clobber=clobber)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -864,7 +869,6 @@ class ReductionAssessment:
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
-        self.symlink_dir = symlink_dir
         if self.hardcopy:
             write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir,
                       loggers=self.loggers)

@@ -103,6 +103,7 @@ from ..config.defaults import default_dap_method, default_dap_method_path, defau
 from ..config.defaults import default_dap_par_file, default_dap_plan_file
 from ..util.exception_tools import print_frame
 from ..util.parser import arginp_to_list
+from ..util.fileio import create_symlink
 from .mangampl import MaNGAMPL
 from ..par.analysisplan import AnalysisPlanSet
 from . import util
@@ -1266,12 +1267,7 @@ class rundap:
                                                ifudesign=ifudesign, ref=True,
                                                drpver=self.mpl.drpver, dapver=self.dapver,
                                                analysis_path=self.analysis_path)
-                olink_dest = os.path.join(path,parfile.split('/')[-1])
-                olink_src = os.path.relpath(parfile, start=os.path.dirname(olink_dest)) \
-                                if relative_symlink else parfile
-                if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
-                    os.remove(olink_dest)
-                os.symlink(olink_src, olink_dest)
+                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber)
 
 #        # Generate the DRP input and DAP output paths, and the DAP
 #        # source path

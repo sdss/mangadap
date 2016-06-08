@@ -313,12 +313,27 @@ def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relat
 
     # Create the symlink if requested
     if symlink_dir is not None:
-        olink_dest = os.path.join(symlink_dir, ofile.split('/')[-1])
-        olink_src = os.path.relpath(ofile, start=os.path.dirname(olink_dest)) \
-                        if relative_symlink else ofile
-        if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
+        create_symlink(ofile, symlink_dir, relative_symlink=relative_symlink, loggers=loggers,
+                       quiet=quiet)
+
+
+def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, loggers=None,
+                   quiet=False):
+    """
+    Create a symlink to the input file in the provided directory.  If
+    relative_symlink is True (default), the path to the file is relative
+    to the directory with the symlink.
+    """
+    olink_dest = os.path.join(symlink_dir, ofile.split('/')[-1])
+    if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
+        if clobber:
             os.remove(olink_dest)
-        if not quiet:
-            log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink_dest))
-        os.symlink(olink_src, olink_dest)
+        else:
+            return
+
+    olink_src = os.path.relpath(ofile, start=os.path.dirname(olink_dest)) \
+                    if relative_symlink else ofile
+    if not quiet:
+        log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink_dest))
+    os.symlink(olink_src, olink_dest)
 

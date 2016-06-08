@@ -1049,13 +1049,18 @@ class SpatiallyBinnedSpectra:
 
         # If the file already exists, and not clobbering, just read the
         # file
+        self.symlink_dir = symlink_dir
         if os.path.isfile(ofile) and not clobber:
+            self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
             self.read(checksum=self.checksum)
             if not self.quiet and reff is not None and self.reff != reff:
                 warnings.warn('Provided effective radius different from available file; set ' \
                               'clobber=True to overwrite.')
+            # Make sure the symlink exists
+            if self.symlink_dir is not None:
+                create_symlink(ofile, self.symlink_dir, clobber=clobber)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -1365,7 +1370,6 @@ class SpatiallyBinnedSpectra:
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
         self.hardcopy = hardcopy
-        self.symlink_dir = symlink_dir
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:

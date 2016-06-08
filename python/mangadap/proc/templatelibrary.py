@@ -1519,6 +1519,9 @@ class TemplateLibrary:
             self.file_list = glob.glob(self.library['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
+            # Make sure the symlink exists
+            if self.symlink_dir is not None:
+                create_symlink(ofile, self.symlink_dir, clobber=clobber)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
