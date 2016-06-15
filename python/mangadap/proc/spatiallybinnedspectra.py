@@ -913,6 +913,9 @@ class SpatiallyBinnedSpectra:
                        'Dereddening spectra assuming E(B-V) = {0}'.format(
                                 self.drpf['PRIMARY'].header['EBVGAL'] if self.deredden else 0.0))
 
+        if numpy.sum(good_spec) == 0:
+            raise ValueError('No good spectra!')
+
         # Fill in any remaining binning parameters
         self._fill_method_par(good_spec)
 

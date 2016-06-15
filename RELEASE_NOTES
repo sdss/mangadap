@@ -1,3 +1,13 @@
+KBW (?? Jun 2016): tag 2.0.1
+
+    Fixed failures:
+        - Bookkeeping error in emission-line moment measurements
+        - Incorrect/incomplete checking for sufficient data to fit
+          emission lines
+        - Added oversamling configuration files
+
+--------------------------------------------------------------------------------
+
 KBW (08 Jun 2016): tag 2.0
 
     Initial tag after major refactor of DAP to be solely in python.
@@ -7,8 +17,6 @@ KBW (08 Jun 2016): tag 2.0
     
     This tag was used to run initial benchmark tests for the candidate
     MPL-5 data.
-
---------------------------------------------------------------------------------
 
 KBW (24 Feb 2016): tag 1.1.2
     Tag stable version of trunk before starting major revisions to

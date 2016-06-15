@@ -681,6 +681,9 @@ class EmissionLineModel:
             log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
                                                             numpy.sum(self._bins_to_fit())))
 
+        if numpy.sum(self._bins_to_fit()) == 0:
+            raise ValueError('No good spectra to fit!')
+
         # Fill in any remaining binning parameters
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
 

@@ -2693,6 +2693,9 @@ python/mangadap/config/spectral_templates/miuscat.ini -text
 python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_milesthin.ini -text
+python/mangadap/config/stellar_continuum_modeling/gauo2_milesthin.ini -text
+python/mangadap/config/stellar_continuum_modeling/gauo4_milesthin.ini -text
+python/mangadap/config/stellar_continuum_modeling/gauo8_milesthin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/contrib/cap_mpfit.py -text

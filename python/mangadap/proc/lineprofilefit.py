@@ -483,9 +483,9 @@ class LineProfileFit:
 
             .. math::
 
-                \mathbf{\alpha} = \left[\frac{1}{\sigma_{ij}}
-                J_{ij}\right]^{\rm T} \left[\frac{1}{\sigma_{ij}}
-                J_{ij}\right].
+                \mathbf{\alpha}_{kl} = \left[\frac{1}{\sigma_{i}}
+                J_{ik}\right]^{\rm T} \left[\frac{1}{\sigma_{i}}
+                J_{il}\right].
 
             That is, :math:`\mathbf{C} = \mathbf{\alpha}^{-1}`.
 
@@ -655,10 +655,17 @@ class LineProfileFit:
 #        print('Initial guess parameters inside LineProfileFit:')
 #        print(self.par)
 #        print(self.bounds)
-        self.result = optimize.least_squares(self._resid if self.err is None else self._chi,
-                                             self.par, bounds=self.bounds, jac='2-point',
-                                             #method='lm', loss='linear', verbose=1)
-                                             method='trf', loss='linear', verbose=verbose)
+
+        try:
+            self.result = optimize.least_squares(self._resid if self.err is None else self._chi,
+                                                 self.par, bounds=self.bounds, jac='2-point',
+                                                 method='trf', loss='linear', verbose=verbose)
+        except ValueError as e:
+            print('ValueError: {0}'.format(e))
+            print(self.par)
+            print(self.bounds)
+            self.result.success = False
+            return
 
 #        try:
 #            self.result = optimize.least_squares(self._resid if self.err is None else self._chi,
@@ -1614,6 +1621,9 @@ class Elric(EmissionLineFit):
                 # No observed pixels in fitting window
 #                print('Sum of fitting mask: {0}'.format(numpy.sum(fitting_mask[j,:])))
                 if numpy.sum(fitting_mask[j,:]) == 0:
+                    warnings.warn('No valid data for fit to line(s) {0} ({1}).  '
+                                  'Continuuing'.format(self.fitting_window[j].line_index,
+                                    self.emission_lines['name'][self.fitting_window[j].db_indx]))
                     model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                                       'INSUFFICIENT_DATA')
                     continue
@@ -1680,6 +1690,19 @@ class Elric(EmissionLineFit):
                     _bounds = numpy.append(_bounds,
                           numpy.array([-numpy.inf,numpy.inf]*(base_order+1)).reshape(-1,2),axis=0)
 
+                # Check there is sufficient data to perform the fit
+                model_fit_par['NPIXFIT'][i,j] = len(spec_to_fit[j,fitting_mask[j,:]].compressed())
+                if model_fit_par['NPIXFIT'][i,j] <= _guess_par.size:
+                    warnings.warn('Insufficient data points ({0}) to fit with this function ' \
+                                  '(npar={1})!'.format(
+                                        len(spec_to_fit[j,fitting_mask[j,:]].compressed()),
+                                        _guess_par.size))
+                    self.bestfit[i,j] = None
+                    # Flag that the fit was not performed
+                    model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
+                                                                      'INSUFFICIENT_DATA')
+                    continue
+
                 # Make sure that the guess is still in the bounds:
                 # TODO: How do I deal with this:
                 #   - throw a warning and adjust the guess
@@ -1696,9 +1719,11 @@ class Elric(EmissionLineFit):
                 # TODO: Get rid of this debugging issue...
                 if ~numpy.all(_bounds[:,0]<_bounds[:,1]):
 
-                    _bounds = self.fitting_window[j].bounds.reshape(-1,2)
                     print('input')
                     print(_bounds)
+                    print(self.fitting_window[j].bounds.reshape(-1,2))
+                    print(numpy.sum(fitting_mask[j,:]))
+
                     if self.fitting_window[j].nlines == 1:
                         indx = self.fitting_window[j].profile_set[0].mean_indx()
                         _bounds[indx,0] = velocity[j,fitting_mask[j,:]][0]
@@ -1737,19 +1762,6 @@ class Elric(EmissionLineFit):
 #                print('N valid pixels: {0}'.format(
 #                                               len(spec_to_fit[j,fitting_mask[j,:]].compressed())))
                 
-                # Check there is sufficient data to perform the fit
-                model_fit_par['NPIXFIT'][i,j] = len(spec_to_fit[j,fitting_mask[j,:]].compressed())
-                if model_fit_par['NPIXFIT'][i,j] <= _guess_par.size:
-                    warnings.warn('Insufficient data points ({0}) to fit with this function ' \
-                                  '(npar={1})!'.format(
-                                        len(spec_to_fit[j,fitting_mask[j,:]].compressed()),
-                                        _guess_par.size))
-                    self.bestfit[i,j] = None
-                    # Flag that the fit was not performed
-                    model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
-                                                                      'INSUFFICIENT_DATA')
-                    continue
-
                 # Run the fit
 #                print('guess par: {0} {1}'.format(i, j))
 #                print(_guess_par)

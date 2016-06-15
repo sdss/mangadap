@@ -1122,7 +1122,8 @@ class TemplateLibrary:
         # Modify the spectral resolution to a target function, if one
         # has been provided.
         redshift = 0.0 if self.sres is None else self._modify_spectral_resolution()
-        #redshift = 0.0
+#        warnings.warn('Running test that does not match the spectral resolution!')
+#        redshift = 0.0
 
         ################################################################
         # Resample the templates to a logarithmic binning step.

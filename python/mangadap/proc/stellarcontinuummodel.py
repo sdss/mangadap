@@ -682,6 +682,9 @@ class StellarContinuumModel:
             log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
                                                             numpy.sum(good_bins)))
 
+        if numpy.sum(good_bins) == 0:
+            raise ValueError('No good spectra to fit!')
+
         # Fill in any remaining binning parameters
         self.tpl_symlink_dir = tpl_symlink_dir
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)

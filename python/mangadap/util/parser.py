@@ -63,22 +63,28 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
     """
     out = inp
 
-#   print('INP type: {0}'.format(type(inp)))
+#    print('INP type: {0}'.format(type(inp)))
 
     # Simply return a None value
     if out is None:
         return out
 
+#    print(out)
+
     # If the input value is a string, convert it to a list of strings
-    if type(out) == str:
+    if isinstance(out, str):
         out = out.replace("[", "")
         out = out.replace("]", "")
         out = out.replace(" ", "")
         out = out.split(',')
 
+#    print(out)
+
     # If the input is still not a list, make it one
-    if type(out) != list:
+    if not isinstance(out, list):
         out = [out]
+
+#    print(out)
 
     # Evaluate each string, if requested
     if evaluate:
@@ -93,7 +99,8 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
             else:
                 out[i] = tmp
 
-#   print('OUT type: {0}'.format(type(out)))
+#    print(out)
+#    print('OUT type: {0}'.format(type(out)))
     return out
 
 

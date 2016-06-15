@@ -1159,10 +1159,11 @@ class SpectralIndices:
                                                             numpy.sum(self._check_snr())))
             log_output(self.loggers, 1, logging.INFO, 'Total spectra to use: {0}'.format(
                                                             numpy.sum(good_bins)))
-
             log_output(self.loggers, 1, logging.INFO, 'Number of indices to measure: {0}'.format(
                                                             self.nindx))
-                                                            
+
+        if numpy.sum(good_bins) == 0:
+            raise ValueError('No good spectra for measurements!')
 
         # Get the redshifts to apply
         self._assign_redshifts(redshift)

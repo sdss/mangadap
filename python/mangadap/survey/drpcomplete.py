@@ -633,27 +633,26 @@ class DRPComplete:
             which to collect data.
         """
 
-        path = self.redux_path
         matchedlist = (self.platelist is not None and self.ifudesignlist is not None \
                        and (len(self.platelist) == len(self.ifudesignlist) and not combinatorics))
 
         plates = []
         ifudesigns = []
+
         # Lists already matched, just see if the pairs exist
         if matchedlist:
             n_plates=len(self.platelist)
             for i in range(0,n_plates):
                 drpf = drpfits.DRPFits(self.platelist[i], self.ifudesignlist[i], 'CUBE',
-                                       drpver=self.drpver)
+                                       drpver=self.drpver, redux_path=self.redux_path, read=False)
                 if os.path.exists(drpf.file_path()):
                     plates.append(self.platelist[i])
                     ifudesigns.append(self.ifudesignlist[i])
             return plates, ifudesigns
 
-#        print(path)
         print('Searching for completed DRP CUBE files...', end='\r')
         # Otherwise generate the lists
-        for root, dir, files in os.walk(path):
+        for root, dir, files in os.walk(self.redux_path):
             for file in files:
                 if file.endswith('-LOGCUBE.fits.gz'):
                     p, b, m = parse_drp_file_name(file)
@@ -688,8 +687,6 @@ class DRPComplete:
 
         print('Searching for completed DRP CUBE files...DONE.')
 
-#        print(plates)
-#        print(ifudesigns)
         return plates, ifudesigns
 
 
