@@ -1,10 +1,14 @@
 KBW (?? Jun 2016): tag 2.0.1
 
+    Removed old DAP IDL code, except for pro/mangadap_version.pro .
+
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements
         - Incorrect/incomplete checking for sufficient data to fit
           emission lines
         - Added oversamling configuration files
+
+    
 
 --------------------------------------------------------------------------------
 
