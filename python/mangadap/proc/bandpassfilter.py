@@ -316,9 +316,14 @@ def passband_integrated_mean(x, y, passband=None, err=None, log=False, base=10.0
 
 
 def passband_weighted_mean(x, y, z, passband=None, yerr=None, zerr=None, log=False, base=10.0):
-    """
-    Determine the y-weighted integral of z over the passband.  Nominal
-    errors are returned if err is provided.
+    r"""
+    Determine the y-weighted integral of z over the passband; i.e.,
+
+    .. math::
+
+        \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx}.
+    
+    Nominal errors are returned if err is provided.
     """
     # Get the passband interval, accounting for masked pixels
     weighted_integral = passband_integral(x, z*y, passband=passband, log=log, base=base)

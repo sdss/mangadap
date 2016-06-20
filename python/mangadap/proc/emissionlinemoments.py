@@ -280,7 +280,7 @@ class EmissionLineMoments:
             output.  Default is False.
 
     Attributes:
-         loggers (list): List of `logging.Logger`_ objects to log
+        loggers (list): List of `logging.Logger`_ objects to log
             progress; ignored if quiet=True.  Logging is done using
             :func:`mangadap.util.log.log_output`.
         quiet (bool): Suppress all terminal and logging output.
@@ -481,7 +481,7 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def _per_bin_dtype(nmom, bitmask=None):
+    def output_dtype(nmom, bitmask=None):
         r"""
         Construct the record array data type for the output fits
         extension.
@@ -654,7 +654,7 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def _sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, noise=None):
+    def sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, noise=None):
         """Get the side-band integrals."""
 
         # Calculate the pseudo-continua in the sidebands
@@ -731,7 +731,7 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def _single_band_moments(wave, spec, passband, restwave, noise=None):
+    def single_band_moments(wave, spec, passband, restwave, noise=None):
         """
         Measure the moments for a single band.
 
@@ -805,8 +805,8 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def _continuum_subtracted_moments(wave, spec, mainbands, restwave, bcen, bcont, rcen, rcont,
-                                      spec_n=None, noise=None):
+    def continuum_subtracted_moments(wave, spec, mainbands, restwave, bcen, bcont, rcen, rcont,
+                                     spec_n=None, noise=None):
         """
         Calculate the continuum-subtracted moments
         """
@@ -846,16 +846,16 @@ class EmissionLineMoments:
 
             flux[i], fluxerr[i], mom1[i], mom1err[i], mom2[i], mom2err[i], incomplete[i], \
                     empty[i], divbyzero[i], undefined_mom2[i] \
-                        = EmissionLineMoments._single_band_moments(wave, _spec, p, restwave[i],
-                                                                   noise=noise)
+                        = EmissionLineMoments.single_band_moments(wave, _spec, p, restwave[i],
+                                                                  noise=noise)
 
         return cntm, cntb, flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, \
                     divbyzero, undefined_mom2
 
 
     @staticmethod
-    def _check_and_prep_input(momdb, wave, flux, ivar=None, mask=None, model_subtracted_flux=None,
-                              no_model=None, redshift=None, bitmask=None):
+    def check_and_prep_input(momdb, wave, flux, ivar=None, mask=None, model_subtracted_flux=None,
+                             no_model=None, redshift=None, bitmask=None):
 
         # Check the input moment database
         if not isinstance(momdb, EmissionMomentsDB):
@@ -916,8 +916,8 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def _measure_moments(momdb, wave, flux, ivar=None, mask=None, model_subtracted_flux=None,
-                         no_model=None, redshift=None, bitmask=None):
+    def measure_moments(momdb, wave, flux, ivar=None, mask=None, model_subtracted_flux=None,
+                        no_model=None, redshift=None, bitmask=None):
         """
         Measure the emission-line moments.
 
@@ -925,16 +925,16 @@ class EmissionLineMoments:
         """
 
         _flux, noise, _model_subtracted_flux, _no_model, _redshift \
-                    = EmissionLineMoments._check_and_prep_input(momdb, wave, flux, ivar=ivar,
-                                mask=mask, model_subtracted_flux=model_subtracted_flux,
-                                no_model=no_model, redshift=redshift, bitmask=bitmask)
+                    = EmissionLineMoments.check_and_prep_input(momdb, wave, flux, ivar=ivar,
+                                        mask=mask, model_subtracted_flux=model_subtracted_flux,
+                                        no_model=no_model, redshift=redshift, bitmask=bitmask)
 
         nspec = _flux.shape[0]
         nmom = momdb.nsets
 
         # Initialize the output data
-        measurements = init_record_array(nspec, EmissionLineMoments._per_bin_dtype(nmom,
-                                                                                   bitmask=bitmask))
+        measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
+                                                                                 bitmask=bitmask))
 
         # Common arrays used for each spectrum
         blue_fraction = numpy.zeros(nmom, dtype=numpy.float)
@@ -1015,7 +1015,7 @@ class EmissionLineMoments:
             # Get the blue pseudo continuum
             measurements['BCEN'][i,~momdb.dummy], measurements['BCONT'][i,~momdb.dummy], conterr, \
                 incomplete[~momdb.dummy], empty[~momdb.dummy] \
-                    = EmissionLineMoments._sideband_pseudocontinua(wave, spec, _bluebands,
+                    = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _bluebands,
                                                     spec_n=spec_n[~momdb.dummy], noise=_noise)
             if _noise is not None:
                 measurements['BCONTERR'][i,~momdb.dummy] = conterr
@@ -1029,7 +1029,7 @@ class EmissionLineMoments:
             # Get the red pseudo continuum
             measurements['RCEN'][i,~momdb.dummy], measurements['RCONT'][i,~momdb.dummy], conterr, \
                 incomplete[~momdb.dummy], empty[~momdb.dummy] \
-                    = EmissionLineMoments._sideband_pseudocontinua(wave, spec, _redbands,
+                    = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _redbands,
                                                     spec_n=spec_n[~momdb.dummy], noise=_noise)
             if _noise is not None:
                 measurements['RCONTERR'][i,~momdb.dummy] = conterr
@@ -1054,7 +1054,7 @@ class EmissionLineMoments:
                     measurements['MOM1ERR'][i,indx], measurements['MOM2'][i,indx], \
                     measurements['MOM2ERR'][i,indx], incomplete[indx], empty[indx], \
                     divbyzero[indx], undefined_mom2[indx] = \
-                            EmissionLineMoments._continuum_subtracted_moments(wave, spec,
+                            EmissionLineMoments.continuum_subtracted_moments(wave, spec,
                                                                _mainbands, momdb['restwave'][indx],
                                                                measurements['BCEN'][i,indx],
                                                                measurements['BCONT'][i,indx],
@@ -1090,7 +1090,7 @@ class EmissionLineMoments:
         
 
     @staticmethod
-    def _measure_equivalent_widths(momdb, measurements, wave, flux, ivar=None, mask=None,
+    def measure_equivalent_widths(momdb, measurements, wave, flux, ivar=None, mask=None,
                                    redshift=None, bitmask=None):
         """
         This MUST follow the moment measurements such that the
@@ -1102,7 +1102,7 @@ class EmissionLineMoments:
         """
 
         _flux, noise, model_subtracted_flux, no_model, _redshift \
-                    = EmissionLineMoments._check_and_prep_input(momdb, wave, flux, ivar=ivar,
+                    = EmissionLineMoments.check_and_prep_input(momdb, wave, flux, ivar=ivar,
                                 mask=mask, redshift=redshift, bitmask=bitmask)
 
         # Measure the pseudo-continuum in the sidebands
@@ -1221,6 +1221,9 @@ class EmissionLineMoments:
         self.nbins = self.binned_spectra.nbins
         self.missing_bins = self.binned_spectra.missing_bins
 
+        # Get the redshifts to apply
+        self._assign_redshifts(redshift if self.stellar_continuum is None else None)
+
 #        pyplot.scatter(numpy.arange(self.nspec), self.redshift, marker='.', s=50, color='k', lw=0)
 #        pyplot.show()
             
@@ -1237,10 +1240,13 @@ class EmissionLineMoments:
             log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
                                                             len(self.binned_spectra.missing_bins)))
             log_output(self.loggers, 1, logging.INFO, 'With good S/N: {0}'.format(
-                                                            numpy.sum(good_snr)))
-            log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
-                                                            numpy.sum(good_bins)))
+                                                                            numpy.sum(good_snr)))
+            log_output(self.loggers, 1, logging.INFO, 'Total spectra to use: {0}'.format(
+                                                                            numpy.sum(good_bins)))
+            log_output(self.loggers, 1, logging.INFO, 'Number of lines to measure: {0}'.format(
+                                                                            self.nmom))
 
+        # Make sure there are good spectra
         if numpy.sum(good_bins) == 0:
             raise ValueError('No good spectra for measurements!')
 
@@ -1269,9 +1275,6 @@ class EmissionLineMoments:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
-        # Get the redshifts to apply
-        self._assign_redshifts(redshift if stellar_continuum is None else None)
-
         # Get the spectra to use for the measurements
         flux, ivar, mask, model_subtracted_flux, no_model = self._spectra_for_measurements()
 
@@ -1280,12 +1283,12 @@ class EmissionLineMoments:
 
         # Instatiate the table data that will be saved with the index
         # measurements
-        hdu_measurements = init_record_array(flux.shape[0], self._per_bin_dtype(self.nmom,
-                                                                            bitmask=self.bitmask))
+        hdu_measurements = init_record_array(flux.shape[0], self.output_dtype(self.nmom,
+                                                                              bitmask=self.bitmask))
 
         # Perform the moment measurements
         hdu_measurements[good_bins] \
-                = self._measure_moments(self.momdb, self.binned_spectra['WAVE'].data,
+                = self.measure_moments(self.momdb, self.binned_spectra['WAVE'].data,
                                         flux[good_bins,:].copy(), ivar=ivar[good_bins,:].copy(),
                                         mask=mask[good_bins,:].copy(),
                                     model_subtracted_flux=model_subtracted_flux[good_bins,:].copy(),
@@ -1294,13 +1297,13 @@ class EmissionLineMoments:
 
         # Perform the equivalent width measurements
         hdu_measurements[good_bins] \
-                = self._measure_equivalent_widths(self.momdb, hdu_measurements[good_bins],
-                                                  self.binned_spectra['WAVE'].data,
-                                                  flux[good_bins,:].copy(),
-                                                  ivar=ivar[good_bins,:].copy(),
-                                                  mask=mask[good_bins,:].copy(),
-                                                  redshift=self.redshift[good_bins],
-                                                  bitmask=self.bitmask)
+                = self.measure_equivalent_widths(self.momdb, hdu_measurements[good_bins],
+                                                 self.binned_spectra['WAVE'].data,
+                                                 flux[good_bins,:].copy(),
+                                                 ivar=ivar[good_bins,:].copy(),
+                                                 mask=mask[good_bins,:].copy(),
+                                                 redshift=self.redshift[good_bins],
+                                                 bitmask=self.bitmask)
 
         hdu_measurements['BIN_INDEX'] = numpy.arange(self.nbins)
         hdu_measurements['REDSHIFT'] = self.redshift

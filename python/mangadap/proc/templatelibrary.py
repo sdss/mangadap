@@ -1112,7 +1112,7 @@ class TemplateLibrary:
         if not self.library['in_vacuum']:
             self.hdu['WAVE'].data \
                     = airtovac(self.hdu['WAVE'].data.ravel()).reshape(self.hdu['WAVE'].data.shape)
-#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
+#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
 #        pyplot.show()
 
 #        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
@@ -1455,7 +1455,6 @@ class TemplateLibrary:
               :class:`mangadap.drpfits.DRPFits` return the spectral
               sampling type.
             - Documentation needs updating!
-
 
         """
 

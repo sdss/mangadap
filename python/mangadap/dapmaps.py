@@ -1369,7 +1369,7 @@ class construct_maps_file:
 
         MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY propagated to NOVALUE
 
-        NO_DISPERSION_CORRECTION propaged to RAW
+        NO_DISPERSION_CORRECTION propagated to RAW
 
         DIVBYZERO propagated to MATHERROR
 
