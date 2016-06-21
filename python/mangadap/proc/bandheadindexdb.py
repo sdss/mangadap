@@ -193,6 +193,14 @@ class BandheadIndexDB(ParDatabase):
             raise ValueError('Could not find DAPBHI entries in {0}!'.format(
                                                                     self.database['file_path']))
 
+        # Check if any of the bands are dummy bands and warn the user
+        self.dummy = numpy.any(numpy.array(par['DAPBHI']['blueside']) < 0, axis=1)
+        self.dummy |= numpy.any(numpy.array(par['DAPBHI']['redside']) < 0, axis=1)
+        if numpy.sum(self.dummy) > 0:
+            warnings.warn('Bands with negative wavelengths are used to insert dummy values.'
+                          '  Ignoring input bands with indices: {0}'.format(
+                                                numpy.array(par['DAPBHI']['index'])[self.dummy]))
+
         # Setup the array of bandhead index database parameters
         self.nindx = len(par['DAPBHI']['index'])
         parlist = []

@@ -197,6 +197,15 @@ class AbsorptionIndexDB(ParDatabase):
             raise ValueError('Could not find DAPABI entries in {0}!'.format(
                                                                     self.database['file_path']))
 
+        # Check if any of the bands are dummy bands and warn the user
+        self.dummy = numpy.any(numpy.array(par['DAPABI']['blueside']) < 0, axis=1)
+        self.dummy |= numpy.any(numpy.array(par['DAPABI']['redside']) < 0, axis=1)
+        self.dummy |= numpy.any(numpy.array(par['DAPABI']['primary']) < 0, axis=1)
+        if numpy.sum(self.dummy) > 0:
+            warnings.warn('Bands with negative wavelengths are used to insert dummy values.'
+                          '  Ignoring input bands with indices: {0}'.format(
+                                                numpy.array(par['DAPABI']['index'])[self.dummy]))
+
         # Setup the array of absorption-line index database parameters
         self.nindx = len(par['DAPABI']['index'])
         parlist = []
@@ -212,6 +221,7 @@ class AbsorptionIndexDB(ParDatabase):
                         primary=par['DAPABI']['primary'][i] if invac \
                                         else airtovac(numpy.array(par['DAPABI']['primary'][i])),
                                            units=par['DAPABI']['units'][i],
+                                           integrand='flambda',
                                            component=comp) ]
 
         ParDatabase.__init__(self, parlist)

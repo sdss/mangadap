@@ -1,16 +1,16 @@
 KBW (?? Jun 2016): tag 2.0.1
 
-    Removed old DAP IDL code, except for pro/mangadap_version.pro .
+    Removed old DAP IDL code, except for pro/mangadap_version.pro
 
-    Added MILES cluster template group.
+    Fixed/added functionality:
+        - Added MILES cluster template group.
+        - Added oversamling configuration files
+        - Fixed error in spectral-index masks
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements
         - Incorrect/incomplete checking for sufficient data to fit
           emission lines
-        - Added oversamling configuration files
-
-    
 
 --------------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ KBW (24 Feb 2016): tag 1.1.2
 
 KBW (25 Jan 2016): tag 1.1.1
     Tagged version run for MPL-4.
-    
+
     NOTE: Tag was created much later than MPL-4 was released.  DAP MPL-4
     release located in the mangawork/sandbox directory, and not
     maintained in the nominal MANGA_SPECTRO_ANALYSIS directory structure

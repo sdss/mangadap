@@ -329,7 +329,6 @@ class AbsorptionLineIndices:
 #        print('')
 #        print(self.blue_continuum)
 #        print('')
-#        print('')
 
         self.red_center, self.red_continuum, self.red_continuum_err, self.red_incomplete, \
             self.red_empty = SpectralIndices.sideband_pseudocontinua(wave, flux, redbands,
@@ -337,6 +336,7 @@ class AbsorptionLineIndices:
 #        print(self.red_center)
 #        print('')
 #        print(self.red_continuum)
+#        print('')
 
         # Get the parameters for the linear continuum across the
         # primary passband
@@ -346,6 +346,7 @@ class AbsorptionLineIndices:
 #        print(self.continuum_m)
 #        print('')
 #        print(self.continuum_b)
+#        print('')
 
         # Compute the continuum normalized indices.  This has to be done
         # in a for loop because the continuum is index-dependent
@@ -459,7 +460,7 @@ class BandheadIndices:
 
         # Determine which indices have both a valid index and index
         # error calculation
-        self.main_imcomplete = None
+        self.main_incomplete = None
         self.main_empty = None
         self.divbyzero = ~((numpy.absolute(d) > 0) & (numpy.absolute(n) > 0))
 
@@ -683,13 +684,16 @@ class SpectralIndices:
         mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
+        print('Mask size:', self.binned_spectra['MASK'].data.size)
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
                                                    flag=self.binned_spectra.do_not_fit_flags())
+        print('Masked as DIDNOTUSE:', numpy.sum(indx))
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
                                                    flag='FORESTAR')
+        print('Masked as FORESTAR: ', numpy.sum(indx))
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Turn on the flag stating that the S/N in the spectrum was
@@ -888,14 +892,14 @@ class SpectralIndices:
         existing_sres = self.binned_spectra.drpf['SPECRES'].data
         new_sres = wave/self.database['fwhm']
         
-#        new_flux, sres, sigoff, new_mask, new_ivar \
-#                = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
-#                                            log10=True, new_log10=True)
+        new_flux, sres, sigoff, new_mask, new_ivar \
+                = match_spectral_resolution(wave, flux, existing_sres, wave, new_sres, ivar=ivar,
+                                            log10=True, new_log10=True)
 
         # FOR DEBUGGING
-        warnings.warn('NOT MATCHING SPECTRAL RESOLUTION!')
-        new_flux = flux.copy()
-        new_mask = mask.copy()
+#        warnings.warn('NOT MATCHING SPECTRAL RESOLUTION!')
+#        new_flux = flux.copy()
+#        new_mask = mask.copy()
 
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5)
 #        pyplot.step(wave, new_flux[0,:], where='mid', linestyle='-', color='r', lw=2.5)
@@ -969,7 +973,7 @@ class SpectralIndices:
         # Calculate the fraction of the band that is covered by unmasked
         # pixels
         interval_frac = passband_integrated_width(wave, spec, passband=sidebands, log=log) \
-                                / numpy.diff(sidebands, axis=1)
+                                / numpy.diff(sidebands, axis=1).ravel()
 
 #        if len(spec.shape) > 1:
 #            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
@@ -986,17 +990,29 @@ class SpectralIndices:
 
     @staticmethod
     def set_masks(measurements, blue_incomplete, blue_empty, red_incomplete, red_empty, divbyzero,
-                  main_incomplete=None, main_empty=None):
+                  main_incomplete=None, main_empty=None, bitmask=None):
+
+#        print('blue incomplete: {0}/{1}'.format(numpy.sum(blue_incomplete), blue_incomplete.size))
+#        print('blue empty: {0}/{1}'.format(numpy.sum(blue_empty), blue_empty.size))
+#        print('red incomplete: {0}/{1}'.format(numpy.sum(red_incomplete), red_incomplete.size))
+#        print('red empty: {0}/{1}'.format(numpy.sum(red_empty), red_empty.size))
+#        print('divbyzero: {0}/{1}'.format(numpy.sum(divbyzero), divbyzero.size))
+#        if main_incomplete is not None:
+#            print('main incomplete: {0}/{1}'.format(numpy.sum(main_incomplete),
+#                                                    main_incomplete.size))
+#        if main_empty is not None:
+#            print('main empty: {0}/{1}'.format(numpy.sum(main_empty), main_empty.size))
+
         measurements['MASK'][blue_incomplete] = True if bitmask is None else \
                 bitmask.turn_on(measurements['MASK'][blue_incomplete], 'BLUE_INCOMP')
         measurements['MASK'][blue_empty] = True if bitmask is None else \
                 bitmask.turn_on(measurements['MASK'][blue_empty], 'BLUE_EMPTY')
         measurements['MASK'][red_incomplete] = True if bitmask is None else \
-                bitmask.turn_on(measurements['MASK'][blue_incomplete], 'RED_INCOMP')
+                bitmask.turn_on(measurements['MASK'][red_incomplete], 'RED_INCOMP')
         measurements['MASK'][red_empty] = True if bitmask is None else \
                 bitmask.turn_on(measurements['MASK'][red_empty], 'RED_EMPTY')
         measurements['MASK'][divbyzero] = True if bitmask is None else \
-                bitmask.turn_on(measurements['MASK'][main_empty], 'DIVBYZERO')
+                bitmask.turn_on(measurements['MASK'][divbyzero], 'DIVBYZERO')
         if main_incomplete is not None:
             measurements['MASK'][main_incomplete] = True if bitmask is None else \
                     bitmask.turn_on(measurements['MASK'][main_incomplete], 'MAIN_INCOMP')
@@ -1007,7 +1023,7 @@ class SpectralIndices:
 
 
     @staticmethod
-    def save_results(results, measurements, good, err=False):
+    def save_results(results, measurements, good, err=False, bitmask=None):
         if not isinstance(results, (AbsorptionLineIndices, BandheadIndices)):
             raise TypeError('Input must be of type AbsorptionLineIndices or BandheadIndices')
 
@@ -1015,11 +1031,11 @@ class SpectralIndices:
         measurements['BCEN'][good] = results.blue_center
         measurements['BCONT'][good] = results.blue_continuum
         if err:
-            measurements['BCONTERR'][good] = results.blue_conterr
+            measurements['BCONTERR'][good] = results.blue_continuum_err
         measurements['RCEN'][good] = results.red_center
         measurements['RCONT'][good] = results.red_continuum
         if err:
-            measurements['RCONTERR'][good] = results.red_conterr
+            measurements['RCONTERR'][good] = results.red_continuum_err
         measurements['INDX'][good] = results.index
         if err:
             measurements['INDXERR'][good] = results.index_err
@@ -1045,10 +1061,9 @@ class SpectralIndices:
         divbyzero[good] = results.divbyzero
 
         # Set the masks
-        measurements = SpectralIndices.set_masks(measurements, blue_incomplete, blue_empty,
-                                                 red_incomplete, red_empty, divbyzero,
-                                                 main_incomplete=main_incomplete,
-                                                 main_empty=main_empty)
+        return SpectralIndices.set_masks(measurements, blue_incomplete, blue_empty, red_incomplete,
+                                         red_empty, divbyzero, main_incomplete=main_incomplete,
+                                         main_empty=main_empty, bitmask=bitmask)
 
 
     @staticmethod
@@ -1088,17 +1103,17 @@ class SpectralIndices:
 #        pyplot.show()
 
         # Get the list of good indices of each type
-        abs_fnu = ~absdb.dummy & absdb['integrand'] == 'fnu'
+        abs_fnu = ~absdb.dummy & (absdb['integrand'] == 'fnu')
         good_abs_fnu = numpy.zeros(nindx, dtype=numpy.bool)
         good_abs_fnu[:absdb.nsets][abs_fnu] = True
-        abs_flambda = ~absdb.dummy & absdb['integrand'] == 'flambda'
+        abs_flambda = ~absdb.dummy & (absdb['integrand'] == 'flambda')
         good_abs_flambda = numpy.zeros(nindx, dtype=numpy.bool)
         good_abs_flambda[:absdb.nsets][abs_flambda] = True
 
-        bhd_fnu = ~bhddb.dummy & bhddb['integrand'] == 'fnu'
+        bhd_fnu = ~bhddb.dummy & (bhddb['integrand'] == 'fnu')
         good_bhd_fnu = numpy.zeros(nindx, dtype=numpy.bool)
-        good_bhd_fnu[absdb.nsets:][~bhddb.dummy & bhddb['integrand'] == 'fnu'] = True
-        bhd_flambda = ~bhddb.dummy & bhddb['integrand'] == 'flambda'
+        good_bhd_fnu[absdb.nsets:][bhd_fnu] = True
+        bhd_flambda = ~bhddb.dummy & (bhddb['integrand'] == 'flambda')
         good_bhd_flambda = numpy.zeros(nindx, dtype=numpy.bool)
         good_bhd_flambda[absdb.nsets:][bhd_flambda] = True
 
@@ -1127,7 +1142,8 @@ class SpectralIndices:
                                                 err=_noise, units=absdb['units'][abs_fnu])
                 # ... and save them
                 measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_abs_fnu, err=_noise is not None)
+                                                               good_abs_fnu, err=_noise is not None,
+                                                               bitmask=bitmask)
 
             # Integrate over F_lambda
             if numpy.sum(good_abs_flambda) > 0:
@@ -1139,7 +1155,8 @@ class SpectralIndices:
                 # ... and save them
                 measurements[i] = SpectralIndices.save_results(results, measurements[i],
                                                                good_abs_flambda,
-                                                               err=_noise is not None)
+                                                               err=_noise is not None,
+                                                               bitmask=bitmask)
 
             # -----------------------------------
             # Measure the bandhead indices
@@ -1157,7 +1174,8 @@ class SpectralIndices:
                                           order=bhddb['order'][bhd_fnu])
                 # ... and save them
                 measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_bhd_fnu, err=_noise is not None)
+                                                               good_bhd_fnu, err=_noise is not None,
+                                                               bitmask=bitmask)
 
             # Integrate over F_lambda
             if numpy.sum(good_bhd_flambda) > 0:
@@ -1169,7 +1187,8 @@ class SpectralIndices:
                 # ... and save them
                 measurements[i] = SpectralIndices.save_results(results, measurements[i],
                                                                good_bhd_flambda,
-                                                               err=_noise is not None)
+                                                               err=_noise is not None,
+                                                               bitmask=bitmask)
 
 #            pyplot.scatter(_interval, interval/_interval, marker='.', color='k', s=50)
 #            pyplot.show()
@@ -1191,6 +1210,9 @@ class SpectralIndices:
 #        print(numpy.sum(_y.mask))
 #        pyplot.plot(_x, _y, color='g', lw=2, linestyle='-')
 #        pyplot.show()
+
+        print('Total masked: {0}/{1}'.format(numpy.sum(measurements['MASK'] > 0),
+                                             measurements['MASK'].size))
 
         # Return the data
         return measurements
@@ -1274,14 +1296,14 @@ class SpectralIndices:
         print('good models: {0}'.format(numpy.sum(good_models)))
         broadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                 template_library=template_library), mask=mask)
-        print('Broadened models shape: {0}'.format(broadened_model.shape))
+        print('Broadened models shape: {0}'.format(broadened_models.shape))
 
         # Get the unbroadened version
         unbroadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                             template_library=template_library,
                                                             redshift_only=True),
                                                   mask=mask)
-        print('Models without broadening shape: {0}'.format(unbroadened_model.shape))
+        print('Models without broadening shape: {0}'.format(unbroadened_models.shape))
 
 #        model_flux = self.stellar_continuum.copy_to_masked_array(
 #                                    flag=self.stellar_continuum.all_except_emission_flags())
@@ -1318,11 +1340,18 @@ class SpectralIndices:
                                                 flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
                                                        'DIVBYZERO' ])
 
+        print('Number of measurements: ', bad_measurement.size)
+        print('Bad measurements: ', numpy.sum(bad_measurement))
+
         # Determine which indices have good measurements
         angu, magu = self._unit_selection()
+
         good_ang = ~bad_measurement & (numpy.array([angu]*self.nbins)) \
                                     & (numpy.absolute(broadened_model_measurements['INDX']) > 0)
         good_mag = ~bad_measurement & (numpy.array([magu]*self.nbins))
+
+        print('Good angstrom measurements: ', numpy.sum(good_ang))
+        print('Good magnitude measurements: ', numpy.sum(good_mag))
 
         # Determine and return the corrections to apply
         corrections = numpy.zeros((self.nbins, self.nindx), dtype=numpy.float)
@@ -1483,15 +1512,17 @@ class SpectralIndices:
         hdu_measurements['MASK'][~good_bins] \
                 = self.bitmask.turn_on(hdu_measurements['MASK'][~good_bins], 'NO_MEASUREMENT')
 
+        print('After correction and no measurements: {0}/{1}'.format(
+                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
+
         # Flag bad corrections
-        bad_ang = (numpy.array([good_bins]*self.nindx).T) & ~good_ang
-        hdu_measurements['MASK'][bad_ang] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][bad_ang],
+        bad_correction = (numpy.array([good_bins]*self.nindx).T) & ~good_ang & ~good_mag
+        hdu_measurements['MASK'][bad_correction] \
+                = self.bitmask.turn_on(hdu_measurements['MASK'][bad_correction],
                                        'NO_DISPERSION_CORRECTION')
-        bad_mag = (numpy.array([good_bins]*self.nindx).T) & ~good_mag
-        hdu_measurements['MASK'][bad_mag] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][bad_mag],
-                                       'NO_DISPERSION_CORRECTION')
+
+        print('After bad corrections: {0}/{1}'.format(
+                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
 
         # Apply the corrections
         hdu_measurements['INDX'][good_ang] *= hdu_measurements['INDX_DISPCORR'][good_ang]
