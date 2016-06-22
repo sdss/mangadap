@@ -229,7 +229,7 @@ def passband_median(x, y, passband=None):
 def pixel_fraction_in_passband(x, passband, dx):
     """
     Get the width of each x interval to include in the passband
-        integral
+    integral.
     """
     return ((x[1:]-passband[0])/dx).clip(0,1) + ((passband[1]-x[:-1])/dx).clip(0,1) - 1.0
 

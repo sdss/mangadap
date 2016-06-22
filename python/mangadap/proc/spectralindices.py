@@ -315,7 +315,7 @@ class AbsorptionLineIndices:
         # Make sure the units exist
         if units is None:
             warnings.warn('Input units not provided.  Assuming angstroms.')
-            self.units = numpy.full(self.nindx, 'ang')
+            self.units = numpy.full(self.nindx, 'ang', dtype=object)
         else:
             self.units = units
         self.order = None
@@ -337,6 +337,11 @@ class AbsorptionLineIndices:
 #        print('')
 #        print(self.red_continuum)
 #        print('')
+
+        
+#       # TEST: Change to center instead of flux-weighted center
+#        self.blue_center = numpy.mean(bluebands, axis=1).ravel()
+#        self.red_center = numpy.mean(redbands, axis=1).ravel()
 
         # Get the parameters for the linear continuum across the
         # primary passband
@@ -363,14 +368,24 @@ class AbsorptionLineIndices:
             integrand = 1.0 - flux/cont if self.units[i] == 'ang' else flux/cont
 
             # Calculate the integral over the passband
+#            print(self.units[i])
+#            print(m)
+#            dw = numpy.diff(wave[0:2])[0]
+#            print(dw)
+#            print(self.index[i])
             self.index[i] = passband_integral(wave, integrand, passband=m, log=log)
+#            print(self.index[i])
+#            tmp = numpy.logical_and(wave > m[0], wave < m[1])
+#            print(numpy.sum(integrand[tmp])*dw)
+#            tmp = numpy.logical_and(wave > bluebands[i,0], wave < redbands[i,1])
+#            pyplot.plot(wave[tmp], integrand[tmp])
+#            pyplot.show()
             if err is not None:
                 self.index_err[i] = numpy.sqrt(passband_integral(wave, numpy.square(err/cont),
                                                passband=m, log=log))
 
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty
-#            interval = passband_integrated_width(wave, integrand, passband=m, log=log)
             interval = passband_integrated_width(wave, flux, passband=m, log=log)
             interval_frac = interval / numpy.diff(m)[0]
             self.main_incomplete[i] = interval_frac < 1.0
@@ -381,7 +396,7 @@ class AbsorptionLineIndices:
 #            fint = passband_integral(wave, flux, passband=m, log=log)
 #            cint = passband_integral(wave, cont, passband=m, log=log)
 #
-#            print(interval*(1-fint/cint) - self.index[i])
+##            print(interval*(1-fint/cint) - self.index[i])
 #            self.index[i] = interval*(1.0-fint/cint if self.units[i] == 'ang' else fint/cint)
 #            if err is not None:
 #                eint = numpy.sqrt(passband_integral(wave, numpy.square(err), passband=m, log=log))
@@ -426,7 +441,7 @@ class BandheadIndices:
         # Check input order
         if order is None:
             warnings.warn('Input order not specified.  Assuming r_b.')
-            self.order = numpy.full(self.nindx, 'r_b', dtype=numpy.str)
+            self.order = numpy.full(self.nindx, 'r_b', dtype=object)
         else:
             self.order = order
 
@@ -684,16 +699,16 @@ class SpectralIndices:
         mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
-        print('Mask size:', self.binned_spectra['MASK'].data.size)
+#        print('Mask size:', self.binned_spectra['MASK'].data.size)
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
                                                    flag=self.binned_spectra.do_not_fit_flags())
-        print('Masked as DIDNOTUSE:', numpy.sum(indx))
+#        print('Masked as DIDNOTUSE:', numpy.sum(indx))
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
                                                    flag='FORESTAR')
-        print('Masked as FORESTAR: ', numpy.sum(indx))
+#        print('Masked as FORESTAR: ', numpy.sum(indx))
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Turn on the flag stating that the S/N in the spectrum was
@@ -1211,8 +1226,8 @@ class SpectralIndices:
 #        pyplot.plot(_x, _y, color='g', lw=2, linestyle='-')
 #        pyplot.show()
 
-        print('Total masked: {0}/{1}'.format(numpy.sum(measurements['MASK'] > 0),
-                                             measurements['MASK'].size))
+#        print('Total masked: {0}/{1}'.format(numpy.sum(measurements['MASK'] > 0),
+#                                             measurements['MASK'].size))
 
         # Return the data
         return measurements
@@ -1292,18 +1307,18 @@ class SpectralIndices:
 
         # Get the broadened stellar-continuum model
         good_models = good_bins & (self.stellar_continuum['PAR'].data['MASK'] == 0)
-        print('good_bins: {0}'.format(numpy.sum(good_bins)))
-        print('good models: {0}'.format(numpy.sum(good_models)))
+#        print('good_bins: {0}'.format(numpy.sum(good_bins)))
+#        print('good models: {0}'.format(numpy.sum(good_models)))
         broadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                 template_library=template_library), mask=mask)
-        print('Broadened models shape: {0}'.format(broadened_models.shape))
+#        print('Broadened models shape: {0}'.format(broadened_models.shape))
 
         # Get the unbroadened version
         unbroadened_models = numpy.ma.MaskedArray(self.stellar_continuum.construct_models(
                                                             template_library=template_library,
                                                             redshift_only=True),
                                                   mask=mask)
-        print('Models without broadening shape: {0}'.format(unbroadened_models.shape))
+#        print('Models without broadening shape: {0}'.format(unbroadened_models.shape))
 
 #        model_flux = self.stellar_continuum.copy_to_masked_array(
 #                                    flag=self.stellar_continuum.all_except_emission_flags())
@@ -1512,8 +1527,8 @@ class SpectralIndices:
         hdu_measurements['MASK'][~good_bins] \
                 = self.bitmask.turn_on(hdu_measurements['MASK'][~good_bins], 'NO_MEASUREMENT')
 
-        print('After correction and no measurements: {0}/{1}'.format(
-                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
+#        print('After correction and no measurements: {0}/{1}'.format(
+#                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
 
         # Flag bad corrections
         bad_correction = (numpy.array([good_bins]*self.nindx).T) & ~good_ang & ~good_mag
@@ -1521,8 +1536,8 @@ class SpectralIndices:
                 = self.bitmask.turn_on(hdu_measurements['MASK'][bad_correction],
                                        'NO_DISPERSION_CORRECTION')
 
-        print('After bad corrections: {0}/{1}'.format(
-                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
+#        print('After bad corrections: {0}/{1}'.format(
+#                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
 
         # Apply the corrections
         hdu_measurements['INDX'][good_ang] *= hdu_measurements['INDX_DISPCORR'][good_ang]
