@@ -105,7 +105,8 @@ class StellarKinematicsFit(SpectralFitting):
                  ('RMS',numpy.float),
                  ('ABSRESID',numpy.float,5),
                  ('FRMS',numpy.float),
-                 ('FABSRESID',numpy.float,5)
+                 ('FABSRESID',numpy.float,5),
+                 ('SIGMACORR',numpy.float)
                ]
 
 # ----------------------------------------------------------------------

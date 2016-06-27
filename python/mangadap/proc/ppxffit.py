@@ -72,7 +72,8 @@ from ..par.parset import ParSet
 from ..util.bitmask import BitMask
 from ..util.fileio import init_record_array
 from ..util.log import log_output
-from ..util.instrument import spectrum_velocity_scale, resample_vector
+from ..util.instrument import spectrum_velocity_scale, resample_vector, spectral_resolution
+from ..util.constants import constants
 from ..contrib.ppxf import ppxf
 from ..contrib import ppxf_util
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -89,10 +90,62 @@ __author__ = 'Kyle B. Westfall'
 
 
 class PPXFFitPar(ParSet):
+    r"""
+
+    Define a parameter set used by the pPXF fitting method.
+
+    .. todo::
+        The overlap between this and
+        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
+        is not well designed.
+
+    Args:
+        template_library_key (str): Keyword of the library to fit.  See
+            :func:`mangadap.proc.templatelibrary.available_template_libraries`.
+
+        template_library
+            (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
+            Object with the spectra in the template library that have
+            been prepared for analysis of the data.
+
+        guess_redshift (array-like): Initial guess for the redshift
+            (:math:`cz`) of each binned spectrum.
+
+        guess_dispersion (array-like): Initial guess for the velocity
+            dispersion for each binned spectrum.
+
+        iteration_mode (str): (**Optional**) Iteration mode to use; see
+            :func:`PPXFFit.iteration_modes`.
+
+        match_resolution (bool): (**Optional**) Match the spectral
+            resolution of the template to that of the galaxy data.  This
+            is used only when constructing the template library.
+            Default is True.
+        
+        velscale_ratio (int): (**Optional**) The **integer** ratio
+            between the velocity scale of the pixel in the galaxy data
+            to that of the template data.  This is used only when
+            constructing the template library.  Default is None, which
+            is the same as assuming that the velocity scales are
+            identical.
+        
+        minimum_snr (float): (**Optional**) Minimum S/N ratio to include
+            in the fitting.
+
+        pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`):
+            (**Optional**) Pixel mask to include during the fitting.
+        
+        bias, clean, degree, mdegree, moments, oversample, sky, regul,
+            reddening, component, reg_dim (various): (**Optional**) See
+            :class:`mangadap.contrib.ppxf.ppxf` documentation.
+
+    """
+
     def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
-                 minimum_snr=None, pixelmask=None, bias=None, clean=False, degree=None,
-                 mdegree=None, moments=None, oversample=None, sky=None, regul=None, reddening=None,
-                 component=None, reg_dim=None):
+                 iteration_mode='global_template_with_rejection', match_resolution=True,
+                 velscale_ratio=None, minimum_snr=None, pixelmask=None, bias=None, clean=False,
+                 degree=None, mdegree=None, moments=None, oversample=None, sky=None, regul=None,
+                 reddening=None, component=None, reg_dim=None):
     
         arr = [ numpy.ndarray, list ]                   # sky, p0, lam, component
         arr_in_fl = [ numpy.ndarray, list, int, float ] # component, reg_dim
@@ -100,22 +153,25 @@ class PPXFFitPar(ParSet):
 
         _def = self._keyword_defaults()
         
+        iter_opt = PPXFFit.iteration_modes()
         moment_opt = [ 2, 4, 6 ]
 
         pars =     [ 'template_library_key', 'template_library', 'guess_redshift',
-                     'guess_dispersion', 'minimum_snr', 'pixelmask', 'bias', 'clean', 'degree',
-                     'mdegree', 'moments', 'oversample', 'sky', 'regul', 'reddening', 'component',
-                     'reg_dim' ]
+                     'guess_dispersion', 'iteration_mode', 'match_resolution', 'velscale_ratio',
+                     'minimum_snr', 'pixelmask', 'bias', 'clean', 'degree', 'mdegree', 'moments',
+                     'oversample', 'sky', 'regul', 'reddening', 'component', 'reg_dim' ]
         values =   [ template_library_key, template_library, guess_redshift, guess_dispersion,
-                     minimum_snr, pixelmask, bias, clean, degree, mdegree, moments, oversample,
-                     sky, regul, reddening, component, reg_dim ]
-        options =  [ None, None, None, None, None, None, None, None, None, None, moment_opt, None,
-                     None, None, None, None, None ]
-        defaults = [ None, None, None, None, None, None, _def['bias'], _def['clean'],
-                     _def['degree'], _def['mdegree'], _def['moments'], _def['oversample'], None,
-                     _def['regul'], _def['reddening'], _def['component'], _def['reg_dim'] ]
-        dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, in_fl, PixelMask, in_fl, bool, int,
-                     int, int, int, arr, in_fl, in_fl, arr_in_fl, arr_in_fl ]
+                     iteration_mode, match_resolution, velscale_ratio, minimum_snr, pixelmask,
+                     bias, clean, degree, mdegree, moments, oversample, sky, regul, reddening,
+                     component, reg_dim ]
+        options =  [ None, None, None, None, iter_opt, None, None, None, None, None, None, None,
+                     None, moment_opt, None, None, None, None, None, None ]
+        defaults = [ None, None, None, None, 'global_template_with_rejection', True, None, None,
+                     None, _def['bias'], _def['clean'], _def['degree'], _def['mdegree'],
+                     _def['moments'], _def['oversample'], None, _def['regul'], _def['reddening'],
+                     _def['component'], _def['reg_dim'] ]
+        dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, str, bool, int, in_fl, PixelMask,
+                     in_fl, bool, int, int, int, int, arr, in_fl, in_fl, arr_in_fl, arr_in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -183,33 +239,94 @@ class PPXFFit(StellarKinematicsFit):
     """
     def __init__(self, bitmask, par=None):
         StellarKinematicsFit.__init__(self, 'ppxf', bitmask, par=par)
+        # Specify some mask bit names
         self.snr_flag = 'LOW_SNR'
         self.rng_flag = 'OUTSIDE_RANGE'
         self.tpl_flag = 'TPL_PIXELS'
         self.trunc_flag = 'TRUNCATED'
         self.rej_flag = 'PPXF_REJECT'
+        # Logging and terminal output
         self.loggers = None
         self.quiet = False
 
+        # Imposed fitting boundaries
         self.velocity_limits = None
         self.sigma_limits = None
         self.gh_limits = None
 
+        # Fitting parameters
         self.tpl_wave = None
+        self.tpl_sres = None
         self.tpl_flux = None
         self.ntpl = None
         self.obj_wave = None
+        self.obj_sres = None
         self.obj_flux = None
         self.obj_ferr = None
         self.nobj = None
-        self.velScale = None
+        self.velscale = None
+        self.velscale_ratio = None
+        self.matched_resolution = None
         self.guess_kin = None
+        self.spectrum_start = None
+        self.spectrum_end = None
         self.dof = None
         self.base_velocity = None
 
+        # Fitting options
+        self.bias = None
+        self.clean = None
+        self.degree = None
+        self.mdegree = None
+        self.moments = None
+        self.oversample = None
+
 
     @staticmethod
-    def _losvd_limits(velScale):
+    def iteration_modes():
+        r"""
+        
+        Possible iteration methods:
+
+            ``none``: Fit all bins with all templates with a single call
+            to pPXF.
+
+            ``global_template_with_rejection``:  Fit the global spectrum
+            with all templates and include a single rejection iteration.
+            The pixel mask for this fit is the base mask for all fits to
+            the individual bins.  A single rejection iteration is done
+            for each bin.  **Only the global template is used when
+            fitting each bin.**
+
+            ``nonzero_global_templates_with_rejection``:  Fit the global
+            spectrum with all templates and include a single rejection
+            iteration.  The pixel mask for this fit is the base mask for
+            all fits to the individual bins.  A single rejection
+            iteration is done for each bin.  **Only the templates with
+            non-zero weights are used when fitting each bin.**
+
+            ``all_templates_with_rejection``:  Fit the global spectrum
+            with all templates and include a single rejection iteration.
+            The pixel mask for this fit is the base mask for all fits to
+            the individual bins.  A single rejection iteration is done
+            for each bin.  **All templates are used when fitting each
+            bin.**
+
+        Returns:
+            list: List of allowed options.
+        """
+        return [ 'none', 'global_template_with_rejection',
+                 'nonzero_global_templates_with_rejection', 'all_templates_with_rejection' ]
+
+
+    @staticmethod
+    def _obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=None, dvtol=1e-10):
+        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        return numpy.absolute(velscale - spectrum_velocity_scale(tpl_wave)*_velscale_ratio) < dvtol
+
+
+    @staticmethod
+    def _losvd_limits(velscale):
         r"""
         Return the limits on the LOSVD parameters used by pPXF.
 
@@ -218,15 +335,16 @@ class PPXFFit(StellarKinematicsFit):
             - Limits of the higher orders moments are from -0.3 to 0.3
         """
         velocity_limits = numpy.array([-2e3, 2e3])
-        sigma_limits = numpy.array([0.1*velScale, 1e3])
+        sigma_limits = numpy.array([0.1*velscale, 1e3])
         gh_limits = numpy.array([-0.3, 0.3])
         return velocity_limits, sigma_limits, gh_limits
 
 
     # TODO: Be clear between velocity (ppxf) vs. redshift (cz)
     @staticmethod
-    def _fitting_mask(tpl_wave, obj_wave, velScale, velocity_offset, waverange=None,
-                      max_velocity_range=400., alias_window=2400., loggers=None, quiet=False):
+    def _fitting_mask(tpl_wave, obj_wave, velscale, velocity_offset, velscale_ratio=None,
+                      waverange=None, max_velocity_range=400., alias_window=2400., loggers=None,
+                      quiet=False):
         """
         Return a list of pixels in the object spectrum to be fit using pPXF.
     
@@ -249,7 +367,7 @@ class PPXFFit(StellarKinematicsFit):
                 fit.
             tpl_wave (array): Wavelength vector of the template library to
                 fit to the object spectrum.
-            velScale (float): Velocity scale of the pixel.
+            velscale (float): Velocity scale of the pixel.
             velocity_offset (array) : Vector with the velocity offset
                 (expected or actual) between the template and the object
                 spectrum in km/s.  Used to estimate which wavelengths can be
@@ -305,13 +423,16 @@ class PPXFFit(StellarKinematicsFit):
                        'Minimum/Maximum redshift: {0}/{1}'.format(z_min, z_max))
 
         # 2. If the number of template pixels is not >= number of fitted galaxy pixels,
-        #    further limit the blue and red edges of the galaxy spectra
-        now=numpy.sum(fit_indx)         # Number of good object pixels
-        ntw=len(tpl_wave)               # Number of template pixels
+        #    further limit the blue and red edges of the galaxy spectra.
+        #    **This must account for the relative pixel scale.**
+        now=numpy.sum(fit_indx)                 # Number of good object pixels
+        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        ntw=len(tpl_wave)//_velscale_ratio       # Number of template pixels
         if not quiet:
             log_output(loggers, 1, logging.INFO,
                        'After selecting the wavelength range to analyze: {0}'.format(now))
-            log_output(loggers, 1, logging.INFO, 'Number of template pixels: {0}'.format(ntw))
+            log_output(loggers, 1, logging.INFO,
+                'Number of template pixels (in units of the galaxy pixel scale): {0}'.format(ntw))
         if ntw < now:
             # Indices of wavelengths redward of the redshifted template
             # TODO: Change this to the rigorous calculation of the pPXF
@@ -345,14 +466,15 @@ class PPXFFit(StellarKinematicsFit):
             fit_indx[ numpy.where(fit_indx)[0][ntw:] ] = False      # Truncate the red edge as well
             if not quiet:
                 log_output(loggers, 1, logging.INFO, 
-                           'Impose same as number of template pixels: {0} {1}'.format(
+                           'Limit to at most the number of template pixels: {0} {1}'.format(
                                                                         numpy.sum(fit_indx), ntw))
         npix_mask = ~(fit_indx) & ~(waverange_mask)
 
         # 3. Limit wavelength range to avoid aliasing problems in the template convolution
-        nalias = int(numpy.floor(alias_window/velScale))            # Number of pixels to mask
+        nalias = int(numpy.floor(alias_window/velscale))            # Number of pixels to mask
         # Mask to the range that should be unaffected by alias errors
-        waverange_tpl = [ tpl_wave[nalias]*(1+z_max), tpl_wave[ntw-nalias-1]*(1+z_min) ]
+        waverange_tpl = [ tpl_wave[nalias*_velscale_ratio]*(1+z_max),
+                          tpl_wave[(ntw-nalias)*_velscale_ratio-1]*(1+z_min) ]
         if not quiet:
             log_output(loggers, 1, logging.INFO,
                        'Mask to these wavelengths to avoid convolution aliasing: {0} - {1}'.format(
@@ -374,7 +496,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velScale):
+    def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velscale):
         """
         Determine the pseudo offset in velocity between the template and
         object spectra, just due to the difference in the starting
@@ -390,19 +512,151 @@ class PPXFFit(StellarKinematicsFit):
                 library to fit to the object spectrum.
             obj_wave (numpy.ndarray): Wavelength vector for the object
                 spectrum to be fit.
-            velScale (float): Velocity step per pixel in km/s common to
+            velscale (float): Velocity step per pixel in km/s common to
                 both the template and object spectrum.
     
         Returns:
             float: Velocity offset in km/s between the initial wavelengths
             of the template and object spectra.
         """
-        return (numpy.log(obj_wave[0])-numpy.log(tpl_wave[0]))*velScale \
+        return (numpy.log(obj_wave[0])-numpy.log(tpl_wave[0]))*velscale \
                     / numpy.diff(numpy.log(obj_wave[0:2]))[0]
 
 
-    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False,
-                                   iterative=False):
+    def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9):
+        """
+        Reject aberrant pixels from pPXF fit.
+        """
+        for i in range(maxiter):
+#            if not self.quiet:
+#                log_output(self.loggers, 1, logging.INFO,
+#                           'Rejection iteration, remaining pixels: {0} {1}'.format(i+1, len(gpm)))
+            scale = numpy.sum(galaxy[gpm]*ppxf_fit.bestfit[gpm]) \
+                            / numpy.sum(numpy.square(ppxf_fit.bestfit[gpm]))
+            resid = scale*ppxf_fit.bestfit[gpm] - galaxy[gpm]
+            err = numpy.std(resid)
+            ok_old = gpm
+            gpm = numpy.flatnonzero(numpy.absolute(ppxf_fit.bestfit - galaxy) < 3*err)
+            gpm = numpy.intersect1d(ok_old, gpm)
+            if numpy.array_equal(gpm, ok_old):
+                break 
+        return gpm
+
+
+    def _dispersion_correction(self, gpm):
+        """
+        Calculate the dispersion corrections as the quadrature
+        difference between the spectral resolution of the template and
+        object spectra.
+        """
+        cnst = constants()
+        sigma_inst_obj = astropy.constants.c.to('km/s').value/self.obj_sres[gpm]
+        sigma_inst_tpl = astropy.constants.c.to('km/s').value/self.tpl_sres(self.obj_wave[gpm])
+        return numpy.sqrt(numpy.mean(numpy.square(sigma_inst_obj)
+                                     - numpy.square(sigma_inst_tpl)))/cnst.sig2fwhm
+
+
+    def _fit_global_spectrum(self, plot=False):
+        """
+        Fit the global spectrum.  This:
+            - Sets the base-level good pixel mask for the fits to the individual
+              bins
+            - Gives the template weights for the global template
+
+        .. todo::
+            - Only include spectra above a given S/N in global spectrum?
+            - Allow for a number of iterations as input.
+        """
+
+        # Sum all spectra to create the global spectrum
+        global_spectrum = numpy.ma.sum(self.obj_flux, axis=0)
+        global_spectrum_err = numpy.ma.sqrt(numpy.ma.sum(numpy.square(self.obj_ferr), axis=0))
+        global_spectrum_err[numpy.ma.getmaskarray(global_spectrum)] = 1.0   # To avoid pPXF error
+
+        # Initialize the good pixel mask based on the mask in the
+        # fitting region
+        gpm = numpy.where( ~(global_spectrum.mask[self.spectrum_start:self.spectrum_end]))[0]
+
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Fitting global spectrum ...')
+            log_output(self.loggers, 1, logging.INFO,
+                       'Original number of fitted pixels: {0}'.format(len(gpm)))
+
+#        pyplot.step(self.obj_wave, global_spectrum, where='mid', color='k')
+#        pyplot.step(self.obj_wave, global_spectrum_err, where='mid', color='k')
+#        pyplot.plot(self.obj_wave[numpy.array([self.spectrum_start,self.spectrum_start])], [0,1],
+#                    color='r')
+#        pyplot.plot(self.obj_wave[numpy.array([self.spectrum_end-1,self.spectrum_end-1])], [0,1],
+#                    color='r')
+#        pyplot.show()
+
+        # First fit of global spectrum
+        ppxf_fit = ppxf(self.tpl_flux.T,
+                        global_spectrum.data[self.spectrum_start:self.spectrum_end],
+                        global_spectrum_err.data[self.spectrum_start:self.spectrum_end],
+                        self.velscale, self.guess_kin[0,:], velscale_ratio=self.velscale_ratio,
+                        goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
+                        mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
+                        vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+        if plot:
+            pyplot.show()
+
+        # Return if pPXF failed
+        if not ppxf_fit.mp.status > 0:
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'pPXF failed to fit global spectrum!')
+            return None, None
+
+#        print(ppxf_fit.sol[0] + self.base_velocity)
+#        print(self.guess_kin[0,0] + self.base_velocity)
+#        print(ppxf_fit.mp.status)
+#        pyplot.show()
+
+#        # Save the non-zero templates
+#        nonzero_templates = ppxf_fit.weights[0:self.ntpl] > 0
+#        print(numpy.sum(nonzero_templates))
+#        print(numpy.where( nonzero_templates )[0])
+
+        # Reject pixels based on their deviation from the model
+        gpm = self._update_rejection(ppxf_fit,
+                                     global_spectrum.data[self.spectrum_start:self.spectrum_end],
+                                     gpm)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of pixels to fit after first rejection: {0}'.format(len(gpm)))
+
+        # Refit with the new bad pixel mask and with a starting guess
+        # based on the previous fit
+        ppxf_fit = ppxf(self.tpl_flux.T,
+                        global_spectrum.data[self.spectrum_start:self.spectrum_end],
+                        global_spectrum_err.data[self.spectrum_start:self.spectrum_end],
+                        self.velscale, ppxf_fit.sol[0:2], velscale_ratio=self.velscale_ratio,
+                        goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
+                        mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
+                        vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+        if plot:
+            pyplot.show()
+#        print(ppxf_fit.sol[0] + self.base_velocity)
+#        print(self.guess_kin[0,0] + self.base_velocity)
+#        print(ppxf_fit.mp.status)
+#        pyplot.show()
+
+        # Return if pPXF failed
+        if not ppxf_fit.mp.status > 0:
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'pPXF failed to fit global spectrum!')
+            return None, None
+
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Non-zero templates fit to global spectrum: {0}'.format(
+                                                    numpy.sum(ppxf_fit.weights[0:self.ntpl] > 0)))
+
+        # Return the good pixel mask and the template weights
+        return gpm, ppxf_fit.weights[0:self.ntpl]
+
+
+    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
 
         This is a basic interface that is geared for the DAP that
@@ -456,20 +710,32 @@ class PPXFFit(StellarKinematicsFit):
 #            pyplot.plot(obj_wave, obj_flux[good_spec,:][i,:])
 #            pyplot.plot(obj_wave, obj_ferr[good_spec,:][i,:])
 #            pyplot.show()
-#        exit()
+
+#        print(par['template_library']['SPECRES'].data.shape)
+#        for i in range(par['template_library']['SPECRES'].data.shape[0]):
+#            pyplot.plot(par['template_library']['WAVE'].data,
+#                        par['template_library']['SPECRES'].data[i,:])
+
+        warnings.warn('Adopting mean spectral resolution of all templates!')
+        tpl_sres = numpy.mean(par['template_library']['SPECRES'].data, axis=0).ravel()
+#        print(tpl_sres.shape)
+#        pyplot.plot(par['template_library']['WAVE'].data, tpl_sres)
+#        pyplot.show()
 
         # Perform the fit
-        func = self.iterative_fit if iterative else self.fit
-
         model_wave, model_flux, model_mask, model_par \
-                = func(par['template_library']['WAVE'].data.copy(),
-                       par['template_library']['FLUX'].data.copy(),
-                       binned_spectra['WAVE'].data.copy(), obj_flux[good_spec,:],
-                       obj_ferr[good_spec,:], par['guess_redshift'][good_spec],
-                       par['guess_dispersion'][good_spec], mask=par['pixelmask'],
-                       waverange=par['pixelmask'].waverange, bias=par['bias'], clean=par['clean'],
-                       degree=par['degree'], mdegree=par['mdegree'], moments=par['moments'],
-                       oversample=par['oversample'], loggers=loggers, quiet=quiet)
+                = self.fit(par['template_library']['WAVE'].data.copy(),
+                           par['template_library']['FLUX'].data.copy(),
+                           binned_spectra['WAVE'].data.copy(), obj_flux[good_spec,:],
+                           obj_ferr[good_spec,:], par['guess_redshift'][good_spec],
+                           par['guess_dispersion'][good_spec], iteration_mode=par['iteration_mode'],
+                           velscale_ratio=par['velscale_ratio'], mask=par['pixelmask'],
+                           matched_resolution=par['match_resolution'],
+                           tpl_sres=tpl_sres, obj_sres=binned_spectra['SPECRES'].data.copy(),
+                           waverange=par['pixelmask'].waverange, bias=par['bias'],
+                           clean=par['clean'], degree=par['degree'], mdegree=par['mdegree'],
+                           moments=par['moments'], oversample=par['oversample'], loggers=loggers,
+                           quiet=quiet, dvtol=1e-9)
 
         # Reshape the data to include space for binned spectra that were
         # not fit
@@ -498,8 +764,10 @@ class PPXFFit(StellarKinematicsFit):
 
 
     def fit(self, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ferr, guess_redshift,
-            guess_dispersion, mask=None, waverange=None, bias=None, clean=False, degree=4,
-            mdegree=0, moments=2, oversample=None, loggers=None, quiet=False, dvtol=1e-10):
+            guess_dispersion, iteration_mode='global_template_with_rejection', velscale_ratio=None,
+            mask=None, matched_resolution=True, tpl_sres=None, obj_sres=None, waverange=None,
+            bias=None, clean=False, degree=4, mdegree=0, moments=2, oversample=None, loggers=None,
+            quiet=False, dvtol=1e-10):
 
         """
 
@@ -524,10 +792,32 @@ class PPXFFit(StellarKinematicsFit):
             guess_dispersion (float or numpy.ndarray): Single or
                 spectrum-specific velocity dispersion used to set the
                 initial guess kinematics.
-            mask (numpy.ndarray):  A
+            iteration_mode (str): (**Optional**) Iteration sequence to
+                perform.  See :func:`iteration_modes`.
+            velscale_ratio (int): (**Optional**) Ratio of velocity scale
+                per pixel in the object spectra to that for the template
+                spectra.  Default is that they should be identical.
+            mask (numpy.ndarray): (**Optional**) A
                 baseline pixel mask to use during the fitting  Other
                 pixels may be masked via the convenience functions, but
                 these pixels will always be masked.
+            matched_resolution (bool): (**Optional**)  Flag that the
+                object and template spectra have identical spectral
+                resolution.  Default is True.
+            tpl_sres (numpy.ndarray): (**Optional**) One-dimensional
+                vector with the spectral resolution (:math:`R =
+                \lambda/\Delta\lambda`) at each wavelength of the
+                template spectra.  Default is the resolution is not
+                provided and assumed to be same as the object
+                resolution.
+            obj_sres (numpy.ndarray): (**Optional**) One-dimensional
+                vector with the spectral resolution (:math:`R =
+                \lambda/\Delta\lambda`) at each wavelength of the object
+                spectra.  Default is the resolution is not provided and
+                assumed to be same as the template resolution.
+            waverange (array-like): (**Optional**) Lower and upper
+                wavelength limits to *include* in the fit.  Default is
+                to use as much of the spectrum as possible.
             bias (float): (**Optional**) Defaults to 0.0. From the pPXF
                 documentation: This parameter biases the (h3, h4, ...)
                 measurements towards zero (Gaussian LOSVD) unless their
@@ -607,7 +897,7 @@ class PPXFFit(StellarKinematicsFit):
                 keyword to oversample the template by a factor 30x
                 before convolving it with a well sampled LOSVD. This can
                 be useful to extract proper velocities, even when sigma
-                < 0.7*velScale and the dispersion information becomes
+                < 0.7*velscale and the dispersion information becomes
                 totally unreliable due to undersampling.  IMPORTANT: One
                 should sample the spectrum more finely, if possible,
                 before resorting to the use of this keyword!
@@ -640,6 +930,8 @@ class PPXFFit(StellarKinematicsFit):
             ValueError: Raised if the input arrays are not of the
                 correct shape or if the pixel scale of the template and
                 object spectra is greater than the specified tolerance.
+        """
+
         # Initialize the reporting
         if loggers is not None:
             self.loggers = loggers
@@ -658,6 +950,10 @@ class PPXFFit(StellarKinematicsFit):
                              'wavelength array.')
         self.tpl_flux = tpl_flux
         self.ntpl = self.tpl_flux.shape[0]
+        if tpl_sres is not None and tpl_sres.shape != self.tpl_wave.shape:
+            raise ValueError('Provided template resolution vector does not have the correct shape.')
+        self.tpl_sres = None if tpl_sres is None \
+                            else spectral_resolution(self.tpl_wave, tpl_sres, log10=True)
 
         # - Objects
         if len(obj_wave.shape) != 1:
@@ -674,19 +970,33 @@ class PPXFFit(StellarKinematicsFit):
         self.obj_ferr = obj_ferr if isinstance(obj_ferr, numpy.ma.MaskedArray) \
                                     else numpy.ma.MaskedArray(obj_ferr)
         self.nobj = self.obj_flux.shape[0]
+        self.obj_sres = obj_sres
+        if self.obj_sres is not None and self.obj_sres.shape != self.obj_wave.shape:
+            raise ValueError('Provided object resolution vector does not have the correct shape.')
+
+        # Confirm there is enough information to handle an unmatched
+        # resolution
+        if not matched_resolution and (self.obj_sres is None or self.tpl_sres is None):
+            raise ValueError('If the spectral resolution is not matched between the template and '
+                             'the object data, you must provide the spectral resolution for both.')
+        self.matched_resolution = matched_resolution
 
         # Get the pixel scale
-        self.velScale = spectrum_velocity_scale(self.obj_wave)
-        if numpy.absolute(self.velScale - spectrum_velocity_scale(self.tpl_wave)) > dvtol:
+        self.velscale = spectrum_velocity_scale(self.obj_wave)
+        self.velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        if not self._obj_tpl_pixelmatch(self.velscale, self.tpl_wave,
+                                       velscale_ratio=self.velscale_ratio, dvtol=dvtol):
             raise ValueError('Pixel scale of the object and template spectra must be identical.')
         self.velocity_limits, self.sigma_limits, self.gh_limits \
-                    = PPXFFit._losvd_limits(self.velScale)
+                    = PPXFFit._losvd_limits(self.velscale)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Number of templates: {0}'.format(self.ntpl))
             log_output(self.loggers, 1, logging.INFO, 'Number of object spectra: {0}'.format(
                                                                                         self.nobj))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velScale))
+            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velscale))
+            log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
+                                                                            self.velscale_ratio))
             log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
                                                                             *self.sigma_limits))
 
@@ -708,6 +1018,14 @@ class PPXFFit(StellarKinematicsFit):
                             numpy.log(_guess_redshift+1)*astropy.constants.c.to('km/s').value,
                             _guess_dispersion]).T
 
+        # Save the pPXF parameters
+        self.bias = bias
+        self.clean = clean
+        self.degree = degree
+        self.mdegree = mdegree
+        self.moments = moments
+        self.oversample = oversample
+
         # Initialize the output arrays
         #  Model flux:
         model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
@@ -725,48 +1043,75 @@ class PPXFFit(StellarKinematicsFit):
         #  Record array with model parameters
         model_par = init_record_array(self.nobj,
                         self._per_stellar_kinematics_dtype(self.ntpl, degree+1, max(mdegree,0),
-                                                           moments, self.bitmask.minimum_dtype()))
+                                                           self.moments,
+                                                           self.bitmask.minimum_dtype()))
         model_par['BIN_INDEX'] = numpy.arange(self.nobj)
 
-        # TODO: Need parameter keywords for max_velocity_range and
-        # alias_window
+        # Assess the regions that need to be masked during fitting
         try:
+            # TODO: Need parameter keywords for max_velocity_range and
+            # alias_window
             fit_indx, waverange_mask, npix_mask, alias_mask \
-                = self._fitting_mask(self.tpl_wave, self.obj_wave, self.velScale, _cz,
-                                     waverange=waverange, loggers=self.loggers, quiet=self.quiet)
+                = self._fitting_mask(self.tpl_wave, self.obj_wave, self.velscale, _cz,
+                                     velscale_ratio=self.velscale_ratio, waverange=waverange,
+                                     loggers=self.loggers, quiet=self.quiet)
         except ValueError as e:
             if not self.quiet:
                 warnings.warn('No fitting done because of a masking error: {0}'.format(e))
             model_par['MASK'] = self.bitmask.turn_on(model_par['MASK'], 'NO_FIT')
-            return obj_wave, model_flux, model_mask, model_par
+            return self.obj_wave, model_flux, model_mask, model_par
 
-        # Add to the mask
+        # Add these regions to the mask
         model_mask[:,waverange_mask] = self.bitmask.turn_on(model_mask[:,waverange_mask],
                                                             self.rng_flag)
         model_mask[:,npix_mask] = self.bitmask.turn_on(model_mask[:,npix_mask], self.tpl_flag)
         model_mask[:,alias_mask] = self.bitmask.turn_on(model_mask[:,alias_mask], self.trunc_flag)
-        # And update the internal mask of the data
+
+        # Make sure that the errors are valid
+        indx = ~(self.obj_ferr.data > 0) | ~(numpy.isfinite(self.obj_ferr.data))
+        if numpy.sum(indx) > 0:
+            model_mask[indx] = self.bitmask.turn_on(model_mask[indx], 'INVALID_ERROR')
+
+        # Update the internal mask of the data
         self.obj_flux[model_mask > 0] = numpy.ma.masked
+
+        # To avoid having pPXF throw an exception, make sure that all
+        # the masked errors are set to unity
+        self.obj_ferr[model_mask > 0] = 1.0
         self.obj_ferr[model_mask > 0] = numpy.ma.masked
 
         # Determine the starting and ending pixels
-        start, end = numpy.where(fit_indx)[0][ [0,-1] ]
-        end += 1
+        self.spectrum_start, self.spectrum_end = numpy.where(fit_indx)[0][ [0,-1] ]
+        self.spectrum_end += 1
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fitting pixels {0} --> {1}'.format(
-                       start, end))
+                       self.spectrum_start, self.spectrum_end))
             log_output(self.loggers, 1, logging.INFO,
-                       'Corresponds to wavelengths {0} --> {1}'.format(self.obj_wave[start],
-                                                                       self.obj_wave[end-1]))
+                       'Corresponds to wavelengths {0} --> {1}'.format(
+                                                            self.obj_wave[self.spectrum_start],
+                                                            self.obj_wave[self.spectrum_end-1]))
+
+#        _test_mask = self.bitmask.turn_off(model_mask, 'EML_REGION')
+#        pyplot.step(self.obj_wave, self.obj_flux[0,:], where='mid', lw=0.5, color='k')
+#        pyplot.step(self.obj_wave, model_mask[0,:], where='mid', lw=1., color='r')
+#        pyplot.step(self.obj_wave, _test_mask[0,:], where='mid', lw=1., color='g')
+#        pyplot.show()
 
         # Save the pixel statistics
-        model_par['BEGPIX'][:] = start
-        model_par['ENDPIX'][:] = end
-        model_par['NPIXTOT'][:] = end-start
+        model_par['BEGPIX'][:] = self.spectrum_start
+        model_par['ENDPIX'][:] = self.spectrum_end
+        model_par['NPIXTOT'][:] = self.spectrum_end - self.spectrum_start
+
+#        pyplot.step(self.obj_wave, self.obj_flux[0,:]/numpy.median(self.obj_flux[0,:]),
+#                    where='mid', color='k', lw=0.5)
+#        pyplot.step(self.tpl_wave*(1+guess_redshift[0]),
+#                    self.tpl_flux[31,:]/numpy.median(self.tpl_flux[31,:]), where='mid',
+#                    color='red', lw=1.5)
+#        pyplot.show()
 
         # Determine the degrees of freedom of the fit, used for the
         # brute force calculation of the reduced chi-square
-        self.dof = moments + max(mdegree, 0)
+        self.dof = self.moments + max(self.mdegree, 0)
         if degree >= 0:
             self.dof += degree+1
         if not self.quiet:
@@ -776,52 +1121,92 @@ class PPXFFit(StellarKinematicsFit):
         # Get the input pixel shift between the object and template
         # wavelength vectors; interpretted by pPXF as a base velocity
         # shift between the two
-        self.base_velocity = self.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
-                                                    self.velScale)
-        
-#        self.guess_kin[:,0] -= self.base_velocity
-#        self.vsyst = 0 #numpy.mean(self.guess_kin[:,0])
+        self.base_velocity = self.ppxf_tpl_obj_voff(self.tpl_wave,
+                                            self.obj_wave[self.spectrum_start:self.spectrum_end],
+                                                    self.velscale)
 
+        # Report the base velocity
         if not self.quiet:
             log_output(self.loggers, 2, logging.INFO,
                        'Initial wavelength yields baseline velocity offset of: {0:.2f}'.format(
                                                                                self.base_velocity))
-#            log_output(self.loggers, 2, logging.INFO,
-#                       'Systemic velocity offset provided to pPXF: {0:.2f}'.format(self.vsyst))
 
-#        _oversample = False if oversample is None else oversample
+#        pyplot.imshow(self.obj_flux, origin='lower', interpolation='nearest', aspect='auto')
+#        pyplot.colorbar()
+#        pyplot.show()
 
+        # Initialize the good pixel mask and the template set according
+        # to the iteration method
+        plot=False
+        if iteration_mode == 'global_template_with_rejection':
+            gpm0, global_weights = self._fit_global_spectrum(plot=plot)
+            if gpm0 is None or global_weights is None:
+                # pPXF failed!  
+                model_mask[:] = self.bitmask.turn_on(model_mask[:], 'FIT_FAILED')
+                model_par['MASK'][:] = self.bitmask.turn_on(model_par['MASK'][:], 'FIT_FAILED')
+                return self.obj_wave, model_flux, model_mask, model_par
+            templates = numpy.dot(global_weights, self.tpl_flux).reshape(1,-1)  # Global template
+        elif iteration_mode == 'nonzero_global_templates_with_rejection':
+            gpm0, global_weights = self._fit_global_spectrum(plot=plot)
+            if gpm0 is None or global_weights is None:
+                # pPXF failed!  
+                model_mask[:] = self.bitmask.turn_on(model_mask[:], 'FIT_FAILED')
+                model_par['MASK'][:] = self.bitmask.turn_on(model_par['MASK'][:], 'FIT_FAILED')
+                return self.obj_wave, model_flux, model_mask, model_par
+            templates = self.tpl_flux[global_weights > 0,:]         # Nonzero templates
+            nonzero_templates = global_weights > 0
+        elif iteration_mode == 'all_templates_with_rejection':
+            gpm0, global_weights = self._fit_global_spectrum(plot=plot)
+            if gpm0 is None or global_weights is None:
+                # pPXF failed!  
+                model_mask[:] = self.bitmask.turn_on(model_mask[:], 'FIT_FAILED')
+                model_par['MASK'][:] = self.bitmask.turn_on(model_par['MASK'][:], 'FIT_FAILED')
+                return self.obj_wave, model_flux, model_mask, model_par
+            templates = self.tpl_flux                               # All templates
+        elif iteration_mode == 'none':
+            gpm0 = numpy.arange(self.spectrum_end-self.spectrum_start).astype(int)
+            templates = self.tpl_flux
+        else:
+            raise ValueError('Unrecognized iteration method: {0}'.format(iteration_mode))
+
+        # Print heading of fitted kinematics for each bin
         if not self.quiet:
             log_output(self.loggers, 2, logging.INFO, '{0:>5}'.format('INDX')
-                    + (' {:>14}'*moments).format(*(['KIN{0}'.format(i+1) for i in range(moments)]))
+                    + (' {:>14}'*self.moments).format(*(['KIN{0}'.format(i+1)
+                                                                for i in range(self.moments)]))
                     + ' {0:>5} {1:>9} {2:>9} {3:>4}'.format('NZTPL', 'CHI2', 'RCHI2', 'STAT'))
+
+#        indx = ~(self.obj_ferr > 0) | ~(numpy.isfinite(self.obj_ferr))
+#        print(numpy.sum(indx))
 
         # Fit each binned spectrum:
         for i in range(self.nobj):
-#            if not self.quiet:
-#                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
 
-            # Get the list of good pixels
-            gpm = numpy.where( ~(self.obj_flux.mask[i,start:end]))[0]
+            # Reset the good pixel mask to the default
+            gpm = gpm0.copy()
 
             # Check if there is sufficient data for the fit
             # TODO: Too conservative?
-            if len(gpm) < self.dof+self.ntpl:
+            if len(gpm) < self.dof+templates.shape[0]:
                 if not self.quiet:
                     warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
-                                  '(dof={2}).'.format(_nfit, i+1, self.dof+self.ntpl))
+                                  '(dof={2}).'.format(len(gpm), i+1, self.dof+templates.shape[0]))
                 # Flag that the fit was not performed
                 model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
                 model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
                                                             'INSUFFICIENT_DATA')
+                # Move on to the next bin
                 continue
             
-#            pyplot.plot(self.obj_wave[start:end], self.obj_flux[i,start:end])
-#            pyplot.plot(self.obj_wave[start:end], self.obj_flux[i,start:end])
+#            pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end],
+#            self.obj_flux[i,self.spectrum_start:self.spectrum_end])
+#            pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end],
+#            self.obj_flux[i,self.spectrum_start:self.spectrum_end])
 #            pyplot.show()
 
-#            pyplot.plot(self.obj_wave[start:end],
-#                        self.obj_flux[i,start:end]/numpy.ma.mean(self.obj_flux[i,start:end]))
+#            pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end],
+#                        self.obj_flux[i,self.spectrum_start:self.spectrum_end]/numpy.ma.mean(
+#                                                            self.obj_flux[i,self.spectrum_start:self.spectrum_end]))
 #            pyplot.plot(self.tpl_wave*(1+(self.vsyst-self.base_velocity)
 #                            / astropy.constants.c.to('km/s').value),
 #                        self.tpl_flux[31,:]/numpy.mean(self.tpl_flux[31,:]))
@@ -831,12 +1216,15 @@ class PPXFFit(StellarKinematicsFit):
 #            print(self.guess_kin[i,:])
 
             # Run ppxf
-            ppxf_fit = ppxf(self.tpl_flux.T, self.obj_flux.data[i,start:end],
-                            self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
-                            goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=oversample,
-                            vsyst=self.base_velocity, quiet=True)#, plot=True)
-#                            vsyst=self.vsyst, quiet=True, plot=True)
+            ppxf_fit = ppxf(templates.T,
+                            self.obj_flux.data[i,self.spectrum_start:self.spectrum_end],
+                            self.obj_ferr.data[i,self.spectrum_start:self.spectrum_end],
+                            self.velscale, self.guess_kin[i,:], velscale_ratio=self.velscale_ratio,
+                            goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
+                            mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
+                            vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+            if plot:
+                pyplot.show()
 
             # TODO: Add the status to the output table?
             # Check the status of the fit
@@ -848,46 +1236,80 @@ class PPXFFit(StellarKinematicsFit):
                 model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
                 model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'FIT_FAILED')
                 continue
+
+            # Perform a rejection iteration
+            if iteration_mode in [ 'global_template_with_rejection',
+                                     'nonzero_global_templates_with_rejection',
+                                     'all_templates_with_rejection' ]:
+                gpm = self._update_rejection(ppxf_fit,
+                                        self.obj_flux.data[i,self.spectrum_start:self.spectrum_end],
+                                             gpm)
+                ppxf_fit = ppxf(templates.T,
+                                self.obj_flux.data[i,self.spectrum_start:self.spectrum_end],
+                                self.obj_ferr.data[i,self.spectrum_start:self.spectrum_end],
+                                self.velscale, ppxf_fit.sol[0:2],
+                                velscale_ratio=self.velscale_ratio, goodpixels=gpm, bias=self.bias,
+                                clean=self.clean, degree=self.degree, mdegree=self.mdegree,
+                                moments=self.moments, oversample=self.oversample,
+                                vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+                if plot:
+                    pyplot.show()
+
+            # Check the status of the fit (again)
+            if not ppxf_fit.mp.status > 0:
+                # Fit failed so log it and continue
+                if not self.quiet:
+                    log_output(self.loggers, 1, logging.INFO,
+                               'Failed pPXF status for spectrum {0}; nothing saved.'.format(i+1))
+                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'FIT_FAILED')
+                continue
+
+            # Check if the fit reached the maximum number of iterations.
+            # Keep the data but throw a warning and log the status via
+            # the bitmask.
             if ppxf_fit.mp.status == 5:
-                # Fit reached the maximum number of iterations.  Keep
-                # the data but throw a warning and log the status via
-                # the bitmask.
                 if not self.quiet:
                     warnings.warn('pPXF optimizer reached maximum number of iterations for '
                                   'spectrum {0}.'.format(i+1))
                 model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MAXITER')
 
             # Save the result
-            model_flux[i,start:end] = ppxf_fit.bestfit
+            model_flux[i,self.spectrum_start:self.spectrum_end] = ppxf_fit.bestfit
             if len(gpm) != len(ppxf_fit.goodpixels):
                 rejected_pixels = list(set(gpm)-set(ppxf_fit.goodpixels))
                 if not self.quiet:
                     log_output(self.loggers, 1, logging.INFO,
                                'Rejected {0} pixels during fit.'.format(len(rejected_pixels)))
-                model_mask[i,start:end][rejected_pixels] \
-                        = self.bitmask.turn_on(model_mask[i,start:end][rejected_pixels],
+                model_mask[i,self.spectrum_start:self.spectrum_end][rejected_pixels] \
+                        = self.bitmask.turn_on(
+                            model_mask[i,self.spectrum_start:self.spectrum_end][rejected_pixels],
                                                flag=self.rej_flag)
-
             model_par['NPIXFIT'][i] = len(ppxf_fit.goodpixels)
-            model_par['TPLWGT'][i] = ppxf_fit.weights[0:self.ntpl]   # TODO: Store sparsely?
 
-            if degree >= 0:
+            # TODO: Store template weights sparsely?
+            if iteration_mode == 'global_template_with_rejection':
+                model_par['TPLWGT'][i] = ppxf_fit.weights[0]*global_weights
+            elif iteration_mode == 'nonzero_global_templates_with_rejection':
+                model_par['TPLWGT'][i][nonzero_templates] = ppxf_fit.weights[0:templates.shape[0]]
+            else:
+                model_par['TPLWGT'][i] = ppxf_fit.weights[0:self.ntpl]
+
+            if self.degree >= 0:
                 model_par['ADDCOEF'][i] = ppxf_fit.polyweights
-            if mdegree > 0:
+            if self.mdegree > 0:
                 model_par['MULTCOEF'][i] = ppxf_fit.mpolyweights
 
             model_par['KININP'][i] = self.guess_kin[i,:]
-#            model_par['KININP'][i][0] += self.base_velocity
             model_par['KIN'][i] = ppxf_fit.sol
-#            model_par['KIN'][i][0] += self.base_velocity
             model_par['KINERR'][i] = ppxf_fit.error
 
-            resid = self.obj_flux[i,start:end] - ppxf_fit.bestfit
-            model_par['CHI2'][i] = numpy.sum( numpy.square(
-                                        (resid/self.obj_ferr[i,start:end])[ppxf_fit.goodpixels] ))
+            resid = self.obj_flux[i,self.spectrum_start:self.spectrum_end] - ppxf_fit.bestfit
+            model_par['CHI2'][i] = numpy.sum(numpy.square(
+                                (resid/self.obj_ferr[i,self.spectrum_start:self.spectrum_end])[ppxf_fit.goodpixels]))
             model_par['RCHI2'][i] = model_par['CHI2'][i] \
-                            / (model_par['NPIXFIT'][i] 
-                                - self.dof - numpy.sum(model_par['TPLWGT'][i] > 0))
+                                        / (model_par['NPIXFIT'][i] 
+                                            - self.dof - numpy.sum(model_par['TPLWGT'][i] > 0))
             model_par['ROBUST_RCHI2'][i] = ppxf_fit.chi2
 
             model_par['RMS'][i] = numpy.sqrt(numpy.ma.mean( numpy.square(
@@ -898,7 +1320,7 @@ class PPXFFit(StellarKinematicsFit):
 
             indx = numpy.absolute(ppxf_fit.bestfit) > 0
             _goodpixels = numpy.intersect1d(numpy.arange(len(resid))[indx], ppxf_fit.goodpixels,
-                                                assume_unique=True)
+                                            assume_unique=True)
             if len(_goodpixels) > 0:
                 frac_resid = resid[_goodpixels]/ppxf_fit.bestfit[_goodpixels]
                 model_par['FRMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
@@ -911,9 +1333,13 @@ class PPXFFit(StellarKinematicsFit):
 #                        zorder=1, alpha=0.5)
 #            pyplot.show()
 
+            # Calculate the dispersion correction if necessary
+            if not self.matched_resolution:
+                model_par['SIGMACORR'][i] = self._dispersion_correction(ppxf_fit.goodpixels)
+
             if not self.quiet:
                 log_output(self.loggers, 2, logging.INFO, '{0:>5d}'.format(i+1)
-                            + (' {:>14.7e}'*moments).format(*model_par['KIN'][i]) 
+                            + (' {:>14.7e}'*self.moments).format(*model_par['KIN'][i]) 
                     + ' {0:>5d} {1:>9.2e} {2:>9.2e} {3:>4d}'.format(
                                                             numpy.sum(model_par['TPLWGT'][i] > 0),
                                                             model_par['CHI2'][i],
@@ -928,397 +1354,7 @@ class PPXFFit(StellarKinematicsFit):
 
         return self.obj_wave, model_flux, model_mask, model_par
 
-        """
-        raise NotImplementedError('Do the iterative fit!')
 
-
-    def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9):
-        """
-        Reject aberrant pixels from pPXF fit.
-        """
-        for i in range(maxiter):
-#            if not self.quiet:
-#                log_output(self.loggers, 1, logging.INFO,
-#                           'Rejection iteration, remaining pixels: {0} {1}'.format(i+1, len(gpm)))
-            scale = numpy.sum(galaxy[gpm]*ppxf_fit.bestfit[gpm]) \
-                            / numpy.sum(numpy.square(ppxf_fit.bestfit[gpm]))
-            resid = scale*ppxf_fit.bestfit[gpm] - galaxy[gpm]
-            err = numpy.std(resid)
-            ok_old = gpm
-            gpm = numpy.flatnonzero(numpy.absolute(ppxf_fit.bestfit - galaxy) < 3*err)
-            gpm = numpy.intersect1d(ok_old, gpm)
-            if numpy.array_equal(gpm, ok_old):
-                break 
-        return gpm
-
-
-    def iterative_fit(self, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ferr, guess_redshift,
-                      guess_dispersion, mask=None, waverange=None, bias=None, clean=False,
-                      degree=4, mdegree=0, moments=2, oversample=None, loggers=None, quiet=False,
-                      dvtol=1e-10):
-        """
-
-        - Construct a "global" spectrum from all bins/spaxels within 1 Re
-                - pPXF fit to determine the optimal template weights
-                    - need radii (x,y,pa,ell) and Re
-            - keep polynomial degree low; additive only!
-            - initial estimate for masking everything
-            - only fit first two moments (V, sig)
-            - fit all templates
-                - test different libraries
-            - produce a single "global" template to be used in what follows
-
-        - Start loop over all Voronoi bins:
-            - In all fits use single template from "global" fit
-            
-            1st pPXF fit:
-                - Still use initial mask for gas
-                - fit only V, sig
-                - measure residuals
-                - estimate error spectrum from residuals (rms vs. wavelength)
-
-            2nd pPXF fit:
-                - refit spectrum with new error spectrum
-                    - first compare error spectrum and residual spectrum
-                - again only fit first two moments
-                - apply cleaning algorithm to include strongly deviant pixels in mask
-                    - chi-square clip? first only clip in emission-line
-                      regions (and redward of SII - to catch red sky lines?)
-                - This will produce (V_Gauss and sig_Gauss) needed e.g. for Jeans models
-                
-            3rd pPXF fit:
-                - apply mask (goodpixels) from previous fit
-                - fit four moments
-                - include penalty/bias in h3,h4
-                - This will produce (V, sig, h3, h4) needed e.g. for Schwarzschild models
-
-            4th pPXF fit---Monte Carlo errors: Repeat ~100 times
-                - Reshuffle the residuals in small wavelength intervals
-                - pPXF fit with NO penalty (or very small)
-        """
-
-        # TODO: Put stuff that's common between fit and iterative_fit
-        # into on function
-
-        # Initialize the reporting
-        if loggers is not None:
-            self.loggers = loggers
-        self.quiet = quiet
-
-        # Check the input
-        # - Templates
-        if len(tpl_wave.shape) != 1:
-            raise ValueError('Input template wavelengths must be a vector; all spectra should '
-                             'have the same wavelength solution.')
-        self.tpl_wave = tpl_wave
-        if isinstance(tpl_flux, numpy.ma.MaskedArray):
-            raise TypeError('Template spectra cannot be masked arrays!')
-        if tpl_flux.shape[1] != len(self.tpl_wave):
-            raise ValueError('The template spectra fluxes must have the same length as the '
-                             'wavelength array.')
-        self.tpl_flux = tpl_flux
-        self.ntpl = self.tpl_flux.shape[0]
-
-        # - Objects
-        if len(obj_wave.shape) != 1:
-            raise ValueError('Input object wavelengths must be a vector; all spectra should '
-                             'have the same wavelength solution.')
-        self.obj_wave = obj_wave
-        if obj_flux.shape[1] != len(self.obj_wave):
-            raise ValueError('The object spectra fluxes must have the same length as the '
-                             'wavelength array.')
-        self.obj_flux = obj_flux if isinstance(obj_flux, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(obj_flux)
-        if obj_ferr is not None and obj_ferr.shape != self.obj_flux.shape:
-            raise ValueError('The shape of any provided error array must match the flux array.')
-        self.obj_ferr = obj_ferr.copy() if isinstance(obj_ferr, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(obj_ferr.copy())
-        self.nobj = self.obj_flux.shape[0]
-
-        # Get the pixel scale
-        self.velScale = spectrum_velocity_scale(self.obj_wave)
-        if numpy.absolute(self.velScale - spectrum_velocity_scale(self.tpl_wave)) > dvtol:
-            raise ValueError('Pixel scale of the object and template spectra must be identical.')
-        self.velocity_limits, self.sigma_limits, self.gh_limits \
-                    = PPXFFit._losvd_limits(self.velScale)
-
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Number of templates: {0}'.format(self.ntpl))
-            log_output(self.loggers, 1, logging.INFO, 'Number of object spectra: {0}'.format(
-                                                                                        self.nobj))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velScale))
-            log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
-                                                                            *self.sigma_limits))
-
-        # Get the input guess kinematics
-        _guess_redshift = numpy.atleast_1d(guess_redshift)
-        if len(_guess_redshift) != 1 and len(_guess_redshift) != self.nobj:
-            raise ValueError('Must provide a single redshift or one per object spectrum.')
-        if len(_guess_redshift) == 1:
-            _guess_redshift = numpy.full(self.nobj, _guess_redshift[0], dtype=numpy.float)
-        _guess_dispersion = numpy.atleast_1d(guess_dispersion)
-        if len(_guess_dispersion) != 1 and len(_guess_dispersion) != self.nobj:
-            raise ValueError('Must provide a single dispersion or one per object spectrum.')
-        if len(_guess_dispersion) == 1:
-            _guess_dispersion = numpy.full(self.nobj, _guess_dispersion[0], dtype=numpy.float)
-
-        # TODO: Make below a function!
-        _cz = _guess_redshift*astropy.constants.c.to('km/s').value
-        self.guess_kin = numpy.array([
-                            numpy.log(_guess_redshift+1)*astropy.constants.c.to('km/s').value,
-                            _guess_dispersion]).T
-
-        # Initialize the output arrays
-        #  Model flux:
-        model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
-        #  Model mask:
-        model_mask = numpy.zeros(self.obj_flux.shape, dtype=self.bitmask.minimum_dtype())
-        if mask is not None:
-            # Include the mask, if provided
-            if isinstance(mask, numpy.ndarray):
-                if mask is not None and mask.shape != self.obj_flux.shape:
-                    raise ValueError('Shape of object mask array must match its flux array.')
-                model_mask = mask.astype(self.bitmask.minimum_dtype())
-            if isinstance(mask, SpectralPixelMask):
-                model_mask = mask.bits(self.bitmask, self.obj_wave, nspec=self.nobj,
-                                       velocity_offsets=_cz)
-
-        #  Record array with model parameters
-        model_par = init_record_array(self.nobj,
-                        self._per_stellar_kinematics_dtype(self.ntpl, degree+1, max(mdegree,0),
-                                                           moments, self.bitmask.minimum_dtype()))
-        model_par['BIN_INDEX'] = numpy.arange(self.nobj)
-
-        # Assess the regions that need to be masked during fitting
-        try:
-            # TODO: Need parameter keywords for max_velocity_range and
-            # alias_window
-            fit_indx, waverange_mask, npix_mask, alias_mask \
-                = self._fitting_mask(self.tpl_wave, self.obj_wave, self.velScale, _cz,
-                                     waverange=waverange, loggers=self.loggers, quiet=self.quiet)
-        except ValueError as e:
-            if not self.quiet:
-                warnings.warn('No fitting done because of a masking error: {0}'.format(e))
-            model_par['MASK'] = self.bitmask.turn_on(model_par['MASK'], 'NO_FIT')
-            return obj_wave, model_flux, model_mask, model_par
-
-        # Add these regions to the mask
-        model_mask[:,waverange_mask] = self.bitmask.turn_on(model_mask[:,waverange_mask],
-                                                            self.rng_flag)
-        model_mask[:,npix_mask] = self.bitmask.turn_on(model_mask[:,npix_mask], self.tpl_flag)
-        model_mask[:,alias_mask] = self.bitmask.turn_on(model_mask[:,alias_mask], self.trunc_flag)
-
-        # Make sure that the errors are valid
-        indx = ~(self.obj_ferr.data > 0) | ~(numpy.isfinite(self.obj_ferr.data))
-        if numpy.sum(indx) > 0:
-            model_mask[indx] = self.bitmask.turn_on(model_mask[indx], 'INVALID_ERROR')
-        
-        # Update the internal mask of the data.
-        self.obj_flux[model_mask > 0] = numpy.ma.masked
-
-        # To avoid having pPXF throw an exception, make sure that all
-        # the masked errors are set to unity
-        self.obj_ferr[model_mask > 0] = 1.0
-        self.obj_ferr[model_mask > 0] = numpy.ma.masked
-
-        # Determine the starting and ending pixels
-        start, end = numpy.where(fit_indx)[0][ [0,-1] ]
-        end += 1
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Fitting pixels {0} --> {1}'.format(
-                       start, end))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Corresponds to wavelengths {0} --> {1}'.format(self.obj_wave[start],
-                                                                       self.obj_wave[end-1]))
-
-#        _test_mask = self.bitmask.turn_off(model_mask, 'EML_REGION')
-#        pyplot.step(self.obj_wave, self.obj_flux[0,:], where='mid', lw=0.5, color='k')
-#        pyplot.step(self.obj_wave, model_mask[0,:], where='mid', lw=1., color='r')
-#        pyplot.step(self.obj_wave, _test_mask[0,:], where='mid', lw=1., color='g')
-#        pyplot.show()
-
-        # Save the pixel statistics
-        model_par['BEGPIX'][:] = start
-        model_par['ENDPIX'][:] = end
-        model_par['NPIXTOT'][:] = end-start
-
-#        pyplot.step(self.obj_wave, self.obj_flux[0,:]/numpy.median(self.obj_flux[0,:]),
-#                    where='mid', color='k', lw=0.5)
-#        pyplot.step(self.tpl_wave*(1+guess_redshift[0]),
-#                    self.tpl_flux[31,:]/numpy.median(self.tpl_flux[31,:]), where='mid',
-#                    color='red', lw=1.5)
-#        pyplot.show()
-
-        # Determine the degrees of freedom of the fit, used for the
-        # brute force calculation of the reduced chi-square
-        self.dof = moments + max(mdegree, 0)
-        if degree >= 0:
-            self.dof += degree+1
-        if not self.quiet:
-            log_output(self.loggers, 2, logging.INFO, 'Total degrees of freedom: {0}'.format(
-                                                                            self.dof+self.ntpl))
-
-        # Get the input pixel shift between the object and template
-        # wavelength vectors; interpretted by pPXF as a base velocity
-        # shift between the two
-        self.base_velocity = self.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
-                                                    self.velScale)
-#        self.guess_kin[:,0] -= self.base_velocity
-#        self.vsyst = 0 #numpy.mean(self.guess_kin[:,0])
-
-        if not self.quiet:
-            log_output(self.loggers, 2, logging.INFO,
-                       'Initial wavelength yields baseline velocity offset of: {0:.2f}'.format(
-                                                                               self.base_velocity))
-#            log_output(self.loggers, 2, logging.INFO,
-#                       'Systemic velocity offset provided to pPXF: {0:.2f}'.format(self.vsyst))
-
-#        _oversample = False if oversample is None else oversample
-
-#        pyplot.imshow(self.obj_flux, origin='lower', interpolation='nearest', aspect='auto')
-#        pyplot.colorbar()
-#        pyplot.show()
-
-        # --------------------------------------------------------------
-        # --- IN FLUX ---
-        # --------------------------------------------------------------
-
-        # First fit global spectrum
-        global_spectrum = numpy.ma.sum(self.obj_flux, axis=0)
-        global_spectrum_err = numpy.ma.sqrt(numpy.ma.sum(numpy.square(self.obj_ferr), axis=0))
-        global_spectrum_err[numpy.ma.getmaskarray(global_spectrum)] = 1.0   # To avoid pPXF error
-
-        gpm = numpy.where( ~(global_spectrum.mask[start:end]))[0]
-
-#        pyplot.step(self.obj_wave, global_spectrum, where='mid', color='k')
-#        pyplot.step(self.obj_wave, global_spectrum_err, where='mid', color='k')
-#        pyplot.plot(self.obj_wave[numpy.array([start,start])], [0,1], color='r')
-#        pyplot.plot(self.obj_wave[numpy.array([end-1,end-1])], [0,1], color='r')
-#        pyplot.show()
-
-        ppxf_fit = ppxf(self.tpl_flux.T, global_spectrum.data[start:end],
-                        global_spectrum_err.data[start:end], self.velScale, self.guess_kin[0,:],
-                        goodpixels=gpm, bias=bias, clean=clean, degree=degree, mdegree=mdegree,
-                        moments=moments, oversample=oversample,
-                        vsyst=-self.base_velocity, quiet=True)#False, plot=True)
-                        #, quiet=False, plot=True)
-#        print(ppxf_fit.sol[0] + self.base_velocity)
-#        print(self.guess_kin[0,0] + self.base_velocity)
-#        print(ppxf_fit.mp.status)
-        pyplot.show()
-
-        nonzero_templates = ppxf_fit.weights[0:self.ntpl] > 0
-#        print(numpy.sum(nonzero_templates))
-#        print(numpy.where( nonzero_templates )[0])
-
-        gpm = self._update_rejection(ppxf_fit, global_spectrum.data[start:end], gpm)
-
-        ppxf_fit = ppxf(self.tpl_flux.T, global_spectrum.data[start:end],
-                        global_spectrum_err.data[start:end], self.velScale, ppxf_fit.sol[0:2],
-                        goodpixels=gpm, bias=bias, clean=clean, degree=degree, mdegree=mdegree,
-                        moments=moments, oversample=oversample,
-                        vsyst=-self.base_velocity, quiet=True)#, plot=True)
-         #, quiet=False, plot=True)
-#        print(ppxf_fit.sol[0] + self.base_velocity)
-#        print(self.guess_kin[0,0] + self.base_velocity)
-#        print(ppxf_fit.mp.status)
-#        pyplot.show()
-
-        # Limit the set of templates to be the same as used in the
-        # global spectrum
-#        nonzero_templates |= ppxf_fit.weights[0:self.ntpl] > 0
-
-        # Only use a single template based on the best fitting template
-        # mix for the global spectrum
-        nonzero_templates = ppxf_fit.weights[0:self.ntpl] > 0
-        global_weights = ppxf_fit.weights[0:self.ntpl]
-        global_template = numpy.dot(ppxf_fit.weights[0:self.ntpl], self.tpl_flux)
-
-#        pyplot.step(self.tpl_wave, global_template, where='mid', color='k', lw=0.5)
-#        pyplot.show()
-
-        ntpl_in_fit = numpy.sum(nonzero_templates)
-
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                'Non-zero templates fit during global-spectrum iteration: {0}'.format(ntpl_in_fit))
-
-        gpm0 = gpm.copy()
-
-        # --------------------------------------------------------------
-        # --------------------------------------------------------------
-
-
-        # Header for output from each individual fit
-        if not self.quiet:
-            log_output(self.loggers, 2, logging.INFO, '{0:>5}'.format('INDX')
-                    + (' {:>14}'*moments).format(*(['KIN{0}'.format(i+1) for i in range(moments)]))
-                    + ' {0:>5} {1:>9} {2:>9} {3:>4}'.format('NZTPL', 'CHI2', 'RCHI2', 'STAT'))
-
-        indx = ~(self.obj_ferr > 0) | ~(numpy.isfinite(self.obj_ferr))
-        print(numpy.sum(indx))
-
-        # Fit each binned spectrum:
-        for i in range(self.nobj):
-#            if not self.quiet:
-#                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nobj))
-
-            # Get the list of good pixels
-            # TODO: Use the gpm from the fit to the global template
-#            gpm = numpy.where( ~(self.obj_flux.mask[i,start:end]))[0]
-
-            gpm = gpm0.copy()
-
-            # Check if there is sufficient data for the fit
-            # TODO: Too conservative?
-            if len(gpm) < self.dof+self.ntpl:
-                if not self.quiet:
-                    warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
-                                  '(dof={2}).'.format(_nfit, i+1, self.dof+self.ntpl))
-                # Flag that the fit was not performed
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
-                                                            'INSUFFICIENT_DATA')
-                continue
-            
-#            pyplot.plot(self.obj_wave[start:end], self.obj_flux[i,start:end])
-#            pyplot.plot(self.obj_wave[start:end], self.obj_flux[i,start:end])
-#            pyplot.show()
-
-#            pyplot.plot(self.obj_wave[start:end],
-#                        self.obj_flux[i,start:end]/numpy.ma.mean(self.obj_flux[i,start:end]))
-#            pyplot.plot(self.tpl_wave*(1+(self.vsyst-self.base_velocity)
-#                            / astropy.constants.c.to('km/s').value),
-#                        self.tpl_flux[31,:]/numpy.mean(self.tpl_flux[31,:]))
-#            pyplot.plot(self.tpl_wave*(1+self.base_velocity/astropy.constants.c.to('km/s').value),
-#                        self.tpl_flux[31,:]/numpy.mean(self.tpl_flux[31,:]))
-#            pyplot.show()
-#            print(self.guess_kin[i,:])
-
-            # ----------------------------------------------------------
-            # ----------------------------------------------------------
-            # ----------------------------------------------------------
-            # Run ppxf
-            # --- first fit; global mask; emission-lines masked ---
-            ppxf_fit = ppxf(global_template, self.obj_flux.data[i,start:end],
-                            self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
-                            goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=oversample,
-                            vsyst=-self.base_velocity, quiet=True)#, plot=True)
-#                            vsyst=self.vsyst, quiet=True, plot=True)
-
-            # ---reject---
-            gpm = self._update_rejection(ppxf_fit, self.obj_flux.data[i,start:end], gpm)
-
-            # --- second fit; updated mask; emission-lines masked ---
-            ppxf_fit = ppxf(global_template, self.obj_flux.data[i,start:end],
-                            self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
-                            goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-                            mdegree=mdegree, moments=moments, oversample=oversample,
-                            vsyst=-self.base_velocity, quiet=True)#False, plot=True)
-#            print('Stellar only weight: {0}'.format(ppxf_fit.weights[0]))
-#            pyplot.show()
-#
 #            # --- third fit; updated mask; emission-lines unmasked;
 #            # stellar kinematics fixed ---
 #
@@ -1347,118 +1383,12 @@ class PPXFFit(StellarKinematicsFit):
 #                                          numpy.where(self.bitmask.flagged(model_mask[i,start:end],
 #                                                                            flag='EML_REGION'))[0])
 #            ppxf_fit = ppxf(stars_gas_templates, self.obj_flux.data[i,start:end],
-#                            self.obj_ferr.data[i,start:end], self.velScale, gk,
+#                            self.obj_ferr.data[i,start:end], self.velscale, gk,
 #                            goodpixels=gpm_emission, bias=bias, clean=clean, degree=-1,
 #                            mdegree=8, moments=moments_gas, oversample=oversample,
 #                            vsyst=-self.base_velocity, quiet=False, plot=True, component=component)
 #            print('W/ emission lines: {0}'.format(ppxf_fit.weights[0]))
 #            pyplot.show()
-#            exit()
-
-            # ----------------------------------------------------------
-            # ----------------------------------------------------------
-            # ----------------------------------------------------------
-
-#            ppxf_fit = ppxf(self.tpl_flux[nonzero_templates,:].T, self.obj_flux.data[i,start:end],
-#                            self.obj_ferr.data[i,start:end], self.velScale, self.guess_kin[i,:],
-#                            goodpixels=gpm, bias=bias, clean=clean, degree=degree,
-#                            mdegree=mdegree, moments=moments, oversample=oversample,
-#                            quiet=True)
-
-            # TODO: Add the status to the output table?
-            # Check the status of the fit
-            if not ppxf_fit.mp.status > 0:
-                # Fit failed so log it and continue
-                if not self.quiet:
-                    log_output(self.loggers, 1, logging.INFO,
-                               'Failed pPXF status for spectrum {0}; nothing saved.'.format(i+1))
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'FIT_FAILED')
-                continue
-            if ppxf_fit.mp.status == 5:
-                # Fit reached the maximum number of iterations.  Keep
-                # the data but throw a warning and log the status via
-                # the bitmask.
-                if not self.quiet:
-                    warnings.warn('pPXF optimizer reached maximum number of iterations for '
-                                  'spectrum {0}.'.format(i+1))
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MAXITER')
-
-            # Save the result
-            model_flux[i,start:end] = ppxf_fit.bestfit
-            if len(gpm) != len(ppxf_fit.goodpixels):
-                rejected_pixels = list(set(gpm)-set(ppxf_fit.goodpixels))
-                if not self.quiet:
-                    log_output(self.loggers, 1, logging.INFO,
-                               'Rejected {0} pixels during fit.'.format(len(rejected_pixels)))
-                model_mask[i,start:end][rejected_pixels] \
-                        = self.bitmask.turn_on(model_mask[i,start:end][rejected_pixels],
-                                               flag=self.rej_flag)
-
-            model_par['NPIXFIT'][i] = len(ppxf_fit.goodpixels)
-            # TODO: Store template weights sparsely?
-#            model_par['TPLWGT'][i][nonzero_templates] = ppxf_fit.weights[0:ntpl_in_fit]
-            model_par['TPLWGT'][i] = ppxf_fit.weights[0]*global_weights
-            # TODO: Does negative weights mean the fit failed?
-            if ppxf_fit.weights[0] < 0:
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
-                                                            'NEGATIVE_WEIGHTS')
-            if degree >= 0:
-                model_par['ADDCOEF'][i] = ppxf_fit.polyweights
-            if mdegree > 0:
-                model_par['MULTCOEF'][i] = ppxf_fit.mpolyweights
-
-            model_par['KININP'][i] = self.guess_kin[i,:]
-#            model_par['KININP'][i][0] += self.base_velocity
-            model_par['KIN'][i] = ppxf_fit.sol
-#            model_par['KIN'][i][0] += self.base_velocity
-            model_par['KINERR'][i] = ppxf_fit.error
-
-            resid = self.obj_flux[i,start:end] - ppxf_fit.bestfit
-            model_par['CHI2'][i] = numpy.sum( numpy.square(
-                                        (resid/self.obj_ferr[i,start:end])[ppxf_fit.goodpixels] ))
-            model_par['RCHI2'][i] = model_par['CHI2'][i] \
-                            / (model_par['NPIXFIT'][i] 
-                                - self.dof - numpy.sum(model_par['TPLWGT'][i] > 0))
-            model_par['ROBUST_RCHI2'][i] = ppxf_fit.chi2
-
-            model_par['RMS'][i] = numpy.sqrt(numpy.ma.mean( numpy.square(
-                                                                resid[ppxf_fit.goodpixels]) ))
-            # Get growth statistics for the residuals
-            model_par['ABSRESID'][i] = residual_growth(resid[ppxf_fit.goodpixels],
-                                                       [0.68, 0.95, 0.99])
-
-            indx = numpy.absolute(ppxf_fit.bestfit) > 0
-            _goodpixels = numpy.intersect1d(numpy.arange(len(resid))[indx], ppxf_fit.goodpixels,
-                                                assume_unique=True)
-            if len(_goodpixels) > 0:
-                frac_resid = resid[_goodpixels]/ppxf_fit.bestfit[_goodpixels]
-                model_par['FRMS'][i] = numpy.sqrt(numpy.ma.mean(numpy.square(frac_resid)))
-                if len(_goodpixels) > 1:
-                    model_par['FABSRESID'][i] = residual_growth(frac_resid, [0.68, 0.95, 0.99])
-
-#            pyplot.step(obj_wave, flux[i,:], where='mid', linestyle='-', lw=0.5, color='k',
-#                        zorder=3)
-#            pyplot.plot(obj_wave, model_flux[i,:], linestyle='-', lw=1.5, color='r',
-#                        zorder=1, alpha=0.5)
-#            pyplot.show()
-
-            if not self.quiet:
-                log_output(self.loggers, 2, logging.INFO, '{0:>5d}'.format(i+1)
-                            + (' {:>14.7e}'*moments).format(*model_par['KIN'][i]) 
-                    + ' {0:>5d} {1:>9.2e} {2:>9.2e} {3:>4d}'.format(
-                                                            numpy.sum(model_par['TPLWGT'][i] > 0),
-                                                            model_par['CHI2'][i],
-                                                            model_par['RCHI2'][i],
-                                                            ppxf_fit.mp.status))
-
-        model_par['KIN'][:,0], model_par['KINERR'][:,0] \
-                = self._convert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
-
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'pPXF finished')
-
-        return self.obj_wave, model_flux, model_mask, model_par
 
 
     @staticmethod
@@ -1523,7 +1453,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def _losvd_kernel(par, velScale, vsyst=0.0):
+    def _losvd_kernel(par, velscale, vsyst=0.0):
         """
         Return the sampled kernel.
 
@@ -1542,7 +1472,7 @@ class PPXFFit(StellarKinematicsFit):
         _par = par.copy()
         _par[0], verr = PPXFFit._revert_velocity(_par[0], 1.0)
         _par[0] += vsyst
-        _par[0:2] /= velScale      # Convert to pixels
+        _par[0:2] /= velscale      # Convert to pixels
 
         dx = int(abs(_par[0])+5.0*par[1])
         nl = 2*dx+1
@@ -1563,7 +1493,7 @@ class PPXFFit(StellarKinematicsFit):
             losvd *= poly
 
 #        return losvd
-        return _par[0]*velScale, losvd
+        return _par[0]*velscale, losvd
 
 #        npad = int(2**np.ceil(np.log2(nwave + nl/2)))
 #        losvd_pad = numpy.zeros(npad)
@@ -1572,7 +1502,7 @@ class PPXFFit(StellarKinematicsFit):
 
     @staticmethod
     def construct_models(binned_spectra, template_library, model_par, degree, mdegree,
-                         redshift_only=False):
+                         redshift_only=False, velscale_ratio=None, dvtol=1e-10):
         """
         Construct models using the provided set of model parameters and
         template library.  The number of template weights in the
@@ -1595,10 +1525,15 @@ class PPXFFit(StellarKinematicsFit):
         if model_par['TPLWGT'].shape[1] != template_library.ntpl:
             raise ValueError('The number of weights does not match the number of templates.')
 
-        velScale = spectrum_velocity_scale(binned_spectra['WAVE'].data)
-
         tpl_wave = template_library['WAVE'].data
         obj_wave = binned_spectra['WAVE'].data
+
+        velscale = spectrum_velocity_scale(obj_wave)
+        if not PPXFFit._obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=velscale_ratio,
+                                           dvtol=dvtol):
+            raise ValueError('Pixel scale of the object and template spectra must be identical.')
+        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+
         obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
 
         outRange = obj_wave[ [0,-1] ]
@@ -1641,10 +1576,14 @@ class PPXFFit(StellarKinematicsFit):
 #                print('Start,End: ', start, end)
 #                print(obj_wave[start:end].shape)
 #                print(tpl_wave.shape)
-                vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velScale)
-                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velScale, vsyst=vsyst)
-                models[i,start:end] = scipy.signal.fftconvolve(composite_template, losvd,
-                                                               mode="same")[:end-start]
+                vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velscale)
+                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velscale/_velscale_ratio,
+                                                   vsyst=vsyst)
+                npix_temp = composite_template.size - composite_template.size % _velscale_ratio
+                _model = scipy.signal.fftconvolve(composite_template[:npix_temp], losvd,
+                                                  mode="same")
+                models[i,start:end] = numpy.mean(_model.reshape(-1,_velscale_ratio),
+                                                 axis=1).ravel()[:end-start]
 
             # Account for the polynomial
             x = numpy.linspace(-1, 1, model_par['NPIXTOT'][i])

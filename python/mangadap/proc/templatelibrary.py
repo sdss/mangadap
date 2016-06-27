@@ -212,6 +212,10 @@ bitmasks for the template library spectra.
         processed library.
     | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
         to :class:`TemplateLibrary`
+    | **22 Jun 2016**: (KBW) Included MILESHC library in documentation.
+        Allow to specify how the resolution and sampling are matched to
+        the DRP data.  The :class:`TemplateLibrary` class should be
+        generalized to make this more transparent (and unnecessary).
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -365,27 +369,29 @@ def available_template_libraries(dapsrc=None):
     |                 |   Spectral |         |  Wavelength | Lower |
     |             KEY |  res (ang) | Vacuum? | Range (ang) | Limit |
     +=================+============+=========+=============+=======+
-    |       M11-MARCS |       2.73 |      No |        full |  None |
+    |        M11MARCS |       2.73 |      No |        full |  None |
     +-----------------+------------+---------+-------------+-------+
-    |      M11-STELIB |       3.40 |      No |        full |  None |
+    |       M11STELIB |       3.40 |      No |        full |  None |
     +-----------------+------------+---------+-------------+-------+
-    | M11-STELIB-ZSOL |       3.40 |      No |        full |  None |
+    |   M11STELIBZSOL |       3.40 |      No |        full |  None |
     +-----------------+------------+---------+-------------+-------+
-    |      M11-ELODIE |       0.55 |      No |      < 6795 |  None |
+    |       M11ELODIE |       0.55 |      No |      < 6795 |  None |
     +-----------------+------------+---------+-------------+-------+
-    |       M11-MILES |       2.54 |      No | 3550 - 7400 |  None |
+    |        M11MILES |       2.54 |      No | 3550 - 7400 |  None |
     +-----------------+------------+---------+-------------+-------+
     |           MILES |       2.50 |      No |      < 7400 |  None |
     +-----------------+------------+---------+-------------+-------+
-    |       MILES-AVG |       2.50 |      No |      < 7400 |  None |
+    |        MILESAVG |       2.50 |      No |      < 7400 |  None |
     +-----------------+------------+---------+-------------+-------+
-    |      MILES-THIN |       2.50 |      No |      < 7400 |  None |
+    |       MILESTHIN |       2.50 |      No |      < 7400 |  None |
+    +-----------------+------------+---------+-------------+-------+
+    |         MILESHC |       2.50 |      No |      < 7400 |  None |
     +-----------------+------------+---------+-------------+-------+
     |          STELIB |       3.40 |      No |        full |   0.0 |
     +-----------------+------------+---------+-------------+-------+
     |         MIUSCAT |       2.51 |      No | 3480 - 9430 |  None |
     +-----------------+------------+---------+-------------+-------+
-    |    MIUSCAT-THIN |       2.51 |      No | 3480 - 9430 |  None |
+    |     MIUSCATTHIN |       2.51 |      No | 3480 - 9430 |  None |
     +-----------------+------------+---------+-------------+-------+
 
     .. warning::
@@ -539,6 +545,16 @@ class TemplateLibrary:
         drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
             file (object) with which the template library is associated
             for analysis
+        match_to_drp_resolution (bool): (**Optional**) Match the
+            spectral resolution of the template library to the
+            resolution provided by the :class:`mangadap.drpfits.DRPFits`
+            object; the latter must be provided for this argument to
+            have any use.
+        velscale_ratio (int): (**Optional**) Resample the template
+            spectra such that the ratio of the pixel scale in the
+            provided :class:`mangadap.drpfits.DRPFits` object is this
+            many times larger than the pixels in the resampled template
+            spectrum.
         sres (:class:`mangadap.util.instrument.spectral_resolution`):
             (**Optional**) The object is used simply to access the
             spectral resolution and associated wavelength coordinate
@@ -632,13 +648,17 @@ class TemplateLibrary:
           binning!
         - Allow to process, where process is just to change the
           sampling or the resolution (not necessarily both).
+        - Need to make this more general, removing all dependence on
+          DRPFits object.  This would simplify the functionality to
+          change how the resolution and sampling matching is specified.
 
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
-                 sres=None, velocity_offset=0.0, spectral_step=None, log=True,
-                 wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
-                 directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
-                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+                 match_to_drp_resolution=True, velscale_ratio=None, sres=None, velocity_offset=0.0,
+                 spectral_step=None, log=True, wavelength_range=None, renormalize=True, dapver=None,
+                 analysis_path=None, directory_path=None, processed_file=None, read=True,
+                 process=True, hardcopy=True, symlink_dir=None, clobber=False, checksum=False,
+                 loggers=None, quiet=False):
 
         self.version = '2.1'
         self.loggers = loggers
@@ -690,13 +710,15 @@ class TemplateLibrary:
             return
 
         # Read and process the library
-        self.process_template_library(drpf=drpf, sres=sres, velocity_offset=velocity_offset,
-                                      spectral_step=spectral_step, log=log,
-                                      wavelength_range=wavelength_range, renormalize=renormalize,
-                                      dapver=dapver, analysis_path=analysis_path,
-                                      directory_path=directory_path, processed_file=processed_file,
-                                      hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber,
-                                      loggers=loggers, quiet=quiet)
+        self.process_template_library(drpf=drpf, match_to_drp_resolution=match_to_drp_resolution,
+                                      velscale_ratio=velscale_ratio, sres=sres,
+                                      velocity_offset=velocity_offset, spectral_step=spectral_step,
+                                      log=log, wavelength_range=wavelength_range,
+                                      renormalize=renormalize, dapver=dapver,
+                                      analysis_path=analysis_path, directory_path=directory_path,
+                                      processed_file=processed_file, hardcopy=hardcopy,
+                                      symlink_dir=symlink_dir, clobber=clobber, loggers=loggers,
+                                      quiet=quiet)
 
 
     def __del__(self):
@@ -816,7 +838,8 @@ class TemplateLibrary:
         all the template spectra in a single array.
 
         .. todo::
-            - What happens if spectrum has an empty primary extension?
+            - What happens if the spectrum has an empty primary
+              extension?
 
         Returns:
             int: Maximum number of pixels used by the listed spectra.
@@ -1109,9 +1132,11 @@ class TemplateLibrary:
         """
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
+
         if not self.library['in_vacuum']:
             self.hdu['WAVE'].data \
                     = airtovac(self.hdu['WAVE'].data.ravel()).reshape(self.hdu['WAVE'].data.shape)
+
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
 #        pyplot.show()
 
@@ -1145,9 +1170,9 @@ class TemplateLibrary:
 
         # Get the number of pixels needed
 #        print(fullRange)
-        npix, fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
+        npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
                                                log=self.log10_sampling)
-#        print(fullRange, self.spectral_step, npix)
+#        print(fullRange, _fullRange, self.spectral_step, npix)
 
         # Any pixels without data after resampling are given a value
         # that is the minimum flux - 100 so that they can be easily
@@ -1339,7 +1364,8 @@ class TemplateLibrary:
 
 
     def process_template_library(self, library_key=None, tpllib_list=None, dapsrc=None, drpf=None,
-                                 sres=None, velocity_offset=0.0, spectral_step=None, log=True,
+                                 match_to_drp_resolution=True, velscale_ratio=None, sres=None,
+                                 velocity_offset=0.0, spectral_step=None, log=True,
                                  wavelength_range=None, renormalize=True, dapver=None,
                                  analysis_path=None, directory_path=None, processed_file=None,
                                  hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
@@ -1400,6 +1426,16 @@ class TemplateLibrary:
                 can be processed; and the user must provide
                 *directory_path* and *processed_file* such that the
                 output file can be written.
+            match_to_drp_resolution (bool): (**Optional**) Match the
+                spectral resolution of the template library to the
+                resolution provided by the
+                :class:`mangadap.drpfits.DRPFits` object; the latter
+                must be provided for this argument to have any use.
+            velscale_ratio (int): (**Optional**) Resample the template
+                spectra such that the ratio of the pixel scale in the
+                provided :class:`mangadap.drpfits.DRPFits` object is
+                this many times larger than the pixels in the resampled
+                template spectrum.
             sres (:class:`mangadap.util.instrument.spectral_resolution`):
                 (**Optional**) The object is used simply to access the
                 spectral resolution and associated wavelength coordinate
@@ -1471,12 +1507,14 @@ class TemplateLibrary:
                     warnings.warn('DRP file previously unopened.  Reading now.')
                 drpf.open_hdu()
             self.sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
-                                            log10=True)
+                                            log10=True) if match_to_drp_resolution else None
 #            self.velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
             # Set this by default, but need DRPFits to return if the
             # file is logarithmically sampled!
             self.log10_sampling = True
             self.spectral_step = spectral_coordinate_step(drpf.hdu['WAVE'].data, log=True)
+            if velscale_ratio is not None:
+                self.spectral_step /= velscale_ratio
 #            print(self.spectral_step)
         # Use the provided input values
         else:

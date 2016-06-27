@@ -1306,7 +1306,7 @@ class Elric(EmissionLineFit):
         restwave = numpy.array([self.emission_lines['restwave']]*self.nspec)
         cnst = constants()
 
-        # Get the instrumental dispersion at each (valid)line center
+        # Get the instrumental dispersion at each (valid) line center
         indx = ~self.bitmask.flagged(model_eml_par['MASK'],
                                      flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
                                            'UNDEFINED_COVAR' ])

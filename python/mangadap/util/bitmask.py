@@ -140,14 +140,13 @@ class BitMask:
                  Bit: key3 = 4
 
     Args:
-
-        keys (str, list, numpy.ndarray): (**Optional**) List of keys (or single key) to
-            use as the bit name.  Each key is given a bit number ranging
-            from 0..N-1.  If **not** provided, one of either *ini_file*
-            or *par_file* must be provided.
-
-        descr (str, list, numpy.ndarray): (Optional) List of descriptions
-            (or single discription) provided by :func:`info` for each bit.
+        keys (str, list, numpy.ndarray): (**Optional**) List of keys (or
+            single key) to use as the bit name.  Each key is given a bit
+            number ranging from 0..N-1.  If **not** provided, one of
+            either *ini_file* or *par_file* must be provided.
+        descr (str, list, numpy.ndarray): (**Optional**) List of
+            descriptions (or single discription) provided by
+            :func:`info` for each bit.
 
     Raises:
         ValueError: Raised if more than 64 bits are provided.
@@ -330,11 +329,11 @@ class BitMask:
         The instantiation of :class:`BitMask` does not include the value
         of the bit, it just assumes that the bits should be in sequence
         such that the first key has a value of 0, and the last key has a
-        value of N-1.  Unfortunately, not all the bits the DAP needs to
-        use follow a sequence.  This function finds the range of the
-        bits and then slots in NULL keywords and empty descriptions
-        where necessary to fill in the full complement of bits.  NULL
-        keywords are ignored by the :class:`BitMask` object.
+        value of N-1.  Unfortunately, not all the bits the DAP follow a
+        sequence.  This function finds the range of the bits and then
+        slots in NULL keywords and empty descriptions where necessary to
+        fill in the full complement of bits.  NULL keywords are ignored
+        by the :class:`BitMask` object.
 
         This is a static method because it doesn't depend on any of the
         attributes of :class:`BitMask`.
@@ -445,10 +444,10 @@ class BitMask:
         any one of many bits is on.
 
         Args:
-            value (uint or array): Bitmask value.  It should be less
+            value (uint, int, array): Bitmask value.  It should be less
                 than or equal to :attr:`max_value`; however, that is not
                 checked.
-            flag (string or array): (Optional) Bit names to check.  If
+            flag (string, array): (**Optional**) Bit names to check.  If
                 None, then it checks if any bit is on.
         
         Returns:
@@ -487,7 +486,7 @@ class BitMask:
         Return the list of flagged bit names for a single bit value.
 
         Args:
-            value (uint): Bitmask value.  It should be less than or
+            value (int, uint): Bitmask value.  It should be less than or
                 equal to :attr:`max_value`; however, that is not
                 checked.
         
@@ -514,7 +513,7 @@ class BitMask:
         Toggle a bit in the provided bitmask value.
 
         Args:
-            value (uint or array): Bitmask value.  It should be less
+            value (uint, int, array): Bitmask value.  It should be less
                 than or equal to :attr:`max_value`; however, that is not
                 checked.
             flag (list, numpy.ndarray, or str): Bit name(s) to toggle.

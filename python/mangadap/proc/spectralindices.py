@@ -105,7 +105,7 @@ from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..config.defaults import default_dap_common_path
 from ..util.instrument import spectral_resolution, match_spectral_resolution
-from ..util.instrument import spectral_coordinate_step
+from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.log import log_output
 from ..util.bitmask import BitMask
@@ -1273,13 +1273,17 @@ class SpectralIndices:
                                                  drpver=self.binned_spectra.drpf.drpver,
                                                  dapver=dapver, analysis_path=self.analysis_path)
 
+        velscale_ratio = 1 if self.stellar_continuum.method['fitpar']['velscale_ratio'] is None \
+                            else self.stellar_continuum.method['fitpar']['velscale_ratio']
+        spectral_step=spectral_coordinate_step(wave, log=True) / velscale_ratio
+
         # Return the template library object
         return TemplateLibrary(self.stellar_continuum.method['fitpar']['template_library_key'],
                                sres=sres, velocity_offset=velocity_offset,
-                               spectral_step=spectral_coordinate_step(wave, log=True), log=True,
-                               dapsrc=dapsrc, directory_path=directory_path,
-                               symlink_dir=self.tpl_symlink_dir, processed_file=processed_file,
-                               loggers=self.loggers, quiet=self.quiet)
+                               spectral_step=spectral_step, log=True, dapsrc=dapsrc,
+                               directory_path=directory_path, symlink_dir=self.tpl_symlink_dir,
+                               processed_file=processed_file, loggers=self.loggers,
+                               quiet=self.quiet)
     
 
     def _calculate_dispersion_corrections(self, good_bins, dapver=None, dapsrc=None):

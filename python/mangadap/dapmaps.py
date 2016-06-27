@@ -810,6 +810,10 @@ class construct_maps_file:
                                     name='STELLAR_SIGMA_MASK') ]
             hdus += [ fits.ImageHDU(data=None,
                                     header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'STELLAR_SIGMACORR'),
+                                    name='STELLAR_SIGMACORR') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                      'STELLAR_CONT_FRESID'),
                                     name='STELLAR_CONT_FRESID') ]
             hdus += [ fits.ImageHDU(data=None,
@@ -910,6 +914,15 @@ class construct_maps_file:
                                                                  hduclas2='QUALITY', err=True,
                                                                  bit_type=mask.dtype.type),
                                 name='STELLAR_SIGMA_MASK') ]
+
+        # Stellar velocity dispersion correction
+        data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
+        data.ravel()[indx] \
+                = stellar_continuum['PAR'].data['SIGMACORR'][unique_bins[reconstruct[indx]]]
+        hdus += [ fits.ImageHDU(data=data.T,
+                               header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                'STELLAR_SIGMACORR', bunit='km/s'),
+                               name='STELLAR_SIGMACORR') ]
 
         # Continuum fit statistics
         s = numpy.array([False, True, False, True, False])

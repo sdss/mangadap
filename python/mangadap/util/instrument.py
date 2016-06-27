@@ -1353,12 +1353,12 @@ def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=N
     if len(outRange) != 2:
         raise ValueError('Output range must be a 2-element vector.')
 
-    outRange = numpy.atleast_1d(outRange)
-    npix = int( numpy.diff(numpy.log(outRange))/numpy.log(base) / dx) + 1 if log else \
-                int(numpy.diff(outRange)/dx) + 1
-    _outRange = outRange
-    _outRange[1] = numpy.power(base, numpy.log(outRange[0])/numpy.log(base) + dx*(npix-1)) \
-                            if log else outRange[0] + dx*(npix-1)
+    _outRange = numpy.atleast_1d(outRange).copy()
+    npix = int( numpy.diff(numpy.log(_outRange))/numpy.log(base) / dx) + 1 if log else \
+                int(numpy.diff(_outRange)/dx) + 1
+#    _outRange = outRange
+    _outRange[1] = numpy.power(base, numpy.log(_outRange[0])/numpy.log(base) + dx*(npix-1)) \
+                            if log else _outRange[0] + dx*(npix-1)
     return npix, _outRange
 
 
@@ -1442,6 +1442,7 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
     outRange = inRange if newRange is None else numpy.array(newRange)
     m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=dx,
                                         default=(n if newpix is None else newpix))
+#    print(outRange, m, _outRange)
     outRange = outRange if _outRange is None else _outRange
     outBorders, outPscale = _pixel_borders(outRange, m, log=newLog, base=base)
     outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \

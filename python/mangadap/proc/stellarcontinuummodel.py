@@ -216,6 +216,12 @@ def validate_stellar_continuum_modeling_method_config(cnfg):
             raise KeyError('Keyword \'template_library\' must be provided for pPXF fitting.')
         if 'sky_spectra' in cnfg.options('default') and cnfg['default']['sky_spectra'] != 'None':
             raise NotImplementedError('Cannot yet use sky spectra via a config file.')
+        if 'fit_iter' not in cnfg.options('default'):
+            cnfg['default']['fit_iter'] = 'None'
+        if 'match_resolution' not in cnfg.options('default'):
+            cnfg['default']['match_resolution'] = 'None'
+        if 'velscale_ratio' not in cnfg.options('default'):
+            cnfg['default']['velscale_ratio'] = 'None'
         for k in PPXFFitPar._keyword_defaults().keys():
             if k not in cnfg.options('default'):
                 cnfg['default'][k] = 'None'
@@ -291,6 +297,9 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
         if cnfg['default']['fit_method'] == 'ppxf':
             # sky is always none for now
             fitpar = PPXFFitPar(cnfg['default']['template_library'], None, None, None,
+                                cnfg['default']['fit_iter'],
+                                eval(cnfg['default']['match_resolution']),
+                                eval(cnfg['default']['velscale_ratio']),
                                 eval(cnfg['default']['minimum_snr']),
                                 SpectralPixelMask(artdb=artifacts, emldb=emission_lines,
                                                   waverange=eval(cnfg['default']['waverange'])),
@@ -479,9 +488,7 @@ class StellarContinuumModel:
 
     def _fill_method_par(self, dapsrc=None, analysis_path=None):
         """
-
         Fill in any remaining modeling parameters.
-
         """
         # Report
         if not self.quiet:
@@ -515,8 +522,10 @@ class StellarContinuumModel:
             self.method['fitpar']['template_library'] \
                     = TemplateLibrary(self.method['fitpar']['template_library_key'],
                             velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
-                                      drpf=self.binned_spectra.drpf, dapsrc=dapsrc,
-                                      analysis_path=analysis_path,
+                                      drpf=self.binned_spectra.drpf,
+                                match_to_drp_resolution=self.method['fitpar']['match_resolution'],
+                                      velscale_ratio=self.method['fitpar']['velscale_ratio'],
+                                      dapsrc=dapsrc, analysis_path=analysis_path,
                                       symlink_dir=self.tpl_symlink_dir, loggers=self.loggers,
                                       quiet=self.quiet)
                                       #, clobber=True)
@@ -718,7 +727,7 @@ class StellarContinuumModel:
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_mask, model_par \
                 = self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                         loggers=self.loggers, quiet=self.quiet, iterative=True)
+                                         loggers=self.loggers, quiet=self.quiet)
         
         assert numpy.sum(model_wave - self.binned_spectra['WAVE'].data) == 0, \
                     'Incorrect wavelength range'
@@ -980,6 +989,8 @@ class StellarContinuumModel:
                                                         self.hdu['PAR'].data,
                                                         self.method['fitpar']['degree'],
                                                         self.method['fitpar']['mdegree'],
-                                                        redshift_only=redshift_only)
+                                                        redshift_only=redshift_only,
+                                        velscale_ratio=self.method['fitpar']['velscale_ratio'],
+                                                        dvtol=1e-9)
 
 

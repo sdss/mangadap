@@ -178,10 +178,10 @@ def determine_goodpixels(logLam, lamRangeTemp, z):
     dv = lines*0 + 800 # width/2 of masked gas emission region in km/s
     c = 299792.458 # speed of light in km/s
 
-    flag = logLam < 0  # empy mask
-    for j in range(lines.size):
-        flag |= (np.exp(logLam) > lines[j]*(1 + z)*(1 - dv[j]/c)) \
-              & (np.exp(logLam) < lines[j]*(1 + z)*(1 + dv[j]/c))
+    flag = np.zeros_like(logLam, dtype=bool)
+    for line, dvj in zip(lines, dv):
+        flag |= (np.exp(logLam) > line*(1 + z)*(1 - dvj/c)) \
+              & (np.exp(logLam) < line*(1 + z)*(1 + dvj/c))
 
     flag |= np.exp(logLam) > lamRangeTemp[1]*(1 + z)*(1 - 900/c)   # Mask edges of
     flag |= np.exp(logLam) < lamRangeTemp[0]*(1 + z)*(1 + 900/c)   # stellar library
@@ -220,7 +220,7 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     lam = np.exp(logLam_temp)
     sigma = FWHM_gal/2.355 # Assumes instrumental sigma is constant in Angstrom
 
-    # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha
+    # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha  (air wavelengths)
     line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])
     line_names = np.array(['Hdelta', 'Hgamma', 'Hbeta', 'Halpha'])
     emission_lines = np.exp(-0.5*((lam[:,np.newaxis] - line_wave)/sigma)**2)

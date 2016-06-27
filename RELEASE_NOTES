@@ -4,7 +4,10 @@ KBW (?? Jun 2016): tag 2.0.1
 
     Fixed/added functionality:
         - Added MILES cluster template group.
-        - Added oversamling configuration files
+        - Allow for choice to *not* match the spectral resolution of the
+          template to that of the galaxy data, and supply templates at
+          higher spectral sampling.
+        - Include stellar velocity dispersion quadrature correction.
         - Fixed error in spectral-index masks
 
     Fixed failures:

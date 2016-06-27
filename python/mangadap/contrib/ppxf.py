@@ -400,7 +400,7 @@
 #       velocity one can get from the literature. Do not try to use that!
 #
 # OUTPUT PARAMETERS (stored as attributes of the PPXF class):
-#   BESTFIT: a named variable to receive a vector with the best fitting
+#   .BESTFIT: a named variable to receive a vector with the best fitting
 #       template: this is a linear combination of the templates, convolved with
 #       the best fitting LOSVD, multiplied by the multiplicative polynomials and
 #       with subsequently added polynomial continuum terms.
@@ -408,12 +408,12 @@
 #           BESTFIT = (TEMPLATES @ WEIGHTS)*mpoly + apoly,
 #       where the expressions to evaluate mpoly and apoly are given in the
 #       documentation of MPOLYWEIGHTS and POLYWEIGHTS respectively.
-#   CHI2: The reduced chi^2 (=chi^2/DOF) of the fit.
-#   GOODPIXELS: integer vector containing the indices of the good pixels in the
+#   .CHI2: The reduced chi^2 (=chi^2/DOF) of the fit.
+#   .GOODPIXELS: integer vector containing the indices of the good pixels in the
 #       fit. This vector is the same as the input GOODPIXELS if the CLEAN
 #       keyword is *not* set, otherwise it will be updated by removing the
 #       detected outliers.
-#   ERROR: this variable contain a vector of *formal* errors (1*sigma) for the
+#   .ERROR: this variable contain a vector of *formal* errors (1*sigma) for the
 #       fitted parameters in the output vector SOL. This option can be used when
 #       speed is essential, to obtain an order of magnitude estimate of the
 #       uncertainties, but we *strongly* recommend to run Monte Carlo
@@ -428,7 +428,7 @@
 #       the penalty (BIAS) should be set to zero, or better to a very small
 #       value. See Section 3.4 of Cappellari & Emsellem (2004) for an
 #       explanation.
-#   POLYWEIGHTS: When DEGREE >= 0 contains the weights of the additive Legendre
+#   .POLYWEIGHTS: When DEGREE >= 0 contains the weights of the additive Legendre
 #       polynomials of order 0, 1, ... DEGREE. The best fitting additive
 #       polynomial can be explicitly evaluated as
 #           x = np.linspace(-1, 1, len(galaxy))
@@ -438,7 +438,7 @@
 #       spectrum. In that case the output weights of the additive polynomials
 #       alternate between the first (left) spectrum and the second (right)
 #       spectrum.
-#   MATRIX: Design matrix[nPixels, DEGREE+nTemplates] of the linear system.
+#   .MATRIX: Design matrix[nPixels, DEGREE+nTemplates] of the linear system.
 #     - pp.matrix[nPixels, :DEGREE] contains the additive polynomials if
 #       DEGREE >= 0.
 #     - pp.matrix[nPixels, DEGREE:] contains the templates convolved by the
@@ -446,14 +446,14 @@
 #     - pp.matrix[nPixels, -nGas:] contains the nGas emission line templates if
 #       given. In the latter case the best fitting gas emission line spectrum is
 #           lines = pp.matrix[:, -nGas:] @ pp.weights[-nGas:]
-#   MPOLYWEIGHTS: When MDEGREE > 0 this contains in output the coefficients of
+#   .MPOLYWEIGHTS: When MDEGREE > 0 this contains in output the coefficients of
 #       the multiplicative Legendre polynomials of order 1, 2, ... MDEGREE.
 #       The polynomial can be explicitly evaluated as:
 #           from numpy.polynomials import legendre
 #           x = np.linspace(-1, 1, len(galaxy))
 #           mpoly = legendre.legval(x, np.append(1, pp.mpolyweights))
-#   REDDENING: Best fitting E(B-V) value if the REDDENING keyword is set.
-#   SOL: Vector containing in output the parameters of the kinematics.
+#   .REDDENING: Best fitting E(B-V) value if the REDDENING keyword is set.
+#   .SOL: Vector containing in output the parameters of the kinematics.
 #       If MOMENTS=2 this contains [Vel, Sigma]
 #       If MOMENTS=4 this contains [Vel, Sigma, h3, h4]
 #       If MOMENTS=6 this contains [Vel, Sigma, h3, h4, h5, h6]
@@ -491,7 +491,7 @@
 #     - IMPORTANT: if Chi^2/DOF is not ~1 it means that the errors are not
 #       properly estimated, or that the template is bad and it is *not* safe to
 #       set the /CLEAN keyword.
-#   WEIGHTS: receives the value of the weights by which each template was
+#   .WEIGHTS: receives the value of the weights by which each template was
 #       multiplied to best fit the galaxy spectrum. The optimal template can be
 #       computed with an array-vector multiplication:
 #           TEMP = TEMPLATES @ WEIGHTS (Numpy >= 1.10 syntax on Python >= 3.5)
@@ -976,7 +976,7 @@ class ppxf(object):
                 raise ValueError("START must be a list of vectors [start1, start2,...]")
             if len(start) != self.ncomp:
                 raise ValueError("There must be one START per COMPONENT")
-            start1 = list(start)  # Makes a copy in both Python 2 and 3
+            start1 = list(start)  # Make a copy in both Python 2 and 3
 
         # Pad with zeros when `start[j]` has fewer elements than `moments[j]`
         for j, (st, mo) in enumerate(zip(start1, self.moments)):
@@ -1102,12 +1102,13 @@ class ppxf(object):
         self.weights = self.weights[(self.degree + 1)*len(s2):]  # output weights for the templates (or sky) only
 
         if not quiet:
-            print("Best Fit:       V     sigma        h3        h4        h5        h6")
+            txt = ["Vel", "sigma", "h3", "h4", "h5", "h6"]
+            print("Best Fit:", "".join("%10s" % f for f in txt[:np.max(self.moments)]))
             for j in range(self.ncomp):
-                print("comp.", j, "".join("%10.3g" % f for f in self.sol[j]))
+                print("  comp.", j, "".join("%10.3g" % f for f in self.sol[j]))
                 if self.sol[j][1] < velScale/2 and velscale_ratio is None:
                     print("Warning: sigma is under-sampled and unreliable. "
-                        "Resample the input spectra if possible.")
+                          "Resample the input spectra if possible.")
             print("chi2/DOF: %.4g" % self.chi2)
             print('Function evaluations:', ncalls)
             nw = self.weights.size
@@ -1120,6 +1121,8 @@ class ppxf(object):
 
         if fraction is not None:
             fracFit = np.sum(self.weights[component==0])/np.sum(self.weights[component<2])
+            if not quiet:
+                print("Weights Fraction w[0]/w[0+1]: %0.3g" % fracFit)
             if abs(fracFit - fraction) > 0.01:
                 print("Warning: FRACTION is inaccurate. TEMPLATES and GALAXY "
                       "should have mean ~ 1 when using the FRACTION keyword")
