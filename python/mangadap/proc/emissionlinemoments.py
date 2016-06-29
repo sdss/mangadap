@@ -1335,26 +1335,29 @@ class EmissionLineMoments:
                                                         / astropy.constants.c.to('km/s').value+1.0)
                                                                 *restwave[indx])/cnst.sig2fwhm
 
-        # Correct the second moments for the instrumental dispersion
-        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
-        defined[indx] = hdu_measurements['SINST'][indx] < hdu_measurements['MOM2'][indx]
-        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
-        nonzero[indx] = numpy.absolute(hdu_measurements['SINST'][indx] 
-                                            - hdu_measurements['MOM2'][indx]) > 0
+        # FOR THE MOMENT DO NOT APPLY THE INSTRUMENTAL VELOCITY
+        # DISPERSION
 
-#        orig = hdu_measurements['MOM2'].copy()
-
-        hdu_measurements['MOM2ERR'][nonzero] \
-                    = 2.0*hdu_measurements['MOM2'][nonzero]*hdu_measurements['MOM2ERR'][nonzero]
-        hdu_measurements['MOM2'][nonzero] = numpy.square(hdu_measurements['MOM2'][nonzero]) \
-                                                - numpy.square(hdu_measurements['SINST'][nonzero])
-        hdu_measurements['MOM2'][nonzero] = hdu_measurements['MOM2'][nonzero] \
-                            / numpy.sqrt(numpy.absolute(hdu_measurements['MOM2'][nonzero]))
-        hdu_measurements['MOM2ERR'][nonzero] /= numpy.absolute(2.*hdu_measurements['MOM2'][nonzero])
-
-        # Flag undefined values
-        hdu_measurements['MASK'][indx & ~defined] \
-                = self.bitmask.turn_on(hdu_measurements['MASK'][indx & ~defined], 'UNDEFINED_MOM2')
+#        # Correct the second moments for the instrumental dispersion
+#        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
+#        defined[indx] = hdu_measurements['SINST'][indx] < hdu_measurements['MOM2'][indx]
+#        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
+#        nonzero[indx] = numpy.absolute(hdu_measurements['SINST'][indx] 
+#                                            - hdu_measurements['MOM2'][indx]) > 0
+#
+##        orig = hdu_measurements['MOM2'].copy()
+#
+#        hdu_measurements['MOM2ERR'][nonzero] \
+#                    = 2.0*hdu_measurements['MOM2'][nonzero]*hdu_measurements['MOM2ERR'][nonzero]
+#        hdu_measurements['MOM2'][nonzero] = numpy.square(hdu_measurements['MOM2'][nonzero]) \
+#                                                - numpy.square(hdu_measurements['SINST'][nonzero])
+#        hdu_measurements['MOM2'][nonzero] = hdu_measurements['MOM2'][nonzero] \
+#                            / numpy.sqrt(numpy.absolute(hdu_measurements['MOM2'][nonzero]))
+#        hdu_measurements['MOM2ERR'][nonzero] /= numpy.absolute(2.*hdu_measurements['MOM2'][nonzero])
+#
+#        # Flag undefined values
+#        hdu_measurements['MASK'][indx & ~defined] \
+#                = self.bitmask.turn_on(hdu_measurements['MASK'][indx & ~defined], 'UNDEFINED_MOM2')
 
 #        flg = self.bitmask.flagged(hdu_measurements['MASK'], flag='UNDEFINED_MOM2')
 #        pyplot.scatter(orig[nonzero & flg], hdu_measurements['MOM2'][nonzero & flg], marker='.',

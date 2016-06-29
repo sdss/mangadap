@@ -1299,6 +1299,10 @@ class Elric(EmissionLineFit):
 
 
     def _instrumental_dispersion_correction(self, model_eml_par):
+        """
+        Determine the instrumental velocity dispersion at the centroids
+        of the fitted emission lines.
+        """
         if self.sres is None:
             return
         interpolator = interpolate.interp1d(self.wave, self.sres, fill_value='extrapolate',
@@ -1323,6 +1327,14 @@ class Elric(EmissionLineFit):
 #        pyplot.scatter(model_eml_par['SINST'][indx], model_eml_par['KIN'][indx,1], marker='.',
 #                       s=30, color='k')
 #        pyplot.show()
+
+
+    def _correct_velocity_dispersion(self, model_eml_par):
+        """
+        Use the **previously calculated** instrumental velocity
+        dispersion to correct the measured velocity dispersions of the
+        lines to the astrophysical velocity dispersion.
+        """
 
         # Correct the second moments for the instrumental dispersion
         defined = numpy.zeros(indx.shape, dtype=numpy.bool)

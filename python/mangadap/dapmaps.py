@@ -1235,6 +1235,11 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='EMLINE_GSIGMA_MASK') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                   header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                    'EMLINE_GSIGMACORR',
+                                                                    bunit='km/s'),
+                                   name='EMLINE_GSIGMACORR') ]
             return hdus
 
         # Add data to the primary header
