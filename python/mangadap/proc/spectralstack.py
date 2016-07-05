@@ -344,9 +344,16 @@ class SpectralStack():
 
 #            print(numpy.sum(variance_ratio.mask))
 #            for i in range(nbin):
-#                pyplot.scatter(numpy.arange(nchan), variance_ratio[i,:], marker='.', s=30, lw=0)
+##                pyplot.scatter(numpy.arange(nchan), variance_ratio[i,:], marker='.', s=30, lw=0)
+#                pyplot.plot(numpy.arange(nchan), variance_ratio[i,:], lw=0.5)
+#            pyplot.xlabel(r'Covariance Channel')
+#            pyplot.ylabel(r'$C_{ii}\ I_{ii}$')
 #            pyplot.show()
-            ratio = numpy.array([numpy.ma.mean( variance_ratio, axis=1 )]*nwave).T
+#            exit()
+#            ratio = numpy.array([numpy.ma.mean( variance_ratio, axis=1 )]*nwave).T
+            ratio = numpy.array([numpy.ma.median( variance_ratio, axis=1 )]*nwave).T
+#            print(numpy.sqrt(ratio))
+#            exit()
             self.ivar = (numpy.ma.power(ratio, -1.0).ravel() * self.ivar.ravel()).reshape(-1,nwave)
             self.covar = Covariance(inp=self.covar, input_indx=covar.input_indx)
 #            j = self.covar.input_indx[0]
