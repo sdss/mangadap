@@ -65,6 +65,8 @@ A class hierarchy that performs the stellar-continuum fitting.
     | **19 Apr 2016**: (KBW) First version
     | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
         to :class:`StellarContinuumModel`, removed verbose 
+    | **05 Jul 2016**: (KBW) Removed oversample keyword from instantion
+        of :class:`mangadap.proc.ppxffit.PPXFFit` objects.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -305,8 +307,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                                                   waverange=eval(cnfg['default']['waverange'])),
                                 eval(cnfg['default']['bias']), eval(cnfg['default']['clean']),
                                 eval(cnfg['default']['degree']), eval(cnfg['default']['mdegree']),
-                                eval(cnfg['default']['moments']),
-                                eval(cnfg['default']['oversample']), None,
+                                eval(cnfg['default']['moments']), None,
                                 eval(cnfg['default']['regul']), eval(cnfg['default']['reddening']),
                                 eval(cnfg['default']['component']),
                                 eval(cnfg['default']['reg_dim']) )

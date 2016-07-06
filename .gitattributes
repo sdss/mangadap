@@ -2584,10 +2584,12 @@ python/mangadap/config/spectral_templates/m11_stelib.ini -text
 python/mangadap/config/spectral_templates/m11_stelib_zsol.ini -text
 python/mangadap/config/spectral_templates/miles.ini -text
 python/mangadap/config/spectral_templates/miles_avg.ini -text
+python/mangadap/config/spectral_templates/miles_hc.ini -text
 python/mangadap/config/spectral_templates/miles_thin.ini -text
 python/mangadap/config/spectral_templates/miuscat.ini -text
 python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_milesthin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text

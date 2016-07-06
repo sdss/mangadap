@@ -211,11 +211,10 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------
-        warnings.warn('Turn on de-reddening!')
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
-                                           deredden=False, dapsrc=dapsrc,
-                                           analysis_path=_analysis_path, symlink_dir=plan_ref_dir,
+                                           dapsrc=dapsrc, analysis_path=_analysis_path,
+                                           symlink_dir=plan_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
 #        pyplot.plot(drpf['WAVE'].data, drpf['FLUX'].data[28,28,:])

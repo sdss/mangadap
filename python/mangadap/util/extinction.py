@@ -52,7 +52,10 @@ import scipy.interpolate
 
 __author__ = 'Kyle Westfall'
 
-def reddening_vector_calzetti(wave, ebv, rv=4.05):
+def default_calzetti_rv():
+    return 4.05
+
+def reddening_vector_calzetti(wave, ebv, rv=None):
     r"""
     Return the Calzetti et al. (2000) reddening vector.
 
@@ -93,6 +96,8 @@ def reddening_vector_calzetti(wave, ebv, rv=4.05):
     # Wavenumber in 1/micron
     k = 1e4/_wave
 
+    _rv = default_calzetti_rv() if rv is None else rv
+
     # Select valid wavelength ranges
     w1 = (_wave > 6300.) & (_wave < 22000.)
     w2 = (_wave > 912.) & (_wave <= 6300.)
@@ -102,14 +107,17 @@ def reddening_vector_calzetti(wave, ebv, rv=4.05):
     # Extinction curve
     ext = numpy.ma.zeros(_wave.size, dtype=numpy.float)
     ext[~w1 & ~w2] = numpy.ma.masked
-    ext[w1] = 2.659*(-1.857 + 1.040*k[w1]) + rv
-    ext[w2] = 2.659*(polyval(k[w2], [-2.156, 1.509, -0.198, 0.011])) + rv
+    ext[w1] = 2.659*(-1.857 + 1.040*k[w1]) + _rv
+    ext[w2] = 2.659*(polyval(k[w2], [-2.156, 1.509, -0.198, 0.011])) + _rv
 
     # Return dereddening vector
     return numpy.ma.power(10., 0.4*ext*ebv)
 
 
-def reddening_vector_ccm(wave, ebv, rv=3.1, original=False):
+def default_ccm_rv():
+    return 3.1
+
+def reddening_vector_ccm(wave, ebv, rv=None, original=False):
     r"""
 
     Return the reddening vector based on Cardelli, Clayton, and Mathis
@@ -158,6 +166,8 @@ def reddening_vector_ccm(wave, ebv, rv=3.1, original=False):
     # Wavenumber in 1/micron
     k = 1e4/_wave
 
+    _rv = default_ccm_rv() if rv is None else rv
+
     a = numpy.zeros(k.size, dtype=numpy.float)
     b = numpy.zeros(k.size, dtype=numpy.float)
 
@@ -198,7 +208,7 @@ def reddening_vector_ccm(wave, ebv, rv=3.1, original=False):
     a[w1] = polyval(k[w1]-8., [ -1.073, -0.628,  0.137, -0.070 ])
     b[w1] = polyval(k[w1]-8., [ 13.670,  4.257, -0.420,  0.374 ])
 
-    ext = numpy.ma.MaskedArray(rv*(a+b/rv))
+    ext = numpy.ma.MaskedArray(_rv*(a+b/_rv))
     ext[ (k<=0.3) | (k>11.) ] = numpy.ma.masked
 
     # Return dereddening vector
@@ -230,7 +240,11 @@ class LMC2ExtinctionCoefficients(FMExtinctionCoefficients):
         FMExtinctionCoefficients.__init__(self, 4.596, 0.91, -1.28, 1.11, 2.73, 0.64)
 
 
-def reddening_vector_fm(wave, ebv, rv=3.1, coeffs=None):
+def default_fm_rv():
+    return 3.1
+
+
+def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
     r"""
 
     Return the reddening vector based on Fitzpatrick & Massa
@@ -281,7 +295,9 @@ def reddening_vector_fm(wave, ebv, rv=3.1, coeffs=None):
     # Check the provided coefficients
     if coeffs is not None and not isinstance(FMExtinctionCoefficients):
         raise TypeError('Coefficients must be provided by a FMExtinctionCoefficients object.')
-    _coeffs = FMExtinctionCoefficients.from_Rv(rv) if coeffs is None else coeffs
+
+    _rv = default_fm_rv() if rv is None else rv
+    _coeffs = FMExtinctionCoefficients.from_Rv(_rv) if coeffs is None else coeffs
 
     # Wavenumber in 1/micron
     k = 1e4/_wave
@@ -296,7 +312,7 @@ def reddening_vector_fm(wave, ebv, rv=3.1, coeffs=None):
     uv_kclip = (uv_k-5.9).clip(0.,None)
     uv_ext = _coeffs.c1  + _coeffs.c2*uv_k \
              + _coeffs.c3*uv_k2/(numpy.square(uv_k2 - _coeffs.k0**2) + uv_k2*_coeffs.gamma**2) \
-             + _coeffs.c4*(0.5392*numpy.square(uv_kclip)+0.05644*numpy.power(uv_kclip,3)) + rv
+             + _coeffs.c4*(0.5392*numpy.square(uv_kclip)+0.05644*numpy.power(uv_kclip,3)) + _rv
 
     # Pull out spline points
     splpts_uv_ext, ext[w1] = uv_ext[:2], uv_ext[2:] 
@@ -309,18 +325,33 @@ def reddening_vector_fm(wave, ebv, rv=3.1, coeffs=None):
     splpts_oi_k = numpy.append([0],10000.0/numpy.array([26500.0, 12200.0, 6000.0, 5470.0, 4670.0,
                                                         4110.0]))
 
-    splpts_oi_ext = numpy.append( numpy.array([0.0,0.26469,0.82925])*rv/3.1,
-                                  numpy.array([ polyval(rv, [-4.22809e-01, 1.00270,  2.13572e-04]),
-                                                polyval(rv, [-5.13540e-02, 1.00216, -7.35778e-05]),
-                                                polyval(rv, [ 7.00127e-01, 1.00184, -3.32598e-05]),
-                                                polyval(rv, [     1.19456, 1.01707, -5.46959e-03,
-                                                              7.97809e-04, -4.45636e-05]) ]) )
+    splpts_oi_ext = numpy.append( numpy.array([0.0,0.26469,0.82925])*_rv/3.1,
+                                  numpy.array([ polyval(_rv, [-4.22809e-01, 1.00270,  2.13572e-04]),
+                                                polyval(_rv, [-5.13540e-02, 1.00216, -7.35778e-05]),
+                                                polyval(_rv, [ 7.00127e-01, 1.00184, -3.32598e-05]),
+                                                polyval(_rv, [     1.19456, 1.01707, -5.46959e-03,
+                                                               7.97809e-04, -4.45636e-05]) ]) )
     tck = scipy.interpolate.splrep(numpy.append(splpts_oi_k,splpts_uv_k),
                                    numpy.append(splpts_oi_ext,splpts_uv_ext), s=0)
     ext[~w1] = scipy.interpolate.splev(k[~w1], tck)
 
     return numpy.ma.power(10., 0.4*ext*ebv)
 
-    
+
+def reddening_vector(wave, ebv, form='ODonnell', rv=None, coeffs=None):
+    if form == 'ODonnell':
+        return reddening_vector_ccm(wave, ebv, rv=rv, original=False)
+
+    if form == 'CCM':
+        return reddening_vector_ccm(wave, ebv, rv=rv, original=True)
+
+    if form == 'FM':
+        return reddening_vector_fm(wave, ebv, rv=rv, coeffs=coeffs)
         
-    
+    if form == 'Calzetti':
+        return reddening_vector_calzetti(wave, ebv, rv=rv)
+
+    raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
+        
+
+

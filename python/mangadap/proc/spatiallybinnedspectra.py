@@ -63,6 +63,8 @@ procedures.
     | **19 May 2016**: (KBW) Include SPECRES and SPECRESD extensions
         from DRP file in output. Added loggers and quiet keyword
         arguments to :class:`SpatiallyBinnedSpectra`, removed verbose 
+    | **06 Jul 2016**: (KBW) Make the application of a reddening
+        correction an input parameter.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -107,7 +109,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.extinction import reddening_vector_fm
+from ..util.extinction import reddening_vector
 from ..util.log import log_output
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
@@ -175,21 +177,21 @@ class SpatiallyBinnedSpectraDef(ParSet):
         stackfunc (callable): The function that stacks the spectra in a
             given bin.
     """
-    def __init__(self, key, minimum_snr, binpar, binclass, binfunc, stackpar, stackclass,
-                 stackfunc):
+    def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
+                 binfunc, stackpar, stackclass, stackfunc):
         in_fl = [ int, float ]
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
 #        stackcls_opt = [ SpectralStack ]
         par_opt = [ ParSet, dict ]
 
-        pars =     [ 'key', 'minimum_snr', 'binpar', 'binclass', 'binfunc', 'stackpar',
-                        'stackclass', 'stackfunc' ]
-        values =   [   key,   minimum_snr,   binpar,   binclass,   binfunc,   stackpar,
-                          stackclass,   stackfunc ]
-        dtypes =   [   str,         in_fl,  par_opt,       None,      None,    par_opt,
-                                None,        None ]
-        can_call = [ False,         False,    False,      False,      True,      False,
-                               False,        True ]
+        pars =     [ 'key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
+                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc' ]
+        values =   [   key,   galactic_reddening,   galactic_rv,   minimum_snr,   binpar,
+                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc ]
+        dtypes =   [   str,                  str,         in_fl,         in_fl,  par_opt,
+                           None,      None,    par_opt,         None,        None ]
+        can_call = [ False,                False,         False,         False,    False,
+                          False,      True,      False,        False,        True ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
 
@@ -216,8 +218,14 @@ def validate_spatial_binning_scheme_config(cnfg):
     if 'method' not in cnfg.options('default'):
         raise KeyError('Keyword \'method\' must be provided.')
 
+    if 'galactic_reddening' not in cnfg.options('default') \
+            or cnfg['default']['galactic_reddening'] is None:
+        cnfg['default']['galactic_reddening'] = None
+    if 'galactic_rv' not in cnfg.options('default') or cnfg['default']['galactic_rv'] is None:
+        cnfg['default']['galactic_rv'] = '3.1'
+
     if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
-        cnfg['default']['minimum_snr']= '0.0'
+        cnfg['default']['minimum_snr'] = '0.0'
 
     if 'operation' not in cnfg.options('default') or cnfg['default']['operation'] is None:
         cnfg['default']['operation'] = 'mean'
@@ -240,6 +248,10 @@ def validate_spatial_binning_scheme_config(cnfg):
     if 'stack_covariance_par' not in cnfg.options('default') \
             or cnfg['default']['stack_covariance_par'] is None:
         cnfg['default']['stack_covariance_par'] = 'none'
+
+    if 'noise_calib' not in cnfg.options('default') \
+            or cnfg['default']['noise_calib'] is None:
+        cnfg['default']['noise_calib'] = 'None'
 
     if cnfg['default']['method'] in [ 'none', 'global' ]:
         return
@@ -378,7 +390,7 @@ def available_spatial_binning_methods(dapsrc=None):
             binclass = spatialbinning.RadialBinning()
             binfunc = binclass.bin_index
         elif cnfg['default']['method'] == 'voronoi':
-            covar = 1.0 if cnfg['default']['noise_calib'] is None \
+            covar = 1.0 if cnfg['default']['noise_calib'] == 'None' \
                         else cnfg['default'].getfloat('noise_calib')
             binpar = spatialbinning.VoronoiBinningPar(cnfg['default'].getfloat('target_snr'),
                                                       None, None, covar)
@@ -400,6 +412,9 @@ def available_spatial_binning_methods(dapsrc=None):
         stackfunc = stackclass.stack_DRPFits
 
         binning_methods += [ SpatiallyBinnedSpectraDef(cnfg['default']['key'],
+                                       None if cnfg['default']['galactic_reddening'] == 'None' \
+                                            else cnfg['default']['galactic_reddening'],
+                                                       eval(cnfg['default']['galactic_rv']),
                                                        cnfg['default'].getfloat('minimum_snr'),
                                                        binpar, binclass, binfunc, stackpar,
                                                        stackclass, stackfunc) ]
@@ -458,10 +473,10 @@ class SpatiallyBinnedSpectra:
         - Add prior with velocity offsets for spaxels.
    
     """
-    def __init__(self, method_key, drpf, rdxqa, reff=None, deredden=False, method_list=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, hardcopy=True, symlink_dir=None, clobber=False, checksum=False,
-                 loggers=None, quiet=False):
+    def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
+                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
+                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.version = '1.0'
         self.loggers = None
@@ -474,7 +489,7 @@ class SpatiallyBinnedSpectra:
         self.drpf = None
         self.rdxqa = None
         self.reff = None
-        self.deredden = False
+        self.deredden = self.method['galactic_reddening'] is not None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -505,10 +520,9 @@ class SpatiallyBinnedSpectra:
         self.covariance = None
 
         # Bin the spectra
-        self.bin_spectra(drpf, rdxqa, reff=reff, deredden=deredden, dapver=dapver,
-                         analysis_path=analysis_path, directory_path=directory_path,
-                         output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
-                         clobber=clobber, loggers=loggers, quiet=quiet)
+        self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
+                         directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
+                         symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
     def __del__(self):
@@ -805,17 +819,26 @@ class SpatiallyBinnedSpectra:
     def _get_reddening_corr(self):
             red_hdr = fits.Header()
             red_hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
-            red_hdr['RVGAL'] = (3.1, 'Ratio of total to selective extinction (Rv)')
-            red_hdr['GEXTCRV'] = ('FMExtinction', 'Assumed Galactic extinction curve')
+            red_hdr['GEXTLAW'] = ('None' if self.method['galactic_reddening'] is None 
+                                     else self.method['galactic_reddening'],
+                                  'Galactic extinction law')
+            red_hdr['RVGAL'] = (self.method['galactic_rv'],
+                                'Ratio of total to selective extinction, R(V)')
 
-#            red = reddening_vector_fm(self.drpf['WAVE'].data,
-#                                                self.drpf['PRIMARY'].header['EBVGAL'], rv=3.1)
+            if self.method['galactic_reddening'] is None:
+                return red_hdr, numpy.ones(self.drpf['WAVE'].data.shape)
+
+#            red = reddening_vector(self.drpf['WAVE'].data, self.drpf['PRIMARY'].header['EBVGAL'],
+#                                   form=self.method['galactic_reddening'],
+#                                   rv=self.method['galactic_rv'])
 #            print(numpy.sum(numpy.ma.getmaskarray(red)))
 #            pyplot.plot(self.drpf['WAVE'].data, red)
 #            pyplot.plot(self.drpf['WAVE'].data, red.data)
 #            pyplot.show()
-            return red_hdr, reddening_vector_fm(self.drpf['WAVE'].data,
-                                                self.drpf['PRIMARY'].header['EBVGAL'], rv=3.1).data
+            return red_hdr, reddening_vector(self.drpf['WAVE'].data,
+                                             self.drpf['PRIMARY'].header['EBVGAL'],
+                                             form=self.method['galactic_reddening'],
+                                             rv=self.method['galactic_rv']).data
 
 
     def file_name(self):
@@ -839,7 +862,7 @@ class SpatiallyBinnedSpectra:
 
 
     # TODO: This function needs to be broken up
-    def bin_spectra(self, drpf, rdxqa, reff=None, deredden=False, dapver=None, analysis_path=None,
+    def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
                     clobber=False, loggers=None, quiet=False):
         """
@@ -884,7 +907,6 @@ class SpatiallyBinnedSpectra:
         # binning approach
         if reff is not None:
             self.reff = reff
-        self.deredden = deredden
 
         # Get the good spectra
         #   - Must have valid pixels over more than 80% of the spectral
@@ -912,6 +934,11 @@ class SpatiallyBinnedSpectra:
             log_output(self.loggers, 1, logging.INFO,
                        'Dereddening spectra assuming E(B-V) = {0}'.format(
                                 self.drpf['PRIMARY'].header['EBVGAL'] if self.deredden else 0.0))
+            if self.deredden:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Galactic extinction law: {0}'.format(self.method['galactic_reddening']))
+                log_output(self.loggers, 1, logging.INFO,
+                           'Galactic R(V): {0}'.format(self.method['galactic_rv']))
 
         if numpy.sum(good_spec) == 0:
             raise ValueError('No good spectra!')

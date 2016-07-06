@@ -66,9 +66,8 @@
 #   pp = ppxf(templates, galaxy, noise, velScale, start,
 #             bias=None, bounds=None, clean=False, component=0, degree=4,
 #             fixed=None, fraction=None, goodpixels=None, lam=None, mdegree=0,
-#             moments=4, oversample=None, plot=False, quiet=False,
-#             reddening=None, reg_dim=None, regul=0, sky=None,
-#             velscale_ratio=None, vsyst=0)
+#             moments=4, plot=False, quiet=False, reddening=None, reg_dim=None,
+#             regul=0, sigma_diff=0, sky=None, velscale_ratio=None, vsyst=0)
 #
 #   print(pp.sol)  # print best-fitting kinematics (V, sigma, h3, h4)
 #
@@ -283,14 +282,6 @@
 #           component = [0]*100 + [1]*5   # --> [0, 0, ... 0, 1, 1, 1, 1, 1]
 #           moments = [-4, 2]
 #           start = [[V, sigma, h3, h4], [V, sigma]]
-#   OVERSAMPLE: Set this keyword to a factor by which the template is
-#       oversampled before convolving it with a well sampled LOSVD. This can be
-#       useful to extract proper velocities, even when sigma < 0.7*velScale and
-#       the dispersion information becomes totally unreliable due to
-#       undersampling.
-#       IMPORTANT: Use of this keyword is discouraged. One should sample the
-#       spectrum more finely, or use higher resolution templates in combination
-#       with the VELSCALE_RATIO keyword, if possible.
 #   VELSCALE_RATIO: Integer. Gives the integer ratio > 1 between the VELSCALE of
 #       the GALAXY and the TEMPLATES. When this keyword is used, the templates
 #       are convolved by the LOSVD at their native resolution, and only
@@ -377,6 +368,14 @@
 #       templates along different dimensions (e.g. nAge, nMetal, nAlpha) is
 #       inferred from the dimensions of the TEMPLATES array and this keyword is
 #       not necessary.
+#   SIGMA_DIFF: Quadratic difference in km/s defined as
+#           sigma_diff**2 = sigma_inst**2 - sigma_temp**2
+#       between the instrumental dispersion of the galaxy spectrum and the
+#       instrumental dispersion of the template spectra.
+#       This keyword is useful when the templates have higher resolution than the
+#       galaxy and they were not convolved to match the instrumental dispersion
+#       of the galaxy spectrum. In this situation the convolution is done by pPXF
+#       with increased accuracy, using an analytic Fourier Transform.
 #   SKY: vector containing the spectrum of the sky to be included in the fit, or
 #       array of dimensions SKY[nPixels, nSky] containing different sky spectra
 #       to add to the model of the observed GALAXY spectrum. The SKY has to be
@@ -686,6 +685,11 @@
 #           MC, Oxford, 22 May 2016
 #   V5.3.3: Fixed Python 2 compatibility. Thanks to Masato Onodera (NAOJ).
 #           MC, Oxford 24 May 2016
+#   V6.0.0: Compute the Fourier Transform of the LOSVD analytically:
+#           Major improvement in velocity accuracy when sigma < velscale.
+#           Removed OVERSAMPLE keyword, which is now unnecessary.
+#           Removed limit on velocity shift of templates.
+#           MC, Oxford, 14 June 2016
 #
 ################################################################################
 
@@ -694,11 +698,11 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.polynomial import legendre
-from scipy import ndimage, optimize, linalg
- 
+from scipy import optimize, linalg, misc
+
 from . import cap_mpfit as mpfit
 
-#-------------------------------------------------------------------------------
+################################################################################
 
 def nnls_flags(A, b, flag):
     """
@@ -715,17 +719,17 @@ def nnls_flags(A, b, flag):
 
     return x[:n]
 
-#-------------------------------------------------------------------------------
+################################################################################
 
 def rebin(x, factor):
     """
-    Rebin a one-dimensional vector by averaging 
+    Rebin a one-dimensional vector by averaging
     in groups of "factor" adjacent values
-    
+
     """
     return np.mean(x.reshape(-1, factor), axis=1)
 
-#-------------------------------------------------------------------------------
+################################################################################
 
 def robust_sigma(y, zero=False):
     """
@@ -748,7 +752,7 @@ def robust_sigma(y, zero=False):
 
     return sigma
 
-#-------------------------------------------------------------------------------
+################################################################################
 
 def reddening_curve(lam, ebv):
     """
@@ -773,7 +777,7 @@ def reddening_curve(lam, ebv):
 
     return fact # The model spectrum has to be multiplied by this vector
 
-#-------------------------------------------------------------------------------
+################################################################################
 
 def _bvls_solve(A, b, npoly):
 
@@ -792,47 +796,100 @@ def _bvls_solve(A, b, npoly):
 
     return soluz
 
-#-------------------------------------------------------------------------------
+################################################################################
 
-def _rfft_templates(templates, vsyst, vlims, sigmax, factor, nspec, ratio):
+def _templates_rfft(templates):
     """
-    Pre-compute the FFT and possibly oversample the templates
+    Pre-compute the FFT (of real input) of the templates
 
     """
-
-    # Sample the LOSVD at least to vsyst+vel+5*sigma for all kinematic components
-    #
-    if nspec == 2:
-        dx = int(np.max(np.ceil(abs(vsyst) + abs(vlims) + 5*sigmax)))
-    else:
-        dx = int(np.max(np.ceil(abs(vsyst + vlims) + 5*sigmax)))
-
-    # Oversample all templates (if requested)
-    #
-    if factor > 1 and ratio is None:
-        templates = ndimage.interpolation.zoom(templates, [factor, 1], order=3)
-
-    nk = 2*dx*factor + 1
-    nf = templates.shape[0]
-    npad = int(2**np.ceil(np.log2(nf + nk/2)))  # vector length for zero padding
-
     # Pre-compute the FFT of all templates
-    # (Use Numpy's rfft as Scipy adopted an odd output format)
-    #
-    rfft_templates = np.fft.rfft(templates, n=npad, axis=0)
+    # (Use Numpy's rfft, given that Scipy adopted an odd output format)
+    npad = 2**int(np.ceil(np.log2(templates.shape[0])))
+    templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
 
-    return rfft_templates, npad
+    return templates_rfft, npad
 
-#-------------------------------------------------------------------------------
+################################################################################
+
+def _losvd_rfft(pars, nspec, moments, vj, npad, ncomp, vsyst, factor, sigma_diff):
+    """
+    Analytic Fourier Transform (of real input) of the Gauss-Hermite LOSVD
+    (see Cappellari in preparation)
+
+    """
+    nl = npad//2 + 1
+    losvd_rfft = np.empty((nl, ncomp, nspec), dtype=complex)
+    for j, p in enumerate(vj):  # loop over kinematic components
+        for k in range(nspec):  # nspec=2 for two-sided fitting, otherwise nspec=1
+            s = 1 if k == 0 else -1  # s=+1 for left spectrum, s=-1 for right one
+            vel = vsyst + s*pars[0 + p]
+            a, b = [-vel, sigma_diff]/pars[1 + p]
+            w = np.linspace(0, np.pi*factor*pars[1 + p], nl)
+            losvd_rfft[:, j, k] = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
+
+            # Hermite polynomials normalized as van der Marel & Franx (1993, Appendix A).
+            if moments[j] > 2:
+                n = np.arange(3, moments[j] + 1)
+                ii = [1j, 1]*(n.size//2)   # Alternating imaginary/real
+                nm = np.sqrt(misc.factorial(n)*2**n)   # vdMF93 Normalization
+                coeff = np.append([1, 0, 0], ii*pars[n + p - 1]/nm)
+                poly = np.polynomial.hermite.hermval(w, coeff)
+
+                losvd_rfft[:, j, k] *= poly
+
+    return losvd_rfft
+
+################################################################################
+
+def _include_regularization(a, npoly, npix, nspec, reg_dim, regul):
+    """
+    Add second-degree 1D, 2D or 3D linear regularization
+    Press W.H., et al., 2007, Numerical Recipes, 3rd ed., equation (19.5.10)
+
+    """
+    dim = reg_dim.size
+    i = npoly + np.arange(np.prod(reg_dim)).reshape(reg_dim)
+    p = npix*nspec
+    diff = np.array([1, -2, 1])*regul
+    ind = np.array([-1, 0, 1])
+    if dim == 1:
+        for j in range(1, reg_dim - 1):
+            a[p, i[j + ind]] = diff
+            p += 1
+    elif dim == 2:
+        for k in range(reg_dim[1]):
+            for j in range(reg_dim[0]):
+                if 0 != j != reg_dim[0] - 1:
+                    a[p, i[j + ind, k]] = diff
+                    p += 1
+                if 0 != k != reg_dim[1] - 1:
+                    a[p, i[j, k + ind]] = diff
+                    p += 1
+    elif dim == 3:
+        for q in range(reg_dim[2]):
+            for k in range(reg_dim[1]):
+                for j in range(reg_dim[0]):
+                    if 0 != j != reg_dim[0] - 1:
+                        a[p, i[j + ind, k, q]] = diff
+                        p += 1
+                    if 0 != k != reg_dim[1] - 1:
+                        a[p, i[j, k + ind, q]] = diff
+                        p += 1
+                    if 0 != q != reg_dim[2] - 1:
+                        a[p, i[j, k, q + ind]] = diff
+                        p += 1
+
+################################################################################
 
 class ppxf(object):
 
     def __init__(self, templates, galaxy, noise, velScale, start,
                  bias=None, clean=False, degree=4, fraction=None, goodpixels=None,
-                 mask=None, mdegree=0, moments=2, oversample=None, plot=False,
+                 mask=None, mdegree=0, moments=2, plot=False,
                  quiet=False, sky=None, vsyst=0, regul=0, lam=None, reddening=None,
                  component=0, reg_dim=None, fixed=None, bounds=None,
-                 velscale_ratio=None):
+                 velscale_ratio=None, sigma_diff=0):
 
         # Do extensive checking of possible input errors
         #
@@ -842,7 +899,6 @@ class ppxf(object):
         self.fraction = fraction
         self.degree = max(degree, -1)
         self.mdegree = max(mdegree, 0)
-        self.oversample = oversample
         self.quiet = quiet
         self.sky = sky
         self.vsyst = vsyst/velScale
@@ -853,9 +909,7 @@ class ppxf(object):
         self.star = templates.reshape(templates.shape[0], -1)
         self.npix_temp, self.ntemp = self.star.shape
         self.factor = 1   # default value
-
-        if (velscale_ratio is not None) and (oversample is not None):
-            raise ValueError('One cannot use OVERSAMPLE with VELSCALE_RATIO')
+        self.sigma_diff = sigma_diff/velScale
 
         if velscale_ratio is not None:
             if not isinstance(velscale_ratio, int):
@@ -864,11 +918,6 @@ class ppxf(object):
             self.star = self.star[:self.npix_temp, :]  # Make size multiple of velscale_ratio
             self.npix_temp //= velscale_ratio    # This is the size after rebin()
             self.factor = velscale_ratio
-
-        if oversample is not None:
-            if not isinstance(oversample, int):
-                raise ValueError('OVERSAMPLE must be an integer')
-            self.factor = oversample
 
         component = np.atleast_1d(component)
         if component.dtype != int:
@@ -1015,7 +1064,6 @@ class ppxf(object):
                     'value': 0., 'fixed': 0} for j in range(npars)]
 
         p = 0
-        vlims = np.empty(2*self.ncomp)
         for j in range(self.ncomp):
             st1, st2 = np.array(start1[j][:2])/velScale  # Convert velocity scale to pixels
             if bounds is None:
@@ -1024,13 +1072,11 @@ class ppxf(object):
             else:
                 bn1, bn2 = np.array(bounds[j][:2])/velScale
             parinfo[0 + p]['value'] = st1.clip(*bn1)
-            parinfo[0 + p]['limits'] = vlims[2*j:2*j+2] = bn1
+            parinfo[0 + p]['limits'] = bn1
             parinfo[0 + p]['step'] = 1e-2
             parinfo[1 + p]['value'] = st2.clip(*bn2)
             parinfo[1 + p]['limits'] = bn2
             parinfo[1 + p]['step'] = 1e-2
-            if self.npix_temp <= 2*(abs(self.vsyst + st1) + 5*st2):
-                raise ValueError('Velocity shift too big: Adjust wavelength ranges of spectrum and templates')
             for k in range(self.moments[j]):
                 if moments[j] < 0:  # negative moments --> keep entire LOSVD fixed
                     parinfo[k + p]['fixed'] = 1
@@ -1049,11 +1095,7 @@ class ppxf(object):
             parinfo[ngh]['value'] = reddening
             parinfo[ngh]['limits'] = [0., 10.]  # force positive E(B-V) < 10 mag
 
-        # Pre-compute the FFT and possibly oversample the templates
-        #
-        self.star_rfft, self.npad = _rfft_templates(
-            self.star, self.vsyst, vlims, parinfo[1]['limits'][1],
-            self.factor, galaxy.ndim, velscale_ratio)
+        self.star_rfft, self.npad = _templates_rfft(self.star)
 
         # Here the actual calculation starts.
         # If required, once the minimum is found, clean the pixels deviating
@@ -1106,9 +1148,6 @@ class ppxf(object):
             print("Best Fit:", "".join("%10s" % f for f in txt[:np.max(self.moments)]))
             for j in range(self.ncomp):
                 print("  comp.", j, "".join("%10.3g" % f for f in self.sol[j]))
-                if self.sol[j][1] < velScale/2 and velscale_ratio is None:
-                    print("Warning: sigma is under-sampled and unreliable. "
-                          "Resample the input spectra if possible.")
             print("chi2/DOF: %.4g" % self.chi2)
             print('Function evaluations:', ncalls)
             nw = self.weights.size
@@ -1136,7 +1175,7 @@ class ppxf(object):
         if plot:
             self.plot()
 
-#-------------------------------------------------------------------------------
+################################################################################
 
     def plot(self):
 
@@ -1169,7 +1208,7 @@ class ppxf(object):
         for gj in self.goodpixels[w]:
             plt.plot(x[[gj, gj]], [mn, self.bestfit[gj]], 'LimeGreen')
 
-#-------------------------------------------------------------------------------
+################################################################################
 
     def _fitfunc(self, pars, fjac=None):
 
@@ -1185,45 +1224,10 @@ class ppxf(object):
             ngh -= 1  # Fitting reddening
 
         # Find indices of vel_j for all kinematic components
-        #
         vj = np.append(0, np.cumsum(self.moments)[:-1])
 
-        # Sample the LOSVD at least to vsyst+vel+5*sigma for all kinematic components
-        #
-        if nspec == 2:
-            dx = int(np.ceil(np.max(abs(self.vsyst) + abs(pars[0+vj]) + 5*pars[1+vj])))
-        else:
-            dx = int(np.ceil(np.max(abs(self.vsyst + pars[0+vj]) + 5*pars[1+vj])))
-
-        nl = 2*dx*self.factor + 1
-        x = np.linspace(-dx, dx, nl)   # Evaluate the Gaussian using steps of 1/factor pixel
-        losvd = np.empty((nl, self.ncomp, nspec))
-        for j, p in enumerate(vj):    # loop over kinematic components
-            for k in range(nspec):    # nspec=2 for two-sided fitting, otherwise nspec=1
-                s = 1 if k == 0 else -1  # s=+1 for left spectrum, s=-1 for right one
-                vel = self.vsyst + s*pars[0+p]
-                w = (x - vel)/pars[1+p]
-                w2 = w**2
-                gauss = np.exp(-0.5*w2)
-                losvd[:, j, k] = gauss/gauss.sum()
-
-                # Hermite polynomials normalized as in Appendix A of van der Marel & Franx (1993).
-                # Coefficients for h5, h6 are given e.g. in Appendix C of Cappellari et al. (2002)
-                #
-                if self.moments[j] > 2:        # h_3 h_4
-                    poly = 1 + s*pars[2+p]/np.sqrt(3)*(w*(2*w2-3)) \
-                             + pars[3+p]/np.sqrt(24)*(w2*(4*w2-12)+3)
-                    if self.moments[j] == 6:  # h_5 h_6
-                        poly += s*pars[4+p]/np.sqrt(60)*(w*(w2*(4*w2-20)+15)) \
-                              + pars[5+p]/np.sqrt(720)*(w2*(w2*(8*w2-60)+90)-15)
-                    losvd[:, j, k] *= poly
-
-        # Compute the FFT of all LOSVDs
-        #
-        losvd_pad = np.zeros((self.npad, self.ncomp, nspec))
-        losvd_pad[:nl, :, :] = losvd                         # Zero padding
-        losvd_pad = np.roll(losvd_pad, (2 - nl)//2, axis=0)  # Bring kernel center to first position
-        losvd_rfft = np.fft.rfft(losvd_pad, axis=0)
+        losvd_rfft = _losvd_rfft(pars, nspec, self.moments, vj, self.npad, self.ncomp,
+                                 self.vsyst, self.factor, self.sigma_diff)
 
         # The zeroth order multiplicative term is already included in the
         # linear fit of the templates. The polynomial below has mean of 1.
@@ -1285,9 +1289,9 @@ class ppxf(object):
         for j, star_rfft in enumerate(self.star_rfft.T):  # loop over columns
             for k in range(nspec):
                 tt = np.fft.irfft(star_rfft*losvd_rfft[:, self.component[j], k])
-                if self.factor == 1:  # No oversampling
+                if self.factor == 1:  # Template as same resolution as galaxy
                     tmp[:, k] = tt[:self.npix_temp]
-                else:                 # Template was oversampled before convolution
+                else:                 # Template has higher resolution than galaxy
                     tmp[:, k] = rebin(tt[:self.npix_temp*self.factor], self.factor)
             c[:, npoly+j] = mpoly*tmp[:npix, :].ravel()  # reform into a vector
 
@@ -1310,40 +1314,8 @@ class ppxf(object):
             a[:npix*nspec, :] = c / self.noise[:, None] # Weight all columns with errors
             b = self.galaxy / self.noise
 
-        # Add second-degree 1D, 2D or 3D linear regularization
-        # Press W.H., et al., 2007, Numerical Recipes, 3rd ed., equation (19.5.10)
-        #
         if self.regul > 0:
-            i = npoly + np.arange(np.prod(self.reg_dim)).reshape(self.reg_dim)
-            p = npix*nspec
-            diff = np.array([1, -2, 1])*self.regul
-            ind = np.array([-1, 0, 1])
-            if dim == 1:
-                for j in range(1, self.reg_dim-1):
-                    a[p, i[j+ind]] = diff
-                    p += 1
-            elif dim == 2:
-                for k in range(self.reg_dim[1]):
-                    for j in range(self.reg_dim[0]):
-                        if 0 != j != self.reg_dim[0]-1:
-                            a[p, i[j+ind, k]] = diff
-                            p += 1
-                        if 0 != k != self.reg_dim[1]-1:
-                            a[p, i[j, k+ind]] = diff
-                            p += 1
-            elif dim == 3:
-                for q in range(self.reg_dim[2]):
-                    for k in range(self.reg_dim[1]):
-                        for j in range(self.reg_dim[0]):
-                            if 0 != j != self.reg_dim[0]-1:
-                                a[p, i[j+ind, k, q]] = diff
-                                p += 1
-                            if 0 != k != self.reg_dim[1]-1:
-                                a[p, i[j, k+ind, q]] = diff
-                                p += 1
-                            if 0 != q != self.reg_dim[2]-1:
-                                a[p, i[j, k, q+ind]] = diff
-                                p += 1
+            _include_regularization(a, npoly, npix, nspec, self.reg_dim, self.regul)
 
         if self.fraction is not None:
             ff = a[-1, -self.ntemp:]
@@ -1390,10 +1362,10 @@ class ppxf(object):
         if np.any(self.moments > 2) and self.bias != 0:
             D2 = 0.
             for j, p in enumerate(vj):  # loop over kinematic components
-                if self.moments[j] > 2:  
+                if self.moments[j] > 2:
                     D2 += np.sum(pars[2+p:self.moments[j]+p]**2)  # eq.(8)
             err += self.bias*robust_sigma(err, zero=True)*np.sqrt(D2)  # eq.(9)
 
         return 0, err
 
-#-------------------------------------------------------------------------------
+################################################################################

@@ -4,9 +4,6 @@
 
 Provides a set of functions to handle instrumental effects.
 
-:func:`log_rebin` has been pulled from
-:mod:`mangadap.contrib.ppxf_util.py` and modified.
-
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
@@ -54,6 +51,8 @@ Provides a set of functions to handle instrumental effects.
         and output range computed in :func:`resample_vector_npix`; now
         returns an adjusted range to make sure that the sampling and
         range results in an exact integer number of pixels.
+    | **05 Jul 2016**: (KBW) To avoid confusion, commented out
+        log_rebin.
 
 """
 
@@ -988,307 +987,307 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     return out_flux, out_sres, sigma_offset, out_mask, None
     
 
-def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=False,
-              newRange=None, wave_in_ang=False, unobs=0.0):
-    """
-    .. note::
-     
-        Copyright (C) 2001-2014, Michele Cappellari
-        E-mail: cappellari_at_astro.ox.ac.uk
-     
-        This software is provided as is without any warranty whatsoever.
-        Permission to use, for non-commercial purposes is granted.
-        Permission to modify for personal or internal use is granted,
-        provided this copyright and disclaimer are included unchanged at
-        the beginning of the file. All other rights are reserved.
-
-    Logarithmically rebin a spectrum, while rigorously conserving the
-    flux.  Basically the photons in the spectrum are simply
-    ridistributed according to a new grid of pixels, with non-uniform
-    size in the spectral direction.
-    
-    This routine makes the `standard' zero-order assumption that the
-    spectrum is *constant* within each pixels. It is possible to perform
-    log-rebinning by assuming the spectrum is represented by a
-    piece-wise polynomial of higer degree, while still obtaining a
-    uniquely defined linear problem, but this reduces to a deconvolution
-    and amplifies noise.
-
-    .. warning::
-
-        This assumption can be poor for sharp features in the spectrum.
-        Beware if resampling spectra with strong, marginally sampled
-        features!
-    
-    This same routine can be used to compute approximate errors of the
-    log-rebinned spectrum. To do this type the command
-    
-    >>> err2New, logLam, velscale = log_rebin(lamRange, numpy.square(err))
-    
-    and the desired errors will be given by numpy.sqrt(err2New).
-    
-    .. warning::
-    
-        This rebinning of the error-spectrum is very *approximate* as it
-        does not consider the correlation introduced by the rebinning!
-
-    Args:
-
-        lamRange (numpy.ndarray): two elements vector containing the
-            central wavelength of the first and last pixels in the
-            spectrum, which is assumed to have constant wavelength
-            scale! E.g. from the values in the standard FITS keywords:
-            LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
-            LAMRANGE[0] < LAMRANGE[1].
-        spec (numpy.ndarray): Input spectrum.
-        oversample (int): (**Optional**) Oversampling can be done, not
-            to loose spectral resolution, especally for extended
-            wavelength ranges and to avoid aliasing.  Default is to
-            provide the same number of output pixels as input.
-        velscale (float): (**Optional**) Velocity scale in km/s per
-            pixels. If this variable is not defined, then it will
-            contain in output the velocity scale.  If this variable is
-            defined by the user it will be used to set the output number
-            of pixels and wavelength scale.
-        flux (bool): (**Optional**) Set this keyword to preserve total
-            flux.  In this case the log rebinning changes the pixels
-            flux in proportion to their dLam so the following command
-            will show large differences beween the spectral shape before
-            and after :func:`log_rebin`::
-     
-                # Plot log-rebinned spectrum
-                pyplot.plot(exp(logLam), specNew)
-                pyplot.plot(numpy.arange(lamRange[0],lamRange[1],spec.size), spec, 'g')
-                pyplot.show()
-     
-            By default, when this keyword is *not* set, the above two
-            lines produce two spectra that almost perfectly overlap each
-            other.
-        log10 (bool): (**Optional**) Flag that the spectrum should be
-            binned in units of base-10 log wavelength, instead of
-            natural log
-        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
-            be sampled to a new spectral range (lamRange is the
-            *existing* spectral range).
-        wave_in_ang (bool): (**Optional**) Return the wavelength
-            coordinates in angstroms, not log(angstroms)
-        unobs (float): (**Optional**) Default value for unobserved
-            spectral regions.
-
-    Returns:
-        numpy.ndarray, float: Returns three variables: logarithmically
-        rebinned spectrum, the log of the wavelength at the geometric
-        center of each pixel, and the velocity scale of each pixel in
-        km/s.
-        
-    Raises:
-        ValueError: Raised if the input spectrum is not a
-            one-dimensional numpy.ndarray.
-        
-    *Modification History*:
-        | **V1.0.0**: Using interpolation. Michele Cappellari, Leiden,
-            22 October 2001
-        | **V2.0.0**: Analytic flux conservation. MC, Potsdam, 15 June
-            2003
-        | **V2.1.0**: Allow a velocity scale to be specified by the
-            user.  MC, Leiden, 2 August 2003
-        | **V2.2.0**: Output the optional logarithmically spaced
-            wavelength at the geometric mean of the wavelength at the
-            border of each pixel.  Thanks to Jesus Falcon-Barroso. MC,
-            Leiden, 5 November 2003
-        | **V2.2.1**: Verify that lamRange[0] < lamRange[1].  MC,
-            Vicenza, 29 December 2004
-        | **V2.2.2**: Modified the documentation after feedback from
-            James Price.  MC, Oxford, 21 October 2010
-        | **V2.3.0**: By default now preserve the shape of the spectrum,
-            not the total flux. This seems what most users expect from
-            the procedure.  Set the keyword /FLUX to preserve flux like
-            in previous version.  MC, Oxford, 30 November 2011
-        | **V3.0.0**: Translated from IDL into Python. MC, Santiago, 23
-            November 2013
-        | **V3.1.0**: Fully vectorized log_rebin. Typical speed up by
-            two orders of magnitude.  MC, Oxford, 4 March 2014
-        | **05 Jun 2015**: (K. Westfall, KBW) Pulled from ppxf_util.py.
-            Conform to mangadap documentation standard.  Transcribe
-            edits made to IDL version that provides for the log10 and
-            newRange arguments.  Add option to return wavelength in
-            angstroms, not log(angstroms).  Break out determination of
-            input and output spectrum pixel coordinates to a new
-            function, :func:`log_rebin_pix`.  Added default value for
-            unobserved pixels.  Default behavior unchanged.
-
-    .. todo::
-
-        - Allow to resample an already geometrically binned spectrum
-    
-    """
-    lamRange = numpy.asarray(lamRange)
-
-    if type(spec) != numpy.ndarray:
-        raise ValueError('Input spectrum must be a numpy.ndarray')
-    s = spec.shape
-    if len(s) != 1:
-        raise ValueError('input spectrum must be a vector')
-    n = s[0]
-
-    # This is broken out into a separate procedure so that it can be
-    # called to determine the size of the rebinned spectra without
-    # actually doing the rebinning
-    dLam, m, logscale, velscale = \
-        log_rebin_pix(lamRange, n, oversample=oversample, velscale=velscale, log10=log10,
-                      newRange=newRange)
-    print(dLam)                        
-    print(m)
-    print(logscale)
-    print(velscale)
-
-    # Get the sampling of the existing spectrum
-    lim = lamRange/dLam + [-0.5, 0.5]           # All in units of dLam
-    borders = numpy.linspace(*lim, num=n+1)     # Linearly sampled pixels
-
-    print(borders)
-    print(dLam)
-
-    # Set limits to a new wavelength range
-    if newRange is not None:
-        lim = numpy.asarray(newRange)/dLam + [-0.5, 0.5]
-
-    # Set the limits to the (base-10 or natural) log of the wavelength
-    logLim = numpy.log(lim) if not log10 else numpy.log10(lim)
-    logLim[1] = logLim[0] + m*logscale      # Set last wavelength, based on integer # of pixels
-
-    # Geometrically spaced pixel borders for the new spectrum
-#    newBorders = numpy.logspace(*logLim, num=m+1, base=(10.0 if log10 else numpy.exp(1)))
-    newBorders = numpy.power(10., numpy.linspace(*logLim, num=m+1)) if log10 else \
-                 numpy.exp(numpy.linspace(*logLim, num=m+1))
-
-
-    print(newBorders)
-    print(m)
-    print(logscale)
-
-    # Get the new spectrum by performing an analytic integral
-    k = (newBorders - borders[0]).clip(0, n-1).astype(int)
-    specNew = numpy.add.reduceat(spec, k)[:-1]
-    specNew *= numpy.diff(k) > 0                # fix for design flaw of reduceat()
-    specNew += numpy.diff((newBorders - borders[k])*spec[k])
-
-    # Don't conserve the flux
-    if not flux:
-        specNew /= numpy.diff(newBorders)
-
-    # Output log(wavelength): log of geometric mean
-    LamNew = numpy.sqrt(newBorders[1:]*newBorders[:-1])*dLam
-
-    # Set values for unobserved regions
-    if newRange is not None and (newRange[0] < lamRange[0] or newRange[1] > lamRange[1]):
-            specNew[ (LamNew < lamRange[0]) | (LamNew > lamRange[1]) ] = unobs
-
-    # Return log(wavelength), if requested
-    if not wave_in_ang:
-        LamNew = numpy.log10(LamNew) if log10 else numpy.log(LamNew)
-
-    # Return spectrum, wavelength coordinates, and pixel size in km/s
-    return specNew, LamNew, velscale
-
-
-
-def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newRange=None):
-    """
-    Determine the number of new pixels and their coordinate step when
-    rebinning a spectrum in geometrically stepped bins.  The input
-    spectrum must be sampled linearly in wavelength.  This is primarily
-    a support routine for :func:`log_rebin`.
-
-    Although breaking this out from the main :func:`log_rebin` function
-    leads to a few repeat calculations in that function, the use of this
-    function is in determine a common wavelength range for a large
-    number of spectra before resampling the spectra themselves.  See
-    :class:`mangadap.TemplateLibrary` .
-
-    Args:
-        lamRange (numpy.ndarray): two elements vector containing the
-            central wavelength of the first and last pixels in the
-            spectrum, which is assumed to have constant wavelength
-            scale! E.g. from the values in the standard FITS keywords:
-            LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
-            LAMRANGE[0] < LAMRANGE[1].
-        n (int): Number of pixels in the original spectrum.
-        oversample (int): (**Optional**) Oversampling can be done, not
-            to loose spectral resolution, especally for extended
-            wavelength ranges and to avoid aliasing.  Default is to
-            provide the same number of output pixels as input.
-        velscale (float): (**Optional**) Velocity scale in km/s per
-            pixels. If this variable is not defined, then it will
-            contain in output the velocity scale.  If this variable is
-            defined by the user it will be used to set the output number
-            of pixels and wavelength scale.
-        log10 (bool): (**Optional**) Flag that the spectrum should be
-            binned in units of base-10 log wavelength, instead of
-            natural log
-        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
-            be sampled to a new spectral range (lamRange is the
-            *existing* spectral range).
-
-    Returns:
-        float, int: Returns
-            
-            1. the linear wavelength step of each pixel in the input
-            spectrum, 
-            2. the number of pixels for the rebinned spectrum, 
-            3. the log-linear wavelength step for each pixel in the new
-            spectrum, and
-            4. the velocity step for each pixel in the new spectrum.
-
-    Raises:
-        ValueError: Raised if the input wavelength range (*lamRange* or
-            *newRange*) does not have two elements or is not sorted.
-    """
-    lamRange = numpy.asarray(lamRange)
-    if len(lamRange) != 2:
-        raise ValueError('lamRange must contain two elements')
-    if lamRange[0] >= lamRange[1]:
-        raise ValueError('It must be lamRange[0] < lamRange[1]')
-
-    # Size of output spectrum
-    m = int(n) if oversample is None else int(n*oversample)
-
-    # Get the sampling of the existing spectrum
-    dLam = numpy.diff(lamRange)/(n - 1.)        # Assume constant dLam
-    lim = lamRange/dLam + [-0.5, 0.5]           # All in units of dLam
-
-    # Get the sampling for the new spectrum, if requested to be
-    # different
-    if newRange is not None:
-        newRange = numpy.asarray(newRange)
-        if len(newRange) != 2:
-            raise ValueError('newRange must contain two elements')
-        if newRange[0] >= newRange[1]:
-            raise ValueError('It must be newRange[0] < newRange[1]')
-        lim = newRange/dLam + [-0.5, 0.5]       # Set limits to a new wavelength range
-
-        # Adjust the length
-        nn = int((lamRange[1]-lamRange[0]-newRange[1]+newRange[0])/dLam)
-        m = m-nn if oversample is None else m-nn*oversample
-
-    # Set the limits to the (base-10 or natural) log of the wavelength
-    logLim = numpy.log(lim) if not log10 else numpy.log10(lim)
-
-    c = astropy.constants.c.to('km/s').value    # Speed of light in km/s (use astropy definition)
-
-    # Set the velocity scale, if velscale not provided; otherwise force
-    # the sampling based in the input velscale
-    if velscale is None:                        # Velocity scale is not set by user
-        velscale = numpy.diff(logLim)[0]/m*c    # Only for output
-        if log10:
-            velscale *= numpy.log(10.)          # Adjust to log base-10
-
-    logscale = velscale/c                       # dlambda/lambda = dln(lambda)
-    if log10:
-        logscale /= numpy.log(10.)              # Convert to dlog10(lambda)
-    m = int(numpy.diff(logLim)/logscale)        # Number of output pixels
-
-    return dLam, m, logscale, velscale
+#def log_rebin(lamRange, spec, oversample=None, velscale=None, flux=False, log10=False,
+#              newRange=None, wave_in_ang=False, unobs=0.0):
+#    """
+#    .. note::
+#     
+#        Copyright (C) 2001-2014, Michele Cappellari
+#        E-mail: cappellari_at_astro.ox.ac.uk
+#     
+#        This software is provided as is without any warranty whatsoever.
+#        Permission to use, for non-commercial purposes is granted.
+#        Permission to modify for personal or internal use is granted,
+#        provided this copyright and disclaimer are included unchanged at
+#        the beginning of the file. All other rights are reserved.
+#
+#    Logarithmically rebin a spectrum, while rigorously conserving the
+#    flux.  Basically the photons in the spectrum are simply
+#    ridistributed according to a new grid of pixels, with non-uniform
+#    size in the spectral direction.
+#    
+#    This routine makes the `standard' zero-order assumption that the
+#    spectrum is *constant* within each pixels. It is possible to perform
+#    log-rebinning by assuming the spectrum is represented by a
+#    piece-wise polynomial of higer degree, while still obtaining a
+#    uniquely defined linear problem, but this reduces to a deconvolution
+#    and amplifies noise.
+#
+#    .. warning::
+#
+#        This assumption can be poor for sharp features in the spectrum.
+#        Beware if resampling spectra with strong, marginally sampled
+#        features!
+#    
+#    This same routine can be used to compute approximate errors of the
+#    log-rebinned spectrum. To do this type the command
+#    
+#    >>> err2New, logLam, velscale = log_rebin(lamRange, numpy.square(err))
+#    
+#    and the desired errors will be given by numpy.sqrt(err2New).
+#    
+#    .. warning::
+#    
+#        This rebinning of the error-spectrum is very *approximate* as it
+#        does not consider the correlation introduced by the rebinning!
+#
+#    Args:
+#
+#        lamRange (numpy.ndarray): two elements vector containing the
+#            central wavelength of the first and last pixels in the
+#            spectrum, which is assumed to have constant wavelength
+#            scale! E.g. from the values in the standard FITS keywords:
+#            LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
+#            LAMRANGE[0] < LAMRANGE[1].
+#        spec (numpy.ndarray): Input spectrum.
+#        oversample (int): (**Optional**) Oversampling can be done, not
+#            to loose spectral resolution, especally for extended
+#            wavelength ranges and to avoid aliasing.  Default is to
+#            provide the same number of output pixels as input.
+#        velscale (float): (**Optional**) Velocity scale in km/s per
+#            pixels. If this variable is not defined, then it will
+#            contain in output the velocity scale.  If this variable is
+#            defined by the user it will be used to set the output number
+#            of pixels and wavelength scale.
+#        flux (bool): (**Optional**) Set this keyword to preserve total
+#            flux.  In this case the log rebinning changes the pixels
+#            flux in proportion to their dLam so the following command
+#            will show large differences beween the spectral shape before
+#            and after :func:`log_rebin`::
+#     
+#                # Plot log-rebinned spectrum
+#                pyplot.plot(exp(logLam), specNew)
+#                pyplot.plot(numpy.arange(lamRange[0],lamRange[1],spec.size), spec, 'g')
+#                pyplot.show()
+#     
+#            By default, when this keyword is *not* set, the above two
+#            lines produce two spectra that almost perfectly overlap each
+#            other.
+#        log10 (bool): (**Optional**) Flag that the spectrum should be
+#            binned in units of base-10 log wavelength, instead of
+#            natural log
+#        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
+#            be sampled to a new spectral range (lamRange is the
+#            *existing* spectral range).
+#        wave_in_ang (bool): (**Optional**) Return the wavelength
+#            coordinates in angstroms, not log(angstroms)
+#        unobs (float): (**Optional**) Default value for unobserved
+#            spectral regions.
+#
+#    Returns:
+#        numpy.ndarray, float: Returns three variables: logarithmically
+#        rebinned spectrum, the log of the wavelength at the geometric
+#        center of each pixel, and the velocity scale of each pixel in
+#        km/s.
+#        
+#    Raises:
+#        ValueError: Raised if the input spectrum is not a
+#            one-dimensional numpy.ndarray.
+#        
+#    *Modification History*:
+#        | **V1.0.0**: Using interpolation. Michele Cappellari, Leiden,
+#            22 October 2001
+#        | **V2.0.0**: Analytic flux conservation. MC, Potsdam, 15 June
+#            2003
+#        | **V2.1.0**: Allow a velocity scale to be specified by the
+#            user.  MC, Leiden, 2 August 2003
+#        | **V2.2.0**: Output the optional logarithmically spaced
+#            wavelength at the geometric mean of the wavelength at the
+#            border of each pixel.  Thanks to Jesus Falcon-Barroso. MC,
+#            Leiden, 5 November 2003
+#        | **V2.2.1**: Verify that lamRange[0] < lamRange[1].  MC,
+#            Vicenza, 29 December 2004
+#        | **V2.2.2**: Modified the documentation after feedback from
+#            James Price.  MC, Oxford, 21 October 2010
+#        | **V2.3.0**: By default now preserve the shape of the spectrum,
+#            not the total flux. This seems what most users expect from
+#            the procedure.  Set the keyword /FLUX to preserve flux like
+#            in previous version.  MC, Oxford, 30 November 2011
+#        | **V3.0.0**: Translated from IDL into Python. MC, Santiago, 23
+#            November 2013
+#        | **V3.1.0**: Fully vectorized log_rebin. Typical speed up by
+#            two orders of magnitude.  MC, Oxford, 4 March 2014
+#        | **05 Jun 2015**: (K. Westfall, KBW) Pulled from ppxf_util.py.
+#            Conform to mangadap documentation standard.  Transcribe
+#            edits made to IDL version that provides for the log10 and
+#            newRange arguments.  Add option to return wavelength in
+#            angstroms, not log(angstroms).  Break out determination of
+#            input and output spectrum pixel coordinates to a new
+#            function, :func:`log_rebin_pix`.  Added default value for
+#            unobserved pixels.  Default behavior unchanged.
+#
+#    .. todo::
+#
+#        - Allow to resample an already geometrically binned spectrum
+#    
+#    """
+#    lamRange = numpy.asarray(lamRange)
+#
+#    if type(spec) != numpy.ndarray:
+#        raise ValueError('Input spectrum must be a numpy.ndarray')
+#    s = spec.shape
+#    if len(s) != 1:
+#        raise ValueError('input spectrum must be a vector')
+#    n = s[0]
+#
+#    # This is broken out into a separate procedure so that it can be
+#    # called to determine the size of the rebinned spectra without
+#    # actually doing the rebinning
+#    dLam, m, logscale, velscale = \
+#        log_rebin_pix(lamRange, n, oversample=oversample, velscale=velscale, log10=log10,
+#                      newRange=newRange)
+#    print(dLam)                        
+#    print(m)
+#    print(logscale)
+#    print(velscale)
+#
+#    # Get the sampling of the existing spectrum
+#    lim = lamRange/dLam + [-0.5, 0.5]           # All in units of dLam
+#    borders = numpy.linspace(*lim, num=n+1)     # Linearly sampled pixels
+#
+#    print(borders)
+#    print(dLam)
+#
+#    # Set limits to a new wavelength range
+#    if newRange is not None:
+#        lim = numpy.asarray(newRange)/dLam + [-0.5, 0.5]
+#
+#    # Set the limits to the (base-10 or natural) log of the wavelength
+#    logLim = numpy.log(lim) if not log10 else numpy.log10(lim)
+#    logLim[1] = logLim[0] + m*logscale      # Set last wavelength, based on integer # of pixels
+#
+#    # Geometrically spaced pixel borders for the new spectrum
+##    newBorders = numpy.logspace(*logLim, num=m+1, base=(10.0 if log10 else numpy.exp(1)))
+#    newBorders = numpy.power(10., numpy.linspace(*logLim, num=m+1)) if log10 else \
+#                 numpy.exp(numpy.linspace(*logLim, num=m+1))
+#
+#
+#    print(newBorders)
+#    print(m)
+#    print(logscale)
+#
+#    # Get the new spectrum by performing an analytic integral
+#    k = (newBorders - borders[0]).clip(0, n-1).astype(int)
+#    specNew = numpy.add.reduceat(spec, k)[:-1]
+#    specNew *= numpy.diff(k) > 0                # fix for design flaw of reduceat()
+#    specNew += numpy.diff((newBorders - borders[k])*spec[k])
+#
+#    # Don't conserve the flux
+#    if not flux:
+#        specNew /= numpy.diff(newBorders)
+#
+#    # Output log(wavelength): log of geometric mean
+#    LamNew = numpy.sqrt(newBorders[1:]*newBorders[:-1])*dLam
+#
+#    # Set values for unobserved regions
+#    if newRange is not None and (newRange[0] < lamRange[0] or newRange[1] > lamRange[1]):
+#            specNew[ (LamNew < lamRange[0]) | (LamNew > lamRange[1]) ] = unobs
+#
+#    # Return log(wavelength), if requested
+#    if not wave_in_ang:
+#        LamNew = numpy.log10(LamNew) if log10 else numpy.log(LamNew)
+#
+#    # Return spectrum, wavelength coordinates, and pixel size in km/s
+#    return specNew, LamNew, velscale
+#
+#
+#
+#def log_rebin_pix(lamRange, n, oversample=None, velscale=None, log10=False, newRange=None):
+#    """
+#    Determine the number of new pixels and their coordinate step when
+#    rebinning a spectrum in geometrically stepped bins.  The input
+#    spectrum must be sampled linearly in wavelength.  This is primarily
+#    a support routine for :func:`log_rebin`.
+#
+#    Although breaking this out from the main :func:`log_rebin` function
+#    leads to a few repeat calculations in that function, the use of this
+#    function is in determine a common wavelength range for a large
+#    number of spectra before resampling the spectra themselves.  See
+#    :class:`mangadap.TemplateLibrary` .
+#
+#    Args:
+#        lamRange (numpy.ndarray): two elements vector containing the
+#            central wavelength of the first and last pixels in the
+#            spectrum, which is assumed to have constant wavelength
+#            scale! E.g. from the values in the standard FITS keywords:
+#            LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].  It must be
+#            LAMRANGE[0] < LAMRANGE[1].
+#        n (int): Number of pixels in the original spectrum.
+#        oversample (int): (**Optional**) Oversampling can be done, not
+#            to loose spectral resolution, especally for extended
+#            wavelength ranges and to avoid aliasing.  Default is to
+#            provide the same number of output pixels as input.
+#        velscale (float): (**Optional**) Velocity scale in km/s per
+#            pixels. If this variable is not defined, then it will
+#            contain in output the velocity scale.  If this variable is
+#            defined by the user it will be used to set the output number
+#            of pixels and wavelength scale.
+#        log10 (bool): (**Optional**) Flag that the spectrum should be
+#            binned in units of base-10 log wavelength, instead of
+#            natural log
+#        newRange (numpy.ndarray): (**Optional**) Force the spectrum to
+#            be sampled to a new spectral range (lamRange is the
+#            *existing* spectral range).
+#
+#    Returns:
+#        float, int: Returns
+#            
+#            1. the linear wavelength step of each pixel in the input
+#            spectrum, 
+#            2. the number of pixels for the rebinned spectrum, 
+#            3. the log-linear wavelength step for each pixel in the new
+#            spectrum, and
+#            4. the velocity step for each pixel in the new spectrum.
+#
+#    Raises:
+#        ValueError: Raised if the input wavelength range (*lamRange* or
+#            *newRange*) does not have two elements or is not sorted.
+#    """
+#    lamRange = numpy.asarray(lamRange)
+#    if len(lamRange) != 2:
+#        raise ValueError('lamRange must contain two elements')
+#    if lamRange[0] >= lamRange[1]:
+#        raise ValueError('It must be lamRange[0] < lamRange[1]')
+#
+#    # Size of output spectrum
+#    m = int(n) if oversample is None else int(n*oversample)
+#
+#    # Get the sampling of the existing spectrum
+#    dLam = numpy.diff(lamRange)/(n - 1.)        # Assume constant dLam
+#    lim = lamRange/dLam + [-0.5, 0.5]           # All in units of dLam
+#
+#    # Get the sampling for the new spectrum, if requested to be
+#    # different
+#    if newRange is not None:
+#        newRange = numpy.asarray(newRange)
+#        if len(newRange) != 2:
+#            raise ValueError('newRange must contain two elements')
+#        if newRange[0] >= newRange[1]:
+#            raise ValueError('It must be newRange[0] < newRange[1]')
+#        lim = newRange/dLam + [-0.5, 0.5]       # Set limits to a new wavelength range
+#
+#        # Adjust the length
+#        nn = int((lamRange[1]-lamRange[0]-newRange[1]+newRange[0])/dLam)
+#        m = m-nn if oversample is None else m-nn*oversample
+#
+#    # Set the limits to the (base-10 or natural) log of the wavelength
+#    logLim = numpy.log(lim) if not log10 else numpy.log10(lim)
+#
+#    c = astropy.constants.c.to('km/s').value    # Speed of light in km/s (use astropy definition)
+#
+#    # Set the velocity scale, if velscale not provided; otherwise force
+#    # the sampling based in the input velscale
+#    if velscale is None:                        # Velocity scale is not set by user
+#        velscale = numpy.diff(logLim)[0]/m*c    # Only for output
+#        if log10:
+#            velscale *= numpy.log(10.)          # Adjust to log base-10
+#
+#    logscale = velscale/c                       # dlambda/lambda = dln(lambda)
+#    if log10:
+#        logscale /= numpy.log(10.)              # Convert to dlog10(lambda)
+#    m = int(numpy.diff(logLim)/logscale)        # Number of output pixels
+#
+#    return dLam, m, logscale, velscale
 
 
 def _pixel_borders(xlim, npix, log=False, base=10.0):

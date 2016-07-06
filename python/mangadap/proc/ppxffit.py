@@ -42,7 +42,11 @@ Implements a wrapper class for pPXF.
         Add examples
 
 *Revision history*:
-    | **26 Apr 2016**: Moved from spectralfitting.py to its own file by K. Westfall (KBW)
+    | **26 Apr 2016**: Moved from spectralfitting.py to its own file by
+        K. Westfall (KBW)
+    | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
+        keyword given a better solution; see Cappellari (in prep).  This
+        keyword was therefore removed from the parameter set.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -135,8 +139,8 @@ class PPXFFitPar(ParSet):
         pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`):
             (**Optional**) Pixel mask to include during the fitting.
         
-        bias, clean, degree, mdegree, moments, oversample, sky, regul,
-            reddening, component, reg_dim (various): (**Optional**) See
+        bias, clean, degree, mdegree, moments, sky, regul, reddening,
+            component, reg_dim (various): (**Optional**) See
             :class:`mangadap.contrib.ppxf.ppxf` documentation.
 
     """
@@ -144,8 +148,8 @@ class PPXFFitPar(ParSet):
     def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
                  iteration_mode='global_template_with_rejection', match_resolution=True,
                  velscale_ratio=None, minimum_snr=None, pixelmask=None, bias=None, clean=False,
-                 degree=None, mdegree=None, moments=None, oversample=None, sky=None, regul=None,
-                 reddening=None, component=None, reg_dim=None):
+                 degree=None, mdegree=None, moments=None, sky=None, regul=None, reddening=None,
+                 component=None, reg_dim=None):
     
         arr = [ numpy.ndarray, list ]                   # sky, p0, lam, component
         arr_in_fl = [ numpy.ndarray, list, int, float ] # component, reg_dim
@@ -159,19 +163,19 @@ class PPXFFitPar(ParSet):
         pars =     [ 'template_library_key', 'template_library', 'guess_redshift',
                      'guess_dispersion', 'iteration_mode', 'match_resolution', 'velscale_ratio',
                      'minimum_snr', 'pixelmask', 'bias', 'clean', 'degree', 'mdegree', 'moments',
-                     'oversample', 'sky', 'regul', 'reddening', 'component', 'reg_dim' ]
+                     'sky', 'regul', 'reddening', 'component', 'reg_dim' ]
         values =   [ template_library_key, template_library, guess_redshift, guess_dispersion,
                      iteration_mode, match_resolution, velscale_ratio, minimum_snr, pixelmask,
-                     bias, clean, degree, mdegree, moments, oversample, sky, regul, reddening,
-                     component, reg_dim ]
+                     bias, clean, degree, mdegree, moments, sky, regul, reddening, component,
+                     reg_dim ]
         options =  [ None, None, None, None, iter_opt, None, None, None, None, None, None, None,
-                     None, moment_opt, None, None, None, None, None, None ]
+                     None, moment_opt, None, None, None, None, None ]
         defaults = [ None, None, None, None, 'global_template_with_rejection', True, None, None,
                      None, _def['bias'], _def['clean'], _def['degree'], _def['mdegree'],
-                     _def['moments'], _def['oversample'], None, _def['regul'], _def['reddening'],
-                     _def['component'], _def['reg_dim'] ]
+                     _def['moments'], None, _def['regul'], _def['reddening'], _def['component'],
+                     _def['reg_dim'] ]
         dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, str, bool, int, in_fl, PixelMask,
-                     in_fl, bool, int, int, int, int, arr, in_fl, in_fl, arr_in_fl, arr_in_fl ]
+                     in_fl, bool, int, int, int, arr, in_fl, in_fl, arr_in_fl, arr_in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -184,8 +188,8 @@ class PPXFFitPar(ParSet):
         Return the keyword defaults.  Pulled from
         :class:`mangadap.contrib.ppxf.ppxf`.
         """
-        return { 'bias':None, 'clean':False, 'degree':4, 'mdegree':0, 'moments':2,
-                 'oversample':None, 'regul':0, 'reddening':None, 'component':0, 'reg_dim':None }
+        return { 'bias':None, 'clean':False, 'degree':4, 'mdegree':0, 'moments':2, 'regul':0,
+                 'reddening':None, 'component':0, 'reg_dim':None }
 
 
     def _check(self):
@@ -208,7 +212,6 @@ class PPXFFitPar(ParSet):
         hdr['PPXFMOM'] = (self['moments'], 'Number of fitted LOSVD moments in pPXF')
         hdr['PPXFDEG'] = (self['degree'], 'Order of additive polynomial in pPXF')
         hdr['PPXFMDEG'] = (self['mdegree'], 'Order of multiplicative polynomial in pPXF')
-        hdr['PPXFOVER'] = (str(self['oversample']), 'Templates oversampled in pPXF')
 
 
     def fromheader(self, hdr):
@@ -218,7 +221,6 @@ class PPXFFitPar(ParSet):
         self['moments'] = hdr['PPXFMOM']
         self['degree'] = hdr['PPXFDEG']
         self['mdegree'] = hdr['PPXFMDEG']
-        self['oversample'] = eval(hdr['PPXFOVER'])
 
 
 
@@ -279,7 +281,6 @@ class PPXFFit(StellarKinematicsFit):
         self.degree = None
         self.mdegree = None
         self.moments = None
-        self.oversample = None
 
 
     @staticmethod
@@ -596,8 +597,8 @@ class PPXFFit(StellarKinematicsFit):
                         global_spectrum_err.data[self.spectrum_start:self.spectrum_end],
                         self.velscale, self.guess_kin[0,:], velscale_ratio=self.velscale_ratio,
                         goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
-                        mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
-                        vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+                        mdegree=self.mdegree, moments=self.moments, vsyst=-self.base_velocity,
+                        quiet=(not plot), plot=plot)
         if plot:
             pyplot.show()
 
@@ -632,8 +633,8 @@ class PPXFFit(StellarKinematicsFit):
                         global_spectrum_err.data[self.spectrum_start:self.spectrum_end],
                         self.velscale, ppxf_fit.sol[0:2], velscale_ratio=self.velscale_ratio,
                         goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
-                        mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
-                        vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+                        mdegree=self.mdegree, moments=self.moments, vsyst=-self.base_velocity,
+                        quiet=(not plot), plot=plot)
         if plot:
             pyplot.show()
 #        print(ppxf_fit.sol[0] + self.base_velocity)
@@ -734,8 +735,7 @@ class PPXFFit(StellarKinematicsFit):
                            tpl_sres=tpl_sres, obj_sres=binned_spectra['SPECRES'].data.copy(),
                            waverange=par['pixelmask'].waverange, bias=par['bias'],
                            clean=par['clean'], degree=par['degree'], mdegree=par['mdegree'],
-                           moments=par['moments'], oversample=par['oversample'], loggers=loggers,
-                           quiet=quiet, dvtol=1e-9)
+                           moments=par['moments'], loggers=loggers, quiet=quiet, dvtol=1e-9)
 
         # Reshape the data to include space for binned spectra that were
         # not fit
@@ -766,8 +766,8 @@ class PPXFFit(StellarKinematicsFit):
     def fit(self, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ferr, guess_redshift,
             guess_dispersion, iteration_mode='global_template_with_rejection', velscale_ratio=None,
             mask=None, matched_resolution=True, tpl_sres=None, obj_sres=None, waverange=None,
-            bias=None, clean=False, degree=4, mdegree=0, moments=2, oversample=None, loggers=None,
-            quiet=False, dvtol=1e-10):
+            bias=None, clean=False, degree=4, mdegree=0, moments=2, loggers=None, quiet=False,
+            dvtol=1e-10):
 
         """
 
@@ -892,15 +892,6 @@ class PPXFFit(StellarKinematicsFit):
                       1] moments = [-4, 2] start = [[V, sigma, h3, h4],
                       [V, sigma]]
 
-            oversample (int): (**Optional**) Default is None (for no
-                oversampling).  From the pPXF documentation: Set this
-                keyword to oversample the template by a factor 30x
-                before convolving it with a well sampled LOSVD. This can
-                be useful to extract proper velocities, even when sigma
-                < 0.7*velscale and the dispersion information becomes
-                totally unreliable due to undersampling.  IMPORTANT: One
-                should sample the spectrum more finely, if possible,
-                before resorting to the use of this keyword!
             loggers (list): (**Optional**) List of `logging.Logger`_ objects
                 to log progress; ignored if quiet=True.  Logging is done
                 using :func:`mangadap.util.log.log_output`.  Default is
@@ -1024,7 +1015,6 @@ class PPXFFit(StellarKinematicsFit):
         self.degree = degree
         self.mdegree = mdegree
         self.moments = moments
-        self.oversample = oversample
 
         # Initialize the output arrays
         #  Model flux:
@@ -1221,8 +1211,8 @@ class PPXFFit(StellarKinematicsFit):
                             self.obj_ferr.data[i,self.spectrum_start:self.spectrum_end],
                             self.velscale, self.guess_kin[i,:], velscale_ratio=self.velscale_ratio,
                             goodpixels=gpm, bias=self.bias, clean=self.clean, degree=self.degree,
-                            mdegree=self.mdegree, moments=self.moments, oversample=self.oversample,
-                            vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+                            mdegree=self.mdegree, moments=self.moments, vsyst=-self.base_velocity,
+                            quiet=(not plot), plot=plot)
             if plot:
                 pyplot.show()
 
@@ -1250,8 +1240,8 @@ class PPXFFit(StellarKinematicsFit):
                                 self.velscale, ppxf_fit.sol[0:2],
                                 velscale_ratio=self.velscale_ratio, goodpixels=gpm, bias=self.bias,
                                 clean=self.clean, degree=self.degree, mdegree=self.mdegree,
-                                moments=self.moments, oversample=self.oversample,
-                                vsyst=-self.base_velocity, quiet=(not plot), plot=plot)
+                                moments=self.moments, vsyst=-self.base_velocity, quiet=(not plot),
+                                plot=plot)
                 if plot:
                     pyplot.show()
 
