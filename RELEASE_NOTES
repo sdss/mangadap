@@ -1,13 +1,18 @@
-KBW (?? Jun 2016): tag 2.0.1
+KBW (?? Jul 2016): tag 2.1
 
     Removed old DAP IDL code, except for pro/mangadap_version.pro
 
     Fixed/added functionality:
+        - Included correction for Galactic extinction; current default
+          is to use the O'Donnell (1994) coefficents for the CCM
+          extinction law.
         - Added MILES cluster template group.
         - Allow for choice to *not* match the spectral resolution of the
           template to that of the galaxy data, and supply templates at
           higher spectral sampling.
         - Include stellar velocity dispersion quadrature correction.
+        - Included v6.0.0 of pPXF; allows analytic calculation of LOSVD
+          FFT for better performance at low velocity dispersion
         - Fixed error in spectral-index masks
 
     Fixed failures:

@@ -1328,9 +1328,9 @@ class SpectralIndices:
 #                                    flag=self.stellar_continuum.all_except_emission_flags())
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=1)
 #        pyplot.plot(wave, model_flux[0,:], linestyle='-', color='r', lw=1.5, zorder=2, alpha=0.5)
-#        pyplot.plot(wave, broadened_models[0,:], linestyle='-', color='g', lw=1.0, zorder=3,
+#        pyplot.plot(wave, broadened_models.data[0,:], linestyle='-', color='g', lw=1.0, zorder=3,
 #                    alpha=0.5)
-#        pyplot.plot(wave, unbroadened_models[0,:], linestyle='-', color='b', lw=1.0, zorder=3,
+#        pyplot.plot(wave, unbroadened_models.data[0,:], linestyle='-', color='b', lw=1.0, zorder=3,
 #                    alpha=0.5)
 #        pyplot.show()
 #        exit()

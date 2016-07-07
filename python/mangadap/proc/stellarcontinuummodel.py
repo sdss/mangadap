@@ -990,6 +990,7 @@ class StellarContinuumModel:
                                                         self.hdu['PAR'].data,
                                                         self.method['fitpar']['degree'],
                                                         self.method['fitpar']['mdegree'],
+                                                        self.method['fitpar']['moments'],
                                                         redshift_only=redshift_only,
                                         velscale_ratio=self.method['fitpar']['velscale_ratio'],
                                                         dvtol=1e-9)

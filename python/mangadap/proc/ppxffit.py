@@ -47,6 +47,8 @@ Implements a wrapper class for pPXF.
     | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
         keyword given a better solution; see Cappellari (in prep).  This
         keyword was therefore removed from the parameter set.
+    | **06 Jul 2016**: (KBW) Use v6.0.0 pPXF functions to compute models
+        using new LOSVD kernel functionality.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -78,7 +80,7 @@ from ..util.fileio import init_record_array
 from ..util.log import log_output
 from ..util.instrument import spectrum_velocity_scale, resample_vector, spectral_resolution
 from ..util.constants import constants
-from ..contrib.ppxf import ppxf
+from ..contrib.ppxf import ppxf, _templates_rfft, _losvd_rfft
 from ..contrib import ppxf_util
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
@@ -1478,20 +1480,20 @@ class PPXFFit(StellarKinematicsFit):
             poly = 1 + _par[2]/numpy.sqrt(3)*(w*(2*w2-3)) + _par[3]/numpy.sqrt(24)*(w2*(4*w2-12)+3)
             if len(_par) > 4:
                 # h_5 h_6
-                poly += _par[4]/np.sqrt(60)*(w*(w2*(4*w2-20)+15)) \
-                            + _par[5]/np.sqrt(720)*(w2*(w2*(8*w2-60)+90)-15)
+                poly += _par[4]/numpy.sqrt(60)*(w*(w2*(4*w2-20)+15)) \
+                            + _par[5]/numpy.sqrt(720)*(w2*(w2*(8*w2-60)+90)-15)
             losvd *= poly
 
 #        return losvd
         return _par[0]*velscale, losvd
 
-#        npad = int(2**np.ceil(np.log2(nwave + nl/2)))
+#        npad = int(2**numpy.ceil(numpy.log2(nwave + nl/2)))
 #        losvd_pad = numpy.zeros(npad)
 
         
 
     @staticmethod
-    def construct_models(binned_spectra, template_library, model_par, degree, mdegree,
+    def construct_models(binned_spectra, template_library, model_par, degree, mdegree, moments,
                          redshift_only=False, velscale_ratio=None, dvtol=1e-10):
         """
         Construct models using the provided set of model parameters and
@@ -1501,6 +1503,10 @@ class PPXFFit(StellarKinematicsFit):
 
         If redshift_only is true, ignore the LOSVD and simply shift the
         model to the correct redshift.
+
+        CURRENTLY WILL NOT WORK WITH:
+            - multiple kinematic components
+            - point-symmetric fits
 
         .. todo::
 
@@ -1549,7 +1555,6 @@ class PPXFFit(StellarKinematicsFit):
 #                         color='k')
 #            pyplot.show()
 
-            redshift = model_par['KIN'][i,0]/astropy.constants.c.to('km/s').value
             start = model_par['BEGPIX'][i]
             end = model_par['ENDPIX'][i]
 
@@ -1557,23 +1562,63 @@ class PPXFFit(StellarKinematicsFit):
             if redshift_only:
                 # Resample the redshifted template to the wavelength grid of
                 # the binned spectra
+                redshift = model_par['KIN'][i,0]/astropy.constants.c.to('km/s').value
                 inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
                 wave, models[i,:] = resample_vector(composite_template, xRange=inRange, inLog=True,
                                                     newRange=outRange, newpix=outpix, newLog=True,
                                                     flat=False)
             else:
+
 #                print('{0}/{1}'.format(i+1,binned_spectra.nbins))
 #                print('Start,End: ', start, end)
 #                print(obj_wave[start:end].shape)
 #                print(tpl_wave.shape)
+
+                # for PPXF v6.0.0
                 vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velscale)
-                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velscale/_velscale_ratio,
-                                                   vsyst=vsyst)
-                npix_temp = composite_template.size - composite_template.size % _velscale_ratio
-                _model = scipy.signal.fftconvolve(composite_template[:npix_temp], losvd,
-                                                  mode="same")
-                models[i,start:end] = numpy.mean(_model.reshape(-1,_velscale_ratio),
-                                                 axis=1).ravel()[:end-start]
+                if _velscale_ratio > 1:
+                    npix_temp = composite_template.size - composite_template.size % _velscale_ratio
+                    composite_template = composite_template[:npix_temp].reshape(-1,1)
+                    npix_temp //= _velscale_ratio
+
+                ctmp_rfft, npad = _templates_rfft(composite_template)
+                _moments = numpy.atleast_1d(moments)
+                ncomp = 1
+                if _moments.size == 1:
+                    _moments = numpy.full(ncomp, numpy.absolute(_moments), dtype=int)
+                else:
+                    _moments = numpy.absolute(_moments)
+                vj = numpy.append(0, numpy.cumsum(_moments)[:-1])
+                par = model_par['KIN'][i,:].copy()
+                par[0], verr = PPXFFit._revert_velocity(par[0], 1.0)
+                par /= velscale
+                kern_rfft = _losvd_rfft(par, 1, _moments, vj, npad, 1, vsyst/velscale,
+                                        _velscale_ratio, 0.0)
+
+                _model = numpy.fft.irfft(ctmp_rfft[:,0]
+                                         * kern_rfft[:,0,0]).ravel()[:npix_temp*_velscale_ratio]
+                if _velscale_ratio > 1:
+                    _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1).ravel()
+#                pyplot.plot(obj_wave[start:end], _model[:end-start])
+#                pyplot.show()
+
+#                models[i,start:end] = _model[2:end-start+2]
+                models[i,start:end] = _model[:end-start]
+
+
+                # Previous method
+#                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velscale/_velscale_ratio,
+#                                                   vsyst=vsyst)
+#                _model = scipy.signal.fftconvolve(composite_template[:npix_temp], losvd,
+#                                                  mode="same")
+#                models[i,start:end] = numpy.mean(_model.reshape(-1,_velscale_ratio),
+#                                                 axis=1).ravel()[:end-start]
+
+#            pyplot.plot(obj_wave[start:end], obj_flux[i,start:end])
+#            pyplot.plot(tpl_wave, composite_template)
+#            pyplot.plot(obj_wave[start:end], models[i,start:end])
+#            pyplot.show()
+#            exit()
 
             # Account for the polynomial
             x = numpy.linspace(-1, 1, model_par['NPIXTOT'][i])
