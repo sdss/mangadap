@@ -1582,10 +1582,10 @@ class PPXFFit(StellarKinematicsFit):
                 vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[start:end], velscale)
                 if _velscale_ratio > 1:
                     npix_temp = composite_template.size - composite_template.size % _velscale_ratio
-                    composite_template = composite_template[:npix_temp].reshape(-1,1)
+                    _composite_template = composite_template[:npix_temp].reshape(-1,1)
                     npix_temp //= _velscale_ratio
 
-                ctmp_rfft, npad = _templates_rfft(composite_template)
+                ctmp_rfft, npad = _templates_rfft(_composite_template)
                 _moments = numpy.atleast_1d(moments)
                 ncomp = 1
                 if _moments.size == 1:
