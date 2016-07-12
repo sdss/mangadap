@@ -1444,7 +1444,15 @@ class construct_maps_file:
                                                                      hduclas2='QUALITY', err=True,
                                                                      bit_type=numpy.bool),
                                     name='SPECINDEX_MASK') ]
+            hdus += [ fits.ImageHDU(data=None,
+                                    header=self._finalize_map_header(self.singlechannel_maphdr,
+                                                                     'SPECINDEX_CORR'),
+                                    name='SPECINDEX_CORR') ]
             return hdus
+
+        if spectral_indices['PRIMARY'].header['INDXCOR']:
+            raise ValueError('Cannot construct maps file with dispersion corrections applied to '
+                             'indices!')
 
         # Add data to the primary header
         prihdr['SIKEY'] = (spectral_indices.database['key'],
@@ -1509,6 +1517,15 @@ class construct_maps_file:
                                                                  hduclas2='QUALITY', err=True,
                                                                  bit_type=mask.dtype.type),
                                 name='SPECINDEX_MASK') ]
+
+        # Index dispersion corrections
+        data = numpy.zeros((*spectral_indices.spatial_shape, spectral_indices.nindx),
+                           dtype=numpy.float)
+        data.reshape(-1, spectral_indices.nindx)[indx,:] \
+                = spectral_indices['SINDX'].data['INDX_DISPCORR'][unique_bins[reconstruct[indx]],:]
+        hdus += [ fits.ImageHDU(data=data.T,
+                                header=self._finalize_map_header(hdr, 'SPECINDEX_CORR'),
+                                name='SPECINDEX_CORR') ]
 
         return hdus
 

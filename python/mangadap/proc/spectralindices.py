@@ -64,6 +64,13 @@ A class hierarchy that performs the spectral-index measurements.
 *Revision history*:
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **09 May 2016**: (KBW) Add subtraction of emission-line models
+    | **11 Jul 2016**: (KBW) Allow to not apply dispersion corrections
+        for index measurements 
+
+.. todo::
+
+    - Also provide index as measured from best-fitting model without
+      dispersion?
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -137,20 +144,25 @@ class SpectralIndicesDef(ParSet):
         key (str): Keyword used to distinguish between different
             spectral-index databases.
         minimum_snr (bool): Minimum S/N of spectrum to fit
-        fwhm (bool): Resolution FWHM in angstroms at which to make the
-            measurements.
+        fwhm (int, float): Resolution FWHM in angstroms at which to make
+            the measurements.
+        apply_corrections (bool): Flag to apply dispersion corrections
+            to indices.  Dispersion corrections are always calculated!
         artifacts (str): String identifying the artifact database to use
         absindex (str): String identifying the absorption-index database
             to use
         bandhead (str): String identifying the bandhead-index database
             to use
     """
-    def __init__(self, key, minimum_snr, fwhm, artifacts, absindex, bandhead):
+    def __init__(self, key, minimum_snr, fwhm, apply_corrections, artifacts, absindex, bandhead):
         in_fl = [ int, float ]
 
-        pars =     [ 'key', 'minimum_snr', 'fwhm', 'artifacts', 'absindex', 'bandhead' ]
-        values =   [   key,   minimum_snr,   fwhm,   artifacts,   absindex,   bandhead ]
-        dtypes =   [   str,         in_fl,  in_fl,         str,        str,        str ]
+        pars =     [ 'key', 'minimum_snr', 'fwhm', 'apply_corrections', 'artifacts', 'absindex',
+                        'bandhead' ]
+        values =   [   key,   minimum_snr,   fwhm,   apply_corrections,   artifacts,   absindex,
+                          bandhead ]
+        dtypes =   [   str,         in_fl,  in_fl,                bool,         str,        str,
+                               str ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
@@ -179,6 +191,10 @@ def validate_spectral_indices_config(cnfg):
     if 'resolution_fwhm' not in cnfg.options('default') \
             or cnfg['default']['resolution_fwhm'] is None:
         cnfg['default']['resolution_fwhm']= '-1'
+
+    if 'apply_sigma_correction' not in cnfg.options('default') \
+            or cnfg['default']['apply_sigma_correction'] is None:
+        cnfg['default']['apply_sigma_correction']= 'False'
 
     if 'artifact_mask' not in cnfg.options('default') \
             or cnfg['default']['artifact_mask'] is None:
@@ -256,6 +272,7 @@ def available_spectral_index_databases(dapsrc=None):
         index_set_list += [ SpectralIndicesDef(cnfg['default']['key'],
                                                eval(cnfg['default']['minimum_snr']), 
                                                eval(cnfg['default']['resolution_fwhm']),
+                                               eval(cnfg['default']['apply_sigma_correction']),
                                                None if cnfg['default']['artifact_mask'] == 'None' \
                                                     else cnfg['default']['artifact_mask'],
                                         None if cnfg['default']['absorption_indices'] == 'None' \
@@ -522,6 +539,7 @@ class SpectralIndices:
         self.stellar_continuum = None
         self.emission_line_model = None
         self.nindx = self.count_indices(self.absdb, self.bhddb)
+        self.corrected_indices = False
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -684,6 +702,7 @@ class SpectralIndices:
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
+        hdr['INDXCOR'] = (self.corrected_indices, 'Indices corrected for velocity dispersion')
         # Anything else?
         # Additional database details?
         return hdr
@@ -1544,10 +1563,12 @@ class SpectralIndices:
 #                        numpy.sum(hdu_measurements['MASK'] > 0), hdu_measurements['MASK'].size))
 
         # Apply the corrections
-        hdu_measurements['INDX'][good_ang] *= hdu_measurements['INDX_DISPCORR'][good_ang]
-        hdu_measurements['INDXERR'][good_ang] \
-                *= numpy.abs(hdu_measurements['INDX_DISPCORR'][good_ang])
-        hdu_measurements['INDX'][good_mag] += hdu_measurements['INDX_DISPCORR'][good_mag]
+        if self.database['apply_corrections']:
+            hdu_measurements['INDX'][good_ang] *= hdu_measurements['INDX_DISPCORR'][good_ang]
+            hdu_measurements['INDXERR'][good_ang] \
+                    *= numpy.abs(hdu_measurements['INDX_DISPCORR'][good_ang])
+            hdu_measurements['INDX'][good_mag] += hdu_measurements['INDX_DISPCORR'][good_mag]
+        self.corrected_indices = self.database['apply_corrections']
 
         # Fill array for any missing bins in prep for writing to the HDU
         bin_indx = self.binned_spectra['BINID'].data.ravel()

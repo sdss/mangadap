@@ -14,6 +14,11 @@ KBW (?? Jul 2016): tag 2.1
         - Included v6.0.0 of pPXF; allows analytic calculation of LOSVD
           FFT for better performance at low velocity dispersion
         - Fixed error in spectral-index masks
+        - Dispersion correction separated from spectral-index
+          measurements in maps file
+        - Spectral-index dispersion corrections not automatically applied
+        - Added config to ignore resolution matching in spectral-index
+          measurements (for testing)
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements

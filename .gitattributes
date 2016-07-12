@@ -2577,6 +2577,7 @@ python/mangadap/config/spatial_binning/vor05.ini -text
 python/mangadap/config/spatial_binning/vor10.ini -text
 python/mangadap/config/spatial_binning/vor30.ini -text
 python/mangadap/config/spectral_indices/indxe.ini -text
+python/mangadap/config/spectral_indices/indxen.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
 python/mangadap/config/spectral_templates/m11_marcs.ini -text
 python/mangadap/config/spectral_templates/m11_miles.ini -text
@@ -2593,6 +2594,8 @@ python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_all.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_glb.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt_sil.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt_sim.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_milesthin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text

@@ -1491,6 +1491,13 @@ class PPXFFit(StellarKinematicsFit):
 #        losvd_pad = numpy.zeros(npad)
 
         
+    @staticmethod
+    def _shift_via_resample(wave, flux, redshift, inLog, outRange, outpix, outLog):
+        inRange = wave[[0,-1]] * (1.0 + redshift)
+        new_wave, new_flux = resample_vector(flux, xRange=inRange, inLog=inLog, newRange=outRange,
+                                             newpix=outpix, newLog=outLog, flat=False)
+        return new_flux
+
 
     @staticmethod
     def construct_models(binned_spectra, template_library, model_par, degree, mdegree, moments,
@@ -1548,6 +1555,7 @@ class PPXFFit(StellarKinematicsFit):
 
             # Get the composite template
             indx = model_par['TPLWGT'][i] > 0
+            redshift = model_par['KIN'][i,0]/astropy.constants.c.to('km/s').value
             composite_template = numpy.dot(model_par['TPLWGT'][i][indx],
                                            template_library['FLUX'].data[indx,:])
 
@@ -1562,13 +1570,9 @@ class PPXFFit(StellarKinematicsFit):
             if redshift_only:
                 # Resample the redshifted template to the wavelength grid of
                 # the binned spectra
-                redshift = model_par['KIN'][i,0]/astropy.constants.c.to('km/s').value
-                inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
-                wave, models[i,:] = resample_vector(composite_template, xRange=inRange, inLog=True,
-                                                    newRange=outRange, newpix=outpix, newLog=True,
-                                                    flat=False)
+                models[i,:] = PPXFFit._shift_via_resample(tpl_wave, composite_template, redshift,
+                                                          True, outRange, outpix, True)
             else:
-
 #                print('{0}/{1}'.format(i+1,binned_spectra.nbins))
 #                print('Start,End: ', start, end)
 #                print(obj_wave[start:end].shape)
@@ -1590,29 +1594,34 @@ class PPXFFit(StellarKinematicsFit):
                     _moments = numpy.absolute(_moments)
                 vj = numpy.append(0, numpy.cumsum(_moments)[:-1])
                 par = model_par['KIN'][i,:].copy()
+                # Convert the velocity to pixel units
                 par[0], verr = PPXFFit._revert_velocity(par[0], 1.0)
-                par /= velscale
-                kern_rfft = _losvd_rfft(par, 1, _moments, vj, npad, 1, vsyst/velscale,
-                                        _velscale_ratio, 0.0)
+                # Convert the velocity dispersion to ignore the
+                # resolution difference
+                if model_par['SIGMACORR'][i] > 0:
+                    par[1] = numpy.square(par[1]) - numpy.square(model_par['SIGMACORR'][i])
+                    par[1] = numpy.sqrt(par[1]) if par[1] > 0 else 0.0
 
-                _model = numpy.fft.irfft(ctmp_rfft[:,0]
-                                         * kern_rfft[:,0,0]).ravel()[:npix_temp*_velscale_ratio]
-                if _velscale_ratio > 1:
-                    _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1).ravel()
-#                pyplot.plot(obj_wave[start:end], _model[:end-start])
-#                pyplot.show()
-
-#                models[i,start:end] = _model[2:end-start+2]
-                models[i,start:end] = _model[:end-start]
-
-
-                # Previous method
-#                vel, losvd = PPXFFit._losvd_kernel(model_par['KIN'][i,:], velscale/_velscale_ratio,
-#                                                   vsyst=vsyst)
-#                _model = scipy.signal.fftconvolve(composite_template[:npix_temp], losvd,
-#                                                  mode="same")
-#                models[i,start:end] = numpy.mean(_model.reshape(-1,_velscale_ratio),
-#                                                 axis=1).ravel()[:end-start]
+                # Construct the model
+                if par[1] > 0:
+                    # Velocity dispersion is valid, follow the pPXF
+                    # method
+                    par /= velscale
+                    kern_rfft = _losvd_rfft(par, 1, _moments, vj, npad, 1, vsyst/velscale,
+                                            _velscale_ratio, 0.0)
+                    _model = numpy.fft.irfft(ctmp_rfft[:,0]
+                                             * kern_rfft[:,0,0]).ravel()[:npix_temp*_velscale_ratio]
+                    if _velscale_ratio > 1:
+                        _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1).ravel()
+#                    pyplot.plot(obj_wave[start:end], _model[:end-start])
+#                    pyplot.show()
+                    models[i,start:end] = _model[:end-start]
+                else:
+                    # Velocity dispersion is undefined, return a
+                    # zero-dispersion spectrum
+                    models[i,:] = PPXFFit._shift_via_resample(tpl_wave, composite_template,
+                                                              redshift, True, outRange, outpix,
+                                                              True)
 
 #            pyplot.plot(obj_wave[start:end], obj_flux[i,start:end])
 #            pyplot.plot(tpl_wave, composite_template)
