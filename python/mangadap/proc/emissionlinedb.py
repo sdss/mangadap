@@ -106,6 +106,8 @@ support classes and functions.
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
+    | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
+        in database.
 
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
@@ -239,26 +241,41 @@ class EmissionLinePar(ParSet):
             adjusted to the provided redshift for the spectrum.  For
             example, for a GaussianLineProfile, this is typically set to
             ``[1.0, 0.0, 100.0]``.
-        fix (numpy.ndarray) : (**Optional**) A list of flags for fixing
+        fix (numpy.ndarray): (**Optional**) A list of flags for fixing
             the input guess parameters during the fit.  Use 0 for a free
             parameter, 1 for a fixed parameter.  The parameter value is
             only fixed **after** adjusted in the flux and or center
             based on the redshift and the implied tied parameters.  For
             a free set of parameters using a GaussianLineProfile, this
             is set to ``[ 0, 0, 0 ]``.
-        lobnd (numpy.ndarray(: (**Optional**) A list of lower bounds for
+        lobnd (numpy.ndarray): (**Optional**) A list of lower bounds for
             the parameters.  For each parameter, use None to indicate no
             lower bound.  For a GaussianLineProfile with positive flux
             and standard deviation, this is set to ``[ 0.0, None, 0.0
             ]``.
-        hibnd (numpy.ndarray(: (**Optional**) A list of upper bounds for
+        hibnd (numpy.ndarray): (**Optional**) A list of upper bounds for
             the parameters.  For each parameter, use None to indicate no
             upper bound.  For a GaussianLineProfile with maximum
             standard deviation of 500 km/s, this is set to ``[ None,
             None, 500.0 ]``.
+        log_bnd (numpy.ndarray): (**Optional**) A list of flags used
+            when determining if a fit parameter is near the imposed
+            boundary.  If true, the fraction of the boundary range used
+            is done in logarithmic, not linear, separation.
+        blueside (numpy.ndarray): (**Optional**) A two-element vector
+            with the starting and ending wavelength for a bandpass
+            blueward of the emission line, which is used to set the
+            continuum level near the emission line when calculating the
+            equivalent width.
+        redside (numpy.ndarray): (**Optional**) A two-element vector
+            with the starting and ending wavelength for a bandpass
+            redward of the emission line, which is used to set the
+            continuum level near the emission line when calculating the
+            equivalent width.
     """
     def __init__(self, index, name, restwave, action=None, flux=None, mode=None, profile=None,
-                 ncomp=None, output_model=None, par=None, fix=None, lobnd=None, hibnd=None):
+                 ncomp=None, output_model=None, par=None, fix=None, lobnd=None, hibnd=None,
+                 log_bnd=None, blueside=None, redside=None):
         
         in_fl = [ int, float ]
         action_options = [ 'i', 'f', 'm', 's']
@@ -271,15 +288,16 @@ class EmissionLinePar(ParSet):
             l[i] = l[i].strip()
 
         pars =     [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp',
-                     'output_model', 'par', 'fix', 'lobnd', 'hibnd' ]
+                     'output_model', 'par', 'fix', 'lobnd', 'hibnd', 'log_bnd', 'blueside',
+                     'redside' ]
         values =   [   index,   l[0],   restwave,     l[1],   flux,   l[2],   profile,   ncomp,
-                       output_model, par,   fix,   lobnd,   hibnd ]
+                       output_model, par,   fix,   lobnd,   hibnd, log_bnd, blueside, redside ]
         defaults = [ None, None, None, 'f', 1.0, 'f', 'GaussianLineProfile', 1, True, None, None,
-                     None, None ]
+                     None, None, None, None, None ]
         options =  [ None, None, None, action_options,  None,  None, None, None, None, None, None,
-                     None, None ]
+                     None, None, None, None, None ]
         dtypes =   [ int, str, in_fl, str, in_fl, str, str, int, bool, arr_like, arr_like,
-                     arr_like, arr_like ]
+                     arr_like, arr_like, arr_like, arr_like, arr_like ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -311,6 +329,14 @@ class EmissionLinePar(ParSet):
                              'same window (w), with a tied flux ratio (x), with a tied velocity ' \
                              '(v), with a tied velocity dispersion (s), with both kinematics ' \
                              'tied (k), or with the fluxes and kinematics tied (a).')
+        # Check the lengths of all the arrays
+        npar = len(self.data['par'])
+        if numpy.any(numpy.array([len(self.data['fix']), len(self.data['lobnd']),
+                                  len(self.data['hibnd']), len(self.data['log_bnd'])]) != npar):
+            raise ValueError('Number of parameters must be the same for par, fix, lobnd, hibnd, '
+                             'and log_bnd.')
+        if numpy.any(numpy.array([ len(self.data['blueside']), len(self.data['redside'])]) != 2):
+            raise ValueError('Bandpasses must be two-element vectors!')
 
 
 def available_emission_line_databases(dapsrc=None):
@@ -419,7 +445,12 @@ class EmissionLineDB(ParDatabase):
                                          output_model=bool(par['DAPEML']['output_model'][i]),
                                          par=par['DAPEML']['par'][i],
                                          fix=par['DAPEML']['fix'][i],
-                                         lobnd=lobnd, hibnd=hibnd) ]
+                                         lobnd=lobnd, hibnd=hibnd,
+                                         log_bnd=par['DAPEML']['log_bounded'][i],
+                                blueside=par['DAPEML']['blueside'][i] if invac \
+                                        else airtovac(numpy.array(par['DAPEML']['blueside'][i])),
+                                redside=par['DAPEML']['redside'][i] if invac \
+                                        else airtovac(numpy.array(par['DAPEML']['redside'][i])) ) ]
 
         ParDatabase.__init__(self, parlist)
 

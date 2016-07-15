@@ -33,6 +33,7 @@ Provides a set of utility functions to deal with dust extinction.
     | **02 Jun 2016**: Original implementation by K. Westfall (KBW).
         Drawn from dust.py in David Wilkinson's FIREFLY code, and the
         dereddening functions in IDLUTILS.
+    | **14 Jul 2016**: (KBW) Added :func:`apply_reddening`
 
 """
 
@@ -49,6 +50,8 @@ if sys.version > '3':
 import numpy
 from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
+
+from ..mangafits import MaNGAFits
 
 __author__ = 'Kyle Westfall'
 
@@ -354,4 +357,42 @@ def reddening_vector(wave, ebv, form='ODonnell', rv=None, coeffs=None):
     raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
         
 
+def apply_reddening(flux, reddening_correction, dispaxis=2, deredden=True, ivar=None):
+    """
+    Apply the reddening.  Default operation is to **deredden** a
+    spectrum.  Set deredden=False to **redden** a spectrum.
+
+    The reddening vector is expected to be the multiplicative factor
+    needed to **deredden** the spectrum.  I.e., the returned array
+    when dereddening will be: dereddened_flux = flux *
+    reddening_correction.
+
+    Errors propagated if ivar provided.
+
+    If ivar provided, returns flux and ivar arrays; if not, only flux
+    array is returned.
+    """
+
+    # Check the input
+    if len(reddening_correction.shape) != 1:
+        raise ValueError('Input reddening correction must be a vector.')
+    if ivar is not None and flux.shape != ivar.shape:
+        raise ValueError('Flux and inverse variance arrays must have the same shape.')
+    if len(flux.shape) == 1:
+        if flux.size != reddening_correction.size:
+            raise ValueError('Fluxe and reddening vector must have same number of wavelengths.')
+        _flux = flux * reddening_correction if deredden else flux / reddening_correction
+        if ivar is None:
+            return _flux
+        return _flux, ivar / numpy.square(reddening_correction) if deredden \
+                        else ivar * numpy.square(reddening_correction)
+    if dispaxis is None:
+        raise ValueError('Must provide dispersion axis if flux array is multidimensional.')
+
+    spatial_shape = MaNGAFits.get_spatial_shape(flux.shape, dispaxis)
+    c = numpy.array([reddening_correction]*numpy.prod(spatial_shape)).reshape(*spatial_shape,-1)
+    _flux = flux * c if deredden else flux / c
+    if ivar is None:
+        return _flux
+    return _flux, ivar / numpy.square(c) if deredden else ivar * numpy.square(c)
 

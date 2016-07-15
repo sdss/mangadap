@@ -19,6 +19,32 @@ KBW (?? Jul 2016): tag 2.1
         - Spectral-index dispersion corrections not automatically applied
         - Added config to ignore resolution matching in spectral-index
           measurements (for testing)
+        - Changed the lower limit of the emission-line dispersion to be
+          30 km/s, which means the line has a FWHM ~1 pixel at minimum;
+          upper bound changed to 800 km/s.
+        - Definition of "near" bounds for bounded kinematic fits:
+            - Velocities and higher moments: Cannot be nearer to a bound
+              than 1% of the full width of the allowed parameter space.
+            - Velocity dispersions: Cannot be nearer to a bound than 1%
+              of the LOG of the full width of the allowed parameter
+              space.
+          For the stellar kinematics, this means:
+                  PAR         NEAR_BOUND ranges
+                -----   -----------------------
+                    V    -2000:-1960, 1960:2000
+                sigma   6.903:7.255, 951.46:1e3
+                   hN    -0.3:-0.294, 0.294:0.3
+          The velocity limits for the emission-lines are dynamically
+          defined by the lines in the window or to be +/- 25 angstroms
+          about the line center, and no higher moments are fit at the
+          moment.  So the only fixed limits are for the dispersion; any
+          values within the ranges 30.:31, 774.16:800 are considered
+          "near" the boundary.
+        - Stellar-continuum model mask now includes NEAR_BOUND bits, if
+          necessary.
+        - Constructs an output model data cube with the stellar
+          continuum and emission-line model as a complement to the maps
+          file.
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements

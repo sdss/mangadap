@@ -446,7 +446,7 @@ class EmissionLineModel:
                  ('NCOMP', numpy.int)
                ]
 
-    
+
     def _compile_database(self):
         """
         Compile the database with the specifications of each index.
@@ -545,17 +545,38 @@ class EmissionLineModel:
         Initialize the header.
 
         """
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
         hdr['ELFKEY'] = (self.method['key'], 'Emission-line modeling method keyword')
         hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
         hdr['EMLDB'] = (self.method['emission_lines'], 'Emission-line database keyword')
         if self.stellar_continuum is not None:
-            hdr['SCTPL'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
-        hdr['NMOD'] = (self.nmodels, 'Number of unique emission-line models')
+            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
+        hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
         if len(self.missing_models) > 0:
-            hdr['EMPTYMOD'] = (str(self.missing_models), 'List of models with no data')
+            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
         # Anything else?
         # Additional database details?
+        return hdr
+
+
+    def _add_method_header(self, hdr):
+        """Add fitting method information to the header."""
+        if self.method['fitclass'] is not None:
+            try:
+                hdr['ELTYPE'] = self.method['fitclass'].fit_type
+                hdr['ELMETH'] = self.method['fitclass'].fit_method
+            except:
+                if not self.quiet and self.hardcopy:
+                    warnings.warn('Fit class object does not have fit_type and/or fit_method ' \
+                                  'attributes.  No parameters written to header.')
+        if self.method['fitpar'] is not None:
+            try:
+                hdr = self.method['fitpar'].toheader(hdr)
+            except:
+                if not self.quiet and self.hardcopy:
+                    warnings.warn('Fit parameter class has no toheader() function.  No ' \
+                                  'parameters written to header.')
         return hdr
 
 
@@ -595,7 +616,7 @@ class EmissionLineModel:
 
 
     def _assign_spectral_arrays(self):
-        self.spectral_arrays = [ 'FLUX', 'MASK' ]
+        self.spectral_arrays = [ 'FLUX', 'BASE', 'MASK' ]
 
 
     def _assign_image_arrays(self):
@@ -714,7 +735,7 @@ class EmissionLineModel:
 
         # Fit the spectra
         # Mask should be fully defined within the fitting function
-        model_wave, model_flux, model_mask, model_fit_par, model_eml_par = \
+        model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par = \
             self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                    loggers=self.loggers, quiet=self.quiet)
 
@@ -734,28 +755,17 @@ class EmissionLineModel:
         flux = numpy.zeros(self.shape, dtype=numpy.float)
         flux.reshape(-1,self.nwave)[indx,:] = model_flux[unique_models[reconstruct[indx]],:]
 
+        base = numpy.zeros(self.shape, dtype=numpy.float)
+        base.reshape(-1,self.nwave)[indx,:] = model_base[unique_models[reconstruct[indx]],:]
+
         mask = self._initialize_mask()
         mask.reshape(-1,self.nwave)[indx,:] = model_mask[unique_models[reconstruct[indx]],:]
 
         # Initialize the header keywords
+        self.hardcopy = hardcopy
         hdr = self._clean_drp_header(ext='PRIMARY')
-        self._initialize_header(hdr)
-
-        if self.method['fitclass'] is not None:
-            try:
-                hdr['EMLTYPE'] = self.method['fitclass'].fit_type
-                hdr['EMLMETH'] = self.method['fitclass'].fit_method
-            except:
-                if hardcopy:
-                    warnings.warn('Fit class object does not have fit_type and/or fit_method ' \
-                                  'attributes.  No parameters written to header.')
-        if self.method['fitpar'] is not None:
-            try:
-                self.method['fitpar'].toheader(hdr)
-            except:
-                if hardcopy:
-                    warnings.warn('Fit parameter class has no toheader() function.  No ' \
-                                  'parameters written to header.')
+        hdr = self._initialize_header(hdr)
+        hdr = self._add_method_header(hdr)
 
         # Save the data to the hdu attribute
         # TODO: Write the bitmask to the header?
@@ -764,6 +774,9 @@ class EmissionLineModel:
                                   fits.ImageHDU(data=flux.data,
                                                 header=self.binned_spectra['FLUX'].header.copy(),
                                                 name='FLUX'),
+                                  fits.ImageHDU(data=base.data,
+                                                header=self.binned_spectra['FLUX'].header.copy(),
+                                                name='BASE'),
                                   fits.ImageHDU(data=mask,
                                                 header=self.binned_spectra['MASK'].header.copy(),
                                                 name='MASK'),
@@ -788,7 +801,6 @@ class EmissionLineModel:
         # Write the data, if requested
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:
@@ -861,9 +873,9 @@ class EmissionLineModel:
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 
-        self.nmodels = self.hdu['PRIMARY'].header['NMOD']
+        self.nmodels = self.hdu['PRIMARY'].header['NELMOD']
         try:
-            self.missing_models = eval(self.hdu['PRIMARY'].header['EMPTYMOD'])
+            self.missing_models = eval(self.hdu['PRIMARY'].header['EMPTYEL'])
         except KeyError:
             # Assume if this fails, it's because the keyword doesn't
             # exist

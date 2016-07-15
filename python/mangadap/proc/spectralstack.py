@@ -87,7 +87,6 @@ class SpectralStackPar(ParSet):
             the velocities.
 
         covariance (str, float): Describes how to incorporate covariance
-
             into the spectral stacking.  If a float, the value is used
             in the renormalization of the nominal calculation of the
             errors using the formula:
@@ -124,12 +123,16 @@ class SpectralStackPar(ParSet):
         """
         Copy the information to a header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Returns:
+            `astropy.io.fits.Header`_ : Edited header object.
         """
         hdr['STCKOP'] = (self['operation'], 'Stacking operation')
         hdr['STCKVREG'] = (str(self['vel_register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
+        return hdr
 
 
     def fromheader(self, hdr):

@@ -214,6 +214,7 @@ class PPXFFitPar(ParSet):
         hdr['PPXFMOM'] = (self['moments'], 'Number of fitted LOSVD moments in pPXF')
         hdr['PPXFDEG'] = (self['degree'], 'Order of additive polynomial in pPXF')
         hdr['PPXFMDEG'] = (self['mdegree'], 'Order of multiplicative polynomial in pPXF')
+        return hdr
 
 
     def fromheader(self, hdr):
@@ -559,6 +560,66 @@ class PPXFFit(StellarKinematicsFit):
                                      - numpy.square(sigma_inst_tpl)))/cnst.sig2fwhm
 
 
+    def _is_near_bounds(self, ppxf_fit, guess_velocity, tol_frac=1e-2):
+        """
+        Check if the fitted kinematics are near the imposed limits.
+        
+        The definition of "near" is that the velocity and higher moments
+        cannot be closer than the provided fraction of the total width
+        to the boundary.  For the velocity dispersion, the fraction is
+        done in log space.
+        """
+
+#        print(ppxf_fit.sol)
+#        print(guess_velocity)
+
+        # Velocity
+        _velocity_limits = self.velocity_limits + guess_velocity
+        Dv = numpy.diff(_velocity_limits)[0]
+        tol = Dv*tol_frac
+
+#        print(tol, ppxf_fit.sol[0]-_velocity_limits[0], _velocity_limits[1]-ppxf_fit.sol[0])
+
+        if ppxf_fit.sol[0]-_velocity_limits[0] < tol:
+            return True
+        if _velocity_limits[1]-ppxf_fit.sol[0] < tol:
+            return True
+
+        # Velocity dispersion
+        Ds = numpy.diff(numpy.log10(self.sigma_limits))[0]
+        tol = Ds*tol_frac
+
+#        print(tol, numpy.log10(ppxf_fit.sol[1]) - numpy.log10(self.sigma_limits[0]),
+#              numpy.log10(self.sigma_limits[1]) - numpy.log10(ppxf_fit.sol[1]))
+
+        if numpy.log10(ppxf_fit.sol[1]) - numpy.log10(self.sigma_limits[0]) < tol:
+            return True
+        if numpy.log10(self.sigma_limits[1]) - numpy.log10(ppxf_fit.sol[1]) < tol:
+            return True
+
+        if self.moments == 2:
+            return False
+
+        # H3 and H4
+        Dh = numpy.diff(self.gh_limits)
+        tol = Dh*tol_frac
+        if ppxf_fit.sol[2] - self.gh_limits[0] < tol or ppxf_fit.sol[3] - self.gh_limits[0] < tol:
+            return True
+        if self.gh_limits[1] - ppxf_fit.sol[2] < tol or self.gh_limits[1] - ppxf_fit.sol[3] < tol:
+            return True
+        
+        if self.moments == 4:
+            return False
+
+        # H5 and H6
+        if ppxf_fit.sol[4] - self.gh_limits[0] < tol or ppxf_fit.sol[5] - self.gh_limits[0] < tol:
+            return True
+        if self.gh_limits[1] - ppxf_fit.sol[4] < tol or self.gh_limits[1] - ppxf_fit.sol[5] < tol:
+            return True
+
+        return False
+        
+        
     def _fit_global_spectrum(self, plot=False):
         """
         Fit the global spectrum.  This:
@@ -1236,6 +1297,7 @@ class PPXFFit(StellarKinematicsFit):
                 gpm = self._update_rejection(ppxf_fit,
                                         self.obj_flux.data[i,self.spectrum_start:self.spectrum_end],
                                              gpm)
+                self.guess_kin[i,:] = ppxf_fit.sol[0:2]
                 ppxf_fit = ppxf(templates.T,
                                 self.obj_flux.data[i,self.spectrum_start:self.spectrum_end],
                                 self.obj_ferr.data[i,self.spectrum_start:self.spectrum_end],
@@ -1249,7 +1311,8 @@ class PPXFFit(StellarKinematicsFit):
 
             # Check the status of the fit (again)
             if not ppxf_fit.mp.status > 0:
-                # Fit failed so log it and continue
+                # Fit failed so log it and continue.  No model fit is
+                # returned.
                 if not self.quiet:
                     log_output(self.loggers, 1, logging.INFO,
                                'Failed pPXF status for spectrum {0}; nothing saved.'.format(i+1))
@@ -1265,6 +1328,15 @@ class PPXFFit(StellarKinematicsFit):
                     warnings.warn('pPXF optimizer reached maximum number of iterations for '
                                   'spectrum {0}.'.format(i+1))
                 model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MAXITER')
+
+            # Test if the kinematics are near the imposed boundaries.
+            # The best fitting model is still provided, but masked.
+            if self._is_near_bounds(ppxf_fit, self.guess_kin[i,0]):
+                if not self.quiet:
+                    warnings.warn('Returned parameters for spectrum {0} too close to '
+                                  'bounds.'.format(i+1))
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'NEAR_BOUND')
+                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NEAR_BOUND')
 
             # Save the result
             model_flux[i,self.spectrum_start:self.spectrum_end] = ppxf_fit.bestfit

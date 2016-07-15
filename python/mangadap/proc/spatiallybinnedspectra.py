@@ -109,7 +109,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create
 from ..util.bitmask import BitMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.extinction import reddening_vector
+from ..util.extinction import reddening_vector, apply_reddening
 from ..util.log import log_output
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
@@ -648,6 +648,7 @@ class SpatiallyBinnedSpectra:
         Initialize the header.
 
         """
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
         if self.reff is not None:
             hdr['REFF'] = self.reff
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
@@ -752,6 +753,12 @@ class SpatiallyBinnedSpectra:
 
         return bin_data
 
+   
+    @property
+    def is_unbinned(self):
+        return self.method['binpar'] is None and self.method['binclass'] is None \
+                    and self.method['binfunc'] is None
+
 
     def _fill_covariance(self, stack_covar, bin_indx):
         nspec = len(bin_indx)
@@ -816,29 +823,48 @@ class SpatiallyBinnedSpectra:
         self.image_arrays = [ 'BINID' ]
 
 
+    def _get_reddening_hdr(self, hdr):
+        hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
+        hdr['GEXTLAW'] = ('None' if self.method['galactic_reddening'] is None 
+                            else self.method['galactic_reddening'], 'Galactic extinction law')
+        hdr['RVGAL'] = (self.method['galactic_rv'], 'Ratio of total to selective extinction, R(V)')
+        return hdr
+
+
     def _get_reddening_corr(self):
-            red_hdr = fits.Header()
-            red_hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
-            red_hdr['GEXTLAW'] = ('None' if self.method['galactic_reddening'] is None 
-                                     else self.method['galactic_reddening'],
-                                  'Galactic extinction law')
-            red_hdr['RVGAL'] = (self.method['galactic_rv'],
-                                'Ratio of total to selective extinction, R(V)')
+        if self.method['galactic_reddening'] is None:
+            return prihdr, red_hdr, numpy.ones(self.drpf['WAVE'].data.shape)
 
-            if self.method['galactic_reddening'] is None:
-                return red_hdr, numpy.ones(self.drpf['WAVE'].data.shape)
+        return reddening_vector(self.drpf['WAVE'].data, self.drpf['PRIMARY'].header['EBVGAL'],
+                                form=self.method['galactic_reddening'],
+                                rv=self.method['galactic_rv']).data
 
-#            red = reddening_vector(self.drpf['WAVE'].data, self.drpf['PRIMARY'].header['EBVGAL'],
-#                                   form=self.method['galactic_reddening'],
-#                                   rv=self.method['galactic_rv'])
-#            print(numpy.sum(numpy.ma.getmaskarray(red)))
-#            pyplot.plot(self.drpf['WAVE'].data, red)
-#            pyplot.plot(self.drpf['WAVE'].data, red.data)
-#            pyplot.show()
-            return red_hdr, reddening_vector(self.drpf['WAVE'].data,
-                                             self.drpf['PRIMARY'].header['EBVGAL'],
-                                             form=self.method['galactic_reddening'],
-                                             rv=self.method['galactic_rv']).data
+
+    def _add_method_header(self, hdr):
+        if self.method['binclass'] is not None:
+            try:
+                hdr['BINTYPE'] = (self.method['binclass'].bintype, 'Binning method')
+            except AttributeError:
+                if not self.quiet and self.hardcopy:
+                    warnings.warn('Binning parameter class has no attribute bintype.  No type ' \
+                                  'written to the header of the output fits file.')
+
+        if self.method['binpar'] is not None:
+            if not self.quiet and self.hardcopy and not callable(self.method['binpar'].toheader):
+                warnings.warn('Binning parameter class does not have toheader() function.  ' \
+                              'No binning parameters written to the header of the output ' \
+                              'fits file.')
+            else:
+                hdr = self.method['binpar'].toheader(hdr)
+
+        if self.method['stackpar'] is not None:
+            if not self.quiet and self.hardcopy and not callable(self.method['stackpar'].toheader):
+                warnings.warn('Stacking parameter class does not have toheader() function.  ' \
+                              'No stacking parameters written to the header of the output ' \
+                              'fits file.')
+            else:
+                hdr = self.method['stackpar'].toheader(hdr)
+        return hdr
 
 
     def file_name(self):
@@ -951,8 +977,7 @@ class SpatiallyBinnedSpectra:
 
         # No binning so just fill the hdu with the appropriate data from
         # the DRP file
-        if self.method['binpar'] is None and self.method['binclass'] is None \
-                and self.method['binfunc'] is None:
+        if self.is_unbinned:
         
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
@@ -964,20 +989,22 @@ class SpatiallyBinnedSpectra:
 
             # Initialize the header keywords
             hdr = self._clean_drp_header(ext='PRIMARY')
-            self._initialize_header(hdr)
+            hdr = self._initialize_header(hdr)
+            hdr['BINTYPE'] = ('None', 'Binning method')
+            hdr = self._get_reddening_hdr(hdr)
+            red_hdr = fits.Header()
+            red_hdr = self._get_reddening_hdr(red_hdr)
 
             # Generate the reddening correction
-            red_hdr, reddening_correction = self._get_reddening_corr()
+            reddening_correction = self._get_reddening_corr()
 
             # Get the flux and errors, including the reddening
             # correction if requested
             flux = self.drpf['FLUX'].data.copy()
             ivar = self.drpf['IVAR'].data.copy()
             if self.deredden:
-                c = numpy.array([reddening_correction]*numpy.prod(self.spatial_shape)).reshape(
-                                                                            *self.spatial_shape,-1)
-                flux *= c
-                ivar /= numpy.square(c)
+                flux, ivar = apply_reddening(flux, reddening_correction,
+                                             dispaxis=self.drpf.dispaxis, ivar=ivar)
 
             # Initialize the basics of the mask
             mask = self._initialize_mask(good_fgoodpix, good_snr)
@@ -996,6 +1023,8 @@ class SpatiallyBinnedSpectra:
 
             # Set the HDUList just based on the original DRP data
 #            print('Building HDUList...', end='\r')
+            # TODO: Strip headers of sub extensions of everything but
+            # the WCS and HDUCLAS information.
             self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                       fits.ImageHDU(data=flux,
                                                     header=self.drpf['FLUX'].header.copy(),
@@ -1009,7 +1038,7 @@ class SpatiallyBinnedSpectra:
                                       self.drpf['WAVE'].copy(),
                                       self.drpf['SPECRES'].copy(),
                                       self.drpf['SPECRESD'].copy(),
-                                      fits.ImageHDU(data=reddening_correction, header=red_hdr,
+                                      fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
                                                     name='REDCORR'),
                                       fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
                                                     header=self.drpf['FLUX'].header.copy(),
@@ -1119,15 +1148,20 @@ class SpatiallyBinnedSpectra:
             raise ValueError('Unexpected to have stack covariance be a correlation matrix.')
 
         # Generate the reddening correction
-        red_hdr, reddening_correction = self._get_reddening_corr()
+        reddening_correction = self._get_reddening_corr()
+#        pyplot.plot(self.drpf['WAVE'].data, reddening_correction)
+#        pyplot.show()
 
         # And apply it if requested
         if self.deredden:
-            c = numpy.array([reddening_correction]*stack_flux.shape[0])
-            stack_flux *= c
-            stack_sdev *= c
-            if stack_ivar is not None:
-                stack_ivar /= numpy.square(c)
+            stack_flux, stack_ivar = apply_reddening(stack_flux, reddening_correction, dispaxis=1,
+                                                     ivar=stack_ivar)
+            stack_sdev = apply_reddening(stack_sdev, reddening_correction, dispaxis=1)
+#            c = numpy.array([reddening_correction]*stack_flux.shape[0])
+#            stack_flux *= c
+#            stack_sdev *= c
+#            if stack_ivar is not None:
+#                stack_ivar /= numpy.square(c)
             if stack_covar is not None:
                 for i,j in enumerate(stack_covar.input_indx):
                     stack_covar.cov[i] *= numpy.square(reddening_correction[j])
@@ -1311,31 +1345,13 @@ class SpatiallyBinnedSpectra:
 #        pyplot.show()
 
         # Initialize the header keywords
+        self.hardcopy = hardcopy
         hdr = self._clean_drp_header(ext='PRIMARY')
-        self._initialize_header(hdr)
-        if self.method['binclass'] is not None:
-            try:
-                hdr['BINTYPE'] = (self.method['binclass'].bintype, 'Binning method')
-            except AttributeError:
-                if not self.quiet and hardcopy:
-                    warnings.warn('Binning parameter class has no attribute bintype.  No type ' \
-                                  'written to the header of the output fits file.')
-
-        if self.method['binpar'] is not None:
-            if not self.quiet and hardcopy and not callable(self.method['binpar'].toheader):
-                warnings.warn('Binning parameter class does not have toheader() function.  ' \
-                              'No binning parameters written to the header of the output ' \
-                              'fits file.')
-            elif hardcopy:
-                self.method['binpar'].toheader(hdr)
-
-        if self.method['stackpar'] is not None:
-            if not self.quiet and hardcopy and not callable(self.method['stackpar'].toheader):
-                warnings.warn('Stacking parameter class does not have toheader() function.  ' \
-                              'No stacking parameters written to the header of the output ' \
-                              'fits file.')
-            elif hardcopy:
-                self.method['stackpar'].toheader(hdr)
+        hdr = self._initialize_header(hdr)
+        hdr = self._add_method_header(hdr)
+        hdr = self._get_reddening_hdr(hdr)
+        red_hdr = fits.Header()
+        red_hdr = self._get_reddening_hdr(red_hdr)
 
         # Initialize the basics of the mask
         mask_bit_values = self._initialize_mask(good_fgoodpix, good_snr)
@@ -1356,6 +1372,9 @@ class SpatiallyBinnedSpectra:
 #        pyplot.show()
 
         # Save the data to the hdu attribute
+        # TODO: Strip headers of sub extensions of everything but
+        # the WCS and HDUCLAS information.  Key WCS information in
+        # BINID.
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.ImageHDU(data=flux.data,
                                                 header=self.drpf['FLUX'].header.copy(),
@@ -1399,7 +1418,6 @@ class SpatiallyBinnedSpectra:
         # Write the data, if requested
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:

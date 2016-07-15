@@ -27,7 +27,7 @@ Provides a set of parsing utility functions.
 
 .. todo::
     - Add function that will parse the default MaNGA fits file name (see
-      :func:`mangadap.config.defaults.default_manga_fits_root`.
+      :func:`mangadap.config.defaults.default_manga_fits_root`).
 
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)

@@ -51,6 +51,7 @@ from .util.bitmask import BitMask
 from .util.log import log_output
 from .util.fileio import write_hdu
 from .drpfits import DRPFits, DRPQuality3DBitMask
+from .dapqual import DAPQualityBitMask
 from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
 from .config.defaults import default_dap_source
 from .proc.reductionassessments import ReductionAssessment
@@ -63,17 +64,6 @@ from .proc.spectralindices import SpectralIndices
 from matplotlib import pyplot
 
 __author__ = 'Kyle Westfall'
-
-class DAPQualityBitMask(BitMask):
-    """
-    .. todo::
-        - Force read IDLUTILS version as opposed to internal one?
-    """
-    def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_quality_bits.ini'))
-
 
 class DAPMapsBitMask(BitMask):
     """
@@ -147,7 +137,7 @@ class construct_maps_file:
 
         # Set the output file
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.method) \
+                                                 self.method, mode='MAPS') \
                                     if output_file is None else str(output_file)
 
         # Report
@@ -171,26 +161,9 @@ class construct_maps_file:
             return
 
         # Initialize the primary header
-        self.dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
-        self.drp3qualbm = DRPQuality3DBitMask()
-        self.dapqual = self.dapqualbm.minimum_dtype()(0)    # Original flag value is 0
-        prihdr = self._primary_header()
+        prihdr = self._initialize_primary_header()
 
-        # Initialize the DAP quality flag
-        if self.drp3qualbm.flagged(prihdr['DRP3QUAL'], flag='CRITICAL'):
-            if not self.quiet:
-                log_output(self.loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
-            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'CRITICAL')
-            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'DRPCRIT')
-
-#       Excluded from 2.0 tag to allow for dependency of DAP to be on
-#       IDLUTILS v5_5_25
-#        if binned_spectra.method['binclass'] is not None \
-#                and binned_spectra.method['binclass'].bintype == 'voronoi' \
-#                and binned_spectra.nbins == 1:
-#            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'SINGLEBIN')
-
-        # Get the base map header
+        # Get the base map headers
         self.multichannel_maphdr = self._map_header(nchannels=2)
         self.singlechannel_maphdr = self._map_header(nchannels=1)
 
@@ -212,22 +185,16 @@ class construct_maps_file:
         # Spectral indices:
         self.sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
-        # Determine if there's a foreground star
-        if numpy.sum(binned_spectra.bitmask.flagged(binned_spectra['MASK'].data,
-                                                    flag='FORESTAR')) > 0:
-            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'FORESTAR')
-
-        # Commit the quality flag to the header
-        prihdr['DAPQUAL'] = (self.dapqual, 'DAP quality bitmask')
-
         # Save the data to the hdu attribute
+        prihdr = self._finalize_primary_header(prihdr, binned_spectra, dapsrc=dapsrc)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *self.rdxqalist,
                                   *self.bspeclist,
                                   *self.contlist,
                                   *self.emlmomlist,
                                   *self.elmodlist,
-                                  *self.sindxlist ])
+                                  *self.sindxlist
+                                ])
 
         # Write the file
         if not os.path.isdir(self.directory_path):
@@ -251,20 +218,53 @@ class construct_maps_file:
         hdr.remove('BSCALE')
         hdr.remove('BZERO')
         hdr.remove('BUNIT')
-        hdr.remove('MASKNAME')
+#        hdr.remove('MASKNAME')
 
 
-    def _primary_header(self):
+    def _initialize_primary_header(self):
         hdr = self.drpf.hdu['PRIMARY'].header.copy()
 
         # Clean out header for info not pertinent to the DAP
         self._clean_primary_header(hdr)
 
-        # Add Authors
-        hdr['AUTHOR'] = 'K Westfall, B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        # Change MASKNAME
+        hdr['MASKNAME'] = 'MANGA_DAPPIXMASK'
 
         # Add versioning
         return hdr
+
+
+    def _finalize_primary_header(self, prihdr, binned_spectra, dapsrc=None):
+
+        # Initialize the DAP quality flag
+        self.dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
+        self.drp3qualbm = DRPQuality3DBitMask()
+        self.dapqual = self.dapqualbm.minimum_dtype()(0)    # Type casting original flag to 0
+        if self.drp3qualbm.flagged(self.drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
+            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'CRITICAL')
+            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'DRPCRIT')
+
+        #Excluded from 2.0 tag to allow for dependency of DAP to be on
+        #IDLUTILS v5_5_25
+        if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
+                and binned_spectra.method['binclass'].bintype == 'voronoi' \
+                and binned_spectra.nbins == 1:
+            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'SINGLEBIN')
+
+        # Determine if there's a foreground star
+        if numpy.sum(self.drpf.bitmask.flagged(self.drpf['MASK'].data, flag='FORESTAR')) > 0:
+            self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'FORESTAR')
+
+        # Commit the quality flag to the header
+        prihdr['DAPQUAL'] = (self.dapqual, 'DAP quality bitmask')
+
+        # Finalize authors
+        prihdr['AUTHOR'] = 'K Westfall, B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+
+        return prihdr
+
 
 
     def _initialize_mask(self, binned_spectra=None):
@@ -314,7 +314,8 @@ class construct_maps_file:
         return mask
 
 
-    def _clean_map_header(self, hdr, nchannels=1):
+    @staticmethod
+    def _clean_map_header(hdr, nchannels=1):
 
         # Change header keywords to the default values for the third axis
         if nchannels > 1:
@@ -360,6 +361,8 @@ class construct_maps_file:
         hdr = self._clean_map_header(hdr, nchannels=nchannels)
         # Add Authors
         hdr['AUTHOR'] = 'K Westfall & B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        # Change the pixel mask name
+        hdr['MASKNAME'] = 'MANGA_DAPPIXMASK'
         # Add versioning
         # Add DAP quality
         # Other meta data?
@@ -461,9 +464,10 @@ class construct_maps_file:
 
         # Add data to the primary header
         if rdxqa is not None:
-            prihdr['RDXQAKEY'] = (rdxqa.method['key'])
-            prihdr['PA'] = (rdxqa.pa, 'Isophotal position angle')
-            prihdr['ELL'] = (rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
+            prihdr = rdxqa._initialize_header(prihdr)
+#            prihdr['RDXQAKEY'] = (rdxqa.method['key'])
+#            prihdr['PA'] = (rdxqa.pa, 'Isophotal position angle')
+#            prihdr['ELL'] = (rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
 
         # On-sky coordinates
         hdr = self._add_channel_names(self.multichannel_maphdr, ['On-sky X', 'On-sky Y'])
@@ -478,9 +482,6 @@ class construct_maps_file:
         hdr = self._add_channel_names(self.multichannel_maphdr,
                                       ['Elliptical radius', 'Elliptical azimuth'],
                                       units=['arcsec', 'degrees'])
-        if rdxqa is not None:
-            hdr['PA'] = (rdxqa.pa, 'Isophotal position angle')
-            hdr['ELL'] = (rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['ELL_COO'].reshape(*self.drpf.spatial_shape, -1).T
         hdus += [ fits.ImageHDU(data=data,
@@ -598,16 +599,14 @@ class construct_maps_file:
             return hdus
 
         # Add data to the primary header
-        if binned_spectra.reff is not None:
-            prihdr['REFF'] = (binned_spectra.reff, 'Effective radius (arcsec)')
-        prihdr['BINKEY'] = (binned_spectra.method['key'], 'Spectal binning method keyword')
-        prihdr['BINMINSN'] = (binned_spectra.method['minimum_snr'],
-                                    'Minimum S/N of spectrum to include')
-        prihdr['FSPCOV'] = (binned_spectra['PRIMARY'].header['FSPCOV'],
-                                    'Minimum allowed valid spectral coverage fraction')
-        prihdr['NBINS'] = (binned_spectra.nbins, 'Number of unique spatial bins')
-        if len(binned_spectra.missing_bins) > 0:
-            prihdr['EMPTYBIN'] = (str(binned_spectra.missing_bins), 'List of bins with no data')
+        # TODO: Apply this to each extension instead of the primary
+        # header to allow for extension specific binning?
+        prihdr = binned_spectra._initialize_header(prihdr)
+        if binned_spectra.is_unbinned:
+            prihdr['BINTYPE'] = ('None', 'Binning method')
+        else:
+            prihdr = binned_spectra._add_method_header(prihdr)
+        prihdr = binned_spectra._get_reddening_hdr(prihdr)
 
         # Bin index
         bin_indx = binned_spectra['BINID'].data.copy().ravel()
@@ -823,27 +822,8 @@ class construct_maps_file:
             return hdus
 
         # Add data to the primary header
-        prihdr['VSTEP'] = (stellar_continuum['PRIMARY'].header['VSTEP'],
-                                'Velocity step per spectral channel.')
-        prihdr['SCKEY'] = (stellar_continuum.method['key'],
-                                'Stellar-continuum modeling method keyword')
-        prihdr['SCMINSN'] = (stellar_continuum.method['minimum_snr'],
-                                'Minimum S/N of spectrum to include')
-        # Add the guess kinematics, if provided
-        try:
-            prihdr['INPVEL'] = (stellar_continuum['PRIMARY'].header['INPVEL'],
-                                    'Initial guess velocity')
-        except:
-            pass
-
-        try:
-            prihdr['INPSIG'] = (stellar_continuum['PRIMARY'].header['INPSIG'],
-                                    'Initial guess velocity dispersion')
-        except:
-            pass
-#        prihdr['NMOD'] = (stellar_continuum.nmodels, 'Number of unique stellar-continuum models')
-#        if len(self.missing_models) > 0:
-#            prihdr['EMPTYMOD'] = (str(self.missing_models), 'List of models with no data')
+        prihdr = stellar_continuum._initialize_header(prihdr)
+        prihdr = stellar_continuum._add_method_header(prihdr)
 
         # Bin index
         bin_indx = stellar_continuum['BINID'].data.copy().ravel()
@@ -1043,13 +1023,7 @@ class construct_maps_file:
             return hdus
 
         # Add data to the primary header
-        prihdr['ELMKEY'] = (emission_line_moments.database['key'],
-                                'Emission-line moments database keyword')
-        prihdr['ELMMINSN'] = (emission_line_moments.database['minimum_snr'],
-                                'Minimum S/N of spectrum to include')
-        prihdr['ARTDB'] = (emission_line_moments.database['artifacts'], 'Artifact database keyword')
-        prihdr['MOMDB'] = (emission_line_moments.database['passbands'],
-                                'Emission-line moments database keyword')
+        prihdr = emission_line_moments._initialize_header(prihdr)
 
         # Bin index
         bin_indx = emission_line_moments.binned_spectra['BINID'].data.copy().ravel()
@@ -1243,14 +1217,8 @@ class construct_maps_file:
             return hdus
 
         # Add data to the primary header
-        prihdr['ELFKEY'] = (emission_line_model.method['key'],
-                                'Emission-line modeling method keyword')
-        prihdr['ELFMINSN'] = (emission_line_model.method['minimum_snr'],
-                                'Minimum S/N of spectrum to include')
-        prihdr['ARTDB'] = (emission_line_model.method['artifacts'],
-                                'Artifact database keyword')
-        prihdr['EMLDB'] = (emission_line_model.method['emission_lines'],
-                                'Emission-line database keyword')
+        prihdr = emission_line_model._initialize_header(prihdr)
+        prihdr = emission_line_model._add_method_header(prihdr)
 
         # Bin index
         bin_indx = emission_line_model.binned_spectra['BINID'].data.copy().ravel()
@@ -1450,23 +1418,12 @@ class construct_maps_file:
                                     name='SPECINDEX_CORR') ]
             return hdus
 
-        if spectral_indices['PRIMARY'].header['INDXCOR']:
+        if spectral_indices['PRIMARY'].header['SICORR']:
             raise ValueError('Cannot construct maps file with dispersion corrections applied to '
                              'indices!')
 
         # Add data to the primary header
-        prihdr['SIKEY'] = (spectral_indices.database['key'],
-                                'Spectral-index database keyword')
-        prihdr['SIMINSN'] = (spectral_indices.database['minimum_snr'],
-                                'Minimum S/N of spectrum to include')
-        prihdr['FWHM'] = (spectral_indices.database['fwhm'],
-                                'FWHM of index system resolution (ang)')
-        prihdr['ARTDB'] = (spectral_indices.database['artifacts'],
-                                'Artifact database keyword')
-        prihdr['ABSDB'] = (spectral_indices.database['absindex'],
-                                'Absorption-index database keyword')
-        prihdr['BHDDB'] = (spectral_indices.database['bandhead'],
-                                'Bandhead-index database keyword')
+        prihdr = spectral_indices._initialize_header(prihdr)
 
         # Bin index
         bin_indx = spectral_indices.binned_spectra['BINID'].data.copy().ravel()

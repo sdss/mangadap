@@ -551,19 +551,41 @@ class StellarContinuumModel:
         Initialize the header.
 
         """
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
         hdr['VSTEP'] = (spectrum_velocity_scale(self.binned_spectra['WAVE'].data),
                         'Velocity step per spectral channel.')
         hdr['SCKEY'] = (self.method['key'], 'Stellar-continuum modeling method keyword')
         hdr['SCMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         # Guess kinematics may eventually be vectors!
         if self.guess_vel is not None:
-            hdr['INPVEL'] = (self.guess_vel, 'Initial guess velocity')
+            hdr['SCINPVEL'] = (self.guess_vel, 'Initial guess velocity')
         if self.guess_sig is not None:
-            hdr['INPSIG'] = (self.guess_sig, 'Initial guess velocity dispersion')
-        hdr['NMOD'] = (self.nmodels, 'Number of unique stellar-continuum models')
+            hdr['SCINPSIG'] = (self.guess_sig, 'Initial guess velocity dispersion')
+        hdr['NSCMOD'] = (self.nmodels, 'Number of unique stellar-continuum models')
         if len(self.missing_models) > 0:
-            hdr['EMPTYMOD'] = (str(self.missing_models), 'List of models with no data')
+            hdr['EMPTYSC'] = (str(self.missing_models), 'List of bins w/o SC model')
         return hdr
+
+
+    def _add_method_header(self, hdr):
+        """Add fitting method information to the header."""
+        if self.method['fitclass'] is not None:
+            try:
+                hdr['SCTYPE'] = self.method['fitclass'].fit_type
+                hdr['SCMETH'] = self.method['fitclass'].fit_method
+            except:
+                if not self.quiet and self.hardcopy:
+                    warnings.warn('Fit class object does not have fit_type and/or fit_method ' \
+                                  'attributes.  No parameters written to header.')
+        if self.method['fitpar'] is not None:
+            try:
+                hdr = self.method['fitpar'].toheader(hdr)
+            except:
+                if not self.quiet and self.hardcopy:
+                    warnings.warn('Fit parameter class has no toheader() function.  No ' \
+                                  'parameters written to header.')
+        return hdr
+
 
 
     def _initialize_mask(self, good_snr):
@@ -634,7 +656,7 @@ class StellarContinuumModel:
 
     def all_except_emission_flags(self):
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'TPL_PIXELS',
-                'TRUNCATED', 'PPXF_REJECT', 'FIT_FAILED' ]
+                'TRUNCATED', 'PPXF_REJECT', 'FIT_FAILED', 'NEAR_BOUND' ]
 
 
     def fit(self, binned_spectra, guess_vel=None, guess_sig=None, dapsrc=None, dapver=None,
@@ -754,25 +776,10 @@ class StellarContinuumModel:
         mask.reshape(-1,self.nwave)[indx,:] = model_mask[unique_bins[reconstruct[indx]],:]
 
         # Initialize the header keywords
+        self.hardcopy = hardcopy
         hdr = self._clean_drp_header(ext='PRIMARY')
-        self._initialize_header(hdr)
-
-        if self.method['fitclass'] is not None:
-            try:
-                hdr['SCTYPE'] = self.method['fitclass'].fit_type
-                hdr['SCMETH'] = self.method['fitclass'].fit_method
-            except:
-                if not self.quiet and hardcopy:
-                    warnings.warn('Fit class object does not have fit_type and/or fit_method ' \
-                                  'attributes.  No parameters written to header.')
-        if self.method['fitpar'] is not None:
-            try:
-                self.method['fitpar'].toheader(hdr)
-            except:
-                if not self.quiet and hardcopy:
-                    warnings.warn('Fit parameter class has no toheader() function.  No ' \
-                                  'parameters written to header.')
-
+        hdr = self._initialize_header(hdr)
+        hdr = self._add_method_header(hdr)
 
         # Save the data to the hdu attribute
         # TODO: Write the bitmask to the header?
@@ -795,7 +802,6 @@ class StellarContinuumModel:
         # Write the data, if requested
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:
@@ -880,9 +886,9 @@ class StellarContinuumModel:
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 
-        self.nmodels = self.hdu['PRIMARY'].header['NMOD']
+        self.nmodels = self.hdu['PRIMARY'].header['NSCMOD']
         try:
-            self.missing_models = eval(self.hdu['PRIMARY'].header['EMPTYMOD'])
+            self.missing_models = eval(self.hdu['PRIMARY'].header['EMPTYSC'])
         except KeyError:
             # Assume if this fails, it's because the keyword doesn't
             # exist

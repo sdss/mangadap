@@ -689,9 +689,10 @@ class SpectralIndices:
         Initialize the header.
 
         """
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
         hdr['SIKEY'] = (self.database['key'], 'Spectral-index database keyword')
         hdr['SIMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['FWHM'] = (self.database['fwhm'], 'FWHM of index system resolution (ang)')
+        hdr['SIFWHM'] = (self.database['fwhm'], 'FWHM of index system resolution (ang)')
         hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['ABSDB'] = (self.database['absindex'], 'Absorption-index database keyword')
         hdr['BHDDB'] = (self.database['bandhead'], 'Bandhead-index database keyword')
@@ -702,7 +703,7 @@ class SpectralIndices:
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
-        hdr['INDXCOR'] = (self.corrected_indices, 'Indices corrected for velocity dispersion')
+        hdr['SICORR'] = (self.corrected_indices, 'Indices corrected for velocity dispersion')
         # Anything else?
         # Additional database details?
         return hdr
@@ -1588,8 +1589,9 @@ class SpectralIndices:
         mask.reshape(-1,self.nwave)[indx,:] = _mask[unique_bins[reconstruct[indx]],:]
 
         # Initialize the header keywords
+        self.hardcopy = hardcopy
         hdr = self._clean_drp_header(ext='PRIMARY')
-        self._initialize_header(hdr)
+        hdr = self._initialize_header(hdr)
 
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
@@ -1617,7 +1619,6 @@ class SpectralIndices:
         # Write the data, if requested
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:

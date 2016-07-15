@@ -937,7 +937,7 @@ class DRPFits:
 
     def file_name(self):
         """Return the name of the DRP file"""
-        root = default_manga_fits_root(self.plate, self.ifudesign, self.mode)
+        root = default_manga_fits_root(self.plate, self.ifudesign, 'LOG{0}'.format(self.mode))
         return '{0}.fits.gz'.format(root)
 
 

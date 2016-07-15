@@ -70,4 +70,29 @@
 #       or center based on the redshift and the implied tied parameters.
 #       For a free set of parameters using a GaussianLineProfile, this
 #       is set to "{ 0 0 0 }".
+#   LOWER_BOUND:
+#       A list of lower bounds for the parameters.  For each parameter,
+#       use None to indicate no lower bound.  For a GaussianLineProfile
+#       with positive flux and standard deviation, this is set to
+#       '{ 0.0 None 0.0 }'.
+#   UPPER_BOUND:
+#       A list of upper bounds for the parameters.  For each parameter,
+#       use None to indicate no upper bound.  For a GaussianLineProfile
+#       with maximum standard deviation of 800 km/s, this is set to
+#       '{ None None 800.0 }'.
+#   LOG_BOUND:
+#       A list of flags used when determining if a fit parameter is near
+#       the imposed boundary.  If true, the fraction of the boundary
+#       range used is done in logarithmic, not linear, separation.  Use
+#       0 for False, 1 for True.
+#   BLUESIDE:   
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass blueward of the emission line, which is used to set
+#       the continuum level near the emission line when calculating the
+#       equivalent width.
+#   REDSIDE:   
+#       A two-element vector with the starting and ending wavelength for
+#       a bandpass redward of the emission line, which is used to set
+#       the continuum level near the emission line when calculating the
+#       equivalent width.
 #------------------------------------------------------------------------

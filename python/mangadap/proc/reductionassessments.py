@@ -449,6 +449,8 @@ class ReductionAssessment:
         self.hdu = None
         self.checksum = checksum
         self.correlation = None
+        self.covar_wave = None
+        self.covar_channel = None
 
         # Run the assessments of the DRP file
         self.compute(drpf, pa=pa, ell=ell, dapver=dapver, analysis_path=analysis_path,
@@ -562,6 +564,18 @@ class ReductionAssessment:
 
     def info(self):
         return self.hdu.info()
+
+
+    def _initialize_header(self, hdr):
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
+        hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
+        hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')
+        hdr['COVWAVE'] = ( self.covar_wave if self.method['covariance'] else 'None',
+                            'Wavelength of S/N covariance channel')
+        hdr['COVINDX'] = ( self.covar_channel if self.method['covariance'] else 'None',
+                            'Index of S/N covariance channel')
+        return hdr
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,
@@ -692,14 +706,24 @@ class ReductionAssessment:
                 log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
             self.hdu = fits.open(ofile, checksum=self.checksum)
             self.correlation = Covariance(source=self.hdu, primary_ext='COVAR')
-            self.pa = self.hdu['PRIMARY'].header['PA']
+
+            # Read the header data
+            self.pa = self.hdu['PRIMARY'].header['ECOOPA']
             if not self.quiet and pa is not None and self.pa != pa:
                 warnings.warn('Provided position angle different from available file; set ' \
                               'clobber=True to overwrite.')
-            self.ell = self.hdu['PRIMARY'].header['ELL']
+            self.ell = self.hdu['PRIMARY'].header['ECOOELL']
             if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
+            self.covar_wave = self.hdu['PRIMARY'].header['COVWAVE']
+            if isinstance(self.covar_wave, str):
+                self.covar_wave = eval(self.covar_wave)
+            self.covar_channel = self.hdu['PRIMARY'].header['COVINDX']
+            if isinstance(self.covar_channel, str):
+                self.covar_channel = eval(self.covar_channel)
+#            print(self.covar_wave, self.covar_channel)
+
             # Make sure the symlink exists
             if self.symlink_dir is not None:
                 create_symlink(ofile, self.symlink_dir, clobber=clobber)
@@ -771,52 +795,54 @@ class ReductionAssessment:
         # wavelength range.  In the latter case, and exception is
         # raised!
         if self.method['covariance']:
-            covar_wave = numpy.sum(self.method['waverange'])/2.
-            covar_channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data - covar_wave) )[0]
+            self.covar_wave = numpy.sum(self.method['waverange'])/2.
+            self.covar_channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data
+                                                               - self.covar_wave) )[0]
             # TODO: Make this fraction an input parameter!
             goodfrac = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8)
 
             off = 1
             sign = 1
-            while covar_wave > waverange[0] and covar_wave < waverange[1] \
-                    and numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)) > 0:
-                covar_channel += sign*off
-                covar_wave = drpf['WAVE'].data[covar_channel]
-#                print(covar_wave, covar_channel, off, sign,
-#                      numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)))
+            while self.covar_wave > waverange[0] and self.covar_wave < waverange[1] \
+                    and numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)) > 0:
+                self.covar_channel += sign*off
+                self.covar_wave = drpf['WAVE'].data[self.covar_channel]
+#                print(self.covar_wave, self.covar_channel, off, sign,
+#                      numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)))
                 sign *= -1
                 off += 1
 
-            if numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,covar_channel] > 0)) > 0:
+            if numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)) > 0:
                 raise ValueError('Unable to find wavelength channel within fully valid data.')
             
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
                            'Covariance measured at wavelength: {0} (channel {1})'.format(
-                                covar_wave, covar_channel))
+                                self.covar_wave, self.covar_channel))
         else:
-            covar_wave = None
+            self.covar_wave = None
+            self.covar_channel = None
 
         spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'], self.correlation \
                 = drpf.flux_stats(waverange=self.method['waverange'],
                                   covar=self.method['covariance'], correlation=True,
-                                  covar_wave=covar_wave)
+                                  covar_wave=self.covar_wave)
 
 #        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
-#                        (drpf.bitmask.flagged(drpf['MASK'].data[:,:,covar_channel],
+#                        (drpf.bitmask.flagged(drpf['MASK'].data[:,:,self.covar_channel],
 #                                             flag=['DONOTUSE', 'FORESTAR']))
 #        print(numpy.sum(t))
 #
 #        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
-#                        ~(drpf['IVAR'].data[:,:,covar_channel] > 0)
+#                        ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)
 #        print(numpy.sum(t))
 #
 #        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
-#                        ~(drpf['FLUX'].data[:,:,covar_channel] > 0)
+#                        ~(drpf['FLUX'].data[:,:,self.covar_channel] > 0)
 #        print(numpy.sum(t))
 #
 #        goodpix_im = spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape)
-#        m = drpf['FLUX'].data[:,:,covar_channel]
+#        m = drpf['FLUX'].data[:,:,self.covar_channel]
 #        pyplot.imshow(m, origin='lower', interpolation='nearest')
 #        pyplot.colorbar()
 #        pyplot.show()
@@ -836,13 +862,7 @@ class ReductionAssessment:
 
         # Construct header
         hdr = fits.Header()
-        hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
-        hdr['PA'] = (self.pa, 'Isophotal position angle')
-        hdr['ELL'] = (self.ell, 'Isophotal ellipticity (1-b/a)')
-        hdr['COVWAVE'] = ( '{0:.1f}'.format(covar_wave) if self.method['covariance'] else 'None',
-                            'Wavelength of covariance channel')
-        hdr['COVINDX'] = ( '{0:.1f}'.format(covar_channel) if self.method['covariance'] else 'None',
-                            'Index of covariance channel')
+        hdr = self._initialize_header(hdr)
 
         # Get the covariance columns; pulled directly from ../util/covariance.py
         if self.method['covariance']:

@@ -150,9 +150,17 @@ class RadialBinningPar(ParSet):
     
     def toheader(self, hdr):
         """
-        Copy the information to a header.
+        Copy some of the parameters to a header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_): Header object to write to.
+
+        Returns:
+            `astropy.io.fits.Header`_: Edited header object
+
+        Raises:
+            TypeError: Raised if input is not an
+                `astropy.io.fits.Header`_ object.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -164,6 +172,7 @@ class RadialBinningPar(ParSet):
         hdr['BINSCL'] = (self['radius_scale'], 'Radial binning radius scale (arcsec)')
         hdr['BINRAD'] = (str(list(self['radii'])), 'Radial binning radius sampling')
         hdr['BINLGR'] = (str(self['log_step']), 'Geometric step used by radial binning')
+        return hdr
 
 
     def fromheader(self, hdr):
@@ -352,9 +361,17 @@ class VoronoiBinningPar(ParSet):
 
     def toheader(self, hdr):
         """
-        Copy the information to a header.
+        Copy some of the parameters to a header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_): Header object to write to.
+
+        Returns:
+            `astropy.io.fits.Header`_: Edited header object
+
+        Raises:
+            TypeError: Raised if input is not an
+                `astropy.io.fits.Header`_ object.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -367,6 +384,7 @@ class VoronoiBinningPar(ParSet):
             hdr['BINCOV'] = ('full', 'Voronoi binning S/N covariance type')
         else:
             hdr['BINCOV'] = ('none', 'Voronoi binning S/N covariance type')
+        return hdr
 
 
     def fromheader(self, hdr):

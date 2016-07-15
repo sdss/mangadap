@@ -67,6 +67,7 @@ from ..proc.emissionlinemoments import EmissionLineMoments
 from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
 from ..dapmaps import construct_maps_file
+from ..dapcube import construct_cube_file
 #from ..proc.templatelibrary import TemplateLibrary
 
 from ..util.covariance import Covariance
@@ -74,9 +75,9 @@ from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 __email__ = 'kbwestfall@gmail.com'
-__copyright__ = 'Copyright 2016, SDSS-IV/MaNGA Pipeline Group'
+__copyright__ = '(c) 2016, SDSS-IV/MaNGA Pipeline Group'
 __license__ = 'BSD3'
-__version__ = 2.0
+__version__ = '2.0.1'
 __status__ = 'Development'
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
@@ -274,6 +275,11 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices,
                             nsa_redshift=obs['vel']/astropy.constants.c.to('km/s').value,
+                            dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
+                            loggers=loggers)
+        construct_cube_file(drpf, binned_spectra=binned_spectra,
+                            stellar_continuum=stellar_continuum,
+                            emission_line_model=emission_line_model,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
                             loggers=loggers)
 

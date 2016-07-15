@@ -19,6 +19,8 @@ Implements an emission-line profile fitting class.
 
 *Revision history*:
     | **26 Apr 2016**: Original implementation by K. Westfall (KBW)
+    | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
+        not a returned parameters is near its boundary.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
@@ -49,6 +51,7 @@ import logging
 
 import numpy
 from scipy import interpolate, integrate, optimize
+from scipy.special import erf
 import astropy.constants
 from astropy.modeling import FittableModel, Parameter
 
@@ -102,7 +105,12 @@ class GaussianLineProfile(FittableModel):
     
     @staticmethod
     def evaluate(x, zmom, mean, sigma):
+        # Discrete samples
         return zmom * numpy.exp(-0.5*numpy.square((x - mean)/sigma)) / numpy.sqrt(2*numpy.pi)/sigma
+#        # Integrated over a pixel
+#        diff = (x-mean)/pixelscale
+#        denom = numpy.sqrt(2.0)*sigma/pixelscale
+#        return zmom * (erf((diff+0.5)/denom) - erf((diff-0.5)/denom))/2.
 
 
     @staticmethod
@@ -711,15 +719,12 @@ class ElricPar(ParSet):
 
 
     def toheader(self, hdr):
-#        hdr['LPROF'] = (self['profile'].__name__, 'Line profile type')
-#        hdr['LPNCOMP'] = (self['ncomp'], 'Number of line profile components')
         hdr['LPBASEO'] = (self['base_order'], 'Baseline Legendre polynomial order')
         hdr['LPWIN'] = (self['window_buffer'], 'Buffer for fitting window (ang)')
+        return hdr
 
 
     def fromheader(self, hdr):
-#        self['profile'] = eval(hdr['LPROF'])
-#        self['ncomp'] = hdr['LPNCOMP']
         self['base_order'] = hdr['LPBASEO']
         self['window_buffer'] = hdr['LPWIN']
 
@@ -773,6 +778,9 @@ class ElricFittingWindow:
         bounds (numpy.ndarray): (**Optional**) A two-column array with
             the lower (first column) and upper (second column) bounds
             for the fit parameters.
+        log_bounds (numpy.ndarray): (**Optional**) The range of the
+            boundary should be considered as logarithmic when testing if
+            a parameter is near its boundary.
         output_model (bool): (**Optional**) Include the best-fitting
             model in the composite emission-line model for each
             spectrum.  This is only flagged as true if ALL the emission
@@ -786,7 +794,8 @@ class ElricFittingWindow:
             called *sequentially* to tie model parameters.
     """
     def __init__(self, nlines=None, db_indx=None, line_index=None, restwave=None, profile_set=None,
-                 fixed_par=None, bounds=None, output_model=None, tied_pairs=None, tied_funcs=None):
+                 fixed_par=None, bounds=None, log_bounds=None, output_model=None, tied_pairs=None,
+                 tied_funcs=None):
 
         self.nlines = nlines
         self.db_indx = db_indx
@@ -796,12 +805,14 @@ class ElricFittingWindow:
         self.init_par = numpy.array([ p.par.copy().ravel() for p in self.profile_set ])
         self.fixed_par = fixed_par
         self.bounds = bounds
+        self.log_bounds = log_bounds
         self.output_model = output_model
         self.tied_pairs = tied_pairs
         self.tied_funcs = tied_funcs
 
 
-    def append(self, db_indx, line_index, restwave, profile, fixed_par, bounds, output_model):
+    def append(self, db_indx, line_index, restwave, profile, fixed_par, bounds, log_bounds,
+               output_model):
         """
         Append another line to the fitting window.  Must be a single line!
         """
@@ -817,6 +828,8 @@ class ElricFittingWindow:
             raise TypeError('Appended fixed parameter must be a vector with the correct length.')
         if len(bounds.shape) != 2 or bounds.shape[0] != profile.npar or bounds.shape[1] != 2:
             raise TypeError('Appended bounds must have shape: {0}'.format(tuple(profile.npar,2)))
+        if len(log_bounds.shape) != 1 or len(log_bounds) != profile.npar:
+            raise TypeError('Appended log_bounds parameter must be a vector of the correct length.')
         if not isinstance(output_model, bool):
             raise TypeError('Flag to output model must be boolean.')
         
@@ -828,6 +841,8 @@ class ElricFittingWindow:
         self.init_par = numpy.append(self.init_par, profile.par.copy(), axis=0)
         self.fixed_par = numpy.append(self.fixed_par, fixed_par.astype(bool).reshape(1,-1), axis=0)
         self.bounds = numpy.append(self.bounds, bounds.reshape(1,-1,2), axis=0)
+        self.log_bounds = numpy.append(self.log_bounds, log_bounds.astype(bool).reshape(1,-1),
+                                       axis=0)
         self.output_model &= output_model
 
 
@@ -996,11 +1011,13 @@ class Elric(EmissionLineFit):
                                     for l,u in zip(self.emission_lines['lobnd'][primary_line][i],
                                                    self.emission_lines['hibnd'][primary_line][i])
                                  ]).reshape(1,-1,2)
+            log_bounds = self.emission_lines['log_bnd'][primary_line][i].astype(bool).reshape(1,-1)
             output_model = self.emission_lines['output_model'][primary_line][i]
             self.fitting_window[i] = ElricFittingWindow(nlines=1, db_indx=db_indx,
                                                         line_index=line_index, restwave=restwave,
                                                         profile_set=profile_set,
                                                         fixed_par=fixed_par, bounds=bounds,
+                                                        log_bounds=log_bounds,
                                                         output_model=output_model)
 
         # Return if nothing is tied
@@ -1026,7 +1043,7 @@ class Elric(EmissionLineFit):
                                                                    profile=eval(e['profile'])),
                                                   e['fix'],
                     numpy.array([ [l,u] for l,u in zip(e['lobnd'], e['hibnd']) ]).reshape(-1,2),
-                                                  bool(e['output_model']))
+                                                  e['log_bnd'], bool(e['output_model']))
             # Set the guess velocity of the profile based on the
             # velocity relative to the main line
             self.fitting_window[base_indx].reset_init_mean(-1,
@@ -1140,6 +1157,105 @@ class Elric(EmissionLineFit):
                 raise ValueError('Provided {0} upper bounds, but expected {1}.'.format(
                                   emission_lines['hibnd'][i].size,
                                   npar*emission_lines['ncomp'][i]))
+            if emission_lines['log_bnd'][i].size != npar*emission_lines['ncomp'][i]:
+                raise ValueError('Provided {0} log boundaries designations, but expected '
+                                 '{1}.'.format(emission_lines['log_bnd'][i].size,
+                                               npar*emission_lines['ncomp'][i]))
+
+
+    @staticmethod
+    def _is_near_bound(par, lbnd, ubnd, logbounded, rtol=1e-2, atol=1e-4):
+        """
+        Determine of any of the parameters within start and start+npar
+        are "near" an imposed boundary.
+        """
+#        print('par: ', par)
+#        print('lbnd: ', lbnd)
+        lbounded = ~numpy.isinf(lbnd)
+#        print('L bounded: ', lbounded)
+
+#        print('ubnd: ', ubnd)
+        ubounded = ~numpy.isinf(ubnd)
+#        print('U bounded: ', ubounded)
+
+        if numpy.sum(lbounded) == 0 and numpy.sum(ubounded) == 0:
+#            print('No bounds')
+            return False
+
+        if numpy.any(lbounded & ~ubounded & (par - lbnd < atol)):
+#            print('Near lower bound')
+            return True
+
+        if numpy.any(~lbounded & ubounded & (ubnd - par < atol)):
+#            print('Near upper bound')
+            return True
+
+        ulbounded = lbounded & ubounded
+#        print('UL bounded', ulbounded)
+        if numpy.sum(ulbounded) == 0:
+#            print('None bounded from both sides')
+            return False
+
+#        print('log bounded', logbounded)
+#        print('UL & log bounded', ulbounded & logbounded)
+#        print('UL & not log bounded', ulbounded & ~logbounded)
+        Dp = numpy.zeros(ulbounded.size, dtype=numpy.float)
+        Dp[ulbounded & logbounded] = numpy.log10(ubnd[ulbounded & logbounded]) \
+                                        - numpy.log10(lbnd[ulbounded & logbounded])
+        Dp[ulbounded & ~logbounded] = ubnd[ulbounded & ~logbounded] - lbnd[ulbounded & ~logbounded]
+        tol = Dp*rtol
+#        print(tol)
+#        print(tol[ulbounded & logbounded])
+#        print((numpy.ma.log10(par) - numpy.ma.log10(lbnd))[ulbounded & logbounded])
+#        print((numpy.ma.log10(ubnd) - numpy.ma.log10(par))[ulbounded & logbounded])
+
+        if numpy.any( ulbounded & logbounded & ( (numpy.ma.log10(par) - numpy.ma.log10(lbnd) < tol) 
+                                        | (numpy.ma.log10(ubnd) - numpy.ma.log10(par) < tol))):
+#            print('Near boundary in log')
+            return True
+                            
+#        print(tol[ulbounded & ~logbounded])
+#        print((par - lbnd)[ulbounded & ~logbounded])
+#        print((ubnd - par)[ulbounded & ~logbounded])
+
+        if numpy.any( ulbounded & ~logbounded & ( (par - lbnd < tol) | (ubnd - par < tol))):
+#            print('Near boundary in linear')
+            return True
+#        print('Not near boundary')
+        return False
+
+
+#        # Check if the parameters are near a boundary
+#        if self.bestfit[i,j].bounded:
+#            model_fit_par['LOBND'][i,j,:npar] = self.bestfit[i,j].bounds[0]
+#            model_fit_par['UPBND'][i,j,:npar] = self.bestfit[i,j].bounds[1]
+#            for k in range(npar):
+#                if not numpy.isinf(self.bestfit[i,j].bounds[0][k]) \
+#                        and model_fit_par['PAR'][i,j,k] - model_fit_par['ERR'][i,j,k] \
+#                                    <= self.bestfit[i,j].bounds[0][k]:
+#                    near_bound = True
+#                    break
+#                if not numpy.isinf(self.bestfit[i,j].bounds[1][k]) \
+#                        and model_fit_par['PAR'][i,j,k] + model_fit_par['ERR'][i,j,k] \
+#                                    >= self.bestfit[i,j].bounds[1][k]:
+#                    near_bound = True
+#                    break
+
+#            if self.bestfit[i,j].bounded:
+#                if numpy.any(~numpy.isinf(self.bestfit[i,j].bounds[0][pl:pl+nlinepar[k]]) \
+#                                & (model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]]
+#                                    - model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]]
+#                                    <= self.bestfit[i,j].bounds[0][pl:pl+nlinepar[k]])):
+#                    model_eml_par['MASK'][i,emlj] \
+#                            = self.bitmask.turn_on(model_eml_par['MASK'][i,emlj], 'NEAR_BOUND')
+#                    near_bound = True
+#                if numpy.any(~numpy.isinf(self.bestfit[i,j].bounds[1][pl:pl+nlinepar[k]]) \
+#                                & (model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]]
+#                                    + model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]] \
+#                                    >= self.bestfit[i,j].bounds[1][pl:pl+nlinepar[k]])):
+#                    model_eml_par['MASK'][i,emlj] \
+#                            = self.bitmask.turn_on(model_eml_par['MASK'][i,emlj], 'NEAR_BOUND')
+#                    near_bound = True
 
 
     def _assess_and_save_fit(self, i, j, model_fit_par, model_eml_par):
@@ -1207,7 +1323,6 @@ class Elric(EmissionLineFit):
                                                     err=model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]])
             # Flux unit conversion
 #            print(astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k])
-#            exit()
             model_eml_par['FLUX'][i,emlj] \
                     /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
             model_eml_par['FLUXERR'][i,emlj] \
@@ -1233,38 +1348,18 @@ class Elric(EmissionLineFit):
                                                                        par=par[pl:pl+nlinepar[k]],
                                                     err=model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]])
 
-            if self.bestfit[i,j].bounded:
-                if numpy.any(~numpy.isinf(self.bestfit[i,j].bounds[0][pl:pl+nlinepar[k]]) \
-                                & (model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]]
-                                    - model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]]
-                                    <= self.bestfit[i,j].bounds[0][pl:pl+nlinepar[k]])):
-                    model_eml_par['MASK'][i,emlj] \
-                            = self.bitmask.turn_on(model_eml_par['MASK'][i,emlj], 'NEAR_BOUND')
-                    near_bound = True
-                if numpy.any(~numpy.isinf(self.bestfit[i,j].bounds[1][pl:pl+nlinepar[k]]) \
-                                & (model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]]
-                                    + model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]] \
-                                    >= self.bestfit[i,j].bounds[1][pl:pl+nlinepar[k]])):
-                    model_eml_par['MASK'][i,emlj] \
-                            = self.bitmask.turn_on(model_eml_par['MASK'][i,emlj], 'NEAR_BOUND')
-                    near_bound = True
+            
 
+            if self.bestfit[i,j].bounded \
+                    & self._is_near_bound(model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]],
+                                          self.bestfit[i,j].bounds[0][pl:pl+nlinepar[k]],
+                                          self.bestfit[i,j].bounds[1][pl:pl+nlinepar[k]],
+                            self.fitting_window[j].log_bounds.ravel().copy()[pl:pl+nlinepar[k]]):
+                model_eml_par['MASK'][i,emlj] \
+                            = self.bitmask.turn_on(model_eml_par['MASK'][i,emlj], 'NEAR_BOUND')
+                near_bound = True
 
-#        # Check if the parameters are near a boundary
-#        if self.bestfit[i,j].bounded:
-#            model_fit_par['LOBND'][i,j,:npar] = self.bestfit[i,j].bounds[0]
-#            model_fit_par['UPBND'][i,j,:npar] = self.bestfit[i,j].bounds[1]
-#            for k in range(npar):
-#                if not numpy.isinf(self.bestfit[i,j].bounds[0][k]) \
-#                        and model_fit_par['PAR'][i,j,k] - model_fit_par['ERR'][i,j,k] \
-#                                    <= self.bestfit[i,j].bounds[0][k]:
-#                    near_bound = True
-#                    break
-#                if not numpy.isinf(self.bestfit[i,j].bounds[1][k]) \
-#                        and model_fit_par['PAR'][i,j,k] + model_fit_par['ERR'][i,j,k] \
-#                                    >= self.bestfit[i,j].bounds[1][k]:
-#                    near_bound = True
-#                    break
+#        print('Any line in window near boundary: ', near_bound)
         if near_bound:
             model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                               'NEAR_BOUND')
@@ -1296,6 +1391,8 @@ class Elric(EmissionLineFit):
                 model_fit_par['FRAC_RESID'][i,j] = residual_growth(frac_resid,
                                                                [0.25, 0.50, 0.75, 0.90, 0.99])
 #                print('FRAC_RESID: ', model_fit_par['FRAC_RESID'][i,j])
+
+        return near_bound
 
 
     def _instrumental_dispersion_correction(self, model_eml_par):
@@ -1363,7 +1460,6 @@ class Elric(EmissionLineFit):
 #        pyplot.scatter(orig[nonzero & ~flg,1], model_eml_par['KIN'][nonzero & ~flg,1], marker='.',
 #                       s=30, color='k')
 #        pyplot.show()
-#        exit()
 
 
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
@@ -1418,7 +1514,7 @@ class Elric(EmissionLineFit):
         else:
             continuum = None
 
-        model_wave, model_flux, model_mask, model_fit_par, model_eml_par \
+        model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par \
             = self.fit(wave, _flux, par['emission_lines'], error=noise, mask=par['pixelmask'],
                        sres=sres, stellar_continuum=continuum, base_order=par['base_order'],
                        window_buffer=par['window_buffer'], guess_redshift=guess_redshift,
@@ -1426,6 +1522,9 @@ class Elric(EmissionLineFit):
         
         _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
         _model_flux[good_spec,:] = model_flux
+
+        _model_base = numpy.zeros(flux.shape, dtype=numpy.float)
+        _model_base[good_spec,:] = model_base
 
         _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_dtype())
 
@@ -1446,7 +1545,7 @@ class Elric(EmissionLineFit):
         _model_eml_par[good_spec] = model_eml_par
         _model_eml_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
 
-        return model_wave, _model_flux, _model_mask, _model_fit_par, _model_eml_par
+        return model_wave, _model_flux, _model_base, _model_mask, _model_fit_par, _model_eml_par
 
 
     def fit(self, wave, flux, emission_lines, error=None, mask=None, sres=None,
@@ -1575,6 +1674,7 @@ class Elric(EmissionLineFit):
         # Initialize the output arrays
         #  Model flux:
         model_flux = numpy.zeros(self.flux.shape, dtype=numpy.float)
+        model_base = numpy.zeros(self.flux.shape, dtype=numpy.float)
         #  Model mask:
         model_mask = numpy.zeros(self.flux.shape, dtype=self.bitmask.minimum_dtype())
         indx = numpy.ma.getmaskarray(self.flux)
@@ -1624,6 +1724,7 @@ class Elric(EmissionLineFit):
 
             cz = self.guess_redshift[i]*astropy.constants.c.to('km/s').value
 
+#            total_near_bound = 0
             # Fit each window
             for j in range(self.nwindows):
                 # Rest the profile to the initial parameters
@@ -1789,18 +1890,31 @@ class Elric(EmissionLineFit):
 #                print('Spec: {0}; Line (set): {1}; Success: {2}'.format(i+1,j+1,
 #                                                                self.bestfit[i,j].result.success))
 
-                self._assess_and_save_fit(i, j, model_fit_par, model_eml_par)
-                
+                near_bound = self._assess_and_save_fit(i, j, model_fit_par, model_eml_par)
+                if near_bound:
+#                    print('Flagging mask as near bound')
+                    model_mask[i,fitting_mask[j,:]] \
+                            = self.bitmask.turn_on(model_mask[i,fitting_mask[j,:]], 'NEAR_BOUND')
+#                    total_near_bound += 1
+
                 # Add the best-fit to the lines to the composite model
                 # for this spectrum
-                if self.fitting_window[j].output_model and model_fit_par['MASK'][i,j] == 0:
-                    p = self.bestfit[i,j].result.x.copy()
-                    # Remove the baseline
-                    p[-base_order-1:] = 0.0
-                    model_flux[i,:] += self.bestfit[i,j].sample(velocity[j,:], par=p)
-                else:
+                if self.fitting_window[j].output_model and not self.bestfit[i,j].result.success:
+                    model_mask[i,fitting_mask[j,:]] \
+                            = self.bitmask.turn_on(model_mask[i,fitting_mask[j,:]], 'FIT_FAILED')
+                elif not self.fitting_window[j].output_model or model_fit_par['MASK'][i,j] != 0:
                     model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                                       'EXCLUDED_FROM_MODEL')
+                elif self.fitting_window[j].output_model and model_fit_par['MASK'][i,j] == 0:
+                    # Get the full model (eventually will only be the
+                    # baseline)
+                    p = self.bestfit[i,j].result.x.copy()
+                    model_base[i,fitting_mask[j,:]] \
+                            += self.bestfit[i,j].sample(velocity[j,fitting_mask[j,:]], par=p)
+                    # Remove the baseline and only get the line profile
+                    p[-base_order-1:] = 0.0
+                    model_flux[i,fitting_mask[j,:]] \
+                            += self.bestfit[i,j].sample(velocity[j,fitting_mask[j,:]], par=p)
 
 #                if 44 in self.fitting_window[j].line_index:
 #                    pyplot.errorbar(velocity[j,fitting_mask[j,:]], spec_to_fit[j,fitting_mask[j,:]],
@@ -1818,8 +1932,18 @@ class Elric(EmissionLineFit):
 #                    pyplot.show()
 
 #            pyplot.plot(wave, model_flux[i,:], linestyle='-', color='g')
+#            pyplot.plot(wave, model_base[i,:], linestyle='-', color='r')
 #            pyplot.show()
 
+#            print('Windows with parameters near boundary: {0}'.format(total_near_bound))
+
+        # Remove the lines from the full model to just provide the
+        # baseline model
+        model_base -= model_flux
+
+#        pyplot.plot(wave, model_flux[0,:], linestyle='-', color='g')
+#        pyplot.plot(wave, model_base[0,:], linestyle='-', color='r')
+#        pyplot.show()
 
         # Determine the instrumental dispersion at the line centers
         self._instrumental_dispersion_correction(model_eml_par)
@@ -1828,6 +1952,6 @@ class Elric(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
                        (time.clock() - t)/60))
 
-        return self.wave, model_flux, model_mask, model_fit_par, model_eml_par
+        return self.wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 
 

@@ -63,6 +63,9 @@ MaNGA DAP, such as paths and file names.
         :func:`mangadap.config.inputdata.available_template_libraries`.
         No longer need ConfigParser here.
 
+    | **12 Jul 2016**: (KBW) Changed :func:`default_manga_fits_root` to
+        accommodate MAPS output name.
+
 """
 
 from __future__ import division
@@ -409,21 +412,26 @@ def default_manga_fits_root(plate, ifudesign, mode=None):
     Generate the main root name for the output MaNGA fits files for a
     given plate/ifudesign/mode.
 
-    .. todo::
-        - Include a "sampling mode" (LIN vs. LOG)?
-
     Args:
         plate (int): Plate number
         ifudesign (int): IFU design number
-        mode (str): (**Optional**) Mode of the DRP reduction; either RSS
-            or CUBE.  Default is to leave the mode out of the name.
+        mode (str): (**Optional**) Mode of the output fits file.
+            Options are: 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', or
+            'MAPS'.  Default is that no mode is included in the name.
 
     Returns:
         str: Root name for a MaNGA fits file:
-        `manga-[PLATE]-[IFUDESIGN]-LOG[MODE]`
+        `manga-[PLATE]-[IFUDESIGN]-[MODE]`
+
+    Raises:
+
+        ValueError: Raised if mode is not a valid option.
+
     """
+    if mode not in [ None, 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', 'MAPS' ]:
+        raise ValueError('Do not understand mode={0}.'.format(mode))
     return 'manga-{0}-{1}'.format(plate, ifudesign) if mode is None else \
-                    'manga-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
+                    'manga-{0}-{1}-{2}'.format(plate, ifudesign, mode)
 
 
 def default_dap_file_root(plate, ifudesign, mode=None):
@@ -517,8 +525,11 @@ def default_dap_file_name(plate, ifudesign, output_mode, mode=None, compressed=T
         plate (int): Plate number
         ifudesign (int): IFU design number
         output_mode (str) : Output mode designation
-        mode (str): (**Optional**) Mode of the DRP reduction; either RSS
-            or CUBE.  Default is to leave the mode out of the name.
+        mode (str): (**Optional**) Mode of the output fits file.
+            Options are: 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', or
+            'MAPS'.  Default is that no mode is included in the name.
+        compressed (bool): (**Optional**) Append '.gz' to the output
+            file name.  Default is True.
 
     Returns:
         str: Name of the DAP output file.

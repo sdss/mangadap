@@ -429,12 +429,13 @@ class EmissionLineMoments:
         Initialize the header.
 
         """
+        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
         hdr['ELMKEY'] = (self.database['key'], 'Emission-line moments database keyword')
         hdr['ELMMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['MOMDB'] = (self.database['passbands'], 'Emission-line moments database keyword')
         if self.stellar_continuum is not None:
-            hdr['SCTPL'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
+            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
@@ -1091,7 +1092,7 @@ class EmissionLineMoments:
 
     @staticmethod
     def measure_equivalent_widths(momdb, measurements, wave, flux, ivar=None, mask=None,
-                                   redshift=None, bitmask=None):
+                                  redshift=None, bitmask=None):
         """
         This MUST follow the moment measurements such that the
         emission-line fluxes have already been calculated.
@@ -1369,8 +1370,9 @@ class EmissionLineMoments:
 
 
         # Initialize the header keywords
+        self.hardcopy = hardcopy
         hdr = self._clean_drp_header(ext='PRIMARY')
-        self._initialize_header(hdr)
+        hdr = self._initialize_header(hdr)
 
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
@@ -1387,7 +1389,6 @@ class EmissionLineMoments:
         # Write the data, if requested
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        self.hardcopy = hardcopy
         if self.hardcopy:
             self.write(clobber=clobber)
         if not self.quiet:
