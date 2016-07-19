@@ -51,7 +51,7 @@ A class hierarchy that fits the emission lines.
         from .pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
-        from .lineprofilefit import Elric, ElricPar, GaussianLineProfile
+        from .elric import Elric, ElricPar, GaussianLineProfile
         from .util import _select_proc_method
 
 *Class usage examples*:
@@ -107,7 +107,7 @@ from .emissionlinedb import EmissionLineDB
 from .pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
-from .lineprofilefit import Elric, ElricPar, GaussianLineProfile
+from .elric import Elric, ElricPar, GaussianLineProfile
 from .util import _select_proc_method
 
 from matplotlib import pyplot

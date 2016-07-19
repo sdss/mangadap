@@ -8,11 +8,10 @@ Implements an emission-line profile fitting class.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/lineprofilefit.py
+    $MANGADAP_DIR/python/mangadap/proc/elric.py
 
 *Imports and python version compliance*:
     ::
-
 
 *Class usage examples*:
         Add examples
@@ -21,6 +20,7 @@ Implements an emission-line profile fitting class.
     | **26 Apr 2016**: Original implementation by K. Westfall (KBW)
     | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
         not a returned parameters is near its boundary.
+    | **19 Jul 2016**: (KBW) Changed file name
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser

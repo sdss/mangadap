@@ -2660,11 +2660,11 @@ python/mangadap/proc/absorptionindexdb.py -text
 python/mangadap/proc/artifactdb.py -text
 python/mangadap/proc/bandheadindexdb.py -text
 python/mangadap/proc/bandpassfilter.py -text
+python/mangadap/proc/elric.py -text
 python/mangadap/proc/emissionlinedb.py -text
 python/mangadap/proc/emissionlinemodel.py -text
 python/mangadap/proc/emissionlinemoments.py -text
 python/mangadap/proc/emissionmomentsdb.py -text
-python/mangadap/proc/lineprofilefit.py -text
 python/mangadap/proc/pixelmask.py -text
 python/mangadap/proc/ppxffit.py -text
 python/mangadap/proc/reductionassessments.py -text
