@@ -527,7 +527,9 @@ class SpectralIndices:
         self.database = None
         self.artdb = None
         self.absdb = None
+        self.nabs = 0
         self.bhddb = None
+        self.nbhd = 0
         self.pixelmask = None
         self._define_databases(database_key, database_list=database_list,
                                artifact_list=artifact_list,
@@ -538,7 +540,8 @@ class SpectralIndices:
         self.redshift = None
         self.stellar_continuum = None
         self.emission_line_model = None
-        self.nindx = self.count_indices(self.absdb, self.bhddb)
+        self.nabs, self.nbhd = self.count_indices(self.absdb, self.bhddb)
+        self.nindx = self.nabs + self.nbhd
         self.corrected_indices = False
 
         # Define the output directory and file
@@ -619,12 +622,7 @@ class SpectralIndices:
 
     @staticmethod
     def count_indices(absdb, bhddb):
-        nindx = 0
-        if absdb is not None:
-            nindx += absdb.nsets
-        if bhddb is not None:
-            nindx += bhddb.nsets
-        return nindx
+        return 0 if absdb is None else absdb.nsets, 0 if bhddb is None else bhddb.nsets
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -762,26 +760,32 @@ class SpectralIndices:
         Compile the database with the specifications of each index.
         """
         name_len = 0
-        for n in self.absdb['name']:
-            if name_len < len(n):
-                name_len = len(n)
+        if self.absdb is not None:
+            for n in self.absdb['name']:
+                if name_len < len(n):
+                    name_len = len(n)
+        if self.bhddb is not None:
+            for n in self.bhddb['name']:
+                if name_len < len(n):
+                    name_len = len(n)
 
         # Instatiate the table data that will be saved defining the set
         # of indices measured
         hdu_database = init_record_array(self.nindx, self._index_database_dtype(name_len))
 
-        hdu_database['TYPE'][:self.absdb.nsets] = 'absorption'
-        hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
-        ak = [ 'index', 'name', 'primary', 'blueside', 'redside', 'units', 'component' ]
-        for _hk, _ak in zip(hk,ak):
-            hdu_database[_hk][:self.absdb.nsets] = self.absdb[_ak]
-
-        hdu_database['TYPE'][self.absdb.nsets:] = 'bandhead'
-        hk = [ 'ID', 'NAME', 'BLUEBAND', 'REDBAND', 'INTEGRAND', 'ORDER' ]
-        ak = [ 'index', 'name', 'blueside', 'redside', 'integrand', 'order' ]
-        for _hk, _ak in zip(hk,ak):
-            hdu_database[_hk][self.absdb.nsets:] = self.bhddb[_ak]
-
+        t = 0 if self.absdb is None else self.absdb.nsets
+        if self.absdb is not None:
+            hdu_database['TYPE'][:t] = 'absorption'
+            hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
+            ak = [ 'index', 'name', 'primary', 'blueside', 'redside', 'units', 'component' ]
+            for _hk, _ak in zip(hk,ak):
+                hdu_database[_hk][:t] = self.absdb[_ak]
+        if self.bhddb is not None:
+            hdu_database['TYPE'][t:] = 'bandhead'
+            hk = [ 'ID', 'NAME', 'BLUEBAND', 'REDBAND', 'INTEGRAND', 'ORDER' ]
+            ak = [ 'index', 'name', 'blueside', 'redside', 'integrand', 'order' ]
+            for _hk, _ak in zip(hk,ak):
+                hdu_database[_hk][t:] = self.bhddb[_ak]
         return hdu_database
 
 
@@ -893,11 +897,14 @@ class SpectralIndices:
         flux_mask = numpy.ma.getmaskarray(flux)
         mask[flux_mask] = self.bitmask.turn_on(mask[flux_mask], 'DIDNOTUSE')
 
+#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=1)
+#        _flux = self.binned_spectra.copy_to_masked_array(
+#                                                      flag=self.binned_spectra.do_not_fit_flags())
+#        pyplot.step(wave, _flux[0,:], where='mid', linestyle='-', color='b', lw=1)
+#        pyplot.show()
+
         if self.database['fwhm'] < 0:
             return flux, ivar, mask
-
-#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=1.5)
-#        pyplot.show()
 
         # Revert flux and ivar to unmasked arrays
         flux = numpy.asarray(flux)
@@ -1111,13 +1118,14 @@ class SpectralIndices:
 
         """
         # Check the input databases
-        if not isinstance(absdb, AbsorptionIndexDB):
+        if absdb is not None and not isinstance(absdb, AbsorptionIndexDB):
             raise TypeError('Input database must have type AbsorptionIndexDB.')
-        if not isinstance(bhddb, BandheadIndexDB):
+        if bhddb is not None and not isinstance(bhddb, BandheadIndexDB):
             raise TypeError('Input database must have type BandheadIndexDB.')
 
         # Get the number of indices
-        nindx = SpectralIndices.count_indices(absdb, bhddb)
+        nabs, nbhd = SpectralIndices.count_indices(absdb, bhddb)
+        nindx = nabs+nbhd
         if nindx == 0:
             raise ValueError('No indices to measure!')
 
@@ -1138,19 +1146,27 @@ class SpectralIndices:
 #        pyplot.show()
 
         # Get the list of good indices of each type
-        abs_fnu = ~absdb.dummy & (absdb['integrand'] == 'fnu')
+        abs_fnu = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
+                        else ~absdb.dummy & (absdb['integrand'] == 'fnu')
         good_abs_fnu = numpy.zeros(nindx, dtype=numpy.bool)
-        good_abs_fnu[:absdb.nsets][abs_fnu] = True
-        abs_flambda = ~absdb.dummy & (absdb['integrand'] == 'flambda')
+        if nabs > 0:
+            good_abs_fnu[:nabs][abs_fnu] = True
+        abs_flambda = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
+                        else ~absdb.dummy & (absdb['integrand'] == 'flambda')
         good_abs_flambda = numpy.zeros(nindx, dtype=numpy.bool)
-        good_abs_flambda[:absdb.nsets][abs_flambda] = True
+        if nabs > 0:
+            good_abs_flambda[:nabs][abs_flambda] = True
 
-        bhd_fnu = ~bhddb.dummy & (bhddb['integrand'] == 'fnu')
+        bhd_fnu = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
+                        else ~bhddb.dummy & (bhddb['integrand'] == 'fnu')
         good_bhd_fnu = numpy.zeros(nindx, dtype=numpy.bool)
-        good_bhd_fnu[absdb.nsets:][bhd_fnu] = True
-        bhd_flambda = ~bhddb.dummy & (bhddb['integrand'] == 'flambda')
+        if nbhd > 0:
+            good_bhd_fnu[:nbhd][bhd_fnu] = True
+        bhd_flambda = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
+                        else ~bhddb.dummy & (bhddb['integrand'] == 'flambda')
         good_bhd_flambda = numpy.zeros(nindx, dtype=numpy.bool)
-        good_bhd_flambda[absdb.nsets:][bhd_flambda] = True
+        if nbhd > 0:
+            good_bhd_flambda[:nbhd][bhd_flambda] = True
 
         # Initialize the output data
         measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))
@@ -1162,68 +1178,72 @@ class SpectralIndices:
 
             # -----------------------------------
             # Measure the absorption-line indices
+            if nabs > 0:
 
-            # Shift the bands
-            _bluebands = absdb['blueside']*(1.0+_redshift[i])
-            _redbands = absdb['redside']*(1.0+_redshift[i])
-            _mainbands = absdb['primary']*(1.0+_redshift[i])
+                # Shift the bands
+                _bluebands = absdb['blueside']*(1.0+_redshift[i])
+                _redbands = absdb['redside']*(1.0+_redshift[i])
+                _mainbands = absdb['primary']*(1.0+_redshift[i])
 
-            # Integrate over F_nu
-            if numpy.sum(good_abs_fnu) > 0:
-                # Make the measurements ...
-                _noise = None if noise_fnu is None else noise_fnu[i,:]
-                results = AbsorptionLineIndices(wave, flux_fnu[i,:], _bluebands[abs_fnu],
-                                                _redbands[abs_fnu], _mainbands[abs_fnu],
-                                                err=_noise, units=absdb['units'][abs_fnu])
-                # ... and save them
-                measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_abs_fnu, err=_noise is not None,
-                                                               bitmask=bitmask)
+                # Integrate over F_nu
+                if numpy.sum(good_abs_fnu) > 0:
+                    # Make the measurements ...
+                    _noise = None if noise_fnu is None else noise_fnu[i,:]
+                    results = AbsorptionLineIndices(wave, flux_fnu[i,:], _bluebands[abs_fnu],
+                                                    _redbands[abs_fnu], _mainbands[abs_fnu],
+                                                    err=_noise, units=absdb['units'][abs_fnu])
+                    # ... and save them
+                    measurements[i] = SpectralIndices.save_results(results, measurements[i],
+                                                                   good_abs_fnu,
+                                                                   err=_noise is not None,
+                                                                   bitmask=bitmask)
 
-            # Integrate over F_lambda
-            if numpy.sum(good_abs_flambda) > 0:
-                # Make the measurements ...
-                _noise = None if noise is None else noise[i,:]
-                results = AbsorptionLineIndices(wave, _flux[i,:], _bluebands[abs_flambda],
-                                                _redbands[abs_flambda], _mainbands[abs_flambda],
-                                                err=_noise, units=absdb['units'][abs_flambda])
-                # ... and save them
-                measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_abs_flambda,
-                                                               err=_noise is not None,
-                                                               bitmask=bitmask)
+                # Integrate over F_lambda
+                if numpy.sum(good_abs_flambda) > 0:
+                    # Make the measurements ...
+                    _noise = None if noise is None else noise[i,:]
+                    results = AbsorptionLineIndices(wave, _flux[i,:], _bluebands[abs_flambda],
+                                                    _redbands[abs_flambda], _mainbands[abs_flambda],
+                                                    err=_noise, units=absdb['units'][abs_flambda])
+                    # ... and save them
+                    measurements[i] = SpectralIndices.save_results(results, measurements[i],
+                                                                   good_abs_flambda,
+                                                                   err=_noise is not None,
+                                                                   bitmask=bitmask)
 
             # -----------------------------------
             # Measure the bandhead indices
+            if nbhd > 0:
 
-            # Shift the bands
-            _bluebands = bhddb['blueside']*(1.0+_redshift[i])
-            _redbands = bhddb['redside']*(1.0+_redshift[i])
+                # Shift the bands
+                _bluebands = bhddb['blueside']*(1.0+_redshift[i])
+                _redbands = bhddb['redside']*(1.0+_redshift[i])
 
-            # Integrate over F_nu
-            if numpy.sum(good_bhd_fnu) > 0:
-                # Make the measurements ...
-                _noise = None if noise_fnu is None else noise_fnu[i,:]
-                results = BandheadIndices(wave, flux_fnu[i,:], _bluebands[bhd_fnu],
-                                          _redbands[bhd_fnu], err=_noise,
-                                          order=bhddb['order'][bhd_fnu])
-                # ... and save them
-                measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_bhd_fnu, err=_noise is not None,
-                                                               bitmask=bitmask)
+                # Integrate over F_nu
+                if numpy.sum(good_bhd_fnu) > 0:
+                    # Make the measurements ...
+                    _noise = None if noise_fnu is None else noise_fnu[i,:]
+                    results = BandheadIndices(wave, flux_fnu[i,:], _bluebands[bhd_fnu],
+                                              _redbands[bhd_fnu], err=_noise,
+                                              order=bhddb['order'][bhd_fnu])
+                    # ... and save them
+                    measurements[i] = SpectralIndices.save_results(results, measurements[i],
+                                                                   good_bhd_fnu,
+                                                                   err=_noise is not None,
+                                                                   bitmask=bitmask)
 
-            # Integrate over F_lambda
-            if numpy.sum(good_bhd_flambda) > 0:
-                # Make the measurements ...
-                _noise = None if noise is None else noise[i,:]
-                results = BandheadIndices(wave, _flux[i,:], _bluebands[bhd_flambda],
-                                          _redbands[bhd_flambda], err=_noise,
-                                          order=bhddb['order'][bhd_flambda])
-                # ... and save them
-                measurements[i] = SpectralIndices.save_results(results, measurements[i],
-                                                               good_bhd_flambda,
-                                                               err=_noise is not None,
-                                                               bitmask=bitmask)
+                # Integrate over F_lambda
+                if numpy.sum(good_bhd_flambda) > 0:
+                    # Make the measurements ...
+                    _noise = None if noise is None else noise[i,:]
+                    results = BandheadIndices(wave, _flux[i,:], _bluebands[bhd_flambda],
+                                              _redbands[bhd_flambda], err=_noise,
+                                              order=bhddb['order'][bhd_flambda])
+                    # ... and save them
+                    measurements[i] = SpectralIndices.save_results(results, measurements[i],
+                                                                   good_bhd_flambda,
+                                                                   err=_noise is not None,
+                                                                   bitmask=bitmask)
 
 #            pyplot.scatter(_interval, interval/_interval, marker='.', color='k', s=50)
 #            pyplot.show()
@@ -1257,13 +1277,14 @@ class SpectralIndices:
         
         # Flag the indices as either having magnitude or angstrom units
         angu = numpy.full(self.nindx, False, dtype=numpy.bool)
-        angu[:self.absdb.nsets] = self.absdb['units'] == 'ang'
+        if self.nabs > 0:
+            angu[:self.nabs] = self.absdb['units'] == 'ang'
         magu = numpy.invert(angu)
         # Bandhead indices are unitless, but the correction follows the
         # same operation as for the absorption-line indices with
         # angstrom units
-        magu[self.absdb.nsets:] = False
-        angu[self.absdb.nsets:] = True
+        magu[self.nabs:] = False
+        angu[self.nabs:] = True
 
         return angu, magu
 
@@ -1353,7 +1374,6 @@ class SpectralIndices:
 #        pyplot.plot(wave, unbroadened_models.data[0,:], linestyle='-', color='b', lw=1.0, zorder=3,
 #                    alpha=0.5)
 #        pyplot.show()
-#        exit()
 
         # Measure the indices for both sets of spectra
         broadened_model_measurements = init_record_array(self.nbins, self.output_dtype(self.nindx,
@@ -1536,6 +1556,7 @@ class SpectralIndices:
                                                            mask=_mask[good_bins,:].copy(),
                                                            redshift=self.redshift[good_bins],
                                                            bitmask=self.bitmask)
+        print
 
         # Get the corrections by performing the measurements on the
         # best-fitting continuum models, with and without the velocity
@@ -1567,7 +1588,7 @@ class SpectralIndices:
         if self.database['apply_corrections']:
             hdu_measurements['INDX'][good_ang] *= hdu_measurements['INDX_DISPCORR'][good_ang]
             hdu_measurements['INDXERR'][good_ang] \
-                    *= numpy.abs(hdu_measurements['INDX_DISPCORR'][good_ang])
+                    *= numpy.absolute(hdu_measurements['INDX_DISPCORR'][good_ang])
             hdu_measurements['INDX'][good_mag] += hdu_measurements['INDX_DISPCORR'][good_mag]
         self.corrected_indices = self.database['apply_corrections']
 

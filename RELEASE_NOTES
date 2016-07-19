@@ -45,6 +45,9 @@ KBW (?? Jul 2016): tag 2.1
         - Constructs an output model data cube with the stellar
           continuum and emission-line model as a complement to the maps
           file.
+        - Allows for an iteration that modifies the stellar-continuum
+          fit by unmasking and fitting the emission lines, while not
+          changing the stellar kinematics.
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements

@@ -22,6 +22,7 @@ data/artifacts/README -text
 data/artifacts/badsky.par -text
 data/bandhead_indices/README -text
 data/bandhead_indices/bhbasic.par -text
+data/bandhead_indices/bhd4000.par -text
 data/emission_bandpass_filters/README -text
 data/emission_bandpass_filters/elbfull.par -text
 data/emission_bandpass_filters/elbstrong.par -text
@@ -2538,6 +2539,7 @@ python/mangadap/config/absorption_indices/extindx.ini -text
 python/mangadap/config/absorption_indices/lickindx.ini -text
 python/mangadap/config/artifacts/badsky.ini -text
 python/mangadap/config/bandhead_indices/bhbasic.ini -text
+python/mangadap/config/bandhead_indices/bhd4000.ini -text
 python/mangadap/config/bitmasks/dap_cube_bits.ini -text
 python/mangadap/config/bitmasks/dap_maps_bits.ini -text
 python/mangadap/config/bitmasks/dap_quality_bits.ini -text
@@ -2577,6 +2579,7 @@ python/mangadap/config/spatial_binning/spx.ini -text
 python/mangadap/config/spatial_binning/vor05.ini -text
 python/mangadap/config/spatial_binning/vor10.ini -text
 python/mangadap/config/spatial_binning/vor30.ini -text
+python/mangadap/config/spectral_indices/bhindxn.ini -text
 python/mangadap/config/spectral_indices/indxe.ini -text
 python/mangadap/config/spectral_indices/indxen.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
@@ -2593,9 +2596,12 @@ python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_all.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc_alle.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_glb.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc_glbe.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt_sim.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzte.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_milesthin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text

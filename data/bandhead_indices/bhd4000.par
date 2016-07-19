@@ -1,0 +1,26 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 18 Mar 2016
+#
+# These bandhead indices are defined by:
+#       D4000   - Bruzual (1983, ApJ, 273, 105)
+#       Dn4000  - Balogh et al. (1999, ApJ, 527, 54)
+#
+# The columns are described in README.
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[9];
+    double blueside[2];
+    double redside[2];
+    char waveref[3];
+    char integrand[7];
+    char order[3];
+} DAPBHI;
+
+DAPBHI  1  D4000      { 3750.000  3950.000 }  { 4050.000  4250.000 }  air      fnu  r_b
+DAPBHI  2  Dn4000     { 3850.000  3950.000 }  { 4000.000  4100.000 }  air      fnu  r_b
+

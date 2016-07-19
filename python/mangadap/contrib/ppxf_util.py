@@ -262,8 +262,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     line_names = line_names[w]
     line_wave = line_wave[w]
 
-    print('Emission lines included in gas templates:')
-    print(line_names)
+#    print('Emission lines included in gas templates:')
+#    print(line_names)
 
     return emission_lines, line_names, line_wave
 
