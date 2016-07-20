@@ -839,6 +839,21 @@ class PPXFFit(StellarKinematicsFit):
 
         return model_wave, _model_flux, _model_mask, _model_par
 
+    
+    def _validate_kinematics(self, speci, model_mask, model_par):
+        """
+        Validate the returned kinematics.
+
+        Checks:
+            - corrected velocity dispersion must be in the range 50-400
+              km/s
+        """
+        sigcor = numpy.square(model_par['KIN'][speci,1]) \
+                    - numpy.square(model_par['SIGMACORR'][speci])
+        if sigcor < 2500. or sigcor > 1.6e5:
+            model_mask[speci,:] = self.bitmask.turn_on(model_mask[speci,:], 'BAD_SIGMA')
+            model_par['MASK'][speci] = self.bitmask.turn_on(model_par['MASK'][speci], 'BAD_SIGMA')
+
 
     def fit(self, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ferr, guess_redshift,
             guess_dispersion, iteration_mode='global_template', velscale_ratio=None, mask=None,
@@ -1550,6 +1565,9 @@ class PPXFFit(StellarKinematicsFit):
             # Calculate the dispersion correction if necessary
             if not self.matched_resolution:
                 model_par['SIGMACORR'][i] = self._dispersion_correction(ppxf_fit.goodpixels)
+
+            # Test if kinematics are reliable
+            self._validate_kinematics(i, model_mask, model_par)
 
             if not self.quiet:
                 log_output(self.loggers, 2, logging.INFO, '{0:>5d}'.format(i+1)

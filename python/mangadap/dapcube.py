@@ -445,6 +445,7 @@ class construct_cube_file:
         el_indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data, flag=flags)
         mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FIT_IGNORED')
 
+        # TODO: What do I do with BAD_SIGMA?
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data,
                                                     flag=['FIT_FAILED', 'NEAR_BOUND'])
         el_indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data,

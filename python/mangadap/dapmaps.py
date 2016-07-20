@@ -285,11 +285,10 @@ class construct_maps_file:
         if binned_spectra is None:
             return mask
 
-        mask = self._binning_mask(mask, binned_spectra)
-
+#        mask = self._binning_mask(mask, binned_spectra)
 #        pyplot.imshow(mask, origin='lower', interpolation='nearest')
 #        pyplot.show()
-        return mask
+        return self._binning_mask(mask, binned_spectra)
 
 
     def _binning_mask(self, _mask, binned_spectra):
@@ -311,6 +310,13 @@ class construct_maps_file:
 
 #        pyplot.imshow(mask, origin='lower', interpolation='nearest')
 #        pyplot.show()
+        return self._consolidate_donotuse(mask)
+
+
+    def _consolidate_donotuse(self, mask):
+        flgd = self.bitmask.flagged(mask, flag=[ 'LOWCOV', 'FORESTAR', 'NOVALUE', 'FITFAILED',
+                                                 'NEARBOUND', 'MATHERROR' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'DONOTUSE')
         return mask
 
 
@@ -719,19 +725,20 @@ class construct_maps_file:
 
 
     def _stellar_continuum_mask_to_map_mask(self, stellar_continuum, unique_bins, reconstruct,
-                                            indx):
+                                            indx, for_dispersion=False):
         """
         Propagate and consolidate the stellar-continuum masks to the map
         pixel mask.
 
-        DIDNOTUSE, FORESTAR propagated from already existing mask (self.common_mask)
+        DIDNOTUSE, FORESTAR propagated from already existing mask
+            (self.common_mask)
 
         LOW_SNR, NO_FIT, INSUFFICIENT_DATA propagated to NOVALUE
 
-        FIT_FAILED, NEAR_BOUND propagated to BADFIT
+        FIT_FAILED, NEAR_BOUND propagated to FITFAILED and NEARBOUND
 
-        NEGATIVE_WEIGHTS propagated to BADVALUE
-
+        NEGATIVE_WEIGHTS consolidated into UNRELIABLE; if
+            dispersion=True, include BAD_SIGMA in this
         """
 
         # Construct the existing mask data
@@ -754,15 +761,22 @@ class construct_maps_file:
         flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
-        # Consolidate to BADFIT
-        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['FIT_FAILED', 'NEAR_BOUND'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
+        # Copy FIT_FAILED
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='FIT_FAILED')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
 
-        # Consolidate to BADVALUE
-        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NEGATIVE_WEIGHTS'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
+        # Copy NEAR_BOUND
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='NEAR_BOUND')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
 
-        return mask
+        # Consolidate to UNRELIABLE
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='NEGATIVE_WEIGHTS')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
+        if for_dispersion:
+            flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='BAD_SIGMA')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
+
+        return self._consolidate_donotuse(mask)
 
 
     def stellar_continuum_maps(self, prihdr, stellar_continuum):
@@ -832,9 +846,12 @@ class construct_maps_file:
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
         indx = bin_indx > -1
 
-        # The extensions share a common mask
-        mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins, reconstruct,
-                                                        indx)
+        # Get the velocity mask
+        vel_mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins,
+                                                            reconstruct, indx)
+        # Add the bad sigma measurements
+        sig_mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, unique_bins,
+                                                            reconstruct, indx, for_dispersion=True)
 
         # Stellar velocity
         data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
@@ -860,11 +877,11 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}', qual=True),
                                 name='STELLAR_VEL_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=mask.T,
+        hdus += [ fits.ImageHDU(data=vel_mask.T,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_VEL',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=vel_mask.dtype.type),
                                 name='STELLAR_VEL_MASK') ]
 
         # Stellar velocity dispersion
@@ -888,11 +905,11 @@ class construct_maps_file:
                                                                  bunit='(km/s)^{-2}', qual=True),
                                 name='STELLAR_SIGMA_IVAR') ]
         # Bitmask
-        hdus += [ fits.ImageHDU(data=mask.T,
+        hdus += [ fits.ImageHDU(data=sig_mask.T,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
                                                                  'STELLAR_SIGMA',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=sig_mask.dtype.type),
                                 name='STELLAR_SIGMA_MASK') ]
 
         # Stellar velocity dispersion correction
@@ -935,9 +952,9 @@ class construct_maps_file:
 
         MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
-        MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to BADFIT
+        MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED
 
-        NO_ABSORPTION_CORRECTION propaged to RAW
+        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
@@ -961,20 +978,20 @@ class construct_maps_file:
                                                                 'RED_EMPTY', 'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
-        # Consolidate to BADFIT
+        # Consolidate to FITFAILED
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_JUMP', 'BLUE_JUMP',
                                                                  'RED_JUMP', 'JUMP_BTWN_SIDEBANDS'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
 
-        # Consolidate to RAW
+        # Consolidate to NOCORRECTION
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['NO_ABSORPTION_CORRECTION'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'RAW')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOCORRECTION')
 
         # Consolidate to MATHERROR
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['DIVBYZERO'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'MATHERROR')
 
-        return mask
+        return self._consolidate_donotuse(mask)
 
 
     def emission_line_moment_maps(self, prihdr, emission_line_moments):
@@ -1115,9 +1132,11 @@ class construct_maps_file:
 
         INSUFFICIENT_DATA propagated to NOVALUE
 
-        FIT_FAILED, NEAR_BOUND, UNDEFINED_COVAR propagated to BADFIT
+        FIT_FAILED, UNDEFINED_COVAR propagated to FITFAILED
 
-        UNDEFINED_SIGMA propagated to BADVALUE
+        NEAR_BOUND copied to NEARBOUND
+
+        UNDEFINED_SIGMA propagated to UNRELIABLE
         """
 
         # Construct the existing mask data
@@ -1134,17 +1153,20 @@ class construct_maps_file:
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['INSUFFICIENT_DATA'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
-        # Consolidate to BADFIT
-        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['NEAR_BOUND', 'FIT_FAILED',
-                                                                   'UNDEFINED_COVAR'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADFIT')
+        # Consolidate to FITFAILED
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['FIT_FAILED', 'UNDEFINED_COVAR'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
 
-        # Consolidate to BADVALUE; currently only done for the dispersion
+        # Copy NEAR_BOUND
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag='NEAR_BOUND')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+        # Consolidate to UNRELIABLE; currently only done for the dispersion
         if dispersion:
             flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA'])
-            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'BADVALUE')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
-        return mask
+        return self._consolidate_donotuse(mask)
 
 
     def emission_line_model_maps(self, prihdr, emission_line_model):
@@ -1355,7 +1377,7 @@ class construct_maps_file:
 
         MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY propagated to NOVALUE
 
-        NO_DISPERSION_CORRECTION propagated to RAW
+        NO_DISPERSION_CORRECTION propagated to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
@@ -1377,15 +1399,15 @@ class construct_maps_file:
                                                                                     'RED_EMPTY' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
-        # Consolidate to RAW
+        # Consolidate to NOCORRECTION
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['NO_DISPERSION_CORRECTION'])
-        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'RAW')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOCORRECTION')
 
         # Consolidate to MATHERROR
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['DIVBYZERO'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'MATHERROR')
 
-        return mask
+        return self._consolidate_donotuse(mask)
 
 
     def spectral_index_maps(self, prihdr, spectral_indices):
