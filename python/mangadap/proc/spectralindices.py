@@ -1133,6 +1133,10 @@ class SpectralIndices:
                                                                        mask=mask, redshift=redshift,
                                                                        bitmask=bitmask)
         nspec = _flux.shape[0]
+#        print(_flux.shape)
+#        print(None if noise is None else noise.shape)
+#        print(wave.shape)
+#        print((numpy.array([wave]*nspec)).shape)
 
         # Create the f_nu spectra
         # The conversion is multiplicative, meaning the calculation of
@@ -1378,16 +1382,19 @@ class SpectralIndices:
         # Measure the indices for both sets of spectra
         broadened_model_measurements = init_record_array(self.nbins, self.output_dtype(self.nindx,
                                                                         bitmask=self.bitmask))
-        broadened_model_measurements[good_models] \
-                = self.measure_indices(self.absdb, self.bhddb, wave, broadened_models[good_models],
-                                       redshift=self.redshift[good_models], bitmask=self.bitmask)
-
         unbroadened_model_measurements = init_record_array(self.nbins, self.output_dtype(
                                                                 self.nindx, bitmask=self.bitmask))
-        unbroadened_model_measurements[good_models] \
-                = self.measure_indices(self.absdb, self.bhddb, wave,
-                                       unbroadened_models[good_models],
-                                       redshift=self.redshift[good_models], bitmask=self.bitmask)
+        if numpy.sum(good_models) > 0:
+            broadened_model_measurements[good_models] \
+                    = self.measure_indices(self.absdb, self.bhddb, wave,
+                                           broadened_models[good_models],
+                                           redshift=self.redshift[good_models],
+                                           bitmask=self.bitmask)
+            unbroadened_model_measurements[good_models] \
+                    = self.measure_indices(self.absdb, self.bhddb, wave,
+                                           unbroadened_models[good_models],
+                                           redshift=self.redshift[good_models],
+                                           bitmask=self.bitmask)
 
         # Do not apply the correction if any of the bands were empty or
         # would have had to divide by zero
