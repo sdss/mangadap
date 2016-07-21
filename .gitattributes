@@ -2573,6 +2573,7 @@ python/mangadap/config/example_par/obsinput.par -text
 python/mangadap/config/reduction_assessments/rfwhm.ini -text
 python/mangadap/config/reduction_assessments/snrr.ini -text
 python/mangadap/config/spatial_binning/all.ini -text
+python/mangadap/config/spatial_binning/nre.ini -text
 python/mangadap/config/spatial_binning/rad.ini -text
 python/mangadap/config/spatial_binning/re1025.ini -text
 python/mangadap/config/spatial_binning/spx.ini -text
