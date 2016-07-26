@@ -2532,7 +2532,6 @@ examples/test_resolution_matching.py -text
 examples/test_template_library.py -text
 pro/mangadap_version.pro -text
 python/LICENSE.rst -text
-python/README -text
 python/mangadap/__init__.py -text
 python/mangadap/config/__init__.py -text
 python/mangadap/config/absorption_indices/extindx.ini -text
