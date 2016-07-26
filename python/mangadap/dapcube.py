@@ -353,7 +353,7 @@ class construct_cube_file:
         """
         mask = numpy.zeros(binned_spectra.shape, dtype=self.bitmask.minimum_dtype())
         indx = ~(binned_spectra['IVAR'].data > 0) | ~(numpy.isfinite(binned_spectra['IVAR'].data))
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVAR_INVALID')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
 
         indx = binned_spectra.bitmask.flagged(binned_spectra['MASK'].data, flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
@@ -394,11 +394,11 @@ class construct_cube_file:
             - consolidate DIDNOTUSE, LOW_SPECCOV, LOW_SNR from
               binned_spectra into IGNORED
             - consolidate NONE_IN_STACK from binned_spectra into
-              FLUX_INVALID
+              FLUXINVALID
 
         For the model spectra:
             - copy INVALID_ERROR from stellar_continuum into
-              IVAR_INVALID
+              IVARINVALID
 
             - copy ARTIFACTs from both stellar_continuum and
               emission_line_model
@@ -410,7 +410,7 @@ class construct_cube_file:
             - from emission_line_model, consolidate DIDNOTUSE, LOW_SNR,
               OUTSIDE_RANGE into a list of pixels ignored by the
               emission-line fit
-            - flag pixels as FIT_IGNORED if the pixel is ignored by
+            - flag pixels as FITIGNORED if the pixel is ignored by
               **both** the stellar-continuum and emission-line fits
 
             - from stellar_continuum, consolidate FIT_FAILED and
@@ -426,12 +426,12 @@ class construct_cube_file:
         mask[indx] = self.bitmask.turn_on(mask[indx], 'IGNORED')
 
         indx = binned_spectra.bitmask.flagged(binned_spectra['MASK'].data, flag='NONE_IN_STACK')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FLUX_INVALID')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FLUXINVALID')
 
         # Draw from stellar_continuum
         indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data,
                                                  flag='INVALID_ERROR')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVAR_INVALID')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
 
         # Draw from stellar_continuum and emission_line_model
         indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data, flag='ARTIFACT') \
@@ -444,14 +444,14 @@ class construct_cube_file:
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data, flag=flags)
         flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
         el_indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data, flag=flags)
-        mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FIT_IGNORED')
+        mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FITIGNORED')
 
         # TODO: What do I do with BAD_SIGMA?
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data,
                                                     flag=['FIT_FAILED', 'NEAR_BOUND'])
         el_indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data,
                                                       flag=['FIT_FAILED', 'NEAR_BOUND'])
-        mask[sc_indx | el_indx] = self.bitmask.turn_on(mask[sc_indx | el_indx], 'FIT_FAILED')
+        mask[sc_indx | el_indx] = self.bitmask.turn_on(mask[sc_indx | el_indx], 'FITFAILED')
 
         return mask
 
@@ -543,7 +543,7 @@ class construct_cube_file:
         From the emission-line model object:
             - copy ARTIFACT
             - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE into IGNORED_EL
-            - copy FIT_FAILED, NEAR_BOUND into EL_FAILED
+            - copy FIT_FAILED, NEAR_BOUND into ELFAILED
         """
         indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data,
                                                    flag='ARTIFACT')
@@ -551,11 +551,11 @@ class construct_cube_file:
 
         indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data,
                                                    flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE'])
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'EL_IGNORED')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ELIGNORED')
 
         indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data,
                                                    flag=['FIT_FAILED', 'NEAR_BOUND'])
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'EL_FAILED')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ELFAILED')
 
         return mask
 

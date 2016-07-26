@@ -22,6 +22,8 @@ There has to be a better way to construct the file(s)!
 
 *Revision history*:
     | **09 May 2016**: Original Implementation by K. Westfall (KBW)
+    | **26 Jul 2016**: (KBW) Flag the Gaussian-fitted flux as unreliable
+        if the summed flux is not within a factor of two
 
 .. todo::
     Do something different than add an empty extension when the data are
@@ -195,6 +197,35 @@ class construct_maps_file:
                                   *self.elmodlist,
                                   *self.sindxlist
                                 ])
+
+        #---------------------------------------------------------------
+        # TEMPORARY FLAGS:
+        # Flag the Gaussian-fitted flux as unreliable if the summed flux
+        # is not within a factor of two.
+        factor = 5.0
+        indx = (self.hdu['BINID'].data > -1) \
+                & (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+                & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
+                & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
+                    | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) )
+        print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
+        if numpy.sum(indx):
+            self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
+            self.hdu['EMLINE_GVEL_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
+            self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
+
+        # Flag the stellar velocity dispersions measured in spectra with
+        # S/N<10 as unreliable
+        indx = (self.hdu['BINID'].data > -1) & (self.hdu['BIN_SNR'].data < 10) \
+                    & (self.hdu['STELLAR_SIGMA_MASK'].data == 0)
+        print('unreliable sigma because of low S/N: ', numpy.sum(indx))
+        if numpy.sum(indx):
+            self.hdu['STELLAR_SIGMA_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
+        #---------------------------------------------------------------
 
         # Write the file
         if not os.path.isdir(self.directory_path):
@@ -480,9 +511,9 @@ class construct_maps_file:
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['SKY_COO'].reshape(*self.drpf.spatial_shape, -1).T
         hdus = [ fits.ImageHDU(data=data,
-                               header=self._finalize_map_header(hdr, 'SPXL_SKYCOO', bunit='arcsec',
+                               header=self._finalize_map_header(hdr, 'SPX_SKYCOO', bunit='arcsec',
                                                                 nchannels=2),
-                               name='SPXL_SKYCOO') ]
+                               name='SPX_SKYCOO') ]
 
         # Elliptical coordinates
         hdr = self._add_channel_names(self.multichannel_maphdr,
@@ -491,28 +522,27 @@ class construct_maps_file:
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['ELL_COO'].reshape(*self.drpf.spatial_shape, -1).T
         hdus += [ fits.ImageHDU(data=data,
-                                header=self._finalize_map_header(hdr, 'SPXL_ELLCOO', bunit='arcsec',
+                                header=self._finalize_map_header(hdr, 'SPX_ELLCOO', bunit='arcsec',
                                                                  nchannels=2),
-                                name='SPXL_ELLCOO') ]
+                                name='SPX_ELLCOO') ]
 
-        # Spectral coverage
-        data = None if rdxqa is None else \
-                    rdxqa['SPECTRUM'].data['FGOODPIX'].reshape(self.drpf.spatial_shape).T
-        hdus += [ fits.ImageHDU(data=data,
-                                header=self._finalize_map_header(self.singlechannel_maphdr,
-                                                                 'SPXL_SPCOV'),
-                                name='SPXL_SPCOV') ]
-
+#        # Spectral coverage
+#        data = None if rdxqa is None else \
+#                    rdxqa['SPECTRUM'].data['FGOODPIX'].reshape(self.drpf.spatial_shape).T
+#        hdus += [ fits.ImageHDU(data=data,
+#                                header=self._finalize_map_header(self.singlechannel_maphdr,
+#                                                                 'SPX_SPCOV'),
+#                                name='SPX_SPCOV') ]
 
         # SNR assessments of the DRP data
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['SIGNAL'].reshape(self.drpf.spatial_shape).T
         hdus += [ fits.ImageHDU(data=data,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
-                                                                 'SPXL_MFLUX',
+                                                                 'SPX_MFLUX',
                                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel',
                                                                  err=True),
-                                name='SPXL_MFLUX') ]
+                                name='SPX_MFLUX') ]
 
         if rdxqa is None:
             ivar = None
@@ -523,15 +553,15 @@ class construct_maps_file:
             ivar[numpy.invert(indx)] = 0.0
         hdus += [ fits.ImageHDU(data=data,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
-                                                                 'SPXL_MFLUX', hduclas2='ERROR',
+                                                                 'SPX_MFLUX', hduclas2='ERROR',
                                                         bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}'),
-                                name='SPXL_MFLUX_IVAR') ]
+                                name='SPX_MFLUX_IVAR') ]
         data = None if rdxqa is None else \
                     rdxqa['SPECTRUM'].data['SNR'].reshape(self.drpf.spatial_shape).T
         hdus += [ fits.ImageHDU(data=data,
                                 header=self._finalize_map_header(self.singlechannel_maphdr,
-                                                                 'SPXL_SNR'),
-                                name='SPXL_SNR') ]
+                                                                 'SPX_SNR'),
+                                name='SPX_SNR') ]
 
         return hdus
 

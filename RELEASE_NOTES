@@ -52,6 +52,8 @@ KBW (26 Jul 2016): tag 2.0.1
           non-primary lines fit in each window.
         - Fixed error in construction of the Hessian (inverse
           covariance) matrix from the emission-line fits.
+        - Removed SPXL_SPCOV extension; changed extension names from
+          'SPXL' to 'SPX' to match binning scheme name.
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements
