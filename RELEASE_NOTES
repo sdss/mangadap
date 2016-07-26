@@ -1,4 +1,4 @@
-KBW (?? Jul 2016): tag 2.1
+KBW (26 Jul 2016): tag 2.0.1
 
     Removed old DAP IDL code, except for pro/mangadap_version.pro
 
@@ -48,6 +48,10 @@ KBW (?? Jul 2016): tag 2.1
         - Allows for an iteration that modifies the stellar-continuum
           fit by unmasking and fitting the emission lines, while not
           changing the stellar kinematics.
+        - Fixed problem with emission-line parameters returned for
+          non-primary lines fit in each window.
+        - Fixed error in construction of the Hessian (inverse
+          covariance) matrix from the emission-line fits.
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements

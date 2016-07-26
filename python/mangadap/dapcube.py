@@ -63,6 +63,7 @@ from matplotlib import pyplot
 
 __author__ = 'Kyle Westfall'
 
+
 class DAPCubeBitMask(BitMask):
     """
     .. todo::

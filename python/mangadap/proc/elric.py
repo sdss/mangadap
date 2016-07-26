@@ -599,9 +599,10 @@ class LineProfileFit:
             if self.result is not None:
                 warnings.warn('Cannot calculate covariance matrix without error vector!')
             return None
-        invsig = numpy.array([numpy.ma.power(self.err,-1.)]*self.result.jac.shape[1]).T
-        a = (invsig.ravel()*self.result.jac.ravel()).reshape(self.result.jac.shape)
-        a = numpy.dot(a.T,a)
+#        invsig = numpy.array([numpy.ma.power(self.err,-1.)]*self.result.jac.shape[1]).T
+#        a = (invsig.ravel()*self.result.jac.ravel()).reshape(self.result.jac.shape)
+#        a = numpy.dot(a.T,a)
+        a = numpy.dot(self.result.jac.T,self.result.jac)
         if verbose > 0:
             print('Curvature:')
             print('    ', a)
@@ -1258,6 +1259,28 @@ class Elric(EmissionLineFit):
 #                    near_bound = True
 
 
+    @staticmethod
+    def _correct_subeml_par(restwave_0, restwave_k, par, err=None):
+        """
+        Correct the parameters fit assuming a rest wavelength of
+        restwave_0, when it's actually restwave_k.  Input parameters are
+        expected to be flux, velocity, velocity dispersion.
+        """
+        c = astropy.constants.c.to('km/s').value
+        _par = par.copy()
+        _par[0] *= restwave_k/restwave_0
+        _par[1] = (restwave_0*(par[1]/c + 1)/restwave_k - 1)*c
+        _par[2] *= restwave_0/restwave_k
+        if err is None:
+            return _par
+
+        _err = err.copy()
+        _err[0] *= restwave_k/restwave_0
+        _err[1] *= restwave_0/restwave_k
+        _err[2] *= restwave_0/restwave_k
+        return _par, _err
+        
+
     def _assess_and_save_fit(self, i, j, model_fit_par, model_eml_par):
         """
         Assess the result of the LineProfileFit results.
@@ -1323,17 +1346,15 @@ class Elric(EmissionLineFit):
                                                     err=model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]])
             # Flux unit conversion
 #            print(astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k])
+#                    /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
             model_eml_par['FLUX'][i,emlj] \
-                    /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
+                    *= self.fitting_window[j].restwave[0]/astropy.constants.c.to('km/s').value
             model_eml_par['FLUXERR'][i,emlj] \
-                    /= astropy.constants.c.to('km/s').value/self.fitting_window[j].restwave[k]
+                    *= self.fitting_window[j].restwave[0]/astropy.constants.c.to('km/s').value
 
             model_eml_par['KIN'][i,emlj,0] \
                     = self.fitting_window[j].profile_set[k].moment(order=1,
-                                                                   par=par[pl:pl+nlinepar[k]]) \
-                            - self._line_velocity_offset(self.fitting_window[j].restwave[k],
-                                                         self.fitting_window[j].restwave[0])
-
+                                                                   par=par[pl:pl+nlinepar[k]])
             model_eml_par['KINERR'][i,emlj,0] \
                     = self.fitting_window[j].profile_set[k].moment_err(order=1,
                                                                        par=par[pl:pl+nlinepar[k]],
@@ -1348,7 +1369,25 @@ class Elric(EmissionLineFit):
                                                                        par=par[pl:pl+nlinepar[k]],
                                                     err=model_fit_par['ERR'][i,j,pl:pl+nlinepar[k]])
 
-            
+            # Correct for the fact that the fit was done using a
+            # velocity vector defined by the primary line
+            # TODO: Need to change how fitting is done so that this is
+            # NOT necessary!
+            if k > 0:
+                line_par, line_parerr \
+                        = self._correct_subeml_par(self.fitting_window[j].restwave[0],
+                                                   self.fitting_window[j].restwave[k],
+                                                   numpy.array([ model_eml_par['FLUX'][i,emlj],
+                                                                 model_eml_par['KIN'][i,emlj,0],
+                                                                 model_eml_par['KIN'][i,emlj,1] ]),
+                                                   err= numpy.array([
+                                                            model_eml_par['FLUXERR'][i,emlj],
+                                                            model_eml_par['KINERR'][i,emlj,0],
+                                                            model_eml_par['KINERR'][i,emlj,1] ]))
+                model_eml_par['FLUX'][i,emlj], model_eml_par['KIN'][i,emlj,0], \
+                    model_eml_par['KIN'][i,emlj,1] = tuple(line_par)
+                model_eml_par['FLUXERR'][i,emlj], model_eml_par['KINERR'][i,emlj,0], \
+                    model_eml_par['KINERR'][i,emlj,1] = tuple(line_parerr)
 
             if self.bestfit[i,j].bounded \
                     & self._is_near_bound(model_fit_par['PAR'][i,j,pl:pl+nlinepar[k]],
