@@ -255,8 +255,12 @@ class SpectralStack():
                 the spectra.  If not provided, the weights are uniform.
         """
         nspec = binid.size
+        print(nspec)
         valid = binid > -1
+        print(numpy.sum(valid))
         unique_bins = numpy.unique(binid[valid])
+        print(unique_bins.size)
+        print(unique_bins)
         nbin = numpy.amax(unique_bins)+1        # Allow for missing bin numbers
 
         self.rebin_T = numpy.zeros((nbin,nspec), dtype=numpy.float)
