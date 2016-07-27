@@ -1295,17 +1295,30 @@ class Elric(EmissionLineFit):
             - For multiple component lines, check the ordering of the
               subcomponents
         """
-        include_model = True
-        if not self.bestfit[i,j].result.success:
-            model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
-                                                              'FIT_FAILED')
+        # Instantiate the returned flag that the parameter are near the
+        # imposed boundary; only meaningful if the fit did not fail
+        near_bound = False
 
-        # Assign the fitting window for each emission line
+        # Assign the fitting window
         model_eml_par['WIN_INDEX'][i,self.fitting_window[j].db_indx] = j
 #        print(model_eml_par['WIN_INDEX'][i,:])
 
-        # Get the full list of parameters (including fixed and tied values)
+        # If the parameters are bounded, save the bounds
         npar = self.bestfit[i,j].npar
+        if self.bestfit[i,j].bounded:
+            model_fit_par['LOBND'][i,j,:npar] = self.bestfit[i,j].bounds[0]
+            model_fit_par['UPBND'][i,j,:npar] = self.bestfit[i,j].bounds[1]
+
+        # Save which parameters were fixed or should be ignored
+        model_fit_par['IGNORE'][i,j,npar:] = True
+        
+#        include_model = True
+        if not self.bestfit[i,j].result.success:
+            model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
+                                                              'FIT_FAILED')
+            return near_bound
+
+        # Get the full list of parameters (including fixed and tied values)
         self.bestfit[i,j]._assign_par(self.bestfit[i,j].result.x)
         par = self.bestfit[i,j].par
         model_fit_par['PAR'][i,j,:npar] = par[:]
@@ -1325,13 +1338,7 @@ class Elric(EmissionLineFit):
 #        print('PAR: ', model_fit_par['PAR'][i,j,:npar])
 #        print('ERR: ', model_fit_par['ERR'][i,j,:npar])
 
-        # If the parameters are bounded, save the bounds
-        if self.bestfit[i,j].bounded:
-            model_fit_par['LOBND'][i,j,:npar] = self.bestfit[i,j].bounds[0]
-            model_fit_par['UPBND'][i,j,:npar] = self.bestfit[i,j].bounds[1]
-
         # Get the per-line parameters
-        near_bound = False
         nlinepar = numpy.array([ p.npar for p in self.fitting_window[j].profile_set ])
         for k in range(self.fitting_window[j].nlines):
             pl = 0 if k == 0 else numpy.sum(nlinepar[:k])
@@ -1403,9 +1410,6 @@ class Elric(EmissionLineFit):
             model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                               'NEAR_BOUND')
 
-        # Save which parameters were fixed or should be ignored
-        model_fit_par['IGNORE'][i,j,npar:] = True
-        
         # Set the fit statistics
         model_fit_par['CHI2'][i,j] = 0.0 if self.error is None else \
                                             numpy.sum(numpy.square(self.bestfit[i,j]._chi(par)))
@@ -1944,6 +1948,7 @@ class Elric(EmissionLineFit):
                 # Add the best-fit to the lines to the composite model
                 # for this spectrum
                 if self.fitting_window[j].output_model and not self.bestfit[i,j].result.success:
+                    
                     model_mask[i,fitting_mask[j,:]] \
                             = self.bitmask.turn_on(model_mask[i,fitting_mask[j,:]], 'FIT_FAILED')
                 elif not self.fitting_window[j].output_model or model_fit_par['MASK'][i,j] != 0:
