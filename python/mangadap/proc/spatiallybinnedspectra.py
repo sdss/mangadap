@@ -1133,6 +1133,8 @@ class SpatiallyBinnedSpectra:
         bin_indx = numpy.full(self.drpf.nspec, -1, dtype=numpy.int)
         bin_indx[good_spec] = self.method['binfunc'](x[good_spec], y[good_spec],
                                                      par=self.method['binpar'])
+        if numpy.sum(bin_indx > -1):
+            raise ValueError('No spectra in ANY bin!')
 
         # Done for testing missing bins
 #        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
