@@ -1798,8 +1798,8 @@ class Elric(EmissionLineFit):
                 for k,p in enumerate(self.fitting_window[j].profile_set):
                     p.shift_mean(cz)
                     vi = numpy.argsort(numpy.absolute(velocity[j,:]-p.moment(order=1)))[0]
-                    print('guess flux: ', (spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0.1 else 0.1) \
-                                * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
+#                    print('guess flux: ', (spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0.1 else 0.1) \
+#                                * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
                     p.set_flux((spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0.1 else 0.1) \
                                 * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
 
@@ -1808,6 +1808,9 @@ class Elric(EmissionLineFit):
                                             for p in self.fitting_window[j].profile_set ]).ravel()
                 _fixed_par = self.fitting_window[j].fixed_par.ravel().copy()
                 _bounds = self.fitting_window[j].bounds.copy().reshape(-1,2)
+                print(_guess_par)
+                print(_fixed_par)
+                print(_bounds)
 
                 # For individual lines, bound the line mean to be within
                 # the fitting window
