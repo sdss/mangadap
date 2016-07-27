@@ -1316,6 +1316,10 @@ class Elric(EmissionLineFit):
         if not self.bestfit[i,j].result.success:
             model_fit_par['MASK'][i,j] = self.bitmask.turn_on(model_fit_par['MASK'][i,j],
                                                               'FIT_FAILED')
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.ERROR,
+                           'Fit: {0}/{1} FAILED!'.format(i+1,self.nspec))
+            
             return near_bound
 
         # Get the full list of parameters (including fixed and tied values)
