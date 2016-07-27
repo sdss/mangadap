@@ -1798,7 +1798,7 @@ class Elric(EmissionLineFit):
                 for k,p in enumerate(self.fitting_window[j].profile_set):
                     p.shift_mean(cz)
                     vi = numpy.argsort(numpy.absolute(velocity[j,:]-p.moment(order=1)))[0]
-                    p.set_flux((spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0 else 0.1) \
+                    p.set_flux((spec_to_fit[j,vi] if spec_to_fit[j,vi] > 0.1 else 0.1) \
                                 * numpy.sqrt(2*numpy.pi) * p.moment(order=2))
 
                 # Setup the guess parameters and bounds
