@@ -673,6 +673,9 @@ class LineProfileFit:
             print('ValueError: {0}'.format(e))
             print(self.par)
             print(self.bounds)
+            self.result = optimize.OptimizeResult(success=False)
+            print('assigned failure: ', self.result.success)
+            exit()
             self.result.success = False
             return
 
