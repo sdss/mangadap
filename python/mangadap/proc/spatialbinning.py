@@ -263,6 +263,8 @@ class RadialBinning(SpatialBinning):
         # Get the radius and azimuth
         r, theta = self.sma_coo.polar(x,y)
 
+        print('Radius scale: ', self.par['radius_scale'])
+
         # Get the starting radius and step per bin
         r /= self.par['radius_scale']
         indx = r >= 0.0
