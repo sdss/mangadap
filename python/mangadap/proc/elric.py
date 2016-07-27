@@ -1318,7 +1318,9 @@ class Elric(EmissionLineFit):
                                                               'FIT_FAILED')
             if not self.quiet:
                 log_output(self.loggers, 1, logging.ERROR,
-                           'Fit: {0}/{1} FAILED!'.format(i+1,self.nspec))
+                           'FIT FAILED: Spec: {0}/{1} ({2} : {3})'.format(i+1,self.nspec,
+                                                            self.fitting_window[j].line_index,
+                                    self.emission_lines['name'][self.fitting_window[j].db_indx]))
             
             return near_bound
 
