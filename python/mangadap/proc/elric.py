@@ -674,9 +674,6 @@ class LineProfileFit:
             print(self.par)
             print(self.bounds)
             self.result = optimize.OptimizeResult(success=False)
-            print('assigned failure: ', self.result.success)
-            exit()
-            self.result.success = False
             return
 
 #        try:
@@ -1811,9 +1808,9 @@ class Elric(EmissionLineFit):
                                             for p in self.fitting_window[j].profile_set ]).ravel()
                 _fixed_par = self.fitting_window[j].fixed_par.ravel().copy()
                 _bounds = self.fitting_window[j].bounds.copy().reshape(-1,2)
-                print(_guess_par)
-                print(_fixed_par)
-                print(_bounds)
+#                print(_guess_par)
+#                print(_fixed_par)
+#                print(_bounds)
 
                 # For individual lines, bound the line mean to be within
                 # the fitting window
