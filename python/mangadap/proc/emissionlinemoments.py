@@ -62,6 +62,8 @@ A class hierarchy that measures moments of the observed emission lines.
     | **25 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **20 May 2016**: (KBW) Added loggers and quiet keyword arguments
         to :class:`EmissionLineMoments`, removed verbose 
+    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
+        redshift when stellar continuum is provided.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -604,9 +606,15 @@ class EmissionLineMoments:
                 self.redshift = _redshift[ self.unique_bins(index=True) ]
             else:   # Has length nbins
                 self.redshift = _redshift
-        elif self.stellar_continuum is not None:
-            self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
-                                / astropy.constants.c.to('km/s').value
+
+        # Change to the measurements from the stellar continuum fit, if
+        # available and unmasked
+        if self.stellar_continuum is not None:
+            good_kin = ~self.stellar_continuum.bitmask.flagged(
+                            self.stellar_continuum['PAR'].data['MASK'],
+                            ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
+            self.redshift[good_kin] = self.stellar_continuum['PAR'].data['KIN'][good_kin,0] \
+                                            / astropy.constants.c.to('km/s').value
 
 
     def _spectra_for_measurements(self):
@@ -1223,7 +1231,8 @@ class EmissionLineMoments:
         self.missing_bins = self.binned_spectra.missing_bins
 
         # Get the redshifts to apply
-        self._assign_redshifts(redshift if self.stellar_continuum is None else None)
+#        self._assign_redshifts(redshift if self.stellar_continuum is None else None)
+        self._assign_redshifts(redshift)
 
 #        pyplot.scatter(numpy.arange(self.nspec), self.redshift, marker='.', s=50, color='k', lw=0)
 #        pyplot.show()

@@ -59,6 +59,8 @@ A class hierarchy that fits the emission lines.
 
 *Revision history*:
     | **26 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
+        redshift when stellar continuum is provided.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -479,6 +481,7 @@ class EmissionLineModel:
         but set to default_dispersion if they're not provided.
         """
 
+        # Set default values
         self.redshift = numpy.zeros(self.nmodels, dtype=numpy.float)
         if redshift is not None:
             _redshift = numpy.atleast_1d(redshift)
@@ -492,9 +495,30 @@ class EmissionLineModel:
                 self.redshift = _redshift[ self.unique_models(index=True) ]
             else:   # Has length nmodels
                 self.redshift = _redshift
-        elif self.stellar_continuum is not None:
-            self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
-                                / astropy.constants.c.to('km/s').value
+
+        # Change to the measurements from the stellar continuum fit, if
+        # available and unmasked
+        if self.stellar_continuum is not None:
+            good_kin = ~self.stellar_continuum.bitmask.flagged(
+                            self.stellar_continuum['PAR'].data['MASK'],
+                            ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
+#            print(numpy.sum(good_kin), len(good_kin))
+#            pyplot.scatter(numpy.arange(len(good_kin)), self.redshift, marker='.', s=30, color='r')
+#            pyplot.scatter(numpy.arange(len(good_kin))[good_kin],
+#                           self.stellar_continuum['PAR'].data['KIN'][good_kin,0]
+#                                / astropy.constants.c.to('km/s').value,
+#                           marker='.', s=30, color='b')
+#            pyplot.scatter(numpy.arange(len(good_kin))[~good_kin],
+#                           self.stellar_continuum['PAR'].data['KIN'][~good_kin,0]
+#                                / astropy.constants.c.to('km/s').value,
+#                           marker='.', s=30, color='0.5')
+#            pyplot.show()
+            self.redshift[good_kin] = self.stellar_continuum['PAR'].data['KIN'][good_kin,0] \
+                                            / astropy.constants.c.to('km/s').value
+#            pyplot.scatter(numpy.arange(len(self.redshift)), self.redshift,
+#                           marker='.', s=30, color='r')
+#            pyplot.show()
+#            exit()
 
         self.dispersion = numpy.full(self.nmodels, default_dispersion, dtype=numpy.float)
         if dispersion is not None:
@@ -686,7 +710,8 @@ class EmissionLineModel:
         # Get the guess kinematics
         redshift = None if guess_vel is None else guess_vel / astropy.constants.c.to('km/s').value
         dispersion = None if guess_sig is None else guess_sig
-        self._assign_input_kinematics(redshift if stellar_continuum is None else None, dispersion)
+        self._assign_input_kinematics(redshift, dispersion)
+#        self._assign_input_kinematics(redshift if stellar_continuum is None else None, dispersion)
 
         # Report
         if not self.quiet:

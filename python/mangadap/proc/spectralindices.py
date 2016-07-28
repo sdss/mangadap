@@ -65,7 +65,9 @@ A class hierarchy that performs the spectral-index measurements.
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **09 May 2016**: (KBW) Add subtraction of emission-line models
     | **11 Jul 2016**: (KBW) Allow to not apply dispersion corrections
-        for index measurements 
+        for index measurements
+    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
+        redshift when stellar continuum is provided.
 
 .. todo::
 
@@ -863,10 +865,15 @@ class SpectralIndices:
                 self.redshift = _redshift[ self.unique_bins(index=True) ]
             else:   # Has length nbins
                 self.redshift = _redshift
-        elif self.stellar_continuum is not None:
-            # Make this a function in StellarContinuumModel
-            self.redshift = self.stellar_continuum['PAR'].data['KIN'][:,0] \
-                                / astropy.constants.c.to('km/s').value
+
+        # Change to the measurements from the stellar continuum fit, if
+        # available and unmasked
+        if self.stellar_continuum is not None:
+            good_kin = ~self.stellar_continuum.bitmask.flagged(
+                            self.stellar_continuum['PAR'].data['MASK'],
+                            ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
+            self.redshift[good_kin] = self.stellar_continuum['PAR'].data['KIN'][good_kin,0] \
+                                            / astropy.constants.c.to('km/s').value
 
 
     def _spectra_for_measurements(self):
@@ -1489,7 +1496,8 @@ class SpectralIndices:
         self.missing_bins = self.binned_spectra.missing_bins
 
         # Get the redshifts to apply
-        self._assign_redshifts(redshift if self.stellar_continuum is None else None)
+#        self._assign_redshifts(redshift if self.stellar_continuum is None else None)
+        self._assign_redshifts(redshift)
 
         # Report
         good_bins = self._bins_to_measure()

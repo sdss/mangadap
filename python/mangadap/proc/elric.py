@@ -1849,9 +1849,18 @@ class Elric(EmissionLineFit):
                     _bounds[indx,0] = borders[2*srt]
                     _bounds[indx,1] = borders[2*srt+1]
 
-                # Add the paramters for the baseline
+                # Add the parameters for the baseline
                 if base_order > -1:
                     _guess_par = numpy.append(_guess_par, numpy.zeros(base_order+1))
+#                    _guess_par[-base_order-1] = numpy.median(spec_to_fit[j,fitting_mask[j,:]])
+#                    print(0.0, _guess_par[-base_order-1])
+#                    pyplot.scatter(velocity[j,fitting_mask[j,:]], spec_to_fit[j,fitting_mask[j,:]],
+#                                   marker='.', s=100, color='k')
+#                    y = velocity.copy()[j,fitting_mask[j,:]]
+#                    y[:] = numpy.median(spec_to_fit[j,fitting_mask[j,:]])
+#                    pyplot.plot(velocity[j,fitting_mask[j,:]], y, color='r')
+#                    pyplot.show()
+#                    exit()
                     _fixed_par = numpy.append(self.fitting_window[j].fixed_par.ravel(),
                                               numpy.zeros(base_order+1).astype(bool))
                     _bounds = numpy.append(_bounds,
