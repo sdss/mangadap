@@ -854,7 +854,7 @@ class SpectralIndices:
         self.redshift = numpy.zeros(self.nbins, dtype=numpy.float)
 
         if redshift is not None:
-            _redshift = numpy.asarray(redshift)
+            _redshift = numpy.atleast_1d(redshift)
             if len(_redshift) not in [ 1, self.nbins, self.nspec ]:
                 raise ValueError('Provided redshift must be either a single value, match the ' \
                                  'number of binned spectra, or match the total number of DRP ' \

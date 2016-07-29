@@ -90,6 +90,7 @@ Base class for handling bit masks by the DAP.
         initialization.
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
         instead of internal yanny reader
+    | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
 
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -351,9 +352,12 @@ class BitMask:
             ValueError: Raised if a bit value is less than 0.
         """
         # Make sure the input is treated as an array
-        keys = numpy.asarray(keys)
-        vals = numpy.asarray(vals)
-        descr = numpy.asarray(descr)
+#        keys = numpy.asarray(keys)
+#        vals = numpy.asarray(vals)
+#        descr = numpy.asarray(descr)
+        keys = numpy.atleast_1d(keys)
+        vals = numpy.atleast_1d(vals)
+        descr = numpy.atleast_1d(descr)
 
         if numpy.amin(vals) < 0:
             raise ValueError('No bit cannot be less than 0!')

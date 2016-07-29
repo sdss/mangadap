@@ -29,7 +29,7 @@ A catch-all module with miscellaneous utility functions.
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
     | **04 Jun 2015**: (KBW) Added :func:`where_not`
-
+    | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
 
 .. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
 
@@ -116,7 +116,8 @@ def inverse_with_zeros(v, absolute=True):
 #            v.mask |= numpy.invert(v > 0)
             v[numpy.invert(v > 0)] = numpy.ma.masked
         return 1.0/v
-    _v = numpy.asarray(v).astype(float)
+#    _v = numpy.asarray(v).astype(float)
+    _v = numpy.atleast_1d(v).astype(float)
     indx = numpy.absolute(_v) > 0 if absolute else _v > 0
     _v[indx] = 1.0/_v[indx]
     _v[numpy.invert(indx)] = 0.0

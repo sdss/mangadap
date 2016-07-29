@@ -399,8 +399,10 @@ class SemiMajorAxisCoo:
             numpy.ndarray: The semi-major-axis polar coordinates:
             :math:`R, \theta`.
         """
-        _x = numpy.asarray(x)
-        _y = numpy.asarray(y)
+#        _x = numpy.asarray(x)
+#        _y = numpy.asarray(y)
+        _x = numpy.atleast_1d(x)
+        _y = numpy.atleast_1d(y)
         if _x.size != _y.size:
             raise ValueError('X and Y arrays must have the same size')
         R = numpy.sqrt( _x*_x + _y*_y)
@@ -436,8 +438,10 @@ class SemiMajorAxisCoo:
             numpy.ndarray: The semi-major-axis Cartesian coordinates:
             :math:`x_a, y_a`.
         """
-        _r = numpy.asarray(r)
-        _theta = numpy.asarray(theta)
+#        _r = numpy.asarray(r)
+#        _theta = numpy.asarray(theta)
+        _r = numpy.atleast_1d(r)
+        _theta = numpy.atleast_1d(theta)
         if _r.size != _theta.size:
             raise ValueError('R and THETA arrays must have the same size')
         tant = numpy.tan(numpy.radians(_theta))
@@ -473,8 +477,10 @@ class SemiMajorAxisCoo:
         """
         if not self._defined():
             raise ValueError('SemiMajorAxisCoo object not fully defined!')
-        _x = numpy.asarray(x)
-        _y = numpy.asarray(y)
+#        _x = numpy.asarray(x)
+#        _y = numpy.asarray(y)
+        _x = numpy.atleast_1d(x)
+        _y = numpy.atleast_1d(y)
         if _x.size != _y.size:
             raise ValueError('X and Y arrays must have the same size')
         out = numpy.empty((_x.size, 6), dtype=numpy.float)
@@ -503,8 +509,10 @@ class SemiMajorAxisCoo:
         """
         if not self._defined():
             raise ValueError('SemiMajorAxisCoo object not fully defined!')
-        _x = numpy.asarray(x)
-        _y = numpy.asarray(y)
+#        _x = numpy.asarray(x)
+#        _y = numpy.asarray(y)
+        _x = numpy.atleast_1d(x)
+        _y = numpy.atleast_1d(y)
         if _x.size != _y.size:
             raise ValueError('X and Y arrays must have the same size')
         out = numpy.empty((_x.size, 4), dtype=numpy.float)

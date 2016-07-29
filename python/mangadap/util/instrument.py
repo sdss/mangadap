@@ -983,6 +983,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     if ivar is not None:
         out_ivar = numpy.square(1.0/out_ivar)
+        # When returning out_ivar, convert it to a normal array
         return out_flux, out_sres, sigma_offset, out_mask, numpy.asarray(out_ivar)
     return out_flux, out_sres, sigma_offset, out_mask, None
     

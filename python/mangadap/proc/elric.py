@@ -1672,7 +1672,8 @@ class Elric(EmissionLineFit):
             self.guess_redshift = numpy.zeros(self.nspec, dtype=numpy.float)
 
         if guess_dispersion is not None:
-            self.guess_dispersion = numpy.asarray(guess_dispersion)
+#            self.guess_dispersion = numpy.asarray(guess_dispersion)
+            self.guess_dispersion = numpy.atleast_1d(guess_dispersion)
             if len(self.guess_dispersion.shape) != 1:
                 raise ValueError('Input guess dispersions must be a single vector.')
             if self.guess_dispersion.size not in [1, self.nspec]:
