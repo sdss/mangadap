@@ -324,6 +324,7 @@ class EmissionLineMoments:
         self.checksum = checksum
 
         self.spatial_shape = None
+        self.nspec = None
         self.spatial_index = None
 
         self.nbins = None
@@ -1225,6 +1226,7 @@ class EmissionLineMoments:
             self.stellar_continuum = stellar_continuum
 
         self.spatial_shape =self.binned_spectra.spatial_shape
+        self.nspec = self.binned_spectra.nspec
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
         self.nbins = self.binned_spectra.nbins
