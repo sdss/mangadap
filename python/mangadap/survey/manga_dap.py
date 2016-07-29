@@ -35,6 +35,7 @@ Provides the main wrapper function for the MaNGA DAP.
 
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.
+    | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!
 
 """
 
@@ -193,6 +194,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)
 
+    # Set the nsa redshift
+    nsa_redshift = obs['vel']/astropy.constants.c.to('km/s').value
+
     # Iterate over plans:
     for i in range(plan.nplans):
 
@@ -237,7 +241,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # Emission-line Moment measurements
         #---------------------------------------------------------------
         emission_line_moments = None if plan['elmom_key'][i] is None else \
-                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra, redshift=nsa_redshift,
                                         stellar_continuum=stellar_continuum, dapsrc=dapsrc,
                                         analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
@@ -259,7 +263,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # Spectral-Index Measurements
         #---------------------------------------------------------------
         spectral_indices = None if plan['spindex_key'][i] is None else \
-                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
+                    SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
                                     analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
@@ -273,8 +277,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
-                            spectral_indices=spectral_indices,
-                            nsa_redshift=obs['vel']/astropy.constants.c.to('km/s').value,
+                            spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
                             loggers=loggers)
         construct_cube_file(drpf, binned_spectra=binned_spectra,
