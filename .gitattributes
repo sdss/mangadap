@@ -14,6 +14,7 @@ bin/manga_dap -text
 bin/mangadap_version -text
 bin/matched_template_library -text
 bin/rundap -text
+bin/spotcheck_dap_maps -text
 bin/write_dap_par -text
 data/absorption_indices/README -text
 data/absorption_indices/extindx.par -text
