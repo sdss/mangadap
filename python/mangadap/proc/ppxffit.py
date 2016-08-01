@@ -1495,14 +1495,14 @@ class PPXFFit(StellarKinematicsFit):
             # Test if the kinematics are near the imposed boundaries.
             # The best fitting model is still provided, but masked.
             near_bound, near_lower_sigma_bound = self._is_near_bounds(ppxf_fit, self.guess_kin[i,0])
+
+            # If the velocity dispersion has hit the lower limit, ONLY
+            # flag the value as having a BAD_SIGMA.
             if near_lower_sigma_bound:
                 near_bound[1] = False
                 model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'BAD_SIGMA')
-                # Flag the value as near a boundary but NOT the
-                # spectrum, unless one of the other parameters is near a
-                # boundary
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'NEAR_BOUND')
-
+            # Otherwise, flag both the parameter set and the spectrum as
+            # NEAR_BOUND
             if numpy.any(near_bound):
                 if not self.quiet:
                     warnings.warn('Returned parameters for spectrum {0} too close to '

@@ -12,10 +12,12 @@ import numpy
 
 from argparse import ArgumentParser
 
-from astropy.io import fits
-from matplotlib import pyplot
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot, rc
 from matplotlib.ticker import NullFormatter
-from matplotlib import rc
+
+from astropy.io import fits
 
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.dapmaps import DAPMapsBitMask
@@ -502,8 +504,8 @@ if __name__ == '__main__':
     daptypes = []
     if arg.daptype is None:
         plan_file = default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                          analysis_path=arg.analysis_path) if arg.plan_file is None \
-                                                else arg.plan_file
+                                          analysis_path=arg.analysis_path) \
+                                            if arg.plan_file is None else arg.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
         daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
     else:
@@ -519,7 +521,7 @@ if __name__ == '__main__':
         if not os.path.isdir(plan_qa_dir):
             os.makedirs(plan_qa_dir)
 
-        spotcheck_images(analysis_path, daptype, arg.plate, arg.ifudesign)#, ofile=ofile)
+        spotcheck_images(analysis_path, daptype, arg.plate, arg.ifudesign, ofile=ofile)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 

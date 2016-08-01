@@ -1429,7 +1429,7 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            file.write('# No plotting scripts yet\n')
+#            file.write('# No plotting scripts yet\n')
 #            pylist_path = os.path.join(dap_source, 'python', 'mangadap', 'plot',
 #                                       'make_qa_file_list.py')
 #            file.write('python3 {0} {1} {2} {3}_files_to_plot.txt -overwrite \n'.format(pylist_path,
@@ -1439,6 +1439,10 @@ class rundap:
 #            pyplot_path = os.path.join(dap_source, 'python', 'mangadap', 'plot', 'plotqa.py')
 #            file.write('python3 {0} {1}/{2}_files_to_plot.txt dapqa_plottypes.ini \n'.format(
 #                                    pyplot_path, output_path, mode))
+            
+            command = 'spotcheck_dap_maps {0} {1} --analysis_path {2} --plan_file {3}'.format(
+                            plate, ifudesign, self.analysis_plan, self.plan_file)
+            file.write('{0}\n'.format(command))
             file.write('\n')
 
         # Touch the done file
