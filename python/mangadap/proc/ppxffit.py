@@ -619,18 +619,19 @@ class PPXFFit(StellarKinematicsFit):
         Dh = numpy.diff(self.gh_limits)
         tol = Dh*tol_frac
         near_bounds[2] = ppxf_fit.sol[2] - self.gh_limits[0] < tol \
-                                or self.gh_limits[1] - ppxf_fit.sol[2] < tol:
+                                or self.gh_limits[1] - ppxf_fit.sol[2] < tol
         near_bounds[3] = ppxf_fit.sol[3] - self.gh_limits[0] < tol \
-                                or self.gh_limits[1] - ppxf_fit.sol[3] < tol:
+                                or self.gh_limits[1] - ppxf_fit.sol[3] < tol
         
         if self.moments == 4:
             return near_bounds, near_lower_sigma_bound
 
         # H5 and H6
         near_bounds[4] = ppxf_fit.sol[4] - self.gh_limits[0] < tol \
-                                or self.gh_limits[1] - ppxf_fit.sol[4] < tol:
+                                or self.gh_limits[1] - ppxf_fit.sol[4] < tol
         near_bounds[5] = ppxf_fit.sol[5] - self.gh_limits[0] < tol \
-                                or self.gh_limits[1] - ppxf_fit.sol[5] < tol:
+                                or self.gh_limits[1] - ppxf_fit.sol[5] < tol
+
         return near_bounds, near_lower_sigma_bound
         
         
