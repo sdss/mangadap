@@ -584,6 +584,9 @@ class PPXFFit(StellarKinematicsFit):
         done in log space.
         """
 
+        near_bounds = numpy.zeros(self.moments, dtype=numpy.bool)
+        near_lower_sigma_bound = False
+
 #        print(ppxf_fit.sol)
 #        print(guess_velocity)
 
@@ -594,10 +597,8 @@ class PPXFFit(StellarKinematicsFit):
 
 #        print(tol, ppxf_fit.sol[0]-_velocity_limits[0], _velocity_limits[1]-ppxf_fit.sol[0])
 
-        if ppxf_fit.sol[0]-_velocity_limits[0] < tol:
-            return True
-        if _velocity_limits[1]-ppxf_fit.sol[0] < tol:
-            return True
+        near_bounds[0] = ppxf_fit.sol[0]-_velocity_limits[0] < tol \
+                            or _velocity_limits[1]-ppxf_fit.sol[0] < tol
 
         # Velocity dispersion
         Ds = numpy.diff(numpy.log10(self.sigma_limits))[0]
@@ -606,32 +607,31 @@ class PPXFFit(StellarKinematicsFit):
 #        print(tol, numpy.log10(ppxf_fit.sol[1]) - numpy.log10(self.sigma_limits[0]),
 #              numpy.log10(self.sigma_limits[1]) - numpy.log10(ppxf_fit.sol[1]))
 
-        if numpy.log10(ppxf_fit.sol[1]) - numpy.log10(self.sigma_limits[0]) < tol:
-            return True
-        if numpy.log10(self.sigma_limits[1]) - numpy.log10(ppxf_fit.sol[1]) < tol:
-            return True
+        near_lower_sigma_bound \
+                = numpy.log10(ppxf_fit.sol[1]) - numpy.log10(self.sigma_limits[0]) < tol
+        near_bounds[1] = near_lower_sigma_bound \
+                        or numpy.log10(self.sigma_limits[1]) - numpy.log10(ppxf_fit.sol[1]) < tol
 
         if self.moments == 2:
-            return False
+            return near_bounds, near_lower_sigma_bound
 
         # H3 and H4
         Dh = numpy.diff(self.gh_limits)
         tol = Dh*tol_frac
-        if ppxf_fit.sol[2] - self.gh_limits[0] < tol or ppxf_fit.sol[3] - self.gh_limits[0] < tol:
-            return True
-        if self.gh_limits[1] - ppxf_fit.sol[2] < tol or self.gh_limits[1] - ppxf_fit.sol[3] < tol:
-            return True
+        near_bounds[2] = ppxf_fit.sol[2] - self.gh_limits[0] < tol \
+                                or self.gh_limits[1] - ppxf_fit.sol[2] < tol:
+        near_bounds[3] = ppxf_fit.sol[3] - self.gh_limits[0] < tol \
+                                or self.gh_limits[1] - ppxf_fit.sol[3] < tol:
         
         if self.moments == 4:
-            return False
+            return near_bounds, near_lower_sigma_bound
 
         # H5 and H6
-        if ppxf_fit.sol[4] - self.gh_limits[0] < tol or ppxf_fit.sol[5] - self.gh_limits[0] < tol:
-            return True
-        if self.gh_limits[1] - ppxf_fit.sol[4] < tol or self.gh_limits[1] - ppxf_fit.sol[5] < tol:
-            return True
-
-        return False
+        near_bounds[4] = ppxf_fit.sol[4] - self.gh_limits[0] < tol \
+                                or self.gh_limits[1] - ppxf_fit.sol[4] < tol:
+        near_bounds[5] = ppxf_fit.sol[5] - self.gh_limits[0] < tol \
+                                or self.gh_limits[1] - ppxf_fit.sol[5] < tol:
+        return near_bounds, near_lower_sigma_bound
         
         
     def _fit_global_spectrum(self, plot=False):
@@ -1493,7 +1493,16 @@ class PPXFFit(StellarKinematicsFit):
 
             # Test if the kinematics are near the imposed boundaries.
             # The best fitting model is still provided, but masked.
-            if self._is_near_bounds(ppxf_fit, self.guess_kin[i,0]):
+            near_bound, near_lower_sigma_bound = self._is_near_bounds(ppxf_fit, self.guess_kin[i,0])
+            if near_lower_sigma_bound:
+                near_bound[1] = False
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'BAD_SIGMA')
+                # Flag the value as near a boundary but NOT the
+                # spectrum, unless one of the other parameters is near a
+                # boundary
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'NEAR_BOUND')
+
+            if numpy.any(near_bound):
                 if not self.quiet:
                     warnings.warn('Returned parameters for spectrum {0} too close to '
                                   'bounds.'.format(i+1))
