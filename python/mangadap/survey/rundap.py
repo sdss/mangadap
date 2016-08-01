@@ -85,10 +85,17 @@ import subprocess
 import time
 import shutil
 import os
-import numpy
 import glob
 import warnings
 from argparse import ArgumentParser
+
+# For version checking
+from distutils.version import StrictVersion
+import numpy
+import scipy
+import astropy
+import pydl
+import sdss_access
 
 try:
     import pbs.queue
@@ -143,6 +150,10 @@ class rundap:
         quiet (bool): (**Optional**) Suppress output
         version (bool): (**Optional**) Print the class version and
             return
+        strictver (bool): (**Optional**) Strictly check the version
+            requirements for this version of the dap.  Default is True,
+            meaning the code will raise an exception if the expected
+            version are not the same as the environment.
         mplver (str): (**Optional**) MPL version to analyze.  Used with
             :class:`mangadap.survey.mangampl.MaNGAMPL` to set the
             idlutils version and the DRP version.  Ideally, this
@@ -247,6 +258,9 @@ class rundap:
         version (bool): Print the class version and return.  Needed as
             an attribute so that it can be read and returned from the
             command line.
+        strictver (bool): Strictly check the version requirements for
+            this version of the dap.  If True, an exception is raised if
+            the expected version are not the same as the environment.
         mpl (:class:`mangadap.survey.mangampl.MaNGAMPL`): MPL version;
             see above.
         redux_path (str): The top-level path with the DRP files.
@@ -300,7 +314,7 @@ class rundap:
                 # STDIO options
                 console=None, quiet=None, version=None,
                 # Override default environmental variables
-                mplver=None, redux_path=None, dapver=None, analysis_path=None, 
+                strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
                 # Definitions used to set files to process
                 plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
                 combinatorics=False,
@@ -322,6 +336,7 @@ class rundap:
         self.version = version
 
         # Override environment
+        self.strictver = strictver
         self.mpl = mplver
         self.redux_path = redux_path
 
@@ -436,41 +451,76 @@ class rundap:
         # Check the environment matches the selected MPL
         # These will throw KeyErrors if the appropriate environmental variables do not exist
         try:
-            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
+#            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
+            accessver_env = sdss_access.__version__
         except KeyError:
             accessver_env = None
         idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
+        python_ver = '.'.join([ str(v) for v in sys.version_info[:3]])
 
         print('Current environment: ')
-        print('    SDSS_ACCESS_VER: {0}'.format(accessver_env))
-        print('       IDLUTILS_VER: {0}'.format(idlver_env))
-        print('      MANGACORE_VER: {0}'.format(os.environ['MANGACORE_VER']))
-        print('       MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
-        print('       MANGADAP_VER: {0}'.format(os.environ['MANGADAP_VER']))
+        print('    SDSS_ACCESS: {0}'.format(accessver_env))
+        print('       IDLUTILS: {0}'.format(idlver_env))
+        print('      MANGACORE: {0}'.format(os.environ['MANGACORE_VER']))
+        print('       MANGADRP: {0}'.format(os.environ['MANGADRP_VER']))
+        print('       MANGADAP: {0}'.format(os.environ['MANGADAP_VER']))
+        print('         PYTHON: {0}'.format(python_ver))
+        print('          NUMPY: {0}'.format(numpy.__version__))
+        print('          SCIPY: {0}'.format(scipy.__version__))
+        print('        ASTROPY: {0}'.format(astropy.__version__))
+        print('           PYDL: {0}'.format(pydl.__version__))
 
-#        print('mpl.accessver: {0}'.format(self.mpl.accessver))
-#        print('mpl.idlver: {0}'.format(self.mpl.idlver))
-#        print('mpl.corever: {0}'.format(self.mpl.corever))
-#        print('mpl.drpver: {0}'.format(self.mpl.drpver))
-
+        # Check versions
         if self.mpl.accessver != accessver_env:
             print('mpl.accessver: {0}'.format(self.mpl.accessver))
             print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
-            raise EnvironmentError('MPL SDSS_ACCESS version does not match current environment;'
-                                   ' see above')
+            self._version_mismatch('MPL SDSS_ACCESS version does not match current environment')
+
         if self.mpl.idlver != idlver_env:
             print('mpl.idlver: {0}'.format(self.mpl.idlver))
             print('IDLUTILS_VER: {0}'.format(idlver_env))
-            raise EnvironmentError('MPL IDLUTILS version does not match current environment;'
-                                   ' see above')
+            self._version_mismatch('MPL IDLUTILS version does not match current environment')
+
         if self.mpl.corever != os.environ['MANGACORE_VER']:
             print('mpl.corever: {0}'.format(self.mpl.corever))
             print('MANGACORE_VER: {0}'.format(os.environ['MANGACORE_VER']))
-            raise EnvironmentError('MPL CORE version does not match current environment; see above')
+            self._version_mismatch('MPL CORE version does not match current environment')
+
         if self.mpl.drpver != os.environ['MANGADRP_VER']:
             print('mpl.drpver: {0}'.format(self.mpl.drpver))
             print('MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
-            raise EnvironmentError('MPL DRP version does not match current environment; see above')
+            self._version_mismatch('MPL DRP version does not match current environment')
+
+        if self.mpl.pythonver is not None \
+                and StrictVersion(python_ver) != StrictVersion(self.mpl.pythonver):
+            print('mpl.pythonver: {0}'.format(self.mpl.pythonver))
+            print('sys.version_info: {0}'.format(python_ver))
+            self._version_mismatch('MPL python version does not match current environment')
+
+        if self.mpl.numpyver is not None \
+                and StrictVersion(numpy.__version__) != StrictVersion(self.mpl.numpyver):
+            print('mpl.numpyver: {0}'.format(self.mpl.numpyver))
+            print('numpy.__version__: {0}'.format(numpy.__version__))
+            self._version_mismatch('MPL numpy version does not match current environment')
+
+        if self.mpl.scipyver is not None \
+                and StrictVersion(scipy.__version__) != StrictVersion(self.mpl.scipyver):
+            print('mpl.scipyver: {0}'.format(self.mpl.scipyver))
+            print('scipy.__version__: {0}'.format(scipy.__version__))
+            self._version_mismatch('MPL scipy version does not match current environment')
+
+        if self.mpl.astropyver is not None \
+                and StrictVersion(astropy.__version__) != StrictVersion(self.mpl.astropyver):
+            print('mpl.astropyver: {0}'.format(self.mpl.astropyver))
+            print('astropy.__version__: {0}'.format(astropy.__version__))
+            self._version_mismatch('MPL astropy version does not match current environment')
+
+        if self.mpl.pydlver is not None \
+                and StrictVersion(pydl.__version__) != StrictVersion(self.mpl.pydlver):
+            print('mpl.pydlver: {0}'.format(self.mpl.pydlver))
+            print('pydl.__version__: {0}'.format(pydl.__version__))
+            self._version_mismatch('MPL pydl version does not match current environment')
+
 
         # If submitting to the cluster, make sure that scripts will be
         # created!
@@ -604,6 +654,9 @@ class rundap:
         parser.add_argument("--version", help="rundap version", action="store_true", default=False)
        
         # These arguments are used to override default behavior
+        parser.add_argument("--loose", help="Only throw warnings if the versioning is "
+                            "not identically as it should be for the designated MPL",
+                            action="store_true", default=False)
         parser.add_argument("--mplver", type=str, help="select MPL version to analyze",
                             default=None)
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
@@ -689,6 +742,7 @@ class rundap:
 
         # Set the versions to use
         # Will OVERWRITE existing input from __init__()
+        self.strictver = ~arg.loose
         if arg.mplver is not None:
             self.mpl = arg.mplver
         if arg.redux_path is not None:
@@ -794,6 +848,17 @@ class rundap:
                                            dapver=self.dapver, analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
+
+
+    def _version_mismatch(self, message):
+        """
+        A version mismatch was detected.  Handle based on
+        :attr:`strictver`.
+        """
+        if self.strictver:
+            raise EnvironmentError('{0}; see above'.format(message))
+        else:
+            warnings.warn('{0}; see above'.format(message))
 
 
     # Files:

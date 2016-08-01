@@ -83,8 +83,16 @@ class MaNGAMPL:
     +--------+-------------+------------+--------+--------+--------+
     | MPL-4  |       0.0.0 |    v5_5_23 | v1_2_0 | v1_5_1 |  1.1.1 |
     +--------+-------------+------------+--------+--------+--------+
-    | MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.1 |
+    | MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.2 |
     +--------+-------------+------------+--------+--------+--------+
+
+
+    Python versions
+    +--------+--------+--------+--------+---------+-------+
+    | MPL    | python | numpy  |  scipy | astropy |  pydl |
+    +========+========+========+========+=========+=======+
+    | MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |   1.1.2 | 0.5.0 |
+    +--------+--------+--------+--------+---------+-------+
 
     .. note::
         Only the survey-level routines are dependent on SDSS_ACCESS and
@@ -130,17 +138,27 @@ class MaNGAMPL:
            
         n = mpls.shape[0] 
         i = 0
-        self.mplver = mpls[mpli].reshape(n)[i]
+        self.mplver = mpls[mpli,i].ravel()[0]
         i += 1
-        self.accessver = mpls[mpli].reshape(n)[i]
+        self.accessver = mpls[mpli,i].ravel()[0]
         i += 1
-        self.idlver = mpls[mpli].reshape(n)[i]
+        self.idlver = mpls[mpli,i].ravel()[0]
         i += 1
-        self.corever = mpls[mpli].reshape(n)[i]
+        self.corever = mpls[mpli,i].ravel()[0]
         i += 1
-        self.drpver = mpls[mpli].reshape(n)[i]
+        self.drpver = mpls[mpli,i].ravel()[0]
         i += 1
-        self.dapver = mpls[mpli].reshape(n)[i]
+        self.dapver = mpls[mpli,i].ravel()[0]
+        i += 1
+        self.pythonver = mpls[mpli,i].ravel()[0]
+        i += 1
+        self.numpyver = mpls[mpli,i].ravel()[0]
+        i += 1
+        self.scipyver = mpls[mpli,i].ravel()[0]
+        i += 1
+        self.astropyver = mpls[mpli,i].ravel()[0]
+        i += 1
+        self.pydlver = mpls[mpli,i].ravel()[0]
         i += 1
 
 
@@ -159,20 +177,29 @@ class MaNGAMPL:
             numpy.array: A string array with the MPL dependencies
         """
         #                             MPL SDSS_ACCESS  IDLUTILS      CORE       DRP       DAP
-        mpl_def = numpy.array([
-                                [ 'MPL-1',      None, 'v5_5_16', 'v1_0_0', 'v1_0_0',     None ],
-                                [ 'MPL-2',      None, 'v5_5_17', 'v1_0_0', 'v1_1_2',     None ],
-                                ['v1_2_0',      None, 'v5_5_19', 'v1_1_0', 'v1_2_0',     None ],
-                                [ 'MPL-3',      None, 'v5_5_22', 'v1_1_0', 'v1_3_3', 'v1_0_0' ],
-                                [ 'MPL-4',   '0.0.0', 'v5_5_23', 'v1_2_0', 'v1_5_1',  '1.1.1' ],
-                                [ 'MPL-5',   '0.2.0', 'v5_5_26', 'v1_3_1', 'v2_0_1',  '2.0.1' ]
+        mpl_def = numpy.array([ [ 'MPL-1',      None, 'v5_5_16', 'v1_0_0', 'v1_0_0',     None,
+                                       None,     None,     None,    None,    None ],
+                                [ 'MPL-2',      None, 'v5_5_17', 'v1_0_0', 'v1_1_2',     None,
+                                       None,     None,     None,    None,    None ],
+                                ['v1_2_0',      None, 'v5_5_19', 'v1_1_0', 'v1_2_0',     None,
+                                       None,     None,     None,    None,    None ],
+                                [ 'MPL-3',      None, 'v5_5_22', 'v1_1_0', 'v1_3_3', 'v1_0_0',
+                                       None,     None,     None,    None,    None ],
+                                [ 'MPL-4',   '0.0.0', 'v5_5_23', 'v1_2_0', 'v1_5_1',  '1.1.1',
+                                       None,     None,     None,    None,    None ],
+                                [ 'MPL-5',   '0.2.0', 'v5_5_26', 'v1_3_1', 'v2_0_1',  '2.0.2',
+                                    '3.5.1', '1.11.0', '0.17.1', '1.1.2', '0.5.0' ]
                               ])
         nmpl = mpl_def.shape[1]
         if write:
             print('Available MPLs:')
+            print('{0:>7} {1:>7} {2:>8} {3:>6} {4:>6} {5:>6} {6:>6} {7:>6} {8:>6} {9:>7}'
+                  ' {10:>6}'.format('MPL', 'SDSSACC', 'IDLUTILS', 'CORE', 'DRP', 'DAP', 'PYTHON',
+                                    'NUMPY', 'SCIPY', 'ASTROPY', 'PYDL'))
             for x in mpl_def[0:nmpl,:]:
-                print('{0}: SDSS_ACCESS:{1}; IDLUTILS:{2}; COREVER:{3}; DRPVER:{4}; DAPVER:{5}'.format(
-                      x[0], x[1], x[2], x[3], x[4], x[5]))
+                _x = x.astype(str)
+                print('{0:>7} {1:>7} {2:>8} {3:>6} {4:>6} {5:>6} {6:>6} {7:>6} {8:>6} {9:>7}'
+                      ' {10:>6}'.format(*_x))
 
         return mpl_def
 
