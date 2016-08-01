@@ -78,7 +78,7 @@ __author__ = 'Kyle B. Westfall'
 __email__ = 'kbwestfall@gmail.com'
 __copyright__ = '(c) 2016, SDSS-IV/MaNGA Pipeline Group'
 __license__ = 'BSD3'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 __status__ = 'Development'
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,

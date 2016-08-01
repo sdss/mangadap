@@ -1497,10 +1497,10 @@ class PPXFFit(StellarKinematicsFit):
             near_bound, near_lower_sigma_bound = self._is_near_bounds(ppxf_fit, self.guess_kin[i,0])
 
             # If the velocity dispersion has hit the lower limit, ONLY
-            # flag the value as having a BAD_SIGMA.
+            # flag the value as having a MIN_SIGMA.
             if near_lower_sigma_bound:
                 near_bound[1] = False
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'BAD_SIGMA')
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MIN_SIGMA')
             # Otherwise, flag both the parameter set and the spectrum as
             # NEAR_BOUND
             if numpy.any(near_bound):
