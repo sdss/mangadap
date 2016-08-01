@@ -90,12 +90,12 @@ import warnings
 from argparse import ArgumentParser
 
 # For version checking
-#from distutils.version import StrictVersion
+from distutils.version import StrictVersion
 import numpy
 import scipy
 import astropy
 import pydl
-import sdss_access
+#import sdss_access
 
 try:
     import pbs.queue
@@ -450,9 +450,10 @@ class rundap:
 
         # Check the environment matches the selected MPL
         # These will throw KeyErrors if the appropriate environmental variables do not exist
+        # TODO: Use the python3 compatible versions of sdss4tools and sdss_access
         try:
-#            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
-            accessver_env = sdss_access.__version__
+            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
+#            accessver_env = sdss_access.__version__
         except KeyError:
             accessver_env = None
         idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
