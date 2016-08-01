@@ -1441,7 +1441,7 @@ class rundap:
 #                                    pyplot_path, output_path, mode))
             
             command = 'spotcheck_dap_maps {0} {1} --analysis_path {2} --plan_file {3}'.format(
-                            plate, ifudesign, self.analysis_plan, self.plan_file)
+                            plate, ifudesign, self.analysis_path, self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
