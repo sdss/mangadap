@@ -83,9 +83,11 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     | **17 Feb 2016**: (KBW) Converted the name of the class to
         DRPComplete
     | **29 Feb 2016**: (KBW) Import drpfits, not drpfile
-    | **13 May 2016**: Switch to using `pydl.pydlutils.yanny`_ instead
-        of internal yanny reader.  Incorporated changes to plateTargets
-        column names defined for DR13.
+    | **13 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
+        instead of internal yanny reader.  Incorporated changes to
+        plateTargets column names defined for DR13.
+    | **02 Aug 2016**: (KBW) Added directory_path input parameter to
+        :class:`DRPComplete`
     
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
@@ -129,18 +131,18 @@ class DRPComplete:
     :func:`update`.
 
     Args:
-        platelist (str or list): (Optional) List of plates to search
+        platelist (str or list): (**Optional**) List of plates to search
             for.  Default is to search the full DRP path.
-        ifudesignlist (str or list): (Optional) List of ifudesign to
+        ifudesignlist (str or list): (**Optional**) List of ifudesign to
             search for.  Default is to search the full DRP path.
-        platetargets (str or list): (Optional) List of platetargets
+        platetargets (str or list): (**Optional**) List of platetargets
             files to search through to find any given plate ifudesign
             combination.  Default is returned as the first element in
             :func:`mangadap.config.defaults.default_plate_target_files`.
-        catid (str or list): (Optional) List of target catalog ID
+        catid (str or list): (**Optional**) List of target catalog ID
             numbers.  Default is returned as the second element in
             :func:`mangadap.config.defaults.default_plate_target_files`.
-        drpver (str): (Optional) DRP version, which is:
+        drpver (str): (**Optional**) DRP version, which is:
                 - used to define the default DRP redux path
                 - used when declaring a drpfits instance
                 - used in the name of the drpcomplete fits file
@@ -148,25 +150,28 @@ class DRPComplete:
             Default is defined by
             :func:`mangadap.config.defaults.default_drp_version`
 
-        redux_path (str): (Optional) The path to the top level directory
+        redux_path (str): (**Optional**) The path to the top level directory
             containing the DRP output files; this is the same as the
             *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.
             Default is defined by
             :func:`mangadap.config.defaults.default_redux_path`.
-        dapver (str): (Optional) DAP version, which is:
+        dapver (str): (**Optional**) DAP version, which is:
                 - used to define the default DAP analysis path
                 - included as a header keyword in the output drpcomplete
                   fits file
 
             Default is defined by
             :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (str): The path to the top level directory for the
-            DAP output files; this is **different** from the
-            directory_path in the :class:`mangadap.dapfile` class.  Default is
-            defined by
+        analysis_path (str): (**Optional**) The path to the top level
+            directory for the DAP output files; this is **different**
+            from the directory_path in the :class:`mangadap.dapfile`
+            class.  Default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`
-        readonly (bool) : Flag that the drpcomplete fits file is only
-            opened for reading, not for updating.
+        directory_path (str): (**Optional**) Direct path to the output
+            file produced using
+            :func:`mangadap.config.defaults.default_dap_common_path`
+        readonly (bool): (**Optional**) Flag that the drpcomplete fits
+            file is only opened for reading, not for updating.
 
     Raises:
         Exception: Raised if user supplies only one of platetargets or
@@ -196,7 +201,8 @@ class DRPComplete:
 
     """
     def __init__(self, platelist=None, ifudesignlist=None, platetargets=None, catid=None,
-                 drpver=None, redux_path=None, dapver=None, analysis_path=None, readonly=False):
+                 drpver=None, redux_path=None, dapver=None, analysis_path=None,
+                 directory_path=None, readonly=False):
         # Input properties
         self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
         self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
@@ -206,7 +212,8 @@ class DRPComplete:
         self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
         self.directory_path = defaults.default_dap_common_path(drpver=self.drpver,
-                                            dapver=self.dapver, analysis_path=self.analysis_path)
+                                            dapver=self.dapver, analysis_path=self.analysis_path) \
+                             if directory_path is None else str(directory_path)
         
         self.hdu = None
         self.nobs = None
@@ -314,7 +321,7 @@ class DRPComplete:
         and return a list of yanny structures.
 
         Args:
-            quiet (bool): (Optional) Suppress terminal output (NOT USED)
+            quiet (bool): (**Optional**) Suppress terminal output (NOT USED)
 
         Returns:
             list: A list of yanny structures, one per platetargets file.
@@ -381,7 +388,7 @@ class DRPComplete:
               thing as what is done below with many try/except blocks?
 
         Args:
-            quiet (bool): (Optional) Suppress terminal output
+            quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
             numpy.array: 14 arrays with: MaNGA ID, object right
@@ -534,7 +541,7 @@ class DRPComplete:
         drpcomplete fits file.
 
         Args:
-            quiet (bool): (Optional) Suppress output
+            quiet (bool): (**Optional**) Suppress output
 
         Returns:
             bool: Flag that all data has already been collated for the
@@ -614,7 +621,7 @@ class DRPComplete:
               (plate,ifudesign)=[(7443,12704),(7459,12703) are chosen
 
         Args:
-            mindesign (int): (Optional) Minimum bundle design to
+            mindesign (int): (**Optional**) Minimum bundle design to
                 consider.  The bundle design is determined by
                 ifudesign/100, such that::
 
@@ -624,7 +631,7 @@ class DRPComplete:
                 a DRP file is ignored.  Default only ignores the
                 minibundles (design=7).
 
-            combinatorics (bool): (Optional) Create :attr:`platelist`
+            combinatorics (bool): (**Optional**) Create :attr:`platelist`
                 and :attr:`ifudesignlist` by determining all possible
                 combinations of the input values. See above.
 
@@ -803,15 +810,15 @@ class DRPComplete:
         force=True.
 
         Args:
-            platelist (str or list): (Optional) List of plates to
+            platelist (str or list): (**Optional**) List of plates to
                 include in the drpcomplete fits file.
-            ifudesignlist (str or list): (Optional) List of ifudesigns
+            ifudesignlist (str or list): (**Optional**) List of ifudesigns
                 to include in the drpcomplete fits file.
-            combinatorics (bool): (Optional) Determine all combinations
+            combinatorics (bool): (**Optional**) Determine all combinations
                 of the entered plates and ifudesigns.
-            force (bool): (Optional) Overwrite any existing drpcomplete
+            force (bool): (**Optional**) Overwrite any existing drpcomplete
                 fits file with a new one built from scratch.
-            alldrp (bool): (Optional) Find the full list of available
+            alldrp (bool): (**Optional**) Find the full list of available
                 DRP files.
 
         Raises:
@@ -940,13 +947,13 @@ class DRPComplete:
                 available
             Reff (numpy.array): Effective radius from catalog, if
                 available
-            drpver (str) : (Optional) DRP version, see above.
-            redux_path (str) : (Optional) Path to the top level of
+            drpver (str) : (**Optional**) DRP version, see above.
+            redux_path (str) : (**Optional**) Path to the top level of
                 directory for the DRP output, see above.
-            dapver (str) : (Optional) DAP version, see above.
-            analysis_path (str) : (Optional) Path to the top level
+            dapver (str) : (**Optional**) DAP version, see above.
+            analysis_path (str) : (**Optional**) Path to the top level
                 directory for the DAP output files, see above.
-            clobber (bool): (Optional) Overwrite any existing file.
+            clobber (bool): (**Optional**) Overwrite any existing file.
 
         Raises:
             AttributeError: Raised if drpcomplete fits file was opened
@@ -1016,11 +1023,11 @@ class DRPComplete:
         *ifudesign* or *index*.
 
         Args:
-            plate (int): (Optional) Plate number
-            ifudesign (int): (Optional) IFU design
-            index (int): (Optional) Index of the row in :attr:`data`
+            plate (int): (**Optional**) Plate number
+            ifudesign (int): (**Optional**) IFU design
+            index (int): (**Optional**) Index of the row in :attr:`data`
                 with the data to return
-            reread (bool): (Optional) Force the database to be re-read
+            reread (bool): (**Optional**) Force the database to be re-read
 
         Returns:
             list: List of the 14 elements of :attr:`data`; see
@@ -1065,12 +1072,12 @@ class DRPComplete:
             ofile (str): Output file name
             mode (str): Mode of the DRP file to analyze; must be either
                 'RSS' or 'CUBE'
-            plate (int): (Optional) Plate number
-            ifudesign (int): (Optional) IFU design
-            index (int): (Optional) Index of the row in :attr:`data`
+            plate (int): (**Optional**) Plate number
+            ifudesign (int): (**Optional**) IFU design
+            index (int): (**Optional**) Index of the row in :attr:`data`
                 with the data to return
-            reread (bool): (Optional) Force the database to be re-read
-            clobber (bool): (Optional) Overwrite any existing parameter
+            reread (bool): (**Optional**) Force the database to be re-read
+            clobber (bool): (**Optional**) Overwrite any existing parameter
                 file
 
         Raises:
@@ -1126,7 +1133,7 @@ class DRPComplete:
         Args:
             plate (int): Plate number
             ifudesign (int): IFU design
-            reread (bool): (Optional) Force the database to be re-read
+            reread (bool): (**Optional**) Force the database to be re-read
 
         Returns:
             int: Index of the row in :attr:`data` with the data for the
