@@ -803,13 +803,13 @@ class construct_maps_file:
         flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='NEGATIVE_WEIGHTS')
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
-        # Convert MIN_SIGMA into a FIT_FAILED for the dispersion
+        # Convert MIN_SIGMA into a NEARBOUND for the dispersion
         if for_dispersion:
             flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='BAD_SIGMA')
             mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
             flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='MIN_SIGMA')
-            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
 
         return self._consolidate_donotuse(mask)
 

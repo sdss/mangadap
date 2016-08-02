@@ -26,8 +26,10 @@ from mangadap.config.defaults import default_dap_plan_file
 
 #-----------------------------------------------------------------------------
 
-def growth_lim(a, lim, fac, midpoint=None):
+def growth_lim(a, lim, fac, midpoint=None, default=[0., 1.]):
     _a = a.compressed()
+    if len(_a) == 0:
+        return default
     srt = numpy.ma.argsort(_a)
     start = int(len(_a)*(1.0-lim)/2)
     end = int(len(_a)*(lim + (1.0-lim)/2))
@@ -182,7 +184,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     hflx_lim = growth_lim(t, 0.95, 1.10)
 #    hflx_lim = [ -0.3, 2.2 ]
     t = numpy.ma.append(d4000, dn4000)
-    d4000_lim = growth_lim(t, 0.90, 1.05)
+#    d4000_lim = growth_lim(t, 0.90, 1.05)
     d4000_lim = [ 1.0, 2.5 ]
 
 #    print(flux_lim)
