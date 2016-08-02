@@ -1513,16 +1513,24 @@ class TemplateLibrary:
             # file is logarithmically sampled!
             self.log10_sampling = True
             self.spectral_step = spectral_coordinate_step(drpf.hdu['WAVE'].data, log=True)
-            if velscale_ratio is not None:
-                self.spectral_step /= velscale_ratio
-#            print(self.spectral_step)
         # Use the provided input values
         else:
             self.sres = sres
             self.log10_sampling = log
             self.spectral_step = spectral_step
+            # TODO: velscale_ratio is only valid if log is true!
+            if velscale_ratio is not None:
+                self.spectral_step /= velscale_ratio
 #            self.velscale = velscale
         self.velocity_offset = velocity_offset
+
+        # Adjust for the velocity scale ratio between the template and
+        # object data to be fit
+        if not self.log10_sampling and velscale_ratio is not None:
+            raise ValueError('velscale_ratio only valid with logarithmically sampled spectra.')
+        if velscale_ratio is not None:
+            self.spectral_step /= velscale_ratio
+#        print(self.spectral_step)
 
         # Set the paths if possible
         directory_path = self.directory_path if directory_path is None else directory_path
