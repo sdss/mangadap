@@ -1,3 +1,22 @@
+KBW (04 Aug 2016): tag 2.0.2
+
+    - Bug in setup for emission-line and spectral-index measurements
+      when stellar continuum not fit.
+    - Fixed error in return type when an emission-line fit fails, and
+      report which line and spectrum failed.
+    - Necessary conversions from asarray() to atleast_1d()
+    - Include spot-check plotting code for maps
+    - NEARBOUND is treated differently and separately applied to the
+      stellar velocities and stellar velocity dispersions.  pPXF fits
+      where the velocity dispersions at the lower bound do not
+      *necessarily* have a bad velocity measurement.
+    - Minor adjustments to TemplateLibrary and DRPComplete classes
+    - Added python versions to mangampl.py and version checking to
+      rundap.py; strict version compliance can be ignored if necessary
+    - Added version information to dapcube.py and dapmaps.py
+    - Corrected HDUCLAS2 for some MAPS extensions
+
+--------------------------------------------------------------------------------
 KBW (26 Jul 2016): tag 2.0.1
 
     Removed old DAP IDL code, except for pro/mangadap_version.pro
@@ -54,14 +73,11 @@ KBW (26 Jul 2016): tag 2.0.1
           covariance) matrix from the emission-line fits.
         - Removed SPXL_SPCOV extension; changed extension names from
           'SPXL' to 'SPX' to match binning scheme name.
-        - Added version information to dapcube.py and dapmaps.py
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements
         - Incorrect/incomplete checking for sufficient data to fit
           emission lines
-
---------------------------------------------------------------------------------
 
 KBW (08 Jun 2016): tag 2.0
 

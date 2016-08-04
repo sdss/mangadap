@@ -492,35 +492,35 @@ class rundap:
             print('MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
             self._version_mismatch('MPL DRP version does not match current environment')
 
-#        if self.mpl.pythonver is not None \
-#                and StrictVersion(python_ver) != StrictVersion(self.mpl.pythonver):
-#            print('mpl.pythonver: {0}'.format(self.mpl.pythonver))
-#            print('sys.version_info: {0}'.format(python_ver))
-#            self._version_mismatch('MPL python version does not match current environment')
-#
-#        if self.mpl.numpyver is not None \
-#                and StrictVersion(numpy.__version__) != StrictVersion(self.mpl.numpyver):
-#            print('mpl.numpyver: {0}'.format(self.mpl.numpyver))
-#            print('numpy.__version__: {0}'.format(numpy.__version__))
-#            self._version_mismatch('MPL numpy version does not match current environment')
-#
-#        if self.mpl.scipyver is not None \
-#                and StrictVersion(scipy.__version__) != StrictVersion(self.mpl.scipyver):
-#            print('mpl.scipyver: {0}'.format(self.mpl.scipyver))
-#            print('scipy.__version__: {0}'.format(scipy.__version__))
-#            self._version_mismatch('MPL scipy version does not match current environment')
-#
-#        if self.mpl.astropyver is not None \
-#                and StrictVersion(astropy.__version__) != StrictVersion(self.mpl.astropyver):
-#            print('mpl.astropyver: {0}'.format(self.mpl.astropyver))
-#            print('astropy.__version__: {0}'.format(astropy.__version__))
-#            self._version_mismatch('MPL astropy version does not match current environment')
-#
-#        if self.mpl.pydlver is not None \
-#                and StrictVersion(pydl.__version__) != StrictVersion(self.mpl.pydlver):
-#            print('mpl.pydlver: {0}'.format(self.mpl.pydlver))
-#            print('pydl.__version__: {0}'.format(pydl.__version__))
-#            self._version_mismatch('MPL pydl version does not match current environment')
+        if self.mpl.pythonver is not None \
+                and StrictVersion(python_ver) != StrictVersion(self.mpl.pythonver):
+            print('mpl.pythonver: {0}'.format(self.mpl.pythonver))
+            print('sys.version_info: {0}'.format(python_ver))
+            self._version_mismatch('MPL python version does not match current environment')
+
+        if self.mpl.numpyver is not None \
+                and StrictVersion(numpy.__version__) != StrictVersion(self.mpl.numpyver):
+            print('mpl.numpyver: {0}'.format(self.mpl.numpyver))
+            print('numpy.__version__: {0}'.format(numpy.__version__))
+            self._version_mismatch('MPL numpy version does not match current environment')
+
+        if self.mpl.scipyver is not None \
+                and StrictVersion(scipy.__version__) != StrictVersion(self.mpl.scipyver):
+            print('mpl.scipyver: {0}'.format(self.mpl.scipyver))
+            print('scipy.__version__: {0}'.format(scipy.__version__))
+            self._version_mismatch('MPL scipy version does not match current environment')
+
+        if self.mpl.astropyver is not None \
+                and StrictVersion(astropy.__version__) != StrictVersion(self.mpl.astropyver):
+            print('mpl.astropyver: {0}'.format(self.mpl.astropyver))
+            print('astropy.__version__: {0}'.format(astropy.__version__))
+            self._version_mismatch('MPL astropy version does not match current environment')
+
+        if self.mpl.pydlver is not None \
+                and StrictVersion(pydl.__version__) != StrictVersion(self.mpl.pydlver):
+            print('mpl.pydlver: {0}'.format(self.mpl.pydlver))
+            print('pydl.__version__: {0}'.format(pydl.__version__))
+            self._version_mismatch('MPL pydl version does not match current environment')
 
 
         # If submitting to the cluster, make sure that scripts will be
