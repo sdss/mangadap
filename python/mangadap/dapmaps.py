@@ -45,6 +45,11 @@ import resource
 import time
 import os
 
+# For versioning
+import scipy
+import astropy
+import pydl
+
 from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
@@ -262,6 +267,14 @@ class construct_maps_file:
         hdr['MASKNAME'] = 'MANGA_DAPPIXMASK'
 
         # Add versioning
+        hdr['VERSPY'] = ('.'.join([ str(v) for v in sys.version_info[:3]]), 'Python version')
+        hdr['VERSNP'] = (numpy.__version__, 'Numpy version')
+        hdr['VERSSCI'] = (scipy.__version__, 'Scipy version')
+        hdr['VERSAST'] = (astropy.__version__, 'Astropy version')
+        hdr['VERSPYDL'] = (pydl.__version__, 'pydl version')
+        # TODO: Hard-coded! Should read DAP version programmatically
+        hdr['VERSDAP'] = ('2.0.2', 'MaNGA DAP version')
+
         return hdr
 
 
@@ -277,8 +290,7 @@ class construct_maps_file:
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'CRITICAL')
             self.dapqual = self.dapqualbm.turn_on(self.dapqual, 'DRPCRIT')
 
-        #Excluded from 2.0 tag to allow for dependency of DAP to be on
-        #IDLUTILS v5_5_25
+        #Signify that the Voronoi binning resulted in a single bin
         if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
                 and binned_spectra.method['binclass'].bintype == 'voronoi' \
                 and binned_spectra.nbins == 1:
@@ -591,12 +603,12 @@ class construct_maps_file:
 
             hdus += [ fits.ImageHDU(data=None,
                                     header=self._finalize_map_header(hdr, 'BIN_LWSKYCOO',
-                                                                     bunit='arcsec', nchannels=2),
+                                                                     bunit='arcsec'),
                                     name='BIN_LWSKYCOO') ]
 
             hdus += [ fits.ImageHDU(data=None,
                                     header=self._finalize_map_header(hdr, 'BIN_LWELLCOO',
-                                                                     bunit='arcsec', nchannels=2),
+                                                                     bunit='arcsec'),
                                     name='BIN_LWELLCOO') ]
 
             hdus += [ fits.ImageHDU(data=None,
@@ -647,8 +659,7 @@ class construct_maps_file:
         # Bin index
         bin_indx = binned_spectra['BINID'].data.copy().ravel()
         hdus = [ fits.ImageHDU(data=bin_indx.reshape(binned_spectra.spatial_shape).T,
-                               header=self._finalize_map_header(self.singlechannel_maphdr,
-                                                                'BINID'),
+                               header=self._finalize_map_header(self.singlechannel_maphdr, 'BINID'),
                                name='BINID') ]
 #        pyplot.imshow(bin_indx.reshape(binned_spectra.spatial_shape).T, origin='lower',
 #                      interpolation='nearest')
@@ -964,7 +975,8 @@ class construct_maps_file:
         hdr = self._add_channel_names(self.multichannel_maphdr, ['68th percentile',
                                                                  '99th percentile'])
         hdus += [ fits.ImageHDU(data=data.T,
-                                header=self._finalize_map_header(hdr, 'STELLAR_CONT_FRESID'),
+                                header=self._finalize_map_header(hdr, 'STELLAR_CONT_FRESID',
+                                                                 nchannels=2),
                                 name='STELLAR_CONT_FRESID') ]
 
         data = numpy.zeros(stellar_continuum.spatial_shape, dtype=numpy.float)
@@ -1101,7 +1113,8 @@ class construct_maps_file:
         hdus = [ fits.ImageHDU(data=data.T,
                                header=self._finalize_map_header(hdr, 'EMLINE_SFLUX', err=True,
                                                                 qual=True,
-                                                                bunit='1E-17 erg/s/cm^2/spaxel'),
+                                                                bunit='1E-17 erg/s/cm^2/spaxel',
+                                                            nchannels=emission_line_moments.nmom),
                                     name='EMLINE_SFLUX') ]
         # Inverse variance
         data = numpy.zeros((*emission_line_moments.spatial_shape, emission_line_moments.nmom),
@@ -1114,13 +1127,15 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SFLUX',
                                                                  hduclas2='ERROR', qual=True,
-                                                            bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}'),
+                                                            bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}',
+                                                            nchannels=emission_line_moments.nmom),
                                 name='EMLINE_SFLUX_IVAR') ]
         # Bitmask
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SFLUX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=emission_line_moments.nmom),
                                 name='EMLINE_SFLUX_MASK') ]
 
         # Equivalent width
@@ -1135,7 +1150,8 @@ class construct_maps_file:
         hdr = self._add_channel_names(self.multichannel_maphdr, cols)
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SEW', err=True,
-                                                                 qual=True, bunit='ang'),
+                                                                 qual=True, bunit='ang',
+                                                            nchannels=emission_line_moments.nmom),
                                 name='EMLINE_SEW') ]
         # Inverse variance
         data = numpy.zeros((*emission_line_moments.spatial_shape, emission_line_moments.nmom),
@@ -1148,13 +1164,15 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SEW',
                                                                  hduclas2='ERROR', qual=True,
-                                                                 bunit='(ang)^{-2}'),
+                                                                 bunit='(ang)^{-2}',
+                                                            nchannels=emission_line_moments.nmom),
                                 name='EMLINE_SEW_IVAR') ]
         # Bitmask
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_SEW',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=emission_line_moments.nmom),
                                 name='EMLINE_SEW_MASK') ]
         return hdus
 
@@ -1303,7 +1321,8 @@ class construct_maps_file:
         hdus = [ fits.ImageHDU(data=data.T,
                                header=self._finalize_map_header(hdr, 'EMLINE_GFLUX', err=True,
                                                                 qual=True,
-                                                                bunit='1E-17 erg/s/cm^2/spaxel'),
+                                                                bunit='1E-17 erg/s/cm^2/spaxel',
+                                                            nchannels=emission_line_model.neml),
                                name='EMLINE_GFLUX') ]
         # Inverse variance
         # TODO: Need to propagate bad inverse variances to mask
@@ -1317,13 +1336,15 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GFLUX',
                                                                  hduclas2='ERROR', qual=True,
-                                                            bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}'),
+                                                            bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GFLUX_IVAR') ]
         # Bitmask
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GFLUX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GFLUX_MASK') ]
 
         # Velocity
@@ -1334,8 +1355,8 @@ class construct_maps_file:
         data = self._convert_to_Newtonian_velocity(data, self.nsa_redshift)
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL', err=True,
-                                                                 qual=True,
-                                                                 bunit='km/s'),
+                                                                 qual=True, bunit='km/s',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GVEL') ]
         # Inverse variance
         data = numpy.zeros((*emission_line_model.spatial_shape, emission_line_model.neml),
@@ -1349,13 +1370,15 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL',
                                                                  hduclas2='ERROR', qual=True,
-                                                                 bunit='(km/s)^{-2}'),
+                                                                 bunit='(km/s)^{-2}',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GVEL_IVAR') ]
         # Bitmask
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GVEL',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GVEL_MASK') ]
 
         # Velocity dispersion
@@ -1365,8 +1388,8 @@ class construct_maps_file:
                 = emission_line_model['EMLDATA'].data['KIN'][unique_bins[reconstruct[indx]],:,1]
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GSIGMA', err=True,
-                                                                 qual=True,
-                                                                 bunit='km/s'),
+                                                                 qual=True, bunit='km/s',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GSIGMA') ]
         # Inverse variance
         data = numpy.zeros((*emission_line_model.spatial_shape, emission_line_model.neml),
@@ -1379,7 +1402,8 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GSIGMA',
                                                                  hduclas2='ERROR', qual=True,
-                                                                 bunit='(km/s)^{-2}'),
+                                                                 bunit='(km/s)^{-2}',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GSIGMA_IVAR') ]
         # Bitmask
         mask = self._emission_line_model_mask_to_map_mask(emission_line_model, unique_bins,
@@ -1387,7 +1411,8 @@ class construct_maps_file:
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_GSIGMA',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_GSIGMA_MASK') ]
 
         # Instrumental dispersion
@@ -1397,7 +1422,8 @@ class construct_maps_file:
                 = emission_line_model['EMLDATA'].data['SINST'][unique_bins[reconstruct[indx]],:]
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(hdr, 'EMLINE_INSTSIGMA',
-                                                                 bunit='km/s'),
+                                                                 bunit='km/s',
+                                                            nchannels=emission_line_model.neml),
                                 name='EMLINE_INSTSIGMA') ]
 
         return hdus
@@ -1511,7 +1537,8 @@ class construct_maps_file:
                 = spectral_indices['SINDX'].data['INDX'][unique_bins[reconstruct[indx]],:]
         hdus = [ fits.ImageHDU(data=data.T,
                                header=self._finalize_map_header(hdr, 'SPECINDEX', err=True,
-                                                                qual=True),
+                                                                qual=True,
+                                                            nchannels=spectral_indices.nindx),
                                name='SPECINDEX') ]
         # Inverse variance
         data = numpy.zeros((*spectral_indices.spatial_shape, spectral_indices.nindx),
@@ -1523,13 +1550,15 @@ class construct_maps_file:
         data[numpy.invert(pos)] = 0.0
         hdus += [ fits.ImageHDU(data=data.T,
                                 header=self._finalize_map_header(errhdr, 'SPECINDEX',
-                                                                 hduclas2='ERROR', qual=True),
+                                                                 hduclas2='ERROR', qual=True,
+                                                            nchannels=spectral_indices.nindx),
                                 name='SPECINDEX_IVAR') ]
         # Bitmask
         hdus += [ fits.ImageHDU(data=mask.T,
                                 header=self._finalize_map_header(hdr, 'SPECINDEX',
                                                                  hduclas2='QUALITY', err=True,
-                                                                 bit_type=mask.dtype.type),
+                                                                 bit_type=mask.dtype.type,
+                                                            nchannels=spectral_indices.nindx),
                                 name='SPECINDEX_MASK') ]
 
         # Index dispersion corrections
@@ -1538,7 +1567,8 @@ class construct_maps_file:
         data.reshape(-1, spectral_indices.nindx)[indx,:] \
                 = spectral_indices['SINDX'].data['INDX_DISPCORR'][unique_bins[reconstruct[indx]],:]
         hdus += [ fits.ImageHDU(data=data.T,
-                                header=self._finalize_map_header(hdr, 'SPECINDEX_CORR'),
+                                header=self._finalize_map_header(hdr, 'SPECINDEX_CORR',
+                                                            nchannels=spectral_indices.nindx),
                                 name='SPECINDEX_CORR') ]
 
         return hdus

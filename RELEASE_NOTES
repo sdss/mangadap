@@ -54,6 +54,7 @@ KBW (26 Jul 2016): tag 2.0.1
           covariance) matrix from the emission-line fits.
         - Removed SPXL_SPCOV extension; changed extension names from
           'SPXL' to 'SPX' to match binning scheme name.
+        - Added version information to dapcube.py and dapmaps.py
 
     Fixed failures:
         - Bookkeeping error in emission-line moment measurements

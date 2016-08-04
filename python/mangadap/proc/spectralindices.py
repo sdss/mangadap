@@ -699,7 +699,8 @@ class SpectralIndices:
         if self.stellar_continuum is not None:
             hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
         if self.emission_line_model is not None:
-            hdr['EMLKEY'] = (self.emission_line_model.method['key'], 'Emission-line model keyword')
+            hdr['ELFKEY'] = (self.emission_line_model.method['key'],
+                                'Emission-line modeling method keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         if len(self.missing_bins) > 0:
             hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')

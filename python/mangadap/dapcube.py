@@ -42,6 +42,11 @@ import resource
 import time
 import os
 
+# For versioning
+import scipy
+import astropy
+import pydl
+
 from astropy.wcs import WCS
 from astropy.io import fits
 
@@ -198,10 +203,6 @@ class construct_cube_file:
 
 
     def _initialize_primary_header(self):
-        """
-        .. todo::
-            Add versioning!
-        """
         hdr = self.drpf.hdu['PRIMARY'].header.copy()
 
         # Clean out header for info not pertinent to the DAP
@@ -211,6 +212,14 @@ class construct_cube_file:
         hdr['MASKNAME'] = 'MANGA_DAPSPECMASK'
 
         # Add versioning
+        hdr['VERSPY'] = ('.'.join([ str(v) for v in sys.version_info[:3]]), 'Python version')
+        hdr['VERSNP'] = (numpy.__version__, 'Numpy version')
+        hdr['VERSSCI'] = (scipy.__version__, 'Scipy version')
+        hdr['VERSAST'] = (astropy.__version__, 'Astropy version')
+        hdr['VERSPYDL'] = (pydl.__version__, 'pydl version')
+        # TODO: Hard-coded! Should read DAP version programmatically
+        hdr['VERSDAP'] = ('2.0.2', 'MaNGA DAP version')
+        
         return hdr
 
 
