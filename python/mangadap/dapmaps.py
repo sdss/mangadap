@@ -222,6 +222,8 @@ class construct_maps_file:
             self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
                     = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
 
+        # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
+
         # Flag the stellar velocity dispersions measured in spectra with
         # S/N<10 as unreliable
         indx = (self.hdu['BINID'].data > -1) & (self.hdu['BIN_SNR'].data < 10) \

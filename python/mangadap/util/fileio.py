@@ -246,10 +246,11 @@ def rec_to_fits_type(rec_element):
         return '{0}E'.format(n)
     if rec_element.dtype == numpy.float64:
         return '{0}D'.format(n)
-
+    
     # If it makes it here, assume its a string
     l = int(rec_element.dtype.str[rec_element.dtype.str.find('U')+1:])
-    return '{0}A'.format(l)
+#    return '{0}A'.format(l) if n==1 else '{0}A{1}'.format(l*n,l)
+    return '{0}A'.format(l*n)
 
 
 def rec_to_fits_col_dim(rec_element):

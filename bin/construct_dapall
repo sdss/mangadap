@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
+import numpy
+import os
+from time import clock
+
+from argparse import ArgumentParser
+
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.survey.dapall import DAPall
+
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    t = clock()
+
+    parser = ArgumentParser()
+
+    parser.add_argument('plan', type=str, help='SDSS parameter file with analysis plan')
+
+    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+    parser.add_argument('-r', '--redux_path', type=str,
+                        help='Top-level directory with the DRP products; defaults to '
+                             '$MANGA_SPECTRO_REDUX/$MANGADRP_VER', default=None)
+    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+    parser.add_argument('-s', '--dap_src', type=str,
+                        help='Top-level directory with the DAP source code; defaults to '
+                            '$MANGADAP_DIR', default=None)
+    parser.add_argument('-a', '--analysis_path', type=str,
+                        help='Top-level output directory for the DAP results; defaults to '
+                             '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
+    parser.add_argument('-m', '--methods', type=str, nargs='+', default=None,
+                        help='Only include output from this DAP method designation in the output')
+    parser.add_argument('--clobber', action='store_true', default=False,
+                        help='overwrite the existing DAPall file')
+
+    arg = parser.parse_args()
+    analysisplan = AnalysisPlanSet.from_par_file(arg.plan)
+
+    db = DAPall(analysisplan, methods=arg.methods, drpver=arg.drpver, redux_path=arg.redux_path,
+                dapver=arg.dapver, dapsrc=arg.dap_src, analysis_path=arg.analysis_path,
+                clobber=arg.clobber)
+
+    print('Elapsed time: {0} seconds'.format(clock() - t))
+
+
+
