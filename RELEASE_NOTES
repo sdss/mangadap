@@ -1,3 +1,15 @@
+KBW (??         ): tag 2.1
+
+    - Included code for DAPall file
+    - Fixed error in bin area calculation in unbinned data.
+    - Added convenience functions to DAPFits for use with the MAPS
+      files.
+
+TO FIX:
+    - ~30 km/s offset in stellar velocity
+    - emission-line moment masks
+
+--------------------------------------------------------------------------------
 KBW (04 Aug 2016): tag 2.0.2
 
     - Bug in setup for emission-line and spectral-index measurements
@@ -16,7 +28,6 @@ KBW (04 Aug 2016): tag 2.0.2
     - Added version information to dapcube.py and dapmaps.py
     - Corrected HDUCLAS2 for some MAPS extensions
 
---------------------------------------------------------------------------------
 KBW (26 Jul 2016): tag 2.0.1
 
     Removed old DAP IDL code, except for pro/mangadap_version.pro

@@ -54,7 +54,7 @@ from ..dapmaps import DAPMapsBitMask
 from ..par.analysisplan import AnalysisPlanSet
 from .drpcomplete import DRPComplete
 from ..config import defaults
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, channel_dictionary
 from ..proc.util import _select_proc_method
 from ..proc.absorptionindexdb import AbsorptionIndexDB
 from ..proc.bandheadindexdb import BandheadIndexDB
@@ -65,18 +65,6 @@ from ..proc.emissionlinemodel import EmissionLineModelDef, available_emission_li
 from matplotlib import pyplot
 
 __author__ = 'Kyle Westfall'
-
-def column_dictionary(hdu, ext):
-    columndict = {}
-    for k, v in hdu[ext].header.items():
-        if k[0] == 'C':
-            try:
-                i = int(k[1:])-1
-            except ValueError:
-                continue
-            columndict[v] = i
-    return columndict
-
 
 def growth(a, growth_fracs, default=-9999.):
     _a = a.compressed() if isinstance(a, numpy.ma.MaskedArray) else numpy.atleast_1d(a).ravel()
@@ -384,8 +372,8 @@ class DAPall:
         # Construct the file names
         methods, plates, ifudesigns = self._combine_plateifu_methods(plt, ifu)
         return numpy.array( ['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
-                                self.analysis_path, p, i, m) 
-                                    for p,i,m in zip(methods, plates, ifudesigns) ])
+                                self.analysis_path, m, p, i) 
+                                    for p,i,m in zip(plates, ifudesigns, methods) ])
 
 
     def file_name(self):
@@ -511,9 +499,9 @@ class DAPall:
             dapmaps = fits.open(f)
 
             # Get the dictionary with the channel names
-            emline = column_dictionary(dapmaps, 'EMLINE_GFLUX')
+            emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
             neml = len(emline)
-            sindx = column_dictionary(dapmaps, 'SPECINDEX')
+            sindx = channel_dictionary(dapmaps, 'SPECINDEX')
             nindx = len(sindx)
             # And set the channel names to the table
             srt = numpy.argsort(list(emline.values()))

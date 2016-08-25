@@ -41,6 +41,7 @@ Provides a set of file I/O routines.
         and :func:`rec_to_fits_type`
     | **19 May 2016**: (KBW) In :func:`write_hdu`, removed verbose and
         added loggers and quiet.
+    | **25 Aug 2016**: (KBW) Added :func:`channel_dictionary`
 
 .. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
@@ -263,6 +264,21 @@ def rec_to_fits_col_dim(rec_element):
     as row-major, as opposed to the native column-major order in python.
     """
     return None if len(rec_element[0].shape) == 1 else str(rec_element[0].shape[::-1])
+
+
+def channel_dictionary(hdu, ext):
+    """
+    Construct a dictionary of the channels in a MAPS file.
+    """
+    channel_dict = {}
+    for k, v in hdu[ext].header.items():
+        if k[0] == 'C':
+            try:
+                i = int(k[1:])-1
+            except ValueError:
+                continue
+            channel_dict[v] = i
+    return channel_dict
 
 
 def compress_file(ifile, clobber=False):

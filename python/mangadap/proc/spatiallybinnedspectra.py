@@ -65,6 +65,8 @@ procedures.
         arguments to :class:`SpatiallyBinnedSpectra`, removed verbose 
     | **06 Jul 2016**: (KBW) Make the application of a reddening
         correction an input parameter.
+    | **25 Aug 2016**: (KBW) Fixed error in bin area when calling
+        :func:`SpatiallyBinnedSpetra._unbinned_data`
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -744,7 +746,8 @@ class SpatiallyBinnedSpectra:
         if self.drpf.pixelscale is None:
             self.drpf.pixelscale = default_cube_pixelscale()
 
-        bin_data['AREA'] = numpy.full(self.nbins, self.drpf.pixelscale, dtype=numpy.float)
+        bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.drpf.pixelscale),
+                                      dtype=numpy.float)
         bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=numpy.int)
 
         bin_data['SIGNAL'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]

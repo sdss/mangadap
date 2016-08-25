@@ -19,6 +19,13 @@ the MaNGA Data Analysis Pipeline (DAP).
 
 *Revision history*:
     | **08 Jun 2016**: Original Implementation by K. Westfall (KBW)
+    | **25 Aug 2016**: (KBW) Added :func:`DAPFits.unique_indices`,
+        :func:`DAPFits.unique_mask`, and :func:`DAPFits.channel_map`
+
+.. todo::
+    - Merge this with dapmaps.py and dapcube.py?
+    - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
+      not just the former.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
@@ -40,7 +47,9 @@ import warnings
 
 from astropy.io import fits
 
+from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
+from .util.geometry import SemiMajorAxisCoo
 from .config.defaults import default_drp_version, default_dap_version, default_analysis_path
 from .config.defaults import default_dap_method_path, default_dap_file_name, default_dap_par_file
 from .par.obsinput import ObsInputPar
@@ -154,9 +163,10 @@ class DAPFits:
         # Read in the data
         self.hdu = None
         self.spatial_shape = None
-        self.smap_ext = []      # Extensions with single maps
-        self.mmap_ext = []      # Extensions with multiple maps
+        self.smap_ext = None      # Extensions with single maps
+        self.mmap_ext = None      # Extensions with multiple maps
         self.par = None
+        self.channel_dict = None
         self.checksum = checksum
         if read:
             self.open_hdu(checksum=self.checksum)
@@ -219,9 +229,6 @@ class DAPFits:
         self.spatial_shape = self.hdu['BINID'].data.shape
         print(self.spatial_shape)
 
-        if not restructure:
-            return
-
         self.smap_ext = []      # Extensions with single maps
         self.mmap_ext = []      # Extensions with multiple maps
         for h in self.hdu:
@@ -230,6 +237,15 @@ class DAPFits:
                     self.smap_ext += [ h.name ]
                 if len(h.shape) == 3:
                     self.mmap_ext += [ h.name ]
+
+        if len(self.mmap_ext) > 0:
+            self.channel_dict = { self.mmap_ext[0]: channel_dictionary(self.hdu, self.mmap_ext[0]) }
+            for i in range(1,len(self.mmap_ext)):
+                self.channel_dict[self.mmap_ext[i]] = channel_dictionary(self.hdu, self.mmap_ext[i])
+
+        if not restructure:
+            return
+
         if len(self.smap_ext) > 0:
             if not quiet:
                 print('Restructuring single map extensions.')
@@ -266,12 +282,29 @@ class DAPFits:
     
     def file_name(self):
         """Return the name of the DAP file"""
-        return default_dap_file_name(self.plate, self.ifudesign, self.method)
+        return default_dap_file_name(self.plate, self.ifudesign, self.method, mode='MAPS')
 
 
     def file_path(self):
         """Return the full path to the DAP file"""
         return os.path.join(self.directory_path, self.file_name())
+
+    
+    def list_channels(self, ext):
+        """
+        Provide a list of the channels in a given extension.
+        """
+        if self.hdu is None:
+            self.open_hdu(checksum=self.checksum)
+        if ext in self.smap_ext:
+            print('{0} contains a single channel.'.format(ext))
+            return
+        print('Channels in extension {0}'.format(ext))
+        print('#  {0:>3} {1}'.format('CH','KEY'))
+        srt = numpy.argsort(list(self.channel_dict[ext].values()))
+        for k, v in zip(numpy.array(list(self.channel_dict[ext].keys()))[srt],
+                        numpy.array(list(self.channel_dict[ext].values()))[srt]):
+            print('   {0:>3} {1}'.format(v,k))
 
 
     def thin_disk_polar_coo(self, xc=None, yc=None, rot=None, pa=None, inc=None, flip=False):
@@ -335,9 +368,10 @@ class DAPFits:
                                       ell=numpy.cos(numpy.radians(inc)))
 
         # Calculate the in-plane radius and azimuth for each bin
-        self.open_hdu(checksum=self.checksum)
-        return disk_plane.polar(self.hdu['SPXL_SKYCOO'].data[:,:,0],
-                                self.hdu['SPXL_SKYCOO'].data[:,:,1])
+        if self.hdu is None:
+            self.open_hdu(checksum=self.checksum)
+        return disk_plane.polar(self.hdu['SPX_SKYCOO'].data[:,:,0],
+                                self.hdu['SPX_SKYCOO'].data[:,:,1])
 
     
     def guess_inclination(self, q0=None):
@@ -394,14 +428,14 @@ class DAPFits:
         return pa if pa < 360 else pa-360
        
 
-#    def effective_radius(self):
-#        """
-#        Return the effective radius from the parameter file.
-#        """
-#        self.read_par()
-#        return self.par['reff']
-#
-#
+    def effective_radius(self):
+        """
+        Return the effective radius from the parameter file.
+        """
+        self.read_par()
+        return self.par['reff']
+
+
 #    def nsa_ellipticity(self):
 #        """
 #        Return the ellipticity from the parameter file.
@@ -410,22 +444,78 @@ class DAPFits:
 #        return self.par['ell']
 #
 #
-#    def guess_cz(self):
-#        """Return the guess redshift (cz) from the parameter file."""
-#        self.read_par()
-#        return self.par['vel']
+    def guess_cz(self):
+        """Return the guess redshift (cz) from the parameter file."""
+        self.read_par()
+        return self.par['vel']
 
-    def unique(self, ext):
+
+    def unique_indices(self):
         """
-        Select out data from the extention that have been derived from
-        unique bins.
+        Use the BINID extension to select the spaxels with unique data.
+        
+        Returns:
+            numpy.ndarray: Returns the list of indices **in the
+            flattened array of a map** that are unique.
+
         """
         if self.hdu is None:
             self.open_hdu(checksum=self.checksum)
 
         unique_bins, indx = numpy.unique(self.hdu['BINID'].data.ravel(), return_index=True)
-        indx = indx[unique_bins > -1]
+        return indx[unique_bins > -1]
 
-        return self.hdu[ext].data.ravel()[indx] if len(self.hdu[ext].data.shape) == 2 \
-                    else self.hdu[ext].data.reshape(-1, self.hdu[ext].data.shape[2])[indx,:]
+
+    def unique_mask(self):
+        """
+        Construct a boolean mask for the unique bins.
+        
+        The returned map is True for spaxels that are part of a unique
+        bin, Fals otherwise.
+        """
+        indx = self.unique_indices()
+        msk = numpy.zeros(self.spatial_shape, dtype=numpy.bool)
+        msk.ravel()[indx] = True
+        return msk
+
+
+    def channel_map(self, ext, channel=None, flag=None):
+        """
+        Return a 2D array with the map for the specified channel.
+        """
+        if channel is None:
+            # Channel must be satisfied
+            if len(self.hdu[ext].data.shape) > 2:
+                raise ValueError('Must specify channel for extension {0}'.format(ext))
+            # Return unmasked array
+            if flag is None:
+                return numpy.ma.MaskedArray(self.hdu[ext].data.copy())
+            # Attempt to get the mask extension from the header
+            try:
+                mask_ext = self.hdu[ext].header['QUALDATA']
+            except:
+                raise ValueError('Mask extension not specified in header.  Unable to mask array.')
+            # Return a masked array, masking the specified flags
+            return numpy.ma.MaskedArray(self.hdu[ext].data.copy(),
+                                        mask=self.bitmask.flagged(self.hdu[mask_ext].data,
+                                                                  flag=flag))
+
+        if channel not in list(self.channel_dict[ext].keys()):
+            raise ValueError('No channel {0} in extension {1}'.format(ext, channel))
+
+        # Return unmasked array
+        if flag is None:
+            return numpy.ma.MaskedArray(self.hdu[ext].data[:,:,self.channel_dict[ext][channel]])
+        # Attempt to get the mask extension from the header
+        try:
+            mask_ext = self.hdu[ext].header['QUALDATA']
+        except:
+            raise ValueError('Mask extension not specified in header.  Unable to mask array.')
+        
+        return numpy.ma.MaskedArray(self.hdu[ext].data[:,:,self.channel_dict[ext][channel]],
+                                    mask=self.bitmask.flagged(
+                                      self.hdu[mask_ext].data[:,:,self.channel_dict[ext][channel]],
+                                      flag=flag))
+
+
 
