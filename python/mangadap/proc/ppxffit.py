@@ -49,6 +49,9 @@ Implements a wrapper class for pPXF.
         keyword was therefore removed from the parameter set.
     | **06 Jul 2016**: (KBW) Use v6.0.0 pPXF functions to compute models
         using new LOSVD kernel functionality.
+    | **10 Oct 2016**: (KBW) Fixed error in calculation of velocity
+        offset between template and object spectra to account for
+        different size pixels.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -514,7 +517,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velscale):
+    def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velscale, velscale_ratio=None):
         """
         Determine the pseudo offset in velocity between the template and
         object spectra, just due to the difference in the starting
@@ -530,15 +533,25 @@ class PPXFFit(StellarKinematicsFit):
                 library to fit to the object spectrum.
             obj_wave (numpy.ndarray): Wavelength vector for the object
                 spectrum to be fit.
-            velscale (float): Velocity step per pixel in km/s common to
-                both the template and object spectrum.
+            velscale (float): Velocity step per pixel in km/s for the
+                **object** spectrum.
+            velscale_ratio (int): (**Optional**) The **integer** ratio
+                between the velocity scale of the pixel in the galaxy
+                data to that of the template data.  This is used only
+                when constructing the template library.  Default is
+                None, which is the same as assuming that the velocity
+                scales are identical.
     
         Returns:
             float: Velocity offset in km/s between the initial wavelengths
             of the template and object spectra.
+
+        .. todo::
+            - Implement a check that calculates the velocity ratio directly?
         """
-        return (numpy.log(obj_wave[0])-numpy.log(tpl_wave[0]))*velscale \
-                    / numpy.diff(numpy.log(obj_wave[0:2]))[0]
+        dlogl = numpy.log(obj_wave[0])-numpy.log(tpl_wave[0]) if velscale_ratio is None \
+                    else numpy.log(obj_wave[0])-numpy.mean(numpy.log(tpl_wave[0:velscale_ratio]))
+        return dlogl*velscale / numpy.diff(numpy.log(obj_wave[0:2]))[0]
 
 
     def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9):
@@ -1208,7 +1221,8 @@ class PPXFFit(StellarKinematicsFit):
         # shift between the two
         self.base_velocity = self.ppxf_tpl_obj_voff(self.tpl_wave,
                                             self.obj_wave[self.spectrum_start:self.spectrum_end],
-                                                    self.velscale)
+                                                    self.velscale,
+                                                    velscale_ratio=self.velscale_ratio)
 
         # Report the base velocity
         if not self.quiet:
@@ -1753,7 +1767,8 @@ class PPXFFit(StellarKinematicsFit):
 #            print(tpl_wave.shape)
 
             # for PPXF v6.0.0
-            vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[_start:_end], velscale)
+            vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[_start:_end], velscale,
+                                               velscale_ratio=_velscale_ratio)
             if _velscale_ratio > 1:
                 npix_temp = composite_template.size - composite_template.size % _velscale_ratio
                 _composite_template = composite_template[:npix_temp].reshape(-1,1)

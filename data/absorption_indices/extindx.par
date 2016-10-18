@@ -25,10 +25,13 @@
 #       Spiniello et al. (2012, ApJL, 753, 32)
 # Indices 35-38 are from:
 #       Spiniello et al. (2014, MNRAS, 438, 1483)
+# Index 39 is from (requested by Baitian Tang):
+#       Serven, Worthey, & Briley (2005, ApJ, 627, 754)
 #
 # The columns are described in README.
 #
 # Revisions:
+#   11 Oct 2016: Added index 39
 #------------------------------------------------------------------------
 
 typedef struct {
@@ -81,4 +84,5 @@ DAPABI 35  bTiO       { 4758.500  4800.000 }  { 4742.750  4756.500 }  { 4827.875
 DAPABI 36  aTiO       { 5445.000  5600.000 }  { 5420.000  5442.000 }  { 5630.000  5655.000 }  air  mag  0
 DAPABI 37  CaH1       { 6357.500  6401.750 }  { 6342.125  6356.500 }  { 6408.500  6429.750 }  air  mag  0
 DAPABI 38  CaH2       { 6775.000  6900.000 }  { 6510.000  6539.250 }  { 7017.000  7064.000 }  air  mag  0
+DAPABI 39  CaHK       { 3899.5    4003.5   }  { 3806.5    3833.8   }  { 4020.7    4052.4   }  air  ang  0
 

@@ -36,6 +36,8 @@ Provides a set of utility functions dealing with computational geometry.
         :class:`SemiMajorAxisCoo`.  Coordinate projection functions
         (e.g., :func:`SemiMajorAxisCoo.polar`) can now take array-like
         objects as arguments.
+    | **08 Sep 2016**: (KBW) Allow :func:`point_inside_polygon` to
+        accept multiple coordinates.
 
 .. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html#scipy.linalg.lu_factor
 
@@ -126,8 +128,12 @@ def point_inside_polygon(polygon, point):
         the machine precision), the returned value is `False`.
 
     """
-    return (abs(polygon_winding_number(polygon, point)) == 1)
-        
+    _point = numpy.atleast_2d(point)
+    if _point.shape[-1] != 2:
+        raise ValueError('Provided point must have two elements in last dimension.')
+    if _point.shape[0] == 1:
+        return (abs(polygon_winding_number(polygon, point)) == 1)
+    return numpy.array([ abs(polygon_winding_number(polygon, p)) == 1 for p in _point ])
 
 
 class SemiMajorAxisCoo:

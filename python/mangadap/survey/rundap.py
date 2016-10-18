@@ -14,6 +14,40 @@ Utah.
 *Imports and python version compliance*:
     ::
 
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+
+        import sys
+        if sys.version > '3':
+            long = int
+
+        import subprocess
+        import time
+        import shutil
+        import os
+        import glob
+        import warnings
+        from argparse import ArgumentParser
+
+        try:
+            import pbs.queue
+        except:
+            warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
+
+        from .drpcomplete import DRPComplete
+        from ..drpfits import DRPFits
+        from ..config.defaults import default_redux_path, default_drp_directory_path
+        from ..config.defaults import default_analysis_path, default_dap_common_path
+        from ..config.defaults import default_dap_method, default_dap_method_path, default_dap_file_root
+        from ..config.defaults import default_dap_par_file, default_dap_plan_file
+        from ..util.exception_tools import print_frame
+        from ..util.parser import arginp_to_list
+        from ..util.fileio import create_symlink
+        from .mangampl import MaNGAMPL
+        from ..par.analysisplan import AnalysisPlanSet
+        from . import util
 
 *Class usage examples*:
     Add some usage comments here!
@@ -64,6 +98,8 @@ Utah.
         conversion of DAP from IDL to python
     | **19 May 2016**: (KBW) Added command-line options for including
         log file
+    | **11 Oct 2016**: (KBW) Version checking moved to
+        :class:`mangadap.survey.mangampl.MaNGAMPL`.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -88,14 +124,6 @@ import os
 import glob
 import warnings
 from argparse import ArgumentParser
-
-# For version checking
-from distutils.version import StrictVersion
-import numpy
-import scipy
-import astropy
-import pydl
-#import sdss_access
 
 try:
     import pbs.queue
@@ -307,6 +335,9 @@ class rundap:
             Database of the available DRP files and the parameters
             necessary to write the DAP par files.
 
+    .. todo::
+        - Move the version checking to mangampl.py
+
     """
     def __init__(self,
                 # Run mode options
@@ -399,7 +430,7 @@ class rundap:
 
         # Make sure the selected MPL version is available
         try:
-            self.mpl = MaNGAMPL(self.mpl)
+            self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
         except:
             e = sys.exc_info()
             print_frame(e[0])
@@ -440,6 +471,7 @@ class rundap:
             print('Attempting to submit to queue: {0}'.format(self.q))
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
         self.mpl.show()
+        self.mpl.verify_versions()
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
@@ -447,81 +479,6 @@ class rundap:
         print('  PLAN FILE: {0}'.format(self.plan_file))
         print('Processing steps added to scripts:')
         print('        {0}'.format(processes))
-
-        # Check the environment matches the selected MPL
-        # These will throw KeyErrors if the appropriate environmental variables do not exist
-        # TODO: Use the python3 compatible versions of sdss4tools and sdss_access
-        try:
-            accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
-#            accessver_env = sdss_access.__version__
-        except KeyError:
-            accessver_env = None
-        idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
-        python_ver = '.'.join([ str(v) for v in sys.version_info[:3]])
-
-        print('Current environment: ')
-        print('    SDSS_ACCESS: {0}'.format(accessver_env))
-        print('       IDLUTILS: {0}'.format(idlver_env))
-        print('      MANGACORE: {0}'.format(os.environ['MANGACORE_VER']))
-        print('       MANGADRP: {0}'.format(os.environ['MANGADRP_VER']))
-        print('       MANGADAP: {0}'.format(os.environ['MANGADAP_VER']))
-        print('         PYTHON: {0}'.format(python_ver))
-        print('          NUMPY: {0}'.format(numpy.__version__))
-        print('          SCIPY: {0}'.format(scipy.__version__))
-        print('        ASTROPY: {0}'.format(astropy.__version__))
-        print('           PYDL: {0}'.format(pydl.__version__))
-
-        # Check versions
-        if self.mpl.accessver != accessver_env:
-            print('mpl.accessver: {0}'.format(self.mpl.accessver))
-            print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
-            self._version_mismatch('MPL SDSS_ACCESS version does not match current environment')
-
-        if self.mpl.idlver != idlver_env:
-            print('mpl.idlver: {0}'.format(self.mpl.idlver))
-            print('IDLUTILS_VER: {0}'.format(idlver_env))
-            self._version_mismatch('MPL IDLUTILS version does not match current environment')
-
-        if self.mpl.corever != os.environ['MANGACORE_VER']:
-            print('mpl.corever: {0}'.format(self.mpl.corever))
-            print('MANGACORE_VER: {0}'.format(os.environ['MANGACORE_VER']))
-            self._version_mismatch('MPL CORE version does not match current environment')
-
-        if self.mpl.drpver != os.environ['MANGADRP_VER']:
-            print('mpl.drpver: {0}'.format(self.mpl.drpver))
-            print('MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
-            self._version_mismatch('MPL DRP version does not match current environment')
-
-        if self.mpl.pythonver is not None \
-                and StrictVersion(python_ver) != StrictVersion(self.mpl.pythonver):
-            print('mpl.pythonver: {0}'.format(self.mpl.pythonver))
-            print('sys.version_info: {0}'.format(python_ver))
-            self._version_mismatch('MPL python version does not match current environment')
-
-        if self.mpl.numpyver is not None \
-                and StrictVersion(numpy.__version__) != StrictVersion(self.mpl.numpyver):
-            print('mpl.numpyver: {0}'.format(self.mpl.numpyver))
-            print('numpy.__version__: {0}'.format(numpy.__version__))
-            self._version_mismatch('MPL numpy version does not match current environment')
-
-        if self.mpl.scipyver is not None \
-                and StrictVersion(scipy.__version__) != StrictVersion(self.mpl.scipyver):
-            print('mpl.scipyver: {0}'.format(self.mpl.scipyver))
-            print('scipy.__version__: {0}'.format(scipy.__version__))
-            self._version_mismatch('MPL scipy version does not match current environment')
-
-        if self.mpl.astropyver is not None \
-                and StrictVersion(astropy.__version__) != StrictVersion(self.mpl.astropyver):
-            print('mpl.astropyver: {0}'.format(self.mpl.astropyver))
-            print('astropy.__version__: {0}'.format(astropy.__version__))
-            self._version_mismatch('MPL astropy version does not match current environment')
-
-        if self.mpl.pydlver is not None \
-                and StrictVersion(pydl.__version__) != StrictVersion(self.mpl.pydlver):
-            print('mpl.pydlver: {0}'.format(self.mpl.pydlver))
-            print('pydl.__version__: {0}'.format(pydl.__version__))
-            self._version_mismatch('MPL pydl version does not match current environment')
-
 
         # If submitting to the cluster, make sure that scripts will be
         # created!
@@ -849,17 +806,6 @@ class rundap:
                                            dapver=self.dapver, analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
-
-
-    def _version_mismatch(self, message):
-        """
-        A version mismatch was detected.  Handle based on
-        :attr:`strictver`.
-        """
-        if self.strictver:
-            raise EnvironmentError('{0}; see above'.format(message))
-        else:
-            warnings.warn('{0}; see above'.format(message))
 
 
     # Files:

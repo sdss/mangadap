@@ -4,9 +4,12 @@ KBW (??         ): tag 2.1
     - Fixed error in bin area calculation in unbinned data.
     - Added convenience functions to DAPFits for use with the MAPS
       files.
+    - Fixed problem with velocity offset between template and galaxy
+      data due to difference in pixel sampling.
 
 TO FIX:
-    - ~30 km/s offset in stellar velocity
+    - masking in output cubes; extrapolated regions with bad
+      continuum...
     - emission-line moment masks
 
 --------------------------------------------------------------------------------
