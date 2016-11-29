@@ -258,8 +258,8 @@ import time
 import logging
 
 import numpy
-from scipy import sparse
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy import sparse, interpolate
+#from scipy.interpolate import InterpolatedUnivariateSpline
 from astropy.io import fits
 import astropy.constants
 from pydl.goddard.astro import airtovac
@@ -275,7 +275,7 @@ from ..util.instrument import resample_vector, resample_vector_npix, spectral_re
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
 from .util import _select_proc_method, HDUList_mask_wavelengths
 
-#from matplotlib import pyplot
+from matplotlib import pyplot
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -1133,6 +1133,7 @@ class TemplateLibrary:
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 
+        # TODO: How does this change the step of each pixel?
         if not self.library['in_vacuum']:
             self.hdu['WAVE'].data \
                     = airtovac(self.hdu['WAVE'].data.ravel()).reshape(self.hdu['WAVE'].data.shape)
@@ -1187,7 +1188,7 @@ class TemplateLibrary:
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
         if not self.quiet and self.loggers is not None:
             log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
-        for i in range(0,self.ntpl):
+        for i in range(self.ntpl):
             # Observed wavelengths
             wave_in = self.hdu['WAVE'].data[i,observed[i,:]].ravel()
             # Rebin the observed wavelength range
@@ -1211,8 +1212,11 @@ class TemplateLibrary:
             # Select the good pixels
             indx = numpy.where(numpy.invert(flux[i,:] < min_flux-10.))
             # define the interpolator (uses linear interpolation; k=1)
-            interpolator = InterpolatedUnivariateSpline(self.hdu['WAVE'].data[i,:].ravel(),
-                                                        self.hdu['SPECRES'].data[i,:].ravel(), k=1)
+#            interpolator = InterpolatedUnivariateSpline(self.hdu['WAVE'].data[i,:].ravel(),
+#                                                        self.hdu['SPECRES'].data[i,:].ravel(), k=1)
+            interpolator = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
+                                                self.hdu['SPECRES'].data[i,:].ravel(),
+                                                fill_value='extrapolate')
             # And then interpolate
             sres[i,indx] = interpolator(wave[indx])
 
@@ -1235,6 +1239,9 @@ class TemplateLibrary:
 #            pyplot.plot(oldwave, oldflux)
 #            pyplot.plot(wave, flux[i,:], 'g')
 #            pyplot.show()
+
+        print('     After resampling (target): ', self.spectral_step)
+        print(' After resampling (calculated): ', spectral_coordinate_step(wave, log=True))
 
         if not self.quiet and self.loggers is not None:
             log_output(self.loggers, 1, logging.INFO, '... done')
@@ -1499,6 +1506,10 @@ class TemplateLibrary:
             self.loggers = loggers
         self.quiet = quiet
 
+        # Ignore velscale_ratio if it is set to unity
+        if velscale_ratio is not None and velscale_ratio == 1:
+            velscale_ratio = None
+
         # Use the DRP file object to set the spectral resolution and
         # velocity scale to match to.
         if drpf is not None:
@@ -1508,7 +1519,6 @@ class TemplateLibrary:
                 drpf.open_hdu()
             self.sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
                                             log10=True) if match_to_drp_resolution else None
-#            self.velscale = spectrum_velocity_scale(drpf.hdu['WAVE'].data, log10=True)
             # Set this by default, but need DRPFits to return if the
             # file is logarithmically sampled!
             self.log10_sampling = True
@@ -1518,10 +1528,7 @@ class TemplateLibrary:
             self.sres = sres
             self.log10_sampling = log
             self.spectral_step = spectral_step
-            # TODO: velscale_ratio is only valid if log is true!
-            if velscale_ratio is not None:
-                self.spectral_step /= velscale_ratio
-#            self.velscale = velscale
+
         self.velocity_offset = velocity_offset
 
         # Adjust for the velocity scale ratio between the template and
@@ -1530,7 +1537,7 @@ class TemplateLibrary:
             raise ValueError('velscale_ratio only valid with logarithmically sampled spectra.')
         if velscale_ratio is not None:
             self.spectral_step /= velscale_ratio
-#        print(self.spectral_step)
+        print(self.spectral_step)
 
         # Set the paths if possible
         directory_path = self.directory_path if directory_path is None else directory_path

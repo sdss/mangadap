@@ -284,14 +284,16 @@ def gaussian_filter1d(spec, sig):
     sig = sig.clip(0.01)  # forces zero sigmas to have 0.01 pixels
     p = int(np.ceil(np.max(3*sig)))
     m = 2*p + 1  # kernel size
-    x2 = np.linspace(-p, p, m)**2
+#    x2 = np.linspace(-p, p, m)**2
+    x2 = np.square(np.linspace(-p, p, m))
 
     n = spec.size
     a = np.zeros((m, n))
     for j in range(m):   # Loop over the small size of the kernel
         a[j, p:-p] = spec[j:n-m+j+1]
 
-    gau = np.exp(-x2[:, None]/(2*sig**2))
+#    gau = np.exp(-x2[:, None]/(2*sig**2))
+    gau = np.exp(-x2[:, None]/(2*np.square(sig)))
     gau /= np.sum(gau, 0)[None, :]  # Normalize kernel
 
     conv_spectrum = np.sum(a*gau, 0)

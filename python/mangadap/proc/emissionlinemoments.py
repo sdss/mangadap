@@ -625,6 +625,10 @@ class EmissionLineMoments:
         function will also provide the model-subtracted flux and a
         boolean array flagged with regions where the model was not
         subtracted from the data.
+
+        .. todo::
+            - Need to match this with what is done in :class:`Elric`
+
         """
         # Get the data arrays
         wave = self.binned_spectra['WAVE'].data
@@ -644,8 +648,9 @@ class EmissionLineMoments:
             return flux, ivar, mask, None, None
 
         # Get the models for the binned spectra
-        model = self.stellar_continuum.copy_to_masked_array(
-                        flag=self.stellar_continuum.all_except_emission_flags())
+        model = self.stellar_continuum.emission_line_continuum_model()
+#        model = self.stellar_continuum.copy_to_masked_array(
+#                        flag=self.stellar_continuum.all_except_emission_flags())
         # Get where the stellar-continuum models are masked but the
         # binned spectra are not
         no_model = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(model)

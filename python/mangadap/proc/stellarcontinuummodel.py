@@ -67,6 +67,13 @@ A class hierarchy that performs the stellar-continuum fitting.
         to :class:`StellarContinuumModel`, removed verbose 
     | **05 Jul 2016**: (KBW) Removed oversample keyword from instantion
         of :class:`mangadap.proc.ppxffit.PPXFFit` objects.
+    | **08 Nov 2016**: (KBW) Moved
+        :func:`StellarContinuumModel.reset_continuum_mask_window` from
+        :class:`Elric` to here.  The function allows one to deal with
+        the subtraction of the continuum over the fully viable spectral
+        range, ignoring small spectral regions that were ignored during
+        the stellar continuum fit.  Also added wrapper function,
+        :func:`StellarContinuumModel.emission_line_continuum_model`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -654,10 +661,73 @@ class StellarContinuumModel:
         return self.hdu.info()
 
 
+    def all_spectrum_flags(self):
+        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'EML_REGION',
+                'TPL_PIXELS', 'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED',
+                'NEAR_BOUND' ]
+
+
     def all_except_emission_flags(self):
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'TPL_PIXELS',
-                'TRUNCATED', 'PPXF_REJECT', 'FIT_FAILED', 'NEAR_BOUND' ]
+                'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED', 'NEAR_BOUND' ]
 
+
+#    def select_baseline_flags(self):
+#        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'OUTSIDE_RANGE', 'TPL_PIXELS',
+#                'TRUNCATED', 'FIT_FAILED', 'NEAR_BOUND' ]
+
+    @staticmethod
+    def reset_continuum_mask_window(continuum, dispaxis=1):
+        """
+        Reset the mask of the stellar continuum to a continuous window
+        from the minimum to maximum valid wavelength.
+        """
+
+        spatial_shape = MaNGAFits.get_spatial_shape(continuum.shape, dispaxis)
+        if len(spatial_shape) != 1:
+            raise ValueError('Input array should be two-dimensional!')
+
+        _continuum = continuum.copy()
+        if dispaxis != 1:
+            _continuum = _continuum.T
+
+        nspec,npix = _continuum.shape
+        pix = numpy.ma.MaskedArray(numpy.array([ numpy.arange(npix) ]*nspec),
+                                   mask=numpy.ma.getmaskarray(_continuum))
+
+        min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
+        max_good_pix = numpy.ma.amax(pix, axis=dispaxis)
+        for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
+            c.mask[s:e] = False
+
+        return _continuum if dispaxis == 1 else _continuum.T
+
+
+    def emission_line_continuum_model(self, select=None):
+        """
+        Extract the stellar continuum to use for emission-line
+        measurements.
+
+        Put here because it is common to both :class:`Elric` and
+        :class:`EmissionLineMoments`.
+
+        """
+        _select = numpy.ones(self.nmodels, dtype=numpy.bool) if select is None else select
+        if len(_select) != self.nmodels:
+            raise ValueError('Spectrum selection has incorrect size.')
+
+        # Get the models for the binned spectra
+        continuum = self.copy_to_masked_array(flag=self.all_spectrum_flags())[_select,:]
+#                        flag=self.all_except_emission_flags())[_select,:]
+#                        flag=self.select_baseline_flags())[_select,:]
+        return self.reset_continuum_mask_window(continuum)
+#        _continuum = self.reset_continuum_mask_window(continuum)
+#        print(continuum.shape)
+#        pyplot.plot(wave, continuum.data[0,:], color='0.5', zorder=1, lw=4)
+#        pyplot.plot(wave, _continuum[0,:], color='r', zorder=2, lw=2)
+#        pyplot.plot(wave, continuum[0,:], color='g', zorder=3, lw=1)
+#        pyplot.show()
+            
 
     def fit(self, binned_spectra, guess_vel=None, guess_sig=None, dapsrc=None, dapver=None,
             analysis_path=None, directory_path=None, output_file=None, hardcopy=True,

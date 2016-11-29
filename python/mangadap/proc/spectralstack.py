@@ -63,6 +63,7 @@ import astropy.constants
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
 from ..util.misc import inverse_with_zeros
+from ..util.constants import constants
 
 from matplotlib import pyplot
 
@@ -149,12 +150,14 @@ class SpectralStackPar(ParSet):
 
 class SpectralStack():
     r"""
-
     Class whose primary function is to stack a set of spectra while
     treating covariance between spectra.
 
     See :func:`covariance_mode_options` for available methods of
     accounting for covariance.
+
+    Class also approximates the resulting spectral resolution of the
+    stacked data.
 
     """
     def __init__(self):
@@ -168,6 +171,7 @@ class SpectralStack():
         self.flux_sdev = None
         self.npix = None
         self.ivar = None
+        self.sres = None
         self.covar = None
 
 
@@ -184,7 +188,7 @@ class SpectralStack():
                 :class:`mangadap.util.covariance.Covariance`): The
                 object to check the type against the covariance handling
                 mode.
-        
+
         Returns:
             bool: Flag that type is correct.
         """
@@ -231,6 +235,17 @@ class SpectralStack():
         return inp_mask.astype(dtype)
 
      
+    @staticmethod
+    def _get_input_sres(sres, nspec):
+        if sres is None:
+            return None
+        if len(sres.shape) == 2 and nspec > 0 and sres.shape[0] != nspec:
+            raise ValueError('spectral resolution array is not the correct shape.')
+        if (len(sres.shape) == 2 and sres.shape[0] == nspec) or nspec == 0:
+            return sres
+        return numpy.array([sres]*nspec)
+
+
     def _set_rebin_transfer_matrix(self, binid, binwgt=None):
         r"""
         Construct the transfer matrix that rebins the spectra.  The
@@ -267,13 +282,13 @@ class SpectralStack():
         self.rebin_T = sparse.csr_matrix(self.rebin_T)
 
 
-    def _stack_without_covariance(self, flux, ivar=None):
+    def _stack_without_covariance(self, flux, ivar=None, sres=None):
         """
 
         Stack the spectra, ignoring any covariance that may or may not
         exist.
 
-        Sets :attr:`flux`, :attr:`fluxsqr`, :attr:`npix`, :attr:`ivar`.
+        Sets :attr:`flux`, :attr:`fluxsqr`, :attr:`npix`, :attr:`ivar`, :attr:`sres`.
 
         The stored data is always based on the SUM of the spectra in the
         stack.
@@ -282,7 +297,10 @@ class SpectralStack():
             flux (numpy.ma.MaskedArray): Flux array.
             ivar (numpy.ma.MaskedArray): (**Optional**) The inverse
                 variance array.
-       
+            sres (numpy.ndarray): (**Optional**) 1D or 2D spectral
+                resolution as a function of wavelength for all or each
+                input spectrum.  Default is to ignore any spectral
+                resolution data.
         """
         # Calculate the sum of the flux, flux^2, and determine the
         # number of pixels in the sum
@@ -293,6 +311,12 @@ class SpectralStack():
         self.flux = numpy.ma.dot(rt, flux)
         self.fluxsqr = numpy.ma.dot(rt, numpy.square(flux))
         self.npix = numpy.ma.dot(rt, numpy.invert(numpy.ma.getmaskarray(flux))).astype(int)
+
+        if sres is not None:
+            Tc = rt.sum(axis=1).ravel()
+            Tc[~(Tc>0)] = 1.0
+            self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2)) 
+                                        / numpy.array([Tc]*sres.shape[1]).T, -0.5 )
 
         if ivar is None:
             return
@@ -306,7 +330,7 @@ class SpectralStack():
 #        pyplot.show()
 
 
-    def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None):
+    def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None, sres=None):
         """
         Stack the spectra and incorporate covariance.
         
@@ -320,7 +344,7 @@ class SpectralStack():
         """
         # If calibrating, first stack without covariance, and the
         # renormalize the error.  Covar is expected to be a single float
-        self._stack_without_covariance(flux, ivar=ivar)
+        self._stack_without_covariance(flux, ivar=ivar, sres=sres)
 
         if covariance_mode == 'calibrate':
             if ivar is not None:
@@ -520,7 +544,7 @@ class SpectralStack():
     @staticmethod
     def min_max_wave(wave, voff):
         """
-        Determine the minimum and maximum of all shifted wavelenghth
+        Determine the minimum and maximum of all shifted wavelength
         ranges.
 
         Args:
@@ -544,48 +568,49 @@ class SpectralStack():
 
     #TODO: Untested!
     @staticmethod
-    def register(wave, voff, flux, ivar=None, mask=None, log=False, base=10.0, keep_range=False):
+    def register(wave, voff, flux, ivar=None, mask=None, sres=None, log=False, base=10.0,
+                 keep_range=False):
         """
 
         Register a set of spectra to the same wavelength range given a
         set of velocity offsets.
 
-        Args:
+        .. warning::
+            **THIS FUNCTION IS UNTESTED!**
 
+        Args:
             wave (numpy.ndarray): Single wavelength vector for all input
                 spectra.
-
             voff (numpy.ndarray): Vector with velocity offsets to apply
                 to each spectrum.
-
             flux (numpy.ndarray): Spectrum flux values.  Can be a
                 masked array.
-
             ivar (numpy.ndarray): (**Optional**) Inverse variance in the
                 spectrum fluxes.  Can be a masked array.
-
             mask (numpy.ndarray): (**Optional**) Binary mask values for
                 the spectrum fluxes; 0 (False) is unmasked, anything
                 else is masked.  Default assumes no pixel mask.
-
+            sres (numpy.ndarray): (**Optional**) 1D or 2D spectral
+                resolution as a function of wavelength for all or each
+                input spectrum.  Default is to ignore any spectral
+                resolution data.
             log (bool): (**Optional**) Flag that the wavelength vector
                 is geometrically stepped in wavelength.
-
             base (float): (**Optional**) If the wavelength vector is
                 geometrically stepped, this is the base of the
                 logarithmic step.  Default is 10.0.
-
             keep_range (float): (**Optional**)  When registering the
                 wavelengths of the shifted spectra, keep the identical
                 spectral range as input.
 
         Returns:
-            numpy.ndarray, `numpy.ma.MaskedArray`_: Returns three
-            arrays: (1) the new wavelength vector, common to all
-            spectra; (2) the new flux array; and (3) the new inverse
-            variance array, which will be None if no inverse variances
-            are provided to the function.  The latter two are
-            `numpy.ma.MaskedArray`_ objects.
+            numpy.ndarray, `numpy.ma.MaskedArray`_: Returns four arrays:
+            (1) the new wavelength vector, common to all spectra; (2)
+            the new flux array; (3) the new inverse variance array,
+            which will be None if no inverse variances are provided to
+            the function; and (4) the new spectral resolution vectors,
+            which will also be None if no spectral resolution vectors
+            are provided.
 
         Raises:
             ValueError: Raised if the wavelength or velocity offset
@@ -607,9 +632,14 @@ class SpectralStack():
             raise ValueError('Input inverse variance array must have the same shape as flux array.')
         if mask is not None and mask.shape != flux.shape:
             raise ValueError('Input mask array must have the same shape as flux array.')
+        if sres is not None and sres.shape != wave.shape and sres.shape != flux.shape:
+            raise ValueError('Input spectral resolution data has incorrect shape.')
 
         # Get the mask
         inp_mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask, dtype=float)
+
+        # Get the spectral resolution
+        inp_sres = SpectralStack._get_input_sres(sres, flux.shape[0])
 
         # Input and output spectral range
         inRange = [wave[0], wave[-1]]
@@ -624,10 +654,10 @@ class SpectralStack():
             nwave, outRange = resample_vector_npix(outRange=outRange, dx=dw, log=log, base=base)
         
         #Initialize the output arrays
-        nspec = flux.shape[0]
         _flux = numpy.empty((nspec,nwave), dtype=numpy.float)
         _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
+        _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
         var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
 
         # Resample each spectrum
@@ -640,13 +670,18 @@ class SpectralStack():
             if var is not None:
                 _wave, _ivar[i,:] = resample_vector(var[i,:].ravel(), xRange=inRange, inLog=log,
                                                     newRange=outRange, newpix=nwave, base=base)
+            if inp_sres is not None:
+                _wave, _sres[i,:] = resample_vector(inp_sres[i,:].ravel(), xRange=inRange,
+                                                    inLog=log, newRange=outRange, newpix=nwave,
+                                                    base=base)
         indx = _mask > 0.5
         _mask[indx] = 1.0
         _mask[numpy.invert(indx)] = 0.0
         _mask = _mask.astype(bool)
 
         return _wave, numpy.ma.MaskedArray(_flux, mask=_mask), \
-               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask)
+               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask), \
+               _sres
 
 
     @staticmethod
@@ -694,6 +729,7 @@ class SpectralStack():
             return drpf.covariance_cube(sigma_rho=covariance_par)
 
         if covariance_mode == 'full':
+            warnings.warn('Sit back.  This is going to take a while...')
             return drpf.covariance_cube()
 
         raise ValueError('Unrecognized covariance method: {0}'.format(covariance_mode))
@@ -718,18 +754,38 @@ class SpectralStack():
         flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
         ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
 
+        hdu_extensions = [ h.name for h in drpf.hdu ]
+        if 'DISP' in hdu_extensions:
+            print('Found DISP')
+#            sres = drpf.copy_to_array(ext='DISP')
+#            i = drpf.spatial_shape[0]//2
+#            ii = i*drpf.spatial_shape[0] + i
+#            print(drpf.spatial_shape[0], i, ii)
+#            pyplot.plot(wave, sres[ii,:])
+#            pyplot.show()
+#            exit()
+            cnst = constants()
+            sres = numpy.ma.power(cnst.sig2fwhm * drpf.copy_to_array(ext='DISP')
+                                        / numpy.array([wave]*flux.shape[0]), -1)
+        elif 'SPECRES' in hdu_extensions:
+            print('Found SPECRES')
+            sres = drpf['SPECRES'].data
+        else:
+            sres = None
+
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 
-        return self.stack(wave, flux, binid=binid, ivar=ivar, log=True, keep_range=True) \
-                    if par is None else \
-                        self.stack(wave, flux, operation=par['operation'], binid=binid, ivar=ivar,
-                                   voff=par['vel_offsets'], log=True,
-                                   covariance_mode=par['covar_mode'], covar=covar, keep_range=True)
+        return self.stack(wave, flux, binid=binid, ivar=ivar, sres=sres, log=True,
+                          keep_range=True) if par is None else \
+                    self.stack(wave, flux, operation=par['operation'], binid=binid, ivar=ivar,
+                               sres=sres, voff=par['vel_offsets'], log=True,
+                               covariance_mode=par['covar_mode'], covar=covar, keep_range=True)
 
 
     def stack(self, wave, flux, operation='mean', binid=None, binwgt=None, ivar=None, mask=None,
-              voff=None, log=False, base=10.0, covariance_mode=None, covar=None, keep_range=False):
+              sres=None, voff=None, log=False, base=10.0, covariance_mode=None, covar=None,
+              keep_range=False):
         """
         Stack a set of spectra.  If binid is None, all the spectra in
         the array are stacked into a single output spectrum.
@@ -755,6 +811,10 @@ class SpectralStack():
             mask (numpy.ndarray): (**Optional**) Binary mask values for
                 the spectrum fluxes; 0 (False) is unmasked, anything
                 else is masked.  Default assumes no pixel mask.
+            sres (numpy.ndarray): (**Optional**) 1D or 2D spectral
+                resolution as a function of wavelength for all or each
+                input spectrum.  Default is to ignore any spectral
+                resolution data.
             voff (numpy.ndarray): (**Optional**) Vector with velocity
                 offsets to apply to each spectrum.  Default is no
                 velocity offsets
@@ -776,7 +836,8 @@ class SpectralStack():
                 spectral range as input.
 
         Returns:
-            numpy.ndarray, `numpy.ma.MaskedArray`_: 
+            numpy.ndarray, `numpy.ma.MaskedArray`_:
+            
 
         return self.wave, self.flux, sdev, self.npix, self.ivar, self.covar
 
@@ -801,6 +862,9 @@ class SpectralStack():
             raise ValueError('Shape of the inverse-variance array must match the flux array.')
         if mask is not None and flux.shape != mask.shape:
             raise ValueError('Shape of the mask array must match the flux array.')
+        if sres is not None and sres.shape != wave.shape and sres.shape != flux.shape:
+            raise ValueError('Input spectral resolution data has incorrect shape.')
+
         nspec = flux.shape[0]
         if binid is not None and binid.size != nspec:
             raise ValueError('Length of binid must match the number of input spectra.')
@@ -829,10 +893,12 @@ class SpectralStack():
             _mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask)
             _flux = numpy.ma.MaskedArray(flux, mask=_mask)
             _ivar = None if ivar is None else numpy.ma.MaskedArray(ivar, mask=_mask)
+            _sres = SpectralStack._get_input_sres(sres, flux.shape[0])
             self.wave = wave
         else:
-            self.wave, _flux, _ivar = register(wave, voff, flux, ivar=ivar, mask=mask, log=log,
-                                               base=base, keep_range=keep_range)
+            self.wave, _flux, _ivar, _sres = register(wave, voff, flux, ivar=ivar, mask=mask,
+                                                      sres=sres, log=log, base=base,
+                                                      keep_range=keep_range)
 
         # Calculate the transfer matrix
         self._set_rebin_transfer_matrix(numpy.zeros(nspec, dtype=numpy.int) 
@@ -840,9 +906,9 @@ class SpectralStack():
 
         # Stack the spectra with or without covariance
         if covariance_mode == 'none':
-            self._stack_without_covariance(_flux, ivar=_ivar)
+            self._stack_without_covariance(_flux, ivar=_ivar, sres=_sres)
         else:
-            self._stack_with_covariance(_flux, covariance_mode, covar, ivar=_ivar)
+            self._stack_with_covariance(_flux, covariance_mode, covar, ivar=_ivar, sres=_sres)
 
 #        pyplot.plot(wave, ivar[20*44+20,:])
 #        pyplot.plot(self.wave, self.ivar[0,:])
@@ -856,7 +922,7 @@ class SpectralStack():
 
         # If summing, then the stacking procedure is done
         if operation == 'sum':
-            return self.wave, self.flux, sdev, self.npix, self.ivar, self.covar
+            return self.wave, self.flux, sdev, self.npix, self.ivar, self.sres, self.covar
 
         # If stacking to the mean, calculate the inverse variance of the
         # mean
@@ -864,7 +930,8 @@ class SpectralStack():
 #        print(covar.input_indx)
 #        covar.show(plane=0)
 
-        return self.wave, mean, sdev, self.npix, self.ivar * numpy.square(self.npix), covar
+        return self.wave, mean, sdev, self.npix, self.ivar * numpy.square(self.npix), \
+                    self.sres, covar
 
 
         

@@ -30,6 +30,7 @@ A catch-all module with miscellaneous utility functions.
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
     | **04 Jun 2015**: (KBW) Added :func:`where_not`
     | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
+    | **17 Nov 2016**: (KBW) Added :func:`high_pass_filter`
 
 .. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
 
@@ -122,4 +123,65 @@ def inverse_with_zeros(v, absolute=True):
     _v[indx] = 1.0/_v[indx]
     _v[numpy.invert(indx)] = 0.0
     return _v
+
+
+def high_pass_filter(flux, dw=0, k=None, Dw=None):
+    """
+    Pulled from FIREFLY's hpf() function and edited on 17 Nov 2016.
+
+    Apply a high-pass filter to the input vector.
+
+    """
+
+    n = flux.size
+    _dw = int(dw)
+
+    if k is None and Dw is None:
+        Dw = 100
+        _k = n//Dw
+    elif k is not None and Dw is None:
+        _k = int(k)
+        Dw = n//_k
+    elif k is None and Dw is not None:
+        _k = n//Dw
+    else:
+        raise ValueError('Cannot provide both k and Dw.')
+
+    # PRINT A REPORT
+
+    # Rita's typical inputs for SDSS:
+    # w = 10 # 10
+    # windowsize = 20 # 20
+
+    # My MaNGA inputs:
+    # if w == 0 and windowsize == 0:
+    #     print "HPF parameters not specified: choosing default window (stepsize=40)"
+    #     w = 40
+    #     windowsize = 0
+
+    h           = numpy.fft.fft(flux)
+    h_filtered  = numpy.zeros(n, dtype=complex)
+    window      = numpy.zeros(n)
+    unwindow    = numpy.zeros(n)
+    window[0]   = 1                             # keep F0 for normalisation
+    unwindow[0] = 1
+
+    for i in range(_dw):
+        window[_k+i] = (i+1.0)/_dw
+        window[n-1-(_k+_dw-i)] = (_dw-i)/_dw
+    window[_k+_dw:n-(_k+_dw)] = 1
+
+    unwindow        = 1 - window
+    unwindow[0]     = 1
+    
+    h_filtered      = h * window
+    un_h_filtered   = h * unwindow
+
+    res     = numpy.real(numpy.fft.ifft(h_filtered))
+    unres   = numpy.real(numpy.fft.ifft(un_h_filtered)) 
+    res_out = (1.0+(res-numpy.median(res))/unres) * numpy.median(res) 
+
+    return res_out, window, res, unres
+
+
 

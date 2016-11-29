@@ -32,6 +32,8 @@ Implements a few base classes used during spectral fitting procedures.
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **19 Apr 2016**: (KBW) First version
     | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
+    | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
+        output table.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -94,6 +96,7 @@ class StellarKinematicsFit(SpectralFitting):
                  ('NPIXTOT',numpy.int),
                  ('NPIXFIT',numpy.int),
                  ('TPLWGT',numpy.float,ntpl),
+                 ('USETPL',numpy.bool,ntpl),
                  ('ADDCOEF',numpy.float,nadd) if nadd > 1 else ('ADDCOEF',numpy.float),
                  ('MULTCOEF',numpy.float,nmult) if nmult > 1 else ('MULTCOEF',numpy.float),
                  ('KININP',numpy.float,2),

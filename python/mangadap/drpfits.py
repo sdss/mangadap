@@ -78,6 +78,7 @@ the MaNGA Data Reduction Pipeline (DRP).
         *intended* orientation provided by the DRP; i.e., [x,y,lambda].
         RSS files are left the same, which is [fiber, lambda].
         Documentation.  Testing, particularly of x,y order.
+    | **10 Nov 2016**: (KBW) Included 'DISP' in spectral arrays.
 
 .. todo::
 
@@ -91,6 +92,10 @@ the MaNGA Data Reduction Pipeline (DRP).
       :func:`mangadap.drpfits.DRPFits.gri_composite`.
     - Image reconstruction has transpose sense wrt DRP output!
     - Add logging
+
+    - Need to be clear about which functions use the RSS spectra to
+      create CUBE related data, like the covariance matrix and
+      instrumental dispersion calculations.
 
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -480,9 +485,9 @@ class DRPFits:
         self.nspec = None               # Total number of spectra (good or bad)
         self.spatial_index = None       # Abstracted spatial indexing
         # A list of the extensions in the fits image with spectral data
-        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'DISP' ]
         if self.mode == 'RSS':
-            self.spectral_arrays += [ 'DISP', 'XPOS', 'YPOS' ]
+            self.spectral_arrays += [ 'XPOS', 'YPOS' ]
         self.dispaxis = 2 if self.mode == 'CUBE' else 1
         self.nwave = None
 
@@ -985,9 +990,9 @@ class DRPFits:
 
         # Reformat and initialize properties of the data
         if self.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu)
+            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
         elif self.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu)
+            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
         self.shape = self.hdu['FLUX'].data.shape
         self.spatial_shape = MaNGAFits.get_spatial_shape(self.shape, self.dispaxis)
         self.nspec = numpy.prod(self.spatial_shape)
@@ -2292,7 +2297,12 @@ class DRPFits:
         defaults.  If they are, the function must be able to find and
         access the 'RSS' file to construct the instrumental dispersion
         map because the necessary information is not in the 'CUBE'
-        files.
+        files (before MPL-6).
+
+        .. todo::
+            - Need to implement something that will recognize that the
+              'DISP' extension exists in the MPL-6 and later DRP CUBE
+              files.
         
         For 'RSS' files, the transfer matrix, :math:`{\mathbf T}`, is
         first calculated using :func:`regrid_transfer_matrix`.  The

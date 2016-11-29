@@ -21,6 +21,18 @@ Implements an emission-line profile fitting class.
     | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
         not a returned parameters is near its boundary.
     | **19 Jul 2016**: (KBW) Changed file name
+    | **19 Oct 2016**: (KBW) Added
+        :func:`Elric.reset_continuum_mask_window` function to deal with
+        the subtraction of the continuum over the fully viable spectral
+        range, and ignoring small spectral regions ignored during the
+        stellar continuum fit.  Changed the initial creation of the
+        continuum mask to include the emission line regions to avoid any
+        polynomial extrapolation errors, in case the emission line
+        happens to fall exactly at the edge of the valid spectral range.
+    | **08 Nov 2016**: (KBW) Moved the
+        :func:`StellarContinuumModel.reset_continuum_mask_window`
+        function from :class:`Elric` to be a member of
+        :class:`StellarContinuumModel`.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
@@ -66,6 +78,7 @@ from .pixelmask import PixelMask, SpectralPixelMask
 from .spectralfitting import EmissionLineFit
 from .emissionlinedb import EmissionLineDB
 from .util import residual_growth
+from ..mangafits import MaNGAFits
 
 from matplotlib import pyplot
 
@@ -1511,6 +1524,35 @@ class Elric(EmissionLineFit):
 #        pyplot.show()
 
 
+# MOVED to StellarContinuumModel
+#    @staticmethod
+#    def reset_continuum_mask_window(continuum, dispaxis=1):
+#        """
+#        Reset the mask of the stellar continuum to a continuous window
+#        from the minimum to maximum valid wavelength.
+#        """
+#
+#        spatial_shape = MaNGAFits.get_spatial_shape(continuum.shape, dispaxis)
+#        if len(spatial_shape) != 1:
+#            raise ValueError('Input array should be two-dimensional!')
+#
+#        _continuum = continuum.copy()
+#        if dispaxis != 1:
+#            _continuum = _continuum.T
+#
+#        nspec,npix = _continuum.shape
+#        pix = numpy.ma.MaskedArray(numpy.array([ numpy.arange(npix) ]*nspec),
+#                                   mask=numpy.ma.getmaskarray(_continuum))
+#
+#        min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
+#        max_good_pix = numpy.ma.amax(pix, axis=dispaxis)
+#        for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
+#            c.mask[s:e] = False
+#
+#        return _continuum if dispaxis == 1 else _continuum.T
+            
+
+
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
 
@@ -1556,13 +1598,10 @@ class Elric(EmissionLineFit):
         guess_redshift = par['guess_redshift'][good_spec]
         guess_dispersion = par['guess_dispersion'][good_spec]
 
-        if par['stellar_continuum'] is not None:
-            # Get the models for the binned spectra
-            continuum = par['stellar_continuum'].copy_to_masked_array(
-                        flag=par['stellar_continuum'].all_except_emission_flags())[good_spec,:]
-        else:
-            continuum = None
-
+        # Note: Type of par['stellar_continuum'] is checked above
+        continuum = None if par['stellar_continuum'] is None else \
+                        par['stellar_continuum'].emission_line_continuum_model(select=good_spec)
+    
         model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par \
             = self.fit(wave, _flux, par['emission_lines'], error=noise, mask=par['pixelmask'],
                        sres=sres, stellar_continuum=continuum, base_order=par['base_order'],

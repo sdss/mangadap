@@ -227,7 +227,7 @@ class DAPFits:
         self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
 
         self.spatial_shape = self.hdu['BINID'].data.shape
-        print(self.spatial_shape)
+#        print(self.spatial_shape)
 
         self.smap_ext = []      # Extensions with single maps
         self.mmap_ext = []      # Extensions with multiple maps

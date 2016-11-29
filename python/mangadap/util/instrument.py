@@ -53,7 +53,9 @@ Provides a set of functions to handle instrumental effects.
         range results in an exact integer number of pixels.
     | **05 Jul 2016**: (KBW) To avoid confusion, commented out
         log_rebin.
-
+    | **25 Oct 2016**: (KBW) Modified :func:`spectral_coordinate_step`
+        to be a mean over the full spectrum to avoid numerical precision
+        errors.
 """
 
 from __future__ import division
@@ -75,7 +77,8 @@ import astropy.constants
 from .constants import constants
 from .misc import where_not
 
-#from matplotlib import pyplot
+from matplotlib import pyplot
+
 __author__ = 'Kyle B. Westfall'
 __credits__ = ['K. Westfall', 'D. Wilkinson', 'O. Steele', 'D. Thomas' ]
 
@@ -99,7 +102,11 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
         float: Spectral sampling step in either angstroms (log=False) or
         the step in log(angstroms).
     """
-    return (numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]))[0]
+    dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
+#    print('mean: ', numpy.mean(dw))
+#    print('sdev: ', numpy.std(dw))
+    return numpy.mean(dw)
+#    return (numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]))[0]
 
 
 def spectrum_velocity_scale(wave):
@@ -129,6 +136,8 @@ class convolution_integral_element:
     """
     Support class for variable sigma convolution.  See
     :func:`convolution_variable_sigma`.
+
+    OUT OF DATE; DO NOT USE
 
     Args:
         y (numpy.ndarray): Vector to convolve
@@ -235,7 +244,86 @@ class convolution_integral_element:
 #        return numpy.sqrt(numpy.sum(numpy.square(self.ye*kernel)) / numpy.sum(kernel))
 
 
-def convolution_variable_sigma(y, sigma, ye=None):
+class VariableGaussianKernel:
+    """
+    Support class for variable sigma convolution.  See
+    :func:`convolution_variable_sigma`.
+
+    Stolen from M. Cappellari's gaussian_filter1d function.
+
+    Args:
+        y (numpy.ndarray): Vector to convolve
+        sigma (numpy.ndarray): Coordinate-dependent standard deviation of the
+            Gaussian kernel
+        ye (numpy.ndarray): (**Optional**) Error in the vector to
+            convolve
+
+    Raises:
+        ValueError: Raised if *y* is not a 1D vector, or if the shape of
+            *y* and *sigma* (and *ye* if provided) are different.
+
+    Attributes:
+        x (numpy.ndarray): Pixel coordinate vector
+        y (numpy.ndarray): Vector to convolve
+        ye (numpy.ndarray): Error in the vector to convolve
+        sigma (numpy.ndarray): Coordinate-dependent standard deviation of the
+            Gaussian kernel
+        norm (numpy.ndarray): Gaussian normalization; calculated once for
+            efficiency
+
+    .. todo::
+
+        - Allow to switch to pixel sampled Gaussian kernel?
+
+    """
+    def __init__(self, sigma, minsig=0.01, nsig=3.0, integral=False):
+        self.n = sigma.size                                     # Vector length
+        self.sigma = sigma.clip(min=minsig)                     # Force sigmas to minimum 
+        self.p = int(numpy.ceil(numpy.amax(nsig*self.sigma)))   # Kernel covers up to nsig*sigma
+        self.m = 2*self.p + 1                                   # Kernel length
+        x2 = numpy.square(numpy.linspace(-self.p, self.p, self.m))   # X^2 for kernel
+
+        # Kernel will have size m x n
+        self.kernel = (erf((x2[:,None]+0.5)/numpy.sqrt(2)/self.sigma) 
+                            - erf((x2[:,None]-0.5)/numpy.sqrt(2)/self.sigma))/2. if integral else \
+                      numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma))) 
+
+        self.kernel /= numpy.sum(self.kernel, 0)[None, :]       # Normalize kernel
+
+
+    def _check_shape(self, y, ye=None):
+        """
+        Make sure that the shapes are appropriate for the defined kernel.
+        """
+        if len(y.shape) != 1:
+            raise ValueError('y must be a 1D array!')
+        if y.size != self.n:
+            raise ValueError('y and sigma must have the same shape!')
+        if ye is not None and (len(ye.shape) != 1 or ye.size != self.n):
+            raise ValueError('ye length does not must have the correct shape!')
+
+
+    def _create_a(self, y):
+        a = numpy.zeros(self.kernel.shape)
+        for i in range(self.m):
+            a[i,self.p:-self.p] = y[i:self.n-self.m+i+1]
+        return a
+
+
+    def convolve(self, y, ye=None):
+        self._check_shape(y, ye=ye)
+
+        # Create m copies of the shifted input function
+        a = self._create_a(y)
+        if ye is None:
+            return numpy.sum(a*self.kernel,0)
+
+        # Construct the error
+        ae = self._create_a(numpy.square(ye))
+        return numpy.sum(a*self.kernel,0), numpy.sqrt(numpy.sum(ae*self.kernel,0))
+
+
+def convolution_variable_sigma(y, sigma, ye=None, integral=False):
     r"""
     Convolve a discretely sampled function :math:`y(x)` with a Gaussian
     kernel, :math:`g`, where the standard deviation of the kernel is a
@@ -288,14 +376,13 @@ def convolution_variable_sigma(y, sigma, ye=None):
         vector and its error.  The second array will be returned as None
         if the error vector is not provided.
     """
-    kernel = convolution_integral_element(y,sigma,ye=ye)
-#    conv = numpy.array(list(map(kernel, kernel.x)))
-    conv = numpy.array([kernel(x) for x in kernel.x])
-    if ye is None:
-        return conv
+#    kernel = convolution_integral_element(y,sigma,ye=ye)
+#    conv = numpy.array([kernel(x) for x in kernel.x])
+#    if ye is None:
+#        return conv
+#    return conv, numpy.array([kernel.error(x) for x in kernel.x])
 
-#    return conv, numpy.array(list(map(kernel.error, kernel.x)))
-    return conv, numpy.array([kernel.error(x) for x in kernel.x])
+    return VariableGaussianKernel(sigma, integral=integral).convolve(y,ye=ye)
 
 
 class spectral_resolution:

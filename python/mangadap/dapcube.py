@@ -172,6 +172,10 @@ class construct_cube_file:
 
         # Save the data to the hdu attribute
         prihdr = self._finalize_primary_header(prihdr, binned_spectra, dapsrc=dapsrc)
+#        lst = [ fits.PrimaryHDU(header=prihdr) ]
+#        lst += speclist
+#        lst += elmodlist
+#        self.hdu = fits.HDUList(lst)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *speclist,
                                   *elmodlist
@@ -448,12 +452,22 @@ class construct_cube_file:
                                                           flag='ARTIFACT')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
 
-        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'EML_REGION', 'TPL_PIXELS', 'TRUNCATED',
-                  'PPXF_REJECT', 'INVALID_ERROR' ]
+        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'EML_REGION', 'TPL_PIXELS',
+                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data, flag=flags)
         flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
         el_indx = emission_line_model.bitmask.flagged(emission_line_model['MASK'].data, flag=flags)
         mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FITIGNORED')
+
+#        t_sc = numpy.ma.MaskedArray(stellar_continuum['FLUX'].data, mask=~sc_indx)
+#        t_el = numpy.ma.MaskedArray(stellar_continuum['FLUX'].data, mask=~el_indx)
+#        t_bt = numpy.ma.MaskedArray(stellar_continuum['FLUX'].data, mask=(el_indx & sc_indx))
+#        pyplot.step(stellar_continuum['WAVE'].data, t_sc.data[22,22,:], where='mid', lw=4.0, color='0.5', zorder=1)
+#        pyplot.step(stellar_continuum['WAVE'].data, t_sc[22,22,:], where='mid', lw=2.0, color='r', zorder=2)
+#        pyplot.step(stellar_continuum['WAVE'].data, t_el[22,22,:], where='mid', lw=1.0, color='b', zorder=3)
+#        pyplot.step(stellar_continuum['WAVE'].data, t_bt.data[22,22,:], where='mid', lw=4.0, color='0.5', zorder=1)
+#        pyplot.step(stellar_continuum['WAVE'].data, t_bt[22,22,:], where='mid', lw=2.0, color='r', zorder=2)
+#        pyplot.show()
 
         # TODO: What do I do with BAD_SIGMA?
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum['MASK'].data,

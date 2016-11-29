@@ -6,10 +6,19 @@ KBW (??         ): tag 2.1
       files.
     - Fixed problem with velocity offset between template and galaxy
       data due to difference in pixel sampling.
+    - Updated mangampl.py to include matplotlib version; added MPL-6
+      versions
+    - Fixed how the stellar-continuum-fitting masks are saved; still
+      need to make sure users can reconstruct these exactly from the
+      output model cube files.
+    - Changed how spectral step is calculated to avoid numerical
+      precision issues.
+    - Incorporated M. Cappellari's gaussian_filter1d into the
+      convolution_variable_sigma function in
+      python/mangadap/util/instrument.py.  It's 2 orders of magnitude
+      faster now!
 
 TO FIX:
-    - masking in output cubes; extrapolated regions with bad
-      continuum...
     - emission-line moment masks
 
 --------------------------------------------------------------------------------

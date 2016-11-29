@@ -22,7 +22,7 @@ Binning!
         import sys
         if sys.version > '3':
             long = int
-        
+
         import numpy
         from scipy import sparse
         from astropy.io import fits
@@ -274,7 +274,7 @@ class RadialBinning(SpatialBinning):
         if self.par['log_step']:
             r[indx] = numpy.log10(r[indx])
 
-        binid = numpy.floor((r - self.rs)/self.dr)
+        binid = numpy.floor((r - self.rs)/self.dr).astype(int)
         if self.to_center:
             binid[(binid<0) & indx] = 0          # Go all the way to R=0
         else:
