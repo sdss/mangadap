@@ -1001,7 +1001,7 @@ class TemplateLibrary:
 
         indx = numpy.where(numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag=flag)))
         return numpy.array([ numpy.amin(self.hdu['WAVE'].data[indx]),
-                             numpy.amax(self.hdu['WAVE'].data[indx])])
+                             numpy.amax(self.hdu['WAVE'].data[indx])]).astype(float)
 
 
     def _minimum_sampling(self):
@@ -1164,16 +1164,16 @@ class TemplateLibrary:
         # all spectra.  Only ignore pixels that were flagged as having
         # no data.
         fullRange = self._wavelength_range(flag='NO_DATA') if wavelength_range is None \
-                            else numpy.array(wavelength_range)
+                            else numpy.array(wavelength_range).astype(float)
         # Get the spectral step if it hasn't been set yet
         if self.spectral_step is None:
             self.spectral_step = self._minimum_sampling()
 
         # Get the number of pixels needed
-#        print(fullRange)
+        print(fullRange)
         npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
                                                log=self.log10_sampling)
-#        print(fullRange, _fullRange, self.spectral_step, npix)
+        print(fullRange, _fullRange, self.spectral_step, npix)
 
         # Any pixels without data after resampling are given a value
         # that is the minimum flux - 100 so that they can be easily
