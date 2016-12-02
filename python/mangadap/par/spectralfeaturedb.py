@@ -3,18 +3,18 @@
 """
 
 Container class for databases of spectral features.  This is the base
-class used by :class:`mangadap.proc.artifactdb.ArtifactDB`,
-:class:`mangadap.proc.emissionlinedb.EmissionLineDB`,
-:class:`mangadap.proc.emissionmomentsdb.EmissionMomentsDB`,
-:class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`, and
-:class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`.
+class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
+:class:`mangadap.par.emissionlinedb.EmissionLineDB`,
+:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
+:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
+:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
 
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spectralfeaturedb.py
+    $MANGADAP_DIR/python/mangadap/par/spectralfeaturedb.py
 
 *Imports and python version compliance*:
     ::
@@ -53,8 +53,8 @@ class used by :class:`mangadap.proc.artifactdb.ArtifactDB`,
         import glob
         import numpy
 
+        from .parset import ParSet
         from ..config.defaults import default_dap_source
-        from ..par.parset import ParSet
 
 .. warning::
 
@@ -107,8 +107,8 @@ from os import environ
 import glob
 import numpy
 
+from .parset import ParSet
 from ..config.defaults import default_dap_source
-from ..par.parset import ParSet
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning

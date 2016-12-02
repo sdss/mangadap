@@ -24,6 +24,9 @@ There has to be a better way to construct the file(s)!
     | **09 May 2016**: Original Implementation by K. Westfall (KBW)
     | **26 Jul 2016**: (KBW) Flag the Gaussian-fitted flux as unreliable
         if the summed flux is not within a factor of two
+    | **30 Nov 2016**: (KBW) Added channels to the SPX_ELLCOO and
+        BIN_ELLCOO extensions with the radius normalized by the
+        effective radius.
 
 .. todo::
     Do something different than add an empty extension when the data are
@@ -57,6 +60,7 @@ import astropy.constants
 from .util.bitmask import BitMask
 from .util.log import log_output
 from .util.fileio import write_hdu
+from .par.obsinput import ObsInputPar
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .dapqual import DAPQualityBitMask
 from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
@@ -93,7 +97,7 @@ class construct_maps_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, drpf, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+    def __init__(self, drpf, obs=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
                  nsa_redshift=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False):
@@ -106,6 +110,8 @@ class construct_maps_file:
         # Type checking
         if not isinstance(drpf, DRPFits):
             raise TypeError('Input must have type DRPFits.')
+        if obs is not None and not isinstance(obs, ObsInputPar):
+            raise TypeError('Input must have type ObsInputPar.')
         if rdxqa is not None and not isinstance(rdxqa, ReductionAssessment):
             raise TypeError('Input must have type ReductionAssessment.')
         if binned_spectra is not None and not isinstance(binned_spectra, SpatiallyBinnedSpectra):
@@ -180,9 +186,9 @@ class construct_maps_file:
 
         # Construct the hdu list for each input object.
         # Reduction assessments:
-        self.rdxqalist = self.reduction_assessment_maps(prihdr, rdxqa)
+        self.rdxqalist = self.reduction_assessment_maps(prihdr, obs, rdxqa)
         # Binned spectra:
-        self.bspeclist = self.binned_spectra_maps(prihdr, binned_spectra)
+        self.bspeclist = self.binned_spectra_maps(prihdr, obs, binned_spectra)
         # Stellar-continuum fits:
         self.contlist = self.stellar_continuum_maps(prihdr, stellar_continuum)
         # Emission-line moments:
@@ -207,22 +213,23 @@ class construct_maps_file:
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
         # is not within a factor of two.
-        factor = 5.0
-        indx = (self.hdu['BINID'].data > -1) \
-                & (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
-                & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
-                & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
-                    | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) )
-        print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
-        if numpy.sum(indx):
-            self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
+        if emission_line_moments is not None and emission_line_model is not None:
+            factor = 5.0
+            indx = (self.hdu['BINID'].data > -1) \
+                    & (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
+                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
+                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) )
+            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
+            if numpy.sum(indx):
+                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
                     = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
-            self.hdu['EMLINE_GVEL_MASK'].data[indx] \
+                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
                     = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
-            self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
+                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
                     = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
 
-        # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
+            # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
 
         # Flag the stellar velocity dispersions measured in spectra with
         # S/N<10 as unreliable
@@ -306,7 +313,7 @@ class construct_maps_file:
         prihdr['DAPQUAL'] = (self.dapqual, 'DAP quality bitmask')
 
         # Finalize authors
-        prihdr['AUTHOR'] = 'K Westfall, B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
 
         return prihdr
 
@@ -411,7 +418,7 @@ class construct_maps_file:
         hdr = self.drpf.hdu['FLUX'].header.copy()
         hdr = self._clean_map_header(hdr, nchannels=nchannels)
         # Add Authors
-        hdr['AUTHOR'] = 'K Westfall & B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        hdr['AUTHOR'] = 'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
         # Change the pixel mask name
         hdr['MASKNAME'] = 'MANGA_DAPPIXMASK'
         # Add versioning
@@ -503,7 +510,7 @@ class construct_maps_file:
 #                                                              bit_type=bit_type))
 
 
-    def reduction_assessment_maps(self, prihdr, rdxqa):
+    def reduction_assessment_maps(self, prihdr, obs, rdxqa):
         """
         Transposes are necessary to keep x,y orientation consistent with
         DRP output.
@@ -531,13 +538,16 @@ class construct_maps_file:
 
         # Elliptical coordinates
         hdr = self._add_channel_names(self.multichannel_maphdr,
-                                      ['Elliptical radius', 'Elliptical azimuth'],
-                                      units=['arcsec', 'degrees'])
+                                      ['Elliptical radius', 'R/Re', 'Elliptical azimuth'],
+                                      units=['arcsec', '', 'degrees'])
+        # Output has a channel with the radius normalized by the effective radius
         data = None if rdxqa is None else \
-                    rdxqa['SPECTRUM'].data['ELL_COO'].reshape(*self.drpf.spatial_shape, -1).T
+                    numpy.repeat(rdxqa['SPECTRUM'].data['ELL_COO'].reshape(
+                                                *self.drpf.spatial_shape, -1).T, [2,1], axis=0)
+        if obs is not None:
+            data[1,:,:] /= obs['reff']
         hdus += [ fits.ImageHDU(data=data,
-                                header=self._finalize_map_header(hdr, 'SPX_ELLCOO', bunit='arcsec',
-                                                                 nchannels=2),
+                                header=self._finalize_map_header(hdr, 'SPX_ELLCOO', nchannels=3),
                                 name='SPX_ELLCOO') ]
 
 #        # Spectral coverage
@@ -590,7 +600,7 @@ class construct_maps_file:
 #            
 
 
-    def binned_spectra_maps(self, prihdr, binned_spectra):
+    def binned_spectra_maps(self, prihdr, obs, binned_spectra):
         """
         Transposes are necessary to keep x,y orientation consistent with
         DRP output.
@@ -688,21 +698,23 @@ class construct_maps_file:
 #        pyplot.show()
 
         # Get the luminosity-weighted polar coordinates
-        data = numpy.zeros((*binned_spectra.spatial_shape, 2), dtype=numpy.float)
-        data.reshape(-1,2)[indx,0] = binned_spectra['BINS'].data['LW_ELL_COO'][
+        data = numpy.zeros((*binned_spectra.spatial_shape, 3), dtype=numpy.float)
+        data.reshape(-1,3)[indx,0] = binned_spectra['BINS'].data['LW_ELL_COO'][
                                                             unique_bins[reconstruct[indx]],0]
-        data.reshape(-1,2)[indx,1] = binned_spectra['BINS'].data['LW_ELL_COO'][
+        data[:,:,1] = data[:,:,0] if obs is None else data[:,:,0]/obs['reff']
+        data.reshape(-1,3)[indx,2] = binned_spectra['BINS'].data['LW_ELL_COO'][
                                                             unique_bins[reconstruct[indx]],1]
         hdr = self._add_channel_names(self.multichannel_maphdr,
-                                      ['Lum. weighted elliptical radius',
+                                      ['Lum. weighted elliptical radius', 'R/Re',
                                        'Lum. weighted elliptical azimuth'],
-                                      units=['arcsec', 'degrees'])
+                                      units=['arcsec', '', 'degrees'])
         if binned_spectra.rdxqa is not None:
-            hdr['PA'] = (binned_spectra.rdxqa.pa, 'Isophotal position angle')
+            hdr['PA'] = (binned_spectra.rdxqa.pa, 'Isophotal position angle (deg)')
             hdr['ELL'] = (binned_spectra.rdxqa.ell, 'Isophotal ellipticity (1-b/a)')
+        if obs is not None:
+            hdr['REFF'] = (obs['reff'], 'Effective radius (arcsec)')
         hdus += [ fits.ImageHDU(data=data.T,
-                                header=self._finalize_map_header(hdr, 'BIN_LWELLCOO',
-                                                                 bunit='arcsec', nchannels=2),
+                                header=self._finalize_map_header(hdr, 'BIN_LWELLCOO', nchannels=3),
                                 name='BIN_LWELLCOO') ]
 
 #        pyplot.imshow(lwcoo.T[0,:,:], origin='lower', interpolation='nearest')

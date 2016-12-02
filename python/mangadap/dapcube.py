@@ -254,7 +254,7 @@ class construct_cube_file:
         prihdr['DAPQUAL'] = (self.dapqual, 'DAP quality bitmask')
 
         # Finalize authors
-        prihdr['AUTHOR'] = 'K Westfall, B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
 
         return prihdr
 
@@ -286,7 +286,7 @@ class construct_cube_file:
         hdr = self.drpf.hdu['FLUX'].header.copy()
         hdr = self._clean_cube_header(hdr)
         # Add Authors
-        hdr['AUTHOR'] = 'K Westfall & B Andrews <kyle.westfall@port.co.uk, andrewsb@pitt.edu>'
+        hdr['AUTHOR'] = 'K Westfall & B Andrews <kyle.westfall@ucolick.org, andrewsb@pitt.edu>'
         # Change the pixel mask name
         hdr['MASKNAME'] = 'MANGA_DAPSPECMASK'
         # Add versioning
@@ -520,13 +520,13 @@ class construct_cube_file:
 
         # Get the reddened data
         data, ivar = apply_reddening(binned_spectra['FLUX'].data, binned_spectra['REDCORR'].data,
-                                     dispaxis=2, deredden=False, ivar=binned_spectra['IVAR'].data)
+                                     deredden=False, ivar=binned_spectra['IVAR'].data)
 
         # Get the model
         model = stellar_continuum['FLUX'].data + emission_line_model['FLUX'].data \
                     + emission_line_model['BASE'].data
         # and redden it
-        model = apply_reddening(model, binned_spectra['REDCORR'].data, dispaxis=2, deredden=False)
+        model = apply_reddening(model, binned_spectra['REDCORR'].data, deredden=False)
 
         # Get the mask data
         mask = self.common_mask.copy()
@@ -609,9 +609,9 @@ class construct_cube_file:
 
         # Get the reddened line model and baselines
         model = apply_reddening(emission_line_model['FLUX'].data, binned_spectra['REDCORR'].data,
-                                dispaxis=2, deredden=False)
+                                deredden=False)
         base = apply_reddening(emission_line_model['BASE'].data, binned_spectra['REDCORR'].data,
-                                dispaxis=2, deredden=False)
+                               deredden=False)
 
         # Get the mask data
         mask = self.common_mask.copy()

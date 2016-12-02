@@ -79,6 +79,11 @@ the MaNGA Data Reduction Pipeline (DRP).
         RSS files are left the same, which is [fiber, lambda].
         Documentation.  Testing, particularly of x,y order.
     | **10 Nov 2016**: (KBW) Included 'DISP' in spectral arrays.
+    | **30 Nov 2016**: (KBW) Include
+        :func:`DRPFits.spectral_resolution`, which returns spectral
+        resolution cube or vector independent of MPL
+    | **01 Dec 2016**: (KBW) Added
+        :func:`DRPFits.spectral_resolution_header`.
 
 .. todo::
 
@@ -129,6 +134,7 @@ try:
 except ImportError:
     warnings.warn('Could not import shapely!', ImportWarning)
 
+from .util.constants import constants
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .config.defaults import default_idlutils_dir, default_drp_version
@@ -388,6 +394,7 @@ class DRPFits:
             DRP bit mask values in the `MASK` extension.
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
             the DRP file
+        ext (list): List of fits extensions in the file
         checksum (bool): Flag to check for file corruption when opening
             the HDU.
         wcs (`astropy.wcs.wcs.WCS`_): WCS object based on WCS keywords
@@ -478,16 +485,14 @@ class DRPFits:
 
         # Setup the variables for the internal data structure
         self.hdu = None                 # Do not automatically read the data
+        self.ext = None                 # Extensions
         self.checksum = checksum        # Check the file for corruption
         self.wcs = None                 # WCS structure
         self.shape = None               # Shape of the data array
         self.spatial_shape = None       # Shape of the spatial axes
         self.nspec = None               # Total number of spectra (good or bad)
         self.spatial_index = None       # Abstracted spatial indexing
-        # A list of the extensions in the fits image with spectral data
-        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'DISP' ]
-        if self.mode == 'RSS':
-            self.spectral_arrays += [ 'XPOS', 'YPOS' ]
+        self.spectral_arrays = None     # Arrays with spectral data
         self.dispaxis = 2 if self.mode == 'CUBE' else 1
         self.nwave = None
 
@@ -923,6 +928,17 @@ class DRPFits:
         self.hdu['FLUX'].header['CUNIT2'] = 'deg'
 
 
+    def _set_spectral_arrays(self):
+        """
+        Set the list of extensions with spectral data
+        """
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
+        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'DISP' in self.ext):
+            self.spectral_arrays += [ 'DISP' ]
+        if self.mode == 'RSS':
+            self.spectral_arrays += [ 'XPOS', 'YPOS' ]
+
+
     def _generate_spatial_index(self):
         """
         Generate the tuples with the list of original indices in the
@@ -987,6 +1003,8 @@ class DRPFits:
         # Open the fits file, but do NOT allow the file to be
         # overwritten
         self.hdu = fits.open(inp, mode='readonly', checksum=checksum)
+        self.ext = [ h.name for h in self.hdu ]
+        self._set_spectral_arrays()
 
         # Reformat and initialize properties of the data
         if self.mode == 'CUBE':
@@ -1092,12 +1110,12 @@ class DRPFits:
         return self.hdu[ext].data.reshape(-1,self.nwave)[_t,:]
         
 
-    def wavelength_mask(self, waverange=None, array=False):
+    def wavelength_mask(self, waverange=None, toarray=False):
         r"""
-        Return a mask boolean array with flag for pixels that
-        fall within the selected wavelength range.  If no wavelength
-        range is provided, the function just returns a fully False array
-        with the correct shape.
+        Return a mask boolean array with flags for pixels that fall
+        within the selected wavelength range.  If no wavelength range is
+        provided, the function just returns a fully False array with the
+        correct shape.
 
         .. todo::
         
@@ -1111,10 +1129,9 @@ class DRPFits:
         Args:
             waverange (array-like) : (**Optional**) A two-element array
                 with the minimum and maximum wavelength to include.
-            array (bool) : (**Optional**) Return an array with a shape
-                :math:`N_{\rm spec} \times N_{\rm pix}` to match the
-                shape of the output of :func:`copy_to_array`.  Default
-                is to provide only the single vector.
+            toarray (bool) : (**Optional**) Return an array with same
+                shape as the flux array.  Default is to provide only the
+                single vector.
 
         Returns:
             numpy.ndarray: Boolean mask array.
@@ -1123,7 +1140,7 @@ class DRPFits:
             ValueError: Raised if the input wavelength range does not
                 have two elements.
         """
-        outshape = self.shape if array else (self.nwave,)
+        outshape = self.shape if toarray else (self.nwave,)
         if waverange is None:
             return numpy.full(outshape, False, dtype=numpy.bool)
         if len(waverange) != 2:
@@ -1133,7 +1150,7 @@ class DRPFits:
             self.dispaxis = len(outshape)-1
         _waverange = waverange if waverange[0] < waverange[1] else [waverange[1], waverange[0]]
         selected = (self.hdu['WAVE'].data < _waverange[0]) | (self.hdu['WAVE'].data > _waverange[1])
-        return numpy.array([selected]*self.nspec).reshape(outshape) if array else selected
+        return numpy.array([selected]*self.nspec).reshape(outshape) if toarray else selected
 
     
     def copy_to_array(self, waverange=None, ext='FLUX'):
@@ -1182,7 +1199,7 @@ class DRPFits:
             raise KeyError('Cannot access {0} extension.'.format(_ext))
         if waverange is None:
             return self.hdu[_ext].data.reshape(-1,self.nwave).copy()
-        indx = numpy.invert(self.wavelength_mask(waverange=waverange, array=True))
+        indx = numpy.invert(self.wavelength_mask(waverange=waverange, toarray=True))
         return self.hdu[_ext].data[indx].reshape(-1,self.nwave).copy()
 
 
@@ -1255,9 +1272,78 @@ class DRPFits:
                             flag=flag)
         # Add the wavelength range mask
         if waverange is not None:
-            mask |= self.wavelength_mask(waverange=waverange,array=True).reshape(-1,self.nwave)
+            mask |= self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
         # Return the masked array
         return numpy.ma.MaskedArray(self.hdu[_ext].data.reshape(-1,self.nwave).copy(), mask=mask)
+
+
+    def spectral_resolution(self, ext=None, toarray=False):
+        """
+        Return the spectral resolution at each spatial and spectral
+        position.
+
+        Args:
+            ext (str): (**Optional**) Specify the extension with the
+                spectral estimate to use.  Should be in [ None, 'DISP',
+                'SPECRES'].  The default is None, which means it will
+                return, in order of precedence, the data in 'DISP',
+                'SPECRES', or a None value if neither are present.
+            toarray (bool): (**Optional**) Return the spectral
+                resolution as a 2D array: Nspec x Nwave, even if the DRP
+                file is a CUBE object, similar to
+                :func:`DRPFits.copy_to_array`.  Default is to return an
+                object with the same shape as the flux array.
+
+        Returns:
+            `numpy.ma.MaskedArray`_ : Masked array with the spectral
+            resolution.
+        """
+        self.open_hdu(checksum=self.checksum)
+        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+            raise ValueError('No extension: {0}'.format(ext))
+
+        if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
+            print('Use DISP')
+            disp = self.copy_to_array(ext='DISP') if toarray else \
+                        numpy.ma.MaskedArray(self.hdu['DISP'].data)
+#            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
+#            i = self.spatial_shape[0]//2
+#            ii = i*self.spatial_shape[0] + i
+#            print(self.spatial_shape[0], i, ii)
+#            pyplot.plot(self['WAVE'].data, sres[ii,:])
+#            pyplot.show()
+#            exit()
+            return numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+        elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
+            print('Use SPECRES')
+            sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
+                                                        * numpy.prod(self.spatial_shape)))
+            return sres if toarray else sres.reshape(-1,self.nwave)
+        return None
+
+
+    def spectral_resolution_header(self, ext=None):
+        """
+        Return a fits header for the spectral resolution array.  Copies
+        the basic header from the relevant extension in the DRP file.
+
+        Args:
+            ext (str): (**Optional**) Specify the extension with the
+                spectral estimate to use.  Should be in [ None, 'DISP',
+                'SPECRES'].  The default is None, which means it will
+                return, in order of precedence, the header for 'DISP',
+                'SPECRES', or an empty header if neither are present.
+        """
+        self.open_hdu(checksum=self.checksum)
+
+        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+            raise ValueError('No extension: {0}'.format(ext))
+
+        if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
+            return self.hdu['DISP'].header.copy()
+        elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
+            return self.hdu['SPECRES'].header.copy()
+        return fits.Header()
 
 
     def object_data(self):
@@ -1456,6 +1542,7 @@ class DRPFits:
             return (x-0.5)*dx+x0, (y-0.5)*self.pixelscale+self.ys
 
         if self.wcs is None:
+            # TODO: Allow this to fix the header if MPL requires it?
 #            self._fix_header()
 #            print(self.hdu['FLUX'].header)
             self.wcs = WCS(header=self.hdu['FLUX'].header,fix=False,naxis=(1,2))
@@ -2263,27 +2350,24 @@ class DRPFits:
 
         self.open_hdu(checksum=self.checksum)
 
-        if channels is None:
-            channels = numpy.arange(self.nwave)     # The number of wavelength channels
-        else:
-            if not isinstance(channels, list) and not isinstance(channels, numpy.ndarray):
-                channels = [channels]
-            channels = numpy.array(channels)
+        # The number of wavelength channels
+        _channels = numpy.arange(self.nwave) if channels is None \
+                        else numpy.atleast_1d(channels)
 
-        nc = len(channels)
+        nc = len(_channels)
         CovCube = numpy.empty(nc, dtype=sparse.csr.csr_matrix)   # Empty ndarray
 
         for i in range(nc):
-            CovCube[i] = self.covariance_matrix(channels[i], pixelscale, recenter, width_buffer,
-                                                rlim, sigma, sigma_rho, csr=True, quiet=True)
             if not quiet:
                 print('Covariance Cube {0}/{1}'.format(i+1,nc), end="\r")
+            CovCube[i] = self.covariance_matrix(_channels[i], pixelscale, recenter, width_buffer,
+                                                rlim, sigma, sigma_rho, csr=True, quiet=True)
 
         if not quiet:
             print('Covariance Cube Done                     ')
 
         # Don't provide input indices if the full cube is calculated
-        return Covariance(inp=CovCube, input_indx=channels) if not csr else CovCube
+        return Covariance(inp=CovCube, input_indx=_channels) if not csr else CovCube
 
 
     def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,
@@ -2482,7 +2566,7 @@ class DRPFits:
         # Done this way so that computation of wavelength mask only done
         # once
         if waverange is not None:
-            wavemask = self.wavelength_mask(waverange=waverange, array=True).reshape(-1,self.nwave)
+            wavemask = self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
 #            xpos.mask |= wavemask
 #            ypos.mask |= wavemask
             xpos[wavemask] = numpy.ma.masked

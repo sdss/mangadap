@@ -1170,10 +1170,10 @@ class TemplateLibrary:
             self.spectral_step = self._minimum_sampling()
 
         # Get the number of pixels needed
-        print(fullRange)
+#        print(fullRange)
         npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
                                                log=self.log10_sampling)
-        print(fullRange, _fullRange, self.spectral_step, npix)
+#        print(fullRange, _fullRange, self.spectral_step, npix)
 
         # Any pixels without data after resampling are given a value
         # that is the minimum flux - 100 so that they can be easily
@@ -1537,7 +1537,7 @@ class TemplateLibrary:
             raise ValueError('velscale_ratio only valid with logarithmically sampled spectra.')
         if velscale_ratio is not None:
             self.spectral_step /= velscale_ratio
-        print(self.spectral_step)
+#        print(self.spectral_step)
 
         # Set the paths if possible
         directory_path = self.directory_path if directory_path is None else directory_path

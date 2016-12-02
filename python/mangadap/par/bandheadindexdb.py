@@ -8,7 +8,7 @@ Container class for the database of bandhead indices to measure.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/bandheadindexdb.py
+    $MANGADAP_DIR/python/mangadap/par/bandheadindexdb.py
 
 *Imports and python version compliance*:
     ::
@@ -28,10 +28,10 @@ Container class for the database of bandhead indices to measure.
 
         from pydl.goddard.astro import airtovac
         from pydl.pydlutils.yanny import yanny
-        from ..par.parset import ParDatabase
-        from ..proc.bandpassfilter import BandPassFilterPar
+        from .parset import ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from .util import _select_proc_method
+        from ..proc.bandpassfilter import BandPassFilterPar
+        from ..proc.util import _select_proc_method
 
 
 *Class usage examples*:
@@ -40,14 +40,14 @@ Container class for the database of bandhead indices to measure.
     bandhead index databases (see
     :func:`available_bandhead_index_databases`)::
     
-        from mangadap.proc.bandheadindexdb import BandheadIndexDB
+        from mangadap.par.bandheadindexdb import BandheadIndexDB
         p = BandheadIndexDB('STANDARD')
 
     The above call requires that the ``$MANGADAP_DIR`` environmental
     variable is set.  If it is not, you can define it's location, as
     in::
 
-        from mangadap.proc.bandheadindexdb import BandheadIndexDB
+        from mangadap.par.bandheadindexdb import BandheadIndexDB
         p = BandheadIndexDB('STANDARD', dapsrc='/path/to/dap/source')
 
     Finally, you can create your own `SDSS-style parameter file`_ with
@@ -57,8 +57,8 @@ Container class for the database of bandhead indices to measure.
     using :class:`SpectralFeatureDBDef`, which you can then pass to
     :class:`BandheadIndexDB`::
 
-        from mangadap.proc.spectralfeaturedb import SpectralFeatureDBDef
-        from mangadap.proc.bandheadindexdb import BandheadIndexDB
+        from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
+        from mangadap.par.bandheadindexdb import BandheadIndexDB
         d = SpectralFeatureDBDef(key='USER',
                                  file_path='/path/to/parameter/file')
         p = BandheadIndexDB('USER', indxdb_list=d)
@@ -95,14 +95,12 @@ if sys.version > '3':
 import os.path
 import numpy
 
-#from ..util.idlutils import airtovac
-#from ..util.yanny import yanny
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from ..par.parset import ParDatabase
-from ..proc.bandpassfilter import BandPassFilterPar
+from .parset import ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from .util import _select_proc_method
+from ..proc.bandpassfilter import BandPassFilterPar
+from ..proc.util import _select_proc_method
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -121,7 +119,7 @@ def available_bandhead_index_databases(dapsrc=None):
     +-------------+-----+----------------------------------+
 
     This is a simple wrapper for
-    :func:`mangadap.proc.available_spectral_feature_databases`.
+    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source

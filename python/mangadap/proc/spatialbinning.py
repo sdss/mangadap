@@ -113,7 +113,6 @@ class RadialBinningPar(ParSet):
     :class:`mangadap.par.parset.ParSet` for attributes.
 
     Args:
-
         center (`numpy.ndarray`_ or list): A two-element array defining
             the center to use in the definition of the elliptical bins.
             This is defined as a sky-right offset in arcseconds from the

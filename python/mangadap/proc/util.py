@@ -214,20 +214,6 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #            bin_change = numpy.repeat(bin_change, rep)
 
 
-#def _pixel_scale(wave, units='km/s', base=10.0):
-#    """
-#    Calculate the velocity scale per pixel.  Assumes the wavelengths
-#    are logarithmically sampled.
-#    """
-#    if units == 'km/s':
-#        return numpy.diff(numpy.log(wave[0:2]))[0]*astropy.constants.c.to('km/s').value
-#    if units == 'logw':
-#        return numpy.diff(numpy.log(wave[0:2]))[0]/numpy.log(base)
-#    if units == 'ang':
-#        return numpy.diff(wave[0:2])[0]
-#
-#    raise ValueError('Units should be km/s, logw, or ang.  Unknown unit: {0}'.format(units))
-
 def residual_growth(resid, growth_samples):
     """
     Interpolate the growth curve at distinct fractions, bracketed by the

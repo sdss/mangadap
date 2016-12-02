@@ -14,7 +14,7 @@ spectra in an RSS or CUBE file.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/artifactdb.py
+    $MANGADAP_DIR/python/mangadap/par/artifactdb.py
 
 *Imports and python version compliance*:
     ::
@@ -32,11 +32,11 @@ spectra in an RSS or CUBE file.
         import os.path
         import numpy
 
-        from ..util.idlutils import airtovac
+        from pydl.goddard.astro import airtovac
         from pydl.pydlutils.yanny import yanny
-        from ..par.parset import ParSet, ParDatabase
+        from .parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from .util import _select_proc_method
+        from ..proc.util import _select_proc_method
 
 *Class usage examples*:
     Add example usage!
@@ -45,6 +45,7 @@ spectra in an RSS or CUBE file.
     | **16 Apr 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
+    | **01 Dec 2016**: (KBW) Relocated from proc to par.
 
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
@@ -64,13 +65,11 @@ if sys.version > '3':
 import os.path
 import numpy
 
-#from ..util.idlutils import airtovac
-#from ..util.yanny import yanny
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from ..par.parset import ParSet, ParDatabase
+from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from .util import _select_proc_method
+from ..proc.util import _select_proc_method
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -132,7 +131,7 @@ def available_artifact_databases(dapsrc=None):
     +-------------+-----+----------------------------------+
 
     This is a simple wrapper for
-    :func:`mangadap.proc.available_spectral_feature_databases`.
+    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source

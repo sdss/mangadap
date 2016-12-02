@@ -40,21 +40,24 @@ A class hierarchy that performs the spectral-index measurements.
 
         from ..mangafits import MaNGAFits
         from ..par.parset import ParSet
+        from ..par.artifactdb import ArtifactDB
+        from ..par.absorptionindexdb import AbsorptionIndexDB
+        from ..par.bandheadindexdb import BandheadIndexDB
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..config.defaults import default_dap_common_path
         from ..util.instrument import spectral_resolution, match_spectral_resolution
-        from ..util.instrument import spectral_coordinate_step
+        from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+        from ..util.log import log_output
         from ..util.bitmask import BitMask
-        from .artifactdb import ArtifactDB
-        from .absorptionindexdb import AbsorptionIndexDB
-        from .bandheadindexdb import BandheadIndexDB
-        from .pixelmask import SpectralPixelMask
+        from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .stellarcontinuummodel import StellarContinuumModel
+        from .emissionlinemodel import EmissionLineModel
         from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
+        from .bandpassfilter import passband_weighted_mean
         from .util import _select_proc_method, flux_to_fnu
 
 
@@ -110,6 +113,9 @@ import astropy.constants
 
 from ..mangafits import MaNGAFits
 from ..par.parset import ParSet
+from ..par.artifactdb import ArtifactDB
+from ..par.absorptionindexdb import AbsorptionIndexDB
+from ..par.bandheadindexdb import BandheadIndexDB
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..config.defaults import default_dap_common_path
@@ -118,10 +124,7 @@ from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.log import log_output
 from ..util.bitmask import BitMask
-from .artifactdb import ArtifactDB
-from .absorptionindexdb import AbsorptionIndexDB
-from .bandheadindexdb import BandheadIndexDB
-from .pixelmask import SpectralPixelMask
+from ..util.pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
@@ -689,7 +692,7 @@ class SpectralIndices:
         Initialize the header.
 
         """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['SIKEY'] = (self.database['key'], 'Spectral-index database keyword')
         hdr['SIMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['SIFWHM'] = (self.database['fwhm'], 'FWHM of index system resolution (ang)')

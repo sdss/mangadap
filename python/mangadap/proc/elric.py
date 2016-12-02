@@ -13,6 +13,39 @@ Implements an emission-line profile fitting class.
 *Imports and python version compliance*:
     ::
 
+        from __future__ import division
+        from __future__ import print_function
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+
+        import sys
+        import warnings
+        if sys.version > '3':
+            long = int
+
+        import time
+        import os
+        import logging
+
+        import numpy
+        from scipy import interpolate, integrate, optimize
+        from scipy.special import erf
+        import astropy.constants
+        from astropy.modeling import FittableModel, Parameter
+
+        from ..mangafits import MaNGAFits
+        from ..par.parset import ParSet
+        from ..par.emissionlinedb import EmissionLineDB
+        from ..util.fileio import init_record_array
+        from ..util.instrument import spectrum_velocity_scale, resample_vector
+        from ..util.log import log_output
+        from ..util.constants import constants
+        from ..util.pixelmask import PixelMask, SpectralPixelMask
+        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .stellarcontinuummodel import StellarContinuumModel
+        from .spectralfitting import EmissionLineFit
+        from .util import residual_growth
+
 *Class usage examples*:
         Add examples
 
@@ -67,18 +100,18 @@ from scipy.special import erf
 import astropy.constants
 from astropy.modeling import FittableModel, Parameter
 
+from ..mangafits import MaNGAFits
 from ..par.parset import ParSet
+from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, resample_vector
 from ..util.log import log_output
 from ..util.constants import constants
+from ..util.pixelmask import PixelMask, SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
-from .pixelmask import PixelMask, SpectralPixelMask
 from .spectralfitting import EmissionLineFit
-from .emissionlinedb import EmissionLineDB
 from .util import residual_growth
-from ..mangafits import MaNGAFits
 
 from matplotlib import pyplot
 
@@ -660,7 +693,9 @@ class LineProfileFit:
                 or (mask is not None and mask.shape != y.shape):
             raise ValueError('All vector shapes must be identical.')
 
-        # If the input is a masked array, combine the two masks
+        # If the input is a masked array, combine the two masks; the
+        # first line below works for both normal numpy.ndarrays and
+        # MaskedArray
         _mask = numpy.ma.getmaskarray(y)
         if mask is not None:
             _mask |= mask
@@ -1522,35 +1557,6 @@ class Elric(EmissionLineFit):
 #        pyplot.scatter(orig[nonzero & ~flg,1], model_eml_par['KIN'][nonzero & ~flg,1], marker='.',
 #                       s=30, color='k')
 #        pyplot.show()
-
-
-# MOVED to StellarContinuumModel
-#    @staticmethod
-#    def reset_continuum_mask_window(continuum, dispaxis=1):
-#        """
-#        Reset the mask of the stellar continuum to a continuous window
-#        from the minimum to maximum valid wavelength.
-#        """
-#
-#        spatial_shape = MaNGAFits.get_spatial_shape(continuum.shape, dispaxis)
-#        if len(spatial_shape) != 1:
-#            raise ValueError('Input array should be two-dimensional!')
-#
-#        _continuum = continuum.copy()
-#        if dispaxis != 1:
-#            _continuum = _continuum.T
-#
-#        nspec,npix = _continuum.shape
-#        pix = numpy.ma.MaskedArray(numpy.array([ numpy.arange(npix) ]*nspec),
-#                                   mask=numpy.ma.getmaskarray(_continuum))
-#
-#        min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
-#        max_good_pix = numpy.ma.amax(pix, axis=dispaxis)
-#        for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
-#            c.mask[s:e] = False
-#
-#        return _continuum if dispaxis == 1 else _continuum.T
-            
 
 
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):

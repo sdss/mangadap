@@ -44,14 +44,15 @@ A class hierarchy that measures moments of the observed emission lines.
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
         from ..util.bitmask import BitMask
+        from ..util.pixelmask import SpectralPixelMask
         from ..util.log import log_output
+        from ..util.constants import constants
         from ..par.parset import ParSet
-        from .artifactdb import ArtifactDB
-        from .emissionmomentsdb import EmissionMomentsDB
-        from .pixelmask import SpectralPixelMask
+        from ..par.artifactdb import ArtifactDB
+        from ..par.emissionmomentsdb import EmissionMomentsDB
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
-        from .bandpassfilter import passband_integral, passband_integrated_width
+        from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
         from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
         from .util import _select_proc_method
 
@@ -105,12 +106,12 @@ from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
 from ..util.bitmask import BitMask
+from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.constants import constants
 from ..par.parset import ParSet
-from .artifactdb import ArtifactDB
-from .emissionmomentsdb import EmissionMomentsDB
-from .pixelmask import SpectralPixelMask
+from ..par.artifactdb import ArtifactDB
+from ..par.emissionmomentsdb import EmissionMomentsDB
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
@@ -432,7 +433,7 @@ class EmissionLineMoments:
         Initialize the header.
 
         """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['ELMKEY'] = (self.database['key'], 'Emission-line moments database keyword')
         hdr['ELMMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')

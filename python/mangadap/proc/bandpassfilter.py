@@ -35,9 +35,9 @@ Container class that defines a bandpass filter.
                              primary=[6557.6,6571.6]) 
 
     However, this class is mostly to provide a base class used by
-    :class:`mangadap.proc.emissionmomentsdb.EmissionMomentsDB`,
-    :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`, and
-    :class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`; it is not
+    :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
+    :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
+    :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
     really meant to be used as given above.
 
 *Revision history*:
@@ -71,11 +71,11 @@ class BandPassFilterPar(ParSet):
     Parameter object that defines a set of band-pass filters.  This is a
     base class for similar objects used calculating fluxes and flux
     moments of emission lines
-    (:class:`mangadap.proc.emissionmomentsdb.EmissionMomentsDB`),
+    (:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`),
     absorption line indices
-    (:class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`), and
+    (:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`), and
     spectral continuum bandheads
-    (:class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`) in the DAP.
+    (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`) in the DAP.
 
     All wavelengths are expected to be IN VACUUM, to match the expected
     application of this filter to SDSS MaNGA spectra.
@@ -100,30 +100,30 @@ class BandPassFilterPar(ParSet):
             with the starting and ending wavelength (angstroms in
             VACUUM) for the primary passband surrounding the spectral
             feature of interest.  This is used by
-            :class:`mangadap.proc.emissionmomentsdb.EmissionMomentsDB`
+            :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
             and
-            :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`,
+            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`,
             but it is irrelevant for
-            :class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`.
+            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
         units (str) : (Optional) Define the unit for the spectral index
             as either angstroms ('ang') or magnitudes ('mag').
             Currently only used by
-            :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`.
+            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.
         component (bool) : (Optional) Flag that the bandpass definition
             is a component of a larger set of bandpass filters.  This is
             currently only used by
-            :class:`mangadap.proc.absorptionindexdb.AbsorptionIndexDB`
+            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
             to combine index measurements into a single index.  If True,
             all components with the same *name* are summed to form the
             composite index.
         integrand (str) : (Optional) Currently only used by
-            :class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`.
+            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
             Define the integrand over the passband used to construct and
             index as either flux per unit frequency (``'fnu'``),
             :math:`F_\nu`, or flux per unit wavelength (``'flambda'``),
             :math:`F_\lambda`.
         order (str): (Optional) Currently only used by
-            :class:`mangadap.proc.bandheadindexdb.BandheadIndexDB`.
+            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
             Define the order to use when constructing the index.  The
             options are either a ratio of red-to-blue or blue-to-red,
             which are respectively selected using ``'r_b'`` or

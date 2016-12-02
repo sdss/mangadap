@@ -31,24 +31,26 @@ A class hierarchy that fits the emission lines.
                 from ConfigParser import ConfigParser
             except ImportError:
                 warnings.warn('Unable to import ConfigParser!  Beware!')
-
+        
         import glob
-        import os.path
+        import os
+        import logging
+        
         import numpy
         from astropy.io import fits
         import astropy.constants
-
+        
         from ..mangafits import MaNGAFits
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
+        from ..par.artifactdb import ArtifactDB
+        from ..par.emissionlinedb import EmissionLineDB
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
         from ..util.bitmask import BitMask
+        from ..util.pixelmask import SpectralPixelMask
         from ..util.log import log_output
-        from .artifactdb import ArtifactDB
-        from .emissionlinedb import EmissionLineDB
-        from .pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .elric import Elric, ElricPar, GaussianLineProfile
@@ -99,14 +101,14 @@ import astropy.constants
 from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
+from ..par.artifactdb import ArtifactDB
+from ..par.emissionlinedb import EmissionLineDB
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
 from ..util.bitmask import BitMask
+from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
-from .artifactdb import ArtifactDB
-from .emissionlinedb import EmissionLineDB
-from .pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .elric import Elric, ElricPar, GaussianLineProfile
@@ -569,7 +571,7 @@ class EmissionLineModel:
         Initialize the header.
 
         """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['ELFKEY'] = (self.method['key'], 'Emission-line modeling method keyword')
         hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')

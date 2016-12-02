@@ -9,7 +9,7 @@ support classes and functions.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/emissionlinedb.py
+    $MANGADAP_DIR/python/mangadap/par/emissionlinedb.py
 
 *Imports and python version compliance*:
     ::
@@ -48,9 +48,10 @@ support classes and functions.
 
         from pydl.goddard.astro import airtovac
         from pydl.pydlutils.yanny import yanny
+        from .parset import ParSet, ParDatabase
+        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+        from ..proc.util import _select_proc_method
         from ..config.defaults import default_dap_source
-        from ..par.parset import ParSet
-        from .util import _select_proc_method
 
 .. warning::
 
@@ -62,7 +63,7 @@ support classes and functions.
 *Class usage examples*:
     To define an emission line::
 
-        from mangadap.proc.emissionlinedb import EmissionLinePar
+        from mangadap.par.emissionlinedb import EmissionLinePar
         p = EmissionLinePar(44, 'Ha', 6564.632, action='f', line='l',
                             flux=1.0, vel=0.0, sig=10., mode='f')
 
@@ -71,14 +72,14 @@ support classes and functions.
     the default set of available emission-line databases (see
     :func:`available_emission_line_databases`)::
     
-        from mangadap.proc.emissionlinedb import EmissionLineDB
+        from mangadap.par.emissionlinedb import EmissionLineDB
         p = EmissionLineDB('STRONG')
 
     The above call requires that the ``$MANGADAP_DIR`` environmental
     variable is set.  If it is not, you can define it's location, as
     in::
 
-        from mangadap.proc.emissionlinedb import EmissionLineDB
+        from mangadap.par.emissionlinedb import EmissionLineDB
         p = EmissionLineDB('STRONG', dapsrc='/path/to/dap/source')
 
     Finally, you can create your own `SDSS-style parameter file`_ with
@@ -88,8 +89,8 @@ support classes and functions.
     using :class:`EmissionLineDBDef`, which you can then pass to
     :class:`EmissionLineDB`::
 
-        from mangadap.proc.emissionlinedb import EmissionLineDBDef
-        from mangadap.proc.emissionlinedb import EmissionLineDB
+        from mangadap.par.emissionlinedb import EmissionLineDBDef
+        from mangadap.par.emissionlinedb import EmissionLineDB
         d = EmissionLineDBDef(key='USER',
                               file_path='/path/to/parameter/file',
                               in_vacuum=True)
@@ -150,14 +151,12 @@ from os import environ
 import glob
 import numpy
 
-#from ..util.idlutils import airtovac
-#from ..util.yanny import yanny
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from ..config.defaults import default_dap_source
-from ..par.parset import ParSet, ParDatabase
-from .util import _select_proc_method
+from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+from ..proc.util import _select_proc_method
+from ..config.defaults import default_dap_source
 
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
@@ -356,7 +355,7 @@ def available_emission_line_databases(dapsrc=None):
     +-------------+-----+----------------------------------+
 
     This is a simple wrapper for
-    :func:`mangadap.proc.available_spectral_feature_databases`.
+    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source

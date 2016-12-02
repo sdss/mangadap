@@ -43,18 +43,18 @@ A class hierarchy that performs the stellar-continuum fitting.
         from ..mangafits import MaNGAFits
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
+        from ..par.artifactdb import ArtifactDB
+        from ..par.emissionlinedb import EmissionLineDB
         from ..util.log import log_output
         from ..util.fileio import rec_to_fits_type, write_hdu
         from ..util.instrument import spectrum_velocity_scale
         from ..util.bitmask import BitMask
+        from ..util.pixelmask import SpectralPixelMask
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .ppxffit import PPXFFitPar, PPXFFit
-        from .artifactdb import ArtifactDB
-        from .emissionlinedb import EmissionLineDB
-        from .pixelmask import SpectralPixelMask
         from .util import _select_proc_method
 
 *Class usage examples*:
@@ -112,18 +112,18 @@ import astropy.constants
 from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
+from ..par.artifactdb import ArtifactDB
+from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fileio import rec_to_fits_type, write_hdu
 from ..util.instrument import spectrum_velocity_scale
 from ..util.bitmask import BitMask
+from ..util.pixelmask import SpectralPixelMask
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .ppxffit import PPXFFitPar, PPXFFit
-from .artifactdb import ArtifactDB
-from .emissionlinedb import EmissionLineDB
-from .pixelmask import SpectralPixelMask
 from .util import _select_proc_method
 
 from matplotlib import pyplot
@@ -558,7 +558,7 @@ class StellarContinuumModel:
         Initialize the header.
 
         """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['VSTEP'] = (spectrum_velocity_scale(self.binned_spectra['WAVE'].data),
                         'Velocity step per spectral channel.')
         hdr['SCKEY'] = (self.method['key'], 'Stellar-continuum modeling method keyword')

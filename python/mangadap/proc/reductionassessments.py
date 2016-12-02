@@ -316,7 +316,7 @@ def available_reduction_assessments(dapsrc=None):
                                             covariance=cnfg['default'].getboolean('covariance'))
                                   ]
         else:
-            raise ValueError('Cannot use par_file or response_function_file yet!')
+            raise NotImplementedError('Cannot use par_file or response_function_file yet!')
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in assessment_methods ]) )) \
@@ -567,7 +567,7 @@ class ReductionAssessment:
 
 
     def _initialize_header(self, hdr):
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
         hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
         hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')

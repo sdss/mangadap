@@ -70,9 +70,9 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
     *imshow_prep* is requested (see below).
     
     Args:
-        x (numpy.array): X coordinates of the pixels
-        y (numpy.array): Y coordinates of the pixels
-        z (numpy.array): Image values at :math:`x,y`.
+        x (numpy.ndarray): X coordinates of the pixels
+        y (numpy.ndarray): Y coordinates of the pixels
+        z (numpy.ndarray): Image values at :math:`x,y`.
         pixelscale (float): (Optional) Pixelscale of the image in
             arcsec/pixel.
         zmin (float): (Optional) Minimum z value to include in the

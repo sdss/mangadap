@@ -98,6 +98,7 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask
+from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.log import log_output
 from ..util.instrument import spectrum_velocity_scale, resample_vector, spectral_resolution
@@ -106,7 +107,6 @@ from ..contrib.ppxf import ppxf, _templates_rfft, _losvd_rfft
 from ..contrib import ppxf_util
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
-from .pixelmask import PixelMask, SpectralPixelMask
 from .spectralfitting import StellarKinematicsFit
 # from .spectralstack import SpectralStack
 from .util import residual_growth
@@ -618,10 +618,10 @@ class PPXFFit(StellarKinematicsFit):
         object spectra.
         """
         cnst = constants()
-        sigma_inst_obj = astropy.constants.c.to('km/s').value/obj_sres[gpm]
-        sigma_inst_tpl = astropy.constants.c.to('km/s').value/self.tpl_sres(self.obj_wave[gpm])
-        return numpy.sqrt(numpy.mean(numpy.square(sigma_inst_obj)
-                                     - numpy.square(sigma_inst_tpl)))/cnst.sig2fwhm
+        fwhm_inst_obj = astropy.constants.c.to('km/s').value/obj_sres[gpm]
+        fwhm_inst_tpl = astropy.constants.c.to('km/s').value/self.tpl_sres(self.obj_wave[gpm])
+        return numpy.sqrt(numpy.mean(numpy.square(fwhm_inst_obj)
+                                     - numpy.square(fwhm_inst_tpl)))/cnst.sig2fwhm
 
 
     def _is_near_bounds(self, ppxf_fit, guess_velocity, tol_frac=1e-2):
@@ -854,6 +854,7 @@ class PPXFFit(StellarKinematicsFit):
         obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
         obj_ferr = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
                                                     flag=binned_spectra.do_not_fit_flags()), -0.5)
+        obj_sres = binned_spectra.copy_to_array(ext='SPECRES')
 
         # Select the spectra that meet the selection criteria
         # TODO: Link this to the StellarContinuumModel._bins_to_fit()
@@ -881,11 +882,6 @@ class PPXFFit(StellarKinematicsFit):
 #        pyplot.plot(par['template_library']['WAVE'].data, tpl_sres)
 #        pyplot.show()
 
-#        # Get the spectral resolution of the object data
-#        obj_sres = binned_spectra.spectral_resolution_matrix()
-#
-#HERE !!
-
         # Perform the fit
         model_wave, model_flux, model_mask, model_par \
                 = self.fit(par['template_library']['WAVE'].data.copy(),
@@ -895,11 +891,11 @@ class PPXFFit(StellarKinematicsFit):
                            par['guess_dispersion'][good_spec], iteration_mode=par['iteration_mode'],
                            velscale_ratio=par['velscale_ratio'], mask=par['pixelmask'],
                            matched_resolution=par['match_resolution'],
-                           tpl_sres=tpl_sres, obj_sres=binned_spectra['SPECRES'].data.copy(),
+                           tpl_sres=tpl_sres, obj_sres=obj_sres[good_spec,:],
                            waverange=par['pixelmask'].waverange, bias=par['bias'],
                            clean=par['clean'], degree=par['degree'], mdegree=par['mdegree'],
                            moments=par['moments'], loggers=loggers, quiet=quiet, dvtol=1e-9)
-#                           tpl_sres=tpl_sres, obj_sres=obj_sres[good_spec,:],
+#                           tpl_sres=tpl_sres, obj_sres=binned_spectra['SPECRES'].data.copy(),
 
         # Reshape the data to include space for binned spectra that were
         # not fit
@@ -1562,8 +1558,8 @@ class PPXFFit(StellarKinematicsFit):
 #        plot=True
         # Fit each binned spectrum:
 #        for i in range(20,21):
-        for i in range(5):
-#        for i in range(self.nobj):
+#        for i in range(5):
+        for i in range(self.nobj):
 
             if self.iteration_mode not in [ 'none', 'no_global_wrej']:
                 # Reset the good-pixel mask to the default, and the

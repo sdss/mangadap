@@ -222,9 +222,29 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                            symlink_dir=plan_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
+        wave = binned_spectra['WAVE'].data
+        flux = binned_spectra.copy_to_masked_array(ext='FLUX')
+        sres = binned_spectra.copy_to_masked_array(ext='SPECRES')
+        print(flux.shape)
+        print(sres.shape)
+
+        for f in flux:
+            pyplot.step(wave, f, lw=0.5)
+        pyplot.show()
+
+        for s in sres:
+            pyplot.plot(wave, s, lw=0.5)
+        pyplot.plot(drpf['WAVE'].data, drpf['SPECRES'].data, lw=2)
+        pyplot.show()
+
+        exit()
+
+#        print('Effective Radius: ', obs['reff'])
+
 #        pyplot.plot(drpf['WAVE'].data, drpf['FLUX'].data[28,28,:])
 #        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[28,28,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[28,28,:]/binned_spectra['REDCORR'].data)
+#        pyplot.plot(binned_spectra['WAVE'].data,
+#                    binned_spectra['FLUX'].data[28,28,:]/binned_spectra['REDCORR'].data)
 #        pyplot.show()
 
         #---------------------------------------------------------------
@@ -273,7 +293,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #-------------------------------------------------------------------
         # Construct the main output file(s)
         #-------------------------------------------------------------------
-        construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
+        construct_maps_file(drpf, obs=obs, rdxqa=rdxqa, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,

@@ -39,6 +39,12 @@ Stack some spectra!
 
 *Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **10 Nov 2016**: (KBW) Include dispersion cube in DRP file to
+        construct spectral resolution of binned spectra.
+    | **30 Nov 2016**: (KBW) Use, e.g., [None,:] slicing instead of,
+        e.g., numpy.array([v]*n) when necessary for array arithmetic
+    | **01 Dec 2016**: (KBW) Allow stacking the spectral resolution to
+        be turned off via :class:`SpectralStackPar`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
@@ -81,40 +87,39 @@ class SpectralStackPar(ParSet):
 
     Args:
         operation (str): Operation to perform for the stacked spectrum.
-            Can only be 'sum' or 'mean'.
-        
-        velocity_register (bool): Flag to velocity register the spectra
+            See :func:`SpectralStack.operation_options` for the
+            available operation options.
+        vel_register (bool): Flag to velocity register the spectra
             before adding them based on a provided prior measurement of
             the velocities.
-
-        covariance (str, float): Describes how to incorporate covariance
-            into the spectral stacking.  If a float, the value is used
-            in the renormalization of the nominal calculation of the
-            errors using the formula:
-
-            .. math::
-                n_{\rm calib} = n_{\rm nominal} (1 + \alpha\ \log_{10}\
-                N_{\rm bin})
-
-            where :math:`N_{\rm bin}` is the number of binned spaxels
-            and :math:`\alpha` is a calibration constant, which has been
-            found to be 1.62 for MaNGA datacubes (see Law et al. 2016).
-            String values of 'full' or 'none' can also be provided;
-            'none' (or None) simply performs the nominal error
-            calculation and 'full' uses the full covariance matrix.
+        vel_offsets (list, numpy.ndarray): List of velocity offsets to
+            apply to the spectra to stack.
+        covar_mode (str): Describes how to incorporate covariance into
+            the spectral stacking.  See
+            :func:`SpectralStack.covariance_mode_options` for the
+            available options.
+        covar_par (int, float, numpy.ndarray, list): The parameter(s)
+            needed to perform a given method of handling the covariance.
+            See :func:`SpectralStack.covariance_mode_options` for the
+            available options.
 
     """
-    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par):
+    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
         covar_options = SpectralStack.covariance_mode_options()
         
-        pars =     [ 'operation', 'vel_register', 'vel_offsets',  'covar_mode',   'covar_par' ]
-        values =   [   operation,   vel_register,   vel_offsets,    covar_mode,     covar_par ]
-        defaults = [      'mean',          False,          None,        'none',          None ]
-        options =  [  op_options,           None,          None, covar_options,          None ]
-        dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like ]
+        pars =     [ 'operation', 'vel_register', 'vel_offsets',  'covar_mode',   'covar_par',
+                        'stack_sres' ]
+        values =   [   operation,   vel_register,   vel_offsets,    covar_mode,     covar_par,
+                          stack_sres ]
+        defaults = [      'mean',          False,          None,        'none',          None,
+                                True ]
+        options =  [  op_options,           None,          None, covar_options,          None,
+                                None ]
+        dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like,
+                                bool ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -133,6 +138,7 @@ class SpectralStackPar(ParSet):
         hdr['STCKVREG'] = (str(self['vel_register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
+        hdr['STCKRES'] = (str(self['stack_sres']), 'Spectral resolution stacked')
         return hdr
 
 
@@ -146,6 +152,7 @@ class SpectralStackPar(ParSet):
         self['vel_register'] = bool(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
         self['covar_par'] = eval(hdr['STCKCRPR'])
+        self['stack_sres'] = eval(hdr['STCKRES'])
 
 
 class SpectralStack():
@@ -315,8 +322,7 @@ class SpectralStack():
         if sres is not None:
             Tc = rt.sum(axis=1).ravel()
             Tc[~(Tc>0)] = 1.0
-            self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2)) 
-                                        / numpy.array([Tc]*sres.shape[1]).T, -0.5 )
+            self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2))/Tc[:,None], -0.5)
 
         if ivar is None:
             return
@@ -377,11 +383,14 @@ class SpectralStack():
 #            pyplot.ylabel(r'$C_{ii}\ I_{ii}$')
 #            pyplot.show()
 #            exit()
+
+            # Below commented because there's a better way to do this
+            # with, e.g., [:,None] indexing
 #            ratio = numpy.array([numpy.ma.mean( variance_ratio, axis=1 )]*nwave).T
-            ratio = numpy.array([numpy.ma.median( variance_ratio, axis=1 )]*nwave).T
-#            print(numpy.sqrt(ratio))
-#            exit()
-            self.ivar = (numpy.ma.power(ratio, -1.0).ravel() * self.ivar.ravel()).reshape(-1,nwave)
+#            ratio = numpy.array([numpy.ma.median( variance_ratio, axis=1 )]*nwave).T
+#            self.ivar = (numpy.ma.power(_ratio, -1.0).ravel()*self.ivar.ravel()).reshape(-1,nwave)
+            ratio = numpy.ma.median( variance_ratio, axis=1 )
+            self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
             self.covar = Covariance(inp=self.covar, input_indx=covar.input_indx)
 #            j = self.covar.input_indx[0]
 #            self.covar.show(plane=j)
@@ -559,10 +568,8 @@ class SpectralStack():
             float: Two floats with the minimum and maximum redshifted
             wavelengths.
         """
-        nv = voff.size
-        _wave = numpy.array([ numpy.amin(wave), numpy.amax(wave)]*nv)
-        _voff = numpy.array([voff.ravel()]*2).T
-        redshifted = _wave*(1.0+_voff/astropy.constants.c.to('km/s').value)
+        _wave = numpy.array([numpy.amin(wave), numpy.amax(wave)])
+        redshifted = _wave[None,:]*(1.+voff[:,None]/astropy.constants.c.to('km/s').value)
         return numpy.amin(redshifted), numpy.amax(redshifted)
 
 
@@ -716,10 +723,13 @@ class SpectralStack():
                                     type(covariance_par)))
 
                 # Convert the wavelengths to channel numbers
-                _wave = numpy.array([drpf['WAVE'].data]*len(_covariance_par)).T
-                _chan = numpy.array([_covariance_par]*drpf['WAVE'].data.size)
-                _covariance_par = numpy.unique(numpy.argsort(
-                                               numpy.absolute(_wave-_chan), axis=1)[0,:])
+                _covariance_par = numpy.unique(numpy.argsort(numpy.absolute(
+                                                drpf['WAVE'].data[:,None]-_covariance_par[None,:]),
+                                                             axis=1)[0,:])
+#                _wave = numpy.array([drpf['WAVE'].data]*len(_covariance_par)).T
+#                _chan = numpy.array([_covariance_par]*drpf['WAVE'].data.size)
+#                _covariance_par = numpy.unique(numpy.argsort(
+#                                               numpy.absolute(_wave-_chan), axis=1)[0,:])
 
             return drpf.covariance_cube(channels=_covariance_par)
 
@@ -753,26 +763,8 @@ class SpectralStack():
         wave = drpf['WAVE'].data
         flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
         ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
-
-        hdu_extensions = [ h.name for h in drpf.hdu ]
-        if 'DISP' in hdu_extensions:
-            print('Found DISP')
-#            sres = drpf.copy_to_array(ext='DISP')
-#            i = drpf.spatial_shape[0]//2
-#            ii = i*drpf.spatial_shape[0] + i
-#            print(drpf.spatial_shape[0], i, ii)
-#            pyplot.plot(wave, sres[ii,:])
-#            pyplot.show()
-#            exit()
-            cnst = constants()
-            sres = numpy.ma.power(cnst.sig2fwhm * drpf.copy_to_array(ext='DISP')
-                                        / numpy.array([wave]*flux.shape[0]), -1)
-        elif 'SPECRES' in hdu_extensions:
-            print('Found SPECRES')
-            sres = drpf['SPECRES'].data
-        else:
-            sres = None
-
+        sres = None if par is None or not par['stack_sres'] \
+                else drpf.spectral_resolution(toarray=True)
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 

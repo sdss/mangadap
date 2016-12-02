@@ -67,6 +67,8 @@ procedures.
         correction an input parameter.
     | **25 Aug 2016**: (KBW) Fixed error in bin area when calling
         :func:`SpatiallyBinnedSpetra._unbinned_data`
+    | **01 Dec 2016**: (KBW) Include keyword that describes how to
+        handle the spectral resolution.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -147,7 +149,7 @@ class SpatiallyBinnedSpectraDef(ParSet):
     stackfunc must be able to function properly with the following
     call::
         
-        stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
+        stack_flux, stack_sdev, stack_npix, stack_ivar, stack_sres, stack_covar = \
                 stack(drpf, id, par=par)
 
     where `drpf` is a :class:`mangadap.drpfits.DRPFits` object.  Note
@@ -160,6 +162,10 @@ class SpatiallyBinnedSpectraDef(ParSet):
     spectrum in the bin, you'd have to provide both the binning and
     stacking routines.  Actually, if that's the case, you're better off
     providing a class object that will both bin and stack the spectra!
+
+    .. todo::
+        - Impose a set of options of the form for the Galactic
+          reddening.
 
     Args:
         key (str): Keyword used to distinguish between different spatial
@@ -178,24 +184,32 @@ class SpatiallyBinnedSpectraDef(ParSet):
             member function of the class.
         stackfunc (callable): The function that stacks the spectra in a
             given bin.
+        spec_res (str): Keyword defining the treatment of the spectral
+            resolution.  See
+            :func:`SpatiallyBinnedSpectra.spectral_resolution_options`
+            for a list of the options.
     """
     def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
-                 binfunc, stackpar, stackclass, stackfunc):
+                 binfunc, stackpar, stackclass, stackfunc, spec_res):
         in_fl = [ int, float ]
+        res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
 #        stackcls_opt = [ SpectralStack ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
-                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc' ]
+                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc', 'spec_res' ]
         values =   [   key,   galactic_reddening,   galactic_rv,   minimum_snr,   binpar,
-                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc ]
+                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc,   spec_res ]
+        options =  [  None,                 None,          None,          None,     None,
+                           None,      None,       None,         None,        None,    res_opt ]
         dtypes =   [   str,                  str,         in_fl,         in_fl,  par_opt,
-                           None,      None,    par_opt,         None,        None ]
+                           None,      None,    par_opt,         None,        None,        str ]
         can_call = [ False,                False,         False,         False,    False,
-                          False,      True,      False,        False,        True ]
+                          False,      True,      False,        False,        True,      False ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
+        ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes,
+                        can_call=can_call)
 
 
 def validate_spatial_binning_scheme_config(cnfg):
@@ -239,6 +253,12 @@ def validate_spatial_binning_scheme_config(cnfg):
     if 'stack_covariance_mode' not in cnfg.options('default') \
             or cnfg['default']['stack_covariance_mode'] is None:
         cnfg['default']['stack_covariance_mode'] = 'none'
+
+    spec_res_options = SpatiallyBinnedSpectra.spectral_resolution_options()
+    if 'spec_res' not in cnfg.options('default') \
+            or cnfg['default']['spec_res'] not in spec_res_options:
+        raise ValueError('Must define how to treat the spectral resolution.  Options are:'
+                         '{0}'.format(spec_res_options))
 
     covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
     if cnfg['default']['stack_covariance_mode'] in covar_par_needed_modes \
@@ -402,14 +422,17 @@ def available_spatial_binning_methods(dapsrc=None):
             binpar = None
             binclass = None
             binfunc = None
-            
+
+        stack_spec_res = cnfg['default']['spec_res'] == 'spaxel'
+
         stackpar = SpectralStackPar(cnfg['default']['operation'],
                                     cnfg['default'].getboolean('velocity_register'),
                                     None,
                                     cnfg['default']['stack_covariance_mode'],
                                     SpectralStack.parse_covariance_parameters(
                                             cnfg['default']['stack_covariance_mode'],
-                                            cnfg['default']['stack_covariance_par']))
+                                            cnfg['default']['stack_covariance_par']),
+                                    stack_spec_res)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
@@ -419,7 +442,8 @@ def available_spatial_binning_methods(dapsrc=None):
                                                        eval(cnfg['default']['galactic_rv']),
                                                        cnfg['default'].getfloat('minimum_snr'),
                                                        binpar, binclass, binfunc, stackpar,
-                                                       stackclass, stackfunc) ]
+                                                       stackclass, stackfunc,
+                                                       cnfg['default']['spec_res']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \
@@ -650,7 +674,7 @@ class SpatiallyBinnedSpectra:
         Initialize the header.
 
         """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         if self.reff is not None:
             hdr['REFF'] = self.reff
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
@@ -819,7 +843,7 @@ class SpatiallyBinnedSpectra:
 
 
     def _assign_spectral_arrays(self):
-        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'FLUXD', 'NPIX' ]
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'SPECRES', 'FLUXD', 'NPIX' ]
 
 
     def _assign_image_arrays(self):
@@ -868,6 +892,29 @@ class SpatiallyBinnedSpectra:
             else:
                 hdr = self.method['stackpar'].toheader(hdr)
         return hdr
+
+
+    @staticmethod
+    def spectral_resolution_options():
+        """
+        Return the allowed options for treating the spectral resolution.
+
+        Options are:
+
+            'spaxel': If available, use the spectral resolution
+            determined for each spaxel.  This is pulled from the 'DISP'
+            extension in the DRP file; an exception will be raised if
+            this extension does not exist!
+
+            'cube': Only consider the median spectral resolution
+            determine for the entire datacube.  This is pulled from the
+            'SPECRES' extension in the DRP file; an exception will be
+            raised if this extension does not exist!
+
+        Returns:
+            list : List of the available method keywords.
+        """
+        return ['spaxel', 'cube']
 
 
     def file_name(self):
@@ -1006,8 +1053,7 @@ class SpatiallyBinnedSpectra:
             flux = self.drpf['FLUX'].data.copy()
             ivar = self.drpf['IVAR'].data.copy()
             if self.deredden:
-                flux, ivar = apply_reddening(flux, reddening_correction,
-                                             dispaxis=self.drpf.dispaxis, ivar=ivar)
+                flux, ivar = apply_reddening(flux, reddening_correction, ivar=ivar)
 
             # Initialize the basics of the mask
             mask = self._initialize_mask(good_fgoodpix, good_snr)
@@ -1024,6 +1070,12 @@ class SpatiallyBinnedSpectra:
             # Grab the per-spectrum data
             bin_data = self._unbinned_data(bin_indx.ravel())
 
+            sres = self.drpf.spectral_resolution(ext='DISP' if self.method['spec_res'] == 'spaxel'
+                                                            else 'SPECRES')
+            sres_hdr = self.drpf.spectral_resolution_header(ext='DISP'
+                                                            if self.method['spec_res'] == 'spaxel'
+                                                            else 'SPECRES')
+
             # Set the HDUList just based on the original DRP data
 #            print('Building HDUList...', end='\r')
             # TODO: Strip headers of sub extensions of everything but
@@ -1039,8 +1091,7 @@ class SpatiallyBinnedSpectra:
                                                     header=self.drpf['MASK'].header.copy(),
                                                     name='MASK'),
                                       self.drpf['WAVE'].copy(),
-                                      self.drpf['SPECRES'].copy(),
-                                      self.drpf['SPECRESD'].copy(),
+                                      fits.ImageHDU(data=sres, header=sres_hdr, name='SPECRES'),
                                       fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
                                                     name='REDCORR'),
                                       fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
@@ -1146,7 +1197,7 @@ class SpatiallyBinnedSpectra:
         # Stack the spectra in each bin
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Stacking spectra ...')
-        stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
+        stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_sres, stack_covar = \
                 self.method['stackfunc'](self.drpf, bin_indx, par=self.method['stackpar'])
 
         if stack_covar is not None and stack_covar.is_correlation:
@@ -1159,9 +1210,9 @@ class SpatiallyBinnedSpectra:
 
         # And apply it if requested
         if self.deredden:
-            stack_flux, stack_ivar = apply_reddening(stack_flux, reddening_correction, dispaxis=1,
+            stack_flux, stack_ivar = apply_reddening(stack_flux, reddening_correction,
                                                      ivar=stack_ivar)
-            stack_sdev = apply_reddening(stack_sdev, reddening_correction, dispaxis=1)
+            stack_sdev = apply_reddening(stack_sdev, reddening_correction)
 #            c = numpy.array([reddening_correction]*stack_flux.shape[0])
 #            stack_flux *= c
 #            stack_sdev *= c
@@ -1170,7 +1221,6 @@ class SpatiallyBinnedSpectra:
             if stack_covar is not None:
                 for i,j in enumerate(stack_covar.input_indx):
                     stack_covar.cov[i] *= numpy.square(reddening_correction[j])
-
 #        print(stack_covar.input_indx)
 #        stack_covar.show(plane=0)
 
@@ -1339,6 +1389,16 @@ class SpatiallyBinnedSpectra:
         if stack_covar is not None:
             self._fill_covariance(stack_covar, bin_indx)
 
+        sres = numpy.zeros(self.shape, dtype=numpy.float)
+        if stack_sres is not None:
+            sres.reshape(-1,self.nwave)[indx,:] = stack_sres[unique_bins[reconstruct[indx]],:]
+        elif 'SPECRES' in self.drpf.ext:
+            sres = numpy.array([self.drpf['SPECRES'].data]
+                                * numpy.prod(self.spatial_shape)).reshape(*self.spatial_shape,-1)
+        sres_hdr = self.drpf.spectral_resolution_header(ext='DISP'
+                                                        if self.method['spec_res'] == 'spaxel'
+                                                        else 'SPECRES')
+
 #        print(self.covariance.input_indx)
 #        self.covariance.show(plane=self.covariance.input_indx[0])
 
@@ -1391,8 +1451,7 @@ class SpatiallyBinnedSpectra:
                                                 header=self.drpf['MASK'].header.copy(),
                                                 name='MASK'),
                                   self.drpf['WAVE'].copy(),
-                                  self.drpf['SPECRES'].copy(),
-                                  self.drpf['SPECRESD'].copy(),
+                                  fits.ImageHDU(data=sres, header=sres_hdr, name='SPECRES'),
                                   fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
                                                 name='REDCORR'),
                                   fits.ImageHDU(data=sdev.data,
