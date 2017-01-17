@@ -51,7 +51,6 @@ from astropy.io import fits
 import astropy.constants
 
 from .drpfits import DRPFits, DRPQuality3DBitMask
-from .dapqual import DAPQualityBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.bitmask import BitMask
 from .util.log import log_output
@@ -73,6 +72,17 @@ from matplotlib import pyplot
 __author__ = 'Kyle Westfall'
 
 #-----------------------------------------------------------------------
+class DAPQualityBitMask(BitMask):
+    """
+    .. todo::
+        - Force read IDLUTILS version as opposed to internal one?
+    """
+    def __init__(self, dapsrc=None):
+        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+                                                     'bitmasks', 'dap_quality_bits.ini'))
+
+
 class DAPMapsBitMask(BitMask):
     """
     .. todo::

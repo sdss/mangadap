@@ -39,7 +39,6 @@ import resource
 import time
 import os
 
-# For versioning
 from scipy import interpolate
 
 from astropy.io import fits
@@ -49,8 +48,7 @@ import astropy.units
 from astropy.stats import sigma_clip
 
 from ..drpfits import DRPFits, DRPQuality3DBitMask
-from ..dapqual import DAPQualityBitMask
-from ..dapmaps import DAPMapsBitMask
+from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
 from ..par.analysisplan import AnalysisPlanSet
 from .drpcomplete import DRPComplete
 from ..config import defaults
