@@ -40,13 +40,13 @@ A class hierarchy that fits the emission lines.
         from astropy.io import fits
         import astropy.constants
         
-        from ..mangafits import MaNGAFits
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
         from ..par.artifactdb import ArtifactDB
         from ..par.emissionlinedb import EmissionLineDB
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
+        from ..util.fitsutil import DAPFitsUtil
         from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
@@ -98,19 +98,19 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
+from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-from .stellarcontinuummodel import StellarContinuumModel
+from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar, GaussianLineProfile
 from .util import _select_proc_method
 
@@ -298,32 +298,47 @@ class EmissionLineModelBitMask(BitMask):
 class EmissionLineModel:
     r"""
 
-    Class that holds the emission-line model results.
+    Class that holds the emission-line model fits.
+
+    Args:
+        loggers (list): (**Optional**) List of `logging.Logger`_ objects
+            to log progress; ignored if quiet=True.  Logging is done
+            using :func:`mangadap.util.log.log_output`.  Default is no
+            logging.
+        quiet (bool): (**Optional**) Suppress all terminal and logging
+            output.  Default is False.
+
+    Attributes:
+        loggers (list): List of `logging.Logger`_ objects to log
+            progress; ignored if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.
+        quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, method_key, binned_spectra, guess_vel=None, guess_sig=None,
-                 stellar_continuum=None, method_list=None, artifact_list=None,
+    def __init__(self, method_key, binned_spectra, redshift=None, dispersion=None, continuum=None,
+                 continuum_method=None, method_list=None, artifact_list=None,
                  emission_line_db_list=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
 
-        self.version = '1.0'
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
         self.method = None
+        self.pixelmask = None
         self.artdb = None
         self.emldb = None
-        self.pixelmask = None
         self._define_method(method_key, method_list=method_list, artifact_list=artifact_list,
-                            emission_line_db_list=emission_line_db_list)
+                            emission_line_db_list=emission_line_db_list, dapsrc=dapsrc)
+
+        self.neml = self.emldb.nsets
 
         self.binned_spectra = None
         self.redshift = None
         self.dispersion = None
-        self.stellar_continuum = None
-        self.neml = self.emldb.nsets
+        self.continuum = None
+        self.continuum_method = None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -332,12 +347,9 @@ class EmissionLineModel:
 
         # Initialize the objects used in the assessments
         self.bitmask = EmissionLineModelBitMask(dapsrc=dapsrc)
+
         self.hdu = None
         self.checksum = checksum
-
-        self.spatial_shape = None
-        self.spatial_index = None
-
         self.shape = None
         self.spatial_shape = None
         self.nspec = None
@@ -353,8 +365,8 @@ class EmissionLineModel:
         self.missing_models = None
 
         # Fit the binned spectra
-        self.fit(binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig,
-                 stellar_continuum=stellar_continuum, dapsrc=dapsrc, dapver=dapver,
+        self.fit(binned_spectra, redshift=redshift, dispersion=dispersion, continuum=continuum,
+                 continuum_method=continuum_method, dapsrc=dapsrc, dapver=dapver,
                  analysis_path=analysis_path, directory_path=directory_path,
                  output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
                  quiet=quiet)
@@ -387,8 +399,7 @@ class EmissionLineModel:
 
         # Instantiate the artifact and emission-line databases
         self.artdb = None if self.method['artifacts'] is None else \
-                        ArtifactDB(self.method['artifacts'],artdb_list=artifact_list,dapsrc=dapsrc)
-        # TODO: Generalize the name of this object
+                    ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
         self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.emldb = None if self.method['emission_lines'] is None else \
@@ -415,7 +426,7 @@ class EmissionLineModel:
         """
         # Set the output directory path
         method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    stellar_continuum=self.stellar_continuum)
+                                    continuum_method=self.continuum_method)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -426,13 +437,38 @@ class EmissionLineModel:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if self.stellar_continuum is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
+        if self.continuum_method is not None:
+            ref_method = '{0}-{1}'.format(ref_method, self.continuum_method)
         ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
-
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
+
+
+    def _initialize_primary_header(self, hdr=None):
+        """
+
+        Initialize the header.
+
+        """
+        # Copy the from the DRP and clean it
+        if hdr is None:
+            hdr = self.binned_spectra.drpf.hdu['PRIMARY'].header.copy()
+            hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
+        
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
+        hdr['ELFKEY'] = (self.method['key'], 'Emission-line modeling method keyword')
+        hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
+        hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
+        hdr['EMLDB'] = (self.method['emission_lines'], 'Emission-line database keyword')
+        if self.continuum_method is not None:
+            hdr['SCKEY'] = (self.continuum_method, 'Stellar-continuum model keyword')
+        hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
+        if len(self.missing_models) > 0:
+            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
+        # Anything else?
+        # Additional database details?
+        return hdr
 
 
     def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
@@ -461,17 +497,15 @@ class EmissionLineModel:
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        hdu_database = init_record_array(self.neml,
+        line_database = init_record_array(self.neml,
                                 self._emission_line_database_dtype(name_len, mode_len, prof_len))
 
         hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
         mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
         for _hk, _mk in zip(hk,mk):
-            hdu_database[_hk] = self.emldb[_mk]
+            line_database[_hk] = self.emldb[_mk]
 
-        #print(hdu_database)
-
-        return hdu_database
+        return line_database
 
 
     def _assign_input_kinematics(self, redshift, dispersion, default_dispersion=100.0):
@@ -483,58 +517,27 @@ class EmissionLineModel:
         but set to default_dispersion if they're not provided.
         """
 
-        # Set default values
-        self.redshift = numpy.zeros(self.nmodels, dtype=numpy.float)
+        # Redshift
+        self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=numpy.float)
         if redshift is not None:
             _redshift = numpy.atleast_1d(redshift)
-            if len(_redshift) not in [ 1, self.nmodels, self.nspec ]:
-                raise ValueError('Provided redshift must be either a single value, match the ' \
-                                 'number of model spectra, or match the total number of DRP ' \
-                                 'spectra.')
-            if len(_redshift) == 1:
-                self.redshift[:] = redshift
-            elif len(_redshift) == self.nspec:
-                self.redshift = _redshift[ self.unique_models(index=True) ]
-            else:   # Has length nmodels
-                self.redshift = _redshift
+            if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
+                raise ValueError('Provided redshift must be either a single value or match the ' \
+                                 'number of binned spectra.')
+            self.redshift = numpy.full(self.binned_spectra.nbins, redshift, dtype=float) \
+                                if len(_redshift) == 1 else _redshift.copy()
 
-        # Change to the measurements from the stellar continuum fit, if
-        # available and unmasked
-        if self.stellar_continuum is not None:
-            good_kin = ~self.stellar_continuum.bitmask.flagged(
-                            self.stellar_continuum['PAR'].data['MASK'],
-                            ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
-#            print(numpy.sum(good_kin), len(good_kin))
-#            pyplot.scatter(numpy.arange(len(good_kin)), self.redshift, marker='.', s=30, color='r')
-#            pyplot.scatter(numpy.arange(len(good_kin))[good_kin],
-#                           self.stellar_continuum['PAR'].data['KIN'][good_kin,0]
-#                                / astropy.constants.c.to('km/s').value,
-#                           marker='.', s=30, color='b')
-#            pyplot.scatter(numpy.arange(len(good_kin))[~good_kin],
-#                           self.stellar_continuum['PAR'].data['KIN'][~good_kin,0]
-#                                / astropy.constants.c.to('km/s').value,
-#                           marker='.', s=30, color='0.5')
-#            pyplot.show()
-            self.redshift[good_kin] = self.stellar_continuum['PAR'].data['KIN'][good_kin,0] \
-                                            / astropy.constants.c.to('km/s').value
-#            pyplot.scatter(numpy.arange(len(self.redshift)), self.redshift,
-#                           marker='.', s=30, color='r')
-#            pyplot.show()
-#            exit()
-
-        self.dispersion = numpy.full(self.nmodels, default_dispersion, dtype=numpy.float)
+        # Same for dispersion
+        self.dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion,
+                                     dtype=numpy.float)
         if dispersion is not None:
             _dispersion = numpy.atleast_1d(dispersion)
-            if len(_dispersion) not in [ 1, self.nmodels, self.nspec ]:
-                raise ValueError('Provided dispersion must be either a single value, match the ' \
-                                 'number of model spectra, or match the total number of DRP ' \
-                                 'spectra.')
-            if len(_disperison) == 1:
-                self.dispersion[:] = dispersion
-            elif len(_redshift) == self.nspec:
-                self.dispersion = _dispersion[ self.unique_models(index=True) ]
-            else:   # Has length nmodels
-                self.dispersion = _dispersion
+
+            if len(_dispersion) not in [ 1, self.binned_spectra.nbins ]:
+                raise ValueError('Provided dispersion must be either a single value or match the ' \
+                                 'number of binned spectra.')
+            self.dispersion = numpy.full(self.binned_spectra.nbins, dispersion, dtype=float) \
+                                if len(_redshift) == 1 else _dispersion.copy()
 
 
     def _fill_method_par(self, dapsrc=None, analysis_path=None):
@@ -548,42 +551,8 @@ class EmissionLineModel:
         self.method['fitpar']['guess_dispersion'] = self.dispersion
         self.method['fitpar']['emission_lines'] = self.emldb
         self.method['fitpar']['pixelmask'] = self.pixelmask
-        if self.stellar_continuum is not None:
-            self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
-
-
-    def _clean_drp_header(self, ext='FLUX'):
-        """
-        Read and clean the header from the DRP fits file extension for
-        use in the output file for this class object.
-
-        .. todo::
-            - Currently just returns the existing header.  Need to
-              decide if/how to manipulate DRP header.
-
-        """
-        return self.binned_spectra.drpf[ext].header.copy()
-
-
-    def _initialize_header(self, hdr):
-        """
-
-        Initialize the header.
-
-        """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
-        hdr['ELFKEY'] = (self.method['key'], 'Emission-line modeling method keyword')
-        hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
-        hdr['EMLDB'] = (self.method['emission_lines'], 'Emission-line database keyword')
-        if self.stellar_continuum is not None:
-            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
-        hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
-        if len(self.missing_models) > 0:
-            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
-        # Anything else?
-        # Additional database details?
-        return hdr
+        if self.continuum is not None:
+            self.method['fitpar']['stellar_continuum'] = self.continuum
 
 
     def _add_method_header(self, hdr):
@@ -606,28 +575,32 @@ class EmissionLineModel:
         return hdr
 
 
-    def _initialize_mask(self):
+    def _finalize_cube_mask(self, mask):
         """
+        Finalize the mask by setting the DIDNOTUSE, FORESTAR, and LOW_SNR masks
 
-        Initialize the mask be setting the DIDNOTUSE, FORESTAR, and LOW_SNR masks
-
+        Returns:
+            numpy.ndarray : Bitmask array.
         """
-        # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
-
         # Turn on the flag stating that the pixel wasn't used
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
                                                    flag=self.binned_spectra.do_not_fit_flags())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
                                                    flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
+        # Turn on the flag stating that the S/N in the spectrum was
+        # below the requested limit
+        low_snr = numpy.invert(self.binned_spectra['BINID'].data == self.hdu['BINID'].data)
+        indx = numpy.array([low_snr]*self.nwave).transpose(1,2,0)
+        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+
         return mask
 
-
+    
     def _check_snr(self):
         # binned_spectra['BINS'].data['SNR'] has length
         # binned_spectra.nbins
@@ -646,11 +619,68 @@ class EmissionLineModel:
 
 
     def _assign_image_arrays(self):
+        """
+        Set :attr:`image_arrays`, which contains the list of extensions
+        in :attr:`hdu` that are on-sky image data.
+        """
         self.image_arrays = [ 'BINID' ]
 
 
-    def _missing_flags(self):
-        return numpy.array([ b in self.missing_models for b in numpy.arange(self.nmodels)])
+    def _get_missing_models(self):
+        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
+                                + self.binned_spectra.missing_bins) 
+
+
+#    def _missing_flags(self):
+#        return numpy.array([ b in self.missing_models for b in numpy.arange(self.nmodels)])
+
+
+    def _construct_2d_hdu(self, model_flux, model_base, model_mask, model_fit_par, model_eml_par):
+        """
+        Construct :attr:`hdu` that is held in memory for manipulation of
+        the object.  See :func:`construct_3d_hdu` if you want to convert
+        the object into a DRP-like datacube.
+        """
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
+
+        # Initialize the headers
+        pri_hdr = self._initialize_primary_header()
+        pri_hdr = self._add_method_header(pri_hdr)
+        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
+                                               'K Westfall <westfall@ucolick.org>')
+
+        # Get the bin ids with fitted models
+        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
+                                               model_eml_par['BINID'])
+
+        # Compile the information on the suite of measured indices
+        line_database = self._compile_database()
+
+        # Save the data to the hdu attribute
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
+                                  fits.ImageHDU(data=model_flux.data, name='FLUX'),
+                                  fits.ImageHDU(data=model_base.data, name='BASE'),
+                                  fits.ImageHDU(data=model_mask, name='MASK'),
+                                  self.binned_spectra['WAVE'].copy(),
+                                  fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
+                                                header=map_hdr, name='BINID'),
+                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
+                                                        format=rec_to_fits_type(line_database[n]),
+                                        array=line_database[n]) for n in line_database.dtype.names],
+                                                         name='PAR'),
+                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
+                                                        format=rec_to_fits_type(model_fit_par[n]),
+                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
+                                        array=model_fit_par[n]) for n in model_fit_par.dtype.names],
+                                                                    name='FIT'),
+                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
+                                                        format=rec_to_fits_type(model_eml_par[n]),
+                                                        dim=rec_to_fits_col_dim(model_eml_par[n]),
+                                        array=model_eml_par[n]) for n in model_eml_par.dtype.names],
+                                                                    name='EMLDATA')
+                                ])
 
 
     def file_name(self):
@@ -664,14 +694,11 @@ class EmissionLineModel:
             return None
         return os.path.join(self.directory_path, self.output_file)
 
-        self.fit(binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig,
-                 stellar_continuum=stellar_continuum, dapsrc=dapsrc, dapver=dapver,
-                 analysis_path=analysis_path, directory_path=directory_path,
-                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, verbose=verbose)
 
-    def fit(self, binned_spectra, guess_vel=None, guess_sig=None, stellar_continuum=None,
-            dapsrc=None, dapver=None, analysis_path=None, directory_path=None, output_file=None,
-            hardcopy=True, clobber=False, loggers=None, quiet=False):
+    def fit(self, binned_spectra, redshift=None, dispersion=None, continuum=None,
+            continuum_method=None, dapsrc=None, dapver=None, analysis_path=None,
+            directory_path=None, output_file=None, hardcopy=True, clobber=False, loggers=None,
+            quiet=False):
         """
 
         Fit the emission lines.
@@ -691,13 +718,14 @@ class EmissionLineModel:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
         self.binned_spectra = binned_spectra
 
-        # StellarContinuumModel object only used when calculating dispersion corrections.
-        if stellar_continuum is not None:
-            if not isinstance(stellar_continuum, StellarContinuumModel):
-                raise TypeError('Provided stellar continuum must have StellarContinuumModel type!')
-            if stellar_continuum.hdu is None:
-                raise ValueError('Provided StellarContinuumModel is undefined!')
-            self.stellar_continuum = stellar_continuum
+        # Continuum accounts for underlying absorption
+        self.continuum = None
+        if continuum is not None:
+            if continuum.shape != self.binned_spectra['FLUX'].data.shape:
+                raise ValueError('Provided continuum does not match shape of the binned spectra.')
+            self.continuum = continuum if isinstance(continuum, numpy.ma.MaskedArray) \
+                                    else numpy.ma.MaskedArray(continuum)
+            self.continuum_method = continuum_method
 
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
@@ -706,38 +734,37 @@ class EmissionLineModel:
         self.dispaxis = self.binned_spectra.dispaxis
         self.nwave = self.binned_spectra.nwave
         
-        self.nmodels = self.binned_spectra.nbins
-        self.missing_models = self.binned_spectra.missing_bins
-
         # Get the guess kinematics
-        redshift = None if guess_vel is None else guess_vel / astropy.constants.c.to('km/s').value
-        dispersion = None if guess_sig is None else guess_sig
         self._assign_input_kinematics(redshift, dispersion)
-#        self._assign_input_kinematics(redshift if stellar_continuum is None else None, dispersion)
+
+        #---------------------------------------------------------------
+        # Get the good spectra
+        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'EMISSION-LINE PROFILE FITTING:')
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Total bins: {0}'.format(
+            log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
                                                             self.binned_spectra.nbins))
-            log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
+            if len(self.binned_spectra.missing_bins) > 0:
+                log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
                                                             len(self.binned_spectra.missing_bins)))
-            log_output(self.loggers, 1, logging.INFO, 'With good S/N: {0}'.format(
-                                                            numpy.sum(self._check_snr())))
-            log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
-                                                            numpy.sum(self._bins_to_fit())))
-
-        if numpy.sum(self._bins_to_fit()) == 0:
+            log_output(self.loggers, 1, logging.INFO, 'With good S/N and to fit: {0}'.format(
+                                                            numpy.sum(good_snr)))
+            
+        if numpy.sum(good_snr) == 0:
             raise ValueError('No good spectra to fit!')
 
+        #---------------------------------------------------------------
         # Fill in any remaining binning parameters
         self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)
 
+        #---------------------------------------------------------------
         # Check that the file path is defined
         ofile = self.file_path()
         if ofile is None:
@@ -750,16 +777,19 @@ class EmissionLineModel:
             log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
                                                                             self.output_file))
         
+        #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
         # file
         if os.path.isfile(ofile) and not clobber:
+            self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
-            self.read()
+            self.read(checksum=self.checksum)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
+        #---------------------------------------------------------------
         # Fit the spectra
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par = \
@@ -768,98 +798,104 @@ class EmissionLineModel:
 
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
-        
-        # Compile the information on the suite of measured indices
-        hdu_database = self._compile_database()
+       
+        # The number of models returned should match the number of
+        # "good" spectra
 
-        # Get the unique bins and how to reconstruct them
-        unique_models, reconstruct = numpy.unique(self.binned_spectra.hdu['BINID'].data.ravel(),
-                                                return_inverse=True)
+        # TODO: Include failed fits in "missing" models?
 
-        # Restructure the output to match the input DRP file
-        indx = self.binned_spectra.hdu['BINID'].data.ravel() > -1
+        # DEBUG
+        if model_flux.shape[0] != numpy.sum(good_snr):
+            raise ValueError('Unexpected returned shape of fitted continuum models.')
+       
+        #---------------------------------------------------------------
+        # Set the number of models and the missing models
+        self.nmodels = model_flux.shape[0]
+        self.missing_models = self._get_missing_models()
 
-        flux = numpy.zeros(self.shape, dtype=numpy.float)
-        flux.reshape(-1,self.nwave)[indx,:] = model_flux[unique_models[reconstruct[indx]],:]
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Fitted models: {0}'.format(self.nmodels))
+            if len(self.missing_models) > 0:
+                log_output(self.loggers, 1, logging.INFO, 'Missing models: {0}'.format(
+                                                            len(self.missing_models)))
 
-        base = numpy.zeros(self.shape, dtype=numpy.float)
-        base.reshape(-1,self.nwave)[indx,:] = model_base[unique_models[reconstruct[indx]],:]
-
-        mask = self._initialize_mask()
-        mask.reshape(-1,self.nwave)[indx,:] = model_mask[unique_models[reconstruct[indx]],:]
-
-        # Initialize the header keywords
+        # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        hdr = self._clean_drp_header(ext='PRIMARY')
-        hdr = self._initialize_header(hdr)
-        hdr = self._add_method_header(hdr)
+        self._construct_2d_hdu(model_flux, model_base, model_mask, model_fit_par, model_eml_par)
 
-        # Save the data to the hdu attribute
-        # TODO: Write the bitmask to the header?
-        # TODO: Convert some/all of the binary table data into images
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
-                                  fits.ImageHDU(data=flux.data,
-                                                header=self.binned_spectra['FLUX'].header.copy(),
-                                                name='FLUX'),
-                                  fits.ImageHDU(data=base.data,
-                                                header=self.binned_spectra['FLUX'].header.copy(),
-                                                name='BASE'),
-                                  fits.ImageHDU(data=mask,
-                                                header=self.binned_spectra['MASK'].header.copy(),
-                                                name='MASK'),
-                                  self.binned_spectra['WAVE'].copy(),
-                                  self.binned_spectra['BINID'].copy(),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                        format=rec_to_fits_type(hdu_database[n]),
-                                        array=hdu_database[n]) for n in hdu_database.dtype.names ],
-                                                         name='PAR'),
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_fit_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
-                                        array=model_fit_par[n]) for n in model_fit_par.dtype.names],
-                                                                    name='FIT'),
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_eml_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_eml_par[n]),
-                                        array=model_eml_par[n]) for n in model_eml_par.dtype.names],
-                                                                    name='EMLDATA')
-                                ])
-
+        #---------------------------------------------------------------
         # Write the data, if requested
-        if not os.path.isdir(self.directory_path):
-            os.makedirs(self.directory_path)
         if self.hardcopy:
+            if not os.path.isdir(self.directory_path):
+                os.makedirs(self.directory_path)
             self.write(clobber=clobber)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
 
-    def write(self, clobber=False):
+    def construct_3d_hdu(self):
+        """
+        Reformat the model spectra into a cube matching the shape of
+        the DRP fits file.
+        """
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Constructing datacube ...')
+
+        bin_indx = self.hdu['BINID'].data.copy().ravel()
+        model_flux = self.hdu['FLUX'].data.copy()
+        model_base = self.hdu['BASE'].data.copy()
+        model_mask = self.hdu['MASK'].data.copy()
+
+        flux, base, mask = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx,
+                                                        [model_flux, model_base, model_mask])
+
+        mask = self._finalize_cube_mask(mask)
+
+        # Primary header is identical regardless of the shape of the
+        # extensions
+        hdr = self.hdu['PRIMARY'].header.copy()
+        cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.drpf,
+                                                 'K Westfall <westfall@ucolick.org>')
+
+        # Return the converted hdu without altering the internal hdu
+        return fits.HDUList([ fits.PrimaryHDU(header=hdr),
+                              fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
+                              fits.ImageHDU(data=base, header=cube_hdr, name='BASE'),
+                              fits.ImageHDU(data=mask, header=cube_hdr, name='MASK'),
+                              self.hdu['WAVE'].copy(),
+                              self.hdu['BINID'].copy(),
+                              self.hdu['PAR'].copy(),
+                              self.hdu['FIT'].copy(),
+                              self.hdu['EMLDATA'].copy()
+                            ])
+
+
+    # Exact same function as used by SpatiallyBinnedSpectra
+    def write(self, match_DRP=False, clobber=False):
         """
         Write the hdu object to the file.
         """
-        # Restructure the data to match the DRPFits file
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Restructuring data to match DRP.')
-        if self.binned_spectra.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        elif self.binned_spectra.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-        
-        # Get the output file and determine if it should be compressed
-        ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
+        # Convert the spectral arrays in the HDU to a 3D cube and write
+        # it
+        if match_DRP:
+            hdu = self.construct_3d_hdu()
+            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.binned_spectra.drpf.mode,
+                                     self.spectral_arrays, self.image_arrays, clobber=clobber,
+                                     checksum=True, loggers=self.loggers, quiet=self.quiet)
+            return
 
-        # Revert the structure
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        if self.binned_spectra.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
-        elif self.binned_spectra.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        # Restructure the spectral arrays as if they're RSS data, and
+        # restructure any maps
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+        # Write the HDU
+        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
+        # Revert back to the python native storage for internal use
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -881,77 +917,66 @@ class EmissionLineModel:
         # that was used in writing the file
         if self.hdu['PRIMARY'].header['ELFKEY'] != self.method['key']:
             if strict:
-                raise ValueError('ELFKEY in header does not match specified method keyword!')
+                raise ValueError('Keywords in header do not match specified method keywords!')
             else:
-                warnings.warn('ELFKEY in header does not match specified method keyword!')
+                warnings.warn('Keywords in header do not match specified method keywords!')
         # TODO: "strict" should also check other aspects of the file to
         # make sure that the details of the method are also the same,
         # not just the keyword
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        if self.binned_spectra.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
-        elif self.binned_spectra.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read the modeling parameters
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 
-        self.nmodels = self.hdu['PRIMARY'].header['NELMOD']
-        try:
-            self.missing_models = eval(self.hdu['PRIMARY'].header['EMPTYEL'])
-        except KeyError:
-            # Assume if this fails, it's because the keyword doesn't
-            # exist
-            self.missing_models = []
+        self.nmodels = self.hdu['FLUX'].shape[0]
+        self.missing_models = self._get_missing_models()
 
 
-    def unique_models(self, index=False):
-        """
-        Get the unique models or the indices of the unique models in the
-        flattened spatial dimension.
-        """
-        unique_models, first_occurrence = numpy.unique(self.hdu['BINID'].data.ravel(),
-                                                       return_index=True)
-        return first_occurrence[1:] if index else unique_models[1:]
-
-
-    def copy_to_array(self, waverange=None, ext='FLUX'):
+    def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
         r"""
+
+        Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
+        specific for :class:`EmissionLineModel`.
+
         Return a copy of the selected data array.  The array size is
         always :math:`N_{\rm models} \times N_{\rm wavelength}`; i.e., the
         data is always flattened to two dimensions and the unique
-        spectra are selected.  See :func:`unique_models` and
-        :func:`mangadap.drpfits.DRPFits.copy_to_array`.
+        spectra are selected.
 
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 ``'FLUX'``.
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            include_missing (bool) : (**Optional**) Create an array with
+                a size that accommodates the missing models.
 
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
+
         """
-        arr = DRPFits.copy_to_array(self, waverange=waverange, ext=ext)[
-                                                                self.unique_models(index=True),:]
-        if len(self.missing_models) == 0:
-            return arr
-        _arr = numpy.zeros( (self.nmodels, self.nwave), dtype=self.hdu[ext].data.dtype)
-        _arr[self.unique_models(),:] = arr
-        return _arr
+        return DAPFitsUtil.copy_to_array(self.hdu, ext=ext, allowed_ext=self.spectral_arrays,
+                                         waverange=waverange,
+                                    missing_bins=self.missing_models if include_missing else None,
+                                         nbins=self.nmodels,
+                                        unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
-    def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
+    def copy_to_masked_array(self, ext='FLUX', flag=None, waverange=None, include_missing=False):
         r"""
+        Wrapper for
+        :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array`
+        specific for :class:`EmissionLineModel`.
 
         Return a copy of the selected data array as a masked array.
         This is functionally identical to :func:`copy_to_array`,
@@ -960,37 +985,59 @@ class EmissionLineModel:
         `flag`.
         
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 `'FLUX'`.
-            mask_ext (str) : (**Optional**) Name of the extension with
-                the mask bit data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
-                `'MASK'`.
             flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
                 masked.  The names *must* be a valid bit name as defined
-                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
-                not provided, *ANY* non-zero mask bit is omitted.
+                by :attr:`bitmask`.  If not provided, *ANY* non-zero
+                mask bit is omitted.
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            include_missing (bool) : (**Optional**) Create an array with
+                a size that accommodates the missing models.
 
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
         """
-        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext, mask_ext=mask_ext,
-                                           flag=flag)[self.unique_models(index=True),:]
-        if len(self.missing_models) == 0:
-            return arr
-        _arr = numpy.ma.zeros( (self.nmodels, self.nwave), dtype=self.hdu[ext].data.dtype)
-        _arr[self.unique_models(),:] = arr
-        _arr[self.missing_models,:] = numpy.ma.masked
-        return _arr
+        return DAPFitsUtil.copy_to_masked_array(self.hdu, ext=ext, mask_ext='MASK', flag=flag,
+                                                bitmask=self.bitmask,
+                                                allowed_ext=self.spectral_arrays,
+                                                waverange=waverange,
+                                    missing_bins=self.missing_models if include_missing else None,
+                                                nbins=self.nmodels,
+                                        unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
+    def fill_to_match(self, binned_spectra, include_base=False):
+        """
+        Get the emission-line models that match the shape of the
+        provided binned_spectra.
+        """
+        if binned_spectra is self.binned_spectra:
+            emission_lines = self.copy_to_array()
+            if include_base:
+                emission_lines += self.copy_to_array(ext='BASE')
+            emission_lines = numpy.ma.MaskedArray(emission_lines)
 
+            # Number of models matches the numbers of bins
+            if binned_spectra.nbins == self.nmodels:
+                return emission_lines
+    
+            # Fill in bins with no models with masked zeros
+            _emission_lines = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
+            _emission_lines[:,:] = numpy.ma.masked
+            for i,j in enumerate(self.hdu['FIT'].data['BINID_INDEX']):
+                _emission_lines[j,:] = emission_lines[i,:]
+            return _emission_lines
+
+        raise NotImplementedError('Can only match to internal binned_spectra.')
+
+    # TODO: Copy matched_guess_kinematics() from StellarContinuumModel,
+    # specifying a specific emission line
 

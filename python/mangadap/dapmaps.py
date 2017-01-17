@@ -27,6 +27,8 @@ There has to be a better way to construct the file(s)!
     | **30 Nov 2016**: (KBW) Added channels to the SPX_ELLCOO and
         BIN_ELLCOO extensions with the radius normalized by the
         effective radius.
+    | **06 Dec 2016**: (KBW) Moved some static functions to
+        :class:`mangadap.MaNGAFits`
 
 .. todo::
     Do something different than add an empty extension when the data are
@@ -44,7 +46,6 @@ if sys.version > '3':
 
 import numpy
 import logging
-import resource
 import time
 import os
 
@@ -57,6 +58,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
 
+from .mangafits import MaNGAFits
 from .util.bitmask import BitMask
 from .util.log import log_output
 from .util.fileio import write_hdu
@@ -257,20 +259,19 @@ class construct_maps_file:
         return (v-astropy.constants.c.to('km/s').value*redshift)/(1.0+redshift)
 
 
-    @staticmethod
-    def _clean_primary_header(hdr):
-        # Remove some keys that are incorrect for DAP data
-        hdr.remove('BSCALE')
-        hdr.remove('BZERO')
-        hdr.remove('BUNIT')
-#        hdr.remove('MASKNAME')
+#    @staticmethod
+#    def _clean_primary_header(hdr):
+#        # Remove some keys that are incorrect for DAP data
+#        hdr.remove('BSCALE')
+#        hdr.remove('BZERO')
+#        hdr.remove('BUNIT')
+##        hdr.remove('MASKNAME')
 
 
     def _initialize_primary_header(self):
+        # Copy the from the DRP and clean it
         hdr = self.drpf.hdu['PRIMARY'].header.copy()
-
-        # Clean out header for info not pertinent to the DAP
-        self._clean_primary_header(hdr)
+        hdr = MaNGAFits._clean_primary_header(hdr)
 
         # Change MASKNAME
         hdr['MASKNAME'] = 'MANGA_DAPPIXMASK'
@@ -372,51 +373,51 @@ class construct_maps_file:
         return mask
 
 
-    @staticmethod
-    def _clean_map_header(hdr, nchannels=1):
-
-        # Change header keywords to the default values for the third axis
-        if nchannels > 1:
-            hdr['NAXIS'] = 3
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
-            hdr['CTYPE3'] = ' '
-            hdr['CUNIT3'] = ' '
-            hdr['CRPIX3'] = 1
-            hdr['CRVAL3'] = 1.
-            hdr['CD3_3']  = 1.
-        else:
-            hdr['NAXIS'] = 2
-            #hdr.remove('NAXIS3')
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
-            hdr.remove('CRPIX3')
-            hdr.remove('CRVAL3')
-            hdr.remove('CD3_3')
-
-        # Remove everything but the WCS information
-        w = WCS(header=hdr)
-        hdr = w.to_header().copy()
-
-        # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
-
-        # Add back in the BSCALE and BZERO values
-        hdr['BSCALE'] = 1.
-        hdr['BZERO'] = 0.
-
-        # Add back in the default CTYPE3, CUNIT3
-        if nchannels > 1:
-            hdr['CTYPE3'] = (' ', 'Undefined type')
-            hdr['CUNIT3'] = (' ', 'Undefined units')
-
-        return hdr
+#    @staticmethod
+#    def _clean_map_header(hdr, nchannels=1):
+#
+#        # Change header keywords to the default values for the third axis
+#        if nchannels > 1:
+#            hdr['NAXIS'] = 3
+#            hdr.remove('CTYPE3')
+#            hdr.remove('CUNIT3')
+#            hdr['CTYPE3'] = ' '
+#            hdr['CUNIT3'] = ' '
+#            hdr['CRPIX3'] = 1
+#            hdr['CRVAL3'] = 1.
+#            hdr['CD3_3']  = 1.
+#        else:
+#            hdr['NAXIS'] = 2
+#            #hdr.remove('NAXIS3')
+#            hdr.remove('CTYPE3')
+#            hdr.remove('CUNIT3')
+#            hdr.remove('CRPIX3')
+#            hdr.remove('CRVAL3')
+#            hdr.remove('CD3_3')
+#
+#        # Remove everything but the WCS information
+#        w = WCS(header=hdr)
+#        hdr = w.to_header().copy()
+#
+#        # Fix the DATE-OBS keyword:
+#        hdr.comments['DATE-OBS'] = 'Date of median exposure'
+#        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+#
+#        # Add back in the BSCALE and BZERO values
+#        hdr['BSCALE'] = 1.
+#        hdr['BZERO'] = 0.
+#
+#        # Add back in the default CTYPE3, CUNIT3
+#        if nchannels > 1:
+#            hdr['CTYPE3'] = (' ', 'Undefined type')
+#            hdr['CUNIT3'] = (' ', 'Undefined units')
+#
+#        return hdr
 
 
     def _map_header(self, nchannels=1):
         hdr = self.drpf.hdu['FLUX'].header.copy()
-        hdr = self._clean_map_header(hdr, nchannels=nchannels)
+        hdr = MaNGAFits._clean_map_header(hdr, nchannels=nchannels)
         # Add Authors
         hdr['AUTHOR'] = 'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
         # Change the pixel mask name

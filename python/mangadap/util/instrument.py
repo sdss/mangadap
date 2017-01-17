@@ -69,8 +69,8 @@ if sys.version > '3':
 
 import warnings
 import numpy
-from scipy import integrate
-from scipy.interpolate import InterpolatedUnivariateSpline
+from scipy import integrate, interpolate
+#from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.special import erf
 import astropy.constants
 
@@ -286,9 +286,9 @@ class VariableGaussianKernel:
         # Kernel will have size m x n
         self.kernel = (erf((x2[:,None]+0.5)/numpy.sqrt(2)/self.sigma) 
                             - erf((x2[:,None]-0.5)/numpy.sqrt(2)/self.sigma))/2. if integral else \
-                      numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma))) 
+                      numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma)))
 
-        self.kernel /= numpy.sum(self.kernel, 0)[None, :]       # Normalize kernel
+        self.kernel /= numpy.sum(self.kernel, axis=0)[None, :]       # Normalize kernel
 
 
     def _check_shape(self, y, ye=None):
@@ -316,11 +316,11 @@ class VariableGaussianKernel:
         # Create m copies of the shifted input function
         a = self._create_a(y)
         if ye is None:
-            return numpy.sum(a*self.kernel,0)
+            return numpy.sum(a*self.kernel, axis=0)
 
         # Construct the error
         ae = self._create_a(numpy.square(ye))
-        return numpy.sum(a*self.kernel,0), numpy.sqrt(numpy.sum(ae*self.kernel,0))
+        return numpy.sum(a*self.kernel, axis=0), numpy.sqrt(numpy.sum(ae*self.kernel, axis=0))
 
 
 def convolution_variable_sigma(y, sigma, ye=None, integral=False):
@@ -475,11 +475,12 @@ class spectral_resolution:
             raise ValueError('wave and sres must have the same shape!')
 
         # k=1; always use linear interpolation
-        if sys.version < '3':
-            print('WARNING: InterpolatedUnivariateSpline may have different behavior in python2!')
-            self.interpolator = InterpolatedUnivariateSpline(wave, sres, k=1)
-        else:
-            self.interpolator = InterpolatedUnivariateSpline(wave, sres, k=1, ext=interp_ext)
+#        if sys.version < '3':
+#            print('WARNING: InterpolatedUnivariateSpline may have different behavior in python2!')
+#            self.interpolator = InterpolatedUnivariateSpline(wave, sres, k=1)
+#        else:
+#            self.interpolator = InterpolatedUnivariateSpline(wave, sres, k=1, ext=interp_ext)
+        self.interpolator = interpolate.interp1d(wave, sres, fill_value=interp_ext)
         self.log10 = log10
         self.cnst = constants()
         self.c = astropy.constants.c.to('km/s').value
@@ -535,14 +536,16 @@ class spectral_resolution:
         """
         Return the wavelength vector; held by :attr:`interpolator`.
         """
-        return self.interpolator._data[0]
+#        return self.interpolator._data[0]
+        return self.interpolator.x
 
 
     def sres(self):
         """
         Return the resolution vector; held by :attr:`interpolator`.
         """
-        return self.interpolator._data[1]
+#        return self.interpolator._data[1]
+        return self.interpolator.y
 
 
     def match(self, new_sres, no_offset=True, min_sig_pix=0.0):
@@ -1004,6 +1007,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             res[i] = res[0]
 #        pyplot.plot(wave, res[0].sig_pd)
 #        pyplot.show()
+#        exit()
     else:
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
@@ -1030,12 +1034,14 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     if nspec == 1 and spec_dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
+        print('running the convolution')
         if ivar is None:
             out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
         else:
             out_flux[indx], out_ivar[indx] \
                     = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
                                                  ye=None if ivar is None else noise[indx])
+        print('done')
         out_sres[indx] = res[0].adjusted_resolution(indx=indx)
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:

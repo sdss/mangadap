@@ -303,7 +303,8 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
     return output_path if ifudesign is None else os.path.join(output_path, str(ifudesign))
 
 
-def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None):
+def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
+                       continuum_method=None):
     """
     Return the method for a provided plan.  The name is currently built
     using the keyword used to identify the methods for building the
@@ -315,11 +316,16 @@ def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None):
         if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
             raise ValueError('Must only provide a single plan.')
         binning_method = str(plan['bin_key'])
-        continuum_method = str(plan['continuum_key'])
+        _continuum_method = str(plan['continuum_key'])
     else:
         binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
-        continuum_method = 'None' if stellar_continuum is None else stellar_continuum.method['key']
-    return '{0}-{1}'.format(binning_method, continuum_method)
+        if stellar_continuum is not None:
+            _continuum_method = stellar_continuum.method['key']
+        elif continuum_method is not None:
+            _continuum_method = continuum_method
+        else:
+            _continuum_method = 'None'
+    return '{0}-{1}'.format(binning_method, _continuum_method)
 
 
 def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False,

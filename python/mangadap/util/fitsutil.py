@@ -9,7 +9,7 @@ Defines a class with common functions for MaNGA fits files.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/mangafits.py
+    $MANGADAP_DIR/python/mangadap/util/fitsutil.py
 
 *Imports and python version compliance*:
     ::
@@ -32,7 +32,7 @@ Defines a class with common functions for MaNGA fits files.
 
 *Revision history*:
     | **17 May 2016**: Original implementation by K. Westfall (KBW)
-    | **02 Dec 2016**: (KBW) Added :func:`mangadap.dapfitsutil.DAPFitsUtil.reconstruct_cube`
+    | **02 Dec 2016**: (KBW) Added :func:`mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube`
 
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -59,12 +59,13 @@ from scipy import sparse
 
 from astropy.wcs import WCS
 from astropy.io import fits
+import astropy.constants
 
-from .util.bitmask import BitMask
-from .util.log import log_output
-from .util.fileio import write_hdu
-from .util.pixelmask import SpectralPixelMask
-from .util.covariance import Covariance
+from .bitmask import BitMask
+from .log import log_output
+from .fileio import write_hdu
+from .pixelmask import SpectralPixelMask
+from .covariance import Covariance
 
 __author__ = 'Kyle B. Westfall'
 
@@ -138,39 +139,6 @@ class DAPFitsUtil:
         hdr['VERSDAP'] = (mangadap.__version__, 'MaNGA DAP version')
 
         return hdr
-
-
-    @staticmethod
-    def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, loggers=None,
-                                    quiet=False):
-
-        # Initialize the DAP quality flag
-        dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
-        drp3qualbm = DRPQuality3DBitMask()
-        dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
-        if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
-            if not quiet:
-                log_output(loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
-            dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
-            dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
-
-        #Signify that the Voronoi binning resulted in a single bin
-        if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
-                and binned_spectra.method['binclass'].bintype == 'voronoi' \
-                and binned_spectra.nbins == 1:
-            dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
-
-        # Determine if there's a foreground star
-        if numpy.sum(drpf.bitmask.flagged(drpf['MASK'].data, flag='FORESTAR')) > 0:
-            dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
-
-        # Commit the quality flag to the header
-        prihdr['DAPQUAL'] = (dapqual, 'DAP quality bitmask')
-
-        # Finalize authors
-        prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
-
-        return prihdr
 
 
     @staticmethod
@@ -940,31 +908,5 @@ class DAPFitsUtil:
         if ivar:
             return v*numpy.square(1.0+redshift)
         return (v-astropy.constants.c.to('km/s').value*redshift)/(1.0+redshift)
-
-
-    @staticmethod
-    def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum,
-                          emission_line_moments, emission_line_model, spectral_indices):
-
-        if not isinstance(drpf, DRPFits):
-            raise TypeError('Input must have type DRPFits.')
-        if obs is not None and not isinstance(obs, ObsInputPar):
-            raise TypeError('Input must have type ObsInputPar.')
-        if rdxqa is not None and not isinstance(rdxqa, ReductionAssessment):
-            raise TypeError('Input must have type ReductionAssessment.')
-        if binned_spectra is not None and not isinstance(binned_spectra, SpatiallyBinnedSpectra):
-            raise TypeError('Input must have type SpatiallyBinnedSpectra.')
-        if stellar_continuum is not None and not isinstance(stellar_continuum,
-                                                            StellarContinuumModel):
-            raise TypeError('Input must have type StellarContinuumModel.')
-        if emission_line_moments is not None and not isinstance(emission_line_moments,
-                                                                EmissionLineMoments):
-            raise TypeError('Input must have type EmissionLineMoments.')
-        if emission_line_model is not None and not isinstance(emission_line_model,
-                                                              EmissionLineModel):
-            raise TypeError('Input must have type EmissionLineModel.')
-        if spectral_indices is not None and not isinstance(spectral_indices, SpectralIndices):
-            raise TypeError('Input must have type SpectralIndices.')
-
 
 

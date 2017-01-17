@@ -84,6 +84,14 @@ the MaNGA Data Reduction Pipeline (DRP).
         resolution cube or vector independent of MPL
     | **01 Dec 2016**: (KBW) Added
         :func:`DRPFits.spectral_resolution_header`.
+    | **06 Dec 2016**: (KBW) Removed wavelength_mask function, now uses
+        :class:`mangadap.util.pixelmask.SpectralPixelMask`.  Moved the
+        main functionality of
+        :func:`mangadap.drpfits.DRPFits.copy_to_array` and
+        :func:`mangadap.drpfits.DRPFits.copy_to_masked_array` to
+        :class:`mangadap.util.fitsutil.DAPFitsUtil`, what's left are wrapper
+        functions for the more general functions in
+        :class:`mangadap.util.fitsutil.DAPFitsUtil`.
 
 .. todo::
 
@@ -134,17 +142,18 @@ try:
 except ImportError:
     warnings.warn('Could not import shapely!', ImportWarning)
 
+from .util.fitsutil import DAPFitsUtil
+from .util.bitmask import BitMask
 from .util.constants import constants
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
+from .util.pixelmask import SpectralPixelMask
 from .config.defaults import default_idlutils_dir, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
 from .config.defaults import default_cube_recenter, default_regrid_rlim
 from .config.defaults import default_regrid_sigma
 from .config.defaults import default_manga_fits_root
-from .util.bitmask import BitMask
-from .mangafits import MaNGAFits
 
 from matplotlib import pyplot
 
@@ -261,7 +270,7 @@ class DRPFitsBitMask(BitMask):
     Structure with the DRP mask bits.
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
-        MaNGAFits.check_mode(mode)
+        DRPFits.check_mode(mode)
         sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
                         if sdss_maskbits is None else sdss_maskbits
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
@@ -437,7 +446,7 @@ class DRPFits:
         # Set the attributes, forcing a known type
         self.plate = long(plate)
         self.ifudesign = long(ifudesign)
-        MaNGAFits.check_mode(mode)
+        self.check_mode(mode)
         self.mode = mode
 
         # Setup the directory path.
@@ -956,6 +965,44 @@ class DRPFits:
         self.spatial_index[:] = [ (ii,jj) for ii, jj in zip(i,j) ]
 
 
+    @staticmethod
+    def mode_options():
+        """
+        Return the allowed modes.
+
+        Returns:
+            list: List of the allowed DRP fits file modes.
+        """
+        return [ 'CUBE', 'RSS' ]
+
+
+    @staticmethod
+    def check_mode(mode):
+        """
+        Check that the mode is valid.
+
+        Args:
+
+            mode (str): Mode value to check.  Valid modes are `CUBE` and
+            `RSS`.
+        """
+        options = DRPFits.mode_options()
+        if mode not in options:
+            raise ValueError('Unknown mode {0}.  Must be in: {1}'.format(mode, options))
+
+
+    @staticmethod
+    def sampling_options():
+        """
+        Return the allowed wavelength sampling modes.
+
+        Returns:
+            list: List of the allowed DRP fits wavelength sampling
+            modes.
+        """
+        return [ 'LIN', 'LOG' ]
+
+
     def file_name(self):
         """Return the name of the DRP file"""
         root = default_manga_fits_root(self.plate, self.ifudesign, 'LOG{0}'.format(self.mode))
@@ -1008,11 +1055,11 @@ class DRPFits:
 
         # Reformat and initialize properties of the data
         if self.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
+            DAPFitsUtil.restructure_cube(self.hdu, ext=self.spectral_arrays)
         elif self.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
+            DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
         self.shape = self.hdu['FLUX'].data.shape
-        self.spatial_shape = MaNGAFits.get_spatial_shape(self.shape, self.dispaxis)
+        self.spatial_shape = DAPFitsUtil.get_spatial_shape(self.shape, self.dispaxis)
         self.nspec = numpy.prod(self.spatial_shape)
         self.nwave = self.shape[self.dispaxis]
         self._generate_spatial_index()
@@ -1110,171 +1157,68 @@ class DRPFits:
         return self.hdu[ext].data.reshape(-1,self.nwave)[_t,:]
         
 
-    def wavelength_mask(self, waverange=None, toarray=False):
-        r"""
-        Return a mask boolean array with flags for pixels that fall
-        within the selected wavelength range.  If no wavelength range is
-        provided, the function just returns a fully False array with the
-        correct shape.
-
-        .. todo::
-        
-            This method is used by other similar objects; see, e.g.,
-            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
-
-            These and other such methods should be pulled out into a
-            base class that these common classes are derived from.  E.g.
-            :class:`MaNGAFits`?
-
-        Args:
-            waverange (array-like) : (**Optional**) A two-element array
-                with the minimum and maximum wavelength to include.
-            toarray (bool) : (**Optional**) Return an array with same
-                shape as the flux array.  Default is to provide only the
-                single vector.
-
-        Returns:
-            numpy.ndarray: Boolean mask array.
-
-        Raises:
-            ValueError: Raised if the input wavelength range does not
-                have two elements.
-        """
-        outshape = self.shape if toarray else (self.nwave,)
-        if waverange is None:
-            return numpy.full(outshape, False, dtype=numpy.bool)
-        if len(waverange) != 2:
-            raise ValueError('Input wavelength range must have 2 and only 2 elements!')
-
-        if self.dispaxis is None:
-            self.dispaxis = len(outshape)-1
-        _waverange = waverange if waverange[0] < waverange[1] else [waverange[1], waverange[0]]
-        selected = (self.hdu['WAVE'].data < _waverange[0]) | (self.hdu['WAVE'].data > _waverange[1])
-        return numpy.array([selected]*self.nspec).reshape(outshape) if toarray else selected
+#    def wavelength_mask(self, waverange=None, toarray=False):
+#        r"""
+#        Return a mask boolean array with flags for pixels that fall
+#        within the selected wavelength range.  If no wavelength range is
+#        provided, the function just returns a fully False array with the
+#        correct shape.
+#
+#        .. todo::
+#        
+#            This method is used by other similar objects; see, e.g.,
+#            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+#
+#            These and other such methods should be pulled out into a
+#            base class that these common classes are derived from.  E.g.
+#            :class:`DAPFitsUtil`?
+#
+#        Args:
+#            waverange (array-like) : (**Optional**) A two-element array
+#                with the minimum and maximum wavelength to include.
+#            toarray (bool) : (**Optional**) Return an array with same
+#                shape as the flux array.  Default is to provide only the
+#                single vector.
+#
+#        Returns:
+#            numpy.ndarray: Boolean mask array.
+#
+#        Raises:
+#            ValueError: Raised if the input wavelength range does not
+#                have two elements.
+#        """
+#        outshape = self.shape if toarray else (self.nwave,)
+#        if waverange is None:
+#            return numpy.full(outshape, False, dtype=numpy.bool)
+#        if len(waverange) != 2:
+#            raise ValueError('Input wavelength range must have 2 and only 2 elements!')
+#
+#        if self.dispaxis is None:
+#            self.dispaxis = len(outshape)-1
+#        _waverange = waverange if waverange[0] < waverange[1] else [waverange[1], waverange[0]]
+#        selected = (self.hdu['WAVE'].data < _waverange[0]) | (self.hdu['WAVE'].data > _waverange[1])
+#        return numpy.array([selected]*self.nspec).reshape(outshape) if toarray else selected
 
     
-    def copy_to_array(self, waverange=None, ext='FLUX'):
-        r"""
-        Return a copy of the selected data array.  The array size is
-        always :math:`N_{\rm spec} \times N_{\rm wavelength}`; i.e., the
-        CUBE files are flattened to two dimensions, matching the
-        dimensionality of the RSS files.  The spatial positions within
-        the original DRP file for each spectrum are given by tuples in
-        :attr:`spatial_index`.
-
-        .. todo::
-        
-            This method is used by other similar objects; see, e.g.,
-            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
-
-            These and other such methods should be pulled out into a
-            base class that these common classes are derived from.  E.g.
-            :class:`MaNGAFits`?
-
-        Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
-            ext (str) : (**Optional**) Name of the extension from which
-                to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
-                ``'FLUX'``.
-
-        Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
-
-        Raises:
-            KeyError : Raised if `ext` is not a valid extension.
+    def copy_to_array(self, ext='FLUX', waverange=None):
         """
-        # Make sure extension is not a list
-        _ext = ext
-        if isinstance(ext, list):
-            if len(ext) > 1:
-                raise ValueError('Must provide only one extension.')
-            _ext = ext[0]
-        # Make sure the extension exists
-        if _ext not in self.spectral_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(_ext))
-        if waverange is None:
-            return self.hdu[_ext].data.reshape(-1,self.nwave).copy()
-        indx = numpy.invert(self.wavelength_mask(waverange=waverange, toarray=True))
-        return self.hdu[_ext].data[indx].reshape(-1,self.nwave).copy()
-
-
-    def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
-        r"""
-
-        Return a copy of the selected data array as a masked array.
-        This is functionally identical to :func:`DRPFits.copy_to_array`,
-        except the output format is a `numpy.ma.MaskedArray`_.  The
-        pixels that are considered to be masked can be specified using
-        the `flag` option.
-        
-        .. todo::
-        
-            This method is used by other similar objects; see, e.g.,
-            :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
-
-            These and other such methods should be pulled out into a
-            base class that these common classes are derived from.  E.g.
-            :class:`MaNGAFits`?
-
-        Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
-
-            ext (str) : (**Optional**) Name of the extension from which
-                to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
-                `'FLUX'`.
-            mask_ext (str) : (**Optional**) Name of the extension with
-                the mask bit data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`spectral_arrays`.  Default is
-                `'MASK'`.
-            flag (str or list): (**Optional**) (List of) Flag names that
-                are considered when deciding if a pixel should be
-                masked.  The names *must* be a valid bit name as defined
-                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
-                not provided, *ANY* non-zero mask bit is omitted.
-
-        Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
-
-        Raises:
-            KeyError : Raised if `ext` is not a valid extension.
+        Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
+        specific for :class:`DRPFits`.
         """
-        # Make sure extension is not a list
-        _ext = ext
-        if isinstance(ext, list):
-            if len(ext) > 1:
-                raise ValueError('Must provide only one extension.')
-            _ext = ext[0]
-        _mask_ext = mask_ext
-        if isinstance(mask_ext, list):
-            if len(mask_ext) > 1:
-                raise ValueError('Must provide only one extension.')
-            _mask_ext = mask_ext[0]
-        # Make sure the extensions exist
-        if _ext not in self.spectral_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(_ext))
-        if _mask_ext not in self.spectral_arrays:
-            raise KeyError('Cannot access {0} extension.'.format(_mask_ext))
-        # Determine which pixels should be masked
-        mask = self.hdu[_mask_ext].data.reshape(-1,self.nwave) > 0 \
-                    if flag is None or self.bitmask is None else \
-                        self.bitmask.flagged(
-                            self.hdu[_mask_ext].data.reshape(-1,self.nwave),
-                            flag=flag)
-        # Add the wavelength range mask
-        if waverange is not None:
-            mask |= self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
-        # Return the masked array
-        return numpy.ma.MaskedArray(self.hdu[_ext].data.reshape(-1,self.nwave).copy(), mask=mask)
+        return DAPFitsUtil.copy_to_array(self.hdu, ext=ext, allowed_ext=self.spectral_arrays,
+                                         waverange=waverange)
+
+
+    def copy_to_masked_array(self, ext='FLUX', flag=None, waverange=None):
+        """
+        Wrapper for
+        :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array`
+        specific for :class:`DRPFits`.
+        """
+        return DAPFitsUtil.copy_to_masked_array(self.hdu, ext=ext, mask_ext='MASK', flag=flag,
+                                                bitmask=self.bitmask,
+                                                allowed_ext=self.spectral_arrays,
+                                                waverange=waverange)
 
 
     def spectral_resolution(self, ext=None, toarray=False):
@@ -1305,7 +1249,7 @@ class DRPFits:
         if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
             print('Use DISP')
             disp = self.copy_to_array(ext='DISP') if toarray else \
-                        numpy.ma.MaskedArray(self.hdu['DISP'].data)
+                        numpy.ma.MaskedArray(self.hdu['DISP'].data.copy())
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
 #            i = self.spatial_shape[0]//2
 #            ii = i*self.spatial_shape[0] + i
@@ -2566,13 +2510,12 @@ class DRPFits:
         # Done this way so that computation of wavelength mask only done
         # once
         if waverange is not None:
-            wavemask = self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
-#            xpos.mask |= wavemask
-#            ypos.mask |= wavemask
+            wavemask = SpectralPixelMask(waverange=waverange).boolean(self.hdu['WAVE'].data,
+                                                                      nspec=self.nspec)
+#            wavemask = self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
             xpos[wavemask] = numpy.ma.masked
             ypos[wavemask] = numpy.ma.masked
             if fluxwgt:
-#                flux.mask |= wavemask
                 flux[wavemask] = numpy.ma.masked
 
         # Get the normalization and return the flux- or un-weighted coordinates

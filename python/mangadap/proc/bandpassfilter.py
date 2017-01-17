@@ -61,6 +61,8 @@ import numpy
 from ..par.parset import ParSet
 from ..util.instrument import _pixel_borders
 
+from matplotlib import pyplot
+
 __author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -354,5 +356,197 @@ def passband_weighted_mean(x, y, z, passband=None, yerr=None, zerr=None, log=Fal
                             weighted_integral_err*numpy.square(weighted_mean/weighted_integral) \
                                     + integral_err*numpy.square(weighted_mean/integral))
     return weighted_mean, weighted_mean_err
+
+
+def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=True):
+    """
+    Get the pseudocontinua in a set of passbands for a single vector (y)
+    """
+    # Calculate the pseudo-continua in the sidebands
+    continuum, continuum_error = passband_integrated_mean(x, y, passband=passband, err=err, log=log)
+    if weighted_center:
+        band_center, _wc_err = passband_weighted_mean(x, y, x, passband=passband, log=log)
+    else:
+        band_center = numpy.mean(x) if passband is None else numpy.mean(passband, axis=1)
+
+    # Calculate the fraction of the band that is covered by unmasked
+    # pixels
+    interval_frac = passband_integrated_width(x, y, passband=passband, log=log) \
+                            / numpy.diff(passband, axis=1).ravel()
+
+#    pyplot.step(x, y, where='mid', color='k', lw=0.5, zorder=1)
+#    pyplot.scatter(band_center, continuum, marker='.', s=50,
+#                   color='b', lw=0, zorder=3)
+#    pyplot.show()
+
+    return band_center, continuum, continuum_error, interval_frac < 1.0, ~(interval_frac > 0.0)
+
+
+def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroid, line_flux,
+                                   ivar=None, mask=None, log=True, redshift=None,
+                                   line_flux_err=None, include_band=None):
+    """
+    Compute the equivalent width for emission lines provided the
+    spectra and the previously measured line flux.
+
+    Args:
+
+        wave (numpy.ndarray): Vector (1D array) with the observed
+            wavelength of each spectrum in angstroms.
+        flux (numpy.ndarray): 1 or 2D array with the observed flux
+            density (units in per angstrom) with size Nspec x Nwave.
+        blueside (numpy.ndarray): Wavelength limits for the blue
+            sidebands in angstroms, with size Nbands x 2.
+        redside (numpy.ndarray): Wavelength limits for the red sidebands
+            in angstroms, with size Nbands x 2.
+        line_centroid (numpy.ndarray): Wavelengths at which to sample
+            the continuum for the equivalent width measurement.  Can be
+            anything, but should typically be the *observed* wavelength
+            of line center in angstroms, with size Nspec x Nband.
+        line_flux (numpy.ndarray): Integrated flux of the emission
+            feature with size Nspec x Nband.
+        ivar (numpy.ndarray): (**Optional**) Inverse variance in the
+            observed flux, with shape that matches flux.  Default
+            ignores error calculation.  **Currently the equivalent width
+            errors do not account for errors in the continuum
+            characterization beneath the line.  So this ivar array is
+            ignored!**
+        mask (numpy.ndarray): (**Optional**) Boolean bad-pixel mask:
+            True values are considered to be bad pixels.  Default
+            assumes all pixels are good.
+        log (bool): (**Optional**) Boolean that the spectra are
+            logarithmically sampled in wavelength.  Default is True.
+        redshift (numpy.ndarray): (**Optional**) Redshift of each
+            spectrum.  Default is to assume the redshift is 0 (i.e.,
+            that the observed and rest frames are identical).
+        line_flux_err (numpy.ndarray): (**Optional**) Errors in the line
+            flux, with size Nspec x Nband.  Default is to ignore the
+            error propagation.
+        include_band (numpy.ndarray): (**Optional**) Boolean array with
+            size Nspec x Nband used to select which bands to use in the
+            calculation for each spectrum.  Default is to include all
+            bands for all spectra. 
+
+    Returns:
+        numpy.ndarray: Six arrays all with size Nspec x Nbands:
+            - the passband median in the blue and red sidebands
+            - a boolean array if the sideband medians were measured and
+              have positive values
+            - The continuum value used to calculate the equivalent width
+            - The equivalent with measurements and their errors; the
+              errors are 0 if no line flux errors were provided
+
+    Raises:
+        ValueError: Raised if the shapes of the input arrays are not
+            correct.
+
+    """
+    # Errors in the flux are currently not
+    if ivar is not None:
+        warnings.warn('Equivalent width does not propagate error from continuum measurement.')
+    noise = None
+
+    # Convert the flux to a masked array, if necessary
+    if mask is not None and mask.shape != flux.shape:
+        raise ValueError('Input mask must have the same shape as the flux array.')
+    _flux = numpy.ma.atleast_2d(flux if isinstance(flux, numpy.ma.MaskedArray) \
+                                        else numpy.ma.MaskedArray(flux, mask=mask))
+    if len(wave) != _flux.shape[1]:
+        raise ValueError('Wavelength vector does not match shape of the flux array.')
+
+#    # Convert the ivar to 1-sigma error, if available
+#    if ivar is None:
+#        noise = None
+#    else:
+#        if ivar.shape != _flux.shape:
+#            raise ValueError('Input ivar array must be the same shape as the flux array.')
+#        _ivar = ivar if isinstance(ivar, numpy.ma.MaskedArray) else \
+#                    numpy.ma.MaskedArray(ivar, mask=numpy.ma.getmaskarray(_flux))
+#        noise = numpy.ma.sqrt(1.0 /_ivar)
+
+    # Check band definitions
+    if bluebands.shape[1] != 2:
+        raise ValueError('Input bands must have shape Nband x 2.')
+    if bluebands.shape != redbands.shape:
+        raise ValueError('Input side bands do not have the same shape.')
+
+    # Check the shapes
+    nspec = flux.shape[0]
+    nbands = bluebands.shape[0]
+
+    expected_shape = (nspec, nbands)
+    if line_centroid.shape != expected_shape:
+        raise ValueError('Line centroid array must have shape: {0}'.format(expected_shape))
+    if line_flux.shape != expected_shape:
+        raise ValueError('Line flux array must have shape: {0}'.format(expected_shape))
+    if line_flux_err is not None and line_flux_err.shape != expected_shape:
+        raise ValueError('Line flux error array must have shape: {0}'.format(expected_shape))
+
+    # Check the input band flags
+    _include_band = numpy.ones(expected_shape, dtype=numpy.bool) \
+                        if include_band is None else include_band
+    if _include_band.shape != expected_shape:
+        raise ValueError('Bands flags array must have shape: {0}'.format(expected_shape))
+
+    # Check the input redshifts
+    _redshift = numpy.zeros(nspec, dtype=numpy.float) if redshift is None else redshift
+    if len(_redshift) != nspec:
+        raise ValueError('Must provide one redshift per input spectrum (flux.shape[0]).')
+
+    # Initialize the output data
+    bmed = numpy.zeros(expected_shape, dtype=float)
+    rmed = numpy.zeros(expected_shape, dtype=float)
+    pos = _include_band.copy()
+    ewcont = numpy.zeros(expected_shape, dtype=float)
+    ew = numpy.zeros(expected_shape, dtype=float)
+    ewerr = numpy.zeros(expected_shape, dtype=float)
+
+    # Measure the pseudo-continuum in the sidebands
+    for i in range(nspec):
+
+        print('Measuring emission-line equivalent widths in spectrum: {0}/{1}'.format(i+1,nspec),
+              end='\r')
+
+        # Spectra to use
+        spec = _flux[i,:]
+        _noise = None if noise is None else noise[i,:]
+
+        # Bands to use
+        indx = _include_band[i,:]
+
+        # Shift the bands to the appropriate redshift
+        _bluebands = bluebands[indx]*(1.0+_redshift[i])
+        _redbands = redbands[indx]*(1.0+_redshift[i])
+
+        # Center of each band (for all bands!)
+        bcen = numpy.mean(bluebands*(1.0+_redshift[i]), axis=1)
+        rcen = numpy.mean(redbands*(1.0+_redshift[i]), axis=1)
+
+        # Median of each band
+        bmed[i,indx] = passband_median(wave, _flux[i,:], passband=_bluebands)
+        rmed[i,indx] = passband_median(wave, _flux[i,:], passband=_redbands)
+
+        # Construct the continuum level at the center of the main
+        # band
+        pos[i,:] = indx & (bmed[i,:] > 0) & (rmed[i,:] > 0)
+
+        # Continuum at line centroid
+        m = (rmed[i,pos[i,:]] - bmed[i,pos[i,:]])/(rcen[pos[i,:]] - bcen[pos[i,:]])
+        ewcont[i,pos[i,:]] = m*(line_centroid[i,pos[i,:]] - bcen[pos[i,:]]) + bmed[i,pos[i,:]]
+
+        # Compute the equivalent width
+        ew[i,pos[i,:]] = line_flux[i,pos[i,:]] / ewcont[i,pos[i,:]]
+        ewerr[i,pos[i,:]] = 0.0 if line_flux_err is None \
+                                else line_flux_err[i,pos[i,:]] / ewcont[i,pos[i,:]]
+
+#        pyplot.step(wave, _flux[i,:], where='mid', color='k', lw=0.5, zorder=1)
+#        pyplot.scatter(bcen[indx], bmed[i,indx], marker='.', s=50, color='b', lw=0, zorder=3)
+#        pyplot.scatter(rcen[indx], rmed[i,indx], marker='.', s=50, color='r', lw=0, zorder=3)
+#        pyplot.scatter(line_centroid[i,indx], ewcont[i,indx], marker='.', s=50, color='g',
+#                       lw=0, zorder=3)
+#        pyplot.show()
+
+    print('Measuring emission-line equivalent widths in spectrum: {0}/{0}'.format(nspec))
+    return bmed, rmed, pos, ewcont, ew, ewerr
 
 

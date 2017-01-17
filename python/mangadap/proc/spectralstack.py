@@ -45,6 +45,13 @@ Stack some spectra!
         e.g., numpy.array([v]*n) when necessary for array arithmetic
     | **01 Dec 2016**: (KBW) Allow stacking the spectral resolution to
         be turned off via :class:`SpectralStackPar`.
+    | **06 Dec 2016**: (KBW) In
+        :func:`mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix`,
+        the number of bins is set by the number of unique indices;
+        before based on the maximum unique index, meaning that "missing"
+        bins were included.  They're now excluded, forcing classes like
+        :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
+        to keep track of missing bins.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
@@ -279,11 +286,13 @@ class SpectralStack():
         nspec = binid.size
         valid = binid > -1
         unique_bins = numpy.unique(binid[valid])
-        nbin = numpy.amax(unique_bins)+1        # Allow for missing bin numbers
+#        nbin = numpy.amax(unique_bins)+1        # Allow for missing bin numbers
+        nbin = len(unique_bins)
 
         self.rebin_T = numpy.zeros((nbin,nspec), dtype=numpy.float)
         for j in range(nbin):
-            indx = binid == j
+#            indx = binid == j
+            indx = binid == unique_bins[j]
             self.rebin_T[j,indx] = 1.0 if binwgt is None else \
                                     binwgt[indx]*numpy.sum(indx)/numpy.sum(binwgt[indx])
         self.rebin_T = sparse.csr_matrix(self.rebin_T)
@@ -784,6 +793,10 @@ class SpectralStack():
 
         Register a set of spectra to the same wavelength range given a
         set of velocity offsets.
+
+        .. todo:
+            - Allow for renormalization of spectra before stacking.
+              Where and how, TBD.
 
         Args:
             wave (numpy.ndarray): Single wavelength vector for all input

@@ -50,13 +50,13 @@ import pydl
 from astropy.wcs import WCS
 from astropy.io import fits
 
-from .util.bitmask import BitMask
-from .util.log import log_output
-from .util.fileio import write_hdu
-from .util.extinction import apply_reddening
 from .mangafits import MaNGAFits
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .dapqual import DAPQualityBitMask
+from .util.bitmask import BitMask
+from .util.log import log_output
+from .util.fileio import write_hdu
+from .util.extinction import GalacticExtinction
 from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
 from .config.defaults import default_dap_source
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -197,20 +197,19 @@ class construct_cube_file:
 
 
     # Make common functionality with DAP Maps files
-    @staticmethod
-    def _clean_primary_header(hdr):
-        # Remove some keys that are incorrect for DAP data
-        hdr.remove('BSCALE')
-        hdr.remove('BZERO')
-        hdr.remove('BUNIT')
-#        hdr.remove('MASKNAME')
+#    @staticmethod
+#    def _clean_primary_header(hdr):
+#        # Remove some keys that are incorrect for DAP data
+#        hdr.remove('BSCALE')
+#        hdr.remove('BZERO')
+#        hdr.remove('BUNIT')
+##        hdr.remove('MASKNAME')
 
 
     def _initialize_primary_header(self):
+        # Copy the from the DRP and clean it
         hdr = self.drpf.hdu['PRIMARY'].header.copy()
-
-        # Clean out header for info not pertinent to the DAP
-        self._clean_primary_header(hdr)
+        hdr = MaNGAFits._clean_primary_header(hdr)
 
         # Change MASKNAME
         hdr['MASKNAME'] = 'MANGA_DAPSPECMASK'
@@ -259,23 +258,23 @@ class construct_cube_file:
         return prihdr
 
 
-    @staticmethod
-    def _clean_cube_header(hdr):
-
-        # Remove everything but the WCS information
-        w = WCS(header=hdr)
-        hdr = w.to_header().copy()
-
-        # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
-
-        # Add back in the BSCALE and BZERO values; BUNIT added during
-        # "finalize"
-        hdr['BSCALE'] = 1.
-        hdr['BZERO'] = 0.
-
-        return hdr
+#    @staticmethod
+#    def _clean_cube_header(hdr):
+#
+#        # Remove everything but the WCS information
+#        w = WCS(header=hdr)
+#        hdr = w.to_header().copy()
+#
+#        # Fix the DATE-OBS keyword:
+#        hdr.comments['DATE-OBS'] = 'Date of median exposure'
+#        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+#
+#        # Add back in the BSCALE and BZERO values; BUNIT added during
+#        # "finalize"
+#        hdr['BSCALE'] = 1.
+#        hdr['BZERO'] = 0.
+#
+#        return hdr
 
 
     def _cube_header(self):
@@ -284,9 +283,9 @@ class construct_cube_file:
             Add versioning!
         """
         hdr = self.drpf.hdu['FLUX'].header.copy()
-        hdr = self._clean_cube_header(hdr)
+        hdr = MaNGAFits._clean_cube_header(hdr)
         # Add Authors
-        hdr['AUTHOR'] = 'K Westfall & B Andrews <kyle.westfall@ucolick.org, andrewsb@pitt.edu>'
+        hdr['AUTHOR'] = 'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
         # Change the pixel mask name
         hdr['MASKNAME'] = 'MANGA_DAPSPECMASK'
         # Add versioning
@@ -519,14 +518,17 @@ class construct_cube_file:
         prihdr = emission_line_model._add_method_header(prihdr)
 
         # Get the reddened data
-        data, ivar = apply_reddening(binned_spectra['FLUX'].data, binned_spectra['REDCORR'].data,
-                                     deredden=False, ivar=binned_spectra['IVAR'].data)
+#        data, ivar = apply_reddening(binned_spectra['FLUX'].data, binned_spectra['REDCORR'].data,
+#                                     deredden=False, ivar=binned_spectra['IVAR'].data)
+        data, ivar = binned_spectra.galext.apply(binned_spectra['FLUX'].data, deredden=False,
+                                                 ivar=binned_spectra['IVAR'].data)
 
         # Get the model
         model = stellar_continuum['FLUX'].data + emission_line_model['FLUX'].data \
                     + emission_line_model['BASE'].data
         # and redden it
-        model = apply_reddening(model, binned_spectra['REDCORR'].data, deredden=False)
+        model = binned_spectra.galext.apply(model, deredden=False)
+#        model = apply_reddening(model, binned_spectra['REDCORR'].data, deredden=False)
 
         # Get the mask data
         mask = self.common_mask.copy()
@@ -608,10 +610,12 @@ class construct_cube_file:
         prihdr = emission_line_model._add_method_header(prihdr)
 
         # Get the reddened line model and baselines
-        model = apply_reddening(emission_line_model['FLUX'].data, binned_spectra['REDCORR'].data,
-                                deredden=False)
-        base = apply_reddening(emission_line_model['BASE'].data, binned_spectra['REDCORR'].data,
-                               deredden=False)
+#        model = apply_reddening(emission_line_model['FLUX'].data, binned_spectra['REDCORR'].data,
+#                                deredden=False)
+#        base = apply_reddening(emission_line_model['BASE'].data, binned_spectra['REDCORR'].data,
+#                               deredden=False)
+        model = binned_spectra.galext.apply(emission_line_model['FLUX'].data, deredden=False)
+        base = binned_spectra.galext.apply(emission_line_model['BASE'].data, deredden=False)
 
         # Get the mask data
         mask = self.common_mask.copy()

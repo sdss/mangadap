@@ -33,14 +33,13 @@ Implements an emission-line profile fitting class.
         import astropy.constants
         from astropy.modeling import FittableModel, Parameter
 
-        from ..mangafits import MaNGAFits
         from ..par.parset import ParSet
         from ..par.emissionlinedb import EmissionLineDB
         from ..util.fileio import init_record_array
         from ..util.instrument import spectrum_velocity_scale, resample_vector
         from ..util.log import log_output
         from ..util.constants import constants
-        from ..util.pixelmask import PixelMask, SpectralPixelMask
+        from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .spectralfitting import EmissionLineFit
@@ -100,17 +99,17 @@ from scipy.special import erf
 import astropy.constants
 from astropy.modeling import FittableModel, Parameter
 
-from ..mangafits import MaNGAFits
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, resample_vector
 from ..util.log import log_output
 from ..util.constants import constants
-from ..util.pixelmask import PixelMask, SpectralPixelMask
+from ..util.pixelmask import SpectralPixelMask
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
+from .bandpassfilter import emission_line_equivalent_width
 from .util import residual_growth
 
 from matplotlib import pyplot
@@ -753,6 +752,7 @@ class ElricPar(ParSet):
     def __init__(self, emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
                  minimum_snr=None, pixelmask=None, stellar_continuum=None):
 
+        arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
 
@@ -761,8 +761,8 @@ class ElricPar(ParSet):
         values =   [ emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
                      minimum_snr, pixelmask, stellar_continuum ]
         defaults = [ None, -1,   25.0, None, None, 0.0, None, None ]
-        dtypes =   [ EmissionLineDB, int, in_fl, arr_in_fl, arr_in_fl, in_fl, PixelMask,
-                     StellarContinuumModel ]
+        dtypes =   [ EmissionLineDB, int, in_fl, arr_in_fl, arr_in_fl, in_fl, SpectralPixelMask,
+                     arr_like ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
 
@@ -954,8 +954,8 @@ class Elric(EmissionLineFit):
 
         self.base_order = None
         self.window_buffer = None
-        self.guess_redshift = None
-        self.guess_dispersion = None
+        self.redshift = None
+        self.dispersion = None
 
         self.bestfit = None
 
@@ -1186,6 +1186,12 @@ class Elric(EmissionLineFit):
 
     @staticmethod
     def _check_db(emission_lines):
+
+        # Check the input type
+        if not isinstance(emission_lines, EmissionLineDB):
+            raise TypeError('Input database must have type EmissionLineDB.')
+
+        # Check the database itself
         neml = emission_lines.nsets
         for i in range(neml):
             profile = eval(emission_lines['profile'][i])
@@ -1492,26 +1498,27 @@ class Elric(EmissionLineFit):
         return near_bound
 
 
-    def _instrumental_dispersion_correction(self, model_eml_par):
-        """
-        Determine the instrumental velocity dispersion at the centroids
-        of the fitted emission lines.
-        """
-        if self.sres is None:
-            return
-        interpolator = interpolate.interp1d(self.wave, self.sres, fill_value='extrapolate',
-                                            assume_sorted=True)
-        restwave = numpy.array([self.emission_lines['restwave']]*self.nspec)
-        cnst = constants()
-
-        # Get the instrumental dispersion at each (valid) line center
-        indx = ~self.bitmask.flagged(model_eml_par['MASK'],
-                                     flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
-                                           'UNDEFINED_COVAR' ])
-        model_eml_par['SINST'][indx] = astropy.constants.c.to('km/s') \
-                                            / interpolator((model_eml_par['KIN'][indx,0] 
-                                                        / astropy.constants.c.to('km/s').value+1.0)
-                                                                *restwave[indx])/cnst.sig2fwhm
+#    def _instrumental_dispersion_correction(self, model_eml_par):
+#        """
+#        Determine the instrumental velocity dispersion at the centroids
+#        of the fitted emission lines.
+#        """
+#        if self.sres is None:
+#            return
+#
+#        interpolator = interpolate.interp1d(self.wave, self.sres, fill_value='extrapolate',
+#                                            assume_sorted=True)
+#        restwave = numpy.array([self.emission_lines['restwave']]*self.nspec)
+#        cnst = constants()
+#
+#        # Get the instrumental dispersion at each (valid) line center
+#        indx = ~self.bitmask.flagged(model_eml_par['MASK'],
+#                                     flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
+#                                           'UNDEFINED_COVAR' ])
+#        model_eml_par['SINST'][indx] = astropy.constants.c.to('km/s') \
+#                                            / interpolator((model_eml_par['KIN'][indx,0] 
+#                                                        / astropy.constants.c.to('km/s').value+1.0)
+#                                                                *restwave[indx])/cnst.sig2fwhm
 
 #        z = model_eml_par['KIN'][indx,0] / astropy.constants.c.to('km/s').value
 #        pyplot.scatter(restwave[indx]*(1.0+z), model_eml_par['SINST'][indx], marker='.', s=30,
@@ -1581,69 +1588,68 @@ class Elric(EmissionLineFit):
         if binned_spectra.hdu is None:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
 
-        # StellarContinuumModel object only used when accounting for
-        # underlying absorption
-        if par['stellar_continuum'] is not None:
-            if not isinstance(par['stellar_continuum'], StellarContinuumModel):
-                raise TypeError('Provided stellar continuum must have StellarContinuumModel type!')
-            if par['stellar_continuum'].hdu is None:
-                raise ValueError('Provided StellarContinuumModel is undefined!')
-
         # Get the data arrays to fit
-        wave = binned_spectra['WAVE'].data
-        sres = binned_spectra['SPECRES'].data
-        flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-        ivar = binned_spectra.copy_to_masked_array(ext='IVAR',
-                                                        flag=binned_spectra.do_not_fit_flags())
+        good_snr = binned_spectra.above_snr_limit(par['minimum_snr'])
+        flux, ivar = EmissionLineFit.get_binned_data(binned_spectra, pixelmask=par['pixelmask'],
+                                                     select=good_snr)
 
-        good_spec = (binned_spectra['BINS'].data['SNR'] > par['minimum_snr']) \
-                        & ~(numpy.array([ b in binned_spectra.missing_bins \
-                                                for b in numpy.arange(binned_spectra.nbins)]))
-        _flux = flux[good_spec,:]
-        noise = numpy.ma.power(ivar[good_spec,:], -0.5)
-        guess_redshift = par['guess_redshift'][good_spec]
-        guess_dispersion = par['guess_dispersion'][good_spec]
-
-        # Note: Type of par['stellar_continuum'] is checked above
-        continuum = None if par['stellar_continuum'] is None else \
-                        par['stellar_continuum'].emission_line_continuum_model(select=good_spec)
-    
+        # Return the fitted data
         model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par \
-            = self.fit(wave, _flux, par['emission_lines'], error=noise, mask=par['pixelmask'],
-                       sres=sres, stellar_continuum=continuum, base_order=par['base_order'],
-                       window_buffer=par['window_buffer'], guess_redshift=guess_redshift,
-                       guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
-        
-        _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
-        _model_flux[good_spec,:] = model_flux
+                = self.fit(binned_spectra['WAVE'].data, flux, par['emission_lines'],
+                           ivar=ivar, sres=binned_spectra['SPECRES'].data.copy()[good_snr,:],
+                           continuum=par['stellar_continuum'][good_snr,:],
+                           base_order=par['base_order'], window_buffer=par['window_buffer'],
+                           guess_redshift=par['guess_redshift'][good_snr],
+                           guess_dispersion=par['guess_dispersion'][good_snr], loggers=loggers,
+                           quiet=quiet)
 
-        _model_base = numpy.zeros(flux.shape, dtype=numpy.float)
-        _model_base[good_spec,:] = model_base
+        # Save the the bin ID numbers indices based on the spectra
+        # selected to be fit
+        model_fit_par['BINID'] = binned_spectra['BINS'].data['BINID'][good_snr]
+        model_fit_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[good_snr]
 
-        _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_dtype())
+        model_eml_par['BINID'] = binned_spectra['BINS'].data['BINID'][good_snr]
+        model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[good_snr]
 
-        _model_mask[numpy.ma.getmaskarray(flux)] \
-                = self.bitmask.turn_on(_model_mask[numpy.ma.getmaskarray(flux)], 'DIDNOTUSE')
-        bad_snr = (binned_spectra['BINS'].data['SNR'] < par['minimum_snr']) \
-                        & ~(numpy.array([ b in binned_spectra.missing_bins \
-                                                for b in numpy.arange(binned_spectra.nbins)]))
-        _model_mask[bad_snr,:] = self.bitmask.turn_on(_model_mask[bad_snr,:], 'LOW_SNR')
+        # Add the equivalent width data
+        Elric.fill_equivalent_width(binned_spectra['WAVE'].data, flux, par['emission_lines'],
+                                    model_eml_par, redshift=par['guess_redshift'][good_snr],
+                                    bitmask=self.bitmask)
 
-        _model_mask[good_spec,:] = model_mask
+        # Only return model and model parameters for the *fitted*
+        # spectra
+        return model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 
-        _model_fit_par = init_record_array(flux.shape[0], model_fit_par.dtype)
-        _model_fit_par[good_spec] = model_fit_par
-        _model_fit_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
+#        _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
+#        _model_flux[good_spec,:] = model_flux
+#
+#        _model_base = numpy.zeros(flux.shape, dtype=numpy.float)
+#        _model_base[good_spec,:] = model_base
+#
+#        _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_dtype())
+#
+#        _model_mask[numpy.ma.getmaskarray(flux)] \
+#                = self.bitmask.turn_on(_model_mask[numpy.ma.getmaskarray(flux)], 'DIDNOTUSE')
+#        bad_snr = (binned_spectra['BINS'].data['SNR'] < par['minimum_snr']) \
+#                        & ~(numpy.array([ b in binned_spectra.missing_bins \
+#                                                for b in numpy.arange(binned_spectra.nbins)]))
+#        _model_mask[bad_snr,:] = self.bitmask.turn_on(_model_mask[bad_snr,:], 'LOW_SNR')
+#
+#        _model_mask[good_spec,:] = model_mask
+#
+#        _model_fit_par = init_record_array(flux.shape[0], model_fit_par.dtype)
+#        _model_fit_par[good_spec] = model_fit_par
+#        _model_fit_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
+#
+#        _model_eml_par = init_record_array(flux.shape[0], model_eml_par.dtype)
+#        _model_eml_par[good_spec] = model_eml_par
+#        _model_eml_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
+#
+#        return model_wave, _model_flux, _model_base, _model_mask, _model_fit_par, _model_eml_par
 
-        _model_eml_par = init_record_array(flux.shape[0], model_eml_par.dtype)
-        _model_eml_par[good_spec] = model_eml_par
-        _model_eml_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
 
-        return model_wave, _model_flux, _model_base, _model_mask, _model_fit_par, _model_eml_par
-
-
-    def fit(self, wave, flux, emission_lines, error=None, mask=None, sres=None,
-            stellar_continuum=None, base_order=-1, window_buffer=25, guess_redshift=None,
+    def fit(self, wave, flux, emission_lines, ivar=None, mask=None, sres=None,
+            continuum=None, base_order=-1, window_buffer=25, guess_redshift=None,
             guess_dispersion=None, loggers=None, quiet=False):
         """
         The flux array is expected to have size Nspec x Nwave.
@@ -1656,107 +1662,38 @@ class Elric(EmissionLineFit):
                 redshifts or dispersions is not a single value or the
                 same as the number of input spectra.
         """
-        # Check the input emission-line database
-        self._check_db(emission_lines)
-        self.emission_lines = emission_lines
-        self.neml = self.emission_lines.nsets
-
         # Initialize the reporting
         if loggers is not None:
             self.loggers = loggers
         self.quiet = quiet
-        
-        # Check the input
-        if len(wave.shape) != 1:
-            raise ValueError('Input wavelengths must be a vector; all flux vectors should have' \
-                             'the same wavelength solution.')
+
+        # Check the input emission-line database
+        Elric._check_db(emission_lines)
+        self.emission_lines = emission_lines
+        self.neml = self.emission_lines.nsets
+
+        # Prepare the spectra for fitting
         self.wave = wave
-        self.nwave = len(self.wave)
-
-        self.sres = None
-        if sres is not None:
-            if len(sres.shape) != 1:
-                raise ValueError('Input spectral resolution must be a vector; all flux vectors ' \
-                                 'should have the same spectral resolution.')
-            if len(sres) != self.nwave:
-                raise ValueError('Spectral resolution vector length must match the wavelength ' \
-                                 'vector.')
-            self.sres = sres
-
-        _flux = flux.reshape(1,-1) if len(flux.shape) != 2 else flux
-        if _flux.shape[1] != self.nwave:
-            raise ValueError('The spectra have to have the same length as the wavelength vector.')
-        if error is not None and error.shape != _flux.shape:
-            raise ValueError('The shape of any provided error array must match the flux array.')
-
-        # Set the input to masked arrays, if they aren't already
-        self.flux = _flux if isinstance(_flux,numpy.ma.MaskedArray) else numpy.ma.MaskedArray(_flux)
-        self.nspec = self.flux.shape[0]
-        # Include the mask, if provided
-        if mask is not None:
-            if isinstance(mask, numpy.ndarray) and numpy.issubdtype(mask.dtype,bool):
-                if mask is not None and mask.shape != self.flux.shape:
-                    raise ValueError('The shape of the mask array must match the flux array.')
-                self.flux[mask] = numpy.ma.masked
-            if isinstance(mask, SpectralPixelMask):
-                self.flux[mask.boolean(self.wave,nspec=self.nspec)] = numpy.ma.masked
-        # Do the same with the error array
-        self.error = None if error is None else (error if isinstance(error, numpy.ma.MaskedArray) \
-                            else numpy.ma.MaskedArray(error, mask=numpy.ma.getmaskarray(self.flux)))
-
-        # Setup the redshift and dispersion vectors
-        if guess_redshift is not None:
-            self.guess_redshift = numpy.atleast_1d(guess_redshift)
-            if len(self.guess_redshift.shape) != 1:
-                raise ValueError('Input guess redshifts must be a single vector.')
-            if self.guess_redshift.size not in [1, self.nspec]:
-                raise ValueError('Provide single redshift or a redshift for each spectrum.')
-            if self.guess_redshift.size == 1:
-                self.guess_redshift = numpy.full(self.nspec, guess_redshift)
-        else:
-            self.guess_redshift = numpy.zeros(self.nspec, dtype=numpy.float)
-
-        if guess_dispersion is not None:
-#            self.guess_dispersion = numpy.asarray(guess_dispersion)
-            self.guess_dispersion = numpy.atleast_1d(guess_dispersion)
-            if len(self.guess_dispersion.shape) != 1:
-                raise ValueError('Input guess dispersions must be a single vector.')
-            if self.guess_dispersion.size not in [1, self.nspec]:
-                raise ValueError('Provide single dispersion or a dispersion for each spectrum.')
-            if self.guess_dispersion.size == 1:
-                self.guess_dispersion = numpy.full(self.nspec, guess_dispersion)
-        else:
-            self.guess_dispersion = numpy.full(self.nspec, self.default_dispersion,
-                                               dtype=numpy.float)
-
-        # Subtract the stellar continuum if it has been provided
-        if stellar_continuum is not None:
-            if stellar_continuum.shape != self.flux.shape:
-                raise ValueError('Shape of the stellar continuum array must match the flux array.')
-            self.continuum = stellar_continuum
-            self.fluxnc = self.flux - self.continuum
-            if isinstance(self.continuum, numpy.ma.MaskedArray):
-                # Get where the stellar-continuum models are masked but
-                # the binned spectra are not
-                self.no_continuum = numpy.invert(numpy.ma.getmaskarray(self.flux)) \
-                                            & numpy.ma.getmaskarray(self.continuum)
-                self.fluxnc.mask[self.no_continuum] = False
-            else:
-                self.no_continuum = None
-        else:
-            self.fluxnc = self.flux
-            self.continuum = None
-            self.no_continuum = None
-
+        self.flux, self.error, self.sres, self.continuum, self.redshift, self.dispersion \
+                    = EmissionLineFit.check_and_prep_input(self.wave, flux, ivar=ivar, mask=mask,
+                                                           sres=sres, continuum=continuum,
+                                                           redshift=guess_redshift,
+                                                           dispersion=guess_dispersion,
+                                                        default_dispersion=self.default_dispersion)
+        # Keep the shape
+        self.nspec, self.nwave = self.flux.shape
+        # Subtract the continuum
+        self.fluxnc, self.no_continuum = EmissionLineFit.subtract_continuum(self.flux,
+                                                                            self.continuum)
         # No continuum for any spaxel!
         if self.no_continuum is None:
             self.no_continuum = numpy.ones(self.flux.shape, dtype=numpy.bool)
 
-        # Get the spectra to use for the profile fitting
 #        pyplot.step(self.wave, self.flux[0,:], where='mid', color='k', lw=0.5, linestyle='-')
 #        pyplot.step(self.wave, self.fluxnc[0,:], where='mid', color='g', lw=0.5, linestyle='-')
 #        pyplot.plot(self.wave, self.no_continuum[0,:], color='r', lw=0.5, linestyle='-')
 #        pyplot.show()
+#        exit()
 
         # Build the emission-line fitting windows
         self._parse_emission_line_models()
@@ -1781,13 +1718,15 @@ class Elric(EmissionLineFit):
         model_fit_par = init_record_array(self.nspec,
                                           self._per_fitting_window_dtype(self.nwindows, max_npar,
                                                                 self.bitmask.minimum_dtype()))
-        model_fit_par['BIN_INDEX'] = numpy.arange(self.nspec)
+        model_fit_par['BINID'] = numpy.arange(self.nspec)
+        model_fit_par['BINID_INDEX'] = numpy.arange(self.nspec)
 
         # Emission-line parameters
         model_eml_par = init_record_array(self.nspec,
                                           self._per_emission_line_dtype(self.neml, 2,
                                                                 self.bitmask.minimum_dtype()))
-        model_eml_par['BIN_INDEX'] = numpy.arange(self.nspec)
+        model_eml_par['BINID'] = numpy.arange(self.nspec)
+        model_eml_par['BINID_INDEX'] = numpy.arange(self.nspec)
 
         t = time.clock()
         # Do the fit
@@ -1803,7 +1742,7 @@ class Elric(EmissionLineFit):
                 log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nspec))
 
             # Get the fitting mask for each emission-line in each window
-            fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.guess_redshift[i],
+            fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.redshift[i],
                                            self.window_buffer)
 
             # Set the mask for any pixels that are NEVER fit for this
@@ -1817,7 +1756,7 @@ class Elric(EmissionLineFit):
             spec_to_fit = numpy.ma.array([ self.flux[i,:] if mj else self.fluxnc[i,:] \
                                             for mj in model_jump ])
 
-            cz = self.guess_redshift[i]*astropy.constants.c.to('km/s').value
+            cz = self.redshift[i]*astropy.constants.c.to('km/s').value
 
 #            total_near_bound = 0
             # Fit each window
@@ -1851,6 +1790,10 @@ class Elric(EmissionLineFit):
                 # adjust the guess flux
                 # TODO: Use emission-line moment results for the
                 # guesses, if provided
+                # TODO: Use self.dispersion to set the initial
+                # dispersion guesses?  Currently uses guesses from
+                # emission-line database (see
+                # _parse_emission_line_models)
                 for k,p in enumerate(self.fitting_window[j].profile_set):
                     p.shift_mean(cz)
                     vi = numpy.argsort(numpy.absolute(velocity[j,:]-p.moment(order=1)))[0]
@@ -2047,6 +1990,15 @@ class Elric(EmissionLineFit):
 
 #            print('Windows with parameters near boundary: {0}'.format(total_near_bound))
 
+            # Determine the instrumental dispersion at the line centers
+            indx = ~self.bitmask.flagged(model_eml_par['MASK'][i,:],
+                                         flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
+                                               'UNDEFINED_COVAR' ])
+            model_eml_par['SINST'][i,indx] \
+                    = EmissionLineFit.instrumental_dispersion(self.wave, self.sres[i,:],
+                                                              emission_lines['restwave'][indx],
+                                                              model_eml_par['KIN'][i,indx,0])
+
         # Remove the lines from the full model to just provide the
         # baseline model
         model_base -= model_flux
@@ -2055,13 +2007,64 @@ class Elric(EmissionLineFit):
 #        pyplot.plot(wave, model_base[0,:], linestyle='-', color='r')
 #        pyplot.show()
 
-        # Determine the instrumental dispersion at the line centers
-        self._instrumental_dispersion_correction(model_eml_par)
-
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
                        (time.clock() - t)/60))
 
         return self.wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 
+
+    @staticmethod
+    def fill_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None, redshift=None,
+                              bitmask=None):
+        """
+        The flux array is expected to have size Nspec x Nwave.
+
+        Provided previous emission-line fits, this function adds the
+        equivalent width measurements to the output database.
+
+        Errors currently *do not* include the errors in the continuum
+        measurement; only the provided error in the flux.
+
+        Raises:
+            ValueError: Raised if the length of the spectra, errors, or
+                mask does not match the length of the wavelength array;
+                raised if the wavelength, redshift, or dispersion arrays
+                are not 1D vectors; and raised if the number of
+                redshifts or dispersions is not a single value or the
+                same as the number of input spectra.
+        """
+
+        # Check the input emission-line database
+        Elric._check_db(emission_lines)
+
+        # If the redshift is NOT provided, use the fitted velocity
+        _redshift = numpy.mean(model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value,
+                               axis=1) if redshift is None else redshift
+
+        # Calculate the wavelength at which to measure the continuum.
+#        if redshift is None:
+#            z = model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value
+#            line_center = (1+z)*emission_lines['restwave'][None,:]
+#        else:
+        # To match what is done by
+        # :class:`mangadap.proc.emissionlineMoments.EmissionLineMoments`
+        line_center = (1+_redshift)[:,None]*emission_lines['restwave'][None,:]
+
+        # Compute the equivalent widths.  The checking done by
+        # EmissionLineFit.check_and_prep_input is *identical* to what is
+        # done within emission_line_equivalent_width()
+        model_eml_par['BMED'], model_eml_par['RMED'], pos, model_eml_par['EWCONT'], \
+                model_eml_par['EW'], model_eml_par['EWERR'] \
+                        = emission_line_equivalent_width(wave, flux,
+                                                         emission_lines['blueside'],
+                                                         emission_lines['redside'], line_center,
+                                                         model_eml_par['FLUX'], mask=mask,
+                                                         redshift=_redshift,
+                                                         line_flux_err=model_eml_par['FLUXERR'])
+
+        # Flag non-positive measurements
+        if bitmask is not None:
+            model_eml_par['MASK'][~pos] = bitmask.turn_on(model_eml_par['MASK'][~pos],
+                                                          'NON_POSITIVE_CONTINUUM')
 

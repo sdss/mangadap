@@ -40,24 +40,62 @@ import sys
 if sys.version > '3':
     long = int
 
+import logging
 import time
 import os
 import numpy
 import warnings
 
+from astropy.wcs import WCS
 from astropy.io import fits
+import astropy.constants
 
-from .util.fileio import channel_dictionary
+from .drpfits import DRPFits, DRPQuality3DBitMask
+from .dapqual import DAPQualityBitMask
+from .util.fitsutil import DAPFitsUtil
+from .util.bitmask import BitMask
+from .util.log import log_output
+from .util.fileio import write_hdu, channel_dictionary
 from .util.exception_tools import print_frame
-from .util.geometry import SemiMajorAxisCoo
-from .config.defaults import default_drp_version, default_dap_version, default_analysis_path
-from .config.defaults import default_dap_method_path, default_dap_file_name, default_dap_par_file
 from .par.obsinput import ObsInputPar
-from .dapmaps import DAPQualityBitMask, DAPMapsBitMask
-from .mangafits import MaNGAFits
+from .config.defaults import default_drp_version, default_dap_source, default_dap_version
+from .config.defaults import default_dap_par_file, default_analysis_path
+from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
+from .proc.reductionassessments import ReductionAssessment
+from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from .proc.stellarcontinuummodel import StellarContinuumModel
+from .proc.emissionlinemoments import EmissionLineMoments
+from .proc.emissionlinemodel import EmissionLineModel
+from .proc.spectralindices import SpectralIndices
+
+from matplotlib import pyplot
 
 __author__ = 'Kyle Westfall'
 
+#-----------------------------------------------------------------------
+class DAPMapsBitMask(BitMask):
+    """
+    .. todo::
+        - Force read IDLUTILS version as opposed to internal one?
+    """
+    def __init__(self, dapsrc=None):
+        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+                                                     'bitmasks', 'dap_maps_bits.ini'))
+
+
+class DAPCubeBitMask(BitMask):
+    """
+    .. todo::
+        - Force read IDLUTILS version as opposed to internal one?
+    """
+    def __init__(self, dapsrc=None):
+        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+                                                     'bitmasks', 'dap_cube_bits.ini'))
+
+
+#-----------------------------------------------------------------------
 class DAPFits:
     """
     Object used to hold properties of and read data from a DAP-produced file.
@@ -157,7 +195,6 @@ class DAPFits:
                                              if par_file is None else str(par_file)
 
         # Set the bitmasks
-        self.dapqual = DAPQualityBitMask()
         self.bitmask = DAPMapsBitMask()
 
         # Read in the data
@@ -249,11 +286,11 @@ class DAPFits:
         if len(self.smap_ext) > 0:
             if not quiet:
                 print('Restructuring single map extensions.')
-            MaNGAFits.restructure_map(self.hdu, ext=self.smap_ext)
+            DAPFitsUtil.restructure_map(self.hdu, ext=self.smap_ext)
         if len(self.mmap_ext) > 0:
             if not quiet:
                 print('Restructuring multi-map extensions.')
-            MaNGAFits.restructure_cube(self.hdu, ext=self.mmap_ext)
+            DAPFitsUtil.restructure_cube(self.hdu, ext=self.mmap_ext)
 
 
     def read_par(self, quiet=True):
@@ -516,6 +553,1451 @@ class DAPFits:
                                     mask=self.bitmask.flagged(
                                       self.hdu[mask_ext].data[:,:,self.channel_dict[ext][channel]],
                                       flag=flag))
+
+
+#-----------------------------------------------------------------------
+class construct_maps_file:
+    """
+    Construct a DAP MAPS file.
+
+    Set as a class for coherency reasons, but should not be used as an
+    object!
+
+    Should force all intermediate objects to be provided.
+
+    """
+    def __init__(self, drpf, obs=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_moments=None, emission_line_model=None, spectral_indices=None,
+                 nsa_redshift=None, dapsrc=None, dapver=None, analysis_path=None,
+                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False):
+
+        #---------------------------------------------------------------
+        # Initialize the reporting
+        self.loggers = None if loggers is None else loggers
+        self.quiet = quiet
+
+        #---------------------------------------------------------------
+        # Check input types
+        confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum,
+                          emission_line_moments, emission_line_model, spectral_indices)
+
+        #---------------------------------------------------------------
+        # Set the output paths
+        self.drpf = drpf
+        self.method = None
+        self.directory_path = None
+        self.output_file = None
+        self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
+                        stellar_continuum)
+
+        # Save input for reference
+        self.spatial_shape = self.drpf.spatial_shape
+        self.nsa_redshift = nsa_redshift
+        self.multichannel_arrays = None
+        self._set_multichannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
+        self.singlechannel_arrays = None
+        self._set_singlechannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
+
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'CONSTRUCTING OUTPUT MAPS:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
+            log_output(self.loggers, 1, logging.INFO, 'Output maps have shape {0}'.format(
+                                                                            self.spatial_shape))
+            log_output(self.loggers, 1, logging.INFO, 'NSA redshift: {0}'.format(self.nsa_redshift))
+
+        #---------------------------------------------------------------
+        # Check if the file already exists
+        ofile = os.path.join(self.directory_path, self.output_file)
+        if os.path.isfile(ofile) and not clobber:
+            # TODO: Perform some checks to make sure the existing file
+            # has the correct content?
+            warnings.warn('Output file exists!  Set clobber=True to overwrite.')
+            return
+
+        #---------------------------------------------------------------
+        # Initialize the primary header
+        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPPIXMASK')
+
+        # Get the base map headers
+        self.multichannel_maphdr \
+                = DAPFitsUtil.build_map_header(self.drpf,
+                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                               multichannel=True, maskname='MANGA_DAPPIXMASK')
+        self.singlechannel_maphdr \
+                = DAPFitsUtil.build_map_header(self.drpf,
+                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                               maskname='MANGA_DAPPIXMASK')
+
+        #---------------------------------------------------------------
+        # Initialize the pixel mask
+        self.bitmask = DAPMapsBitMask(dapsrc=dapsrc)
+
+        # Consolidated DRP cube mask
+        drpf_flags = [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR', 'DONOTUSE' ]
+        self.drpf_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data, drpf_flags,
+                                                      self.drpf.bitmask, self.bitmask)
+        self.drpf_mask = self._consolidate_donotuse(self.drpf_mask)
+
+        # Consolidated binned spectra mask
+        bin_flags = [ 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK' ]
+        self.bin_mask = DAPFitsUtil.reconstruct_cube(self.drpf.shape,
+                                                     binned_spectra['BINID'].data.copy().ravel(),
+                                                     binned_spectra['MASK'].data)
+        self.bin_mask = DAPFitsUtil.marginalize_mask(self.bin_mask, bin_flags,
+                                                     binned_spectra.bitmask, self.bitmask,
+                                                     out_mask=self.drpf_mask.copy(),
+                                                     out_flag='NOVALUE', dispaxis=1)
+        self.bin_mask = self._consolidate_donotuse(self.bin_mask)
+        
+        #---------------------------------------------------------------
+        # Construct the hdu list for each input object.
+        # Reduction assessments:
+        rdxqalist = self.reduction_assessment_maps(prihdr, obs, rdxqa)
+        # Construct the BINID extension
+        binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum,
+                                             emission_line_moments, emission_line_model,
+                                             spectral_indices)
+        # Binned spectra:
+        bspeclist = self.binned_spectra_maps(prihdr, obs, binned_spectra)
+        # Stellar-continuum fits:
+        contlist = self.stellar_continuum_maps(prihdr, stellar_continuum)
+        # Emission-line moments:
+        emlmomlist = self.emission_line_moment_maps(prihdr, emission_line_moments)
+        # Emission-line models:
+        elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
+        # Spectral indices:
+        sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
+
+        # Save the data to the hdu attribute
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+                                             loggers=self.loggers, quiet=self.quiet)
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
+                                  *rdxqalist,
+                                  *binidlist,
+                                  *bspeclist,
+                                  *contlist,
+                                  *emlmomlist,
+                                  *elmodlist,
+                                  *sindxlist
+                                ])
+
+        #---------------------------------------------------------------
+        # TEMPORARY FLAGS:
+        # Flag the Gaussian-fitted flux as unreliable if the summed flux
+        # is not within a factor of two.
+        if emission_line_moments is not None and emission_line_model is not None:
+            factor = 5.0
+            indx = (emission_line_moments['BINID'].data > -1) \
+                    & (emission_line_model['BINID'].data > -1) \
+                    & (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
+                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
+                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) )
+            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
+            if numpy.sum(indx):
+                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
+                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
+                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
+
+            # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
+
+        # Flag the stellar velocity dispersions measured in spectra with
+        # S/N<10 as unreliable
+        indx = (binned_spectra['BINID'].data > -1) & (self.hdu['BIN_SNR'].data < 10) \
+                    & (stellar_continuum['BINID'].data > -1) \
+                    & (self.hdu['STELLAR_SIGMA_MASK'].data == 0)
+        print('unreliable sigma because of low S/N: ', numpy.sum(indx))
+        if numpy.sum(indx):
+            self.hdu['STELLAR_SIGMA_MASK'].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
+        #---------------------------------------------------------------
+
+        # Restructure the multi-channel extensions
+        DAPFitsUtil.restructure_cube(self.hdu, ext=self.multichannel_arrays, inverse=True)
+        # Restructure the single-channel extensions
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.singlechannel_arrays, inverse=True)
+        # Check that the path exists
+        if not os.path.isdir(self.directory_path):
+            os.makedirs(self.directory_path)
+        # Write the HDU
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+
+    def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
+                   stellar_continuum):
+        """
+        Set the paths relevant to the map file.
+        """
+        # The output method directory is, for now, the combination of
+        # the binned_spectrum and stellar_continuum method keys
+        if directory_path is None and (binned_spectra is None or stellar_continuum is None):
+            raise ValueError('Could not define output directory path.')
+
+        # Set the output directory path
+        # TODO: Get DAP version from __version__ string
+        self.method = default_dap_method(binned_spectra=binned_spectra,
+                                         stellar_continuum=stellar_continuum) \
+                                if directory_path is None else None
+        self.directory_path = default_dap_method_path(self.method, plate=self.drpf.plate,
+                                                      ifudesign=self.drpf.ifudesign,
+                                                      drpver=self.drpf.drpver, dapver=dapver,
+                                                      analysis_path=analysis_path) \
+                                                if directory_path is None else str(directory_path)
+
+        # Set the output file
+        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                 self.method, mode='MAPS') \
+                                    if output_file is None else str(output_file)
+
+
+    def _set_multichannel_arrays(self, emission_line_moments, emission_line_model,
+                                 spectral_indices):
+    
+        self.multichannel_arrays = [ 'SPX_SKYCOO', 'SPX_ELLCOO', 'BINID', 'BIN_LWSKYCOO',
+                                     'BIN_LWELLCOO', 'STELLAR_CONT_FRESID' ]
+        if emission_line_moments.nmom > 1:
+            self.multichannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
+                                          'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+        if emission_line_model.neml > 1:
+            self.multichannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
+                                          'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
+                                          'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
+                                          'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+                                          'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
+        if spectral_indices.nindx > 1:
+            self.multichannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
+                                          'SPECINDEX_CORR' ]
+
+
+
+    def _set_singlechannel_arrays(self, emission_line_moments, emission_line_model,
+                                  spectral_indices):
+    
+        self.singlechannel_arrays = [ 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR', 'BIN_AREA',
+                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_SNR',
+                                      'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR', 'STELLAR_SIGMA_MASK',
+                                      'STELLAR_SIGMACORR', 'STELLAR_CONT_RCHI2' ]
+        if emission_line_moments.nmom == 1:
+            self.singlechannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
+                                           'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+        if emission_line_model.neml == 1:
+            self.singlechannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
+                                           'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
+                                           'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
+                                           'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+                                           'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
+        if spectral_indices.nindx == 1:
+            self.singlechannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
+                                           'SPECINDEX_CORR' ]
+
+
+
+    def _consolidate_donotuse(self, mask):
+        return self.bitmask.consolidate(mask, [ 'LOWCOV', 'FORESTAR', 'NOVALUE', 'FITFAILED',
+                                                'NEARBOUND', 'MATHERROR' ], 'DONOTUSE')
+
+
+    def _stellar_continuum_mask_to_map_mask(self, stellar_continuum, sc_mask, for_dispersion=False):
+        """
+        Propagate and consolidate the stellar-continuum masks to the map
+        pixel mask.
+
+        DIDNOTUSE, FORESTAR propagated from already existing mask
+            (self.bin_mask)
+
+        LOW_SNR, NO_FIT, INSUFFICIENT_DATA propagated to NOVALUE
+
+        FIT_FAILED, NEAR_BOUND propagated to FITFAILED and NEARBOUND
+
+        NEGATIVE_WEIGHTS consolidated into UNRELIABLE; if
+            dispersion=True, include BAD_SIGMA in this
+        """
+
+        # Copy the binning mask
+        mask = self.bin_mask.copy()
+
+        # Consolidate to NOVALUE
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Copy FIT_FAILED
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='FIT_FAILED')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
+
+        # Copy NEAR_BOUND
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='NEAR_BOUND')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+        # Consolidate to UNRELIABLE
+        flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='NEGATIVE_WEIGHTS')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
+
+        # Convert MIN_SIGMA into a NEARBOUND for the dispersion
+        if for_dispersion:
+            flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='BAD_SIGMA')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
+
+            flgd = stellar_continuum.bitmask.flagged(sc_mask, flag='MIN_SIGMA')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+        return self._consolidate_donotuse(mask)
+
+
+    def _emission_line_moment_mask_to_map_mask(self, emission_line_moments, elm_mask):
+        """
+        Propagate and consolidate the emission-line moment masks to the map
+        pixel mask.
+
+        DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
+
+        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
+
+        MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED
+
+        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
+
+        DIVBYZERO propagated to MATHERROR
+
+        Second moments not provided so no need to include UNDEFINED_MOM2
+
+        Need to further assess *_INCOMP to see if these lead to bad values (BADVALUE).
+        """
+
+        # Copy the binning mask
+        mask = numpy.array([self.bin_mask.copy()]*emission_line_moments.nmom) #.transpose(1,2,0)
+
+        # Consolidate to NOVALUE
+        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
+                                                                'RED_EMPTY', 'UNDEFINED_BANDS' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Consolidate to FITFAILED
+        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_JUMP', 'BLUE_JUMP',
+                                                                 'RED_JUMP', 'JUMP_BTWN_SIDEBANDS'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
+
+        # Consolidate to NOCORRECTION
+        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['NO_ABSORPTION_CORRECTION'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOCORRECTION')
+
+        # Consolidate to MATHERROR
+        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['DIVBYZERO'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'MATHERROR')
+
+        return self._consolidate_donotuse(mask)
+
+
+    def _emission_line_model_mask_to_map_mask(self, emission_line_model, elf_mask,
+                                              for_dispersion=False):
+        """
+        Propagate and consolidate the emission-line moment masks to the map
+        pixel mask.
+
+        INSUFFICIENT_DATA propagated to NOVALUE
+
+        FIT_FAILED, UNDEFINED_COVAR propagated to FITFAILED
+
+        NEAR_BOUND copied to NEARBOUND
+
+        UNDEFINED_SIGMA propagated to UNRELIABLE
+        """
+
+        # Copy the common mask
+        mask = numpy.array([self.bin_mask.copy()]*emission_line_model.neml) #.transpose(1,2,0)
+
+        # Consolidate to NOVALUE
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['INSUFFICIENT_DATA'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Consolidate to FITFAILED
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['FIT_FAILED', 'UNDEFINED_COVAR'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
+
+        # Copy NEAR_BOUND
+        flgd = emission_line_model.bitmask.flagged(elf_mask, flag='NEAR_BOUND')
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+        # Consolidate to UNRELIABLE; currently only done for the dispersion
+        if for_dispersion:
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA'])
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
+
+        return self._consolidate_donotuse(mask)
+
+
+    def _spectral_index_mask_to_map_mask(self, spectral_indices, si_mask):
+        """
+        Propagate and consolidate the spectral index masks to the map
+        pixel mask.
+
+        DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
+
+        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY propagated to NOVALUE
+
+        NO_DISPERSION_CORRECTION propagated to NOCORRECTION
+
+        DIVBYZERO propagated to MATHERROR
+
+        Need to further assess *_INCOMP to see if these lead to bad values (BADVALUE).
+        """
+
+        # Copy the binning mask
+        mask = numpy.array([self.bin_mask.copy()]*spectral_indices.nindx) #.transpose(1,2,0)
+
+        # Consolidate to NOVALUE
+        flgd = spectral_indices.bitmask.flagged(si_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
+                                                               'RED_EMPTY' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Consolidate to NOCORRECTION
+        # TODO: What do I do about this!
+        flgd = spectral_indices.bitmask.flagged(si_mask, flag=['NO_DISPERSION_CORRECTION'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOCORRECTION')
+
+        # Consolidate to MATHERROR
+        flgd = spectral_indices.bitmask.flagged(si_mask, flag=['DIVBYZERO'])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'MATHERROR')
+
+        return self._consolidate_donotuse(mask)
+
+
+    def reduction_assessment_maps(self, prihdr, obs, rdxqa):
+        """
+        Constructs the 'SPX_SKYCOO', 'SPX_ELLCOO', 'SPX_MFLUX',
+        'SPX_MFLUX_IVAR', and 'SPX_SNR' map extensions.
+
+        .. todo::
+            Add the spaxel correlation data.
+        """
+        #---------------------------------------------------------------
+        # Extensions filled from the reduction assessments
+        ext = ['SPX_SKYCOO', 'SPX_ELLCOO', 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR']
+
+        if rdxqa is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        prihdr = rdxqa._initialize_primary_header(hdr=prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+        hdr = [ DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'SPX_SKYCOO',
+                                                bunit='arcsec', multichannel=True,
+                                                channel_names=['On-sky X', 'On-sky Y']),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'SPX_ELLCOO',
+                                                multichannel=True,
+                                                channel_names=['Elliptical radius', 'R/Re',
+                                                               'Elliptical azimuth'],
+                                                channel_units=['arcsec', '', 'degrees']),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'SPX_MFLUX',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'SPX_MFLUX',
+                                                hduclas2='ERROR',
+                                                bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}'),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'SPX_SNR')
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        # On-sky coordinates
+        spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape, -1)
+        # Elliptical coordinates
+        spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
+        print(spx_ellcoo.shape)
+        spx_ellcoo = numpy.repeat(spx_ellcoo, [2,1], axis=2)
+        print(spx_ellcoo.shape)
+        if obs is not None:
+            spx_ellcoo[:,:,1] /= obs['reff']
+        # Bin signal
+        signal = rdxqa['SPECTRUM'].data['SIGNAL'].copy().reshape(self.spatial_shape)
+        # Bin inverse variance
+        ivar = rdxqa['SPECTRUM'].data['VARIANCE'].copy().reshape(self.spatial_shape)
+        ivar = numpy.ma.power(ivar, -1).filled(0.0)
+        # Bin S/N
+        snr = rdxqa['SPECTRUM'].data['SNR'].copy().reshape(self.spatial_shape)
+
+        # Organize the extension data
+        data = [ spx_skycoo, spx_ellcoo, signal, ivar, snr ]
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+    
+    def binned_spectra_maps(self, prihdr, obs, binned_spectra):
+        """
+        Constructs the 'BIN_LWSKYCOO', 'BIN_LWELLCOO', 'BIN_AREA',
+        'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
+        and 'BIN_SNR' map extensions.
+        """
+        #---------------------------------------------------------------
+        ext = ['BIN_LWSKYCOO', 'BIN_LWELLCOO', 'BIN_AREA', 'BIN_FAREA', 'BIN_MFLUX',
+               'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK', 'BIN_SNR']
+
+        if binned_spectra is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        # TODO: Apply this to each extension instead of the primary
+        # header to allow for extension specific binning?
+        prihdr = binned_spectra._initialize_primary_header(hdr=prihdr)
+        if binned_spectra.is_unbinned:
+            prihdr['BINTYPE'] = ('None', 'Binning method')
+        else:
+            prihdr = binned_spectra._add_method_header(prihdr)
+        prihdr = binned_spectra._add_reddening_header(prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+        hdr = [ DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'BIN_LWSKYCOO',
+                                                bunit='arcsec', multichannel=True,
+                                                channel_names=['Lum. weighted on-sky X',
+                                                               'Lum. weighted on-sky Y']),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'BIN_LWELLCOO',
+                                                multichannel=True,
+                                                channel_names= ['Lum. weighted elliptical radius',
+                                                                'R/Re',
+                                                                'Lum. weighted elliptical azimuth'],
+                                                channel_units=['arcsec', '', 'degrees']),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_AREA',
+                                                bunit='arcsec^2'),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_FAREA'),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_MFLUX',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True,
+                                                qual=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_MFLUX',
+                                                hduclas2='ERROR', qual=True,
+                                                bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}'),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_MFLUX',
+                                                hduclas2='QUALITY', err=True,
+                                                bit_type=self.bitmask.minimum_dtype()),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_SNR')
+               ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        arr = [ binned_spectra['BINS'].data['LW_SKY_COO'][:,0],
+                binned_spectra['BINS'].data['LW_SKY_COO'][:,1],
+                binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
+                binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
+                binned_spectra['BINS'].data['LW_ELL_COO'][:,1],
+                binned_spectra['BINS'].data['AREA'],
+                binned_spectra['BINS'].data['AREA_FRAC'],
+                binned_spectra['BINS'].data['SIGNAL'],
+                numpy.ma.power(binned_spectra['BINS'].data['VARIANCE'].copy(), -1).filled(0.0),
+                binned_spectra['BINS'].data['SNR']
+              ]
+
+        # Bin index
+        bin_indx = binned_spectra['BINID'].data.copy().ravel()
+
+        # Remap the data to the DRP spatial shape
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+
+        # Get the normalized radius
+        if obs is not None:
+            arr[3] /= obs['reff']
+
+        # Organize the extension data
+        data = [ numpy.array(arr[0:2]), numpy.array(arr[2:5]) ] + arr[5:-1] \
+                    + [ self.bin_mask.copy(), arr[-1] ]
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+    def stellar_continuum_maps(self, prihdr, stellar_continuum):
+        """
+        Construct the 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
+        'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
+        'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
+        'STELLAR_CONT_FRESID', and 'STELLAR_CONT_RCHI2' maps extensions.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'STELLAR_VEL', 'STELLAR_VEL_IVAR', 'STELLAR_VEL_MASK', 'STELLAR_SIGMA',
+                'STELLAR_SIGMA_IVAR', 'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
+                'STELLAR_CONT_FRESID', 'STELLAR_CONT_RCHI2' ]
+
+        if stellar_continuum is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        prihdr = stellar_continuum._initialize_primary_header(hdr=prihdr)
+        prihdr = stellar_continuum._add_method_header(prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+        hdr = [ DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_VEL',
+                                                bunit='km/s', err=True, qual=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_VEL',
+                                                hduclas2='ERROR', bunit='(km/s)^{-2}', qual=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_VEL',
+                                                hduclas2='QUALITY', err=True,
+                                                bit_type=self.bitmask.minimum_dtype()),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
+                                                bunit='km/s', err=True, qual=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
+                                                hduclas2='ERROR', bunit='(km/s)^{-2}', qual=True),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
+                                                hduclas2='QUALITY', err=True,
+                                                bit_type=self.bitmask.minimum_dtype()),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
+                                                bunit='km/s'),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_CONT_FRESID',
+                                                multichannel=True,
+                                                channel_names=['68th percentile',
+                                                               '99th percentile']),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_CONT_RCHI2')
+              ]
+
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        arr = [ DAPFitsUtil.redshift_to_Newtonian_velocity(
+                                    stellar_continuum['PAR'].data['KIN'][:,0], self.nsa_redshift),
+                DAPFitsUtil.redshift_to_Newtonian_velocity(numpy.ma.power(
+                                                    stellar_continuum['PAR'].data['KINERR'][:,0],
+                                                    -2).filled(0.0), self.nsa_redshift, ivar=True),
+                stellar_continuum['PAR'].data['KIN'][:,1],
+                numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1].copy(), -2).filled(0.0),
+                stellar_continuum['PAR'].data['SIGMACORR'],
+                stellar_continuum['PAR'].data['FABSRESID'][:,1],
+                stellar_continuum['PAR'].data['FABSRESID'][:,3],
+                stellar_continuum['PAR'].data['RCHI2'],
+                stellar_continuum['PAR'].data['MASK']
+              ]
+
+        # Bin index
+        bin_indx = stellar_continuum['BINID'].data.copy().ravel()
+
+        # Remap the data to the DRP spatial shape
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        
+        # Get the masks
+        vel_mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, arr[-1].copy())
+        sig_mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, arr[-1].copy(),
+                                                            for_dispersion=True)
+
+        # Organize the extension data
+        data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
+                    + [ arr[4], numpy.array(arr[5:7]), arr[7] ]
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+    def emission_line_moment_maps(self, prihdr, emission_line_moments):
+        """
+        Construct the 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR',
+        'EMLINE_SFLUX_MASK', 'EMLINE_SEW', 'EMLINE_SEW_IVAR', and
+        'EMLINE_SEW_MASK' maps extensions.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK', 'EMLINE_SEW',
+                'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+
+        if emission_line_moments is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        prihdr = emission_line_moments._initialize_primary_header(hdr=prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+
+        # Need multichannel map header if more than one moment
+        multichannel = emission_line_moments.nmom > 1
+        # Build the channel names
+        names = [ '{0}-{1}'.format(n,int(w)) \
+                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
+                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+        # Create the basic header for all extensions
+        base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
+                                                 else self.singlechannel_maphdr, names)
+
+        hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SFLUX', err=True, qual=True,
+                                                bunit='1E-17 erg/s/cm^2/spaxel',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SFLUX', hduclas2='ERROR',
+                                                qual=True, bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SFLUX', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', err=True, qual=True,
+                                                bunit='ang', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', hduclas2='ERROR', qual=True,
+                                                bunit='(ang)^{-2}', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel)
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        arr = [ emission_line_moments['ELMMNTS'].data['FLUX'][:,m]
+                    for m in range(emission_line_moments.nmom) ]
+        arr += [ numpy.ma.power(emission_line_moments['ELMMNTS'].data['FLUXERR'][:,m],
+                                -2).filled(0.0) for m in range(emission_line_moments.nmom) ]
+        arr += [ emission_line_moments['ELMMNTS'].data['EW'][:,m]
+                    for m in range(emission_line_moments.nmom) ]
+        arr += [ numpy.ma.power(emission_line_moments['ELMMNTS'].data['EWERR'][:,m],
+                                -2).filled(0.0) for m in range(emission_line_moments.nmom) ]
+        arr += [ emission_line_moments['ELMMNTS'].data['MASK'][:,m]
+                    for m in range(emission_line_moments.nmom) ]
+
+        # Bin index
+        bin_indx = emission_line_moments['BINID'].data.copy().ravel()
+
+        # Remap the data to the DRP spatial shape
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+
+        data = [ numpy.array(arr[emission_line_moments.nmom*i:emission_line_moments.nmom*(i+1)]) \
+                        for i in range(5) ]
+        
+        # Get the mask
+        elm_mask = self._emission_line_moment_mask_to_map_mask(emission_line_moments,
+                                                               data[-1].copy())
+
+        # Organize the extension data
+        data = data[:2] + [elm_mask] + data[2:-1] + [elm_mask]
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+    def emission_line_model_maps(self, prihdr, emission_line_model):
+        """
+        Construct the 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR',
+        'EMLINE_GFLUX_MASK', 'EMLINE_GEW', 'EMLINE_GEW_IVAR',
+        'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
+        'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+        'EMLINE_GSIGMA_MASK', and 'EMLINE_INSTSIGMA' map extensions.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK', 'EMLINE_GEW',
+                'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
+                'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR', 'EMLINE_GSIGMA_MASK',
+                'EMLINE_INSTSIGMA' ]
+
+        if emission_line_model is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)
+        prihdr = emission_line_model._add_method_header(prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+
+        # Need multichannel map header if more than one moment
+        multichannel = emission_line_model.neml > 1
+        # Build the channel names
+        names= [ '{0}-{1}'.format(n,int(w)) \
+                        for n,w in zip(emission_line_model['PAR'].data['NAME'],
+                                       emission_line_model['PAR'].data['RESTWAVE']) ]
+        # Create the basic header for all extensions
+        base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
+                                                 else self.singlechannel_maphdr, names)
+       
+        hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GFLUX', err=True, qual=True,
+                                                bunit='1E-17 erg/s/cm^2/spaxel',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GFLUX', hduclas2='ERROR',
+                                                qual=True, bunit='(1E-17 erg/s/cm^2/spaxel)^{-2}',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GFLUX', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', err=True, qual=True,
+                                                bunit='ang', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', hduclas2='ERROR', qual=True,
+                                                bunit='(ang)^{-2}', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GVEL', err=True, qual=True,
+                                                bunit='km/s', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GVEL', hduclas2='ERROR',
+                                                qual=True, bunit='(km/s)^{-2}',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GVEL', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GSIGMA', err=True, qual=True,
+                                                bunit='km/s', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GSIGMA', hduclas2='ERROR',
+                                                qual=True, bunit='(km/s)^{-2}',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GSIGMA', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_INSTSIGMA', bunit='km/s',
+                                                multichannel=multichannel)
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        narr = 10
+        arr = [ emission_line_model['EMLDATA'].data['FLUX'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['FLUXERR'][:,m],
+                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        arr += [ emission_line_model['EMLDATA'].data['EW'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['EWERR'][:,m],
+                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
+                        emission_line_model['EMLDATA'].data['KIN'][:,m,0], self.nsa_redshift)
+                    for m in range(emission_line_model.neml) ]
+        arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
+                        numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,0],
+                                       -2).filled(0.0), self.nsa_redshift, ivar=True) \
+                    for m in range(emission_line_model.neml) ]
+        arr += [ emission_line_model['EMLDATA'].data['KIN'][:,m,1]
+                    for m in range(emission_line_model.neml) ]
+        arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
+                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        arr += [ emission_line_model['EMLDATA'].data['SINST'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        arr += [ emission_line_model['EMLDATA'].data['MASK'][:,m]
+                    for m in range(emission_line_model.neml) ]
+
+        # Bin index
+        bin_indx = emission_line_model['BINID'].data.copy().ravel()
+
+        # Remap the data to the DRP spatial shape
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+
+        data = [ numpy.array(arr[emission_line_model.neml*i:emission_line_model.neml*(i+1)]) \
+                        for i in range(narr) ]
+
+        # Get the masks
+        base_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy())
+        sig_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy(),
+                                                              for_dispersion=True)
+
+        # Organize the extension data
+        data = data[:2] + [ base_mask ] + data[2:4] + [ base_mask ] + data[4:6] + [ base_mask ] \
+                + data[6:8] + [ sig_mask, data[8] ]
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+    def spectral_index_maps(self, prihdr, spectral_indices):
+        """
+        Construct the 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
+        and 'SPECINDEX_CORR'.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK', 'SPECINDEX_CORR' ]
+
+        if spectral_indices is None:
+            # Construct and return the empty hdus
+            return DAPFitsUtil.empty_hdu(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        prihdr = spectral_indices._initialize_primary_header(hdr=prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+
+        # Need multichannel map header if more than one index
+        multichannel = spectral_indices.nindx > 1
+        # Create the basic header for all extensions
+        base_hdr = self.multichannel_maphdr if multichannel else self.singlechannel_maphdr
+
+        errunits = [ '({0})'.format(u)+'^{-2}' if len(u) > 0 else ''
+                            for u in spectral_indices['SIPAR'].data['UNIT'] ]
+
+        hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', err=True, qual=True,
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                              channel_units=spectral_indices['SIPAR'].data['UNIT']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='ERROR', qual=True,
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                                channel_units=errunits),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='QUALITY', err=True,
+                                                bit_type=self.bitmask.minimum_dtype(),
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_CORR',
+                                                multichannel=multichannel,
+                                               channel_names=spectral_indices['SIPAR'].data['NAME'])
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        arr = [ spectral_indices['SINDX'].data['INDX'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['INDXERR'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['MASK'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['INDX_DISPCORR'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+
+        # Bin index
+        bin_indx = spectral_indices['BINID'].data.copy().ravel()
+
+        # Remap the data to the DRP spatial shape
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+
+        data = [ numpy.array(arr[spectral_indices.nindx*i:spectral_indices.nindx*(i+1)]) \
+                        for i in range(4) ]
+        
+        # Get the mask
+        data[2] = self._spectral_index_mask_to_map_mask(spectral_indices, data[2].copy())
+
+        #---------------------------------------------------------------
+        # Return the map hdus
+        return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+
+
+    
+
+#-----------------------------------------------------------------------
+class construct_cube_file:
+    """
+    Construct a DAP cube file based on the input data.
+
+    Set as a class for coherency reasons, but should not be used as an
+    object!
+
+    Should force all intermediate objects to be provided.
+
+    """
+    def __init__(self, drpf, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
+                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, clobber=True, loggers=None, quiet=False):
+
+        #---------------------------------------------------------------
+        # Initialize the reporting
+        self.loggers = None if loggers is None else loggers
+        self.quiet = quiet
+
+        #---------------------------------------------------------------
+        # Check input types
+        confirm_dap_types(drpf, None, None, binned_spectra, stellar_continuum, None,
+                          emission_line_model, None)
+
+        #---------------------------------------------------------------
+        # Set the output paths
+        self.drpf = drpf
+        self.method = None
+        self.directory_path = None
+        self.output_file = None
+        self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
+                        stellar_continuum)
+
+        # Save input for reference
+        self.shape = self.drpf.shape
+        self.spatial_shape = self.drpf.spatial_shape
+        self.cube_arrays = None
+        self._assign_cube_arrays()
+
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'CONSTRUCTING OUTPUT MODEL CUBE:')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
+                                                                            self.directory_path))
+            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
+                                                                            self.output_file))
+            log_output(self.loggers, 1, logging.INFO, 'Output cubes have shape {0}'.format(
+                                                                            self.shape))
+
+        #---------------------------------------------------------------
+        # Check if the file already exists
+        ofile = os.path.join(self.directory_path, self.output_file)
+        if os.path.isfile(ofile) and not clobber:
+            # TODO: Perform some checks to make sure the existing file
+            # has the correct content?
+            warnings.warn('Output file exists!  Set clobber=True to overwrite.')
+            return
+
+        #---------------------------------------------------------------
+        # Construct the 3D data arrays
+        binned_spectra_3d_hdu = None if binned_spectra is None \
+                                        else binned_spectra.construct_3d_hdu()
+        stellar_continuum_3d_hdu = None if stellar_continuum is None \
+                                        else stellar_continuum.construct_3d_hdu()
+        emission_line_model_3d_hdu = None if emission_line_model is None \
+                                        else emission_line_model.construct_3d_hdu()
+
+        #---------------------------------------------------------------
+        # Initialize the primary header
+        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPSPECMASK')
+
+        # Get the base map header
+        self.base_cubehdr = DAPFitsUtil.build_cube_header(self.drpf,
+                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                                        maskname='MANGA_DAPSPECMASK')
+
+        #---------------------------------------------------------------
+        # Initialize the pixel mask
+        self.bitmask = DAPCubeBitMask(dapsrc=dapsrc)
+
+        self.bin_mask = self._initialize_mask(binned_spectra, binned_spectra_3d_hdu)
+
+        #---------------------------------------------------------------
+        # Construct the hdu list for each input object.
+        # Binned and model spectra:
+        prihdr, speclist = self.model_and_data_cube(prihdr, binned_spectra, binned_spectra_3d_hdu,
+                                                    stellar_continuum, stellar_continuum_3d_hdu,
+                                                    emission_line_model, emission_line_model_3d_hdu)
+        # Emission-line only models:
+        prihdr, elmodlist = self.emission_line_model_cube(prihdr, binned_spectra,
+                                                          emission_line_model,
+                                                          emission_line_model_3d_hdu)
+
+        # Get the BINIDs
+        binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
+                                             emission_line_model, None)
+
+        # Save the data to the hdu attribute
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+                                             loggers=self.loggers, quiet=self.quiet)
+
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
+                                  *speclist,
+                                  *elmodlist,
+                                  *binidlist
+                                ])
+
+        # Restructure the cubes before writing
+        DAPFitsUtil.restructure_cube(self.hdu, ext=self.cube_arrays, inverse=True)
+        # !! THERE ARE NO 'IMAGE' ARRAYS !!
+        # Check that the path exists
+        if not os.path.isdir(self.directory_path):
+            os.makedirs(self.directory_path)
+        # Write the file
+        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                  quiet=self.quiet)
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+
+    def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
+                   stellar_continuum):
+        """
+        Set the paths relevant to the map file.
+        """
+        # The output method directory is, for now, the combination of
+        # the binned_spectrum and stellar_continuum method keys
+        if directory_path is None and (binned_spectra is None or stellar_continuum is None):
+            raise ValueError('Could not define output directory path.')
+
+        # Set the output directory path
+        # TODO: Get DAP version from __version__ string
+        self.method = default_dap_method(binned_spectra=binned_spectra,
+                                         stellar_continuum=stellar_continuum) \
+                                if directory_path is None else None
+        self.directory_path = default_dap_method_path(self.method, plate=self.drpf.plate,
+                                                      ifudesign=self.drpf.ifudesign,
+                                                      drpver=self.drpf.drpver, dapver=dapver,
+                                                      analysis_path=analysis_path) \
+                                                if directory_path is None else str(directory_path)
+
+        # Set the output file
+        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                 self.method, mode='LOGCUBE') \
+                                    if output_file is None else str(output_file)
+
+
+    def _initialize_mask(self, binned_spectra, binned_spectra_3d_hdu):
+        """
+        Initialize the mask based on the DRP cube mask.
+
+        IVAR_INVALID:  Test of invalid inverse variance based on the DRP
+        file.  THIS SHOULD BE A TEST THAT IS INCLUDED IN THE
+        BINNED_SPECTRA OBJECT.  This should match the flags from the
+        stellar continuum model object.
+
+        Copy the FORESTAR flags from the DRP file to the this one
+        """
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
+        if binned_spectra is None:
+            return mask
+
+        indx = ~(binned_spectra_3d_hdu['IVAR'].data > 0) \
+                    | ~(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
+
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+
+        return mask
+
+
+#    def _include_stellar_continuum_mask(self, mask, stellar_continuum):
+#        """
+#        From the stellar continuum model object:
+#            - copy ARTIFACT
+#            - copy INVALID_ERROR into IVAR_INVALID
+#            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION,
+#              TPL_PIXELS, TRUNCATED, PPXF_REJECT, INVALID_ERROR into SC_IGNORED
+#            - copy FIT_FAILED, NEAR_BOUND into SC_FAILED
+#        """
+#        indx = self.bitmask.flagged(self.drpf['MASK'].data, flag='ARTIFACT')
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
+#
+#        indx = self.bitmask.flagged(self.drpf['MASK'].data, flag='INVALID_ERROR')
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVAR_INVALID')
+#
+#        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'EML_REGION', 'TPL_PIXELS', 'TRUNCATED',
+#                  'PPXF_REJECT', 'INVALID_ERROR' ]
+#        indx = self.bitmask.flagged(self.drpf['MASK'].data, flag=flags)
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'SC_IGNORED')
+#
+#        indx = self.bitmask.flagged(self.drpf['MASK'].data, flag='FIT_FAILED')
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'SC_FAILED')
+#
+#        return mask
+
+
+    def _assign_cube_arrays(self):
+        """
+        Set :attr:`cube_arrays`, which contains the list of extensions in
+        :attr:`hdu` that contain spectral data.
+        """
+        self.cube_arrays = [ 'FLUX', 'IVAR', 'MASK', 'MODEL', 'EMLINE', 'EMLINE_BASE',
+                             'EMLINE_MASK', 'BINID' ]
+
+
+    def _get_model_and_data_mask(self, binned_spectra, binned_spectra_3d_hdu, stellar_continuum,
+                                 stellar_continuum_3d_hdu, emission_line_model,
+                                 emission_line_model_3d_hdu):
+        """
+        For the binned spectra:
+            - consolidate DIDNOTUSE, LOW_SPECCOV, LOW_SNR from
+              binned_spectra into IGNORED
+            - consolidate NONE_IN_STACK from binned_spectra into
+              FLUXINVALID
+
+        For the model spectra:
+            - copy INVALID_ERROR from stellar_continuum into
+              IVARINVALID
+
+            - copy ARTIFACTs from both stellar_continuum and
+              emission_line_model
+
+            - from stellar_continuum, consolidate DIDNOTUSE, LOW_SNR,
+              OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
+              PPXF_REJECT, INVALID_ERROR into a list of pixels ignored
+              by the stellar-continuum fit
+            - from emission_line_model, consolidate DIDNOTUSE, LOW_SNR,
+              OUTSIDE_RANGE into a list of pixels ignored by the
+              emission-line fit
+            - flag pixels as FITIGNORED if the pixel is ignored by
+              **both** the stellar-continuum and emission-line fits
+
+            - from stellar_continuum, consolidate FIT_FAILED and
+              NEAR_BOUND into a list of failed pixels from the
+              stellar-continuum fit
+            - do the same for the emission-line fitting mask
+            - flag pixels as FIT_FAILED if the pixel failed in
+              **either** the stellar-continuum or emission-line fits
+        """
+        # Copy the base-level mask
+        mask = self.bin_mask.copy()
+
+        # Draw from binned_spectra
+        flags = [ 'DIDNOTUSE', 'LOW_SPECCOV', 'LOW_SNR' ]
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag=flags)
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IGNORED')
+
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data,
+                                              flag='NONE_IN_STACK')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FLUXINVALID')
+
+        # Draw from stellar_continuum
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
+                                                 flag='INVALID_ERROR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
+
+        # Draw from stellar_continuum and emission_line_model
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
+                                                 flag='ARTIFACT') \
+                    | emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                          flag='ARTIFACT')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
+
+        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'EML_REGION', 'TPL_PIXELS',
+                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
+        sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
+                                                    flag=flags)
+        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
+        el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                      flag=flags)
+        mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FITIGNORED')
+
+        # TODO: What do I do with BAD_SIGMA?
+        sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
+                                                    flag=['FIT_FAILED', 'NEAR_BOUND'])
+        el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                      flag=['FIT_FAILED', 'NEAR_BOUND'])
+        mask[sc_indx | el_indx] = self.bitmask.turn_on(mask[sc_indx | el_indx], 'FITFAILED')
+
+        return mask
+
+
+    def model_and_data_cube(self, prihdr, binned_spectra, binned_spectra_3d_hdu, stellar_continuum,
+                            stellar_continuum_3d_hdu, emission_line_model,
+                            emission_line_model_3d_hdu):
+        """
+        Constructs the 'FLUX', 'IVAR', 'MASK', 'WAVE', 'REDCORR', and
+        'MODEL' model cube extensions.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'FLUX', 'IVAR', 'MASK', 'WAVE', 'REDCORR', 'MODEL' ]
+
+        if binned_spectra is None or stellar_continuum is None or emission_line_model is None:
+            # Construct and return the empty hdus
+            return prihdr, DAPFitsUtil.empty_hdus(ext)
+
+        #---------------------------------------------------------------
+        # Add data to the primary header
+        # TODO: Just copy header from maps file?
+        prihdr = binned_spectra.rdxqa._initialize_primary_header(hdr=prihdr)
+        prihdr = binned_spectra._initialize_primary_header(hdr=prihdr)
+        prihdr = binned_spectra._add_method_header(prihdr)
+        prihdr = binned_spectra._add_reddening_header(prihdr)
+        prihdr = stellar_continuum._initialize_primary_header(hdr=prihdr)
+        prihdr = stellar_continuum._add_method_header(prihdr)
+        prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)
+        prihdr = emission_line_model._add_method_header(prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+        hdr = [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True,
+                                                qual=True),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='ERROR',
+                                                bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}',
+                                                qual=True, prepend=False),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='QUALITY',
+                                                 err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                 prepend=False),
+                None,
+                None,
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'MODEL',
+                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
+                                                 prepend=False)
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        # Reddened flux data
+        flux, ivar = binned_spectra.galext.apply(binned_spectra_3d_hdu['FLUX'].data, deredden=False,
+                                                 ivar=binned_spectra_3d_hdu['IVAR'].data)
+        # Best-fitting composite model
+        model = stellar_continuum_3d_hdu['FLUX'].data + emission_line_model_3d_hdu['FLUX'].data \
+                    + emission_line_model_3d_hdu['BASE'].data
+        # with reddening
+        model = binned_spectra.galext.apply(model, deredden=False)
+
+        # Spectral mask
+        mask = self._get_model_and_data_mask(binned_spectra, binned_spectra_3d_hdu,
+                                                 stellar_continuum, stellar_continuum_3d_hdu,
+                                                 emission_line_model, emission_line_model_3d_hdu)
+
+        data = [ flux, ivar, mask, binned_spectra['WAVE'].data.copy(),
+                 binned_spectra['REDCORR'].data.copy(), model ]
+
+        # Return the primary header and the list of HDUs
+        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+    def _get_emission_line_model_mask(self, emission_line_model, emission_line_model_3d_hdu):
+        """
+        From the emission-line model object:
+            - copy ARTIFACT
+            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE into IGNORED_EL
+            - copy FIT_FAILED, NEAR_BOUND into ELFAILED
+        """
+        # Copy the base-level mask
+        mask = self.bin_mask.copy()
+
+        # Include the emission-line masks
+        indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                   flag='ARTIFACT')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
+
+        indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                   flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE'])
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ELIGNORED')
+
+        indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
+                                                   flag=['FIT_FAILED', 'NEAR_BOUND'])
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ELFAILED')
+
+        return mask
+
+
+    def emission_line_model_cube(self, prihdr, binned_spectra, emission_line_model,
+                                 emission_line_model_3d_hdu):
+        """
+        Constructs the 'EMLINE', 'EMLINE_BASE', and 'EMLINE_MASK' model
+        cube extensions.
+        """
+        #---------------------------------------------------------------
+        ext = [ 'EMLINE', 'EMLINE_BASE', 'EMLINE_MASK' ]
+
+        if emission_line_model is None:
+            return prihdr, DAPFitsUtil.empty_hdus(ext)
+
+        # Add data to the primary header (Repeated from
+        # model_and_data_cube
+#        prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)
+#        prihdr = emission_line_model._add_method_header(prihdr)
+
+        #---------------------------------------------------------------
+        # Get the extension headers
+        hdr = [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
+                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
+                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE', hduclas2='QUALITY',
+                                                 bit_type=self.bitmask.minimum_dtype()),
+              ]
+
+        #---------------------------------------------------------------
+        # Get the data arrays
+        # Get the reddened line model and baselines
+        model = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data, deredden=False)
+        base = binned_spectra.galext.apply(emission_line_model_3d_hdu['BASE'].data, deredden=False)
+
+        # Get the mask data
+        mask = self._get_emission_line_model_mask(emission_line_model, emission_line_model_3d_hdu)
+
+        data = [ model, base, mask ]
+
+        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
+
+
+#-----------------------------------------------------------------------
+def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_line_moments,
+                             emission_line_model, spectral_indices):
+
+    """
+    Combine the bin IDs from the different analysis steps into a single
+    multichannel extension.
+    """
+    if drpf is None:
+        raise ValueError('DRP file must be provided.')
+
+    hdr = DAPFitsUtil.finalize_dap_header( DAPFitsUtil.build_map_header(drpf,
+                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                                    multichannel=True, maskname='MANGA_DAPPIXMASK'),
+                                          'BINID', multichannel=True,
+                                          channel_names=[ 'Binned spectra', 'Stellar continua',
+                                                          'Em. line moments', 'Em. line models',
+                                                          'Spectral indices' ])
+
+    # Build the ID data for each analysis product
+    binid = numpy.zeros(drpf.spatial_shape+(5,), dtype=int)
+    if binned_spectra is not None:
+        binid[:,:,0] = binned_spectra['BINID'].data
+    if stellar_continuum is not None:
+        binid[:,:,1] = stellar_continuum['BINID'].data
+    if emission_line_moments is not None:
+        binid[:,:,2] = emission_line_moments['BINID'].data
+    if emission_line_model is not None:
+        binid[:,:,3] = emission_line_model['BINID'].data
+    if spectral_indices is not None:
+        binid[:,:,4] = spectral_indices['BINID'].data
+
+    return DAPFitsUtil.list_of_image_hdus([ binid ], [ hdr ], [ 'BINID' ])
+
+
+def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
+                      emission_line_model, spectral_indices):
+
+    if not isinstance(drpf, DRPFits):
+        raise TypeError('Input must have type DRPFits.')
+    if obs is not None and not isinstance(obs, ObsInputPar):
+        raise TypeError('Input must have type ObsInputPar.')
+    if rdxqa is not None and not isinstance(rdxqa, ReductionAssessment):
+        raise TypeError('Input must have type ReductionAssessment.')
+    if binned_spectra is not None and not isinstance(binned_spectra, SpatiallyBinnedSpectra):
+        raise TypeError('Input must have type SpatiallyBinnedSpectra.')
+    if stellar_continuum is not None and not isinstance(stellar_continuum,
+                                                        StellarContinuumModel):
+        raise TypeError('Input must have type StellarContinuumModel.')
+    if emission_line_moments is not None and not isinstance(emission_line_moments,
+                                                            EmissionLineMoments):
+        raise TypeError('Input must have type EmissionLineMoments.')
+    if emission_line_model is not None and not isinstance(emission_line_model,
+                                                          EmissionLineModel):
+        raise TypeError('Input must have type EmissionLineModel.')
+    if spectral_indices is not None and not isinstance(spectral_indices, SpectralIndices):
+        raise TypeError('Input must have type SpectralIndices.')
+
+
+
+def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, loggers=None,
+                                quiet=False):
+
+    # Initialize the DAP quality flag
+    dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
+    drp3qualbm = DRPQuality3DBitMask()
+    dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
+    if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
+        if not quiet:
+            log_output(loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
+        dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
+        dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
+
+    #Signify that the Voronoi binning resulted in a single bin
+    if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
+            and binned_spectra.method['binclass'].bintype == 'voronoi' \
+            and binned_spectra.nbins == 1:
+        dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
+
+    # Determine if there's a foreground star
+    if numpy.sum(drpf.bitmask.flagged(drpf['MASK'].data, flag='FORESTAR')) > 0:
+        dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
+
+    # Commit the quality flag to the header
+    prihdr['DAPQUAL'] = (dapqual, 'DAP quality bitmask')
+
+    # Finalize authors
+    prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
+
+    return prihdr
 
 
 

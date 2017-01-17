@@ -109,7 +109,7 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .spectralfitting import StellarKinematicsFit
 # from .spectralstack import SpectralStack
-from .util import residual_growth
+from .util import residual_growth, optimal_scale
 
 from matplotlib import pyplot
 
@@ -169,7 +169,6 @@ class PPXFFitPar(ParSet):
             :class:`mangadap.contrib.ppxf.ppxf` documentation.
 
     """
-
     def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
                  iteration_mode='global_template', match_resolution=True, velscale_ratio=None,
                  minimum_snr=None, pixelmask=None, bias=None, clean=False, degree=None,
@@ -550,9 +549,6 @@ class PPXFFit(StellarKinematicsFit):
         return fit_indx, waverange_mask, npix_mask, alias_mask
 
 
-
-
-
     @staticmethod
     def ppxf_tpl_obj_voff(tpl_wave, obj_wave, velscale, velscale_ratio=None):
         """
@@ -591,20 +587,24 @@ class PPXFFit(StellarKinematicsFit):
         return dlogl*velscale / numpy.diff(numpy.log(obj_wave[0:2]))[0]
 
 
-    def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9):
+    def _update_rejection(self, ppxf_fit, galaxy, gpm, maxiter=9, err=None, nsigma=3.0):
         """
-        Reject aberrant pixels from pPXF fit.
+        Reject aberrant pixels from pPXF fit, allowing for an optimal
+        renormalization of the best fit.
         """
+        wgt = numpy.ones(len(galaxy), dtype=float) if err is None else numpy.ma.power(err,-1.0)
+
         for i in range(maxiter):
 #            if not self.quiet:
 #                log_output(self.loggers, 1, logging.INFO,
 #                           'Rejection iteration, remaining pixels: {0} {1}'.format(i+1, len(gpm)))
-            scale = numpy.sum(galaxy[gpm]*ppxf_fit.bestfit[gpm]) \
-                            / numpy.sum(numpy.square(ppxf_fit.bestfit[gpm]))
+            scale = optimal_scale(galaxy[gpm], ppxf_fit.bestfit[gpm], wgt=wgt[gpm])
+#            scale = numpy.sum(galaxy[gpm]*ppxf_fit.bestfit[gpm]) \
+#                            / numpy.sum(numpy.square(ppxf_fit.bestfit[gpm]))
             resid = scale*ppxf_fit.bestfit[gpm] - galaxy[gpm]
-            err = numpy.std(resid)
+            rms = numpy.std(resid)
             ok_old = gpm
-            gpm = numpy.flatnonzero(numpy.absolute(ppxf_fit.bestfit - galaxy) < 3*err)
+            gpm = numpy.flatnonzero(numpy.absolute(ppxf_fit.bestfit - galaxy) < nsigma*rms)
             gpm = numpy.intersect1d(ok_old, gpm)
             if numpy.array_equal(gpm, ok_old):
                 break 
@@ -825,7 +825,7 @@ class PPXFFit(StellarKinematicsFit):
         This should not declare anything to self!
 
         """
-        # Assign and check parameters if provided
+        # Parameter must be provided
         if par is None:
             raise ValueError('Required parameters for PPXFFit have not been defined.')
         # Check the parameters
@@ -835,36 +835,29 @@ class PPXFFit(StellarKinematicsFit):
             raise NotImplementedError('Cannot use regul, reddening, component, or regul_dim yet.')
 
         # SpatiallyBinnedSpectra object always needed
-        if binned_spectra is None:
-            raise ValueError('Must provide spectra object for fitting.')
-        if not isinstance(binned_spectra, SpatiallyBinnedSpectra):
+        if binned_spectra is None or not isinstance(binned_spectra, SpatiallyBinnedSpectra):
             raise TypeError('Must provide a SpatiallyBinnedSpectra object for fitting.')
         if binned_spectra.hdu is None:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
 
-        # Template library is required!
+        # TemplateLibrary object always needed
         if par['template_library'] is None \
                 or not isinstance(par['template_library'], TemplateLibrary):
             raise TypeError('Must provide a TemplateLibrary object for fitting.')
         if par['template_library'].hdu is None:
             raise ValueError('Provided TemplateLibrary object is undefined!')
 
-        # Get the object spectra
-        obj_wave = binned_spectra['WAVE'].data.copy()
-        obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-        obj_ferr = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
-                                                    flag=binned_spectra.do_not_fit_flags()), -0.5)
-        obj_sres = binned_spectra.copy_to_array(ext='SPECRES')
-
         # Select the spectra that meet the selection criteria
         # TODO: Link this to the StellarContinuumModel._bins_to_fit()
         # function...
-        good_spec = (binned_spectra['BINS'].data['SNR'] > par['minimum_snr']) \
-                        & ~(numpy.array([ b in binned_spectra.missing_bins \
-                                                for b in numpy.arange(binned_spectra.nbins)]))
-#        print(good_spec)
-#        good_spec[2:] = False
-#        print(good_spec)
+        good_spec = binned_spectra.above_snr_limit(par['minimum_snr'])
+
+        # Get the object data
+        obj_wave = binned_spectra['WAVE'].data.copy()
+        obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
+        obj_ferr = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
+                                                    flag=binned_spectra.do_not_fit_flags()) , -0.5)
+        obj_sres = binned_spectra.copy_to_array(ext='SPECRES')
 
 #        for i in range(510,515):
 #            pyplot.plot(obj_wave, obj_flux[good_spec,:][i,:])
@@ -897,39 +890,54 @@ class PPXFFit(StellarKinematicsFit):
                            moments=par['moments'], loggers=loggers, quiet=quiet, dvtol=1e-9)
 #                           tpl_sres=tpl_sres, obj_sres=binned_spectra['SPECRES'].data.copy(),
 
-        # Reshape the data to include space for binned spectra that were
-        # not fit
-        _model_flux = numpy.zeros(obj_flux.shape, dtype=numpy.float)
-        _model_flux[good_spec,:] = model_flux
+        # DEBUG
+        assert numpy.sum(model_wave - binned_spectra['WAVE'].data) == 0, \
+                    'Incorrect wavelength range'
 
-        _model_mask = numpy.zeros(obj_flux.shape, dtype=self.bitmask.minimum_dtype())
+        # Save the the bin ID numbers indices based on the spectra
+        # selected to be fit
+        model_par['BINID'] = binned_spectra['BINS'].data['BINID'][good_spec]
+        model_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[good_spec]
+#        print(model_par['BINID'])
+#        print(model_par['BINID_INDEX'])
 
-        flux_mask = numpy.ma.getmaskarray(obj_flux)
-        _model_mask[flux_mask] = self.bitmask.turn_on(_model_mask[flux_mask], 'DIDNOTUSE')
-        bad_spec = (binned_spectra['BINS'].data['SNR'] < par['minimum_snr']) \
-                        & ~(numpy.array([ b in binned_spectra.missing_bins \
-                                                for b in numpy.arange(binned_spectra.nbins)]))
-#        bad_spec = ~good_spec
+        # Only return model and model parameters for the *fitted*
+        # spectra
+        return model_wave, model_flux, model_mask, model_par
 
-        _model_mask[bad_spec,:] = self.bitmask.turn_on(_model_mask[bad_spec,:], 'LOW_SNR')
-
-        _model_mask[good_spec,:] = model_mask
-
-        _model_par = init_record_array(obj_flux.shape[0], model_par.dtype)
-        _model_par[good_spec] = model_par
-        _model_par['BIN_INDEX'] = numpy.arange(obj_flux.shape[0])
-        _model_par['MASK'][bad_spec] = self.bitmask.turn_on(_model_par['MASK'][bad_spec], 'NO_FIT')
-
-#        t = numpy.ma.MaskedArray(_model_flux, mask=_model_mask > 0)
-#        print(_model_flux.shape)
-#        print(numpy.sum(numpy.ma.getmaskarray(_model_flux)))
-#        pyplot.step(model_wave, obj_flux.data[0,:], where='mid', color='0.5', lw=1)
-#        pyplot.step(model_wave, obj_flux[0,:], where='mid', color='k', lw=0.5)
-#        pyplot.plot(model_wave, t.data[0,:], color='purple', lw=1)
-#        pyplot.plot(model_wave, t[0,:], color='r')
-#        pyplot.show()
-
-        return model_wave, _model_flux, _model_mask, _model_par
+#        # Reshape the data to include space for binned spectra that were
+#        # not fit
+#        _model_flux = numpy.zeros(obj_flux.shape, dtype=numpy.float)
+#        _model_flux[good_spec,:] = model_flux
+#
+#        _model_mask = numpy.zeros(obj_flux.shape, dtype=self.bitmask.minimum_dtype())
+#
+#        flux_mask = numpy.ma.getmaskarray(obj_flux)
+#        _model_mask[flux_mask] = self.bitmask.turn_on(_model_mask[flux_mask], 'DIDNOTUSE')
+#        bad_spec = (binned_spectra['BINS'].data['SNR'] < par['minimum_snr']) \
+#                        & ~(numpy.array([ b in binned_spectra.missing_bins \
+#                                                for b in numpy.arange(binned_spectra.nbins)]))
+##        bad_spec = ~good_spec
+#
+#        _model_mask[bad_spec,:] = self.bitmask.turn_on(_model_mask[bad_spec,:], 'LOW_SNR')
+#
+#        _model_mask[good_spec,:] = model_mask
+#
+#        _model_par = init_record_array(obj_flux.shape[0], model_par.dtype)
+#        _model_par[good_spec] = model_par
+#        _model_par['BIN_INDEX'] = numpy.arange(obj_flux.shape[0])
+#        _model_par['MASK'][bad_spec] = self.bitmask.turn_on(_model_par['MASK'][bad_spec], 'NO_FIT')
+#
+##        t = numpy.ma.MaskedArray(_model_flux, mask=_model_mask > 0)
+##        print(_model_flux.shape)
+##        print(numpy.sum(numpy.ma.getmaskarray(_model_flux)))
+##        pyplot.step(model_wave, obj_flux.data[0,:], where='mid', color='0.5', lw=1)
+##        pyplot.step(model_wave, obj_flux[0,:], where='mid', color='k', lw=0.5)
+##        pyplot.plot(model_wave, t.data[0,:], color='purple', lw=1)
+##        pyplot.plot(model_wave, t[0,:], color='r')
+##        pyplot.show()
+#
+#        return model_wave, _model_flux, _model_mask, _model_par
 
     
     def _validate_kinematics(self, speci, model_mask, model_par):
@@ -953,57 +961,53 @@ class PPXFFit(StellarKinematicsFit):
         self.iteration_mode = iteration_mode
 
 
-    def _check_templates(self, tpl_wave, tpl_flux, tpl_sres):
-        """
-        Check that the input template data is valid.
-
-        .. todo::
-            Make log10 in call to spectral_resolution an argument to
-            this function.
-
+    @staticmethod
+    def _check_templates(tpl_wave, tpl_flux, tpl_sres=None):
+        r"""
+        Check that the input template data is valid.  Static so that it
+        can also be called by :func:`construct_models`.
         """
         if len(tpl_wave.shape) != 1:
             raise ValueError('Input template wavelengths must be a vector; all spectra should '
                              'have the same wavelength solution.')
-        self.tpl_wave = tpl_wave
         if isinstance(tpl_flux, numpy.ma.MaskedArray):
             raise TypeError('Template spectra cannot be masked arrays!')
-        if tpl_flux.shape[1] != len(self.tpl_wave):
+        if tpl_flux.shape[1] != len(tpl_wave):
             raise ValueError('The template spectra fluxes must have the same length as the '
                              'wavelength array.')
-        self.tpl_flux = tpl_flux
-        self.ntpl = self.tpl_flux.shape[0]
-        if tpl_sres is not None and tpl_sres.shape != self.tpl_wave.shape:
+        if tpl_sres is not None and tpl_sres.shape != tpl_wave.shape:
             raise ValueError('Provided template resolution vector does not have the correct shape.')
-        self.tpl_sres = None if tpl_sres is None \
-                            else spectral_resolution(self.tpl_wave, tpl_sres, log10=True)
+        _tpl_sres = None if tpl_sres is None \
+                            else spectral_resolution(tpl_wave, tpl_sres, log10=True)
         # TODO: Allow spectral resolution to be spectrum dependent?
+        return tpl_wave, tpl_flux, _tpl_sres
 
 
-    def _check_objects(self, obj_wave, obj_flux, obj_ferr, obj_sres):
+    @staticmethod
+    def _check_objects(obj_wave, obj_flux, obj_ferr=None, obj_sres=None):
         """
-        Check that the input object data is valid.
+        Check that the input object data is valid.  Static so that it
+        can also be called by :func:`construct_models`.
         """
         if len(obj_wave.shape) != 1:
             raise ValueError('Input object wavelengths must be a vector; all spectra should '
                              'have the same wavelength solution.')
-        self.obj_wave = obj_wave
-        if obj_flux.shape[1] != len(self.obj_wave):
+        if obj_flux.shape[1] != len(obj_wave):
             raise ValueError('The object spectra fluxes must have the same length as the '
                              'wavelength array.')
-        self.obj_flux = obj_flux if isinstance(obj_flux, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(obj_flux)
-        if obj_ferr is not None and obj_ferr.shape != self.obj_flux.shape:
+        _obj_flux = obj_flux if isinstance(obj_flux, numpy.ma.MaskedArray) \
+                                else numpy.ma.MaskedArray(obj_flux)
+        if obj_ferr is not None and obj_ferr.shape != _obj_flux.shape:
             raise ValueError('The shape of any provided error array must match the flux array.')
-        self.obj_ferr = obj_ferr if isinstance(obj_ferr, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(obj_ferr)
-        self.nobj = self.obj_flux.shape[0]
-        self.obj_sres = obj_sres
-        if self.obj_sres is not None and self.obj_sres.shape != self.obj_wave.shape \
-                and self.obj_sres.shape != self.obj_flux.shape:
+        _obj_ferr = obj_ferr if isinstance(obj_ferr, numpy.ma.MaskedArray) \
+                                else numpy.ma.MaskedArray(obj_ferr)
+        if obj_sres is not None and obj_sres.shape != obj_wave.shape \
+                and obj_sres.shape != _obj_flux.shape:
             raise ValueError('Provided object resolution vector does not have the correct shape.')
-        if self.obj_sres is not None and self.obj_sres.shape != self.obj_flux.shape:
-            self.obj_sres = numpy.array([self.obj_sres]*self.nobj)
+        _obj_sres = None if obj_sres is None else obj_sres.copy()
+        if _obj_sres is not None and _obj_sres.shape != _obj_flux.shape:
+            _obj_sres = numpy.array([_obj_sres]*_obj_flux.shape[0])
+        return obj_wave, _obj_flux, _obj_ferr, _obj_sres
 
 
     def _check_template_usage_flags(self, usetpl):
@@ -1040,13 +1044,24 @@ class PPXFFit(StellarKinematicsFit):
                             _guess_dispersion]).T
 
 
-    def _check_pixel_scale(self, velscale_ratio, dvtol=1e-10):
+    @staticmethod
+    def _check_pixel_scale(tpl_wave, obj_wave, velscale_ratio=None, dvtol=1e-10):
+        """
+        Confirm that the pixel scale of the template and object spectra
+        are identical within a certain tolerance, accounting for an
+        input pixel-scale ratio.  Returns the velocity scale of the
+        object spectra and the velocity scale ratio wrt the template
+        spectra.
+
+        Static so that it can be called by :func:`construct_models`.
+        """
         # Get the pixel scale
-        self.velscale = spectrum_velocity_scale(self.obj_wave)
-        self.velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
-        if not self._obj_tpl_pixelmatch(self.velscale, self.tpl_wave,
-                                       velscale_ratio=self.velscale_ratio, dvtol=dvtol):
+        velscale = spectrum_velocity_scale(obj_wave)
+        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        if not PPXFFit._obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=_velscale_ratio,
+                                           dvtol=dvtol):
             raise ValueError('Pixel scale of the object and template spectra must be identical.')
+        return velscale, _velscale_ratio
 
 
     def _check_resolution_match(self, matched_resolution):
@@ -1110,7 +1125,9 @@ class PPXFFit(StellarKinematicsFit):
                                                             'all_templates_plus_emlines' ] else
                         self._per_stellar_kinematics_dtype(self.ntpl, 0, 8, self.moments,
                                                            self.bitmask.minimum_dtype()))
-        model_par['BIN_INDEX'] = numpy.arange(self.nobj)
+        # Set the bins; here the ID and index are identical
+        model_par['BINID'] = numpy.arange(self.nobj)
+        model_par['BINID_INDEX'] = numpy.arange(self.nobj)
 
         return model_flux, model_mask, model_par
 
@@ -1393,15 +1410,21 @@ class PPXFFit(StellarKinematicsFit):
         # - Mode
         self._check_mode(iteration_mode)
         # - Templates
-        self._check_templates(tpl_wave, tpl_flux, tpl_sres)
+        self.tpl_wave, self.tpl_flux, self.tpl_sres \
+                = PPXFFit._check_templates(tpl_wave, tpl_flux, tpl_sres=tpl_sres)
+        self.ntpl = self.tpl_flux.shape[0]
         # - Objects
-        self._check_objects(obj_wave, obj_flux, obj_ferr, obj_sres)
+        self.obj_wave, self.obj_flux, self.obj_ferr, self.obj_sres \
+                = PPXFFit._check_objects(obj_wave, obj_flux, obj_ferr=obj_ferr, obj_sres=obj_sres)
+        self.nobj = self.obj_flux.shape[0]
         # - Template usage (needs to know the number of object spectra)
         self._check_template_usage_flags(usetpl)
         # - Input kinematics
         self._check_input_kinematics(guess_redshift, guess_dispersion)
         # - Input pixel scale
-        self._check_pixel_scale(velscale_ratio, dvtol=dvtol)
+        self.velscale, self.velscale_ratio \
+                = PPXFFit._check_pixel_scale(self.tpl_wave, self.obj_wave,
+                                             velscale_ratio=velscale_ratio, dvtol=dvtol)
         # - Spectral resolution
         self._check_resolution_match(matched_resolution)
         # - Selected wavelength range: always has shape (self.nobj,2)
@@ -2030,43 +2053,63 @@ class PPXFFit(StellarKinematicsFit):
     def reconstruct_model(tpl_wave, templates, obj_wave, kin, weights, velscale, polyweights=None,
                           mpolyweights=None, start=None, end=None, redshift_only=False,
                           sigma_corr=0.0, velscale_ratio=None, dvtol=1e-10, revert_velocity=True):
+        """
+        Construct a pPXF model spectrum based on a set of input spectra and parameters.
+        """
+        # Make sure the pixel scales match
+        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        if not PPXFFit._obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=_velscale_ratio,
+                                           dvtol=dvtol):
+            raise ValueError('Pixel scale of the object and template spectra must be identical.')
 
-        moments = kin.size
+        # Moments for each kinematic component
+        ncomp = 1
+        moments = numpy.atleast_1d(kin.size)
+        _moments = numpy.full(ncomp, numpy.absolute(moments), dtype=int) if moments.size == 1 \
+                            else numpy.absolute(moments)
 
+        # Get the redshift to apply
+        redshift = kin[0]/astropy.constants.c.to('km/s').value
+
+        # Check that the corrected sigma is defined
+        corrected_sigma = numpy.square(kin[1]) - numpy.square(sigma_corr)
+        if not redshift_only and not corrected_sigma > 0:
+            warnings.warn('Corrected sigma is 0 or not defined.  Redshifting template only.')
+            _redshift_only = True
+        else:
+            _redshift_only = redshift_only
+
+        # Start and end pixel in the object spectrum to fit
         _start = 0 if start is None else start
         _end = obj_wave.size if end is None else end
 
-        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
-
-        outRange = obj_wave[ [0,-1] ]
-        outpix = obj_wave.size
-
-        model = numpy.ma.zeros(outpix, dtype=numpy.float)
-
-        # Get the composite template
-        indx = weights > 0
-        redshift = kin[0]/astropy.constants.c.to('km/s').value
+        # Construct the composite template
         composite_template = numpy.dot(weights, templates)
 
 #        pyplot.step(tpl_wave, composite_template, where='mid', linestyle='-', lw=0.5,
 #                    color='k')
 #        pyplot.show()
 
-        # Redshift and broadened using the LOSVD parameters
-        if redshift_only:
+        # Construct the output models
+        model = numpy.ma.zeros(obj_wave.size, dtype=numpy.float)
+        if _redshift_only:
             # Resample the redshifted template to the wavelength grid of
             # the binned spectra
             model[:] = PPXFFit._shift_via_resample(tpl_wave, composite_template, redshift, True,
-                                                   outRange, outpix, True)
+                                                   obj_wave[[0,-1]], obj_wave.size, True)
+            model[:_start] = 0.0
+            model[:_start] = numpy.ma.masked
+            model[_end:] = 0.0
+            model[_end:] = numpy.ma.masked
         else:
-#            print('{0}/{1}'.format(i+1,binned_spectra.nbins))
-#            print('Start,End: ', start, end)
-#            print(obj_wave[start:end].shape)
-#            print(tpl_wave.shape)
+            # Perform the same operations as pPXF v6.0.0
 
-            # for PPXF v6.0.0
+            # Get the offset velocity just due to the difference in the
+            # initial wavelength of the template and object data
             vsyst = -PPXFFit.ppxf_tpl_obj_voff(tpl_wave, obj_wave[_start:_end], velscale,
                                                velscale_ratio=_velscale_ratio)
+            # Account for a modulus in the number of object pixels in
+            # the template spectra
             if _velscale_ratio > 1:
                 npix_temp = composite_template.size - composite_template.size % _velscale_ratio
                 _composite_template = composite_template[:npix_temp].reshape(-1,1)
@@ -2075,13 +2118,10 @@ class PPXFFit(StellarKinematicsFit):
                 _composite_template = composite_template
                 npix_temp = composite_template.size
 
+            # Get the FFT of the composite template
             ctmp_rfft, npad = _templates_rfft(_composite_template)
-            _moments = numpy.atleast_1d(moments)
-            ncomp = 1
-            if _moments.size == 1:
-                _moments = numpy.full(ncomp, numpy.absolute(_moments), dtype=int)
-            else:
-                _moments = numpy.absolute(_moments)
+
+            # Construct the LOSVD parameter vector
             vj = numpy.append(0, numpy.cumsum(_moments)[:-1])
             par = kin.copy()
             # Convert the velocity to pixel units
@@ -2089,31 +2129,25 @@ class PPXFFit(StellarKinematicsFit):
                 par[0], verr = PPXFFit._revert_velocity(par[0], 1.0)
             # Convert the velocity dispersion to ignore the
             # resolution difference
-            if sigma_corr > 0:
-                par[1] = numpy.square(par[1]) - numpy.square(sigma_corr)
-                par[1] = numpy.sqrt(par[1]) if par[1] > 0 else 0.0
+            par[1] = numpy.sqrt(numpy.square(par[1]) - numpy.square(sigma_corr))
+           
+            # Convert the kinematics to pixel units
+            par /= velscale
 
-            # Construct the model
-            if par[1] > 0:
-                # Velocity dispersion is valid, follow the pPXF
-                # method
-                par /= velscale
-                kern_rfft = _losvd_rfft(par, 1, _moments, vj, npad, 1, vsyst/velscale,
-                                        _velscale_ratio, 0.0)
-                _model = numpy.fft.irfft(ctmp_rfft[:,0]
-                                         * kern_rfft[:,0,0]).ravel()[:npix_temp*_velscale_ratio]
-                if _velscale_ratio > 1:
-                    _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1).ravel()
-#                pyplot.plot(obj_wave[_start:_end], _model[:_end-_start])
-#                pyplot.show()
-                model[_start:_end] = _model[:_end-_start]
-            else:
-                # Velocity dispersion is undefined, return a
-                # zero-dispersion spectrum
-                model[:] = PPXFFit._shift_via_resample(tpl_wave, composite_template, redshift,
-                                                       True, outRange, outpix, True)
+            # Construct the FFT of the LOSVD kernel
+            kern_rfft = _losvd_rfft(par, 1, _moments, vj, npad, 1, vsyst/velscale, _velscale_ratio,
+                                    0.0)
 
-        # Account for the polynomial
+            # Construct the model spectrum
+            _model = numpy.fft.irfft(ctmp_rfft[:,0] * kern_rfft[:,0,0]).ravel()
+            if _velscale_ratio > 1:
+                _model = numpy.mean(_model[:npix_temp*_velscale_ratio].reshape(-1,_velscale_ratio),
+                                    axis=1)
+            
+            # Copy the model to the output vector
+            model[_start:_end] = _model[:_end-_start]
+
+        # Account for the polynomials
         x = numpy.linspace(-1, 1, _end-_start)
         if mpolyweights is not None:
             model[_start:_end] *= numpy.polynomial.legendre.legval(x,numpy.append(1.0,mpolyweights))
@@ -2124,71 +2158,122 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def construct_models(binned_spectra, template_library, model_par, degree, mdegree, moments,
-                         redshift_only=False, velscale_ratio=None, dvtol=1e-10):
+    def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux, model_par, select=None,
+                         velscale_ratio=None, redshift_only=False, dvtol=1e-10):
         """
-        Construct models using the provided set of model parameters and
-        template library.  The number of template weights in the
-        provided model parameters must match the number of template
-        spectra.
+        Construct models using the provided set of model parameters.
+        This is a wrapper for :func:`PPXFFit.reconstruct_model`.
+
+        Allows for a replacement template library that must have the
+        same shape as :attr:`tpl_flux`.
 
         If redshift_only is true, ignore the LOSVD and simply shift the
         model to the correct redshift.
-
-        CURRENTLY WILL NOT WORK WITH:
-            - multiple kinematic components
-            - point-symmetric fits
-
-        .. todo::
-
-            This doesn't appear to give exactly the correct
-            reconstruction of the pPXF models.
-
         """
-        if not isinstance(binned_spectra, SpatiallyBinnedSpectra):
-            raise TypeError('Must provide a SpatiallyBinnedSpectra object.')
-        if not isinstance(template_library, TemplateLibrary):
-            raise TypeError('Must provide a TemplateLibrary object.')
-        if model_par['TPLWGT'].shape[1] != template_library.ntpl:
+        # Check the input spectra
+        _tpl_wave, _tpl_flux, _ = PPXFFit._check_templates(tpl_wave, tpl_flux)
+        ntpl = _tpl_flux.shape[0]
+        _obj_wave, _obj_flux, _, _ = PPXFFit._check_objects(obj_wave, obj_flux)
+        nobj = _obj_flux.shape[0]
+
+        # Check the spectral sampling
+        _velscale, _velscale_ratio \
+                = PPXFFit._check_pixel_scale(_tpl_wave, _obj_wave, velscale_ratio=velscale_ratio,
+                                             dvtol=dvtol)
+
+        # Check the shape of the input model parameter database
+        if model_par['BINID'].size != nobj:
+            raise ValueError('Incorrect number of model-parameter sets.')
+        if model_par['TPLWGT'].shape[1] != ntpl:
             raise ValueError('The number of weights does not match the number of templates.')
 
-        tpl_wave = template_library['WAVE'].data.copy()
-        obj_wave = binned_spectra['WAVE'].data.copy()
+        # Only produce selected models
+        skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
 
-        templates = template_library['FLUX'].data.copy()
+        # Instantiate the output model array
+        models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
 
-        velscale = spectrum_velocity_scale(obj_wave)
-        if not PPXFFit._obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=velscale_ratio,
-                                           dvtol=dvtol):
-            raise ValueError('Pixel scale of the object and template spectra must be identical.')
-        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
-
-        obj_flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-
-        outRange = obj_wave[ [0,-1] ]
-        outpix = binned_spectra.nwave
-
-        models = numpy.ma.zeros((binned_spectra.nbins, binned_spectra.nwave), dtype=numpy.float)
-
-        for i in range(binned_spectra.nbins):
-            if i in binned_spectra.missing_bins:
+        # Construct the model for each (selected) object spectrum
+        for i in range(nobj):
+            if skip[i]:
                 models[i,:] = numpy.ma.masked
                 continue
-            if model_par['MASK'][i] > 0:
-                models[i,:] = numpy.ma.masked
-                warnings.warn('Fit to spectrum {0} masked.'.format(i+1))
-                continue
 
-            models[i,:] = PPXFFit.reconstruct_model(tpl_wave, templates, obj_wave,
-                                                   model_par['KIN'][i,:], model_par['TPLWGT'][i],
-                                                   velscale, polyweights=model_par['ADDCOEF'][i],
-                                                   mpolyweights=model_par['MULTCOEF'][i],
-                                                   start=model_par['BEGPIX'][i],
-                                                   end=model_par['ENDPIX'][i],
-                                                   redshift_only=redshift_only,
-                                                   velscale_ratio=_velscale_ratio, dvtol=dvtol)
-
+            models[i,:] = PPXFFit.reconstruct_model(_tpl_wave, _tpl_flux, _obj_wave,
+                                                    model_par['KIN'][i,:], model_par['TPLWGT'][i],
+                                                    _velscale, polyweights=model_par['ADDCOEF'][i],
+                                                    mpolyweights=model_par['MULTCOEF'][i],
+                                                    start=model_par['BEGPIX'][i],
+                                                    end=model_par['ENDPIX'][i],
+                                                    redshift_only=redshift_only,
+                                                    velscale_ratio=_velscale_ratio, dvtol=dvtol)
         return models
+
+
+#    @staticmethod
+#    def construct_models(binned_spectra, template_library, model_par, degree, mdegree, moments,
+#                         redshift_only=False, velscale_ratio=None, dvtol=1e-10):
+#        """
+#        Construct models using the provided set of model parameters and
+#        template library.  The number of template weights in the
+#        provided model parameters must match the number of template
+#        spectra.
+#
+#        If redshift_only is true, ignore the LOSVD and simply shift the
+#        model to the correct redshift.
+#
+#        CURRENTLY WILL NOT WORK WITH:
+#            - multiple kinematic components
+#            - point-symmetric fits
+#
+#        .. todo::
+#
+#            This doesn't appear to give exactly the correct
+#            reconstruction of the pPXF models.
+#
+#        """
+#        if not isinstance(binned_spectra, SpatiallyBinnedSpectra):
+#            raise TypeError('Must provide a SpatiallyBinnedSpectra object.')
+#        if not isinstance(template_library, TemplateLibrary):
+#            raise TypeError('Must provide a TemplateLibrary object.')
+#        if model_par['TPLWGT'].shape[1] != template_library.ntpl:
+#            raise ValueError('The number of weights does not match the number of templates.')
+#
+#        tpl_wave = template_library['WAVE'].data.copy()
+#        obj_wave = binned_spectra['WAVE'].data.copy()
+#
+#        templates = template_library['FLUX'].data.copy()
+#
+#        velscale = spectrum_velocity_scale(obj_wave)
+#        if not PPXFFit._obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=velscale_ratio,
+#                                           dvtol=dvtol):
+#            raise ValueError('Pixel scale of the object and template spectra must be identical.')
+#        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+#
+#        outRange = obj_wave[ [0,-1] ]
+#        outpix = binned_spectra.nwave
+#
+#        models = numpy.ma.zeros((binned_spectra.nbins, binned_spectra.nwave), dtype=numpy.float)
+#
+#        for i in range(binned_spectra.nbins):
+#            if i in binned_spectra.missing_bins:
+#                models[i,:] = numpy.ma.masked
+#                continue
+#            if model_par['MASK'][i] > 0:
+#                models[i,:] = numpy.ma.masked
+#                warnings.warn('Fit to spectrum {0} masked.'.format(i+1))
+#                continue
+#
+#            models[i,:] = PPXFFit.reconstruct_model(tpl_wave, templates, obj_wave,
+#                                                   model_par['KIN'][i,:], model_par['TPLWGT'][i],
+#                                                   velscale, polyweights=model_par['ADDCOEF'][i],
+#                                                   mpolyweights=model_par['MULTCOEF'][i],
+#                                                   start=model_par['BEGPIX'][i],
+#                                                   end=model_par['ENDPIX'][i],
+#                                                   redshift_only=redshift_only,
+#                                                   velscale_ratio=_velscale_ratio, dvtol=dvtol)
+#
+#        return models
 
 
 #    @staticmethod

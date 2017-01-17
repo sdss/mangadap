@@ -455,6 +455,30 @@ class Covariance:
             self.inv = None
 
 
+    def copy(self):
+        """
+        Return a copy of this Covariance object, not a reference to it,
+        by returning a new Covariance instance with the same data.  Only
+        sticking point is making sure to keep track of whether the
+        object was saved as a covariance matrix or as a correlation
+        matrix with a variance vector.
+        """
+        # If the data is saved as a correlation matrix, first revert to
+        # a covariance matrix
+        is_correlation=self.is_correlation
+        if self.is_correlation:
+            self.revert_correlation()
+
+        # Create the new Covariance instance with a copy of the data
+        cp = Covariance(inp=self.cov.copy(), input_indx=self.input_indx.copy())
+
+        # If necessary, convert the data to a correlation matrix
+        if is_correlation:
+            self.to_correlation()
+            cp.to_correlation()
+        return cp
+
+
     def show(self, plane=None, zoom=None, ofile=None):
         """
         Convert the (selected) covariance matrix to a filled array and

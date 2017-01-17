@@ -17,6 +17,20 @@ KBW (??         ): tag 2.1
       convolution_variable_sigma function in
       python/mangadap/util/instrument.py.  It's 2 orders of magnitude
       faster now!
+    - Include spectral resolution handling hooks into spatial binning
+      and stellar continuum fitting.  The code is compliant with data
+      that both does and does not have the 'DISP' extension in the DRP
+      cube file for backwards compatibility.
+    - "Database" parameter classes (e.g., EmissionLineDB) have been
+      moved from python/mangadap/par to python/mangadap/proc/.
+    - Incorporated spaxel-by-spaxel instrumental dispersion corrections.
+    - Significantly restructuring of most of the core classes to
+      minimize the size of the reference files and to use common
+      functions where possible (e.g., new DAPFitsUtil class).
+    - Added equivalent width measurements for the Gaussian fitted
+      fluxes; core function identical for the summed and Gaussian-fit
+      fluxes.
+    - Moved construction of main output files to dapfits.py
 
 TO FIX:
     - emission-line moment masks

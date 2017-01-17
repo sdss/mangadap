@@ -58,28 +58,29 @@ import numpy
 import astropy.constants
 
 from ..config.defaults import default_drp_version, default_dap_version
-from ..config.defaults import default_dap_method, default_dap_method_path
+from ..config.defaults import default_analysis_path, default_dap_method, default_dap_method_path
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..drpfits import DRPFits
+from ..par.obsinput import ObsInputPar
+from ..par.analysisplan import AnalysisPlanSet
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMoments
 from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
-from ..dapmaps import construct_maps_file
-from ..dapcube import construct_cube_file
-#from ..proc.templatelibrary import TemplateLibrary
+from ..dapfits import construct_maps_file, construct_cube_file
 
 from ..util.covariance import Covariance
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
-__email__ = 'kbwestfall@gmail.com'
-__copyright__ = '(c) 2016, SDSS-IV/MaNGA Pipeline Group'
-__license__ = 'BSD3'
-__version__ = '2.0.2'
-__status__ = 'Development'
+
+#__author__ = 'Kyle B. Westfall'
+#__email__ = 'kbwestfall@gmail.com'
+#__copyright__ = '(c) 2016, SDSS-IV/MaNGA Pipeline Group'
+#__license__ = 'BSD3'
+#__version__ = '2.0.2'
+#__status__ = 'Development'
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
               directory_path=None, dapver=None, dapsrc=None, analysis_path=None):
@@ -124,7 +125,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             The above is still in development.
 
     Args:
-        obs (:class:`mangadap.par.obsinput.ObsInputPar`): Object with
+        obs (dict, :class:`mangadap.par.obsinput.ObsInputPar`): Object with
             the input parameters.
         plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
             Object with the analysis plan to implement.
@@ -158,7 +159,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             Need to make this status flag meaningful
 
     """
+    # Check input
+    if not isinstance(obs, (ObsInputPar, dict)):
+        raise TypeError('obs must be of type dict or ObsInputPar')
+    if not isinstance(plan, AnalysisPlanSet):
+        raise TypeError('plan must be of type AnalysisPlanSet')
 
+    # Initialize the logging objects
     init_DAP_logging(log)#, simple_warnings=False)
 
     # Start log
@@ -166,7 +173,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '-'*50)
-    log_output(loggers, 1, logging.INFO, '   DAPVERS: {0}'.format(__version__))
+    import mangadap
+    log_output(loggers, 1, logging.INFO, '   DAPVERS: {0}'.format(mangadap.__version__))
     log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
     t = time.clock()
@@ -222,22 +230,25 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                            symlink_dir=plan_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
-        wave = binned_spectra['WAVE'].data
-        flux = binned_spectra.copy_to_masked_array(ext='FLUX')
-        sres = binned_spectra.copy_to_masked_array(ext='SPECRES')
-        print(flux.shape)
-        print(sres.shape)
-
-        for f in flux:
-            pyplot.step(wave, f, lw=0.5)
-        pyplot.show()
-
-        for s in sres:
-            pyplot.plot(wave, s, lw=0.5)
-        pyplot.plot(drpf['WAVE'].data, drpf['SPECRES'].data, lw=2)
-        pyplot.show()
-
-        exit()
+#        test_3d_hdu = binned_spectra.construct_3d_hdu()
+#        print(binned_spectra.nbins)
+#        print(test_3d_hdu['WAVE'].data.shape)
+#        print(test_3d_hdu['FLUX'].data.shape)
+#
+#        print('missing bins: {0}'.format(binned_spectra.missing_bins))
+#
+#        wave = binned_spectra['WAVE'].data
+#        flux = binned_spectra.copy_to_masked_array(ext='FLUX')
+#        sres = binned_spectra.copy_to_masked_array(ext='SPECRES')
+#
+#        for f in flux:
+#            pyplot.step(wave, f, lw=0.5)
+#        pyplot.show()
+#
+#        for s in sres:
+#           pyplot.plot(wave, s, lw=0.5)
+#        pyplot.plot(drpf['WAVE'].data, drpf['SPECRES'].data, lw=2)
+#        pyplot.show()
 
 #        print('Effective Radius: ', obs['reff'])
 
@@ -257,27 +268,54 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           tpl_symlink_dir=plan_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
+#        print(stellar_continuum['PAR'].data['KIN'][:,1])
+#        print(stellar_continuum['PAR'].data['SIGMACORR'])
+
+#        test_3d_hdu = stellar_continuum.construct_3d_hdu()
+#        print(stellar_continuum.nmodels)
+#        print(test_3d_hdu['WAVE'].data.shape)
+#        print(test_3d_hdu['FLUX'].data.shape)
+
+        #---------------------------------------------------------------
+        # Continuum and spectra for emission line fitting
+        #---------------------------------------------------------------
+        # Procedure:
+        # Set the continuum
+        # Get the moments
+        # | Construct a rdxqa-like object with the S, N, SNR based on
+        # |   some combintion of the emission-line moments
+        # | For each stellar-continuum bin with nspax>1, rebin spaxels
+        # |   based on emission-line S, N, SNR.
+        # | Reset the continuum for the new bins
+        # Fit the emission lines
+
+        #---------------------------------------------------------------
+        continuum = stellar_continuum.fill_to_match(binned_spectra)
+        redshift, dispersion = stellar_continuum.matched_guess_kinematics(binned_spectra,
+                                                                          redshift=nsa_redshift,
+                                                                          dispersion=100.0)
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
         emission_line_moments = None if plan['elmom_key'][i] is None else \
-                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra, redshift=nsa_redshift,
-                                        stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                        analysis_path=_analysis_path,
+                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra, redshift=redshift,
+                                        continuum=continuum,
+                                        continuum_method=stellar_continuum.method['key'],
+                                        dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
-#        emission_line_moments=None
 
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
+        # Force all dispersions to be 100 km/s to start (instead of the
+        # stellar velocity dipsersion)
+        dispersion[:] = 100.0
         emission_line_model = None if plan['elfit_key'][i] is None else \
-                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, guess_vel=obs['vel'],
-                                      stellar_continuum=stellar_continuum, dapsrc=dapsrc,
-                                      analysis_path=_analysis_path,
+                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, redshift=redshift,
+                                      dispersion=dispersion, continuum=continuum,
+                                      continuum_method=stellar_continuum.method['key'],
+                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                       clobber=plan['elfit_clobber'][i], loggers=loggers)
-
-#        emission_line_model=None
-        # Still need to add equivalent-width measurements
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements
@@ -288,7 +326,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
                                     analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
-#        spectral_indices=None
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)
@@ -338,4 +375,5 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     log_output(loggers, 1, logging.INFO, '-'*50)
 
     return status
+
 

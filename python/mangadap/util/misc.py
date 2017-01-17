@@ -46,6 +46,8 @@ if sys.version > '3':
     long = int
 
 import numpy
+#import time
+#from scipy import sparse
 
 __author__ = 'Kyle Westfall'
 
@@ -182,6 +184,98 @@ def high_pass_filter(flux, dw=0, k=None, Dw=None):
     res_out = (1.0+(res-numpy.median(res))/unres) * numpy.median(res) 
 
     return res_out, window, res, unres
+
+#def off_diagonal_identity(size, win):
+#    r"""
+#    Construct a matrix with ones within a window along the diagonal.
+#
+#    Args:
+#        size (int) : Size for the square matrix; i.e., :math:`N` for the
+#            :math:`N\timesN` matrix.
+#        win (int): Number of ones in each row along the diagonal.
+#
+#    Raises:
+#        ValueError: Raised if the window is larger than 2*size-1.
+#
+#    """
+#    if win > 2*size-1:
+#        raise ValueError('Window too large for matrix size.')
+#    if win == 2*size-1:
+#        return numpy.ones((size,size), dtype=int)
+#    x = numpy.zeros((size,size), dtype=int)#numpy.identity(size).astype(int)
+#    for i in range(1,(win+1)//2):
+#        x[:-i,i:] = x[:-i,i:] + numpy.identity(size-i).astype(int)
+#    x += x.T
+#    if win % 2 != 1:
+#        x[:-i-1,i+1:] = x[:-i-1,i+1:] + numpy.identity(size-i-1).astype(int)
+#    return x + numpy.identity(size).astype(int)
+
+def off_diagonal_identity(size, win):
+    r"""
+    Construct a matrix with ones within a window along the diagonal.
+
+    Args:
+        size (int) : Size for the square matrix; i.e., :math:`N` for the
+            :math:`N\timesN` matrix.
+        win (int): Number of ones in each row along the diagonal.
+
+    Raises:
+        ValueError: Raised if the window is larger than 2*size-1.
+
+    """
+    if win > 2*size-1:
+        raise ValueError('Window too large for matrix size.')
+    if win == 2*size-1:
+        return numpy.ones((size,size), dtype=int)
+
+    # Indices of diagonal
+    ii = numpy.arange(size).astype(int)
+
+    # Build the upper triangle
+    i = numpy.empty(0, dtype=int)
+    j = numpy.empty(0, dtype=int)
+    for k in range(1,(win+1)//2):
+        i = numpy.append(i, ii[:size-k])
+        j = numpy.append(j, ii[k:size])
+
+    # Copy to the lower triangle
+    _i = numpy.append(i,j)
+    j = numpy.append(j,i)
+
+    # Add the diagonal
+    i = numpy.append(_i, ii)
+    j = numpy.append(j, ii)
+
+    # Accommodate an even window
+    if win % 2 != 1:
+        i = numpy.append(i, ii[:size-k-1])
+        j = numpy.append(j, ii[k+1:size])
+
+    # Construct and return the array
+    a = numpy.zeros((size,size), dtype=int)
+    a[i,j] = 1
+    return a
+
+#    t = time.clock()
+#    a = sparse.coo_matrix( (numpy.ones(i.size,dtype=int),(i,j)), shape=(size,size)).toarray()
+#    print('sparse: {0} microsec'.format((time.clock() - t)/1e-6))
+#
+#    t = time.clock()
+#    a = numpy.zeros((size,size), dtype=int)
+#    a[i,j] = 1
+#    print('direct: {0} microsec'.format((time.clock() - t)/1e-6))
+#    
+#    return sparse.coo_matrix( (numpy.ones(i.size,dtype=int),(i,j)), shape=(size,size)).toarray()
+    
+#    x = numpy.zeros((size,size), dtype=int)#numpy.identity(size).astype(int)
+#    for i in range(1,(win+1)//2):
+#        x[:-i,i:] = x[:-i,i:] + numpy.identity(size-i).astype(int)
+#    x += x.T
+#    if win % 2 != 1:
+#        x[:-i-1,i+1:] = x[:-i-1,i+1:] + numpy.identity(size-i-1).astype(int)
+#    return x + numpy.identity(size).astype(int)
+
+
 
 
 
