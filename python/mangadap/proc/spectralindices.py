@@ -683,9 +683,9 @@ class SpectralIndices:
             hdr['ELFKEY'] = (self.emission_line_model.method['key'],
                                 'Emission-line modeling method keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-        if len(self.missing_bins) > 0:
-            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
-        hdr['SICORR'] = (self.correct_indices, 'Indices corrected for velocity dispersion')
+#        if len(self.missing_bins) > 0:
+#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
+#        hdr['SICORR'] = (self.correct_indices, 'Indices corrected for velocity dispersion')
         # Anything else?
         # Additional database details?
         return hdr
@@ -1561,6 +1561,21 @@ class SpectralIndices:
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                                measurements['BINID'])
 
+        # Get the spatial map mask
+        map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
+        # Add any spaxel not used because it was flagged by the binning
+        # step
+        indx = self.binned_spectra['MAPMASK'].data > 0
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+        # Isolate any spaxels with foreground stars
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+        # Get the bins that were blow the S/N limit
+        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                                        self.binned_spectra['BINID'].data.ravel(),
+                                                        good_snr, dtype='bool')) & (map_mask == 0)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
         # Compile the information on the suite of measured indices
         passband_database = self._compile_database()
 
@@ -1568,6 +1583,7 @@ class SpectralIndices:
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                     format=rec_to_fits_type(passband_database[n]),
                             array=passband_database[n]) for n in passband_database.dtype.names ],

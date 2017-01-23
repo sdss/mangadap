@@ -591,6 +591,18 @@ class construct_maps_file:
         confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum,
                           emission_line_moments, emission_line_model, spectral_indices)
 
+#        print('inside construct')
+#        bin_indx = stellar_continuum['BINID'].data.copy().ravel()
+#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
+#                                                  stellar_continuum['PAR'].data['KIN'][:,0]),
+#                      origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
+#                                                  stellar_continuum['PAR'].data['KIN'][:,1]),
+#                      origin='lower', interpolation='nearest')
+#        pyplot.show()
+
         #---------------------------------------------------------------
         # Set the output paths
         self.drpf = drpf
@@ -648,23 +660,9 @@ class construct_maps_file:
         # Initialize the pixel mask
         self.bitmask = DAPMapsBitMask(dapsrc=dapsrc)
 
-        # Consolidated DRP cube mask
-        drpf_flags = [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR', 'DONOTUSE' ]
-        self.drpf_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data, drpf_flags,
-                                                      self.drpf.bitmask, self.bitmask)
-        self.drpf_mask = self._consolidate_donotuse(self.drpf_mask)
+        # Get the mask for the binned spectra
+        self.bin_mask = self._build_binning_mask(binned_spectra)
 
-        # Consolidated binned spectra mask
-        bin_flags = [ 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK' ]
-        self.bin_mask = DAPFitsUtil.reconstruct_cube(self.drpf.shape,
-                                                     binned_spectra['BINID'].data.copy().ravel(),
-                                                     binned_spectra['MASK'].data)
-        self.bin_mask = DAPFitsUtil.marginalize_mask(self.bin_mask, bin_flags,
-                                                     binned_spectra.bitmask, self.bitmask,
-                                                     out_mask=self.drpf_mask.copy(),
-                                                     out_flag='NOVALUE', dispaxis=1)
-        self.bin_mask = self._consolidate_donotuse(self.bin_mask)
-        
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
         # Reduction assessments:
@@ -697,20 +695,27 @@ class construct_maps_file:
                                   *sindxlist
                                 ])
 
+#        print('maps')
+#        pyplot.imshow(self.hdu['STELLAR_VEL'].data, origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(self.hdu['STELLAR_SIGMA'].data, origin='lower', interpolation='nearest')
+#        pyplot.show()
+
         #---------------------------------------------------------------
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
         # is not within a factor of two.
         if emission_line_moments is not None and emission_line_model is not None:
             factor = 5.0
-            indx = (emission_line_moments['BINID'].data > -1) \
-                    & (emission_line_model['BINID'].data > -1) \
-                    & (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+            indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
                     & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
                     & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
-                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) )
+                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) ) \
+                    & ( (emission_line_moments['BINID'].data > -1)
+                        & (emission_line_model['BINID'].data > -1) )[:,:,None]
             print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
-            if numpy.sum(indx):
+            if numpy.sum(indx) > 0:
                 self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
                     = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
                 self.hdu['EMLINE_GVEL_MASK'].data[indx] \
@@ -796,9 +801,11 @@ class construct_maps_file:
                                   spectral_indices):
     
         self.singlechannel_arrays = [ 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR', 'BIN_AREA',
-                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_SNR',
-                                      'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR', 'STELLAR_SIGMA_MASK',
-                                      'STELLAR_SIGMACORR', 'STELLAR_CONT_RCHI2' ]
+                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
+                                      'BIN_SNR', 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
+                                      'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
+                                      'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
+                                      'STELLAR_CONT_RCHI2' ]
         if emission_line_moments.nmom == 1:
             self.singlechannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
                                            'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
@@ -813,14 +820,46 @@ class construct_maps_file:
                                            'SPECINDEX_CORR' ]
 
 
-
     def _consolidate_donotuse(self, mask):
-        return self.bitmask.consolidate(mask, [ 'LOWCOV', 'FORESTAR', 'NOVALUE', 'FITFAILED',
-                                                'NEARBOUND', 'MATHERROR' ], 'DONOTUSE')
+        return self.bitmask.consolidate(mask, [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
+                                                'NOVALUE', 'MATHERROR', 'FITFAILED', 'NEARBOUND' ],
+                                        'DONOTUSE')
+
+
+    def _build_binning_mask(self, binned_spectra):
+
+        # Marginalize the DRP mask across wavelengths
+        mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data,
+                                            [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
+                                              'DONOTUSE' ], self.drpf.bitmask, self.bitmask)
+
+        # Add any bits not included in the binning algorithm
+        indx = binned_spectra.bitmask.flagged(binned_spectra['MAPMASK'].data,
+                                              flag=['LOW_SPECCOV', 'LOW_SNR'])
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Marginalize the binned spectra mask just for NONE_IN_STACK and
+        # convert it to NOVALUE
+        bin_mask = DAPFitsUtil.marginalize_mask(binned_spectra['MASK'].data, 'NONE_IN_STACK',
+                                                binned_spectra.bitmask, self.bitmask,
+                                                out_flag='NOVALUE', dispaxis=1)
+        # Reconstruct the full mask with just this flag
+        bin_mask = DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                               binned_spectra['BINID'].data.ravel(), bin_mask)
+        # Add these bits to the full mask
+        indx = self.bitmask.flagged(bin_mask, 'NOVALUE')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+        
+        # Return the mask after consolidating flags into DONOTUSE
+        return self._consolidate_donotuse(mask)
 
 
     def _stellar_continuum_mask_to_map_mask(self, stellar_continuum, sc_mask, for_dispersion=False):
         """
+
+        sc_mask constains the reconstructed map of the masks in each
+        stellar continuum fit (using the stellar continuum bitmask).
+
         Propagate and consolidate the stellar-continuum masks to the map
         pixel mask.
 
@@ -837,6 +876,11 @@ class construct_maps_file:
 
         # Copy the binning mask
         mask = self.bin_mask.copy()
+
+        # Use the stellar continuum map mask to flag low S/N
+        # bins/spaxels as NOVALUE
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum['MAPMASK'].data, flag='LOW_SNR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
 
         # Consolidate to NOVALUE
         flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
@@ -886,7 +930,16 @@ class construct_maps_file:
         """
 
         # Copy the binning mask
-        mask = numpy.array([self.bin_mask.copy()]*emission_line_moments.nmom) #.transpose(1,2,0)
+        mask = self.bin_mask.copy()
+
+        # Use the emission-line moments map mask to flag low S/N
+        # bins/spaxels as NOVALUE
+        indx = emission_line_moments.bitmask.flagged(emission_line_moments['MAPMASK'].data,
+                                                     flag='LOW_SNR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Reshape the mask to include all emission lines
+        mask = numpy.array([mask]*emission_line_moments.nmom).transpose(1,2,0)
 
         # Consolidate to NOVALUE
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
@@ -925,7 +978,16 @@ class construct_maps_file:
         """
 
         # Copy the common mask
-        mask = numpy.array([self.bin_mask.copy()]*emission_line_model.neml) #.transpose(1,2,0)
+        mask = self.bin_mask.copy()
+
+        # Use the emission-line model map mask to flag low S/N
+        # bins/spaxels as NOVALUE
+        indx = emission_line_model.bitmask.flagged(emission_line_model['MAPMASK'].data,
+                                                   flag='LOW_SNR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Reshape the mask to include all emission lines
+        mask = numpy.array([mask]*emission_line_model.neml).transpose(1,2,0)
 
         # Consolidate to NOVALUE
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['INSUFFICIENT_DATA'])
@@ -963,8 +1025,16 @@ class construct_maps_file:
         Need to further assess *_INCOMP to see if these lead to bad values (BADVALUE).
         """
 
-        # Copy the binning mask
-        mask = numpy.array([self.bin_mask.copy()]*spectral_indices.nindx) #.transpose(1,2,0)
+        # Copy the common mask
+        mask = self.bin_mask.copy()
+
+        # Use the spectral index map mask to flag low S/N bins/spaxels
+        # as NOVALUE
+        indx = spectral_indices.bitmask.flagged(spectral_indices['MAPMASK'].data, flag='LOW_SNR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Reshape the mask to include all the spectral indices
+        mask = numpy.array([mask]*spectral_indices.nindx).transpose(1,2,0)
 
         # Consolidate to NOVALUE
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
@@ -1027,9 +1097,7 @@ class construct_maps_file:
         spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape, -1)
         # Elliptical coordinates
         spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
-        print(spx_ellcoo.shape)
         spx_ellcoo = numpy.repeat(spx_ellcoo, [2,1], axis=2)
-        print(spx_ellcoo.shape)
         if obs is not None:
             spx_ellcoo[:,:,1] /= obs['reff']
         # Bin signal
@@ -1125,8 +1193,8 @@ class construct_maps_file:
             arr[3] /= obs['reff']
 
         # Organize the extension data
-        data = [ numpy.array(arr[0:2]), numpy.array(arr[2:5]) ] + arr[5:-1] \
-                    + [ self.bin_mask.copy(), arr[-1] ]
+        data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:5]).transpose(1,2,0) ] \
+                    + arr[5:-1] + [ self.bin_mask.copy(), arr[-1] ]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1188,7 +1256,7 @@ class construct_maps_file:
                                                     stellar_continuum['PAR'].data['KINERR'][:,0],
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
-                numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1].copy(), -2).filled(0.0),
+                numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
                 stellar_continuum['PAR'].data['SIGMACORR'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
                 stellar_continuum['PAR'].data['FABSRESID'][:,3],
@@ -1198,6 +1266,16 @@ class construct_maps_file:
 
         # Bin index
         bin_indx = stellar_continuum['BINID'].data.copy().ravel()
+##        pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower', interpolation='nearest')
+##        pyplot.show()
+#
+#        pyplot.imshow(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, stellar_continuum['PAR'].data['KIN'][:,0]), origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        print(stellar_continuum['PAR'].data['KIN'][:,0])
+#
+#        print('nbin: {0}'.format(numpy.sum(bin_indx > -1)))    
+#        exit()
 
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
@@ -1209,7 +1287,13 @@ class construct_maps_file:
 
         # Organize the extension data
         data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-                    + [ arr[4], numpy.array(arr[5:7]), arr[7] ]
+                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
+#        for i,d in enumerate(data):
+#            if len(d.shape) == 2:
+#                print(i+1)
+#                pyplot.imshow(d, origin='lower', interpolation='nearest')
+#                pyplot.show()
+#        exit()
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1284,7 +1368,8 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
 
-        data = [ numpy.array(arr[emission_line_moments.nmom*i:emission_line_moments.nmom*(i+1)]) \
+        data = [ numpy.array(arr[emission_line_moments.nmom*i:
+                                 emission_line_moments.nmom*(i+1)]).transpose(1,2,0) 
                         for i in range(5) ]
         
         # Get the mask
@@ -1404,7 +1489,8 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
 
-        data = [ numpy.array(arr[emission_line_model.neml*i:emission_line_model.neml*(i+1)]) \
+        data = [ numpy.array(arr[emission_line_model.neml*i:
+                                 emission_line_model.neml*(i+1)]).transpose(1,2,0) \
                         for i in range(narr) ]
 
         # Get the masks
@@ -1482,7 +1568,8 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
 
-        data = [ numpy.array(arr[spectral_indices.nindx*i:spectral_indices.nindx*(i+1)]) \
+        data = [ numpy.array(arr[spectral_indices.nindx*i:
+                                 spectral_indices.nindx*(i+1)]).transpose(1,2,0) \
                         for i in range(4) ]
         
         # Get the mask

@@ -756,7 +756,7 @@ class StellarContinuumModel:
                                 + self.binned_spectra.missing_bins) 
 
 
-    def _construct_2d_hdu(self, model_flux, model_mask, model_par):
+    def _construct_2d_hdu(self, good_snr, model_flux, model_mask, model_par):
         """
         Construct :attr:`hdu` that is held in memory for manipulation of
         the object.  See :func:`construct_3d_hdu` if you want to convert
@@ -770,6 +770,21 @@ class StellarContinuumModel:
         pri_hdr = self._add_method_header(pri_hdr)
         map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
                                                'K Westfall <westfall@ucolick.org>')
+
+        # Get the spatial map mask
+        map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
+        # Add any spaxel not used because it was flagged by the binning
+        # step
+        indx = self.binned_spectra['MAPMASK'].data > 0
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+        # Isolate any spaxels with foreground stars
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+        # Get the bins that were blow the S/N limit
+        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                                        self.binned_spectra['BINID'].data.ravel(),
+                                                        good_snr, dtype='bool')) & (map_mask == 0)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Get the bin ids with fitted models
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
@@ -790,6 +805,7 @@ class StellarContinuumModel:
                                   self.binned_spectra['WAVE'].copy(),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                              format=rec_to_fits_type(model_par[n]),
                                             array=model_par[n]) for n in model_par.dtype.names ],
@@ -986,7 +1002,7 @@ class StellarContinuumModel:
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(model_flux, model_mask, model_par)
+        self._construct_2d_hdu(good_snr, model_flux, model_mask, model_par)
 
         #---------------------------------------------------------------
         # Write the data, if requested
@@ -1005,7 +1021,7 @@ class StellarContinuumModel:
         """
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing datacube ...')
+            log_output(self.loggers, 1, logging.INFO, 'Constructing stellar continuum datacube ...')
 
         bin_indx = self.hdu['BINID'].data.copy().ravel()
         model_flux = self.hdu['FLUX'].data.copy()
@@ -1287,11 +1303,11 @@ class StellarContinuumModel:
         redshift and dispersion should be single numbers or None
 
         """
-        mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
+        mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
                                     ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
-        str_z = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,0], mask=mask) \
+        str_z = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,0].copy(), mask=mask) \
                     / astropy.constants.c.to('km/s').value
-        str_d = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,1], mask=mask)
+        str_d = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,1].copy(), mask=mask)
 
         _redshift = numpy.ma.median(str_z) if redshift is None else redshift
         _dispersion = numpy.ma.median(str_d) if dispersion is None else dispersion

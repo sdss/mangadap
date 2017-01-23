@@ -738,8 +738,8 @@ class SpatiallyBinnedSpectra:
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['FSPCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-        if len(self.missing_bins) > 0:
-            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
+#        if len(self.missing_bins) > 0:
+#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
         return hdr
 
 
@@ -902,6 +902,11 @@ class SpatiallyBinnedSpectra:
                ]
 
 
+    @staticmethod
+    def _get_missing_bins(unique_bins):
+        return list(set(numpy.arange(numpy.amax(unique_bins)+1)) - set(unique_bins))
+
+
     def _unbinned_data_table(self, bin_indx):
         """
         Construct the output data table for the unbinned spectra.
@@ -980,7 +985,7 @@ class SpatiallyBinnedSpectra:
         # - Missing bins are only identified as those without indices in
         #   the range of provided bin numbers.
         self.nbins = len(unique_bins)
-        self.missing_bins = list(set(numpy.arange(numpy.amax(unique_bins)+1)) - set(unique_bins))
+        self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
         # Intialize the data for the binned spectra
         bin_data = init_record_array(self.nbins, self._per_bin_dtype())
@@ -1072,15 +1077,6 @@ class SpatiallyBinnedSpectra:
         return bin_data
 
    
-#    def _get_reddening_corr(self):
-#        if self.method['galactic_reddening'] is None:
-#            return prihdr, red_hdr, numpy.ones(self.drpf['WAVE'].data.shape)
-#
-#        return reddening_vector(self.drpf['WAVE'].data, self.drpf['PRIMARY'].header['EBVGAL'],
-#                                form=self.method['galactic_reddening'],
-#                                rv=self.method['galactic_rv']).data
-
-
     def _apply_reddening(self, flux, ivar, sdev, covar, deredden=True):
         if self.galext.form is None:
             return flux, ivar, sdev, covar
@@ -1123,6 +1119,22 @@ class SpatiallyBinnedSpectra:
         red_hdr = self._add_reddening_header(red_hdr)
         map_hdr = DAPFitsUtil.build_map_header(self.drpf, 'K Westfall <westfall@ucolick.org>')
 
+        # Get the spatial map mask
+        # Marginalize the DRP spectra over wavelength
+        map_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data,
+                                                [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
+                                                  'DONOTUSE' ], self.drpf.bitmask, self.bitmask,
+                                                out_flag='DIDNOTUSE')
+        map_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data, ['FORESTAR'],
+                                                self.drpf.bitmask, self.bitmask, out_mask=map_mask)
+        drp_bad = (map_mask > 0)
+        # Add the spectra with low spectral coverage
+        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & ~drp_bad
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
+        # Add the spectra with low S/N
+        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & ~drp_bad
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=stack_flux.data, name='FLUX'),
@@ -1136,6 +1148,7 @@ class SpatiallyBinnedSpectra:
                                   fits.ImageHDU(data=stack_npix.data, name='NPIX'),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                              format=rec_to_fits_type(bin_data[n]),
                                                 array=bin_data[n]) for n in bin_data.dtype.names ],
@@ -1185,10 +1198,10 @@ class SpatiallyBinnedSpectra:
         """
         Flag bins above a provided S/N limit.
         """
-        warnings.warn('You\'re setting all but two spectra as bad!')
-        test = self.hdu['BINS'].data['SNR'] > sn_limit
-        test[:-2] = False
-        return test
+#        warnings.warn('You\'re setting all but two spectra as bad!')
+#        test = self.hdu['BINS'].data['SNR'] > sn_limit
+#        test[:-2] = False
+#        return test
         return self.hdu['BINS'].data['SNR'] > sn_limit
 
 
@@ -1369,15 +1382,21 @@ class SpatiallyBinnedSpectra:
             i = numpy.asarray(tuple(drpf.spatial_index[good_spec]))
             bin_indx[i[:,0],i[:,1]] = numpy.arange(numpy.sum(good_spec))
 
+#            pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower',
+#                          interpolation='nearest')
+#            pyplot.show()
+
             # Build the data arrays directly from the DRP file
-            flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
+            flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())[good_spec,:]
+
             sdev = numpy.ma.zeros(flux.shape, dtype=float)
-            ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
+            ivar = drpf.copy_to_masked_array(ext='IVAR',
+                                             flag=drpf.do_not_stack_flags())[good_spec,:]
             npix = numpy.ones(flux.shape, dtype=numpy.int)
             npix[numpy.ma.getmaskarray(flux)] = 0
-            mask = drpf.copy_to_array(ext='MASK')
+            mask = drpf.copy_to_array(ext='MASK')[good_spec,:]
             sres = self.drpf.spectral_resolution(ext='DISP' if self.method['spec_res'] == 'spaxel'
-                                                            else 'SPECRES', toarray=True)
+                                                        else 'SPECRES', toarray=True)[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack
@@ -1401,6 +1420,9 @@ class SpatiallyBinnedSpectra:
                         warnings.warn('Could not build covariance data:: '
                                       'AttributeError: {0}'.format(e))
                     covar = None
+
+                if isinstance(covar, Covariance):
+                    covar = DAPFitsUtil.spaxel_to_bin_covariance(covar, bin_indx.ravel())
 
             # Deredden the spectra if the method requests it
             flux, ivar, _, covar = self._apply_reddening(flux, ivar, None, covar)
@@ -1467,11 +1489,11 @@ class SpatiallyBinnedSpectra:
         if numpy.sum(bin_indx > -1) == 0:
             raise ValueError('No spectra in ANY bin!')
 
-        # Done for testing missing bins
-        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
-        time.sleep(3)
-        warnings.warn('Proceeding...')
-        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
+#        # Done for testing missing bins
+#        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
+#        time.sleep(3)
+#        warnings.warn('Proceeding...')
+#        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
         #---------------------------------------------------------------
         # Stack the spectra in each bin
@@ -1542,7 +1564,7 @@ class SpatiallyBinnedSpectra:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing datacube ...')
+            log_output(self.loggers, 1, logging.INFO, 'Constructing binned spectra datacube ...')
 
         # Get/Copy the necessary data arrays
         bin_indx = self.hdu['BINID'].data.copy().ravel()
@@ -1731,12 +1753,13 @@ class SpatiallyBinnedSpectra:
             self.method['stackpar'].fromheader(self.hdu['PRIMARY'].header)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
-        try:
-            self.missing_bins = eval(self.hdu['PRIMARY'].header['EMPTYBIN'])
-        except KeyError:
-            # Assume if this fails, it's because the keyword doesn't
-            # exist
-            self.missing_bins = []
+        self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(self.hdu['BINS'].data['BINID'])
+#        try:
+#            self.missing_bins = eval(self.hdu['PRIMARY'].header['EMPTYBIN'])
+#        except KeyError:
+#            # Assume if this fails, it's because the keyword doesn't
+#            # exist
+#            self.missing_bins = []
 
         # Galactic extinction data already set by bin_spectra
 
@@ -1815,83 +1838,4 @@ class SpatiallyBinnedSpectra:
                                        missing_bins=self.missing_bins if include_missing else None,
                                               nbins=self.nbins,
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
-
-
-#    def continuum_subtracted_spectra(self, continuum):
-#        """Subtract a provided continuum from the data."""
-#
-#        # Get a masked array with the binned flux
-#        flux = self.copy_to_masked_array(flag=self.do_not_fit_flags())
-#
-#        # Check the input continuum data
-#        if continuum is None or continuum.shape != flux.shape:
-#            raise ValueError('Provided continuum array does not have the correct shape.')
-#        _continuum = continuum if isinstance(continuum, numpy.ma.MaskedArray) \
-#                                else numpy.ma.MaskedArray(continuum)
-#
-#        return SpatiallyBinnedSpectra.subtract_continuum(flux, _continuum)
-#
-#
-#    @staticmethod
-#    def subtract_continuum(flux, continuum):
-#        """
-#        Subtract the continuum.  Does not check that shapes match.
-#        Returns the continuum subtracted flux and a boolean array
-#        setting where the continuum is not defined.
-#        """
-#        # Get where the continuum is masked but the spectra are not
-#        no_continuum = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(continuum)
-#
-#        # Subtract the continuum (ensure output is a masked array)
-#        continuum_subtracted_flux = numpy.ma.subtract(flux, continuum)
-#
-#        # Unmask regions where only the continuum is masked.
-#        continuum_subtracted_flux.mask[no_continuum] = False
-#
-#        return continuum_subtracted_flux, no_continuum
-#
-#
-#    def spectra_for_emission_line_measurements(self, pixelmask=None, continuum=None,
-#                                               snr_limit=None):
-#        """
-#        Compile the set of spectra for the emission-line moment
-#        measurements.  If a stellar continuum model is provided, this
-#        function will also provide the model-subtracted flux and a
-#        boolean array flagged with regions where the model was not
-#        subtracted from the data.
-#
-#        """
-#        # Get the data arrays
-#        flux = self.copy_to_masked_array(flag=self.do_not_fit_flags())
-#        ivar = self.copy_to_masked_array(ext='IVAR', flag=self.do_not_fit_flags())
-#
-#        # Mask any pixels in the pixel mask
-#        if pixelmask is not None:
-#            indx = pixelmask.boolean(self.hdu['WAVE'].data, nspec=self.nbins)
-#            flux[indx] = numpy.ma.masked
-#            ivar[indx] = numpy.ma.masked
-#
-#        # Select the spectra to return
-#        good_snr = numpy.ones(flux.shape[0], dtype=bool) if snr_limit is None \
-#                        else self.above_snr_limit(snr_limit)
-#
-#        # If no continuum, just return the selected spectra (kind of
-#        # misses the point of the function...
-#        if continuum is None:
-#            return flux[good_snr,:], ivar[good_snr,:], None, None
-#
-#        # Get and return the selected continuum-subtracted spectra
-#        continuum_subtracted_flux, no_continuum = self.continuum_subtracted_spectra(self.continuum)
-#        return flux[good_snr,:], ivar[good_snr,:], continuum_subtracted_flux[good_snr,:], \
-#                    no_continuum[good_snr,:]
-#
-##        for i in range(flux.shape[0]):
-##            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=2)
-##            pyplot.plot(wave, model[i,:], linestyle='-', color='r', lw=1.5, zorder=1, alpha=0.5)
-##            pyplot.step(wave, model_subtracted_flux[i,:], where='mid', linestyle='-', color='g',
-##                        lw=0.5, zorder=3)
-##            pyplot.show()
-
-
-
 

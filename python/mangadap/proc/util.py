@@ -265,6 +265,13 @@ def optimal_scale(dat, mod, wgt=None):
     if _mod.shape != _dat.shape or (_wgt is not None and _wgt.shape != _dat.shape):
         raise ValueError('Shapes of all input arrays must match.')
 
+#    print(len(_dat))
+#    print(len(_mod))
+#    print(len(_wgt))
+#    pyplot.scatter(_dat, _mod, marker='.', color='k', lw=0)
+#    pyplot.scatter(_dat, _wgt, marker='.', color='r', lw=0)
+#    pyplot.show()
+
     dp = _dat*_wgt
     norm_mp = numpy.sum(numpy.square(_wgt*_mod))
     if norm_mp == 0:

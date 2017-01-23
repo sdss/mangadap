@@ -1620,33 +1620,6 @@ class Elric(EmissionLineFit):
         # spectra
         return model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 
-#        _model_flux = numpy.zeros(flux.shape, dtype=numpy.float)
-#        _model_flux[good_spec,:] = model_flux
-#
-#        _model_base = numpy.zeros(flux.shape, dtype=numpy.float)
-#        _model_base[good_spec,:] = model_base
-#
-#        _model_mask = numpy.zeros(flux.shape, dtype=self.bitmask.minimum_dtype())
-#
-#        _model_mask[numpy.ma.getmaskarray(flux)] \
-#                = self.bitmask.turn_on(_model_mask[numpy.ma.getmaskarray(flux)], 'DIDNOTUSE')
-#        bad_snr = (binned_spectra['BINS'].data['SNR'] < par['minimum_snr']) \
-#                        & ~(numpy.array([ b in binned_spectra.missing_bins \
-#                                                for b in numpy.arange(binned_spectra.nbins)]))
-#        _model_mask[bad_snr,:] = self.bitmask.turn_on(_model_mask[bad_snr,:], 'LOW_SNR')
-#
-#        _model_mask[good_spec,:] = model_mask
-#
-#        _model_fit_par = init_record_array(flux.shape[0], model_fit_par.dtype)
-#        _model_fit_par[good_spec] = model_fit_par
-#        _model_fit_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
-#
-#        _model_eml_par = init_record_array(flux.shape[0], model_eml_par.dtype)
-#        _model_eml_par[good_spec] = model_eml_par
-#        _model_eml_par['BIN_INDEX'] = numpy.arange(flux.shape[0])
-#
-#        return model_wave, _model_flux, _model_base, _model_mask, _model_fit_par, _model_eml_par
-
 
     def fit(self, wave, flux, emission_lines, ivar=None, mask=None, sres=None,
             continuum=None, base_order=-1, window_buffer=25, guess_redshift=None,
@@ -1733,6 +1706,7 @@ class Elric(EmissionLineFit):
         velocity = self._velocity_vectors(self.wave, self.fitting_window)
         self.bestfit = numpy.empty((self.nspec,self.nwindows), dtype=object)
         for i in range(self.nspec):
+#        for i in range(5):
 
 #            for j in range(self.nwindows):
 #                print('Window: {0}/{1}'.format(j+1, self.nwindows))

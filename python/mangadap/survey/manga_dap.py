@@ -60,6 +60,7 @@ import astropy.constants
 from ..config.defaults import default_drp_version, default_dap_version
 from ..config.defaults import default_analysis_path, default_dap_method, default_dap_method_path
 from ..util.log import init_DAP_logging, module_logging, log_output
+from ..util.fitsutil import DAPFitsUtil
 from ..drpfits import DRPFits
 from ..par.obsinput import ObsInputPar
 from ..par.analysisplan import AnalysisPlanSet
@@ -72,15 +73,8 @@ from ..proc.spectralindices import SpectralIndices
 from ..dapfits import construct_maps_file, construct_cube_file
 
 from ..util.covariance import Covariance
+
 from matplotlib import pyplot
-
-
-#__author__ = 'Kyle B. Westfall'
-#__email__ = 'kbwestfall@gmail.com'
-#__copyright__ = '(c) 2016, SDSS-IV/MaNGA Pipeline Group'
-#__license__ = 'BSD3'
-#__version__ = '2.0.2'
-#__status__ = 'Development'
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
               directory_path=None, dapver=None, dapsrc=None, analysis_path=None):
@@ -268,6 +262,29 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           tpl_symlink_dir=plan_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
+
+#        print('after fit')
+#        bin_indx = stellar_continuum['BINID'].data.copy().ravel()
+###        pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower', interpolation='nearest')
+###        pyplot.show()
+##
+##
+#        vel = DAPFitsUtil.redshift_to_Newtonian_velocity(
+#                                    stellar_continuum['PAR'].data['KIN'][:,0], nsa_redshift)
+#
+#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
+#                                                  stellar_continuum['PAR'].data['KIN'][:,0]),
+#                      origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
+#                                                  stellar_continuum['PAR'].data['KIN'][:,1]),
+#                      origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        print('nbin: {0}'.format(numpy.sum(bin_indx > -1)))    
+
+
 #        print(stellar_continuum['PAR'].data['KIN'][:,1])
 #        print(stellar_continuum['PAR'].data['SIGMACORR'])
 
@@ -294,6 +311,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         redshift, dispersion = stellar_continuum.matched_guess_kinematics(binned_spectra,
                                                                           redshift=nsa_redshift,
                                                                           dispersion=100.0)
+
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
@@ -337,6 +355,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
                             loggers=loggers)
+
         construct_cube_file(drpf, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model,

@@ -464,8 +464,8 @@ class EmissionLineModel:
         if self.continuum_method is not None:
             hdr['SCKEY'] = (self.continuum_method, 'Stellar-continuum model keyword')
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
-        if len(self.missing_models) > 0:
-            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
+#        if len(self.missing_models) > 0:
+#            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
         # Anything else?
         # Additional database details?
         return hdr
@@ -601,19 +601,6 @@ class EmissionLineModel:
         return mask
 
     
-    def _check_snr(self):
-        # binned_spectra['BINS'].data['SNR'] has length
-        # binned_spectra.nbins
-        return self.binned_spectra['BINS'].data['SNR'] > self.method['minimum_snr']
-
-
-    def _bins_to_fit(self):
-        """Return flags for the bins to fit."""
-        return (self._check_snr()) \
-                    & ~(numpy.array([ b in self.binned_spectra.missing_bins \
-                                        for b in numpy.arange(self.binned_spectra.nbins)]))
-
-
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'BASE', 'MASK' ]
 
@@ -632,11 +619,8 @@ class EmissionLineModel:
                                 + self.binned_spectra.missing_bins) 
 
 
-#    def _missing_flags(self):
-#        return numpy.array([ b in self.missing_models for b in numpy.arange(self.nmodels)])
-
-
-    def _construct_2d_hdu(self, model_flux, model_base, model_mask, model_fit_par, model_eml_par):
+    def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_fit_par,
+                          model_eml_par):
         """
         Construct :attr:`hdu` that is held in memory for manipulation of
         the object.  See :func:`construct_3d_hdu` if you want to convert
@@ -650,6 +634,21 @@ class EmissionLineModel:
         pri_hdr = self._add_method_header(pri_hdr)
         map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
                                                'K Westfall <westfall@ucolick.org>')
+
+        # Get the spatial map mask
+        map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
+        # Add any spaxel not used because it was flagged by the binning
+        # step
+        indx = self.binned_spectra['MAPMASK'].data > 0
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+        # Isolate any spaxels with foreground stars
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+        # Get the bins that were blow the S/N limit
+        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                                        self.binned_spectra['BINID'].data.ravel(),
+                                                        good_snr, dtype='bool')) & (map_mask == 0)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Get the bin ids with fitted models
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
@@ -666,6 +665,7 @@ class EmissionLineModel:
                                   self.binned_spectra['WAVE'].copy(),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                         format=rec_to_fits_type(line_database[n]),
                                         array=line_database[n]) for n in line_database.dtype.names],
@@ -822,7 +822,8 @@ class EmissionLineModel:
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(model_flux, model_base, model_mask, model_fit_par, model_eml_par)
+        self._construct_2d_hdu(good_snr, model_flux, model_base, model_mask, model_fit_par,
+                               model_eml_par)
 
         #---------------------------------------------------------------
         # Write the data, if requested
@@ -841,7 +842,8 @@ class EmissionLineModel:
         """
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing datacube ...')
+            log_output(self.loggers, 1, logging.INFO,
+                       'Constructing emission-line model datacube ...')
 
         bin_indx = self.hdu['BINID'].data.copy().ravel()
         model_flux = self.hdu['FLUX'].data.copy()

@@ -825,7 +825,7 @@ class DAPFitsUtil:
             mask |= bitmask.flagged(hdu[_mask_ext].data.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
-        a = numpy.ma.MaskedArray(hdu[_ext].data.reshape(nspec,-1).copy(), mask=mask)
+        a = numpy.ma.MaskedArray(hdu[_ext].data.copy().reshape(nspec,-1), mask=mask)
 
         # Apply any bin selection
         if select_bins is not None:
@@ -858,12 +858,12 @@ class DAPFitsUtil:
     
     @staticmethod
     def marginalize_mask(mask, inp_flags, inp_bitmask, out_bitmask, out_mask=None,
-                              out_flag=None, dispaxis=2):
+                         out_flag=None, dispaxis=2):
         _out_mask = numpy.zeros(DAPFitsUtil.get_spatial_shape(mask.shape, dispaxis),
                                 dtype=out_bitmask.minimum_dtype()) \
                         if out_mask is None else out_mask
         _inp_flags = inp_flags if isinstance(inp_flags, list) else [ inp_flags ]
-        for flag in inp_flags:
+        for flag in _inp_flags:
             indx = numpy.all(inp_bitmask.flagged(mask, flag=flag), axis=dispaxis)
             if numpy.sum(indx) == 0:
                 continue

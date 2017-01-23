@@ -436,8 +436,8 @@ class EmissionLineMoments:
         if self.continuum_method is not None:
             hdr['SCKEY'] = (self.continuum_method, 'Stellar-continuum model keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-        if len(self.missing_bins) > 0:
-            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
+#        if len(self.missing_bins) > 0:
+#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
         # Anything else?
         # Additional database details?
         return hdr
@@ -506,19 +506,6 @@ class EmissionLineMoments:
         good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
         return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
                                 + self.binned_spectra.missing_bins) 
-
-    
-#    def _missing_flags(self):
-#        return numpy.array([ b in self.missing_bins for b in numpy.arange(self.nbins)])
-
-
-#    def _bins_to_measure(self):
-#        """
-#        Determine which bins to use for the emission-line moment
-#        measurements.  They must not be designated as "missing" and they
-#        must have sufficient S/N.
-#        """
-#        return (self._check_snr()) & ~(self._missing_flags())
 
 
     def _assign_redshifts(self, redshift):
@@ -1215,6 +1202,21 @@ class EmissionLineMoments:
         map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
                                                'K Westfall <westfall@ucolick.org>')
 
+        # Get the spatial map mask
+        map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
+        # Add any spaxel not used because it was flagged by the binning
+        # step
+        indx = self.binned_spectra['MAPMASK'].data > 0
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+        # Isolate any spaxels with foreground stars
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+        # Get the bins that were blow the S/N limit
+        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                                        self.binned_spectra['BINID'].data.ravel(),
+                                                        good_snr, dtype='bool')) & (map_mask == 0)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
         # Get the bin ids with measurements
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                                measurements['BINID'])
@@ -1226,6 +1228,7 @@ class EmissionLineMoments:
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns(
                                         [ fits.Column(name=n,
                                                       format=rec_to_fits_type(passband_database[n]),
