@@ -34,6 +34,7 @@ Provides a set of utility functions to deal with dust extinction.
         Drawn from dust.py in David Wilkinson's FIREFLY code, and the
         dereddening functions in IDLUTILS.
     | **14 Jul 2016**: (KBW) Added :func:`apply_reddening`
+    | **02 Dec 2016**: (KBW) Added :class:`GalacticExtinction`
 
 """
 
@@ -51,7 +52,6 @@ import numpy
 from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
 
-from ..mangafits import MaNGAFits
 
 __author__ = 'Kyle Westfall'
 
@@ -341,58 +341,248 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
     return numpy.ma.power(10., 0.4*ext*ebv)
 
 
-def reddening_vector(wave, ebv, form='ODonnell', rv=None, coeffs=None):
-    if form == 'ODonnell':
-        return reddening_vector_ccm(wave, ebv, rv=rv, original=False)
+class GalacticExtinction:
+    r"""
+    Class that uses the above functions to compute and apply the
+    Galactic reddening curve according to the desired form.
 
-    if form == 'CCM':
-        return reddening_vector_ccm(wave, ebv, rv=rv, original=True)
+    Args:
+        form (str): (**Optional**) The form of the reddening curve to
+            adopt.  The default is 'ODonnell'
 
-    if form == 'FM':
-        return reddening_vector_fm(wave, ebv, rv=rv, coeffs=coeffs)
-        
-    if form == 'Calzetti':
-        return reddening_vector_calzetti(wave, ebv, rv=rv)
+        wave (numpy.ndarray): (**Optional**) The wavelengths for the
+            computation of the reddening vector to compute.  Default is
+            to leave the vector undefined.
 
-    raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
-        
+        ebv (float): (**Optional**) E(B-V) reddening used to normalize
+            the curve.  Default is to leave the vector undefined.
 
-def apply_reddening(flux, reddening_correction, dispaxis=2, deredden=True, ivar=None):
+        rv (float): (**Optional**) Ratio of V-band extinction to the B-V
+            reddening:
+
+            .. math:: 
+
+                R_V = \frac{A_V}{E(B-V)}
+
+            Default value depends on the requested form.  For 'FM',
+            'CCM', and 'ODonnell', the default is 3.1 (typical for the
+            diffuse ISM of the Milky Way); for 'Calzetti', it is 4.05.
+    
+        coeffs (:class:`FMExtinctionCoefficients`): (**Optional**)
+            Object with the coefficients to use for the extinction
+            curve if the form is 'FM'.  If the form is **not** 'FM',
+            these coefficients are ignored (and should be provided as
+            None).  If the form is 'FM' and `coeffs=None`, the default
+            is to use the :math:`R_V` dependent coefficients defined
+            using the :func:`FMExtinctionCoefficients.from_Rv` class
+            method.
+
+    Raises:
+        ValueError: Raised if *form* is not a known form.
+
     """
-    Apply the reddening.  Default operation is to **deredden** a
-    spectrum.  Set deredden=False to **redden** a spectrum.
+    def __init__(self, form='ODonnell', wave=None, ebv=None, rv=None, coeffs=None):
+        if form not in GalacticExtinction._valid_forms():
+            raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
+        self.form = form
 
-    The reddening vector is expected to be the multiplicative factor
-    needed to **deredden** the spectrum.  I.e., the returned array
-    when dereddening will be: dereddened_flux = flux *
-    reddening_correction.
+        self.wave = None
+        self.ebv = None
+        self.rv = None
+        self.coeffs = None
+        self.redcorr = None
 
-    Errors propagated if ivar provided.
+        self.compute(wave, ebv, rv=rv, coeffs=coeffs)
 
-    If ivar provided, returns flux and ivar arrays; if not, only flux
-    array is returned.
-    """
 
-    # Check the input
-    if len(reddening_correction.shape) != 1:
-        raise ValueError('Input reddening correction must be a vector.')
-    if ivar is not None and flux.shape != ivar.shape:
-        raise ValueError('Flux and inverse variance arrays must have the same shape.')
-    if len(flux.shape) == 1:
-        if flux.size != reddening_correction.size:
-            raise ValueError('Fluxe and reddening vector must have same number of wavelengths.')
-        _flux = flux * reddening_correction if deredden else flux / reddening_correction
+    @staticmethod
+    def _valid_forms():
+        """
+        Returns a list keyword for the allowed reddening curves forms
+        implemented within the :class:`GalacticExtinction` class.
+        """
+        return [ None, 'ODonnell', 'CCM', 'FM', 'Calzetti']
+
+    
+    def _deredden_vec(self):
+        return self.redcorr
+
+
+    def _redden_vec(self):
+        return numpy.ma.power(self.redcorr, -1)
+
+
+    def compute(self, wave, ebv, rv=None, coeffs=None):
+        """
+        Compute the reddening curve of the desired form.
+
+        Args:
+            wave (numpy.ndarray): The wavelengths for the computation of
+                the reddening correction to compute.
+
+            ebv (float): E(B-V) reddening used to normalize the curve.
+
+            rv (float): (**Optional**) Ratio of V-band extinction to the
+                B-V reddening:
+
+                .. math:: 
+
+                    R_V = \frac{A_V}{E(B-V)}
+
+                Default value depends on the requested form.  For 'FM',
+                'CCM', and 'ODonnell', the default is 3.1 (typical for
+                the diffuse ISM of the Milky Way); for 'Calzetti', it is
+                4.05.
+    
+            coeffs (:class:`FMExtinctionCoefficients`): (**Optional**)
+                Object with the coefficients to use for the extinction
+                curve if the form is 'FM'.  If the form is **not** 'FM',
+                these coefficients are ignored (and should be provided
+                as None).  If the form is 'FM' and `coeffs=None`, the
+                default is to use the :math:`R_V` dependent coefficients
+                defined using the
+                :func:`FMExtinctionCoefficients.from_Rv` class method.
+
+        Returns:
+            numpy.ndarray : Vector with the extinction at every provided
+            wavelength.
+
+        """
+        self.wave = wave
+        self.ebv = ebv
+        if rv is None:
+            if self.form in [ 'ODonnell', 'CCM' ]:
+                self.rv = default_ccm_rv()
+            elif self.form == 'FM':
+                self.rv = default_fm_rv()
+            elif self.form == 'Calzetti':
+                self.rv = default_calzetti_rv()
+        else:
+            self.rv = rv
+
+        self.coeffs = FMExtinctionCoefficients.from_Rv(_rv) \
+                            if coeffs is None and self.form == 'FM' else coeffs
+
+        if self.wave is None or self.ebv is None:
+            self.redcorr = None
+            return self.redcorr
+
+        if self.form == 'ODonnell':
+            self.redcorr = reddening_vector_ccm(self.wave, self.ebv, rv=self.rv, original=False)
+        elif self.form == 'CCM':
+            self.redcorr = reddening_vector_ccm(self.wave, self.ebv, rv=self.rv, original=True)
+        elif self.form == 'FM':
+            self.redcorr = reddening_vector_fm(self.wave, self.ebv, rv=self.rv, coeffs=self.coeffs)
+        elif self.form == 'Calzetti':
+            self.redcorr = reddening_vector_calzetti(self.wave, self.ebv, rv=self.rv)
+        else:
+            self.redcorr = numpy.ones(self.wave.size, dtype=float)
+
+        return self.redcorr
+
+
+    def apply(self, flux, ivar=None, deredden=True):
+        r"""
+        Redden or deredden the provided flux array using the existing
+        reddening correction vector.
+
+        If flux has a dimensionality larger than 1, it is assumed that
+        the spectra are organized along the last axis and the reddening
+        correction is applied to all spectra in the array.
+
+        If ivar is provided, the error is propagated.
+
+        Args:
+            flux (numpy.ndarray): The flux array to correct.
+            ivar (numpy.ndarray): The flux inverse variance to use for
+                the error propagation.  Default will not return an
+                inverse variance array.
+            deredden (bool): (**Optional**) Flag to **de**redden the
+                spectrum; if set to false, the function will instead
+                redden the provided fluxes.
+
+        Returns:
+            numpy.ndarray : Returns the reddened flux array, and the
+            inverse variance if ivar is provided.
+
+        Raises:
+            ValueError: Raised if the internal reddening correction
+                vector is not defined, if the entered flux and ivar
+                arrays do not have the same shape, or if the number of
+                wavelength channels in flux does not match the expected
+                number based on the length of :attr:`redcorr`.
+        """
+        # Check the input
+        if self.redcorr is None:
+            raise ValueError('Must first calculate reddening correction vector.')
+        if ivar is not None and flux.shape != ivar.shape:
+            raise ValueError('Flux and inverse variance arrays must have the same shape.')
+
+        r = self._deredden_vec() if deredden else self._redden_vec()
+
+        # Flux is 1D
+        if len(flux.shape) == 1:
+            if flux.size != self.redcorr.size:
+                raise ValueError('Flux and reddening correction vector must have same size.')
+            if ivar is None:
+                return flux * r
+            return flux * r, ivar / numpy.square(r)
+
+        # Flux is ND
         if ivar is None:
-            return _flux
-        return _flux, ivar / numpy.square(reddening_correction) if deredden \
-                        else ivar * numpy.square(reddening_correction)
-    if dispaxis is None:
-        raise ValueError('Must provide dispersion axis if flux array is multidimensional.')
+            return flux * r[None,:]
+        return flux * r[None,:], ivar / numpy.square(r)[None,:]
 
-    spatial_shape = MaNGAFits.get_spatial_shape(flux.shape, dispaxis)
-    c = numpy.array([reddening_correction]*numpy.prod(spatial_shape)).reshape(*spatial_shape,-1)
-    _flux = flux * c if deredden else flux / c
-    if ivar is None:
-        return _flux
-    return _flux, ivar / numpy.square(c) if deredden else ivar * numpy.square(c)
+
+
+
+
+#
+#def apply_reddening(flux, reddening_correction, deredden=True, ivar=None):
+#    """
+#    Apply the reddening.  Default operation is to **deredden** a
+#    spectrum.  Set deredden=False to **redden** a spectrum.
+#
+#    The reddening vector is expected to be the multiplicative factor
+#    needed to **deredden** the spectrum.  I.e., the returned array
+#    when dereddening will be: dereddened_flux = flux *
+#    reddening_correction.
+#
+#    Errors propagated if ivar provided.
+#
+#    If ivar provided, returns flux and ivar arrays; if not, only flux
+#    array is returned.
+#
+#    1 Dec 2016: Removed dispaxis keyword.  Flux and ivar should have
+#    shape Nspec x Npix.
+#
+#    """
+#
+#    # Check the input
+#    if len(reddening_correction.shape) != 1:
+#        raise ValueError('Input reddening correction must be a vector.')
+#    if ivar is not None and flux.shape != ivar.shape:
+#        raise ValueError('Flux and inverse variance arrays must have the same shape.')
+#    if len(flux.shape) == 1:
+#        if flux.size != reddening_correction.size:
+#            raise ValueError('Fluxe and reddening vector must have same number of wavelengths.')
+#        _flux = flux * reddening_correction if deredden else flux / reddening_correction
+#        if ivar is None:
+#            return _flux
+#        return _flux, ivar / numpy.square(reddening_correction) if deredden \
+#                        else ivar * numpy.square(reddening_correction)
+##    if dispaxis is None:
+##        raise ValueError('Must provide dispersion axis if flux array is multidimensional.')
+##    spatial_shape = MaNGAFits.get_spatial_shape(flux.shape, dispaxis)
+##    c = numpy.array([reddening_correction]*numpy.prod(spatial_shape)).reshape(*spatial_shape,-1)
+##    _flux = flux * c if deredden else flux / c
+#    _flux = flux * reddening_correction[None,:] if deredden else flux / reddening_correction[None,:]
+#    if ivar is None:
+#        return _flux
+##    return _flux, ivar / numpy.square(c) if deredden else ivar * numpy.square(c)
+#    return _flux, (ivar / numpy.square(reddening_correction)[None,:] if deredden \
+#                    else ivar * numpy.square(reddening_correction)[None,:])
+#
+#
+#
 

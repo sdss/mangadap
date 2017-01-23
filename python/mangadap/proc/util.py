@@ -41,6 +41,7 @@ import sys
 if sys.version > '3':
     long = int
 
+import warnings
 import numpy
 import astropy.constants
 import scipy.interpolate
@@ -214,20 +215,6 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #            bin_change = numpy.repeat(bin_change, rep)
 
 
-#def _pixel_scale(wave, units='km/s', base=10.0):
-#    """
-#    Calculate the velocity scale per pixel.  Assumes the wavelengths
-#    are logarithmically sampled.
-#    """
-#    if units == 'km/s':
-#        return numpy.diff(numpy.log(wave[0:2]))[0]*astropy.constants.c.to('km/s').value
-#    if units == 'logw':
-#        return numpy.diff(numpy.log(wave[0:2]))[0]/numpy.log(base)
-#    if units == 'ang':
-#        return numpy.diff(wave[0:2])[0]
-#
-#    raise ValueError('Units should be km/s, logw, or ang.  Unknown unit: {0}'.format(units))
-
 def residual_growth(resid, growth_samples):
     """
     Interpolate the growth curve at distinct fractions, bracketed by the
@@ -238,5 +225,58 @@ def residual_growth(resid, growth_samples):
     resid_sort = numpy.sort(numpy.absolute(resid))
     interp = scipy.interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
     return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
+
+
+def optimal_scale(dat, mod, wgt=None):
+    r"""
+    Calculate the optimal scaling of an input model that minimizes the
+    weighted root-mean-square difference between a set of data and a
+    model.  When defining the weighted RMS as:
+
+    .. math::
+        
+        {\rm RMS}^2 = \frac{1}{N} \sum_i w_i^2(d_i - f m_i)^2
+    
+    The optimal renormalization factor that minimizes the RMS is:
+
+    .. math::
+        
+        f = \frac{\mathbf{d}^\prime \dot
+            \mathbf{m}^\prime}{||\mathbf{m}^\prime||^2}
+
+    where :math:`d^\prime_i = w_i d_i` and :math:`m^\prime_i = w_i m_i`.
+
+    Args:
+        dat (array-like): Array of data.
+        mod (array-like): Model to renormalize.
+        wgt (array-like): (**Optional**) Array of weights to apply to
+            each residual.
+
+    Returns:
+        float : The optimal scaling that minimizes the weighted
+        root-mean-square difference betwen the data and the model.
+
+    Raises:
+        ValueError: Raised if the array sizes do not match.
+    """
+    _dat = numpy.atleast_1d(dat)
+    _mod = numpy.atleast_1d(mod)
+    _wgt = numpy.ones(_dat.shape, dtype=float) if wgt is None else numpy.atleast_1d(wgt)
+    if _mod.shape != _dat.shape or (_wgt is not None and _wgt.shape != _dat.shape):
+        raise ValueError('Shapes of all input arrays must match.')
+
+#    print(len(_dat))
+#    print(len(_mod))
+#    print(len(_wgt))
+#    pyplot.scatter(_dat, _mod, marker='.', color='k', lw=0)
+#    pyplot.scatter(_dat, _wgt, marker='.', color='r', lw=0)
+#    pyplot.show()
+
+    dp = _dat*_wgt
+    norm_mp = numpy.sum(numpy.square(_wgt*_mod))
+    if norm_mp == 0:
+        warnings.warn('Scale not determined because model norm is 0.')
+
+    return 1.0 if norm_mp == 0 else numpy.sum(numpy.square(_wgt)*_dat*_mod)/norm_mp
 
 

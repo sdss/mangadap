@@ -135,6 +135,7 @@ from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
+from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create_symlink
@@ -316,7 +317,7 @@ def available_reduction_assessments(dapsrc=None):
                                             covariance=cnfg['default'].getboolean('covariance'))
                                   ]
         else:
-            raise ValueError('Cannot use par_file or response_function_file yet!')
+            raise NotImplementedError('Cannot use par_file or response_function_file yet!')
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in assessment_methods ]) )) \
@@ -566,8 +567,13 @@ class ReductionAssessment:
         return self.hdu.info()
 
 
-    def _initialize_header(self, hdr):
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+    def _initialize_primary_header(self, hdr=None):
+        # Copy the from the DRP and clean it
+        if hdr is None:
+            hdr = self.drpf.hdu['PRIMARY'].header.copy()
+            hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
+
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
         hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
         hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')
@@ -861,8 +867,7 @@ class ReductionAssessment:
 #        pyplot.show()
 
         # Construct header
-        hdr = fits.Header()
-        hdr = self._initialize_header(hdr)
+        hdr = self._initialize_primary_header()
 
         # Get the covariance columns; pulled directly from ../util/covariance.py
         if self.method['covariance']:

@@ -190,11 +190,11 @@ class Covariance:
     Assumes all sparse matrices in the input ndarray have the same size.
 
     Args:
-        inp (`scipy.sparse.csr_matrix`_ or numpy.array): (**Optional**)
+        inp (`scipy.sparse.csr_matrix`_ or numpy.ndarray): (**Optional**)
            Covariance matrix to store.  Data type can be either a single
            `scipy.sparse.csr_matrix`_ object or a 1-D array of them.
            If not provided, the covariance object is instantiated empty.
-        input_indx (numpy.array): (**Optional**) If *inp* is an array of
+        input_indx (numpy.ndarray): (**Optional**) If *inp* is an array of
             `scipy.sparse.csr_matrix`_ objects, this is an integer
             array specifying a pseudo-set of indices to use instead of
             the direct index in the array.  I.e., if *inp* is an array
@@ -235,13 +235,13 @@ class Covariance:
             object being a single matrix.
 
     Attributes:
-        cov (`scipy.sparse.csr_matrix`_ or numpy.array): The
+        cov (`scipy.sparse.csr_matrix`_ or numpy.ndarray): The
             covariance matrix stored in sparse format.
         dim (int): The number of dimensions in the covariance matrix.
             This can either be 2 (a single covariance matrix) or 3
             (multiple covariance matrices).
         nnz (int): The number of non-zero covariance matrix elements.
-        input_indx (numpy.array): If :attr:`cov` is an array of
+        input_indx (numpy.ndarray): If :attr:`cov` is an array of
             `scipy.sparse.csr_matrix`_ objects, this is an integer
             array specifying a pseudo-set of indices to use instead of
             the direct index in the array.  I.e., if :attr:`cov` is an
@@ -249,7 +249,7 @@ class Covariance:
             :attr:`input_indx` that are used instead as the designated
             index for the covariance matrices.  See:
             :func:`__getitem__`, :func:`_grab_true_index`.
-        inv (`scipy.sparse.csr_matrix`_ or numpy.array): The inverse
+        inv (`scipy.sparse.csr_matrix`_ or numpy.ndarray): The inverse
             of the covariance matrix.  **This is not currently
             calculated!**
         var (numpy.ndarray): Array with the variance provided by the
@@ -455,6 +455,30 @@ class Covariance:
             self.inv = None
 
 
+    def copy(self):
+        """
+        Return a copy of this Covariance object, not a reference to it,
+        by returning a new Covariance instance with the same data.  Only
+        sticking point is making sure to keep track of whether the
+        object was saved as a covariance matrix or as a correlation
+        matrix with a variance vector.
+        """
+        # If the data is saved as a correlation matrix, first revert to
+        # a covariance matrix
+        is_correlation=self.is_correlation
+        if self.is_correlation:
+            self.revert_correlation()
+
+        # Create the new Covariance instance with a copy of the data
+        cp = Covariance(inp=self.cov.copy(), input_indx=self.input_indx.copy())
+
+        # If necessary, convert the data to a correlation matrix
+        if is_correlation:
+            self.to_correlation()
+            cp.to_correlation()
+        return cp
+
+
     def show(self, plane=None, zoom=None, ofile=None):
         """
         Convert the (selected) covariance matrix to a filled array and
@@ -511,7 +535,7 @@ class Covariance:
                 object is 3D.
 
         Returns:
-            numpy.array: Dense array with the full covariance matrix.
+            numpy.ndarray: Dense array with the full covariance matrix.
         """
         if self.dim == 2 or plane is not None:
             return (self._with_lower_triangle(plane=plane)).toarray()

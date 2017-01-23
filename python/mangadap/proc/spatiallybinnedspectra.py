@@ -13,7 +13,7 @@ procedures.
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spatialbins.py
+    $MANGADAP_DIR/python/mangadap/proc/spatiallybinnedspectra.py
 
 *Imports and python version compliance*:
     ::
@@ -66,12 +66,24 @@ procedures.
     | **06 Jul 2016**: (KBW) Make the application of a reddening
         correction an input parameter.
     | **25 Aug 2016**: (KBW) Fixed error in bin area when calling
-        :func:`SpatiallyBinnedSpetra._unbinned_data`
+        :func:`SpatiallyBinnedSpetra._unbinned_data_table`
+    | **01 Dec 2016**: (KBW) Include keyword that describes how to
+        handle the spectral resolution.
+    | **02 Dec 2016**: (KBW) Incorporate
+        :class:`mangadap.util.extinction.GalacticExtinction`.  Revert
+        main file structure to be bin-based instead of cube-based;
+        include convenience functions that construct the cube for each
+        extension as requested.
+    | **06 Dec 2016**: (KBW) Significantly restructured.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
+
+
+.. todo::
+    - Check binning an RSS file
 
 """
 
@@ -101,24 +113,27 @@ import logging
 import numpy
 
 from scipy import sparse
+
+from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
 
-from ..mangafits import MaNGAFits
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
+from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create_symlink
 from ..util.bitmask import BitMask
+from ..util.pixelmask import SpectralPixelMask
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.extinction import reddening_vector, apply_reddening
+from ..util.extinction import GalacticExtinction
 from ..util.log import log_output
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
-from .util import _select_proc_method, _fill_vector
+from .util import _select_proc_method #, _fill_vector
 
 from matplotlib import pyplot
 
@@ -147,8 +162,8 @@ class SpatiallyBinnedSpectraDef(ParSet):
     stackfunc must be able to function properly with the following
     call::
         
-        stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
-                stack(drpf, id, par=par)
+        stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, \
+                stack_sres, stack_covar = stack(drpf, id, par=par)
 
     where `drpf` is a :class:`mangadap.drpfits.DRPFits` object.  Note
     that the input and output wavelength ranges are expected to be the
@@ -160,6 +175,10 @@ class SpatiallyBinnedSpectraDef(ParSet):
     spectrum in the bin, you'd have to provide both the binning and
     stacking routines.  Actually, if that's the case, you're better off
     providing a class object that will both bin and stack the spectra!
+
+    .. todo::
+        - Impose a set of options of the form for the Galactic
+          reddening.
 
     Args:
         key (str): Keyword used to distinguish between different spatial
@@ -178,24 +197,32 @@ class SpatiallyBinnedSpectraDef(ParSet):
             member function of the class.
         stackfunc (callable): The function that stacks the spectra in a
             given bin.
+        spec_res (str): Keyword defining the treatment of the spectral
+            resolution.  See
+            :func:`SpatiallyBinnedSpectra.spectral_resolution_options`
+            for a list of the options.
     """
     def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
-                 binfunc, stackpar, stackclass, stackfunc):
+                 binfunc, stackpar, stackclass, stackfunc, spec_res):
         in_fl = [ int, float ]
+        res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
 #        stackcls_opt = [ SpectralStack ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
-                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc' ]
+                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc', 'spec_res' ]
         values =   [   key,   galactic_reddening,   galactic_rv,   minimum_snr,   binpar,
-                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc ]
+                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc,   spec_res ]
+        options =  [  None,                 None,          None,          None,     None,
+                           None,      None,       None,         None,        None,    res_opt ]
         dtypes =   [   str,                  str,         in_fl,         in_fl,  par_opt,
-                           None,      None,    par_opt,         None,        None ]
+                           None,      None,    par_opt,         None,        None,        str ]
         can_call = [ False,                False,         False,         False,    False,
-                          False,      True,      False,        False,        True ]
+                          False,      True,      False,        False,        True,      False ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
+        ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes,
+                        can_call=can_call)
 
 
 def validate_spatial_binning_scheme_config(cnfg):
@@ -239,6 +266,12 @@ def validate_spatial_binning_scheme_config(cnfg):
     if 'stack_covariance_mode' not in cnfg.options('default') \
             or cnfg['default']['stack_covariance_mode'] is None:
         cnfg['default']['stack_covariance_mode'] = 'none'
+
+    spec_res_options = SpatiallyBinnedSpectra.spectral_resolution_options()
+    if 'spec_res' not in cnfg.options('default') \
+            or cnfg['default']['spec_res'] not in spec_res_options:
+        raise ValueError('Must define how to treat the spectral resolution.  Options are:'
+                         '{0}'.format(spec_res_options))
 
     covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
     if cnfg['default']['stack_covariance_mode'] in covar_par_needed_modes \
@@ -402,14 +435,17 @@ def available_spatial_binning_methods(dapsrc=None):
             binpar = None
             binclass = None
             binfunc = None
-            
+
+        stack_spec_res = cnfg['default']['spec_res'] == 'spaxel'
+
         stackpar = SpectralStackPar(cnfg['default']['operation'],
                                     cnfg['default'].getboolean('velocity_register'),
                                     None,
                                     cnfg['default']['stack_covariance_mode'],
                                     SpectralStack.parse_covariance_parameters(
                                             cnfg['default']['stack_covariance_mode'],
-                                            cnfg['default']['stack_covariance_par']))
+                                            cnfg['default']['stack_covariance_par']),
+                                    stack_spec_res)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
@@ -419,7 +455,8 @@ def available_spatial_binning_methods(dapsrc=None):
                                                        eval(cnfg['default']['galactic_rv']),
                                                        cnfg['default'].getfloat('minimum_snr'),
                                                        binpar, binclass, binfunc, stackpar,
-                                                       stackclass, stackfunc) ]
+                                                       stackclass, stackfunc,
+                                                       cnfg['default']['spec_res']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \
@@ -452,10 +489,52 @@ class SpatiallyBinnedSpectraBitMask(BitMask):
 
 class SpatiallyBinnedSpectra:
     r"""
-
     Class that holds spatially binned spectra.
 
     Args:
+        method_key (str): The keyword that designates which method,
+            provided in *method_list*, to use for the binning procedure.  
+        drpf (:class:`mangadap.drpfits.DRPFits`): The DRP datacube with
+            the spectra to bin.
+        rdxqa (:class:`mangadap.proc.reductionassessments.ReductionAssessments`):
+            The basic assessments of the DRP data that are needed for
+            the binning procedures.
+        reff (float): (**Optional**) The effective radius of the galaxy.
+        method_list (list): (**Optional**) List of
+            :class:`SpatiallyBinnedSpectraDef` objects that define one
+            or more methods to use for the spatial binning.  Default is
+            to use the config files in the DAP source directory to
+            construct the available methods using
+            :func:`available_spatial_binning_methods`.
+        dapsrc (str): (**Optional**) Root path to the DAP source
+            directory.  If not provided, the default is defined by
+            :func:`mangadap.config.defaults.default_dap_source`.
+        dapver (str): (**Optional**) The DAP version to use for the
+            analysis, used to override the default defined by
+            :func:`mangadap.config.defaults.default_dap_version`.
+        analysis_path (str): (**Optional**) The top-level path for the
+            DAP output files, used to override the default defined by
+            :func:`mangadap.config.defaults.default_analysis_path`.
+        directory_path (str): The exact path to the directory with DAP
+            output that is common to number DAP "methods".  See
+            :attr:`directory_path`.
+        output_file (str): (**Optional**) Exact name for the output
+            file.  The default is to use
+            :func:`mangadap.config.defaults.default_dap_file_name`.
+        hardcopy (bool): (**Optional**) Flag to write the HDUList
+            attribute to disk.  Default is True; if False, the HDUList
+            is only kept in memory and would have to be reconstructed.
+        symlink_dir (str): (**Optional**) Create a symbolic link to the
+            created file in the supplied directory.  Default is to
+            produce no symbolic link.
+        clobber (bool): (**Optional**) Overwrite any existing files.
+            Default is to use any existing file instead of redoing the
+            analysis and overwriting the existing output.
+        checksum (bool): (**Optional**) Use the checksum in the fits
+            header to confirm that the data has not been corrupted.  The
+            checksum is **always** written to the fits header when the
+            file is created; this argument does not toggle that
+            functionality.
         loggers (list): (**Optional**) List of `logging.Logger`_ objects
             to log progress; ignored if quiet=True.  Logging is done
             using :func:`mangadap.util.log.log_output`.  Default is no
@@ -464,15 +543,14 @@ class SpatiallyBinnedSpectra:
             output.  Default is False.
 
     Attributes:
-         loggers (list): List of `logging.Logger`_ objects to log
+        loggers (list): List of `logging.Logger`_ objects to log
             progress; ignored if quiet=True.  Logging is done using
             :func:`mangadap.util.log.log_output`.
         quiet (bool): Suppress all terminal and logging output.
 
 
     .. todo::
-
-        - Add prior with velocity offsets for spaxels.
+        - Allow velocity offsets for registration.
    
     """
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
@@ -480,7 +558,6 @@ class SpatiallyBinnedSpectra:
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
                  quiet=False):
 
-        self.version = '1.0'
         self.loggers = None
         self.quiet = False
 
@@ -491,7 +568,7 @@ class SpatiallyBinnedSpectra:
         self.drpf = None
         self.rdxqa = None
         self.reff = None
-        self.deredden = self.method['galactic_reddening'] is not None
+        self.galext = None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -557,9 +634,17 @@ class SpatiallyBinnedSpectra:
 
     def _fill_method_par(self, good_spec):
         """
+        Finalize the binning parameters, as needed.
 
-        Fill in any remaining binning parameters.
+        **For the radial binning**, set the ellipticity and position
+        angle.  Set scale radius to the effective radius if desired.
 
+        **For the Voronoi binning**, set the signal and noise.
+
+        Args:
+            good_spec (numpy.ndarray):  List of spectra to include in
+                the binning.  See :func:`_check_fgoodpix` and
+                :func:`_check_snr`.
         """
         if self.method['binclass'] is None:
             return
@@ -608,8 +693,9 @@ class SpatiallyBinnedSpectra:
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
-            directory_path (str): The exact path to the DAP reduction
-                assessments file.  See :attr:`directory_path`.
+            directory_path (str): The exact path to the directory with
+                DAP output that is common to number DAP "methods".  See
+                :attr:`directory_path`.
             dapver (str): DAP version.
             analysis_path (str): The path to the top-level directory
                 containing the DAP output files for a given DRP and DAP
@@ -631,219 +717,38 @@ class SpatiallyBinnedSpectra:
                                         if output_file is None else str(output_file)
 
 
-    def _clean_drp_header(self, ext='FLUX'):
+    def _initialize_primary_header(self, hdr=None):
         """
-        Read and clean the header from the DRP fits file extension for
-        use in the output file for this class object.
+        Initialize the header of :attr:`hdu`.
 
-        .. todo::
-            - Currently just returns the existing header.  Need to
-              decide if/how to manipulate DRP header.
+        Returns:
+            astropy.io.fits.Header : Edited header object.
 
         """
-        return self.drpf[ext].header.copy()
-
-
-    def _initialize_header(self, hdr):
-        """
-
-        Initialize the header.
-
-        """
-        hdr['AUTHOR'] = 'Kyle B. Westfall <kyle.westfall@port.co.uk>'
+        # Copy the from the DRP and clean it
+        if hdr is None:
+            hdr = self.drpf.hdu['PRIMARY'].header.copy()
+            hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
+        
+        # Add keywords specific to this object
+        hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         if self.reff is not None:
             hdr['REFF'] = self.reff
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['FSPCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-        if len(self.missing_bins) > 0:
-            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
+#        if len(self.missing_bins) > 0:
+#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
         return hdr
-
-
-    def _check_fgoodpix(self, minimum_fraction=0.8):
-        return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
-
-
-    def _check_snr(self):
-        return self.rdxqa['SPECTRUM'].data['SNR'] > self.method['minimum_snr']
-
-
-    def _initialize_mask(self, good_fgoodpix, good_snr):
-        """
-
-        Initialize the mask be setting the DIDNOTUSE, FORESTAR, LOW_SPECCOV, and LOW_SNR masks
-
-        """
-        # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
-
-        # Turn on the flag stating that the pixel wasn't used
-        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
-                                         flag=self.drpf.do_not_stack_flags())
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
-
-        # Turn on the flag stating that the pixel has a foreground star
-        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data, flag='FORESTAR')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
-
-        # Turn on the flag stating that the number of valid channels in
-        # the spectrum was below the input fraction.
-        indx = numpy.array([numpy.invert(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SPECCOV')
-
-        # Turn on the flag stating that the S/N in the spectrum was
-        # below the requested limit
-        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
-
-        return mask
-
-
-    def _per_bin_dtype(self):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('BIN_INDEX',numpy.int),
-                 ('NBIN',numpy.int),
-                 ('SKY_COO',numpy.float,(2,)),
-                 ('LW_SKY_COO',numpy.float,(2,)),
-                 ('ELL_COO',numpy.float,(2,)),
-                 ('LW_ELL_COO',numpy.float,(2,)),
-                 ('AREA',numpy.float),
-                 ('AREA_FRAC',numpy.float),
-                 ('SIGNAL',numpy.float),
-                 ('VARIANCE',numpy.float),
-                 ('SNR',numpy.float)
-               ]
-
-#                 ('MASK',self.bitmask.minimum_unit_dtype()),
-#
-# There is no mask for the table data.  However, could add masks for:
-#   - Insufficient good wavelength channels in the spectrum.
-#   - Variance in flux in bin is too large.
-
-
-    def _unbinned_data(self, bin_indx):
-        """
-        Construct the output data table just using the unbinned data.
-        """
-        good_spec = bin_indx > -1
-        self.nbins = numpy.amax(bin_indx)+1
-        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
-
-        bin_data['BIN_INDEX'] = numpy.arange(self.nbins)
-        bin_data['NBIN'] = numpy.ones(self.nbins, dtype=numpy.int)
-        bin_data['SKY_COO'][:,0] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0]
-        bin_data['SKY_COO'][:,1] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1]
-        bin_data['LW_SKY_COO'] = bin_data['SKY_COO'].copy()
-        bin_data['ELL_COO'][:,0] = self.rdxqa['SPECTRUM'].data['ELL_COO'][good_spec,0]
-        bin_data['ELL_COO'][:,1] = self.rdxqa['SPECTRUM'].data['ELL_COO'][good_spec,1]
-        bin_data['LW_ELL_COO'] = bin_data['ELL_COO'].copy()
-
-        if self.drpf.pixelscale is None:
-            self.drpf.pixelscale = default_cube_pixelscale()
-
-        bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.drpf.pixelscale),
-                                      dtype=numpy.float)
-        bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=numpy.int)
-
-        bin_data['SIGNAL'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]
-        bin_data['VARIANCE'] = self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec]
-        bin_data['SNR'] = self.rdxqa['SPECTRUM'].data['SNR'][good_spec]
-
-        return bin_data
-
-   
-    @property
-    def is_unbinned(self):
-        return self.method['binpar'] is None and self.method['binclass'] is None \
-                    and self.method['binfunc'] is None
-
-
-    def _fill_covariance(self, stack_covar, bin_indx):
-        nspec = len(bin_indx)
-        unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
-        indx = bin_indx > -1
-        nchan = stack_covar.shape[0]
-        self.covariance = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-        for i in range(nchan):
-            j = stack_covar.input_indx[i]
-#            stack_covar.show(plane=j)
-
-            # Input spectrum and covariance indices
-            ii = unique_bins[reconstruct[indx]]
-            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
-
-            # Output spectrum and covariance indices
-            oi = numpy.arange(nspec)[indx]
-            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
-
-            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
-            _covar[oi_i, oi_j] = stack_covar.toarray(plane=j)[ii_i,ii_j]
-#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
-#            pyplot.colorbar()
-#            pyplot.show()
-            self.covariance[i] = sparse.triu(_covar).tocsr()
-        self.covariance = Covariance(inp=self.covariance, input_indx=stack_covar.input_indx)
-
-
-    def _extract_stack_covariance(self, bin_indx):
-        nspec = len(bin_indx)
-        unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
-        self.nbins = numpy.amax(unique_bins)+1
-        indx = bin_indx > -1
-        nchan = self.covariance.shape[0]
-        _covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-        for i in range(nchan):
-            j = self.covariance.input_indx[i]
-#            self.covariance.show(plane=j)
-
-            # Input spectrum and covariance indices
-            ii = unique_indx[1:]
-            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
-
-            # Output spectrum and covariance indices
-            oi = unique_bins[1:]
-            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
-
-            _covar = numpy.zeros((self.nbins, self.nbins), dtype=numpy.float)
-            _covar[oi_i, oi_j] = self.covariance.toarray(plane=j)[ii_i,ii_j]
-#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
-#            pyplot.colorbar()
-#            pyplot.show()
-            _covar[i] = sparse.triu(_covar).tocsr()
-        return Covariance(inp=covar, input_indx=stack_covar.input_indx)
-
-
-    def _assign_spectral_arrays(self):
-        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'FLUXD', 'NPIX' ]
-
-
-    def _assign_image_arrays(self):
-        self.image_arrays = [ 'BINID' ]
-
-
-    def _get_reddening_hdr(self, hdr):
-        hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
-        hdr['GEXTLAW'] = ('None' if self.method['galactic_reddening'] is None 
-                            else self.method['galactic_reddening'], 'Galactic extinction law')
-        hdr['RVGAL'] = (self.method['galactic_rv'], 'Ratio of total to selective extinction, R(V)')
-        return hdr
-
-
-    def _get_reddening_corr(self):
-        if self.method['galactic_reddening'] is None:
-            return prihdr, red_hdr, numpy.ones(self.drpf['WAVE'].data.shape)
-
-        return reddening_vector(self.drpf['WAVE'].data, self.drpf['PRIMARY'].header['EBVGAL'],
-                                form=self.method['galactic_reddening'],
-                                rv=self.method['galactic_rv']).data
 
 
     def _add_method_header(self, hdr):
+        """
+        Add method-specific metadata to the header.
+        """
+        if self.is_unbinned:
+            hdr['BINTYPE'] = ('None', 'Binning method')
         if self.method['binclass'] is not None:
             try:
                 hdr['BINTYPE'] = (self.method['binclass'].bintype, 'Binning method')
@@ -870,6 +775,398 @@ class SpatiallyBinnedSpectra:
         return hdr
 
 
+    def _add_reddening_header(self, hdr):
+        """
+        Set the relevant reddening information to the header.
+
+        Args:
+            hdr (astropy.io.fits.Header): Input header object to edit.
+
+        Returns:
+            astropy.io.fits.Header : Edited header object.
+        """
+        hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
+        hdr['GEXTLAW'] = (str(self.galext.form), 'Galactic extinction law')
+        hdr['RVGAL'] = (self.galext.rv, 'Ratio of total to selective extinction, R(V)')
+        return hdr
+
+
+    def _initialize_cube_mask(self):
+        """
+        Initialize the mask, copying the DIDNOTUSE and FORESTAR bits
+        from the DRP file, and setting the LOW_SPECCOV and LOW_SNR bits
+        based on the input boolean arrays.
+
+        Returns:
+            numpy.ndarray : Bitmask array.
+        """
+
+        # Get the spaxels with good spectral coverage and S/N
+        good_fgoodpix = self._check_fgoodpix()
+        good_snr = self._check_snr()
+
+        # Initialize to all zeros
+        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
+
+        # Turn on the flag stating that the pixel wasn't used
+        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
+                                         flag=self.drpf.do_not_stack_flags())
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
+
+        # Turn on the flag stating that the pixel has a foreground star
+        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data, flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+
+        # Turn on the flag stating that the number of valid channels in
+        # the spectrum was below the input fraction.
+        indx = numpy.array([numpy.invert(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
+        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SPECCOV')
+
+        # Turn on the flag stating that the S/N in the spectrum was
+        # below the requested limit
+        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
+        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+
+        return mask
+
+
+    def _check_fgoodpix(self, minimum_fraction=0.8):
+        """
+        Determine which spectra in :attr:`rdxqa` have a fractional
+        spectral coverage of greater than the provided minimum fraction.
+        Only these spectra will be included in the binning.
+    
+        Args:
+            minimum_fraction (float): (**Optional**) The minimum
+                fraction of the spectrum that must be valid for the
+                spectrum to be included in any bin.  Default is 0.8.
+
+        Returns:
+            numpy.ndarray : Boolean array for the spectra that satisfy
+            the criterion.
+        """
+        return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
+
+
+    def _check_snr(self):
+        """
+        Determine which spectra in :attr:`rdxqa` have a S/N greater than
+        the minimum set by :attr:`method`.  Only these spectra will be
+        included in the binning.
+    
+        Returns:
+            numpy.ndarray : Boolean array for the spectra that satisfy
+            the criterion.
+        """
+        return self.rdxqa['SPECTRUM'].data['SNR'] > self.method['minimum_snr']
+
+
+    def _assign_spectral_arrays(self):
+        """
+        Set :attr:`spectral_arrays`, which contains the list of
+        extensions in :attr:`hdu` that contain spectral data.
+        """
+        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'SPECRES', 'FLUXD', 'NPIX' ]
+
+
+    def _assign_image_arrays(self):
+        """
+        Set :attr:`image_arrays`, which contains the list of extensions
+        in :attr:`hdu` that are on-sky image data.
+        """
+        self.image_arrays = [ 'BINID' ]
+
+
+    def _per_bin_dtype(self):
+        """
+        Construct the record array data type that holds the information
+        for the binned spectra.
+
+        .. todo::
+
+            There currently is no mask; however, could add masks for:
+                - Insufficient good wavelength channels in the spectrum.
+                - Variance in flux in bin is too large.
+        """
+        return [ ('BINID',numpy.int),
+                 ('NBIN',numpy.int),
+                 ('SKY_COO',numpy.float,(2,)),
+                 ('LW_SKY_COO',numpy.float,(2,)),
+                 ('ELL_COO',numpy.float,(2,)),
+                 ('LW_ELL_COO',numpy.float,(2,)),
+                 ('AREA',numpy.float),
+                 ('AREA_FRAC',numpy.float),
+                 ('SIGNAL',numpy.float),
+                 ('VARIANCE',numpy.float),
+                 ('SNR',numpy.float)
+               ]
+
+
+    @staticmethod
+    def _get_missing_bins(unique_bins):
+        return list(set(numpy.arange(numpy.amax(unique_bins)+1)) - set(unique_bins))
+
+
+    def _unbinned_data_table(self, bin_indx):
+        """
+        Construct the output data table for the unbinned spectra.
+
+        Args:
+            bin_indx (numpy.ndarray): The integer vector with the bin
+                associated with each spectrum in the DRP cube.  This is
+                the flattened BINID array.
+
+        Returns:
+            numpy.recarray : The record array that is put in the BINS
+            extension of :attr:`hdu`.
+    
+        """
+        # Find the spectra that have a bin ID
+        good_spec = bin_indx > -1
+        self.nbins = numpy.amax(bin_indx)+1
+        self.missing_bins = []                  # No missing bins
+
+        # Copy the data from the ReductionAssessments object
+        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+
+        bin_data['BINID'] = numpy.arange(self.nbins)
+        bin_data['NBIN'] = numpy.ones(self.nbins, dtype=numpy.int)
+        bin_data['SKY_COO'][:,0] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0]
+        bin_data['SKY_COO'][:,1] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1]
+        bin_data['LW_SKY_COO'] = bin_data['SKY_COO'].copy()
+        bin_data['ELL_COO'][:,0] = self.rdxqa['SPECTRUM'].data['ELL_COO'][good_spec,0]
+        bin_data['ELL_COO'][:,1] = self.rdxqa['SPECTRUM'].data['ELL_COO'][good_spec,1]
+        bin_data['LW_ELL_COO'] = bin_data['ELL_COO'].copy()
+
+        if self.drpf.pixelscale is None:
+            self.drpf.pixelscale = default_cube_pixelscale()
+
+        bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.drpf.pixelscale),
+                                      dtype=numpy.float)
+        bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=numpy.int)
+
+        bin_data['SIGNAL'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]
+        bin_data['VARIANCE'] = self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec]
+        bin_data['SNR'] = self.rdxqa['SPECTRUM'].data['SNR'][good_spec]
+
+        return bin_data
+
+
+    def _binned_data_table(self, bin_indx, stack_flux, stack_ivar):
+        r"""
+        Construct the output data table for the binned spectra.
+
+        Args:
+            bin_indx (numpy.ndarray): The integer vector with the bin
+                associated with each spectrum in the DRP cube.  This is
+                the flattened BINID array.
+            stack_flux (numpy.ndarray): The stacked spectra, organized
+                as :math:`N_{\rm spec}\times\N_\lambda}`.
+            stack_flux (numpy.ndarray): The stacked inverse variance,
+                organized as :math:`N_{\rm spec}\times\N_\lambda}`.
+
+        Returns:
+            numpy.recarray : The record array that is put in the BINS
+            extension of :attr:`hdu`.
+    
+        """
+
+        print('getting binned table data')
+
+        # Get the unique bins and the number of spectra in each bin
+        unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
+
+        # Get the number of returned bins:
+        # - The number of returned bins MAY NOT BE THE SAME as the
+        #   number of requested bins.  E.g., if radial bins were
+        #   requested out to 2.5 Reff, when coverage only goes to 1.5
+        #   Reff.
+        # - Bins with no spectra are not included in the data table!
+        # - Missing bins are only identified as those without indices in
+        #   the range of provided bin numbers.
+        self.nbins = len(unique_bins)
+        self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
+
+        # Intialize the data for the binned spectra
+        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+        bin_data['BINID'] = unique_bins.astype(int)
+        bin_data['NBIN'] = bin_count.astype(int)
+
+        # Recalculate the mean signal, mean noise, and mean S/N of the
+        # binned spectra
+#        print(numpy.sum(stack_ivar.mask))
+#        print(numpy.sum(stack_flux.mask))
+#        assert numpy.all(stack_ivar.mask == stack_flux.mask)
+        if stack_ivar is None:
+            warnings.warn('No inverse variance for stack.  Errors set to unity.')
+
+        _wavelength_mask = SpectralPixelMask(waverange=
+                                self.rdxqa.method['waverange']).boolean(self.drpf['WAVE'].data)
+        _mask = numpy.ma.getmaskarray(stack_flux) | _wavelength_mask[None,:]
+
+        if stack_ivar is not None:
+            _mask |= numpy.ma.getmaskarray(stack_ivar)
+
+        _stack_flux = numpy.ma.MaskedArray(stack_flux.data, mask=_mask)
+        stack_nsum = numpy.sum(numpy.invert(_mask), axis=1)
+        bin_data['SIGNAL'] = numpy.ma.sum(_stack_flux,axis=1) / stack_nsum
+        if stack_ivar is not None:
+            _stack_ivar = numpy.ma.MaskedArray(stack_ivar.data, mask=_mask)
+            bin_data['VARIANCE'] = numpy.ma.sum(numpy.ma.power(_stack_ivar, -1.), axis=1)/stack_nsum
+            bin_data['SNR'] = numpy.ma.sum(_stack_flux * numpy.ma.sqrt(_stack_ivar),
+                                           axis=1)/stack_nsum
+            del _stack_ivar
+        del _mask, _stack_flux
+
+#        pyplot.scatter(bin_data['SNR'], bin_data['SIGNAL'], marker='.', color='k', s=40, lw=0)
+#        pyplot.show()
+
+        # Sort the list of bin ids and determine where the spectra jump
+        # between bins
+        srt = numpy.argsort(bin_indx)
+        bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
+
+        # Some convenience reference variables
+        x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
+        y = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
+        r = self.rdxqa['SPECTRUM'].data['ELL_COO'][:,0]
+        t = self.rdxqa['SPECTRUM'].data['ELL_COO'][:,1]
+        s = self.rdxqa['SPECTRUM'].data['SIGNAL']
+
+        # Get the signal-weighted on-sky coordinates
+        wsum = numpy.add.reduceat(s[srt], bin_change)
+        bin_data['LW_SKY_COO'][:,0] = numpy.add.reduceat((x*s)[srt], bin_change)/wsum
+        bin_data['LW_SKY_COO'][:,1] = numpy.add.reduceat((y*s)[srt], bin_change)/wsum
+        bin_data['LW_ELL_COO'][:,0] = numpy.add.reduceat((r*s)[srt], bin_change)/wsum
+        bin_data['LW_ELL_COO'][:,1] = numpy.add.reduceat((t*s)[srt], bin_change)/wsum
+
+        # ... and the unweighted on-sky coordinates
+        bin_data['SKY_COO'][:,0] = numpy.add.reduceat(x[srt], bin_change)/bin_data['NBIN']
+        bin_data['SKY_COO'][:,1] = numpy.add.reduceat(y[srt], bin_change)/bin_data['NBIN']
+        bin_data['ELL_COO'][:,0] = numpy.add.reduceat(r[srt], bin_change)/bin_data['NBIN']
+        bin_data['ELL_COO'][:,1] = numpy.add.reduceat(t[srt], bin_change)/bin_data['NBIN']
+
+        # The mean azimuth can go wrong when bins cross the major axis
+        _wt = numpy.add.reduceat(((t+180)*s)[srt], bin_change)/wsum
+        indx = numpy.absolute(_wt-180-bin_data['LW_ELL_COO'][:,1]) > 1.0        # HARDWIRED
+        bin_data['LW_ELL_COO'][indx,1] = _wt[indx]-180
+
+        _bt = numpy.add.reduceat(t[srt]+180, bin_change) / bin_data['NBIN']
+        indx = numpy.absolute(_bt-180-bin_data['ELL_COO'][:,1]) > 1.0           # HARDWIRED
+        bin_data['ELL_COO'][indx,1] = _bt[indx]-180
+
+#        pyplot.scatter( wt, _wt-180-bin_data['LW_ELL_COO'][:,1], marker='.',color='r',s=40,lw=0 )
+#        pyplot.scatter( bt, _bt-180-bin_data['ELL_COO'][:,1], marker='.',color='b',s=40,lw=0 )
+#        pyplot.show()
+
+        # Compute the area covered by each bin
+        bin_data['AREA'] = self.drpf.binned_on_sky_area(bin_indx, x=x, y=y)
+        print(bin_data['AREA'])
+
+        # Calculate the fractional area of the bin covered by the
+        # spectra, if possible; if not, the fractional area is unity
+        try:
+            bin_total_area = self.method['binclass'].bin_area()[unique_bins]
+        except AttributeError as e:
+            if not self.quiet:
+                warnings.warn('Could not calculate nominal bin area:: '
+                              'AttributeError: {0}'.format(e))
+            bin_total_area = bin_data['AREA']
+        bin_data['AREA_FRAC'] = bin_data['AREA']/bin_total_area
+
+        return bin_data
+
+   
+    def _apply_reddening(self, flux, ivar, sdev, covar, deredden=True):
+        if self.galext.form is None:
+            return flux, ivar, sdev, covar
+
+        # Apply the reddening correction
+        flux, ivar = self.galext.apply(flux, ivar=ivar, deredden=deredden)
+        if sdev is not None:
+            sdev = self.galext.apply(sdev, deredden=deredden)
+        if covar is not None:
+            for i,j in enumerate(covar.input_indx):
+                covar.cov[i] = covar.cov[i] * numpy.square(self.galext.redcorr[j]) if deredden \
+                                    else covar.cov[i] / numpy.square(self.galext.redcorr[j])
+        return flux, ivar, sdev, covar
+
+
+    def _construct_2d_hdu(self, bin_indx, good_fgoodpix, good_snr, bin_data, stack_flux,
+                          stack_sdev, stack_ivar, stack_npix, stack_mask, stack_sres, stack_covar):
+        """
+        Construct :attr:`hdu` that is held in memory for manipulation of
+        the object.  See :func:`construct_3d_hdu` if you want to convert
+        the object into a DRP-like datacube.
+        """
+
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
+        if stack_sres is None:
+            stack_sres = numpy.ma.MaskedArray([self.drpf['SPECRES'].data]*self.nbins)
+#        sres_hdr = self.drpf.spectral_resolution_header(ext='SPECRES')
+
+        self.covariance = None if (stack_covar is None or not isinstance(stack_covar, Covariance)) \
+                                    else stack_covar.copy()
+#        print(self.covariance.shape)
+#        self.covariance.show(plane=self.covariance.input_indx[0])
+
+        # Initialize the headers
+        pri_hdr = self._initialize_primary_header()
+        pri_hdr = self._add_method_header(pri_hdr)
+        pri_hdr = self._add_reddening_header(pri_hdr)
+        red_hdr = fits.Header()
+        red_hdr = self._add_reddening_header(red_hdr)
+        map_hdr = DAPFitsUtil.build_map_header(self.drpf, 'K Westfall <westfall@ucolick.org>')
+
+        # Get the spatial map mask
+        # Marginalize the DRP spectra over wavelength
+        map_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data,
+                                                [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
+                                                  'DONOTUSE' ], self.drpf.bitmask, self.bitmask,
+                                                out_flag='DIDNOTUSE')
+        map_mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data, ['FORESTAR'],
+                                                self.drpf.bitmask, self.bitmask, out_mask=map_mask)
+        drp_bad = (map_mask > 0)
+        # Add the spectra with low spectral coverage
+        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & ~drp_bad
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
+        # Add the spectra with low S/N
+        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & ~drp_bad
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
+        # Save the data to the hdu attribute
+        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
+                                  fits.ImageHDU(data=stack_flux.data, name='FLUX'),
+                                  fits.ImageHDU(data=stack_ivar.data, name='IVAR'),
+                                  fits.ImageHDU(data=stack_mask, name='MASK'),
+                                  self.drpf['WAVE'].copy(),
+                                  fits.ImageHDU(data=stack_sres.data, name='SPECRES'),
+                                  fits.ImageHDU(data=self.galext.redcorr.data, header=red_hdr,
+                                                name='REDCORR'),
+                                  fits.ImageHDU(data=stack_sdev.data, name='FLUXD'),
+                                  fits.ImageHDU(data=stack_npix.data, name='NPIX'),
+                                  fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
+                                                header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
+                                                             format=rec_to_fits_type(bin_data[n]),
+                                                array=bin_data[n]) for n in bin_data.dtype.names ],
+                                                               name='BINS')
+                                ])
+
+        # Fill the covariance matrix
+        if self.covariance is not None:
+            cov_hdr = fits.Header()
+            indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
+            self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
+                                                            if var_col is None else \
+                                                            [ indx_col, var_col, covar_col ]),
+                                                        name='COVAR', header=cov_hdr) ]
+            if plane_col is not None:
+                self.hdu += [ fits.BinTableHDU.from_columns([plane_col], name='COVAR_PLANE') ]
+
+
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -886,20 +1183,95 @@ class SpatiallyBinnedSpectra:
         return self.hdu.info()
 
 
+    @property
+    def is_unbinned(self):
+        """Determine if the spectra are unbinned."""
+        return self.method['binpar'] is None and self.method['binclass'] is None \
+                    and self.method['binfunc'] is None
+
+
     def do_not_fit_flags(self):
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
 
-    # TODO: This function needs to be broken up
+    def above_snr_limit(self, sn_limit):
+        """
+        Flag bins above a provided S/N limit.
+        """
+#        warnings.warn('You\'re setting all but two spectra as bad!')
+#        test = self.hdu['BINS'].data['SNR'] > sn_limit
+#        test[:-2] = False
+#        return test
+        return self.hdu['BINS'].data['SNR'] > sn_limit
+
+
+    @staticmethod
+    def spectral_resolution_options():
+        """
+        Return the allowed options for treating the spectral resolution.
+
+        Options are:
+
+            'spaxel': If available, use the spectral resolution
+            determined for each spaxel.  This is pulled from the 'DISP'
+            extension in the DRP file; an exception will be raised if
+            this extension does not exist!
+
+            'cube': Only consider the median spectral resolution
+            determine for the entire datacube.  This is pulled from the
+            'SPECRES' extension in the DRP file; an exception will be
+            raised if this extension does not exist!
+
+        Returns:
+            list : List of the available method keywords.
+        """
+        return ['spaxel', 'cube']
+
+
     def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
                     clobber=False, loggers=None, quiet=False):
         """
-
         Bin and stack the spectra.
 
-        .. todo::
-            - Allow to weight by S/N?
+        Args:
+            drpf (:class:`mangadap.drpfits.DRPFits`): The DRP datacube
+                with the spectra to bin.
+            rdxqa (:class:`mangadap.proc.reductionassessments.ReductionAssessments`):
+                The basic assessments of the DRP data that are needed
+                for the binning procedures.
+            reff (float): (**Optional**) The effective radius of the
+                galaxy.
+            dapver (str): (**Optional**) The DAP version to use for the
+                analysis, used to override the default defined by
+                :func:`mangadap.config.defaults.default_dap_version`.
+            analysis_path (str): (**Optional**) The top-level path for
+                the DAP output files, used to override the default
+                defined by
+                :func:`mangadap.config.defaults.default_analysis_path`.
+            directory_path (str): The exact path to the directory with
+                DAP output that is common to number DAP "methods".  See
+                :attr:`directory_path`.
+            output_file (str): (**Optional**) Exact name for the output
+                file.  The default is to use
+                :func:`mangadap.config.defaults.default_dap_file_name`.
+            hardcopy (bool): (**Optional**) Flag to write the HDUList
+                attribute to disk.  Default is True; if False, the
+                HDUList is only kept in memory and would have to be
+                reconstructed.
+            symlink_dir (str): (**Optional**) Create a symbolic link to
+                the created file in the supplied directory.  Default is
+                to produce no symbolic link.
+            clobber (bool): (**Optional**) Overwrite any existing files.
+                Default is to use any existing file instead of redoing
+                the analysis and overwriting the existing output.
+            loggers (list): (**Optional**) List of `logging.Logger`_
+                objects to log progress; ignored if quiet=True.  Logging
+                is done using :func:`mangadap.util.log.log_output`.
+                Default is no logging.
+            quiet (bool): (**Optional**) Suppress all terminal and
+                logging output.  Default is False.
+
         """
 
         # Initialize the reporting
@@ -916,9 +1288,12 @@ class SpatiallyBinnedSpectra:
             if not self.quiet:
                 warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
+
+        # TODO: How many of these attributes should I keep, vs. just use
+        # drpf attributes?
         self.drpf = drpf
         self.shape = self.drpf.shape
-        self.spatial_shape =self.drpf.spatial_shape
+        self.spatial_shape = self.drpf.spatial_shape
         self.nspec = self.drpf.nspec
         self.spatial_index = self.drpf.spatial_index.copy()
         self.dispaxis = self.drpf.dispaxis
@@ -931,12 +1306,19 @@ class SpatiallyBinnedSpectra:
             raise TypeError('Must provide a valid ReductionAssessment object!')
         self.rdxqa = rdxqa
 
+        # Set the Galactic extinction correction defined by the method
+        self.galext = GalacticExtinction(form=self.method['galactic_reddening'],
+                                         wave=drpf['WAVE'].data,
+                                         ebv=drpf['PRIMARY'].header['EBVGAL'],
+                                         rv=self.method['galactic_rv'])
+
         # Save the effective radius if provided.  Only used if/when
         # scaling the radii by the effective radius in the radial
         # binning approach
         if reff is not None:
             self.reff = reff
 
+        #---------------------------------------------------------------
         # Get the good spectra
         #   - Must have valid pixels over more than 80% of the spectral
         #   range 
@@ -960,104 +1342,71 @@ class SpatiallyBinnedSpectra:
                                                                             numpy.sum(good_snr)))
             log_output(self.loggers, 1, logging.INFO, 'Number of good spectra: {0}'.format(
                                                                             numpy.sum(good_spec)))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Dereddening spectra assuming E(B-V) = {0}'.format(
-                                self.drpf['PRIMARY'].header['EBVGAL'] if self.deredden else 0.0))
-            if self.deredden:
+            if self.galext.form is None:
+                log_output(self.loggers, 1, logging.INFO, 'Galactic dereddening not applied.')
+            else:
                 log_output(self.loggers, 1, logging.INFO,
-                           'Galactic extinction law: {0}'.format(self.method['galactic_reddening']))
+                           'Galactic extinction law: {0}'.format(self.galext.form))
                 log_output(self.loggers, 1, logging.INFO,
-                           'Galactic R(V): {0}'.format(self.method['galactic_rv']))
+                           'Galactic E(B-V) = {0}'.format(self.galext.ebv))
+                log_output(self.loggers, 1, logging.INFO,
+                           'Galactic R(V): {0}'.format(self.galext.rv))
 
         if numpy.sum(good_spec) == 0:
             raise ValueError('No good spectra!')
 
+        #---------------------------------------------------------------
         # Fill in any remaining binning parameters
         self._fill_method_par(good_spec)
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)
 
+        #---------------------------------------------------------------
         # No binning so just fill the hdu with the appropriate data from
         # the DRP file
         if self.is_unbinned:
+
+            # TODO: This is just a short cut.  Would be better if I
+            # didn't use this.  I.e., I should treat the function calls
+            # exactly the same, but just create binning and stacking
+            # classes for when the data is unbinned...
         
+            # Report data is unbinned
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
-                            'No binning requested; \'Binned\' spectra same as in DRP file.')
-
-            # Set the number of bins
-            self.nbins = numpy.sum(good_spec)       # Number same as good number of bins
-            self.missing_bins = []                  # No missing bins
-
-            # Initialize the header keywords
-            hdr = self._clean_drp_header(ext='PRIMARY')
-            hdr = self._initialize_header(hdr)
-            hdr['BINTYPE'] = ('None', 'Binning method')
-            hdr = self._get_reddening_hdr(hdr)
-            red_hdr = fits.Header()
-            red_hdr = self._get_reddening_hdr(red_hdr)
-
-            # Generate the reddening correction
-            reddening_correction = self._get_reddening_corr()
-
-            # Get the flux and errors, including the reddening
-            # correction if requested
-            flux = self.drpf['FLUX'].data.copy()
-            ivar = self.drpf['IVAR'].data.copy()
-            if self.deredden:
-                flux, ivar = apply_reddening(flux, reddening_correction,
-                                             dispaxis=self.drpf.dispaxis, ivar=ivar)
-
-            # Initialize the basics of the mask
-            mask = self._initialize_mask(good_fgoodpix, good_snr)
-            npix = numpy.ones(self.drpf['FLUX'].data.shape, dtype=numpy.int)
-            npix[mask > 0] = 0
+                            'No binning requested; analyzing DRP spaxel data directly.')
 
             # Generate pseudo bin index
             bin_indx = numpy.full(self.drpf.spatial_shape, -1, dtype=numpy.int)
             i = numpy.asarray(tuple(drpf.spatial_index[good_spec]))
             bin_indx[i[:,0],i[:,1]] = numpy.arange(numpy.sum(good_spec))
-#            pyplot.imshow(bin_indx.T, origin='lower', interpolation='nearest')
+
+#            pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower',
+#                          interpolation='nearest')
 #            pyplot.show()
 
-            # Grab the per-spectrum data
-            bin_data = self._unbinned_data(bin_indx.ravel())
+            # Build the data arrays directly from the DRP file
+            flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())[good_spec,:]
 
-            # Set the HDUList just based on the original DRP data
-#            print('Building HDUList...', end='\r')
-            # TODO: Strip headers of sub extensions of everything but
-            # the WCS and HDUCLAS information.
-            self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
-                                      fits.ImageHDU(data=flux,
-                                                    header=self.drpf['FLUX'].header.copy(),
-                                                    name='FLUX'),
-                                      fits.ImageHDU(data=ivar,
-                                                    header=self.drpf['IVAR'].header.copy(),
-                                                    name='IVAR'),
-                                      fits.ImageHDU(data=mask,
-                                                    header=self.drpf['MASK'].header.copy(),
-                                                    name='MASK'),
-                                      self.drpf['WAVE'].copy(),
-                                      self.drpf['SPECRES'].copy(),
-                                      self.drpf['SPECRESD'].copy(),
-                                      fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
-                                                    name='REDCORR'),
-                                      fits.ImageHDU(data=numpy.zeros(self.drpf['FLUX'].data.shape),
-                                                    header=self.drpf['FLUX'].header.copy(),
-                                                    name='FLUXD'),
-                                      fits.ImageHDU(data=npix,
-                                                    header=self.drpf['FLUX'].header.copy(),
-                                                    name='NPIX'),
-                                      fits.ImageHDU(data=bin_indx, name='BINID'),
-                                      fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                             format=rec_to_fits_type(bin_data[n]),
-                                                array=bin_data[n]) for n in bin_data.dtype.names ],
-                                                                    name='BINS')
-                                      ])
-#            print('Building HDUList... done')
+            sdev = numpy.ma.zeros(flux.shape, dtype=float)
+            ivar = drpf.copy_to_masked_array(ext='IVAR',
+                                             flag=drpf.do_not_stack_flags())[good_spec,:]
+            npix = numpy.ones(flux.shape, dtype=numpy.int)
+            npix[numpy.ma.getmaskarray(flux)] = 0
+            mask = drpf.copy_to_array(ext='MASK')[good_spec,:]
+            sres = self.drpf.spectral_resolution(ext='DISP' if self.method['spec_res'] == 'spaxel'
+                                                        else 'SPECRES', toarray=True)[good_spec,:]
 
-            # Try to add the covariance data if requested
+            # TODO: Does this work with any covariance mode?  Don't like
+            # this back and forth between what is supposed to be a stack
+            # only function
+            # (SpectralStack.build_covariance_data_DRPFits) and
+            # something that is supposed to be indepenent of the details
+            # of the stacking implementation (SpatiallyBinnedSpectra)...
+
+            # Try to add the covariance data, if requested
+            covar=None
             if self.method['stackpar']['covar_mode'] not in ['none', None]:
                 if not self.quiet:
                     log_output(self.loggers, 1, logging.INFO, 'Attempting to compute covariance.')
@@ -1073,30 +1422,28 @@ class SpatiallyBinnedSpectra:
                     covar = None
 
                 if isinstance(covar, Covariance):
-                    cov_hdr = fits.Header()
-                    indx_col, covar_col, var_col, plane_col = covar.binary_columns(hdr=cov_hdr)
-                    
-                    # Include reddening correction in covariance
-                    if self.deredden:
-                        for i,j in enumerate(covar.input_indx):
-                            covar.cov[i] *= numpy.square(reddening_correction[j])
+                    covar = DAPFitsUtil.spaxel_to_bin_covariance(covar, bin_indx.ravel())
 
-                    self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
-                                                                  if var_col is None else \
-                                                                [ indx_col, var_col, covar_col ]),
-                                                                name='COVAR', header=cov_hdr) ]
-                    if plane_col is not None:
-                        self.hdu += [ fits.BinTableHDU.from_columns([plane_col],
-                                                                    name='COVAR_PLANE') ]
+            # Deredden the spectra if the method requests it
+            flux, ivar, _, covar = self._apply_reddening(flux, ivar, None, covar)
 
+            # Fill the table with the per-spectrum data
+            bin_data = self._unbinned_data_table(bin_indx.ravel())
+
+            # Build the internal HDUList object and covariance attribute
+            if (hardcopy or symlink_dir is not None) and not self.quiet:
+                warnings.warn('Hardcopies and symlinks of the SpatiallyBinnedSpectra object are '
+                              'never kept when analyzing unbinned data.')
+            self.hardcopy = False
+            self.symlink_dir = None
+            self._construct_2d_hdu(bin_indx, good_fgoodpix, good_snr, bin_data, flux, sdev, ivar,
+                                   npix, mask, sres, covar)
+            # Finish
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
-
-            # Never save a hard copy of the per-spectrum data; already
-            # saved in the ReductionAssessment and DRPFits objects
-            self.hardcopy = False
             return
 
+        #---------------------------------------------------------------
         # Check that the file path is defined
         ofile = self.file_path()
         if ofile is None:
@@ -1109,6 +1456,7 @@ class SpatiallyBinnedSpectra:
             log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
                                                                             self.output_file))
 
+        #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
         # file
         self.symlink_dir = symlink_dir
@@ -1127,49 +1475,53 @@ class SpatiallyBinnedSpectra:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
-        # Bin the spectra.  To be included in any bin, the spectra must
-        # be selected as 'good' according to the selections made above.
+        #---------------------------------------------------------------
+        # Determine how to bin the spectra.  To be included in any bin,
+        # the spectra must be selected as 'good' according to the
+        # selections made above.
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Binning spectra ...')
-        x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
-        y = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
-        bin_indx = numpy.full(self.drpf.nspec, -1, dtype=numpy.int)
-        bin_indx[good_spec] = self.method['binfunc'](x[good_spec], y[good_spec],
-                                                     par=self.method['binpar'])
+        bin_indx = numpy.full(self.nspec, -1, dtype=numpy.int)
+        bin_indx[good_spec] \
+                = self.method['binfunc'](self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0],
+                                         self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1],
+                                         par=self.method['binpar'])
         if numpy.sum(bin_indx > -1) == 0:
             raise ValueError('No spectra in ANY bin!')
 
-        # Done for testing missing bins
+#        # Done for testing missing bins
 #        warnings.warn('You\'re forcing bins 2 and 3 to be empty!')
+#        time.sleep(3)
+#        warnings.warn('Proceeding...')
 #        bin_indx[ (bin_indx == 2) | (bin_indx == 3) ] = 1
 
+        #---------------------------------------------------------------
         # Stack the spectra in each bin
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Stacking spectra ...')
-        stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_covar = \
+        stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, stack_sres, stack_covar = \
                 self.method['stackfunc'](self.drpf, bin_indx, par=self.method['stackpar'])
-
         if stack_covar is not None and stack_covar.is_correlation:
             raise ValueError('Unexpected to have stack covariance be a correlation matrix.')
 
-        # Generate the reddening correction
-        reddening_correction = self._get_reddening_corr()
-#        pyplot.plot(self.drpf['WAVE'].data, reddening_correction)
-#        pyplot.show()
+        # Construct the mask
+        stack_mask = numpy.zeros(stack_flux.shape, dtype=self.bitmask.minimum_dtype())
+        indx = numpy.invert(stack_npix>0)
+        stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], ['NONE_IN_STACK', 'NO_STDDEV'])
+        indx = numpy.invert(stack_npix>1)
+        stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], 'NO_STDDEV')
 
-        # And apply it if requested
-        if self.deredden:
-            stack_flux, stack_ivar = apply_reddening(stack_flux, reddening_correction, dispaxis=1,
-                                                     ivar=stack_ivar)
-            stack_sdev = apply_reddening(stack_sdev, reddening_correction, dispaxis=1)
-#            c = numpy.array([reddening_correction]*stack_flux.shape[0])
-#            stack_flux *= c
-#            stack_sdev *= c
-#            if stack_ivar is not None:
-#                stack_ivar /= numpy.square(c)
-            if stack_covar is not None:
-                for i,j in enumerate(stack_covar.input_indx):
-                    stack_covar.cov[i] *= numpy.square(reddening_correction[j])
+        #---------------------------------------------------------------
+        # Deredden the spectra if the method requests it
+        stack_flux, stack_ivar, stack_sdev, stack_covar \
+                = self._apply_reddening(stack_flux, stack_ivar, stack_sdev, stack_covar)
+
+#        if self.galext.form is not None:
+#            stack_flux, stack_ivar = self.galext.apply(stack_flux, ivar=stack_ivar)
+#            stack_sdev = self.galext.apply(stack_sdev)
+#            if stack_covar is not None:
+#                for i,j in enumerate(stack_covar.input_indx):
+#                    stack_covar.cov[i] *= numpy.square(self.galext.redcorr[j])
 
 #        print(stack_covar.input_indx)
 #        stack_covar.show(plane=0)
@@ -1184,160 +1536,53 @@ class SpatiallyBinnedSpectra:
 #        pyplot.step(stack_wave, stack_ivar[4,:], where='mid', linestyle='-', color='g')
 #        pyplot.show()
 
+        #---------------------------------------------------------------
+        # Fill the table with the per-bin data
+        bin_data = self._binned_data_table(bin_indx, stack_flux, stack_ivar)
 
-#        pyplot.scatter(stack_signal, stack_noise, marker='.', color='k', s=40, lw=0)
-#        pyplot.show()
+        #---------------------------------------------------------------
+        # Build the internal HDUList object and covariance attribute
+        self.hardcopy = hardcopy
+        self._construct_2d_hdu(bin_indx, good_fgoodpix, good_snr, bin_data, stack_flux, stack_sdev,
+                              stack_ivar, stack_npix, stack_mask, stack_sres, stack_covar)
 
+        #---------------------------------------------------------------
+        # Write the data, if requested
+        if self.hardcopy:
+            if not os.path.isdir(self.directory_path):
+                os.makedirs(self.directory_path)
+            self.write(clobber=clobber)
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing data ...')
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-        # Get the unique bins, how to reconstruct the bins from the
-        # unique set, and the number of spectra in each bin
-        unique_bins, reconstruct, bin_count = numpy.unique(bin_indx, return_inverse=True,
-                                                           return_counts=True)
 
-        # Get the number of returned bins, based on their ID number.
-        # - The number of returned bins MAY NOT BE THE SAME as the
-        #   number of requested bins.  E.g., if radial bins were
-        #   requested out to 2.5 Reff, when coverage only goes to 1.5
-        #   Reff.
-        # - There may also be bins with NO spectra; it is expected that
-        #   the stacking function DOES NOT return empty spectra but only
-        #   produces a spectrum for the unique bin IDs in the list
-        #   provided.  Missing bins interspersed with other bins are
-        #   filled in; however, expected bins with indices higher then
-        #   self.nbin-1 will not be.
-        self.nbins = numpy.amax(unique_bins)+1
-        self.missing_bins = list(set(numpy.arange(self.nbins)) - set(unique_bins))
+    def construct_3d_hdu(self):
+        """
+        Reformat the binned spectra into a cube matching the shape of
+        the DRP fits file from which it was derived.
+        """
 
-        # Recalculate the mean signal, mean noise, and mean S/N of the
-        # binned spectra
-        #   - stack_ivar is always expected to exist!
-        #   - all returned arrays are expected to be MaskedArrays!
-        # !! THIS IS OVER ALL WAVELENGTHS !!
-#        print(numpy.sum(stack_ivar.mask))
-#        print(numpy.sum(stack_flux.mask))
-#        assert numpy.all(stack_ivar.mask == stack_flux.mask)
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Constructing binned spectra datacube ...')
 
-        _mask = numpy.ma.getmaskarray(stack_flux) | numpy.ma.getmaskarray(stack_ivar) \
-                    | numpy.array([
-                        self.drpf.wavelength_mask(waverange=self.rdxqa.method['waverange'])
-                                  ]*stack_flux.shape[0])
-        _stack_flux = numpy.ma.MaskedArray(stack_flux.data, mask=_mask)
-        _stack_ivar = numpy.ma.MaskedArray(stack_ivar.data, mask=_mask)
-        stack_nsum = numpy.sum(numpy.invert(_mask), axis=1)
-        stack_signal = numpy.ma.sum(_stack_flux,axis=1) / stack_nsum
-        stack_variance = numpy.ma.sum(numpy.ma.power(_stack_ivar, -1.), axis=1)/stack_nsum
-        stack_snr = numpy.ma.sum(_stack_flux*numpy.ma.sqrt(_stack_ivar), axis=1)/stack_nsum
-        del _mask, _stack_flux, _stack_ivar
+        # Get/Copy the necessary data arrays
+        bin_indx = self.hdu['BINID'].data.copy().ravel()
+        stack_flux = self.hdu['FLUX'].data.copy()
+        stack_sdev = self.hdu['FLUXD'].data.copy()
+        stack_ivar = self.hdu['IVAR'].data.copy()
+        stack_npix = self.hdu['NPIX'].data.copy()
+        stack_sres = self.hdu['SPECRES'].data.copy()
 
-#        pyplot.scatter(stack_snr, stack_signal, marker='.', color='k', s=40, lw=0)
-#        pyplot.show()
+        # Reconstruct the stacked spectra into a DRP-like datacube
+        flux, mask, sdev, ivar, npix, sres \
+                = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx,
+                                               [ stack_flux, numpy.ma.getmaskarray(stack_flux),
+                                                 stack_sdev, stack_ivar, stack_npix, stack_sres ])
 
-        # Intialize the data for the binned spectra
-        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
-        bin_data['BIN_INDEX'] = numpy.arange(self.nbins)
-
-        bin_data['SIGNAL'] = _fill_vector(stack_signal, self.nbins, self.missing_bins, -999) \
-                                if len(self.missing_bins) > 0 else stack_signal
-        bin_data['VARIANCE'] = _fill_vector(stack_variance, self.nbins, self.missing_bins, -999) \
-                                if len(self.missing_bins) > 0 else stack_variance
-        bin_data['SNR'] = _fill_vector(stack_snr, self.nbins, self.missing_bins, -999) \
-                            if len(self.missing_bins) > 0 else stack_snr
-
-        # Sort the list of bin ids and determine where the spectra jump
-        # between bins
-        srt = numpy.argsort(bin_indx)
-        bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
-
-        # Get the signal-weighted
-        wsum = numpy.add.reduceat(self.rdxqa['SPECTRUM'].data['SIGNAL'][srt], bin_change)
-        wx = numpy.add.reduceat((x*self.rdxqa['SPECTRUM'].data['SIGNAL'])[srt], bin_change)/wsum
-        wy = numpy.add.reduceat((y*self.rdxqa['SPECTRUM'].data['SIGNAL'])[srt], bin_change)/wsum
-        wr = numpy.add.reduceat((self.rdxqa['SPECTRUM'].data['ELL_COO'][:,0] \
-                                    * self.rdxqa['SPECTRUM'].data['SIGNAL'])[srt], bin_change)/wsum
-        wt = numpy.add.reduceat((self.rdxqa['SPECTRUM'].data['ELL_COO'][:,1] \
-                                    * self.rdxqa['SPECTRUM'].data['SIGNAL'])[srt], bin_change)/wsum
-
-        # ... and unweighted on-sky coordinates
-        bn = bin_count[1:].astype(int)
-        bx = numpy.add.reduceat(x[srt], bin_change)/bn
-        by = numpy.add.reduceat(y[srt], bin_change)/bn
-        br = numpy.add.reduceat(self.rdxqa['SPECTRUM'].data['ELL_COO'][srt,0], bin_change)/bn
-        bt = numpy.add.reduceat(self.rdxqa['SPECTRUM'].data['ELL_COO'][srt,1], bin_change)/bn
-
-        # The mean azimuth can go wrong when bins cross the major axis
-        _wt = numpy.add.reduceat(((self.rdxqa['SPECTRUM'].data['ELL_COO'][:,1]+180) \
-                                    * self.rdxqa['SPECTRUM'].data['SIGNAL'])[srt], bin_change)/wsum
-#        pyplot.scatter( wt, _wt-180-wt, marker='.', color='r', s=40, lw=0 )
-        indx = numpy.absolute(_wt-180-wt) > 1.0         # HARDWIRED
-        wt[indx] = _wt[indx]-180
-
-        _bt = numpy.add.reduceat(self.rdxqa['SPECTRUM'].data['ELL_COO'][srt,1]+180, bin_change)/bn
-#        pyplot.scatter( bt, _bt-180-bt, marker='.', color='b', s=40, lw=0 )
-#        pyplot.show()
-        indx = numpy.absolute(_bt-180-bt) > 1.0         # HARDWIRED
-        bt[indx] = _bt[indx]-180
-
-        # Compute the area covered by each bin
-        area = self.drpf.binned_on_sky_area(bin_indx, x=x, y=y)
-
-        # Some bins may not have spectra; _fill_vector() inserts default values
-        bin_data['NBIN'] = _fill_vector(bn, self.nbins, self.missing_bins, -999) \
-                            if len(self.missing_bins) > 0 else bn
-        bin_data['SKY_COO'][:,0] = _fill_vector(bx, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else bx
-        bin_data['SKY_COO'][:,1] = _fill_vector(by, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else by
-        bin_data['ELL_COO'][:,0] = _fill_vector(br, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else br
-        bin_data['ELL_COO'][:,1] = _fill_vector(bt, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else bt
-        bin_data['LW_SKY_COO'][:,0] = _fill_vector(wx, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else wx
-        bin_data['LW_SKY_COO'][:,1] = _fill_vector(wy, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else wy
-        bin_data['LW_ELL_COO'][:,0] = _fill_vector(wr, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else wr
-        bin_data['LW_ELL_COO'][:,1] = _fill_vector(wt, self.nbins, self.missing_bins, -999) \
-                                    if len(self.missing_bins) > 0 else wt
-        bin_data['AREA'] = _fill_vector(area, self.nbins, self.missing_bins, -999) \
-                            if len(self.missing_bins) > 0 else area
-
-        # Calculate the fractional area of the bin covered by the
-        # spectra, if possible; if not, the fractional area is unity
-        try:
-            bin_area = self.method['binclass'].bin_area()
-        except AttributeError as e:
-            if not self.quiet:
-                warnings.warn('Could not calculate nominal bin area:: '
-                              'AttributeError: {0}'.format(e))
-            bin_area = bin_data['AREA']
-        bin_data['AREA_FRAC'] = bin_data['AREA']/bin_area[:self.nbins]
-
-        # Restructure the output to match the input DRP file
-        indx = bin_indx > -1
-
-        flux = numpy.zeros(self.shape, dtype=numpy.float)
-        flux.reshape(-1,self.nwave)[indx,:] = stack_flux[unique_bins[reconstruct[indx]],:]
-
-        mask = numpy.zeros(self.shape, dtype=numpy.bool)
-        if isinstance(stack_flux, numpy.ma.MaskedArray):
-            mask.reshape(-1,self.nwave)[indx,:] \
-                = numpy.ma.getmaskarray(stack_flux)[unique_bins[reconstruct[indx]],:]
-
-        sdev = numpy.zeros(self.shape, dtype=numpy.float)
-        sdev.reshape(-1,self.nwave)[indx,:] = stack_sdev[unique_bins[reconstruct[indx]],:]
-
-        ivar = numpy.zeros(self.shape, dtype=numpy.float)
-        ivar.reshape(-1,self.nwave)[indx,:] = stack_ivar[unique_bins[reconstruct[indx]],:]
-
-        npix = numpy.zeros(self.shape, dtype=numpy.int)
-        npix.reshape(-1,self.nwave)[indx,:] = stack_npix[unique_bins[reconstruct[indx]],:]
-
-        self.covariance = None
-        if stack_covar is not None:
-            self._fill_covariance(stack_covar, bin_indx)
+        # TODO: Move this to the Covariance class?
+        if self.covariance is not None:
+            self.covariance = DAPFitsUtil.bin_to_spaxel_covariance(self.covariance, bin_indx)
 
 #        print(self.covariance.input_indx)
 #        self.covariance.show(plane=self.covariance.input_indx[0])
@@ -1349,17 +1594,8 @@ class SpatiallyBinnedSpectra:
 #                    linestyle='-', color='b')
 #        pyplot.show()
 
-        # Initialize the header keywords
-        self.hardcopy = hardcopy
-        hdr = self._clean_drp_header(ext='PRIMARY')
-        hdr = self._initialize_header(hdr)
-        hdr = self._add_method_header(hdr)
-        hdr = self._get_reddening_hdr(hdr)
-        red_hdr = fits.Header()
-        red_hdr = self._get_reddening_hdr(red_hdr)
-
         # Initialize the basics of the mask
-        mask_bit_values = self._initialize_mask(good_fgoodpix, good_snr)
+        mask_bit_values = self._initialize_cube_mask()
 
         # Add flags based on the availability of pixels to stack
         indx = numpy.invert(npix>0)
@@ -1376,91 +1612,93 @@ class SpatiallyBinnedSpectra:
 #                      interpolation='nearest')
 #        pyplot.show()
 
+        # Primary header is identical regardless of the shape of the
+        # extensions
+        hdr = self.hdu['PRIMARY'].header.copy()
+        cube_hdr = DAPFitsUtil.build_cube_header(self.drpf, 'K Westfall <westfall@ucolick.org>')
+
         # Save the data to the hdu attribute
         # TODO: Strip headers of sub extensions of everything but
         # the WCS and HDUCLAS information.  Key WCS information in
         # BINID.
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
-                                  fits.ImageHDU(data=flux.data,
-                                                header=self.drpf['FLUX'].header.copy(),
-                                                name='FLUX'),
-                                  fits.ImageHDU(data=ivar.data,
-                                                header=self.drpf['IVAR'].header.copy(),
-                                                name='IVAR'),
-                                  fits.ImageHDU(data=mask_bit_values,
-                                                header=self.drpf['MASK'].header.copy(),
-                                                name='MASK'),
-                                  self.drpf['WAVE'].copy(),
-                                  self.drpf['SPECRES'].copy(),
-                                  self.drpf['SPECRESD'].copy(),
-                                  fits.ImageHDU(data=reddening_correction.data, header=red_hdr,
-                                                name='REDCORR'),
-                                  fits.ImageHDU(data=sdev.data,
-                                                header=self.drpf['FLUX'].header.copy(),
-                                                name='FLUXD'),
-                                  fits.ImageHDU(data=npix.data,
-                                                header=self.drpf['FLUX'].header.copy(),
-                                                name='NPIX'),
-                                  fits.ImageHDU(data=bin_indx.reshape(self.drpf.spatial_shape),
-                                                name='BINID'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                             format=rec_to_fits_type(bin_data[n]),
-                                                array=bin_data[n]) for n in bin_data.dtype.names ],
-                                                               name='BINS')
-                                ])
+        hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
+                             fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
+                             fits.ImageHDU(data=ivar, header=cube_hdr, name='IVAR'),
+                             fits.ImageHDU(data=mask_bit_values, header=cube_hdr, name='MASK'),
+                             self.hdu['WAVE'].copy(),
+                             fits.ImageHDU(data=sres, header=cube_hdr, name='SPECRES'),
+                             self.hdu['REDCORR'].copy(),
+                             fits.ImageHDU(data=sdev, header=cube_hdr, name='FLUXD'),
+                             fits.ImageHDU(data=npix, header=cube_hdr, name='NPIX'),
+                             self.hdu['BINID'].copy(),
+                             self.hdu['BINS'].copy()
+                           ])
+
+        # No covariance
+        if self.covariance is None:
+            return hdu
 
         # Fill the covariance matrix
-        if self.covariance is not None:
-            cov_hdr = fits.Header()
-            indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
-            self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
-                                                            if var_col is None else \
-                                                            [ indx_col, var_col, covar_col ]),
-                                                        name='COVAR', header=cov_hdr) ]
-            if plane_col is not None:
-                self.hdu += [ fits.BinTableHDU.from_columns([plane_col], name='COVAR_PLANE') ]
+        cov_hdr = fits.Header()
+        indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
+        hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
+                                                   if var_col is None else \
+                                                   [ indx_col, var_col, covar_col ]),
+                                               name='COVAR', header=cov_hdr) ]
+        if plane_col is not None:
+            hdu += [ fits.BinTableHDU.from_columns([plane_col], name='COVAR_PLANE') ]
 
-        # Write the data, if requested
-        if not os.path.isdir(self.directory_path):
-            os.makedirs(self.directory_path)
-        if self.hardcopy:
-            self.write(clobber=clobber)
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, '-'*50)
+        return hdu
 
 
-    def write(self, clobber=False):
+    def write(self, match_DRP=False, clobber=False):
         """
         Write the hdu object to the file.
         """
-        # Restructure the data to match the DRPFits file
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Restructuring data to match DRP.')
-        if self.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays, inverse=True)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        elif self.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-        
-        # Get the output file and determine if it should be compressed
-        ofile = self.file_path()
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, symlink_dir=self.symlink_dir,
-                  loggers=self.loggers, quiet=self.quiet)
+        # Convert the spectral arrays in the HDU to a 3D cube and write
+        # it
+        if match_DRP:
+            hdu = self.construct_3d_hdu()
+            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.drpf.mode, self.spectral_arrays,
+                                     self.image_arrays, clobber=clobber, checksum=True,
+                                     symlink_dir=self.symlink_dir, loggers=self.loggers,
+                                     quiet=self.quiet)
+            return
 
-        # Revert the structure
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        if self.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
-        elif self.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        # Restructure the spectral arrays as if they're RSS data, and
+        # restructure any maps
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+        # Write the HDU
+        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                  symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+        # Revert back to the python native storage for internal use
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
         """
 
         Read an existing file with a previously binned set of spectra.
+
+        Args:
+            ifile (str): (**Optional**) Name of the file with the data.
+                Default is to use the name provided by
+                :func:`file_path`.
+            strict (bool): (**Optional**) Force a strict reading of the
+                file to make sure that it adheres to the expected
+                format.  At the moment, this only checks to make sure
+                the method keyword printed in the header matches the
+                expected value in :attr:`method`.
+            checksum (bool): (**Optional**) Use the checksum in the
+                header to check for corruption of the data.  Default is
+                False.
+
+        Raises:
+            FileNotFoundError: Raised if the file does not exist.
+            ValueError: Raised if strict is true and the header keyword
+                'BINKEY' does not match the method keyword.
 
         """
         if ifile is None:
@@ -1477,20 +1715,17 @@ class SpatiallyBinnedSpectra:
         # that was used in writing the file
         if self.hdu['PRIMARY'].header['BINKEY'] != self.method['key']:
             if strict:
-                raise ValueError('Keywords in header does not match specified method keyword!')
+                raise ValueError('Keywords in header do not match specified method keywords!')
             elif not self.quiet:
-                warnings.warn('Keywords in header does not match specified method keyword!')
+                warnings.warn('Keywords in header do not match specified method keywords!')
         # TODO: "strict" should also check other aspects of the file to
         # make sure that the details of the method are also the same,
         # not just the keyword
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        if self.drpf.mode == 'CUBE':
-            MaNGAFits.restructure_cube(self.hdu, ext=self.spectral_arrays)
-            MaNGAFits.restructure_map(self.hdu, ext=self.image_arrays)
-        elif self.drpf.mode == 'RSS':
-            MaNGAFits.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read and construct the covariance object
         try:
@@ -1518,57 +1753,55 @@ class SpatiallyBinnedSpectra:
             self.method['stackpar'].fromheader(self.hdu['PRIMARY'].header)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
-        try:
-            self.missing_bins = eval(self.hdu['PRIMARY'].header['EMPTYBIN'])
-        except KeyError:
-            # Assume if this fails, it's because the keyword doesn't
-            # exist
-            self.missing_bins = []
+        self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(self.hdu['BINS'].data['BINID'])
+#        try:
+#            self.missing_bins = eval(self.hdu['PRIMARY'].header['EMPTYBIN'])
+#        except KeyError:
+#            # Assume if this fails, it's because the keyword doesn't
+#            # exist
+#            self.missing_bins = []
+
+        # Galactic extinction data already set by bin_spectra
 
 
-    def unique_bins(self, index=False):
+    def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
         """
-        Get the unique bins or the indices of the unique bins in the
-        flattened spatial dimension.
-        """
-        unique_bins, first_occurrence = numpy.unique(self.hdu['BINID'].data.ravel(),
-                                                     return_index=True)
-        return first_occurrence[1:] if index else unique_bins[1:]
+        Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
+        specific for :class:`SpatiallyBinnedSpectra`.
 
-
-    def copy_to_array(self, waverange=None, ext='FLUX'):
-        r"""
         Return a copy of the selected data array.  The array size is
-        always :math:`N_{\rm bins} \times N_{\rm wavelength}`; i.e., the
+        always :math:`N_{\rm models} \times N_{\rm wavelength}`; i.e., the
         data is always flattened to two dimensions and the unique
-        spectra are selected.  See :func:`unique_bins` and
-        :func:`mangadap.drpfits.DRPFits.copy_to_array`.
+        spectra are selected.
 
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 ``'FLUX'``.
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            include_missing (bool) : (**Optional**) Create an array with
+                a size that accommodates the missing models.
 
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
         """
-        arr = DRPFits.copy_to_array(self, waverange=waverange, ext=ext)[
-                                                                self.unique_bins(index=True),:]
-        if len(self.missing_bins) == 0:
-            return arr
-        _arr = numpy.zeros( (self.nbins, self.nwave), dtype=self.hdu[ext].data.dtype)
-        _arr[self.unique_bins(),:] = arr
-        return _arr
+        return DAPFitsUtil.copy_to_array(self.hdu, ext=ext, allowed_ext=self.spectral_arrays,
+                                         waverange=waverange,
+                                        missing_bins=self.missing_bins if include_missing else None,
+                                         nbins=self.nbins,
+                                        unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
-    def copy_to_masked_array(self, waverange=None, ext='FLUX', mask_ext='MASK', flag=None):
-        r"""
+    def copy_to_masked_array(self, ext='FLUX', flag=None, waverange=None, include_missing=False):
+        """
+        Wrapper for
+        :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array`
+        specific for :class:`SpatiallyBinnedSpectra`.
 
         Return a copy of the selected data array as a masked array.
         This is functionally identical to :func:`copy_to_array`,
@@ -1577,37 +1810,32 @@ class SpatiallyBinnedSpectra:
         `flag`.
         
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
             ext (str) : (**Optional**) Name of the extension from which
                 to draw the data.  Must be allowed for the current
                 :attr:`mode`; see :attr:`data_arrays`.  Default is
                 `'FLUX'`.
-            mask_ext (str) : (**Optional**) Name of the extension with
-                the mask bit data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
-                `'MASK'`.
             flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
                 masked.  The names *must* be a valid bit name as defined
-                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).  If
-                not provided, *ANY* non-zero mask bit is omitted.
+                by :attr:`bitmask`.  If not provided, *ANY* non-zero
+                mask bit is omitted.
+            waverange (array-like) : (**Optional**) Two-element array
+                with the first and last wavelength to include in the
+                computation.  Default is to use the full wavelength
+                range.
+            include_missing (bool) : (**Optional**) Create an array with
+                a size that accommodates the missing models.
 
         Returns:
             numpy.ndarray: A 2D array with a copy of the data from the
             selected extension.
+        
         """
-
-        arr = DRPFits.copy_to_masked_array(self, waverange=waverange, ext=ext, mask_ext=mask_ext,
-                                           flag=flag)[self.unique_bins(index=True),:]
-        if len(self.missing_bins) == 0:
-            return arr
-        _arr = numpy.ma.zeros( (self.nbins, self.nwave), dtype=self.hdu[ext].data.dtype)
-        _arr[self.unique_bins(),:] = arr
-        _arr[self.missing_bins,:] = numpy.ma.masked
-        return _arr
-
-
+        return DAPFitsUtil.copy_to_masked_array(self.hdu, ext=ext, mask_ext='MASK', flag=flag,
+                                              bitmask=self.bitmask,
+                                              allowed_ext=self.spectral_arrays,
+                                              waverange=waverange,
+                                       missing_bins=self.missing_bins if include_missing else None,
+                                              nbins=self.nbins,
+                                        unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 

@@ -12,15 +12,15 @@ import numpy
 
 from argparse import ArgumentParser
 
-import matplotlib
-matplotlib.use('Agg')
+#import matplotlib
+#matplotlib.use('Agg')
 from matplotlib import pyplot, rc
 from matplotlib.ticker import NullFormatter
 
 from astropy.io import fits
 
 from mangadap.par.analysisplan import AnalysisPlanSet
-from mangadap.dapmaps import DAPMapsBitMask
+from mangadap.dapfits import DAPMapsBitMask
 from mangadap.config.defaults import default_dap_method, default_dap_method_path
 from mangadap.config.defaults import default_dap_plan_file
 
@@ -245,7 +245,8 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     ax.xaxis.set_major_formatter(NullFormatter())
     ax.yaxis.set_major_formatter(NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(binid, origin='lower', interpolation='nearest', cmap='spectral', zorder=4,
+
+    im = ax.imshow(binid[0,:,:], origin='lower', interpolation='nearest', cmap='CMRmap', zorder=4,
                    extent=extent, vmin=bin_lim[0], vmax=bin_lim[1])
     cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
                      colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)

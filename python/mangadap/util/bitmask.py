@@ -620,4 +620,14 @@ class BitMask:
 #        return value & ~(1 << self.bits[flag])
 
 
+    def consolidate(self, value, flag_set, consolidated_flag):
+        """
+        Consolidate a set of flags into a single flag.
+        """
+        indx = self.flagged(value, flag=flag_set)
+        value[indx] = self.turn_on(value[indx], consolidated_flag)
+        return value
+
+
+
 
