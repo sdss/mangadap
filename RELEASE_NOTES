@@ -31,9 +31,11 @@ KBW (??         ): tag 2.1
       fluxes; core function identical for the summed and Gaussian-fit
       fluxes.
     - Moved construction of main output files to dapfits.py
+    - Include a map mask in reference files
 
 TO FIX:
     - emission-line moment masks
+    - BINID bitpix
 
 --------------------------------------------------------------------------------
 KBW (04 Aug 2016): tag 2.0.2
