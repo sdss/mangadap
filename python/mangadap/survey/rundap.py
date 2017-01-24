@@ -340,23 +340,23 @@ class rundap:
 
     """
     def __init__(self,
-                # Run mode options
-                daily=None, all=None, clobber=None, redo=None,
-                # STDIO options
-                console=None, quiet=None, version=None,
-                # Override default environmental variables
-                strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
-                # Definitions used to set files to process
-                plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
-                combinatorics=False,
-                prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
-                # Databases with input parameter information
-                platetargets=None,
-                # Flags for script contents
-                log=False, dapproc=True, plots=True, verbose=0,
-                # Cluster options
-                label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                create=False, submit=False, queue=None):
+                 # Run mode options
+                 daily=None, all=None, clobber=None, redo=None,
+                 # STDIO options
+                 console=None, quiet=None, version=None,
+                 # Override default environmental variables
+                 strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
+                 # Definitions used to set files to process
+                 plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
+                 combinatorics=False, list_file=None,
+                 prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
+                 # Databases with input parameter information
+                 platetargets=None,
+                 # Flags for script contents
+                 log=False, dapproc=True, plots=True, verbose=0,
+                 # Cluster options
+                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
+                 create=False, submit=False, queue=None):
 
         # Save run-mode options
         self.daily = daily
@@ -381,9 +381,19 @@ class rundap:
         self.prior_bin = prior_bin
         self.prior_iter = prior_iter
         self.prior_old = prior_old
-        self.platelist = arginp_to_list(platelist, evaluate=True)
-        self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
-        self.modelist = arginp_to_list(modelist)
+
+        if list_file is not None and not os.path.isfile(list_file):
+            raise FileNotFoundError('No file: {0}'.format(list_file))
+
+        if list_file is None:
+            self.platelist = arginp_to_list(platelist, evaluate=True)
+            self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
+            self.modelist = arginp_to_list(modelist)
+        else:
+            if platelist is not None or ifudesignlist is not None or modelist is not None:
+                warnings.warn('Provided file with list of files supercedes other input.')
+            self.platelist, self.ifudesignlist, self.modelist = self._read_file_list(list_file)
+
         self.combinatorics = combinatorics
 
         # plateTargets file(s) to be used by the DRPComplete class,
@@ -577,6 +587,12 @@ class rundap:
     # ******************************************************************
     #  UTILITY FUNCTIONS
     # ******************************************************************
+    def _read_file_list(self, list_file):
+        db = numpy.genfromtxt(list_file, dtype=object)
+        return db[:,0].astype(int).tolist(), db[:,0].astype(int).tolist(), \
+                    db[:,0].astype(str).tolist()
+
+
     def _read_arg(self):
         """Read and interpret the terminal command-line arguments.
 
