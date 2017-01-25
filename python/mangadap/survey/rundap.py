@@ -130,6 +130,8 @@ try:
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
+import numpy
+
 from .drpcomplete import DRPComplete
 from ..drpfits import DRPFits
 from ..config.defaults import default_redux_path, default_drp_directory_path
@@ -340,23 +342,23 @@ class rundap:
 
     """
     def __init__(self,
-                # Run mode options
-                daily=None, all=None, clobber=None, redo=None,
-                # STDIO options
-                console=None, quiet=None, version=None,
-                # Override default environmental variables
-                strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
-                # Definitions used to set files to process
-                plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
-                combinatorics=False,
-                prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
-                # Databases with input parameter information
-                platetargets=None,
-                # Flags for script contents
-                log=False, dapproc=True, plots=True, verbose=0,
-                # Cluster options
-                label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                create=False, submit=False, queue=None):
+                 # Run mode options
+                 daily=None, all=None, clobber=None, redo=None,
+                 # STDIO options
+                 console=None, quiet=False, version=None,
+                 # Override default environmental variables
+                 strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
+                 # Definitions used to set files to process
+                 plan_file=None, platelist=None, ifudesignlist=None, modelist=None,
+                 combinatorics=False, list_file=None,
+                 prior_mode=None, prior_bin=None, prior_iter=None, prior_old=None,
+                 # Databases with input parameter information
+                 platetargets=None,
+                 # Flags for script contents
+                 log=False, dapproc=True, plots=True, verbose=0,
+                 # Cluster options
+                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
+                 create=False, submit=False, queue=None):
 
         # Save run-mode options
         self.daily = daily
@@ -381,9 +383,19 @@ class rundap:
         self.prior_bin = prior_bin
         self.prior_iter = prior_iter
         self.prior_old = prior_old
-        self.platelist = arginp_to_list(platelist, evaluate=True)
-        self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
-        self.modelist = arginp_to_list(modelist)
+
+        if list_file is not None and not os.path.isfile(list_file):
+            raise FileNotFoundError('No file: {0}'.format(list_file))
+
+        if list_file is None:
+            self.platelist = arginp_to_list(platelist, evaluate=True)
+            self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
+            self.modelist = arginp_to_list(modelist)
+        else:
+            if platelist is not None or ifudesignlist is not None or modelist is not None:
+                warnings.warn('Provided file with list of files supercedes other input.')
+            self.platelist, self.ifudesignlist, self.modelist = self._read_file_list(list_file)
+
         self.combinatorics = combinatorics
 
         # plateTargets file(s) to be used by the DRPComplete class,
@@ -428,6 +440,14 @@ class rundap:
             print('This is version 2.0')
             return
 
+#        print('Plates:')
+#        print(self.platelist)
+#        print('IFUs:')
+#        print(self.ifudesignlist)
+#        print('Modes:')
+#        print(self.modelist)
+#        print(len(self.platelist), len(self.ifudesignlist), len(self.modelist))
+
         # Make sure the selected MPL version is available
         try:
             self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
@@ -471,7 +491,7 @@ class rundap:
             print('Attempting to submit to queue: {0}'.format(self.q))
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
         self.mpl.show()
-        self.mpl.verify_versions()
+        self.mpl.verify_versions(quiet=self.quiet)
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
@@ -577,6 +597,14 @@ class rundap:
     # ******************************************************************
     #  UTILITY FUNCTIONS
     # ******************************************************************
+    def _read_file_list(self, list_file):
+        db = numpy.genfromtxt(list_file, dtype=object)
+        if db.shape[1] != 3:
+            raise ValueError('Input file should contain 3 columns.')
+        return db[:,0].astype(int).tolist(), db[:,1].astype(int).tolist(), \
+                    db[:,2].astype(str).tolist()
+
+
     def _read_arg(self):
         """Read and interpret the terminal command-line arguments.
 
@@ -639,6 +667,9 @@ class rundap:
                             default=None)
         parser.add_argument("--modelist", type=str, help="set list of DRP output modes to reduce"
                             " (CUBE or RSS)", default=None)
+        parser.add_argument("--list_file", type=str,
+                            help="a file with the list of plates, ifudesigns, and modes to analyze",
+                            default=None)
         parser.add_argument("--combinatorics", help="force execution of all permutations of the "
                             "provided lists", action="store_true", default=False)
 
@@ -700,7 +731,7 @@ class rundap:
 
         # Set the versions to use
         # Will OVERWRITE existing input from __init__()
-        self.strictver = ~arg.loose
+        self.strictver = not arg.loose
         if arg.mplver is not None:
             self.mpl = arg.mplver
         if arg.redux_path is not None:
@@ -722,12 +753,22 @@ class rundap:
         if arg.prior_old is not None:
             self.prior_old = arg.prior_old
 
-        if arg.platelist is not None:
-            self.platelist = arginp_to_list(arg.platelist, evaluate=True)
-        if arg.ifudesignlist is not None:
-            self.ifudesignlist = arginp_to_list(arg.ifudesignlist, evaluate=True)
-        if arg.modelist is not None:
-            self.modelist = arginp_to_list(arg.modelist)
+        if arg.list_file is not None and not os.path.isfile(arg.list_file):
+            raise FileNotFoundError('No file: {0}'.format(arg.list_file))
+
+        if arg.list_file is None:
+            if arg.platelist is not None:
+                self.platelist = arginp_to_list(arg.platelist, evaluate=True)
+            if arg.ifudesignlist is not None:
+                self.ifudesignlist = arginp_to_list(arg.ifudesignlist, evaluate=True)
+            if arg.modelist is not None:
+                self.modelist = arginp_to_list(arg.modelist)
+        else:
+            if arg.platelist is not None or arg.ifudesignlist is not None \
+                    or arg.modelist is not None:
+                warnings.warn('Provided file with list of files supercedes other input.')
+            self.platelist, self.ifudesignlist, self.modelist = self._read_file_list(arg.list_file)
+
         self.combinatorics = arg.combinatorics
    
         # Set the plateTargets and NSA catalog path

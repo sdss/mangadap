@@ -70,6 +70,7 @@ if sys.version > '3':
     long = int
 
 import os
+import warnings
 from distutils.version import StrictVersion
 
 # For version checking
@@ -261,15 +262,17 @@ class MaNGAMPL:
         return mpl_def
 
 
-    def _version_mismatch(self, message):
+    def _version_mismatch(self, package, required_ver, environment_ver, quiet=False):
         """
         A version mismatch was detected.  Handle based on
         :attr:`strictver`.
         """
         if self.strictver:
-            raise EnvironmentError('{0}; see above'.format(message))
-        else:
-            warnings.warn('{0}; see above'.format(message))
+            raise EnvironmentError('Environment mismatch for {0}: expected {1}, found {2}'.format(
+                                   package, required_ver, environment_ver))
+        elif not quiet:
+            warnings.warn('Environment mismatch for {0}: expected {1}, found {2}'.format(package,
+                          required_ver, environment_ver))
 
 
     def verify_versions(self, quiet=True):
@@ -286,78 +289,53 @@ class MaNGAMPL:
         idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
         python_ver = '.'.join([ str(v) for v in sys.version_info[:3]])
 
-        print('Current environment: ')
-        print('    SDSS_ACCESS: {0}'.format(accessver_env))
-        print('       IDLUTILS: {0}'.format(idlver_env))
-        print('      MANGACORE: {0}'.format(os.environ['MANGACORE_VER']))
-        print('       MANGADRP: {0}'.format(os.environ['MANGADRP_VER']))
-        print('       MANGADAP: {0}'.format(os.environ['MANGADAP_VER']))
-        print('         PYTHON: {0}'.format(python_ver))
-        print('          NUMPY: {0}'.format(numpy.__version__))
-        print('          SCIPY: {0}'.format(scipy.__version__))
-        print('     MATPLOTLIB: {0}'.format(matplotlib.__version__))
-        print('        ASTROPY: {0}'.format(astropy.__version__))
-        print('           PYDL: {0}'.format(pydl.__version__))
+        if not quiet:
+            print('Current environment: ')
+            print('    SDSS_ACCESS: {0}'.format(accessver_env))
+            print('       IDLUTILS: {0}'.format(idlver_env))
+            print('      MANGACORE: {0}'.format(os.environ['MANGACORE_VER']))
+            print('       MANGADRP: {0}'.format(os.environ['MANGADRP_VER']))
+            print('       MANGADAP: {0}'.format(os.environ['MANGADAP_VER']))
+            print('         PYTHON: {0}'.format(python_ver))
+            print('          NUMPY: {0}'.format(numpy.__version__))
+            print('          SCIPY: {0}'.format(scipy.__version__))
+            print('     MATPLOTLIB: {0}'.format(matplotlib.__version__))
+            print('        ASTROPY: {0}'.format(astropy.__version__))
+            print('           PYDL: {0}'.format(pydl.__version__))
 
         # Check versions
         if self.accessver != accessver_env:
-            if not quiet:
-                print('accessver: {0}'.format(self.accessver))
-                print('SDSS_ACCESS_VER: {0}'.format(accessver_env))
-            self._version_mismatch('MPL SDSS_ACCESS version does not match current environment')
+            self._version_mismatch('SDSS_ACCESS', self.accessver, accessver_env, quiet=quiet)
 
         if self.idlver != idlver_env:
-            if not quiet:
-                print('idlver: {0}'.format(self.idlver))
-                print('IDLUTILS_VER: {0}'.format(idlver_env))
-            self._version_mismatch('MPL IDLUTILS version does not match current environment')
+            self._version_mismatch('IDLUTILS', self.idlver, idlver_env, quiet=quiet)
 
         if self.corever != os.environ['MANGACORE_VER']:
-            if not quiet:
-                print('corever: {0}'.format(self.corever))
-                print('MANGACORE_VER: {0}'.format(os.environ['MANGACORE_VER']))
-            self._version_mismatch('MPL CORE version does not match current environment')
+            self._version_mismatch('MANGACORE', self.corever, os.environ['MANGACORE_VER'],
+                                   quiet=quiet)
 
         if self.drpver != os.environ['MANGADRP_VER']:
-            if not quiet:
-                print('drpver: {0}'.format(self.drpver))
-                print('MANGADRP_VER: {0}'.format(os.environ['MANGADRP_VER']))
-            self._version_mismatch('MPL DRP version does not match current environment')
+            self._version_mismatch('MANGADRP', self.drpver, os.environ['MANGADRP_VER'], quiet=quiet)
 
         if self.pythonver is not None \
                 and StrictVersion(python_ver) != StrictVersion(self.pythonver):
-            if not quiet:
-                print('pythonver: {0}'.format(self.pythonver))
-                print('sys.version_info: {0}'.format(python_ver))
-            self._version_mismatch('MPL python version does not match current environment')
+            self._version_mismatch('python', self.pythonver, python_ver, quiet=quiet)
 
         if self.numpyver is not None \
                 and StrictVersion(numpy.__version__) != StrictVersion(self.numpyver):
-            if not quiet:
-                print('numpyver: {0}'.format(self.numpyver))
-                print('numpy.__version__: {0}'.format(numpy.__version__))
-            self._version_mismatch('MPL numpy version does not match current environment')
+            self._version_mismatch('numpy', self.numpyver, numpy.__version__, quiet=quiet)
 
         if self.scipyver is not None \
                 and StrictVersion(scipy.__version__) != StrictVersion(self.scipyver):
-            if not quiet:
-                print('scipyver: {0}'.format(self.scipyver))
-                print('scipy.__version__: {0}'.format(scipy.__version__))
-            self._version_mismatch('MPL scipy version does not match current environment')
+            self._version_mismatch('scipy', self.scipyver, scipy.__version__, quiet=quiet)
 
         if self.astropyver is not None \
                 and StrictVersion(astropy.__version__) != StrictVersion(self.astropyver):
-            if not quiet:
-                print('astropyver: {0}'.format(self.astropyver))
-                print('astropy.__version__: {0}'.format(astropy.__version__))
-            self._version_mismatch('MPL astropy version does not match current environment')
+            self._version_mismatch('astropy', self.astropyver, astropy.__version__, quiet=quiet)
 
         if self.pydlver is not None \
                 and StrictVersion(pydl.__version__) != StrictVersion(self.pydlver):
-            if not quiet:
-                print('pydlver: {0}'.format(self.pydlver))
-                print('pydl.__version__: {0}'.format(pydl.__version__))
-            self._version_mismatch('MPL pydl version does not match current environment')
+            self._version_mismatch('pydl', self.pydlver, pydl.__version__, quiet=quiet)
 
 
     def module_file(self):
