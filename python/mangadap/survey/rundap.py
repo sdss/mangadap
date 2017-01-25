@@ -130,6 +130,8 @@ try:
 except:
     warnings.warn('Could not import pbs.queue!  Any cluster submission will fail!', ImportWarning)
 
+import numpy
+
 from .drpcomplete import DRPComplete
 from ..drpfits import DRPFits
 from ..config.defaults import default_redux_path, default_drp_directory_path
@@ -343,7 +345,7 @@ class rundap:
                  # Run mode options
                  daily=None, all=None, clobber=None, redo=None,
                  # STDIO options
-                 console=None, quiet=None, version=None,
+                 console=None, quiet=False, version=None,
                  # Override default environmental variables
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
                  # Definitions used to set files to process
@@ -438,6 +440,14 @@ class rundap:
             print('This is version 2.0')
             return
 
+#        print('Plates:')
+#        print(self.platelist)
+#        print('IFUs:')
+#        print(self.ifudesignlist)
+#        print('Modes:')
+#        print(self.modelist)
+#        print(len(self.platelist), len(self.ifudesignlist), len(self.modelist))
+
         # Make sure the selected MPL version is available
         try:
             self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
@@ -481,7 +491,7 @@ class rundap:
             print('Attempting to submit to queue: {0}'.format(self.q))
         print('Versions: DAP:{0}, {1}'.format(self.dapver, self.mpl.mplver))
         self.mpl.show()
-        self.mpl.verify_versions()
+        self.mpl.verify_versions(quiet=self.quiet)
         print('Paths:')
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
@@ -589,8 +599,10 @@ class rundap:
     # ******************************************************************
     def _read_file_list(self, list_file):
         db = numpy.genfromtxt(list_file, dtype=object)
-        return db[:,0].astype(int).tolist(), db[:,0].astype(int).tolist(), \
-                    db[:,0].astype(str).tolist()
+        if db.shape[1] != 3:
+            raise ValueError('Input file should contain 3 columns.')
+        return db[:,0].astype(int).tolist(), db[:,1].astype(int).tolist(), \
+                    db[:,2].astype(str).tolist()
 
 
     def _read_arg(self):
@@ -719,7 +731,7 @@ class rundap:
 
         # Set the versions to use
         # Will OVERWRITE existing input from __init__()
-        self.strictver = ~arg.loose
+        self.strictver = not arg.loose
         if arg.mplver is not None:
             self.mpl = arg.mplver
         if arg.redux_path is not None:

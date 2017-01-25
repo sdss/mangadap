@@ -1395,8 +1395,19 @@ class SpatiallyBinnedSpectra:
             npix = numpy.ones(flux.shape, dtype=numpy.int)
             npix[numpy.ma.getmaskarray(flux)] = 0
             mask = drpf.copy_to_array(ext='MASK')[good_spec,:]
-            sres = self.drpf.spectral_resolution(ext='DISP' if self.method['spec_res'] == 'spaxel'
-                                                        else 'SPECRES', toarray=True)[good_spec,:]
+
+            # The definition of the extension below:
+            # - If the user wants the single resolution vector for the
+            #   entire cube (spec_res = cube), then that extension is
+            #   defined explicitly
+            # - Currently the only other options is spec_res=spaxel.  in
+            #   that case, the extension is set to None so that the
+            #   DRPFits class can properly decide which data to return
+            #   based on whether or not the DISP extension is present.
+            # For MPL-5/DR14 data and earlier, the two spectral
+            # resolution options should result in identical output!
+            sres = self.drpf.spectral_resolution(ext='SPECRES' if self.method['spec_res'] == 'cube'
+                                                        else None, toarray=True)[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack
