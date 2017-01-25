@@ -655,6 +655,9 @@ class rundap:
                             default=None)
         parser.add_argument("--modelist", type=str, help="set list of DRP output modes to reduce"
                             " (CUBE or RSS)", default=None)
+        parser.add_argument("--list_file", type=str,
+                            help="a file with the list of plates, ifudesigns, and modes to analyze",
+                            default=None)
         parser.add_argument("--combinatorics", help="force execution of all permutations of the "
                             "provided lists", action="store_true", default=False)
 
@@ -738,12 +741,22 @@ class rundap:
         if arg.prior_old is not None:
             self.prior_old = arg.prior_old
 
-        if arg.platelist is not None:
-            self.platelist = arginp_to_list(arg.platelist, evaluate=True)
-        if arg.ifudesignlist is not None:
-            self.ifudesignlist = arginp_to_list(arg.ifudesignlist, evaluate=True)
-        if arg.modelist is not None:
-            self.modelist = arginp_to_list(arg.modelist)
+        if arg.list_file is not None and not os.path.isfile(arg.list_file):
+            raise FileNotFoundError('No file: {0}'.format(arg.list_file))
+
+        if arg.list_file is None:
+            if arg.platelist is not None:
+                self.platelist = arginp_to_list(arg.platelist, evaluate=True)
+            if arg.ifudesignlist is not None:
+                self.ifudesignlist = arginp_to_list(arg.ifudesignlist, evaluate=True)
+            if arg.modelist is not None:
+                self.modelist = arginp_to_list(arg.modelist)
+        else:
+            if arg.platelist is not None or arg.ifudesignlist is not None \
+                    or arg.modelist is not None:
+                warnings.warn('Provided file with list of files supercedes other input.')
+            self.platelist, self.ifudesignlist, self.modelist = self._read_file_list(arg.list_file)
+
         self.combinatorics = arg.combinatorics
    
         # Set the plateTargets and NSA catalog path

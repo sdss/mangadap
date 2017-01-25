@@ -32,6 +32,8 @@ KBW (??         ): tag 2.1
       fluxes.
     - Moved construction of main output files to dapfits.py
     - Include a map mask in reference files
+    - Allow rundap to read the plate, ifu, and mode combinations to
+      analyze from a file
 
 TO FIX:
     - emission-line moment masks
