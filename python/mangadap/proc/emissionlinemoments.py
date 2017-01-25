@@ -688,7 +688,7 @@ class EmissionLineMoments:
             if numpy.sum(indx) == 0:
                 continue
             band_center[indx], continuum[indx], _continuum_error, band_incomplete[indx], \
-                    band_empty[indx] = pseudocontinuum(wave, spec[i,:], passband=sidebands,
+                    band_empty[indx] = pseudocontinuum(wave, spec[i,:], passband=sidebands[indx,:],
                                                        err=err, log=log,
                                                        weighted_center=weighted_center)
             if err is not None:
