@@ -1225,7 +1225,7 @@ class StellarContinuumModel:
 
 
     @staticmethod
-    def reset_continuum_mask_window(continuum, dispaxis=1):
+    def reset_continuum_mask_window(continuum, dispaxis=1, quiet=False):
         """
         Reset the mask of the stellar continuum to a continuous window
         from the minimum to maximum valid wavelength.
@@ -1248,6 +1248,10 @@ class StellarContinuumModel:
         min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
         max_good_pix = numpy.ma.amax(pix, axis=dispaxis)
         for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
+            if isinstance(s, numpy.ma.core.MaskedConstant) or isinstance(e, numpy.ma.core.MaskedConstant):
+                if not quiet:
+                    warnings.warn('Encountered full continuum fit is masked.')
+                continue
             c.mask[s:e] = False
 
         return _continuum if dispaxis == 1 else _continuum.T
@@ -1266,7 +1270,7 @@ class StellarContinuumModel:
         continuum = self.construct_models(replacement_templates=replacement_templates,
                                           redshift_only=redshift_only) if reconstruct \
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
-        return self.reset_continuum_mask_window(continuum)
+        return self.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
 
     def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
