@@ -30,7 +30,6 @@ Stack some spectra!
 
         from ..par.parset import ParSet
         from ..util.covariance import Covariance
-        from ..util.misc import inverse_with_zeros
 
 *Class usage examples*:
 
@@ -75,7 +74,6 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
-from ..util.misc import inverse_with_zeros
 from ..util.constants import constants
 
 from matplotlib import pyplot
@@ -674,7 +672,8 @@ class SpectralStack():
         _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
+#        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
+        var = None if ivar is None else numpy.ma.power(ivar, -1).filled(0.0)
 
         # Resample each spectrum
         for i in range(nspec):
@@ -696,8 +695,9 @@ class SpectralStack():
         _mask = _mask.astype(bool)
 
         return _wave, numpy.ma.MaskedArray(_flux, mask=_mask), \
-               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask), \
-               _sres
+                    numpy.ma.MaskedArray(numpy.ma.power(_ivar, -1).filled(0.0), mask=_mask), _sres
+
+#               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask), \
 
 
     @staticmethod

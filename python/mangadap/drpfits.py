@@ -92,6 +92,8 @@ the MaNGA Data Reduction Pipeline (DRP).
         :class:`mangadap.util.fitsutil.DAPFitsUtil`, what's left are wrapper
         functions for the more general functions in
         :class:`mangadap.util.fitsutil.DAPFitsUtil`.
+    | **17 Feb 2017**: (KBW) Return nominal inverse variance in
+        :func:`DRPFits.regrid_wavelength_plane` if requested.
 
 .. todo::
 
@@ -1247,7 +1249,6 @@ class DRPFits:
             raise ValueError('No extension: {0}'.format(ext))
 
         if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
-            print('Use DISP')
             disp = self.copy_to_array(ext='DISP') if toarray else \
                         numpy.ma.MaskedArray(self.hdu['DISP'].data.copy())
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
@@ -1259,10 +1260,9 @@ class DRPFits:
 #            exit()
             return numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
         elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
-            print('Use SPECRES')
             sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
                                                         * numpy.prod(self.spatial_shape)))
-            return sres if toarray else sres.reshape(-1,self.nwave)
+            return sres if toarray else sres.reshape(*self.spatial_shape,self.nwave)
         return None
 
 
@@ -1795,7 +1795,7 @@ class DRPFits:
 
 
     def regrid_wavelength_plane(self, channel, pixelscale=None, recenter=None, width_buffer=None,
-                                rlim=None, sigma=None, quiet=False):
+                                rlim=None, sigma=None, quiet=False, return_ivar=False):
         r"""
         Return the reconstructed image for the specified wavelength
         channel.
@@ -1838,6 +1838,9 @@ class DRPFits:
             sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
             quiet (bool): (**Optional**) Suppress terminal output
+            return_ivar (bool): (**Optional**) Return the nominal
+                inverse variance image (i.e. the diagonal of the
+                covariance matrix).
 
         Returns:
             numpy.ndarray: The reconstructed image for the specified
@@ -1869,8 +1872,14 @@ class DRPFits:
         self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
         # Return the regridded data with the proper shape (nx by ny)
-        return (self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)).T
+        if not return_ivar:
+            return (self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)).T
 
+        ivar = numpy.ma.power(
+                self.regrid_T.dot(numpy.ma.power(self.hdu['IVAR'].data[:,channel],-1).filled(0.0)),
+                              -1).filled(0.0).reshape(self.nx,self.ny).T
+        return (self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)).T, \
+                ivar
 
     def _formal_covariance_matrix(self, channel, pixelscale, recenter, width_buffer, rlim, sigma,
                                   csr=False, quiet=False):

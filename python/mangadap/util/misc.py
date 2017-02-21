@@ -31,6 +31,8 @@ A catch-all module with miscellaneous utility functions.
     | **04 Jun 2015**: (KBW) Added :func:`where_not`
     | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
     | **17 Nov 2016**: (KBW) Added :func:`high_pass_filter`
+    | **26 Jan 2017**: (KBW) Created :mod:`mangadap.util.filter` and
+        removed the filtering and smoothing functions from this file.
 
 .. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
 
@@ -52,7 +54,6 @@ import numpy
 __author__ = 'Kyle Westfall'
 
 def line_coeff(p1, p2):
-    # the 'r' here is REQUIRED to get the math below to work
     r"""
     Given two points on a line return the slope and intercept calculated as
 
@@ -99,183 +100,31 @@ def where_not(indx, size):
     return (numpy.setdiff1d(numpy.arange(0,size), indx[0]),)
     
 
-def inverse_with_zeros(v, absolute=True):
-    """
-    Invert an array with zeros, and handle them by setting the inverse
-    to zero.
-
-    Args:
-        v (array-like): Array to invert
-        absolute (bool): Forces that the absolute value must be larger
-            than 0.  Otherwise, any non-positive value is also masked
-            with a zero.
-
-    Returns:
-        numpy.ndarray: Inverse of the array when the vector has values
-        that are greater than 0, otherwise set to 0.0.
-    """
-    if isinstance(v, numpy.ma.MaskedArray):
-        if not absolute:
-#            v.mask |= numpy.invert(v > 0)
-            v[numpy.invert(v > 0)] = numpy.ma.masked
-        return 1.0/v
-#    _v = numpy.asarray(v).astype(float)
-    _v = numpy.atleast_1d(v).astype(float)
-    indx = numpy.absolute(_v) > 0 if absolute else _v > 0
-    _v[indx] = 1.0/_v[indx]
-    _v[numpy.invert(indx)] = 0.0
-    return _v
-
-
-def high_pass_filter(flux, dw=0, k=None, Dw=None):
-    """
-    Pulled from FIREFLY's hpf() function and edited on 17 Nov 2016.
-
-    Apply a high-pass filter to the input vector.
-
-    """
-
-    n = flux.size
-    _dw = int(dw)
-
-    if k is None and Dw is None:
-        Dw = 100
-        _k = n//Dw
-    elif k is not None and Dw is None:
-        _k = int(k)
-        Dw = n//_k
-    elif k is None and Dw is not None:
-        _k = n//Dw
-    else:
-        raise ValueError('Cannot provide both k and Dw.')
-
-    # PRINT A REPORT
-
-    # Rita's typical inputs for SDSS:
-    # w = 10 # 10
-    # windowsize = 20 # 20
-
-    # My MaNGA inputs:
-    # if w == 0 and windowsize == 0:
-    #     print "HPF parameters not specified: choosing default window (stepsize=40)"
-    #     w = 40
-    #     windowsize = 0
-
-    h           = numpy.fft.fft(flux)
-    h_filtered  = numpy.zeros(n, dtype=complex)
-    window      = numpy.zeros(n)
-    unwindow    = numpy.zeros(n)
-    window[0]   = 1                             # keep F0 for normalisation
-    unwindow[0] = 1
-
-    for i in range(_dw):
-        window[_k+i] = (i+1.0)/_dw
-        window[n-1-(_k+_dw-i)] = (_dw-i)/_dw
-    window[_k+_dw:n-(_k+_dw)] = 1
-
-    unwindow        = 1 - window
-    unwindow[0]     = 1
-    
-    h_filtered      = h * window
-    un_h_filtered   = h * unwindow
-
-    res     = numpy.real(numpy.fft.ifft(h_filtered))
-    unres   = numpy.real(numpy.fft.ifft(un_h_filtered)) 
-    res_out = (1.0+(res-numpy.median(res))/unres) * numpy.median(res) 
-
-    return res_out, window, res, unres
-
-#def off_diagonal_identity(size, win):
-#    r"""
-#    Construct a matrix with ones within a window along the diagonal.
+#def inverse_with_zeros(v, absolute=True):
+#    """
+#    Invert an array with zeros, and handle them by setting the inverse
+#    to zero.
 #
 #    Args:
-#        size (int) : Size for the square matrix; i.e., :math:`N` for the
-#            :math:`N\timesN` matrix.
-#        win (int): Number of ones in each row along the diagonal.
+#        v (array-like): Array to invert
+#        absolute (bool): Forces that the absolute value must be larger
+#            than 0.  Otherwise, any non-positive value is also masked
+#            with a zero.
 #
-#    Raises:
-#        ValueError: Raised if the window is larger than 2*size-1.
-#
+#    Returns:
+#        numpy.ndarray: Inverse of the array when the vector has values
+#        that are greater than 0, otherwise set to 0.0.
 #    """
-#    if win > 2*size-1:
-#        raise ValueError('Window too large for matrix size.')
-#    if win == 2*size-1:
-#        return numpy.ones((size,size), dtype=int)
-#    x = numpy.zeros((size,size), dtype=int)#numpy.identity(size).astype(int)
-#    for i in range(1,(win+1)//2):
-#        x[:-i,i:] = x[:-i,i:] + numpy.identity(size-i).astype(int)
-#    x += x.T
-#    if win % 2 != 1:
-#        x[:-i-1,i+1:] = x[:-i-1,i+1:] + numpy.identity(size-i-1).astype(int)
-#    return x + numpy.identity(size).astype(int)
-
-def off_diagonal_identity(size, win):
-    r"""
-    Construct a matrix with ones within a window along the diagonal.
-
-    Args:
-        size (int) : Size for the square matrix; i.e., :math:`N` for the
-            :math:`N\timesN` matrix.
-        win (int): Number of ones in each row along the diagonal.
-
-    Raises:
-        ValueError: Raised if the window is larger than 2*size-1.
-
-    """
-    if win > 2*size-1:
-        raise ValueError('Window too large for matrix size.')
-    if win == 2*size-1:
-        return numpy.ones((size,size), dtype=int)
-
-    # Indices of diagonal
-    ii = numpy.arange(size).astype(int)
-
-    # Build the upper triangle
-    i = numpy.empty(0, dtype=int)
-    j = numpy.empty(0, dtype=int)
-    for k in range(1,(win+1)//2):
-        i = numpy.append(i, ii[:size-k])
-        j = numpy.append(j, ii[k:size])
-
-    # Copy to the lower triangle
-    _i = numpy.append(i,j)
-    j = numpy.append(j,i)
-
-    # Add the diagonal
-    i = numpy.append(_i, ii)
-    j = numpy.append(j, ii)
-
-    # Accommodate an even window
-    if win % 2 != 1:
-        i = numpy.append(i, ii[:size-k-1])
-        j = numpy.append(j, ii[k+1:size])
-
-    # Construct and return the array
-    a = numpy.zeros((size,size), dtype=int)
-    a[i,j] = 1
-    return a
-
-#    t = time.clock()
-#    a = sparse.coo_matrix( (numpy.ones(i.size,dtype=int),(i,j)), shape=(size,size)).toarray()
-#    print('sparse: {0} microsec'.format((time.clock() - t)/1e-6))
-#
-#    t = time.clock()
-#    a = numpy.zeros((size,size), dtype=int)
-#    a[i,j] = 1
-#    print('direct: {0} microsec'.format((time.clock() - t)/1e-6))
-#    
-#    return sparse.coo_matrix( (numpy.ones(i.size,dtype=int),(i,j)), shape=(size,size)).toarray()
-    
-#    x = numpy.zeros((size,size), dtype=int)#numpy.identity(size).astype(int)
-#    for i in range(1,(win+1)//2):
-#        x[:-i,i:] = x[:-i,i:] + numpy.identity(size-i).astype(int)
-#    x += x.T
-#    if win % 2 != 1:
-#        x[:-i-1,i+1:] = x[:-i-1,i+1:] + numpy.identity(size-i-1).astype(int)
-#    return x + numpy.identity(size).astype(int)
-
-
-
+#    if isinstance(v, numpy.ma.MaskedArray):
+#        if not absolute:
+##            v.mask |= numpy.invert(v > 0)
+#            v[numpy.invert(v > 0)] = numpy.ma.masked
+#        return 1.0/v
+##    _v = numpy.asarray(v).astype(float)
+#    _v = numpy.atleast_1d(v).astype(float)
+#    indx = numpy.absolute(_v) > 0 if absolute else _v > 0
+#    _v[indx] = 1.0/_v[indx]
+#    _v[numpy.invert(indx)] = 0.0
+#    return _v
 
 

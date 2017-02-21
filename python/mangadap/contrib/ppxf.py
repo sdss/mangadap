@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (C) 2001-2016, Michele Cappellari
+# Copyright (C) 2001-2017, Michele Cappellari
 # E-mail: michele.cappellari_at_physics.ox.ac.uk
 #
 # Updated versions of the software are available from my web page
@@ -8,7 +8,8 @@
 #
 # If you have found this software useful for your research,
 # I would appreciate an acknowledgment to the use of the
-# "Penalized Pixel-Fitting method by Cappellari & Emsellem (2004)".
+# "Penalized Pixel-Fitting method by Cappellari & Emsellem (2004)
+#  as upgraded in Cappellari (2017)".
 #
 # This software is provided as is without any warranty whatsoever.
 # Permission to use, for non-commercial purposes is granted.
@@ -22,12 +23,14 @@
 #   ppxf()
 #
 # PURPOSE:
-#       Extract galaxy stellar kinematics (V, sigma, h3, h4, h5, h6)
+#       Extract galaxy stellar kinematics (V, sigma, h3, h4, h5, h6,...)
 #       or the stellar population and gas emission by fitting a template
-#       to an observed spectrum in pixel space, using the Penalized
-#       Pixel-Fitting (pPXF) method originally described in:
+#       to an observed spectrum in pixel space, using the
+#       Penalized Pixel-Fitting (pPXF) method originally described in
 #       Cappellari M., & Emsellem E., 2004, PASP, 116, 138
-#       http://adsabs.harvard.edu/abs/2004PASP..116..138C
+#           http://adsabs.harvard.edu/abs/2004PASP..116..138C
+#       and upgraded in Cappellari M., 2017, MNRAS, 466, 798
+#           http://adsabs.harvard.edu/abs/2017MNRAS.466..798C
 #
 #   The following key optional features are also available:
 #   1)  An optimal template, positive linear combination of different input
@@ -64,8 +67,8 @@
 #   from ppxf import ppxf
 #
 #   pp = ppxf(templates, galaxy, noise, velScale, start,
-#             bias=None, bounds=None, clean=False, component=0, degree=4,
-#             fixed=None, fraction=None, goodpixels=None, lam=None, mdegree=0,
+#             bias=None, bounds=None, clean=False, component=0, degree=4, fixed=None,
+#             fraction=None, goodpixels=None, lam=None, linear=False, mdegree=0,
 #             moments=4, plot=False, quiet=False, reddening=None, reg_dim=None,
 #             regul=0, sigma_diff=0, sky=None, velscale_ratio=None, vsyst=0)
 #
@@ -252,6 +255,9 @@
 #       the wavelength can be obtained as lam = np.exp(logLam).
 #     - When LAM is given, the wavelength is shown in the plot, instead of the
 #       pixels.
+#   LINEAR: set to True to keep *all* nonlinear parameters fixed and *only*
+#       perform a linear fit for the templates and additive polynomials weights.
+#       Only pp.chi2, pp.bestfit and pp.weights are returned in this case.
 #   MASK: boolean vector of length GALAXY.size specifying with 1 the pixels that
 #       should be included in the fit. This keyword is just an alternative way
 #       of specifying the GOODPIXELS.
@@ -448,7 +454,7 @@
 #   .MPOLYWEIGHTS: When MDEGREE > 0 this contains in output the coefficients of
 #       the multiplicative Legendre polynomials of order 1, 2, ... MDEGREE.
 #       The polynomial can be explicitly evaluated as:
-#           from numpy.polynomials import legendre
+#           from numpy.polynomial import legendre
 #           x = np.linspace(-1, 1, len(galaxy))
 #           mpoly = legendre.legval(x, np.append(1, pp.mpolyweights))
 #   .REDDENING: Best fitting E(B-V) value if the REDDENING keyword is set.
@@ -688,8 +694,17 @@
 #   V6.0.0: Compute the Fourier Transform of the LOSVD analytically:
 #           Major improvement in velocity accuracy when sigma < velscale.
 #           Removed OVERSAMPLE keyword, which is now unnecessary.
-#           Removed limit on velocity shift of templates.
-#           MC, Oxford, 14 June 2016
+#           Removed limit on velocity shift of templates. 
+#           Simplified FFT zero padding. Updated documentation.
+#           MC, Oxford, 28 July 2016
+#   V6.0.1: Allow MOMENTS to be an arbitrary integer.
+#           Allow for scalar MOMENTS with multiple kinematic components.
+#           MC, Oxford, 10 August 2016
+#   V6.0.2: Improved formatting of printed output. MC, Oxford, 15 August 2016
+#   V6.0.3: Return usual Chi**2/DOF insted of Biweight estimate.
+#           MC, Oxford, 1 December 2016
+#   V6.0.4: Re-introduced `linear` keyword to only perform a linear fit and
+#           skip the non-linear optimization. MC, Oxford, 30 January 2017
 #
 ################################################################################
 
@@ -697,25 +712,27 @@ from __future__ import print_function
 
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.polynomial import legendre
+from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc
+from itertools import combinations
 
+# KBW: 17 Feb 2017: Relative import wrt directory with ppxf.py
 from . import cap_mpfit as mpfit
 
 ################################################################################
 
-def nnls_flags(A, b, flag):
+def nnls_flags(A, b, npoly):
     """
     Solves min||A*x - b|| with
-    x[j] >= 0 for flag[j] == False
-    x[j] free for flag[j] == True
+    x[j] >= 0 for j >= npoly
+    x[j] free for j < npoly
     where A[m, n], b[m], x[n], flag[n]
 
     """
     m, n = A.shape
-    AA = np.hstack([A, -A[:, flag]])
-    x, err = optimize.nnls(AA, b)
-    x[:n][flag] -= x[n:]
+    AA = np.hstack([A, -A[:, :npoly]])
+    x = optimize.nnls(AA, b)[0]
+    x[:npoly] -= x[n:]
 
     return x[:n]
 
@@ -754,7 +771,7 @@ def robust_sigma(y, zero=False):
 
 ################################################################################
 
-def reddening_curve(lam, ebv):
+def reddening_curve(lam1, ebv):
     """
     Reddening curve of Calzetti et al. (2000, ApJ, 533, 682; here C+00).
     This is reliable between 0.12 and 2.2 micrometres.
@@ -765,7 +782,7 @@ def reddening_curve(lam, ebv):
       wavelength has to be multiplied, to model the dust reddening effect.
 
     """
-    lam = 1e4/lam  # Convert Angstrom to micrometres and take 1/lambda
+    lam = 1e4/lam1  # Convert Angstrom to micrometres and take 1/lambda
     rv = 4.05  # C+00 equation (5)
 
     # C+00 equation (3) but extrapolate for lam > 2.2
@@ -773,7 +790,7 @@ def reddening_curve(lam, ebv):
     k1 = np.where(lam >= 6300,
                   rv + 2.659*(1.040*lam - 1.857),
                   rv + 2.659*(1.509*lam - 0.198*lam**2 + 0.011*lam**3 - 2.156))
-    fact = 10**(-0.4*ebv*(k1.clip(0)))  # Calzetti+00 equation (2) with opposite sign
+    fact = 10**(-0.4*ebv*k1.clip(0))  # Calzetti+00 equation (2) with opposite sign
 
     return fact # The model spectrum has to be multiplied by this vector
 
@@ -790,9 +807,7 @@ def _bvls_solve(A, b, npoly):
     elif n == npoly + 1:        # Fitting a single template
         soluz = linalg.lstsq(A, b)[0]
     else:                       # Fitting multiple templates
-        flag = np.zeros(n, dtype=bool)
-        flag[:npoly] = True     # flag = True on Legendre polynomials
-        soluz = nnls_flags(A, b, flag)
+        soluz = nnls_flags(A, b, npoly)
 
     return soluz
 
@@ -800,11 +815,9 @@ def _bvls_solve(A, b, npoly):
 
 def _templates_rfft(templates):
     """
-    Pre-compute the FFT (of real input) of the templates
+    Pre-compute the FFT (of real input) of all templates
 
     """
-    # Pre-compute the FFT of all templates
-    # (Use Numpy's rfft, given that Scipy adopted an odd output format)
     npad = 2**int(np.ceil(np.log2(templates.shape[0])))
     templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
 
@@ -815,7 +828,8 @@ def _templates_rfft(templates):
 def _losvd_rfft(pars, nspec, moments, vj, npad, ncomp, vsyst, factor, sigma_diff):
     """
     Analytic Fourier Transform (of real input) of the Gauss-Hermite LOSVD
-    (see Cappellari in preparation)
+    (equation 38 of Cappellari M., 2017, MNRAS, 466, 798
+    http://adsabs.harvard.edu/abs/2017MNRAS.466..798C)
 
     """
     nl = npad//2 + 1
@@ -823,22 +837,20 @@ def _losvd_rfft(pars, nspec, moments, vj, npad, ncomp, vsyst, factor, sigma_diff
     for j, p in enumerate(vj):  # loop over kinematic components
         for k in range(nspec):  # nspec=2 for two-sided fitting, otherwise nspec=1
             s = 1 if k == 0 else -1  # s=+1 for left spectrum, s=-1 for right one
-            vel = vsyst + s*pars[0 + p]
-            a, b = [-vel, sigma_diff]/pars[1 + p]
-            w = np.linspace(0, np.pi*factor*pars[1 + p], nl)
+            vel, sig = vsyst + s*pars[0 + p], pars[1 + p]
+            a, b = [vel, sigma_diff]/sig
+            w = np.linspace(0, np.pi*factor*sig, nl)
             losvd_rfft[:, j, k] = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
 
-            # Hermite polynomials normalized as van der Marel & Franx (1993, Appendix A).
+            # Hermite polynomials normalized as van der Marel & Franx (1993, Appendix A)
             if moments[j] > 2:
                 n = np.arange(3, moments[j] + 1)
-                ii = [1j, 1]*(n.size//2)   # Alternating imaginary/real
-                nm = np.sqrt(misc.factorial(n)*2**n)   # vdMF93 Normalization
-                coeff = np.append([1, 0, 0], ii*pars[n + p - 1]/nm)
-                poly = np.polynomial.hermite.hermval(w, coeff)
-
+                nrm = np.sqrt(misc.factorial(n)*2**n)   # vdMF93 Normalization
+                coeff = np.append([1, 0, 0], 1j**n*pars[p - 1 + n]/nrm)
+                poly = hermite.hermval(w, coeff)
                 losvd_rfft[:, j, k] *= poly
 
-    return losvd_rfft
+    return np.conj(losvd_rfft)
 
 ################################################################################
 
@@ -889,7 +901,7 @@ class ppxf(object):
                  mask=None, mdegree=0, moments=2, plot=False,
                  quiet=False, sky=None, vsyst=0, regul=0, lam=None, reddening=None,
                  component=0, reg_dim=None, fixed=None, bounds=None,
-                 velscale_ratio=None, sigma_diff=0):
+                 velscale_ratio=None, sigma_diff=0, linear=False):
 
         # Do extensive checking of possible input errors
         #
@@ -911,50 +923,44 @@ class ppxf(object):
         self.factor = 1   # default value
         self.sigma_diff = sigma_diff/velScale
 
+        # KBW: 17 Feb 2017: Initialize status as failed
+        self.status = 0
+
         if velscale_ratio is not None:
-            if not isinstance(velscale_ratio, int):
-                raise ValueError('VELSCALE_RATIO must be an integer')
+            assert isinstance(velscale_ratio, int), 'VELSCALE_RATIO must be an integer'
             self.npix_temp -= self.npix_temp % velscale_ratio
             self.star = self.star[:self.npix_temp, :]  # Make size multiple of velscale_ratio
             self.npix_temp //= velscale_ratio    # This is the size after rebin()
             self.factor = velscale_ratio
 
         component = np.atleast_1d(component)
-        if component.dtype != int:
-            raise ValueError('COMPONENT must be integers')
+        assert component.dtype == int, 'COMPONENT must be integers'
 
         if component.size == 1 and self.ntemp > 1:  # component is a scalar
             self.component = np.zeros(self.ntemp, dtype=int)  # all templates have the same LOSVD
         else:
-            if component.size != self.ntemp:
-                raise ValueError('There must be one kinematic COMPONENT per template')
+            assert component.size == self.ntemp, 'There must be one kinematic COMPONENT per template'
             self.component = component
 
         tmp = np.unique(component)
         self.ncomp = tmp.size
-        if not np.array_equal(tmp, np.arange(self.ncomp)):
-            raise ValueError('COMPONENT must range from 0 to NCOMP-1')
+        assert np.array_equal(tmp, np.arange(self.ncomp)), 'COMPONENT must range from 0 to NCOMP-1'
 
         if fraction is not None:
-            if fraction < 0 or fraction > 1:
-                raise ValueError("Must be `0 < fraction < 1`")
-            if self.ncomp < 2:
-                raise ValueError("At least 2 COMPONENTs are needed with FRACTION keyword")
+            assert 0 < fraction < 1, "Must be `0 < fraction < 1`"
+            assert self.ncomp >= 2, "At least 2 COMPONENTs are needed with FRACTION keyword"
 
         if regul > 0 and reg_dim is None:
-            if self.ncomp == 1:
-                self.reg_dim = np.asarray(templates.shape[1:])
-            else:
-                raise ValueError('REG_DIM must be specified with more than one component')
+            assert self.ncomp == 1, 'REG_DIM must be specified with more than one component'
+            self.reg_dim = np.asarray(templates.shape[1:])
 
         moments = np.atleast_1d(moments)
         if moments.size == 1:  # moments is scalar: all LOSVDs have same number of G-H moments
-            self.moments = np.full(self.ncomp, np.abs(moments), dtype=int)
-        else:
-            self.moments = np.abs(moments)
+            moments = np.full(self.ncomp, moments, dtype=int)
 
-        if tmp.size != self.moments.size:
-            raise ValueError('MOMENTS must be an array of length NCOMP')
+        self.moments = np.abs(moments)
+
+        assert tmp.size == self.moments.size, 'MOMENTS must be an array of length NCOMP'
 
         if regul is None:
             self.regul = 0
@@ -964,67 +970,50 @@ class ppxf(object):
 
         if sky is not None:
             s4 = sky.shape
-            if s4[0] != s2[0]:
-                raise ValueError('SKY must have the same size as GALAXY')
+            assert s4[0] == s2[0], 'SKY must have the same size as GALAXY'
 
-        if len(s2) > 2 or len(s3) > 2:
-            raise ValueError('Wrong GALAXY or NOISE input dimensions')
+        assert len(s2) < 3 and len(s3) < 3, 'Wrong GALAXY or NOISE input dimensions'
 
         if len(s3) > 1 and s3[0] == s3[1]:  # NOISE is a 2-dim covariance matrix
-            if s3[0] != s2[0]:
-                raise ValueError('Covariance Matrix must have size xpix*npix')
+            assert s3[0] == s2[0], 'Covariance Matrix must have size xpix*npix'
             noise = linalg.cholesky(noise, lower=1)  # Cholesky factor of symmetric, positive-definite covariance matrix
             self.noise = linalg.solve_triangular(noise, np.identity(s3[0]), lower=1)  # Invert Cholesky factor
         else:   # NOISE is an error spectrum
-            if not np.equal(s2, s3):
-                raise ValueError('GALAXY and NOISE must have the same size/type')
-            if not np.all((noise > 0) & np.isfinite(noise)):
-                raise ValueError('NOISE must be a positive vector')
+            assert np.equal(s2, s3), 'GALAXY and NOISE must have the same size/type'
+            assert np.all((noise > 0) & np.isfinite(noise)), 'NOISE must be a positive vector'
 
-        if self.npix_temp < s2[0]:
-            raise ValueError('STAR length cannot be smaller than GALAXY')
+        assert self.npix_temp >= s2[0], 'STAR length cannot be smaller than GALAXY'
 
         if reddening is not None:
-            if lam is None or not np.equal(lam.shape, s2):
-                raise ValueError('LAMBDA and GALAXY must have the same size/type')
-            if mdegree > 0:
-                raise ValueError('MDEGREE cannot be used with REDDENING keyword')
+            assert (lam is not None) and np.equal(lam.shape, s2), 'LAMBDA and GALAXY must have the same size/type'
+            assert mdegree < 1, 'MDEGREE cannot be used with REDDENING keyword'
+
+        if lam is not None:
+            assert lam.size == galaxy.size, "LAM and GALAXY must have the same size"
 
         if mask is not None:
-            if mask.dtype != bool:
-                raise ValueError('MASK must be a boolean vector')
-            if mask.shape != galaxy.shape:
-                raise ValueError('MASK and GALAXY must have the same size')
-            if goodpixels is None:
-                goodpixels = np.flatnonzero(mask)
-            else:
-                raise ValueError('GOODPIXELS and MASK cannot be used together')
+            assert mask.dtype == bool, 'MASK must be a boolean vector'
+            assert mask.shape == galaxy.shape, 'MASK and GALAXY must have the same size'
+            assert goodpixels is not None, 'GOODPIXELS and MASK cannot be used together'
+            goodpixels = np.flatnonzero(mask)
 
         if goodpixels is None:
             self.goodpixels = np.arange(s2[0])
         else:
-            if np.any(np.diff(goodpixels) <= 0):
-                raise ValueError('goodpixels is not monotonic or contains duplicated values')
-            if goodpixels[0] < 0 or goodpixels[-1] > s2[0] - 1:
-                raise ValueError('goodpixels are outside the data range')
+            assert np.all(np.diff(goodpixels) > 0), 'GOODPIXELS is not monotonic or contains duplicated values'
+            assert goodpixels[0] >= 0 and goodpixels[-1] < s2[0], 'GOODPIXELS are outside the data range'
             self.goodpixels = goodpixels
 
         if bias is None:
-            self.bias = 0.7*np.sqrt(500./np.size(self.goodpixels))  # pPXF paper pg.144 left
+            self.bias = 0.7*np.sqrt(500./np.size(self.goodpixels))  # pPXF 2004 paper pg.144 left
         else:
             self.bias = bias
-
-        for mom in self.moments:
-            if mom not in [2, 4, 6]:
-                raise ValueError('MOMENTS should be 2, 4 or 6 (or negative to keep kinematics fixed)')
 
         if self.ncomp == 1:
             start1 = [start]
         else:
-            if not isinstance(start, list):
-                raise ValueError("START must be a list of vectors [start1, start2,...]")
-            if len(start) != self.ncomp:
-                raise ValueError("There must be one START per COMPONENT")
+            assert isinstance(start, list), "START must be a list of vectors [start1, start2,...]"
+            assert len(start) == self.ncomp, "There must be one START per COMPONENT"
             start1 = list(start)  # Make a copy in both Python 2 and 3
 
         # Pad with zeros when `start[j]` has fewer elements than `moments[j]`
@@ -1034,22 +1023,56 @@ class ppxf(object):
         if bounds is not None:
             if self.ncomp == 1:
                 bounds = [bounds]
-            if list(map(len, bounds)) != list(map(len, start1)):
-                raise ValueError("BOUNDS must have the same shape as START")
+            assert list(map(len, bounds)) == list(map(len, start1)), "BOUNDS must have the same shape as START"
 
         if fixed is not None:
             if self.ncomp == 1:
                 fixed = [fixed]
-            if list(map(len, fixed)) != list(map(len, start1)):
-                raise ValueError("FIXED must have the same shape as START")
+            assert list(map(len, fixed)) == list(map(len, start1)), "FIXED must have the same shape as START"
 
         if len(s2) == 2:
-            if vsyst == 0:
-                raise ValueError('VSYST must be defined for two-sided fitting')
+            assert vsyst != 0, 'VSYST must be defined for two-sided fitting'
             self.goodpixels = np.array([self.goodpixels, s2[0] + self.goodpixels])  # two-sided fitting of LOSVD
 
         ngh = self.moments.sum()
         npars = ngh + self.mdegree*len(s2)
+
+        self.star_rfft, self.npad = _templates_rfft(self.star)
+
+        if linear:
+            assert mdegree <= 0, "must be `mdegree` <= 0 with `linear`=True"
+            assert reddening is None, "Reddening not implemented with `linear`=True"
+            for j in range(self.ncomp):
+                start1[j][:2] = np.array(start1[j][:2])/velScale  # Convert velocity scale to pixels
+            self.bias = 0
+            status, err = self._fitfunc(np.concatenate(start1))
+            ############################################################            
+            # KBW: 17 Feb 2017
+            # Set status to success
+            if status == 0:
+                self.status = 1
+            # Copy the fixed kinematics and set errors to zero
+            self.sol = []
+            self.error = []
+            for j in range(self.ncomp):
+                start1[j][:2] *= velScale
+                self.sol.append(start1[j][:])
+                self.error.append(np.zeros(self.moments[j]))
+            if self.ncomp == 1:
+                self.sol = self.sol[0]
+                self.error = self.error[0]
+            # Separate template and polynomial weights
+            if degree >= 0:
+                self.polyweights = self.weights[:(self.degree + 1)*len(s2)]
+            self.weights = self.weights[(self.degree + 1)*len(s2):]
+            self.chi2 = np.sum(err**2)/(err.size - npars)   # Chi**2/DOF
+            # Only print if requested
+            if not quiet:
+                print("Linear Fit chi2/DOF: {:.4g}".format(self.chi2))
+            ############################################################            
+            if plot:
+                self.plot()
+            return
 
         if reddening is not None:
             npars += 1
@@ -1068,7 +1091,7 @@ class ppxf(object):
             st1, st2 = np.array(start1[j][:2])/velScale  # Convert velocity scale to pixels
             if bounds is None:
                 bn1 = st1 + np.array([-2e3, 2e3])/velScale  # +/-2000 km/s from first guess
-                bn2 = [0.1, 1e3/velScale]    # hard-coded velScale/10 < sigma < 1000 km/s
+                bn2 = [0.01, 1e3/velScale]    # hard-coded velScale/100 < sigma < 1000 km/s
             else:
                 bn1, bn2 = np.array(bounds[j][:2])/velScale
             parinfo[0 + p]['value'] = st1.clip(*bn1)
@@ -1095,8 +1118,6 @@ class ppxf(object):
             parinfo[ngh]['value'] = reddening
             parinfo[ngh]['limits'] = [0., 10.]  # force positive E(B-V) < 10 mag
 
-        self.star_rfft, self.npad = _templates_rfft(self.star)
-
         # Here the actual calculation starts.
         # If required, once the minimum is found, clean the pixels deviating
         # more than 3*sigma from the best fit and repeat the minimization
@@ -1106,7 +1127,6 @@ class ppxf(object):
         for j in range(5):  # Do at most five cleaning iterations
             self.clean = False  # No cleaning during chi2 optimization
             mp = mpfit.mpfit(self._fitfunc, parinfo=parinfo, quiet=1, ftol=1e-4)
-            ncalls = mp.nfev
             if not clean:
                 break
             goodOld = self.goodpixels.copy()
@@ -1116,15 +1136,15 @@ class ppxf(object):
             if np.array_equal(goodOld, self.goodpixels):
                 break
 
-        # KBW: Keep returned mpfit structure as part of class
-        self.mp = mp
+        # KBW: 17 Feb 2017: Save mpfit status
+        self.status = mp.status
 
         # Evaluate scatter at the bestfit (with BIAS=0)
         # and also get the output bestfit and weights.
         #
         self.bias = 0
         status, err = self._fitfunc(mp.params)
-        self.chi2 = robust_sigma(err, zero=True)**2   # Robust computation of Chi**2/DOF.
+        self.chi2 = np.sum(err**2)/(err.size - npars)   # Chi**2/DOF
 
         p = 0
         self.sol = []
@@ -1144,24 +1164,25 @@ class ppxf(object):
         self.weights = self.weights[(self.degree + 1)*len(s2):]  # output weights for the templates (or sky) only
 
         if not quiet:
-            txt = ["Vel", "sigma", "h3", "h4", "h5", "h6"]
-            print("Best Fit:", "".join("%10s" % f for f in txt[:np.max(self.moments)]))
-            for j in range(self.ncomp):
-                print("  comp.", j, "".join("%10.3g" % f for f in self.sol[j]))
-            print("chi2/DOF: %.4g" % self.chi2)
-            print('Function evaluations:', ncalls)
+            nmom = np.max(self.moments)
+            txt = ["Vel", "sigma"] + ["h" + str(j) for j in range(3, nmom+1)] 
+            print(("Best Fit:" + "{:>10}"*nmom).format(*txt))
+            for j, (sol, mom) in enumerate(zip(self.sol, self.moments)):
+                print((" comp. {}:" + "{:10.0f}"*2 + "{:10.3f}"*(mom-2)).format(j, *sol))
+            print("chi2/DOF: {:.4g}".format(self.chi2))
+            print('Function evaluations:', mp.nfev, 'Status:', mp.status)
             nw = self.weights.size
             if reddening is not None:
-                print('Reddening E(B-V): ', self.reddening)
+                print("Reddening E(B-V): {:.3g}".format(self.reddening))
             print('Nonzero Templates: ', np.sum(self.weights > 0), ' / ', nw)
             if self.weights.size <= 20:
                 print('Templates weights:')
-                print("".join("%10.3g" % f for f in self.weights))
+                print(("{:10.3g}"*self.weights.size).format(*self.weights))
 
         if fraction is not None:
             fracFit = np.sum(self.weights[component==0])/np.sum(self.weights[component<2])
             if not quiet:
-                print("Weights Fraction w[0]/w[0+1]: %0.3g" % fracFit)
+                print("Weights Fraction w[0]/w[0+1]: {:.3g}".format(fracFit))
             if abs(fracFit - fraction) > 0.01:
                 print("Warning: FRACTION is inaccurate. TEMPLATES and GALAXY "
                       "should have mean ~ 1 when using the FRACTION keyword")
@@ -1265,12 +1286,12 @@ class ppxf(object):
             reg2 = self.reg_dim - 2
             if dim == 1:
                 nreg = reg2
-            elif dim == 2:
-                nreg = 2*np.prod(reg2) + 2*np.sum(reg2)  # Rectangle sides have one finite difference
-            elif dim == 3:                               # Hyper-rectangle edges have one finite difference
-                nreg = 3*np.prod(reg2) + 4*np.sum(reg2) \
-                     + 4*(np.prod(reg2[[0, 1]]) + np.prod(reg2[[0, 2]]) + np.prod(reg2[[1, 2]]))
+            elif dim == 2:      # Rectangle sides have one finite difference
+                nreg = 2*np.prod(reg2) + 2*np.sum(reg2)
+            elif dim == 3:      # Hyper-rectangle edges have one finite difference
+                nreg = 3*np.prod(reg2) + 4*np.sum(reg2) + 4*sum(map(np.prod, combinations(reg2, 2)))
             ncols += nreg
+
         if self.fraction is not None:
             ncols += 1
 
@@ -1289,7 +1310,7 @@ class ppxf(object):
         for j, star_rfft in enumerate(self.star_rfft.T):  # loop over columns
             for k in range(nspec):
                 tt = np.fft.irfft(star_rfft*losvd_rfft[:, self.component[j], k])
-                if self.factor == 1:  # Template as same resolution as galaxy
+                if self.factor == 1:  # Template has same resolution as galaxy
                     tmp[:, k] = tt[:self.npix_temp]
                 else:                 # Template has higher resolution than galaxy
                     tmp[:, k] = rebin(tt[:self.npix_temp*self.factor], self.factor)

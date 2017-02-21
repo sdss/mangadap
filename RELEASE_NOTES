@@ -34,6 +34,8 @@ KBW (??         ): tag 2.1
     - Include a map mask in reference files
     - Allow rundap to read the plate, ifu, and mode combinations to
       analyze from a file
+    - Include filtering approach in stellar kinematics fitting
+    - Incorporate ppxf v6.0.4
 
 TO FIX:
     - emission-line moment masks
