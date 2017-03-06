@@ -67,7 +67,6 @@ Implements an emission-line profile fitting class.
         :class:`StellarContinuumModel`.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
 .. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
 

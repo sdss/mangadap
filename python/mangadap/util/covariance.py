@@ -78,17 +78,19 @@ Defines a class used to store and interface with covariance matrices.
 
         # Access individual elements
         print(C[0,0,0])
-        print(C[1000,0,0])
+        print(C[0,0,1000])
 
         # Write the full cube, or set of channels
         CC.write('full_covariance_cube.fits')   # BEWARE: This will be a BIG file
         C.write('covariance_channel_set.fits')
 
     Although you can access the data in the covariance matrix as
-    explained above, this is generally inefficient.  You're likely
-    better of working with the :attr:`Covariance.cov` attribute
-    directly.  To do this, you won't be able to use the aliasing of the
-    channel indices for 3D covariance matrices.
+    explained above, this is generally inefficient because the
+    :func:`Covariance.__getitem__` function currently cannot handle
+    slices.  If you need to perform operations with the covariance
+    matrix, you're better off working with the :attr:`Covariance.cov`
+    attribute directly.  To do this, you won't be able to use the
+    aliasing of the channel indices for 3D covariance matrices.
 
     The :class:`Covariance` class also allows you to toggle between
     accessing the matrix as a true covariance matrix, or by splitting
@@ -116,20 +118,21 @@ Defines a class used to store and interface with covariance matrices.
         import numpy
         from mangadap.util.covariance import Covariance
         from mangadap.drpfits import DRPFits
+
         drpf = DRPFits(7495, 12703, 'RSS', read=True)
         channels = [ 0, 1000, 2000, 3000, 4000 ]
         Cov = drpf.covariance_cube(channels=channels)
 
         Cov.to_correlation()
-        Cov.show(plane=2000)
+        Cov.show(channel=2000)
         Cov.write('correlation_matrix.fits', clobber=True)
         Cov.revert_correlation()
 
         Corr = Covariance(ifile='correlation_matrix.fits')
         Corr.revert_correlation()
 
-        assert ~(numpy.abs(numpy.sum(Cov.toarray(plane=2000) - Corr.toarray(plane=2000))) > 0.0)
-
+        assert ~(numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
+                            - Corr.toarray(channel=2000))) > 0.0)
 
 *Revision history*:
     | **23 Feb 2015**: Original Implementation by K. Westfall (KBW)
@@ -143,6 +146,14 @@ Defines a class used to store and interface with covariance matrices.
         a file or an `astropy.io.fits.hdu.hdulist.HDUList`_ object, and
         allow the specification of the extensions to read the header,
         covariance, and plane data.
+    | **23 Feb 2017**: (KBW) Major revisions: Use DAPFitsUtil to
+        read/write the HDUList.  Output is always a correlation matrix.
+        Rearrange ordering of 3D covariance matrices to reflect the
+        ordering in the DRPFits cube and the DAP Maps channels.  Change
+        *plane* keyword to *channel*.  Change the format of the
+        covariance matrices when written/read from a file to match what
+        is done by the DRP.  Change read method to :func:`from_fits`
+        class method.  Include :func:`from_samples` class method.
 
 .. todo::
     - Allow for calculation of the inverse of the covariance matrix.
@@ -170,12 +181,15 @@ import sys
 if sys.version > '3':
     long = int
 
+import os
 import numpy
 import warnings
 
 from scipy import sparse
 from astropy.io import fits
 from matplotlib import pyplot
+
+from .fitsutil import DAPFitsUtil
 
 __author__ = 'Kyle B. Westfall'
 
@@ -187,13 +201,17 @@ class Covariance:
     Works under the assumption that covariance matrices are symmetric by
     definition.
 
-    Assumes all sparse matrices in the input ndarray have the same size.
+    .. todo::
+        - Can create empty object.  Does this make sense?
 
     Args:
-        inp (`scipy.sparse.csr_matrix`_ or numpy.ndarray): (**Optional**)
-           Covariance matrix to store.  Data type can be either a single
-           `scipy.sparse.csr_matrix`_ object or a 1-D array of them.
-           If not provided, the covariance object is instantiated empty.
+        inp (`scipy.sparse.csr_matrix`_ or numpy.ndarray):
+            Covariance matrix to store.  Input **must** be coviariance
+            data, not correlation data.  Data type can be either a
+            single `scipy.sparse.csr_matrix`_ object or a 1-D array of
+            them.  Assumes all sparse matrices in the input ndarray have
+            the same size.  If None, the covariance object is
+            instantiated empty.
         input_indx (numpy.ndarray): (**Optional**) If *inp* is an array of
             `scipy.sparse.csr_matrix`_ objects, this is an integer
             array specifying a pseudo-set of indices to use instead of
@@ -210,21 +228,9 @@ class Covariance:
             `scipy.sparse.triu`_ when setting the covariance matrix.
             Otherwise, the input matrix is **assumed** to only have the
             upper triangle of numbers.
-        source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):
-            (**Optional**) Initialize the object using an
-            `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to a
-            fits file.  See :func:`read`.
-        primary_ext (str): (**Optional**) If reading the data from
-            *source*, this is the name of the extension with the header
-            information needed to construct the :class:`Covariance`
-            object.  Default is 'PRIMARY'.  See :func:`read`.
-        covar_ext (str): (**Optional**) If reading the data from
-            *source*, this is the name of the extension with covariance
-            data.  Default is 'COVAR'.  See :func:`read`.
-        plane_ext (str): (**Optional**) If reading the data from
-            *source*, this is the name of the extension with the
-            covariance plane indices, if necessary.  Default is 'PLANE'.
-            See :func:`read`.
+        correlation (bool): (**Optional**) Convert the input to a
+            correlation matix.  The input **must** be the covariance
+            matrix.
 
     Raises:
         TypeError: Raised if the input array is not one-dimensional or
@@ -237,6 +243,7 @@ class Covariance:
     Attributes:
         cov (`scipy.sparse.csr_matrix`_ or numpy.ndarray): The
             covariance matrix stored in sparse format.
+        shape (tuple): Shape of the full array.
         dim (int): The number of dimensions in the covariance matrix.
             This can either be 2 (a single covariance matrix) or 3
             (multiple covariance matrices).
@@ -261,29 +268,25 @@ class Covariance:
             saved as a variance vector and a correlation matrix.
 
     """
-    def __init__(self, inp=None, input_indx=None, impose_triu=False, source=None,
-                 primary_ext='PRIMARY', covar_ext='COVAR', plane_ext='PLANE'):
+    def __init__(self, inp, input_indx=None, impose_triu=False, correlation=False):
 
-        # If a file is provided with the covariance matrix, read it and
-        # return
-        if source is not None:
-            self.read(source, impose_triu=impose_triu, primary_ext=primary_ext,
-                      covar_ext=covar_ext, plane_ext=plane_ext)
-            return
+        self.cov = inp
+        self.shape = None
+        self.dim = None
+        self.nnz = None
+        self.input_indx = None
+        self.inv = None
+        self.var = None
+        self.is_correlation = False
 
-        # If no input is provided, free any existing data and return
-        if inp is None:
-            self._free()
+        # Return empty object
+        if self.cov is None:
             return
-        # Otherwise, save the input covariance matrix
-        else:
-            self.cov = inp
 
         # Set the dimensionality, check that each element of the array
         # has the correct type, count the number of non-zero covariance
         # values, and (if necessary) initialize the indices for each
         # covariance matrix
-        self.input_indx = None
         if isinstance(self.cov, numpy.ndarray):
             if len(self.cov.shape) > 1:
                 raise TypeError('Input ndarray can only be one-dimensional')
@@ -291,8 +294,7 @@ class Covariance:
             self.nnz = 0
             for cov in self.cov:
                 if not sparse.isspmatrix_csr(cov):
-                    self._free()
-                    raise TypeError('Input covariance matrix (or elements) must by csr_matrices.')
+                    raise TypeError('Input covariance matrix (or elements) must be csr_matrices.')
                 self.nnz += cov.nnz
 
             if input_indx is not None:
@@ -306,8 +308,7 @@ class Covariance:
         else:
             self.dim = 2
             if not sparse.isspmatrix_csr(self.cov):
-                self._free()
-                raise TypeError('Input covariance matrix (or elements) must by csr_matrices.')
+                raise TypeError('Input covariance matrix (or elements) must be csr matrices.')
             self.nnz = self.cov.nnz
             if input_indx is not None:
                 raise ValueError('Input indices only allowed when allocating multiple matrices.')
@@ -321,12 +322,11 @@ class Covariance:
             self._impose_upper_triangle()
 
         # Set the inverse of the covariance matrix
-        # **NOT YET IMPLEMENTED**
-        self.inv = None
+        # **NOT IMPLEMENTED YET**
 
         # Set the variance array and the correlation matrix flag
-        self.var = None
-        self.is_correlation = False
+        if correlation:
+            self.to_correlation()
 
     
     def __getitem__(self, *args):
@@ -351,14 +351,214 @@ class Covariance:
             raise IndexError('Incorrect number of dimensions!')
         if self.dim == 2:
             return self.cov[tuple(sorted(indx))]
-        return self.cov[self._grab_true_index(indx[0])][tuple(sorted(indx[1:]))]
+        return self.cov[self._grab_true_index(indx[2])][tuple(sorted(indx[:2]))]
 
 
-    def __del__(self):
-        """Deconstructor, ensuring memory storage freed."""
-        self._free()
+    @classmethod
+    def from_samples(cls, samples, cov_tol=None, rho_tol=None):
+        r"""
+
+        Define a covariance object using descrete samples from an
+        N-dimensional parameter space using the numpy covariance
+        function.  The shape of the input array must be :math:`N_{\rm
+        par}\times N_{\rm samples}`.
+
+        Any correlation coefficent less than tol is forced to zero, if
+        tol is provided.
+
+        """
+        if len(samples.shape) != 2:
+            raise ValueError('Input samples for covariance matrix must be a 2D array!')
+
+        npar = samples.shape[0]
+
+        covariance = numpy.cov(samples)
+        if rho_tol is not None:
+            variance = numpy.diag(covariance)
+            correlation = covariance / numpy.ma.sqrt(variance[:,None]*variance[None,:])
+            correlation[ numpy.ma.absolute(correlation) < rho_tol ] = 0.0
+            covariance = correlation.filled(0.0) \
+                            * numpy.ma.sqrt(variance[:,None]*variance[None,:]).filled(0.0)
+        if cov_tol is not None:
+            covariance[ covariance < cov_tol ] = 0.0
+
+        indx = covariance > 0.0
+        i, j = numpy.meshgrid(numpy.arange(npar), numpy.arange(npar), indexing='ij')
+
+        return cls(sparse.coo_matrix((covariance[indx].ravel(),
+                                        (i[indx].ravel(), j[indx].ravel())),
+                                     shape=(npar,npar)).tocsr(), impose_triu=True)
 
 
+    @classmethod
+    def from_fits(cls, source, ivar_ext='IVAR', covar_ext='CORREL', row_major=False,
+                  impose_triu=False, correlation=False, quiet=False):
+        r"""
+        Read an existing covariance object previously written to disk;
+        see :func:`write`.  The class can read covariance data written
+        by other programs *as long as they have a commensurate format*.
+        
+        If the extension names and column names are correct,
+        :class:`Covariance` can read fits files that were not
+        necessarily produced by the class itself.  This is useful for
+        MaNGA DAP products that include the covariance data in among
+        other output products.  Because of this, :func:`output_hdus` and
+        :func:`output_fits_data` are provided to produce the data that
+        can be placed in any fits file.
+
+        The function determines if the output data were reordered by
+        checking the number of binary columns.
+
+        Args:
+            source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):
+                Initialize the object using an
+                `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to
+                a fits file.
+            ivar_ext (str): (**Optional**) If reading the data from
+                *source*, this is the name of the extension with the
+                inverse variance data.  Default is 'IVAR'.  If None,
+                the variance is taken as unity.
+            covar_ext (str): (**Optional**) If reading the data from
+                *source*, this is the name of the extension with
+                covariance data.  Default is 'CORREL'.
+            row_major (bool): (**Optional**) If reading the data from an
+                HDUList, this sets if the data arrays have been
+                rearranged into a python-native (row-major) structure.
+                See
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data`.
+                Default is False.
+            impose_triu (bool): (**Optional**) Flag to force the
+                `scipy.sparse.csr_matrix`_ object to only be the upper
+                triangle of the covariance matrix.  The covariance
+                matrix is symmetric such that C_ij = C_ji, so it's not
+                necessary to keep both values.  This flag will force a
+                call to `scipy.sparse.triu`_ when setting the covariance
+                matrix.  Otherwise, the input matrix is **assumed** to
+                only have the upper triangle of numbers.
+            correlation (bool): (**Optional**) Return the matrix as a
+                correlation matrix.  Default (False) is to use the data
+                (always saved in correlation format; see :func:`write`)
+                to construct the covariance matrix.
+            quiet (bool): (**Optional**) Suppress terminal output.
+
+        """
+        if isinstance(source, fits.HDUList):
+            hdu = source if row_major else DAPFitsUtil.transpose_image_data(source)
+        else:
+            try:
+#                hdu = fits.open(source)
+                hdu = DAPFitsUtil.read(source)
+            except Exception as e:
+                print(e)
+                warnings.warn('Problem reading covariance from file.')
+                return
+
+        # Read a coordinate data
+        shape = eval(hdu[covar_ext].header['COVSHAPE'])
+        dim = len(shape)
+        reshape = len(hdu[covar_ext].columns.names) in [ 5, 6 ]
+        if reshape:
+            i_c1, i_c2, j_c1, j_c2, rhoij = [ hdu[covar_ext].data[ext].copy() for ext in
+                                                [ 'INDXI_C1', 'INDXI_C2', 'INDXJ_C1', 'INDXJ_C2',
+                                                  'RHOIJ' ] ]
+            n = Covariance.reshape_size(shape[0])
+            i = Covariance.ravel_indices(n, i_c1, i_c2)
+            j = Covariance.ravel_indices(n, j_c1, j_c2)
+#            for k in range(len(i_c1)):
+#                print('{0:>3} {1:>3} {2:>3} {3:>3}'.format(i_c1[k], i_c2[k], j_c1[k], j_c2[k]))
+#            for k in range(len(i)):
+#                print('{0:>3} {1:>3}'.format(i[k], j[k]))
+        else:
+            i, j, rhoij = [ hdu[covar_ext].data[ext] for ext in ['INDXI', 'INDXJ', 'RHOIJ'] ]
+
+        # Number of non-zero elements
+        nnz = len(rhoij)
+
+        # Set correlation data
+        if dim == 2:
+            var = numpy.ones(shape[1:], dtype=float) if ivar_ext is None \
+                    else numpy.ma.power(hdu[ivar_ext].data.ravel(), -1).filled(0.0)
+            cij = rhoij * numpy.sqrt( var[i]*var[j] )
+            cov = sparse.coo_matrix( (cij, (i, j)), shape=shape).tocsr()
+            input_indx = None
+        else:
+            k = hdu[covar_ext].data['INDXK'].copy()
+            input_indx = numpy.unique(k)
+            if len(input_indx) > shape[-1]:
+                raise ValueError('Number of unique channel indices is greater than provided shape.')
+            if len(input_indx) < shape[-1]:
+                warnings.warn('Fewer unique channels than all available.')
+
+            var = numpy.ones(shape[1:], dtype=float) if ivar_ext is None \
+                    else numpy.ma.power(hdu[ivar_ext].data.reshape(-1, shape[-1]), -1).filled(0.0)
+            cov = numpy.empty(shape[-1], dtype=sparse.csr.csr_matrix)
+            for ii, uk in enumerate(input_indx):
+                indx = k == uk
+                cij = rhoij[indx] * numpy.sqrt( var[i[indx],ii]*var[j[indx],ii] )
+                cov[ii] = sparse.coo_matrix((cij, (i[indx], j[indx])), shape=shape[:-1]).tocsr()
+
+        # Report
+        # TODO: Convert report to use logging
+        if not quiet:
+            print('Read covariance cube:')
+            print('       output type: {0}'.format('Correlation' \
+                                                    if correlation else 'Covariance'))
+            print('        dimensions: {0}'.format(dim))
+            print('             shape: {0}'.format(shape))
+            if dim == 3:
+                print('    pseudo-indices: ', input_indx)
+            print('   non-zero values: {0}'.format(nnz))
+
+        return cls(cov, input_indx=input_indx, correlation=correlation)
+
+
+    @classmethod
+    def from_matrix_multiplication(cls, T, Sigma):
+        r"""
+        Construct the covariance matrix that results from a matrix multiplication.
+        
+        The matrix multiplication should be of the form:
+
+        .. math::
+        
+            {\mathbf T} \times {\mathbf X} = {\mathbf Y}
+
+        where :math:`{\mathbf T}` is a transfer matrix of size
+        :math:`N_y\times N_x`, :math:`{\mathbf X}` is a vector of size
+        :math:`N_x`, and :math:`{\mathbf Y}` is the vector of length
+        :math:`{N_y}` that results from the multiplication.
+
+        The covariance matrix is then
+        
+        .. math::
+
+             {\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times
+             {\mathbf T}^{\rm T},
+        
+        where :math:`{\mathbf \Sigma}` is the covariance matrix for the
+        elements of :math:`{\mathbf X}`.  If `Sigma` is provided as a
+        vector of length :math:`N_x`, it is assumed that the elements of
+        :math:`{\mathbf X}` are independent and the provided vector
+        gives the variance in each element; i.e., the provided data
+        represent the diagonal of :math:`{\mathbf \Sigma}`.
+        """
+        if len(T.shape) != 2:
+            raise ValueError('Input transfer matrix must be two-dimensional.')
+        nx = T.shape[1]
+        if Sigma.shape != (nx,nx) and Sigma.shape != (nx,):
+            raise ValueError('Shape of input variance matrix must be either '
+                             '({0},{0}) or ({0},).'.format(nx))
+        # If it isn't already, convert T to a csr_matrix
+        _T = T if isinstance(T, sparse.csr.csr_matrix) else sparse.csr_matrix(T)
+        # Set the covariance matrix in X
+        _Sigma = sparse.coo_matrix( (Sigma, (numpy.arange(nx),numpy.arange(nx))),
+                                   shape=(nx,nx)).tocsr() if len(Sigma.shape) == 1 \
+                    else (Sigma if isinstance(Sigma, sparse.csr.csr_matrix) \
+                                else sparse.csr_matrix(Sigma))
+        # Construct the covariance matrix
+        return cls( sparse.triu(_T.dot(_Sigma.dot(_T.transpose()))).tocsr() )
+
+        
     def _grab_true_index(self, inp):
         """
         In the case of a 3D array, return the true array-element index
@@ -389,7 +589,7 @@ class Covariance:
         self.shape = self.cov.shape
         if self.dim == 2:
             return
-        self.shape += self.cov.ravel()[0].shape
+        self.shape = self.cov.ravel()[0].shape + self.shape
 
 
     def _impose_upper_triangle(self):
@@ -408,14 +608,14 @@ class Covariance:
             self.nnz += self.cov[i].nnz
 
 
-    def _with_lower_triangle(self, plane=None):
+    def _with_lower_triangle(self, channel=None):
         """
         Return a `scipy.sparse.csr_matrix`_ object with both its
         upper and lower triangle filled, ensuring that they are
         symmetric.
 
         Args:
-            plane (int): (**Optional**) The pseudo-index of the
+            channel (int): (**Optional**) The pseudo-index of the
                 covariance matrix to return.
 
         Returns:
@@ -424,35 +624,81 @@ class Covariance:
             information).
 
         Raises:
-            ValueError: Raised if the object is 3D and *plane* is not
+            ValueError: Raised if the object is 3D and *channel* is not
                 provided.
         """
         if self.dim == 2:
             a = self.cov
         else:
-            if plane is None:
-                raise ValueError('Must define plane!  Use plane=...')
-            a = self.cov[self._grab_true_index(plane)]
+            if channel is None:
+                raise ValueError('Must define channel!  Use channel=...')
+            a = self.cov[self._grab_true_index(channel)]
 
         return (sparse.triu(a) + sparse.triu(a,1).T)
 
 
-    def _free(self):
-        """Free the memory allocated to the object."""
-        self.dim=0
-        self.shape=None
+    @staticmethod
+    def reshape_size(size):
+        # Get the size of the square image (and make sure it's square)
+        n = numpy.floor(numpy.sqrt(size)).astype(int)
+        if n*n != size:
+            raise ValueError('{0} is not the square of an integer!'.format(size))
+        return n
 
-        try:
-            del self.cov
-            self.cov = None
-        except (NameError,AttributeError):
-            self.cov = None
 
-        try:
-            del self.inv
-            self.inv = None
-        except (NameError,AttributeError):
-            self.inv = None
+    @staticmethod
+    def reshape_indices(size, i):
+        """
+        Return the indices in the 2D array that results from reshaping a
+        vector of length size into a square 2D array.  The indices of
+        interest in the vector are give by i.
+        """
+        n = Covariance.reshape_size(size)
+        ii = i//n
+        return ii, i-ii*n
+        
+
+    @staticmethod
+    def ravel_indices(size, i, j):
+        """
+        Return the indices in the 1D vector that results from flattening
+        a ``size``-by-``size`` square array.
+        """
+        return i*size + j
+
+
+    def apply_new_variance(self, var):
+        """
+        Using the correlation matrix defined by self, use the provided
+        variance data to construct a new covariance matrix.
+
+        The input variance must be of the correct shape.
+        """
+        if var.shape != self.shape[1:]:
+            raise ValueError('Provided variance has incorrect shape.')
+
+        # Convert to a correlation matrix, if needed
+        is_correlation = self.is_correlation
+        if not is_correlation:
+            self.to_correlation()
+
+        if self.dim == 2:
+            i, j, c = sparse.find(self.cov)
+            new_cov = sparse.coo_matrix( (c*numpy.sqrt(var[i]*var[j]), (i,j)),
+                                           shape=self.shape).tocsr()
+        else:
+            new_cov = numpy.empty(self.shape[-1], dtype=sparse.csr.csr_matrix)
+            for p in range(self.shape[-1]):
+                i, j, c = sparse.find(self.cov[p])
+                new_cov[p] = sparse.coo_matrix((c*numpy.sqrt(var[i,p]*var[j,p]), (i,j)),
+                                               shape=self.shape[:-1]).tocsr()
+
+        # Revert to covariance matrix, if needed
+        if not is_correlation:
+            self.revert_correlation()
+
+        # Return a new covariance matrix
+        return Covariance(new_cov, input_indx=self.input_indx, correlation=is_correlation)
 
 
     def copy(self):
@@ -470,7 +716,7 @@ class Covariance:
             self.revert_correlation()
 
         # Create the new Covariance instance with a copy of the data
-        cp = Covariance(inp=self.cov.copy(), input_indx=self.input_indx.copy())
+        cp = Covariance(self.cov.copy(), input_indx=self.input_indx.copy())
 
         # If necessary, convert the data to a correlation matrix
         if is_correlation:
@@ -479,7 +725,30 @@ class Covariance:
         return cp
 
 
-    def show(self, plane=None, zoom=None, ofile=None):
+    def toarray(self, channel=None):
+        """
+        Convert the covariance to a full array, filled with zeros when
+        appropriate.
+
+        Args:
+            channel (int): (**Optional**) The pseudo-index of the
+                covariance matrix to plot.  Required if the covariance
+                object is 3D.
+
+        Returns:
+            numpy.ndarray: Dense array with the full covariance matrix.
+        """
+        if self.dim == 2 or channel is not None:
+            return (self._with_lower_triangle(channel=channel)).toarray()
+        
+        arr = numpy.empty(self.shape, dtype=numpy.float)
+        for k in range(self.shape[-1]):
+            indx = k if self.input_indx is None else self.input_indx[k]
+            arr[:,:,k] = (self._with_lower_triangle(channel=indx)).toarray()
+        return arr
+        
+
+    def show(self, channel=None, zoom=None, ofile=None):
         """
         Convert the (selected) covariance matrix to a filled array and
         plot the array using `matplotlib.pyplot.imshow`_.  If an output
@@ -487,7 +756,7 @@ class Covariance:
         output file; otherwise, the image is plotted to the screen.
 
         Args:
-            plane (int): (**Optional**) The pseudo-index of the
+            channel (int): (**Optional**) The pseudo-index of the
                 covariance matrix to plot.  Required if the covariance
                 object is 3D.
             zoom (float): (**Optional**) Factor by which to zoom in on
@@ -498,7 +767,7 @@ class Covariance:
                 to this file instead of being plotted to the screen.
         """
         # Convert the covariance matrix to an array
-        a = self.toarray(plane)
+        a = self.toarray(channel)
 
         # Remove some fraction of the array to effectively zoom in on
         # the center of the covariance matrix
@@ -524,36 +793,13 @@ class Covariance:
         pyplot.show()
         
 
-    def toarray(self, plane=None):
-        """
-        Convert the covariance to a full array, filled with zeros when
-        appropriate.
-
-        Args:
-            plane (int): (**Optional**) The pseudo-index of the
-                covariance matrix to plot.  Required if the covariance
-                object is 3D.
-
-        Returns:
-            numpy.ndarray: Dense array with the full covariance matrix.
-        """
-        if self.dim == 2 or plane is not None:
-            return (self._with_lower_triangle(plane=plane)).toarray()
-        
-        arr = numpy.empty(self.shape, dtype=numpy.float)
-        for i in range(self.shape[0]):
-            indx = i if self.input_indx is None else self.input_indx[i]
-            arr[i,:,:] = (self._with_lower_triangle(plane=indx)).toarray()
-        return arr
-        
-
-    def find(self, plane=None):
+    def find(self, channel=None):
         """
         Find the non-zero values in the **full** covariance matrix (not
         just the upper triangle).
 
         Args:
-            plane (int): (**Optional**) The pseudo-index of the
+            channel (int): (**Optional**) The pseudo-index of the
                 covariance matrix to plot.  Required if the covariance
                 object is 3D.
 
@@ -562,7 +808,7 @@ class Covariance:
             and *j* contain the index coordinates of the non-zero
             values, and *c* contains the values themselves.
         """
-        return sparse.find(self._with_lower_triangle(plane=plane))
+        return sparse.find(self._with_lower_triangle(channel=channel))
 
 
 #    def issingular(self):
@@ -605,115 +851,277 @@ class Covariance:
 #       return self.inv
 
 
-    def binary_columns(self, hdr=None):
+    def output_fits_data(self, reshape=False):
         r"""
-        Construct the binary columns for the output fits file.
+        Construct the data arrays to write to a fits file, providing the
+        covariance matrix/matrices in coordinate format.
+        
+        Regardless of whether or not the current internal data is a
+        covariance matrix or a correlation matrix, the data is always
+        returned as a correlation matrix.
 
-        The four columns are ``INDX``, ``COVAR``, ``VARIANCE``, and
-        ``INP_INDX``; see :func:`write`.
+        If the covariance matrix is 2 dimensional, four columns are
+        output:
 
+            i, j:  The i,j indices of the covariance matrix.
+
+            rho_ij: The correlation coefficient between pixels i and j.
+
+            variance: The variance in each pixel; i.e., the value of
+                :math:`C_{ii} \forall i`.  If reshape is True, this will
+                be output as a two-dimenional array.
+
+        If the covariance matrix is 3-dimensional, one additional column
+        is output:
+
+            k:  The k indices of the channels associated with each
+                covariance matrix.  This is either just the index of the
+                covariance matrix or the provided pseudo-indices of each
+                channel.
+
+        If using the reshape option, the i and j indices are converted
+        to two columns each providing the indices in the associated
+        reshaped array with coordinates c1,c2.
+            
         Args:
-            hdr (`astropy.io.fits.Header`_) : (**Optional**) A header
-                object that, if provided, will have the keywords
-                ``COVSHAPE`` and ``COVTYPE`` added based on,
-                respectively, the values of :attr:`shape` and
-                :attr:`is_correlation`.
+            reshape (bool): (**Optional**) Reshape the output in the
+                case when *i* and *j* are actually pixels in a
+                two-dimensional image.  The shape of the image is
+                expected to be square, such that the shape of the
+                covariance matrix is :math:`N_x\times N_y`, where
+                :math:`N_x = N_y`.  Each of the I and J output columns
+                are then split into two columns according to associate
+                coordinates, such that there are 8 output columns.
 
         Returns:
-            `astropy.io.fits.Column`_: Up to four
-            `astropy.io.fits.Column`_ objects with the column data, in
-            the sequence listed above.  If the data is not in the form
-            of a correlation matrix, the ``VARIANCE`` column is returned
-            as None.  If the covariance matrix is only two-dimensional,
-            the ``INP_INDX`` column is returned as None.
+            numpy.ndarray : Either 6 or 8 output arrays depending on if
+            the data has been reshaped into an image.
         """
-        # Add the shape to the header
-        if hdr is not None:
-            hdr['COVSHAPE'] = (str(self.shape), 'Shape of the covariance matrix')
-            hdr['COVTYPE'] = ('Correlation' if self.is_correlation else 'Covariance',
-                              'Type of covariance data storage')
 
-        # Create the binary table data
-        coo = numpy.empty((self.nnz, self.dim), dtype=numpy.int32)
-        coo_form = str(self.dim)+'J'
+        # Only ever print correlation matrices
+        is_correlation = self.is_correlation
+        if not is_correlation:
+            self.to_correlation()
+
+        # Get the square size if reshaping
+        reshape_n = Covariance.reshape_size(self.shape[0]) if reshape else None
+
+        # Only one covariance matrix
         if self.dim == 2:
-            ii, jj, covar_value = sparse.find(self.cov)
-            coo[:,0] = ii
-            coo[:,1] = jj
-            if self.is_correlation:
-                var_value = numpy.zeros(self.nnz, dtype=numpy.float64)
-                indx = ii==jj
-                var_value[indx] = self.var[ii[indx]]
-        else:
-            covar_value = numpy.empty(self.nnz, dtype=numpy.float64)
-            var_value = numpy.zeros(self.nnz, dtype=numpy.float64)
-            i = 0
-            j = 0
-            for cov in self.cov:
-                kk = numpy.arange(cov.nnz)+j
-                coo[kk,0] = i
-                ii, jj, vv = sparse.find(cov)
-                coo[kk,1] = ii
-                coo[kk,2] = jj
-                covar_value[kk] = vv
-                if self.is_correlation:
-                    indx = ii==jj
-                    var_value[kk[indx]] = self.var[i,ii[indx]]
-                j += cov.nnz
-                i += 1
+            # Get the data
+            i, j, rhoij = sparse.find(self.cov)
 
-        return fits.Column(name='INDX', format=coo_form, array=coo), \
-               fits.Column(name='COVAR', format='1D', array=covar_value), \
-               (fits.Column(name='VARIANCE', format='1D', array=var_value) \
-                    if self.is_correlation else None), \
-               (None if self.input_indx is None else \
-                    fits.Column(name='INP_INDX', format='1J', array=self.input_indx))
+            # If object was originally a covariance matrix, revert it back
+            if not is_correlation:
+                self.revert_correlation()
+
+            # Return the data
+            if not reshape:
+                # Returns four arrays
+                return i, j, rhoij, self.var.copy()
+
+            # Returns six arrays
+            i_c1, i_c2 = Covariance.reshape_indices(self.shape[0], i)
+            j_c1, j_c2 = Covariance.reshape_indices(self.shape[0], j)
+            return i_c1, i_c2, j_c1, j_c2, rhoij, self.var.reshape(reshape_n, reshape_n).copy()
+
+        # More than one covariance matrix
+        i = numpy.empty(self.nnz, dtype=int)
+        j = numpy.empty(self.nnz, dtype=int)
+        k = numpy.zeros(self.nnz, dtype=int)
+        rhoij = numpy.empty(self.nnz, dtype=float)
+        ii = 0
+        for kk in range(self.shape[-1]):
+            nnz = self.cov[kk].nnz
+            k[ii:ii+nnz] = kk if self.input_indx is None else self.input_indx[kk]
+            i[ii:ii+nnz], j[ii:ii+nnz], rhoij[ii:ii+nnz] = sparse.find(self.cov[kk])
+            ii += nnz
+        
+        # If object was originally a covariance matrix, revert it back
+        if not is_correlation:
+            self.revert_correlation()
+
+        # Return the data
+        if not reshape:
+            # Returns five arrays
+            return i, j, k, rhoij, self.var.copy()
+
+        # Returns seven arrays
+        i_c1, i_c2 = Covariance.reshape_indices(self.shape[0], i)
+        j_c1, j_c2 = Covariance.reshape_indices(self.shape[0], j)
+        return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(reshape_n, reshape_n, -1).copy()
+
+
+#    def binary_columns(self, hdr=None):
+#        r"""
+#        Construct the binary columns for the output fits file.
+#
+#        The four columns are ``INDX``, ``COVAR``, ``VARIANCE``, and
+#        ``INP_INDX``; see :func:`write`.
+#
+#        Args:
+#            hdr (`astropy.io.fits.Header`_) : (**Optional**) A header
+#                object that, if provided, will have the keywords
+#                ``COVSHAPE`` and ``COVTYPE`` added based on,
+#                respectively, the values of :attr:`shape` and
+#                :attr:`is_correlation`.
+#
+#        Returns:
+#            `astropy.io.fits.Column`_: Up to four
+#            `astropy.io.fits.Column`_ objects with the column data, in
+#            the sequence listed above.  If the data is not in the form
+#            of a correlation matrix, the ``VARIANCE`` column is returned
+#            as None.  If the covariance matrix is only two-dimensional,
+#            the ``INP_INDX`` column is returned as None.
+#        """
+#        # Add the shape to the header
+#        if hdr is not None:
+#            hdr['COVSHAPE'] = (str(self.shape), 'Shape of the covariance matrix')
+#            hdr['COVTYPE'] = ('Correlation' if self.is_correlation else 'Covariance',
+#                              'Type of covariance data storage')
+#
+#        # Create the binary table data
+#        coo = numpy.empty((self.nnz, self.dim), dtype=numpy.int32)
+#        coo_form = str(self.dim)+'J'
+#        if self.dim == 2:
+#            ii, jj, covar_value = sparse.find(self.cov)
+#            coo[:,0] = ii
+#            coo[:,1] = jj
+#            if self.is_correlation:
+#                var_value = numpy.zeros(self.nnz, dtype=numpy.float64)
+#                indx = ii==jj
+#                var_value[indx] = self.var[ii[indx]]
+#        else:
+#            covar_value = numpy.empty(self.nnz, dtype=numpy.float64)
+#            var_value = numpy.zeros(self.nnz, dtype=numpy.float64)
+#            i = 0
+#            j = 0
+#            for cov in self.cov:
+#                kk = numpy.arange(cov.nnz)+j
+#                coo[kk,0] = i
+#                ii, jj, vv = sparse.find(cov)
+#                coo[kk,1] = ii
+#                coo[kk,2] = jj
+#                covar_value[kk] = vv
+#                if self.is_correlation:
+#                    indx = ii==jj
+#                    var_value[kk[indx]] = self.var[i,ii[indx]]
+#                j += cov.nnz
+#                i += 1
+#
+#        return fits.Column(name='INDX', format=coo_form, array=coo), \
+#               fits.Column(name='COVAR', format='1D', array=covar_value), \
+#               (fits.Column(name='VARIANCE', format='1D', array=var_value) \
+#                    if self.is_correlation else None), \
+#               (None if self.input_indx is None else \
+#                    fits.Column(name='INP_INDX', format='1J', array=self.input_indx))
 
         
-    def write(self, ofile, hdr=None, clobber=False):
+    def output_hdus(self, reshape=False, hdr=None):
+        """
+        Construct the output HDUs and header that contain the covariance
+        data.
+        """
+        # Use input header or create a minimal one
+        _hdr = fits.Header() if hdr is None else hdr
+        # Ensure the input header has the correct type
+        if not isinstance(_hdr, fits.Header):
+            raise TypeError('Input header must have type astropy.io.fits.Header.')
+        _hdr['COVSHAPE'] = (str(self.shape), 'Shape of the correlation matrix')
+
+        tbl_hdr = fits.Header()
+        tbl_hdr['COVSHAPE'] = (str(self.shape), 'Shape of the correlation matrix')
+
+        # Construct the correlation binary table HDU
+        if self.dim == 2:
+            if reshape:
+                i_c1, i_c2, j_c1, j_c2, rhoij, var \
+                            = self.output_fits_data(reshape=reshape)
+                covar_hdu = fits.BinTableHDU.from_columns([
+                                fits.Column(name='INDXI_C1', format='1J', array=i_c1),
+                                fits.Column(name='INDXI_C2', format='1J', array=i_c2),
+                                fits.Column(name='INDXJ_C1', format='1J', array=j_c1),
+                                fits.Column(name='INDXJ_C2', format='1J', array=j_c2),
+                                fits.Column(name='RHOIJ', format='1D', array=rhoij)
+                                                          ], name='CORREL', header=tbl_hdr)
+            else:
+                i, j, rhoij, var = self.output_fits_data(reshape=reshape)
+                covar_hdu = fits.BinTableHDU.from_columns([
+                                fits.Column(name='INDXI', format='1J', array=i),
+                                fits.Column(name='INDXJ', format='1J', array=j),
+                                fits.Column(name='RHOIJ', format='1D', array=rhoij)
+                                                          ], name='CORREL', header=tbl_hdr)
+        else:
+            if reshape:
+                i_c1, i_c2, j_c1, j_c2, k, rhoij, var \
+                            = self.output_fits_data(reshape=reshape)
+                covar_hdu = fits.BinTableHDU.from_columns([
+                                fits.Column(name='INDXI_C1', format='1J', array=i_c1),
+                                fits.Column(name='INDXI_C2', format='1J', array=i_c2),
+                                fits.Column(name='INDXJ_C1', format='1J', array=j_c1),
+                                fits.Column(name='INDXJ_C2', format='1J', array=j_c2),
+                                fits.Column(name='INDXK', format='1J', array=k),
+                                fits.Column(name='RHOIJ', format='1D', array=rhoij)
+                                                          ], name='CORREL', header=tbl_hdr)
+            else:
+                i, j, k, rhoij, var = self.output_fits_data(reshape=reshape)
+                covar_hdu = fits.BinTableHDU.from_columns([
+                                fits.Column(name='INDXI', format='1J', array=i),
+                                fits.Column(name='INDXJ', format='1J', array=j),
+                                fits.Column(name='INDXK', format='1J', array=k),
+                                fits.Column(name='RHOIJ', format='1D', array=rhoij)
+                                                          ], name='CORREL', header=tbl_hdr)
+
+        ivar_hdu = fits.ImageHDU(data=numpy.ma.power(var,-1.).filled(0.0), name='IVAR')
+
+        return _hdr, ivar_hdu, covar_hdu
+
+
+    def write(self, ofile, reshape=False, hdr=None, clobber=False):
         r"""
         Write the covariance object to a fits file such that it can be
-        read for later use; see :func:`read`.  The covariance matrix
-        (matrices) are stored in "coordinate" format using fits binary
-        tables; see `scipy.sparse.coo_matrix`_.
+        read for later use; see :func:`from_fits`.  The covariance
+        matrix (matrices) are stored in "coordinate" format using fits
+        binary tables; see `scipy.sparse.coo_matrix`_.  The matrix is
+        also **always** stored as a correlation matix, even if the
+        object is currently in the state holding the covariance data.
 
         Independent of the dimensionality of the covariance matrix, the
-        written file has a ``PRIMARY`` extension with two keywords:
-
-            - ``COVSHAPE``: Specifies the original dimensions of the
-              covariance matrix; see :attr:`shape`.
-            - ``COVTYPE``: Designates if the covariance matrix is of
-              type ``'Covariance'`` or ``'Correlation'``; see
-              :attr:`is_correlation`.
+        written file has a ``PRIMARY`` extension with the keyword
+        ``COVSHAPE`` that specifies the original dimensions of the
+        covariance matrix; see :attr:`shape`.
             
-        The covariance data itself is written to the ``COVAR``
-        extension, which has three columns:
+        The correlation data are written to the ``CORREL`` extension.
+        The number of columns in this extension depends on the provided
+        keywords; see :func:`output_fits_data`.  The column names are:
+            
+            - ``INDXI``, ``INDXJ``, ``INDXK``: indices in the covariance
+              matrix.  The last index is provided only if the object is
+              3D.  ``INDXI`` and ``INDXJ`` are separated into two
+              columns if the output is reshaped; these columns are
+              ``INDXI_C1``, ``INDXI_C2``, ``INDXJ_C1``, ``INDXJ_C2``.
 
-            - ``INDX``: The indices of the non-zero elements of the
-              covariance matrix.  For 2D matrices, this means each
-              column element is a two-element vector, :math:`(i,j)`; for
-              3D matrices, it is a three-element vector,
-              :math:`(i,j,k)`.
-            - ``COVAR``: The value of the covariance at the pixel
-              coordinate provided by ``INDX``; e.g., :math:`C_{ij}` or
-              :math:`C_{ijk}`.  If the :class:`Covariance` object being
-              written is a correlation matrix, these are the values of
-              :math:`\rho_{ij}` or :math:`\rho_{ijk}`; along the
-              diagonal of matrices, the values of :math:`\rho=1` are
-              also stored.
-            - ``VARIANCE``: If the :class:`Covariance` object being
-              written is a correlation matrix, this column provides the
-              variances at pixel coordinate :math:`(i,j)`,
-              :math:`(i,j,k)`.  To match the number of rows in the other
-              columns, the off-diagonal elements are set to 0.0.
+            - ``RHOIJ``: The non-zero correlation coefficients located
+              the specified coordinates
 
-        For 3D matrices, a third extension, ``PLANE``, is written
-        containing a binary table with the list of pseudo indices for
-        each of the provided covariance matrices. these indices are in
-        the single column in this extension, ``INP_INDX``.
+        The inverse of the variance along the diagonal of the covariance
+        matrix is output in an ImageHDU in extension ``IVAR``.
 
+        For 3D matrices, if pseudo-indices have been provided, these are
+        used in the ``INDXK`` column; however, the ``COVSHAPE`` header
+        keyword only gives the shape of the unique indices of the
+        covariance channels.
+        
         Args:
             ofile (str): File name for the output.
+            reshape (bool): (**Optional**) Reshape the output in the
+                case when *i* and *j* are actually pixels in a
+                two-dimensional image.  The shape of the image is
+                expected to be square, such that the shape of the
+                covariance matrix is :math:`N_x\times N_y`, where
+                :math:`N_x = N_y`.  Each of the I and J output columns
+                are then split into two columns according to associate
+                coordinates.
             hdr (`astropy.io.fits.Header`_): (**Optional**) A header
                 object to include in the PRIMARY extension.  The SHAPE
                 keyword will be added/overwritten.
@@ -723,176 +1131,20 @@ class Covariance:
             TypeError: Raise if the input *hdr* does not have the
                 correct type.
         """
-        # Use input header or create a minimal one
-        if hdr is None:
-            hdr = fits.Header()
-        # Ensure the input header has the correct type
-        elif not isinstance(hdr, fits.Header):
-            raise TypeError('Input header must have type astropy.io.fits.Header.')
+        if os.path.isfile(ofile) and not clobber:
+            raise FileExistsError('{0} exists!  Use \'clobber=True\' to overwrite.'.format(ofile))
 
-        # Get the fits columns
-        indx_col, covar_col, var_col, plane_col = self.binary_columns(hdr=hdr)
-
-        # Construct the main binary table HDU
-        covar_hdu = fits.BinTableHDU.from_columns([ indx_col, covar_col ], name='COVAR') \
-                        if var_col is None else \
-                    fits.BinTableHDU.from_columns([ indx_col, var_col, covar_col ], name='COVAR')
-
-        # Construct the HDUList
-        hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr), covar_hdu ])
-
-        # Add the index column, if necessary
-        if plane_col is not None:
-            hdu.append(fits.BinTableHDU.from_columns([ plane_col ], name='PLANE'))
-
-        # Write the file
-        hdu.writeto(ofile, clobber=clobber, checksum=True)
+        # Construct HDUList and write the fits file
+        _hdr, ivar_hdu, covar_hdu = self.output_hdus(reshape=reshape, hdr=hdr)
+        DAPFitsUtil.write(fits.HDUList([ fits.PrimaryHDU(header=_hdr), ivar_hdu, covar_hdu ]),
+                          ofile, clobber=clobber, checksum=True)
 
 
-    def read(self, source, primary_ext='PRIMARY', covar_ext='COVAR', plane_ext='PLANE',
-             impose_triu=False, to_correlation=None, return_hdr=False, quiet=False):
-        r"""
-        Read an existing covariance object previously written to disk;
-        see :func:`write`.  The class can read covariance data written
-        by other programs *as long as they have a commensurate format*.
-        
-        If the extension names and column names are correct,
-        :class:`Covariance` can read fits files that were not
-        necessarily produced by the class itself.  This is useful for
-        MaNGA DAP products that include the covariance data in among
-        other output products.  Because of this,
-        :class:`Covariance.binary_columns` is included to provide the
-        columns and header data that can be placed in any fits file.
-
-        Args:
-            source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):
-                `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to
-                fits file with the covariance data.
-            primary_ext (str): (**Optional**) Name of the extension with
-                the header information needed to construct the
-                :class:`Covariance` object.  Default is 'PRIMARY'.
-            covar_ext (str): (**Optional**) Name of the extension with
-                covariance data.  Default is 'COVAR'.
-            plane_ext (str): (**Optional**) Name of the extension with
-                the covariance plane indices, if necessary.  Default is
-                'PLANE'.
-            impose_triu (bool): (**Optional**) Flag to force the
-                `scipy.sparse.csr_matrix`_ object(s) to only contain
-                elements in their upper triangle.  The covariance matrix
-                is symmetric such that C_ij = C_ji, so it's not
-                necessary to keep both values.  This flag will force a
-                call to `scipy.sparse.triu`_ when setting the covariance
-                matrix.  Otherwise, the input matrix is **assumed** to
-                only have the upper triangle of numbers.
-            to_correlation (bool): (**Optional**) Force the operation to
-                return a correlation matrix regardless of the type of
-                data in the file.
-            return_hdr (bool): (**Optional**) Return the
-                `astropy.io.fits.Header`_ object read from the primary
-                extension of the file.
-            quiet (bool): (**Optional**) Suppress screen output
-
-        Returns:
-            `astropy.io.fits.Header`_: The header from the primary
-            extension, if requested.
-        """
-
-        if isinstance(source, fits.HDUList):
-            hdu = source
-        else:
-            try:
-                hdu = fits.open(source)
-            except Exception as e:
-                print(e)
-                warnings.warn('Problem reading covariance from file.')
-                return
-
-        # Erase anything that might already exist
-        self._free()
-
-        # Get the shape and type
-        self.shape = eval(hdu[primary_ext].header['COVSHAPE'])
-        self.dim = len(self.shape)
-        self.nnz = hdu[covar_ext].header['NAXIS2']
-        self.is_correlation = hdu[primary_ext].header['COVTYPE'] == 'Correlation'
-        self.var = None
-
-        # Read a 2D matrix
-        if self.dim == 2:
-            self.cov = sparse.coo_matrix( (hdu[covar_ext].data['COVAR'], \
-                                          (hdu[covar_ext].data['INDX'][:,0], \
-                                          hdu[covar_ext].data['INDX'][:,1])), \
-                                          shape=self.shape).tocsr()
-            # Read the variances if written as a correlation matrix
-            if self.is_correlation:
-                self.var = numpy.zeros(self.shape[0], dtype=numpy.float)
-                indx = hdu[covar_ext].data['INDX'][:,0] == hdu[covar_ext].data['INDX'][:,1]
-                self.var[hdu[covar_ext].data['INDX'][indx,0]] = \
-                        hdu[covar_ext].data['VARIANCE'][indx]
-            self.input_indx = None
-        # Read a 3D matrix
-        else:
-            # Initialize the arrays
-            self.cov = numpy.empty(self.shape[0], dtype=sparse.csr.csr_matrix)
-            if self.is_correlation:
-                self.var = numpy.zeros((self.shape[0], self.shape[1]), dtype=numpy.float)
-            # Read each plane
-            for i in range(self.shape[0]):
-                tt = numpy.where( hdu[covar_ext].data['INDX'][:,0].flatten() == i )[0]
-
-                ii = hdu[covar_ext].data['INDX'][tt,1].flatten()
-                jj = hdu[covar_ext].data['INDX'][tt,2].flatten()
-                vv = hdu[covar_ext].data['COVAR'][tt]
-
-                self.cov[i] = sparse.coo_matrix( (vv, (ii, jj)), shape=self.shape[1:]).tocsr()
-
-                # Read the variances if written as a correlation matrix
-                if self.is_correlation:
-                    indx = ii == jj
-                    self.var[i,ii[indx]] = hdu[covar_ext].data['VARIANCE'][tt[indx]]
-
-            # Try to assign the pseudo-indices
-            try:
-                self.input_indx = hdu[plane_ext].data['INP_INDX']
-            except KeyError:
-                self.input_indx = numpy.arange(self.shape[0])
-
-        # Force the covariance matrix to only have the upper triangle
-        if impose_triu:
-            self._impose_upper_triangle()
-
-        self.inv = None
-
-        # Convert to a correlation matrix if requested
-        if to_correlation is not None:
-            if to_correlation:
-                self.to_correlation()
-            else:
-                self.revert_correlation()
-
-        # Report
-        # TODO: Convert report to use logging
-        if not quiet:
-            print('Read covariance cube:')
-            print('        input type: {0}'.format(hdu[primary_ext].header['COVTYPE']))
-            print('       output type: {0}'.format('Correlation' \
-                                                    if self.is_correlation else 'Covariance'))
-            print('        dimensions: {0}'.format(self.dim))
-            print('             shape: {0}'.format(self.shape))
-            if self.dim == 3:
-                print('    pseudo-indices: ', self.input_indx)
-            print('   non-zero values: {0}'.format(self.nnz))
-
-        # Return the header object if requested
-        if return_hdr:
-            return hdu[primary_ext].header
-
-    
-    def variance(self):
+    def variance(self, copy=True):
         """
         If not already done, grab the variances along the diagonal of
         the covariance matrix.  The function returns the variance for
-        all planes if more than one exists.
+        all channels if more than one exists.
         """
         if self.var is not None:
             return self.var
@@ -901,11 +1153,11 @@ class Covariance:
             self.var = numpy.diag(self.cov.toarray()).copy()
             return self.var
 
-        self.var = numpy.empty((self.shape[0], self.shape[1]), dtype=numpy.float)
-        for p in range(self.shape[0]):
-            self.var[p,:] = numpy.diag(self.cov[p].toarray()).copy()
+        self.var = numpy.empty(self.shape[1:], dtype=numpy.float)
+        for p in range(self.shape[-1]):
+            self.var[:,p] = numpy.diag(self.cov[p].toarray()).copy()
 
-        return self.var
+        return self.var.copy() if copy else self.var
 
 
     def to_correlation(self):
@@ -935,10 +1187,10 @@ class Covariance:
                                           shape=self.shape).tocsr()
             return
        
-        for p in range(self.shape[0]):
+        for p in range(self.shape[-1]):
             i, j, c = sparse.find(self.cov[p])
-            self.cov[p] = sparse.coo_matrix( (c/numpy.sqrt(self.var[p,i]*self.var[p,j]), (i,j)),
-                                             shape=self.shape[1:]).tocsr()
+            self.cov[p] = sparse.coo_matrix( (c/numpy.sqrt(self.var[i,p]*self.var[j,p]), (i,j)),
+                                             shape=self.shape[:-1]).tocsr()
 
 
     def revert_correlation(self):
@@ -963,13 +1215,157 @@ class Covariance:
             self.is_correlation = False
             return
        
-        for p in range(self.shape[0]):
+        for p in range(self.shape[-1]):
             i, j, c = sparse.find(self.cov[p])
-            self.cov[p] = sparse.coo_matrix( (c*numpy.sqrt(self.var[p,i]*self.var[p,j]), (i,j)),
-                                             shape=self.shape[1:]).tocsr()
+            self.cov[p] = sparse.coo_matrix( (c*numpy.sqrt(self.var[i,p]*self.var[j,p]), (i,j)),
+                                             shape=self.shape[:-1]).tocsr()
         self.is_correlation = False
 
+    ####################################################################
+    # TODO: Generalize these to fill and thin or something
+    def bin_to_spaxel_covariance(self, bin_indx):
+        """
+        Propagate the covariance matrix data for the stacked spectra
+        into the full cube.
+
+        This (self) should be the covariance/correlation matrix for the
+        binned spectra.
         
+        Args:
+            bin_indx (numpy.ndarray): The integer vector with the bin
+                associated with each spectrum in the DRP cube.  This is
+                the flattened BINID array.
+
+        Returns:
+            class:`mangadap.util.covariance.Covariance`:
+            Covariance/Correlation matrix for the spaxelized binned
+            data.
+
+        .. todo::
+            - This needs to be tested.
+
+        """
+
+        # Total number of spectra
+        nspec = len(bin_indx)
+
+        # Get the unique bins and how to reconstruct the bins from the
+        # unique set
+        unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
+
+        # Need to handle missing bins
+        if unique_bins.size != unique_bins[-1]+2 \
+                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+                          'to be sorted by their bin number.')
+            unique_bins = numpy.arange(-1,unique_bins.size-1)
+
+        # Get the valid bins
+        indx = bin_indx > -1
+
+        # Expand the covariance matrix by repeating the full matrix
+        # elements for repeated bin values in different spaxels
+        nchan = self.shape[-1]
+        spaxel_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        for i in range(nchan):
+            j = self.input_indx[i]
+#            self.show(channel=j)
+
+            # Input bin and covariance indices
+            ii = unique_bins[reconstruct[indx]]
+            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+
+            # Output spaxel and covariance indices
+            oi = numpy.arange(nspec)[indx]
+            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+
+            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
+            _covar[oi_i, oi_j] = self.toarray(channel=j)[ii_i,ii_j]
+#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+#            pyplot.colorbar()
+#            pyplot.show()
+            spaxel_covar[i] = sparse.triu(_covar).tocsr()
+        return Covariance(spaxel_covar, input_indx=self.input_indx)
+
+
+    def spaxel_to_bin_covariance(self, bin_indx):
+        """
+        Opposite of :func:`bin_to_spaxel_covariance`: Revert the covariance
+        matrix to the covariance between the unique binned spectra.
+
+        This (self) should be the covariance/correlation matrix for the
+        binned spectra redistributed to the size of the original spaxels
+        map.
+
+        .. warning::
+
+            **This does NOT propagate the covariance between the spaxels
+            into the covariance in the binned data.** That operation is
+            done by, e.g.,
+            :func:`mangadap.proc.spectralstack.SpectralStack._stack_with_covariance`.
+            This **only** performs the inverse operation of
+            :func:`bin_to_spaxel_covariance`.
+
+        Args:
+            bin_indx (numpy.ndarray): The integer vector with the bin
+                associated with each spectrum in the DRP cube.  This is
+                the flattened BINID array.
+
+        Returns:
+            class:`mangadap.util.covariance.Covariance`:
+            Covariance/Correlation matrix for the stacked spectra.
+
+        .. todo::
+            - This needs to be tested.
+
+        """
+        # Get the unique bins and their first occurrence in the bin list
+        unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
+
+        # Need to handle missing bins
+        if unique_bins.size != unique_bins[-1]+2 \
+                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+                          'to be sorted by their bin number.')
+            unique_bins = numpy.arange(-1,unique_bins.size-1)
+
+        # Total number of bins
+        nbins = len(unique_bins)-1
+
+        nchan = self.shape[-1]
+        bin_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        for i in range(nchan):
+            j = self.input_indx[i]
+#            self.covariance.show(channel=j)
+
+            # Input spectrum and covariance indices
+            ii = unique_indx[1:]
+            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+
+            # Output spectrum and covariance indices
+            oi = unique_bins[1:]
+            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+
+            _covar = numpy.zeros((nbins, nbins), dtype=numpy.float)
+            _covar[oi_i, oi_j] = self.toarray(channel=j)[ii_i,ii_j]
+#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+#            pyplot.colorbar()
+#            pyplot.show()
+            bin_covar[i] = sparse.triu(_covar).tocsr()
+        return Covariance(bin_covar, input_indx=self.input_indx)
+
+
+    ####################################################################
+
+
+#            order (str): (**Optional**) If reshaping the output
+#                covariance matrix, this defines the order in which the
+#                image data was flattened in memory for the covariance
+#                calculation.  The default (like the numpy.ndarray
+#                default) is 'C' for C-like (row-major) ordering.  The
+#                only other option is 'F' for Fortran-like (column-major)
+#                ordering.
+
 
 
 

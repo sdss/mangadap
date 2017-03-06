@@ -37,7 +37,6 @@ Implements a few base classes used during spectral fitting procedures.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 
 
 """
@@ -100,20 +99,20 @@ class StellarKinematicsFit(SpectralFitting):
                  ('ENDPIX', numpy.int),
                  ('NPIXTOT',numpy.int),
                  ('NPIXFIT',numpy.int),
-                 ('TPLWGT',numpy.float,ntpl),
-                 ('USETPL',numpy.bool,ntpl),
-                 ('ADDCOEF',numpy.float,nadd) if nadd > 1 else ('ADDCOEF',numpy.float),
-                 ('MULTCOEF',numpy.float,nmult) if nmult > 1 else ('MULTCOEF',numpy.float),
-                 ('KININP',numpy.float,2),
-                 ('KIN',numpy.float,nkin),
-                 ('KINERR',numpy.float,nkin),
+                 ('TPLWGT',numpy.float,(ntpl,)),
+                 ('USETPL',numpy.bool,(ntpl,)),
+                 ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
+                 ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
+                 ('KININP',numpy.float,(2,)),
+                 ('KIN',numpy.float,(nkin,)),
+                 ('KINERR',numpy.float,(nkin,)),
                  ('CHI2',numpy.float),
                  ('RCHI2',numpy.float),
                  ('ROBUST_RCHI2',numpy.float),
                  ('RMS',numpy.float),
-                 ('ABSRESID',numpy.float,5),
+                 ('ABSRESID',numpy.float,(5,)),
                  ('FRMS',numpy.float),
-                 ('FABSRESID',numpy.float,5),
+                 ('FABSRESID',numpy.float,(5,)),
                  ('SIGMACORR',numpy.float)
                ]
 
@@ -145,18 +144,18 @@ class EmissionLineFit(SpectralFitting):
         """
         return [ ('BINID', numpy.int),
                  ('BINID_INDEX', numpy.int),
-                 ('WIN_INDEX', numpy.int, neml),
-                 ('MASK', mask_dtype, neml),
-                 ('FLUX', numpy.float, neml),
-                 ('FLUXERR', numpy.float, neml),
+                 ('WIN_INDEX', numpy.int, (neml,)),
+                 ('MASK', mask_dtype, (neml,)),
+                 ('FLUX', numpy.float, (neml,)),
+                 ('FLUXERR', numpy.float, (neml,)),
                  ('KIN', numpy.float, (neml,nkin)),
                  ('KINERR', numpy.float, (neml,nkin)),
-                 ('SINST', numpy.float, neml),
-                 ('BMED', numpy.float, neml),
-                 ('RMED', numpy.float, neml),
-                 ('EWCONT', numpy.float, neml),
-                 ('EW', numpy.float, neml),
-                 ('EWERR', numpy.float, neml)
+                 ('SINST', numpy.float, (neml,)),
+                 ('BMED', numpy.float, (neml,)),
+                 ('RMED', numpy.float, (neml,)),
+                 ('EWCONT', numpy.float, (neml,)),
+                 ('EW', numpy.float, (neml,)),
+                 ('EWERR', numpy.float, (neml,))
                ]
 
 #                 ('EWOF',numpy.float,neml),
@@ -177,8 +176,8 @@ class EmissionLineFit(SpectralFitting):
 
         return [ ('BINID',numpy.int),
                  ('BINID_INDEX',numpy.int),
-                 ('MASK', mask_dtype, nwin),
-                 ('NPIXFIT',numpy.int,nwin),
+                 ('MASK', mask_dtype, (nwin,)),
+                 ('NPIXFIT',numpy.int,(nwin,)),
                  ('PAR',numpy.float,(nwin,max_npar)),
                  ('ERR',numpy.float,(nwin,max_npar)),
                  ('LOBND',numpy.float,(nwin,max_npar)),
@@ -186,11 +185,11 @@ class EmissionLineFit(SpectralFitting):
                  ('FIXED',numpy.bool,(nwin,max_npar)),
 #                 ('TIED',numpy.int,(nwin,max_npar)),
                  ('IGNORE',numpy.bool,(nwin,max_npar)),
-                 ('CHI2',numpy.float,nwin),
-                 ('RCHI2',numpy.float,nwin),
-                 ('RMS',numpy.float,nwin),
+                 ('CHI2',numpy.float,(nwin,)),
+                 ('RCHI2',numpy.float,(nwin,)),
+                 ('RMS',numpy.float,(nwin,)),
                  ('RESID',numpy.float,(nwin,7)),
-                 ('FRAC_RMS',numpy.float,nwin),
+                 ('FRAC_RMS',numpy.float,(nwin,)),
                  ('FRAC_RESID',numpy.float,(nwin,7))
                ]
 

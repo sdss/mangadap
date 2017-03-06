@@ -35,11 +35,29 @@ KBW (??         ): tag 2.1
     - Allow rundap to read the plate, ifu, and mode combinations to
       analyze from a file
     - Include filtering approach in stellar kinematics fitting
-    - Incorporate ppxf v6.0.4
+    - Incorporate ppxf v6.0.6
+    - Reading/writing of fits data is now done using DAPFitsUtil.  When
+      reading with this utility, the fits image data are automatically
+      restructured into a row-major ordering to ease the confusion
+      between the way astropy.io.fits provides the data and the ordering
+      of the NAXIS keywords.  At the moment, this restructuring does not
+      mess up the WCS coordinates in the header; however, depending on
+      any development of astropy.io.fits in the future, this may become
+      a problem.  This feels like a big mess at the moment, but there's
+      no easy way around it.
+    - Restructured how the covariance data are read and written to
+      adhere to the format already adopted by the DRP.  The Covariance
+      class should now be able to seemlessly read the broad-band
+      correlation matrices provided in the LOGCUBE files.
+    - Added DefaultConfig class to help manage config files.  Edited the
+      StellarContinuumModelDef parameters to accommodate the new
+      filtering approach.  Removed all but one StellarContinuumModel
+      method.
 
 TO FIX:
     - emission-line moment masks
     - BINID bitpix
+    - Some config examples are out of date!
 
 --------------------------------------------------------------------------------
 KBW (04 Aug 2016): tag 2.0.2

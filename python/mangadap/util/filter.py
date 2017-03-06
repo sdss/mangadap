@@ -221,7 +221,7 @@ class BoxcarFilter():
         self.lo_rej = lo
         self.hi_rej = hi
         self.nrej = -1 if niter is None else niter
-        self.nspec = None
+        self.nvec = None
         self.npix = None
         self.local_sigma = False if local_sigma is None else local_sigma
 
@@ -325,27 +325,33 @@ class BoxcarFilter():
         Leading and trailing masked regions of each row are set to the
         first and last unmasked value, respectively.
         """
-        # Boolean arrays with bad and good pixels
+        # Boolean arrays with bad pixels
         badpix = numpy.ma.getmaskarray(self.smoothed_y)
-        goodpix = numpy.invert(badpix)
 
-        # Find the first and last unflagged pixels
-        pixcoo = numpy.ma.MaskedArray(numpy.array([numpy.arange(self.npix)]*self.nspec),
-                                      mask=badpix)
+        # Deal with any vectors that are fully masked
+        goodvec = numpy.sum(numpy.invert(badpix), axis=1) > 0
+        ngood = numpy.sum(goodvec)
+        veci = numpy.arange(self.nvec)[goodvec]
+
+        # Find the first and last unflagged pixels in the good vectors
+        pixcoo = numpy.ma.MaskedArray(numpy.array([numpy.arange(self.npix)]*ngood),
+                                      mask=badpix[goodvec,:]).astype(int)
         mini = numpy.ma.amin(pixcoo, axis=1)
         maxi = numpy.ma.amax(pixcoo, axis=1)
 
         # Copy those to the first and last pixels for each row
-        self.smoothed_y[:,0] = numpy.array([self.smoothed_y[i,m] for i,m in enumerate(mini)])
-        self.smoothed_y[:,-1] = numpy.array([self.smoothed_y[i,m] for i,m in enumerate(maxi)])
+        self.smoothed_y[veci,0] = numpy.array([self.smoothed_y[i,m] for i,m in zip(veci, mini)])
+        self.smoothed_y[veci,-1] = numpy.array([self.smoothed_y[i,m] for i,m in zip(veci, maxi)])
 
         # Create the interpolator
-        x = numpy.ma.MaskedArray(numpy.arange(self.nspec*self.npix), mask=badpix)
+        x = numpy.ma.MaskedArray(numpy.arange(self.nvec*self.npix), mask=badpix)
         interpolator = interpolate.interp1d(x.compressed(), self.smoothed_y.compressed(),
                                             assume_sorted=True, fill_value='extrapolate')
 
         # Interpolate the values for the bad pixels
         self.smoothed_y.ravel()[badpix.ravel()] = interpolator(x.data[badpix.ravel()])
+        # Set any fully bad vectors to 0.0
+        self.smoothed_y[numpy.invert(goodvec),:] = 0.0
 
 
     def smooth(self, y, mask=None, boxcar=None, lo=None, hi=None, niter=None, local_sigma=None):
@@ -365,11 +371,13 @@ class BoxcarFilter():
             raise ValueError('Mask shape does not match data.')
         if isinstance(y, numpy.ma.MaskedArray):
             self.input_mask |= numpy.ma.getmaskarray(y)
-        self.output_mask = self.input_mask.copy()
 
-        # Save the input and initialize the output
+        # Save the input
+        provided_vector = len(y.shape) == 1
         self.y = numpy.ma.atleast_2d(numpy.ma.MaskedArray(y.copy(), mask=self.input_mask))
-        self.nspec, self.npix = self.y.shape
+        self.input_mask = numpy.atleast_2d(self.input_mask)
+        self.output_mask = self.input_mask.copy()
+        self.nvec, self.npix = self.y.shape
 
         # Create the list of reduceat indices
         self.rdx_index = self._reduce_indices()
@@ -404,7 +412,7 @@ class BoxcarFilter():
                 break
 
         self._interpolate()
-        return self.smoothed_y
+        return self.smoothed_y[0,:] if provided_vector else self.smoothed_y
 
 
     @property

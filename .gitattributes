@@ -2571,7 +2571,7 @@ python/mangadap/config/example_ini/example_spectral_template_config.ini -text
 python/mangadap/config/example_par/analysisplan.par -text
 python/mangadap/config/example_par/mplplan.par -text
 python/mangadap/config/example_par/obsinput.par -text
-python/mangadap/config/reduction_assessments/rfwhm.ini -text
+python/mangadap/config/reduction_assessments/snrg.ini -text
 python/mangadap/config/reduction_assessments/snrr.ini -text
 python/mangadap/config/spatial_binning/all.ini -text
 python/mangadap/config/spatial_binning/nre.ini -text
@@ -2597,14 +2597,6 @@ python/mangadap/config/spectral_templates/miuscat.ini -text
 python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_all.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_alle.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_glb.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_glbe.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzt_sim.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_mileshc_nzte.ini -text
-python/mangadap/config/stellar_continuum_modeling/gau_milesthin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/contrib/cap_mpfit.py -text

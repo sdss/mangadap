@@ -72,8 +72,6 @@ from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
 from ..dapfits import construct_maps_file, construct_cube_file
 
-from ..util.covariance import Covariance
-
 from matplotlib import pyplot
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,

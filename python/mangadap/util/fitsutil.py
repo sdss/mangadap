@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 r"""
 
-Defines a class with common functions for MaNGA fits files.
+Defines a class with common functions for MaNGA fits files.  This class
+needs to be as core as possible (little to no dependencies are
+higher-level classes).
 
 *License*:
     Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
@@ -32,7 +34,10 @@ Defines a class with common functions for MaNGA fits files.
 
 *Revision history*:
     | **17 May 2016**: Original implementation by K. Westfall (KBW)
-    | **02 Dec 2016**: (KBW) Added :func:`mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube`
+    | **02 Dec 2016**: (KBW) Added
+        :func:`mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube`
+    | **23 Feb 2016**: (KBW) Added functionality that deals with the
+        transpose of the data arrays provided by astropy.io.fits.
 
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -51,6 +56,7 @@ import sys
 if sys.version > '3':
     long = int
 
+import os
 import numpy
 import logging
 import warnings
@@ -63,9 +69,8 @@ import astropy.constants
 
 from .bitmask import BitMask
 from .log import log_output
-from .fileio import write_hdu
+from .fileio import compress_file, create_symlink
 from .pixelmask import SpectralPixelMask
-from .covariance import Covariance
 
 __author__ = 'Kyle B. Westfall'
 
@@ -75,8 +80,9 @@ class DAPFitsUtil:
     interaction with MaNGA fits files.
 
     .. todo::
-        Should this eventually be a base class for all the fits files
-        used/created by the DAP?
+        - Make this a base class for all the fits files used/created by
+          the DAP?
+        - Use HDUList as a base class for this object?
 
     """
     @staticmethod
@@ -295,96 +301,166 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def restructure_cube(hdu, ext=['FLUX', 'IVAR', 'MASK'], inverse=False):
+    def match_image_naxis(hdu, ext=None):
         """
-        Restructure the cube such that the axes are [x, y, lambda].
+        Match the NAXISn header keywords to the shape of the image data.
+        That is, reset the header keywrods such that the shape of the
+        data array is (NAXIS1, NAXIS2, NAXIS3, ...). 
 
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
+        Note that any reordering of the NAXISn keywords will *not*
+        change the WCS information.  You will have to account for if you
+        need the WCS information.
 
+        .. todo::
+            If a WCS is detected, use WCS.swapaxes() to transpose the
+            WCS system!
         """
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        _ext = numpy.atleast_1d(ext).ravel()
-        for i in range(len(_ext)):
-            if len(hdu[_ext[i]].data.shape) != 3:
-                raise ValueError('Selected extension is not three-dimensional: {0}'.format(_ext[i]))
-        for i in range(len(_ext)):
-            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
-            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'], \
-                    hdu[_ext[i]].header['NAXIS3'] = hdu[_ext[i]].data.shape
+        _ext = [ h.name for h in hdu ] if ext is None else ext
+        for e in _ext:
+            if isinstance(hdu[e], (fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU)) \
+                    and hdu[e].data is not None:
+                shape = hdu[e].data.shape
+                for i in range(len(shape)):
+                    hdu[e].header['NAXIS{0}'.format(i+1)] = shape[i]
+        return hdu
 
 
     @staticmethod
-    def restructure_rss(hdu, ext=['FLUX', 'IVAR', 'MASK', 'DISP', 'XPOS', 'YPOS'], inverse=False):
+    def transpose_image_data(hdu, ext=None):
         """
-        Restructure the RSS file.  At this point, this only means fixing
-        the header.
+        Transpose all image data in an HDUList.
 
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
+        The primary use of this function is to ensure the HDUList data
+        arrays use C-contiguous memory but with the natural array
+        ordering of the axes that follow the NAXIS keywords in the
+        header.  I.e., data arrays provided by astropy.io.fits have
+        shapes like (..., NAXIS3, NAXIS2, NAXIS1).  This function
+        reorders the data arrays to have shapes like (NAXIS1, NAXIS2,
+        NAXIS3, ...), and ensures that the NAXISn header keywords
+        reflect this.  Typically, one would do::
+
+            hdu = transpose_image_data(fits.open('test.fits'))
+
+        To prepare the image data for writing to a new fits file, one
+        would do::
+        
+            transpose_image_data(hdu).writeto('new.fits')
+
+        If you just want to ensure that the NAXISn keywords refect the
+        python native ordering, then use :func:`match_image_naxis`.
+
+        Note that any WCS information will **not** be transposed, which
+        you will have to account for if you need the WCS information.
+
+        .. todo::
+            If a WCS is detected, use WCS.swapaxes() to transpose the
+            WCS system!
 
         """
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        _ext = numpy.atleast_1d(ext).ravel()
-        for i in range(len(_ext)):
-            if len(hdu[_ext[i]].data.shape) != 2:
-                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
-        for i in range(len(_ext)):
-            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] \
-                    = hdu[_ext[i]].data.T.shape if inverse else hdu[_ext[i]].data.shape
+        _ext = [ h.name for h in hdu ] if ext is None else ext
+        for e in _ext:
+            if isinstance(hdu[e], (fits.hdu.image.PrimaryHDU, fits.hdu.image.ImageHDU)) \
+                    and hdu[e].data is not None:
+                hdu[e].data = numpy.asarray(hdu[e].data.T, order='C')
+                shape = hdu[e].data.shape
+                for i in range(len(shape)):
+                    hdu[e].header['NAXIS{0}'.format(i+1)] = shape[i]
+        return hdu
 
 
-    @staticmethod
-    def restructure_map(hdu, ext=['BINID'], inverse=False):
-        """
-        Restructure a mapped quantity such that the axes are [x, y].
-
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
-        """
-        if ext is None:
-            raise ValueError('Must provide extensions to restructure.')
-        _ext = numpy.atleast_1d(ext).ravel()
-        if hdu is None:
-            raise ValueError('Input HDUList object is None!')
-        if not isinstance(hdu, fits.HDUList):
-            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
-        for i in range(len(_ext)):
-            if len(hdu[_ext[i]].data.shape) != 2:
-                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
-        for i in range(len(_ext)):
-            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
-            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] = hdu[_ext[i]].data.shape
-
-
-    @staticmethod
-    def restructure_hdu(hdu, mode, spectral_arrays, image_arrays, inverse=False):
-        """
-        Restructure the full hdu using the list of spectral and image extensions.
-
-        .. warning::
-            - Make sure this function remains current with DRP changes.
-            - Function will return None if the fits file has not yet
-              been read.
-        """
-        DAPFitsUtil.check_mode(mode)
-        if mode == 'CUBE':
-            DAPFitsUtil.restructure_cube(hdu, ext=spectral_arrays, inverse=inverse)
-            DAPFitsUtil.restructure_map(hdu, ext=image_arrays, inverse=inverse)
-        elif mode == 'RSS':
-            DAPFitsUtil.restructure_rss(hdu, ext=spectral_arrays, inverse=inverse)
+#    @staticmethod
+#    def restructure_cube(hdu, ext=None, inverse=False):
+#        """
+#        Restructure the cube such that the axes are [x, y, lambda].
+#
+#        For DRP cubes, this does **not** require that the 
+#
+#        .. warning::
+#            - Make sure this function remains current with DRP changes.
+#            - Function will return None if the fits file has not yet
+#              been read.
+#
+#        """
+#        if hdu is None:
+#            raise ValueError('Input HDUList object is None!')
+#        if not isinstance(hdu, fits.HDUList):
+#            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+#        _ext = numpy.atleast_1d(ext).ravel()
+#        for i in range(len(_ext)):
+#            if len(hdu[_ext[i]].data.shape) != 3:
+#                raise ValueError('Selected extension is not three-dimensional: {0}'.format(_ext[i]))
+#        for i in range(len(_ext)):
+#            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
+#            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'], \
+#                    hdu[_ext[i]].header['NAXIS3'] = hdu[_ext[i]].data.shape
+#
+#
+#    @staticmethod
+#    def restructure_rss(hdu, ext=['FLUX', 'IVAR', 'MASK', 'DISP', 'XPOS', 'YPOS'], inverse=False):
+#        """
+#        Restructure the RSS file.  At this point, this only means fixing
+#        the header.
+#
+#        .. warning::
+#            - Make sure this function remains current with DRP changes.
+#            - Function will return None if the fits file has not yet
+#              been read.
+#
+#        """
+#        if hdu is None:
+#            raise ValueError('Input HDUList object is None!')
+#        if not isinstance(hdu, fits.HDUList):
+#            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+#        _ext = numpy.atleast_1d(ext).ravel()
+#        for i in range(len(_ext)):
+#            if len(hdu[_ext[i]].data.shape) != 2:
+#                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
+#        for i in range(len(_ext)):
+#            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] \
+#                    = hdu[_ext[i]].data.T.shape if inverse else hdu[_ext[i]].data.shape
+#
+#
+#    @staticmethod
+#    def restructure_map(hdu, ext=['BINID'], inverse=False):
+#        """
+#        Restructure a mapped quantity such that the axes are [x, y].
+#
+#        .. warning::
+#            - Make sure this function remains current with DRP changes.
+#            - Function will return None if the fits file has not yet
+#              been read.
+#        """
+#        if ext is None:
+#            raise ValueError('Must provide extensions to restructure.')
+#        _ext = numpy.atleast_1d(ext).ravel()
+#        if hdu is None:
+#            raise ValueError('Input HDUList object is None!')
+#        if not isinstance(hdu, fits.HDUList):
+#            raise TypeError('Input must be an astropy.io.fits.HDUList object.')
+#        for i in range(len(_ext)):
+#            if len(hdu[_ext[i]].data.shape) != 2:
+#                raise ValueError('Selected extension is not two-dimensional: {0}'.format(_ext[i]))
+#        for i in range(len(_ext)):
+#            hdu[_ext[i]].data = numpy.asarray(hdu[_ext[i]].data.T, order=('F' if inverse else 'C'))
+#            hdu[_ext[i]].header['NAXIS1'], hdu[_ext[i]].header['NAXIS2'] = hdu[_ext[i]].data.shape
+#
+#
+#    @staticmethod
+#    def restructure_hdu(hdu, mode, spectral_arrays, image_arrays, inverse=False):
+#        """
+#        Restructure the full hdu using the list of spectral and image extensions.
+#
+#        .. warning::
+#            - Make sure this function remains current with DRP changes.
+#            - Function will return None if the fits file has not yet
+#              been read.
+#        """
+#        DAPFitsUtil.check_mode(mode)
+#        if mode == 'CUBE':
+#            DAPFitsUtil.restructure_cube(hdu, ext=spectral_arrays, inverse=inverse)
+#            DAPFitsUtil.restructure_map(hdu, ext=image_arrays, inverse=inverse)
+#        elif mode == 'RSS':
+#            DAPFitsUtil.restructure_rss(hdu, ext=spectral_arrays, inverse=inverse)
 
 
     @staticmethod
@@ -534,158 +610,209 @@ class DAPFitsUtil:
         return tuple([ a for a in new_arr]) if narr > 1 else new_arr[0]
 
 
+# Moved to util/covariance.py
+#    @staticmethod
+#    def bin_to_spaxel_covariance(bin_covar, bin_indx):
+#        """
+#        Propagate the covariance matrix data for the stacked spectra
+#        into the full cube.
+#
+#        Args:
+#            bin_covar (class:`mangadap.util.covariance.Covariance`):
+#                Covariance/Correlation matrix for the binned spectra.
+#            bin_indx (numpy.ndarray): The integer vector with the bin
+#                associated with each spectrum in the DRP cube.  This is
+#                the flattened BINID array.
+#
+#        Returns:
+#            class:`mangadap.util.covariance.Covariance`:
+#            Covariance/Correlation matrix for the spaxelized binned
+#            data.
+#
+#        .. todo::
+#            - This needs to be tested.
+#
+#        """
+#
+#        # Total number of spectra
+#        nspec = len(bin_indx)
+#
+#        # Get the unique bins and how to reconstruct the bins from the
+#        # unique set
+#        unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
+#
+#        # Need to handle missing bins
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+#                          'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
+#
+#        # Get the valid bins
+#        indx = bin_indx > -1
+#
+#        # Expand the covariance matrix by repeating the full matrix
+#        # elements for repeated bin values in different spaxels
+#        nchan = bin_covar.shape[0]
+#        spaxel_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+#        for i in range(nchan):
+#            j = bin_covar.input_indx[i]
+##            bin_covar.show(plane=j)
+#
+#            # Input bin and covariance indices
+#            ii = unique_bins[reconstruct[indx]]
+#            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+#
+#            # Output spaxel and covariance indices
+#            oi = numpy.arange(nspec)[indx]
+#            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+#
+#            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
+#            _covar[oi_i, oi_j] = bin_covar.toarray(plane=j)[ii_i,ii_j]
+##            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+##            pyplot.colorbar()
+##            pyplot.show()
+#            spaxel_covar[i] = sparse.triu(_covar).tocsr()
+#        return Covariance(inp=spaxel_covar, input_indx=bin_covar.input_indx)
+#
+#
+#    @staticmethod
+#    def spaxel_to_bin_covariance(spaxel_covar, bin_indx):
+#        """
+#        Opposite of :func:`bin_to_spaxel_covariance`: Revert the covariance
+#        matrix to the covariance between the unique binned spectra.
+#
+#        .. warning::
+#
+#            **This does NOT propagate the covariance between the spaxels
+#            into the covariance in the binned data.** That operation is
+#            done by, e.g.,
+#            :func:`mangadap.proc.spectralstack.SpectralStack._stack_with_covariance`.
+#            This **only** performs the inverse operation of
+#            :func:`bin_to_spaxel_covariance`.
+#
+#        Args:
+#            spaxel_covar (class:`mangadap.util.covariance.Covariance`):
+#                Covariance/Correlation matrix for the binned spectra.
+#            bin_indx (numpy.ndarray): The integer vector with the bin
+#                associated with each spectrum in the DRP cube.  This is
+#                the flattened BINID array.
+#
+#        Returns:
+#            class:`mangadap.util.covariance.Covariance`:
+#            Covariance/Correlation matrix for the stacked spectra.
+#
+#        .. todo::
+#            - This needs to be tested.
+#
+#        """
+#        # Get the unique bins and their first occurrence in the bin list
+#        unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
+#
+#        # Need to handle missing bins
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+#                          'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
+#
+#        # Total number of bins
+#        nbins = len(unique_bins)-1
+#
+#        nchan = spaxel_covar.shape[0]
+#        bin_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+#        for i in range(nchan):
+#            j = spaxel_covar.input_indx[i]
+##            self.covariance.show(plane=j)
+#
+#            # Input spectrum and covariance indices
+#            ii = unique_indx[1:]
+#            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
+#
+#            # Output spectrum and covariance indices
+#            oi = unique_bins[1:]
+#            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
+#
+#            _covar = numpy.zeros((nbins, nbins), dtype=numpy.float)
+#            _covar[oi_i, oi_j] = spaxel_covar.toarray(plane=j)[ii_i,ii_j]
+##            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
+##            pyplot.colorbar()
+##            pyplot.show()
+#            bin_covar[i] = sparse.triu(_covar).tocsr()
+#        return Covariance(inp=bin_covar, input_indx=spaxel_covar.input_indx)
+
+
     @staticmethod
-    def bin_to_spaxel_covariance(bin_covar, bin_indx):
-        """
-        Propagate the covariance matrix data for the stacked spectra
-        into the full cube (held in :attr:`covariance`).
-
-        Args:
-            bin_covar (class:`mangadap.util.covariance.Covariance`):
-                Covariance/Correlation matrix for the binned spectra.
-            bin_indx (numpy.ndarray): The integer vector with the bin
-                associated with each spectrum in the DRP cube.  This is
-                the flattened BINID array.
-
-        Returns:
-            class:`mangadap.util.covariance.Covariance`:
-            Covariance/Correlation matrix for the spaxelized binned
-            data.
-
-        .. todo::
-            - This needs to be tested.
-
-        """
-
-        # Total number of spectra
-        nspec = len(bin_indx)
-
-        # Get the unique bins and how to reconstruct the bins from the
-        # unique set
-        unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
-
-        # Need to handle missing bins
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
-                          'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
-
-        # Get the valid bins
-        indx = bin_indx > -1
-
-        # Expand the covariance matrix by repeating the full matrix
-        # elements for repeated bin values in different spaxels
-        nchan = bin_covar.shape[0]
-        spaxel_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-        for i in range(nchan):
-            j = bin_covar.input_indx[i]
-#            bin_covar.show(plane=j)
-
-            # Input bin and covariance indices
-            ii = unique_bins[reconstruct[indx]]
-            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
-
-            # Output spaxel and covariance indices
-            oi = numpy.arange(nspec)[indx]
-            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
-
-            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
-            _covar[oi_i, oi_j] = bin_covar.toarray(plane=j)[ii_i,ii_j]
-#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
-#            pyplot.colorbar()
-#            pyplot.show()
-            spaxel_covar[i] = sparse.triu(_covar).tocsr()
-        return Covariance(inp=spaxel_covar, input_indx=bin_covar.input_indx)
+    def read(ofile, permissions='readonly', checksum=False):
+        return DAPFitsUtil.transpose_image_data(fits.open(ofile, mode=permissions,
+                                                          checksum=checksum))
 
 
     @staticmethod
-    def spaxel_to_bin_covariance(spaxel_covar, bin_indx):
+    def write(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+              loggers=None, quiet=False):
         """
-        Opposite of :func:`bin_to_spaxel_covariance`: Revert the covariance
-        matrix to the covariance between the unique binned spectra.
-
-        .. warning::
-
-            **This does NOT propagate the covariance between the spaxels
-            into the covariance in the binned data.** That operation is
-            done by, e.g.,
-            :func:`mangadap.proc.spectralstack.SpectralStack._stack_with_covariance`.
-            This **only** performes the inverse operation of
-            :func:`bin_to_spaxel_covariance`.
-
-        Args:
-            spaxel_covar (class:`mangadap.util.covariance.Covariance`):
-                Covariance/Correlation matrix for the binned spectra.
-            bin_indx (numpy.ndarray): The integer vector with the bin
-                associated with each spectrum in the DRP cube.  This is
-                the flattened BINID array.
-
-        Returns:
-            class:`mangadap.util.covariance.Covariance`:
-            Covariance/Correlation matrix for the stacked spectra.
-
-        .. todo::
-            - This needs to be tested.
-
+        Write an HDUList to an output file.  It is expected that the hdu
+        was either read by the :func:`read` function, or that the hdu
+        was passed through :func:`transpose_image_data` such that
+        HDUList data arrays use C-contiguous memory but with the natural
+        array ordering of the axes that follow the NAXIS keywords in the
+        header.
         """
-        # Get the unique bins and their first occurrence in the bin list
-        unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
+        # Get the output file and determine if it should be compressed
+        compress = False
+        if ofile.split('.')[-1] == 'gz':
+            _ofile = ofile[:ofile.rfind('.')] 
+            compress = True
+        else:
+            _ofile = ofile
+    
+        # Transpose the order
+        hdu = DAPFitsUtil.transpose_image_data(hdu)
 
-        # Need to handle missing bins
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
-                          'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
-
-        # Total number of bins
-        nbins = len(unique_bins)-1
-
-        nchan = spaxel_covar.shape[0]
-        bin_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-        for i in range(nchan):
-            j = spaxel_covar.input_indx[i]
-#            self.covariance.show(plane=j)
-
-            # Input spectrum and covariance indices
-            ii = unique_indx[1:]
-            ii_i, ii_j = map( lambda x: x.ravel(), numpy.meshgrid(ii, ii) )
-
-            # Output spectrum and covariance indices
-            oi = unique_bins[1:]
-            oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
-
-            _covar = numpy.zeros((nbins, nbins), dtype=numpy.float)
-            _covar[oi_i, oi_j] = spaxel_covar.toarray(plane=j)[ii_i,ii_j]
-#            pyplot.imshow(_covar, origin='lower', interpolation='nearest')
-#            pyplot.colorbar()
-#            pyplot.show()
-            bin_covar[i] = sparse.triu(_covar).tocsr()
-        return Covariance(inp=bin_covar, input_indx=spaxel_covar.input_indx)
-
-
-    @staticmethod
-    def write_3d_hdu(hdu, ofile, mode, spectral_arrays, image_arrays, clobber=False,
-                     checksum=False, symlink_dir=None, relative_symlink=True, loggers=None,
-                     quiet=False):
-        """
-        Write the hdu object to the file.
-        """
-        # Restructure the data to the fits-native structure before
-        # writing
+        # Write the data
         if not quiet:
-            log_output(loggers, 1, logging.INFO, 'Converting to fits-native structure.')
-        DAPFitsUtil.restructure_hdu(hdu, mode, spectral_arrays, image_arrays, inverse=True)
-        
-        # Write the restructured data
-        write_hdu(hdu, ofile, clobber=clobber, checksum=checksum, symlink_dir=symlink_dir,
-                  relative_symlink=relative_symlink, loggers=loggers, quiet=quiet)
+            log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
+        hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
 
-        # Revert the structure in internal memory
-        if not quiet:
-            log_output(loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        DAPFitsUtil.restructure_hdu(hdu, mode, spectral_arrays, image_arrays)
+        # Transpose it back
+        hdu = DAPFitsUtil.transpose_image_data(hdu)
+
+        # Compress if desired
+        if compress:
+            if not quiet:
+                log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
+            # And compress it
+            compress_file(_ofile, clobber=clobber)
+            os.remove(_ofile)
+    
+        # Create the symlink if requested
+        if symlink_dir is not None:
+            create_symlink(ofile, symlink_dir, relative_symlink=relative_symlink, loggers=loggers,
+                           quiet=quiet)
+
+
+#    @staticmethod
+#    def write_3d_hdu(hdu, ofile, mode, spectral_arrays, image_arrays, clobber=False,
+#                     checksum=False, symlink_dir=None, relative_symlink=True, loggers=None,
+#                     quiet=False):
+#        """
+#        Write the hdu object to the file.
+#        """
+#        # Restructure the data to the fits-native structure before
+#        # writing
+#        if not quiet:
+#            log_output(loggers, 1, logging.INFO, 'Converting to fits-native structure.')
+#        DAPFitsUtil.restructure_hdu(hdu, mode, spectral_arrays, image_arrays, inverse=True)
+#        
+#        # Write the restructured data
+#        write_hdu(hdu, ofile, clobber=clobber, checksum=checksum, symlink_dir=symlink_dir,
+#                  relative_symlink=relative_symlink, loggers=loggers, quiet=quiet)
+#
+#        # Revert the structure in internal memory
+#        if not quiet:
+#            log_output(loggers, 1, logging.INFO, 'Reverting to python-native structure.')
+#        DAPFitsUtil.restructure_hdu(hdu, mode, spectral_arrays, image_arrays)
 
 
     @staticmethod

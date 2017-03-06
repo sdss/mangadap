@@ -42,6 +42,8 @@ Provides a set of file I/O routines.
     | **19 May 2016**: (KBW) In :func:`write_hdu`, removed verbose and
         added loggers and quiet.
     | **25 Aug 2016**: (KBW) Added :func:`channel_dictionary`
+    | **23 Feb 2017**: (KBW) create_symlink now creates the directory if
+        it doesn't exist
 
 .. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
@@ -304,34 +306,34 @@ def compress_file(ifile, clobber=False):
             shutil.copyfileobj(f_in, f_out)
 
 
-def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
-              loggers=None, quiet=False):
-    """
-    Write an HDUList to an output file.
-    """
-    # Get the output file and determine if it should be compressed
-    compress = False
-    if ofile.split('.')[-1] == 'gz':
-        _ofile = ofile[:ofile.rfind('.')] 
-        compress = True
-    else:
-        _ofile = ofile
-
-    # Write the data
-    if not quiet:
-        log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-    hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
-    if compress:
-        if not quiet:
-            log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
-        # And compress it
-        compress_file(_ofile, clobber=clobber)
-        os.remove(_ofile)
-
-    # Create the symlink if requested
-    if symlink_dir is not None:
-        create_symlink(ofile, symlink_dir, relative_symlink=relative_symlink, loggers=loggers,
-                       quiet=quiet)
+#def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+#              loggers=None, quiet=False):
+#    """
+#    Write an HDUList to an output file.
+#    """
+#    # Get the output file and determine if it should be compressed
+#    compress = False
+#    if ofile.split('.')[-1] == 'gz':
+#        _ofile = ofile[:ofile.rfind('.')] 
+#        compress = True
+#    else:
+#        _ofile = ofile
+#
+#    # Write the data
+#    if not quiet:
+#        log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
+#    hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
+#    if compress:
+#        if not quiet:
+#            log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
+#        # And compress it
+#        compress_file(_ofile, clobber=clobber)
+#        os.remove(_ofile)
+#
+#    # Create the symlink if requested
+#    if symlink_dir is not None:
+#        create_symlink(ofile, symlink_dir, relative_symlink=relative_symlink, loggers=loggers,
+#                       quiet=quiet)
 
 
 def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, loggers=None,
@@ -341,6 +343,7 @@ def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, log
     relative_symlink is True (default), the path to the file is relative
     to the directory with the symlink.
     """
+    # Check if the file already exists
     olink_dest = os.path.join(symlink_dir, ofile.split('/')[-1])
     if os.path.isfile(olink_dest) or os.path.islink(olink_dest):
         if clobber:
@@ -348,9 +351,16 @@ def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, log
         else:
             return
 
+    # Make sure the symlink directory exists
+    if not os.path.isdir(symlink_dir):
+        os.makedirs(symlink_dir)
+
+    # Set the relative path for the symlink, if requested
     olink_src = os.path.relpath(ofile, start=os.path.dirname(olink_dest)) \
                     if relative_symlink else ofile
     if not quiet:
         log_output(loggers, 1, logging.INFO, 'Creating symlink: {0}'.format(olink_dest))
+
+    # Create the symlink
     os.symlink(olink_src, olink_dest)
 

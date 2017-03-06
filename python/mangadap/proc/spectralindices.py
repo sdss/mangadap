@@ -22,15 +22,6 @@ A class hierarchy that performs the spectral-index measurements.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
 
         import glob
         import os.path
@@ -48,10 +39,11 @@ A class hierarchy that performs the spectral-index measurements.
         from ..util.instrument import spectral_resolution, match_spectral_resolution
         from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
         from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+        from ..util.fileio import init_record_array, rec_to_fits_type
         from ..util.log import log_output
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
+        from ..util.parser import DefaultConfig
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .stellarcontinuummodel import StellarContinuumModel
@@ -71,6 +63,8 @@ A class hierarchy that performs the spectral-index measurements.
         for index measurements
     | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
         redshift when stellar continuum is provided.
+    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
+    | **27 Feb 2017**: (KBW) Use DefaultConfig
 
 .. todo::
 
@@ -79,7 +73,6 @@ A class hierarchy that performs the spectral-index measurements.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 
 
 """
@@ -93,15 +86,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
 import os
@@ -121,10 +105,11 @@ from ..config.defaults import default_dap_common_path
 from ..util.instrument import spectral_resolution, match_spectral_resolution
 from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
+from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
@@ -174,13 +159,12 @@ class SpectralIndicesDef(ParSet):
 
 def validate_spectral_indices_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a set of spectral-index measurements.
+    Validate :class:`mangadap.util.parser.DefaultConfig` object with
+    spectral-index measurement parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the spectral-index database as needed
-            by :class:`SpectralIndicesDef`
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
+            parameters to validate.
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -189,32 +173,11 @@ def validate_spectral_indices_config(cnfg):
             be found.
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
+    if not cnfg.keyword_specified('key'):
         raise KeyError('Keyword \'key\' must be provided.')
-    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
-        cnfg['default']['minimum_snr']= '0.0'
-    if 'resolution_fwhm' not in cnfg.options('default') \
-            or cnfg['default']['resolution_fwhm'] is None:
-        cnfg['default']['resolution_fwhm']= '-1'
 
-    if 'compute_sigma_correction' not in cnfg.options('default') \
-            or cnfg['default']['compute_sigma_correction'] is None:
-        cnfg['default']['compute_sigma_correction']= 'False'
-
-    if 'artifact_mask' not in cnfg.options('default') \
-            or cnfg['default']['artifact_mask'] is None:
-        cnfg['default']['artifact_mask'] = 'None'
-
-    if 'absorption_indices' not in cnfg.options('default') \
-            or cnfg['default']['absorption_indices'] is None:
-        cnfg['default']['absorption_indices'] = 'None'
-
-    if 'bandhead_indices' not in cnfg.options('default') \
-            or cnfg['default']['bandhead_indices'] is None:
-        cnfg['default']['bandhead_indices'] = 'None'
-
-    if cnfg['default']['absorption_indices'] == 'None' \
-            and cnfg['default']['bandhead_indices'] == 'None':
+    if not cnfg.keyword_specified('absorption_indices') \
+                and not cnfg.keyword_specified('bandhead_indices'):
         raise ValueError('Must provide either an absorption-index database or a bandhead-index ' \
                          'database, or both.')
 
@@ -244,7 +207,6 @@ def available_spectral_index_databases(dapsrc=None):
             could be found.
         KeyError: Raised if the spectral-index database keywords are not
             all unique.
-        NameError: Raised if ConfigParser is not correctly imported.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -268,22 +230,18 @@ def available_spectral_index_databases(dapsrc=None):
     index_set_list = []
     for f in ini_files:
         # Read the config file
-        cnfg = ConfigParser(allow_no_value=True)
-        cnfg.read(f)
+        cnfg = DefaultConfig(f=f)
         # Ensure it has the necessary elements to define the template
         # library
         validate_spectral_indices_config(cnfg)
 
-        index_set_list += [ SpectralIndicesDef(cnfg['default']['key'],
-                                               eval(cnfg['default']['minimum_snr']), 
-                                               eval(cnfg['default']['resolution_fwhm']),
-                                               eval(cnfg['default']['compute_sigma_correction']),
-                                               None if cnfg['default']['artifact_mask'] == 'None' \
-                                                    else cnfg['default']['artifact_mask'],
-                                        None if cnfg['default']['absorption_indices'] == 'None' \
-                                                else cnfg['default']['absorption_indices'],
-                                        None if cnfg['default']['bandhead_indices'] == 'None' \
-                                                else cnfg['default']['bandhead_indices']) ]
+        index_set_list += [ SpectralIndicesDef(cnfg['key'],
+                                               cnfg.getfloat('minimum_snr', default=0.), 
+                                               cnfg.getfloat('resolution_fwhm', default=-1),
+                                               cnfg.getbool('compute_sigma_correction',
+                                                            default=False),
+                                               cnfg['artifact_mask'], cnfg['absorption_indices'],
+                                               cnfg['bandhead_indices']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \
@@ -729,9 +687,9 @@ class SpectralIndices:
         return [ ('TYPE','<U10'),
                  ('ID',numpy.int),
                  ('NAME','<U{0:d}'.format(name_len)),
-                 ('PASSBAND', numpy.float, 2),
-                 ('BLUEBAND', numpy.float, 2),
-                 ('REDBAND', numpy.float, 2),
+                 ('PASSBAND', numpy.float, (2,)),
+                 ('BLUEBAND', numpy.float, (2,)),
+                 ('REDBAND', numpy.float, (2,)),
                  ('UNIT', '<U3'),
                  ('COMPONENT', numpy.uint8),
                  ('INTEGRAND', '<U7'),
@@ -1625,13 +1583,16 @@ class SpectralIndices:
         """
         Write the hdu object to the file.
         """
-        # Restructure the map
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        # Writeh the HDU
-        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
-        # Restructure the map
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                          loggers=self.loggers, quiet=self.quiet)
+        
+#        # Restructure the map
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+#        # Writeh the HDU
+#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
+#                  quiet=self.quiet)
+#        # Restructure the map
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1646,7 +1607,8 @@ class SpectralIndices:
         if self.hdu is not None:
             self.hdu.close()
 
-        self.hdu = fits.open(ifile, checksum=checksum)
+#        self.hdu = fits.open(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
@@ -1659,9 +1621,9 @@ class SpectralIndices:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         self.missing_bins = self._get_missing_bins()

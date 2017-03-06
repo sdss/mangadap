@@ -23,23 +23,6 @@ support classes and functions.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
         
         import os.path
         from os import environ
@@ -52,13 +35,6 @@ support classes and functions.
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
         from ..proc.util import _select_proc_method
         from ..config.defaults import default_dap_source
-
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_,
-    :func:`available_emission_line_databases` is not python 2
-    compiliant.
 
 *Class usage examples*:
     To define an emission line::
@@ -110,7 +86,6 @@ support classes and functions.
     | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
         in database.
 
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -126,25 +101,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import os.path
 from os import environ

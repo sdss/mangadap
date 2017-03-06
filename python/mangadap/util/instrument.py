@@ -548,6 +548,24 @@ class spectral_resolution:
         return self.interpolator.y
 
 
+    def instrumental_dispersion(self, w=None):
+        r"""
+
+        Return the instrumental dispersion by converting from :math:`R`
+        to :math:`\sigma_{v,inst}` according to:
+            
+        .. math::
+            
+            \sigma_{v,inst} = \frac{c}{\sqrt{8\ln 2}\ R}.
+
+        If w is None, just convert the internal interpolator values.
+        Otherwise, return the values sampled at w.
+        """
+        if w is None:
+            return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator.y).filled(0.0)
+        return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator(w)).filled(0.0)
+
+
     def match(self, new_sres, no_offset=True, min_sig_pix=0.0):
         """
         Currently only an alias for :func:`GaussianKernelDifference`.
@@ -569,7 +587,7 @@ class spectral_resolution:
         .. math::
     
             \sigma_\lambda = \frac{\lambda}{f R}, \ \ {\rm where} \ \  f
-            = \frac{{\rm FWHM_\lambda}}{\sigma_\lambda}.
+            = \frac{{\rm FWHM_\lambda}}{\sigma_\lambda} = \sqrt{8\ln 2}.
 
         Assuming a Gaussian (in angstroms) line-spread function:
 
@@ -832,7 +850,7 @@ class spectral_resolution:
 
 def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=None, mask=None, 
                               min_sig_pix=0.0, no_offset=True, variable_offset=False, log10=False,
-                              new_log10=False):
+                              new_log10=False, quiet=False):
     r"""
     Adjust the existing spectral resolution of a spectrum to a **lower**
     resolution as best as possible.  The primary functionality is in
@@ -1034,19 +1052,18 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     if nspec == 1 and spec_dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
-        print('running the convolution')
         if ivar is None:
             out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
         else:
             out_flux[indx], out_ivar[indx] \
                     = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
                                                  ye=None if ivar is None else noise[indx])
-        print('done')
         out_sres[indx] = res[0].adjusted_resolution(indx=indx)
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:
         for i in range(0,nspec):
-            print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
+            if not quiet:
+                print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
             if ivar is None:
                 out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
@@ -1058,12 +1075,13 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 #           out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
             out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (mask[i,:] == 1)).astype(numpy.uint)
-            if nsres == 1 and i == 0:
+            if len(out_sres.shape) == 1 and i == 0:
                 out_sres[indx] = res[i].adjusted_resolution(indx=indx)
                 continue
-            elif nsres > 1:
+            else:
                 out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
-        print('Matching resolution ... DONE         ')
+        if not quiet:
+            print('Matching resolution ... DONE         ')
 
     # TODO: Add this functionality from the IDL version?
     #

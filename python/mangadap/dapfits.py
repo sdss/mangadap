@@ -54,7 +54,7 @@ from .drpfits import DRPFits, DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.bitmask import BitMask
 from .util.log import log_output
-from .util.fileio import write_hdu, channel_dictionary
+from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
 from .par.obsinput import ObsInputPar
 from .config.defaults import default_drp_version, default_dap_source, default_dap_version
@@ -238,7 +238,7 @@ class DAPFits:
         return self.hdu[key]
 
 
-    def open_hdu(self, permissions='readonly', checksum=False, quiet=True, restructure=True):
+    def open_hdu(self, permissions='readonly', checksum=False, quiet=True):
         """
         Open the fits file and save it to :attr:`hdu`; if :attr:`hdu` is
         not None, the function returns without re-reading the data.
@@ -251,10 +251,6 @@ class DAPFits:
                 overrides the internal :attr:`checksum` attribute **for
                 the current operation only**.
             quiet (bool): (**Optional**) Suppress terminal output
-            restructure (bool): (**Optional**) Restructure the data such
-                that the ordering is (x,y,value); the fits data are
-                stored as (value,y,x).  Set to False for quicker
-                execution but beware of the index order!
 
         Raises:
             FileNotFoundError: Raised if the DAP file doesn't exist.
@@ -271,7 +267,8 @@ class DAPFits:
 
         # Open the fits file with the requested read/write permission
         #check = self.checksum if checksum is None else checksum
-        self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
+#        self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(inp, permissions=permissions, checksum=checksum)
 
         self.spatial_shape = self.hdu['BINID'].data.shape
 #        print(self.spatial_shape)
@@ -290,17 +287,17 @@ class DAPFits:
             for i in range(1,len(self.mmap_ext)):
                 self.channel_dict[self.mmap_ext[i]] = channel_dictionary(self.hdu, self.mmap_ext[i])
 
-        if not restructure:
-            return
-
-        if len(self.smap_ext) > 0:
-            if not quiet:
-                print('Restructuring single map extensions.')
-            DAPFitsUtil.restructure_map(self.hdu, ext=self.smap_ext)
-        if len(self.mmap_ext) > 0:
-            if not quiet:
-                print('Restructuring multi-map extensions.')
-            DAPFitsUtil.restructure_cube(self.hdu, ext=self.mmap_ext)
+#        if not restructure:
+#            return
+#
+#        if len(self.smap_ext) > 0:
+#            if not quiet:
+#                print('Restructuring single map extensions.')
+#            DAPFitsUtil.restructure_map(self.hdu, ext=self.smap_ext)
+#        if len(self.mmap_ext) > 0:
+#            if not quiet:
+#                print('Restructuring multi-map extensions.')
+#            DAPFitsUtil.restructure_cube(self.hdu, ext=self.mmap_ext)
 
 
     def read_par(self, quiet=True):
@@ -615,10 +612,10 @@ class construct_maps_file:
         # Save input for reference
         self.spatial_shape = self.drpf.spatial_shape
         self.nsa_redshift = nsa_redshift
-        self.multichannel_arrays = None
-        self._set_multichannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
-        self.singlechannel_arrays = None
-        self._set_singlechannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
+#        self.multichannel_arrays = None
+#        self._set_multichannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
+#        self.singlechannel_arrays = None
+#        self._set_singlechannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
 
         # Report
         if not self.quiet:
@@ -736,18 +733,23 @@ class construct_maps_file:
                     = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
         #---------------------------------------------------------------
 
-        # Restructure the multi-channel extensions
-        DAPFitsUtil.restructure_cube(self.hdu, ext=self.multichannel_arrays, inverse=True)
-        # Restructure the single-channel extensions
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.singlechannel_arrays, inverse=True)
         # Check that the path exists
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        # Write the HDU
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
+        # Write the maps file
+        DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                          quiet=self.quiet)
+        # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+#        # Restructure the multi-channel extensions
+#        DAPFitsUtil.restructure_cube(self.hdu, ext=self.multichannel_arrays, inverse=True)
+#        # Restructure the single-channel extensions
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.singlechannel_arrays, inverse=True)
+#        # Write the HDU
+#        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+#                  quiet=self.quiet)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
@@ -1621,8 +1623,8 @@ class construct_cube_file:
         # Save input for reference
         self.shape = self.drpf.shape
         self.spatial_shape = self.drpf.spatial_shape
-        self.cube_arrays = None
-        self._assign_cube_arrays()
+#        self.cube_arrays = None
+#        self._assign_cube_arrays()
 
         # Report
         if not self.quiet:
@@ -1684,6 +1686,7 @@ class construct_cube_file:
         binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
                                              emission_line_model, None)
 
+        #---------------------------------------------------------------
         # Save the data to the hdu attribute
         prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
@@ -1694,17 +1697,23 @@ class construct_cube_file:
                                   *binidlist
                                 ])
 
-        # Restructure the cubes before writing
-        DAPFitsUtil.restructure_cube(self.hdu, ext=self.cube_arrays, inverse=True)
-        # !! THERE ARE NO 'IMAGE' ARRAYS !!
+        #---------------------------------------------------------------
+
         # Check that the path exists
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
-        # Write the file
-        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
+        # Write the model cube file
+        DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+                          quiet=self.quiet)
+        # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
+
+#        # Restructure the cubes before writing
+#        DAPFitsUtil.restructure_cube(self.hdu, ext=self.cube_arrays, inverse=True)
+#        # Write the file
+#        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
+#                  quiet=self.quiet)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,

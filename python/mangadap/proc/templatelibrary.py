@@ -50,24 +50,6 @@ bitmasks for the template library spectra.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-
 
         import glob
         import os
@@ -86,9 +68,10 @@ bitmasks for the template library spectra.
         from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.log import log_output
-        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
+        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+        from ..util.parser import DefaultConfig
         from .util import _select_proc_method, HDUList_mask_wavelengths
 
 .. warning::
@@ -219,7 +202,6 @@ bitmasks for the template library spectra.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 """
 
@@ -232,25 +214,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import glob
 import os
@@ -264,15 +227,16 @@ from astropy.io import fits
 import astropy.constants
 from pydl.goddard.astro import airtovac
 
-from ..util.bitmask import BitMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
+from ..util.bitmask import BitMask
 from ..util.log import log_output
-from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
-from ..util.fileio import write_hdu, create_symlink
+from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
+from ..util.fitsutil import DAPFitsUtil
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+from ..util.parser import DefaultConfig
 from .util import _select_proc_method, HDUList_mask_wavelengths
 
 from matplotlib import pyplot
@@ -322,13 +286,12 @@ class TemplateLibraryDef(ParSet):
 
 def validate_spectral_template_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a template library.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
+    the template library parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the template library needed by
-            :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
+            the template library parameters to validate.
 
     Raises:
         KeyError: Raised if required keyword does not exist.
@@ -336,23 +299,12 @@ def validate_spectral_template_config(cnfg):
 
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
-        raise KeyError('Keyword \'key\' must be provided.')
-    if 'file_search' not in cnfg.options('default'):
-        raise KeyError('Keyword \'file_search\' must be provided.')
-    if 'fwhm' not in cnfg.options('default') and 'sres_ext' not in cnfg.options('default'):
-        raise KeyError('Must provided keyword \'fwhm\' or \'sres_ext\'.')
-
-    # Put in default values
-    if 'in_vacuum' not in cnfg.options('default') or cnfg['default']['in_vacuum'] is None:
-        cnfg['default']['in_vacuum'] = 'False'
-    if 'wave_limit' not in cnfg.options('default') or cnfg['default']['wave_limit'] is None:
-        cnfg['default']['wave_limit'] = 'None, None'
-    if 'lower_flux_limit' not in cnfg.options('default') \
-      or cnfg['default']['lower_flux_limit'] is None:
-        cnfg['default']['lower_flux_limit'] = 'None'
-    if 'log10' not in cnfg.options('default') or cnfg['default']['log10'] is None:
-        cnfg['default']['log10'] = 'False'
+    required_keywords = [ 'key', 'file_search' ]
+    if not cnfg.all_required(required_keywords):
+        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
+    
+    if not cnfg.keyword_specified('fwhm') and not cnfg.keyword_specified('sres_ext'):
+        raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
 
 
 def available_template_libraries(dapsrc=None):
@@ -415,9 +367,6 @@ def available_template_libraries(dapsrc=None):
             be found.
         KeyError: Raised if the template-library keywords are not all
             unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
 
     .. todo::
         - Add backup function for Python 2.
@@ -441,28 +390,25 @@ def available_template_libraries(dapsrc=None):
     # Build the list of library definitions
     template_libraries = []
     for f in ini_files:
-        # Read the config file
-        cnfg = ConfigParser(os.environ, allow_no_value=True, interpolation=ExtendedInterpolation())
-        cnfg.read(f)
-        # Ensure it has the necessary elements to define the template
-        # library
+        # Read and validate the config file
+        cnfg = DefaultConfig(f=f, interpolate=True)
         validate_spectral_template_config(cnfg)
+
         # Convert wave_limit and lower_flux_limit to types acceptable by
         # TemplateLibraryDef
-        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
-                                        for e in cnfg['default']['wave_limit'].split(',') ])
-        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
-                           cnfg['default'].getfloat('lower_flux_limit')
+        wave_limit = None if cnfg['wave_limit'] is None \
+                        else numpy.array(cnfg.getlist('wave_limit', evaluate=True))
+        if wave_limit is not None and len(wave_limit) != 2:
+            raise ValueError('Must specify two wavelength limits, can be \'None, None\'.')
+
         # Append the definition of the template library 
         template_libraries += \
-            [ TemplateLibraryDef(key=cnfg['default']['key'],
-                                 file_search=cnfg['default']['file_search'],
-                                 fwhm=cnfg['default'].getfloat('fwhm'),
-                                 sres_ext=cnfg['default']['sres_ext'],
-                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
+            [ TemplateLibraryDef(key=cnfg['key'], file_search=cnfg['file_search'],
+                                 fwhm=cnfg.getfloat('fwhm'), sres_ext=cnfg['sres_ext'],
+                                 in_vacuum=cnfg.getbool('in_vacuum', default=False),
                                  wave_limit=wave_limit,
-                                 lower_flux_limit=lower_flux_limit,
-                                 log10=cnfg['default'].getboolean('log10') )
+                                 lower_flux_limit=cnfg.getfloat('lower_flux_limit'),
+                                 log10=cnfg.getbool('log10', default=False) )
             ]
 
     # Check the keywords of the libraries are all unique
@@ -1085,8 +1031,8 @@ class TemplateLibrary:
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
 
-#        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
-#        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
+        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
+        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 #        pyplot.show()
 
@@ -1099,13 +1045,9 @@ class TemplateLibrary:
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                       self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
                                       self.sres.sres(), min_sig_pix=0.0,
-                                      log10=self.library['log10'], new_log10=True)
+                                      log10=self.library['log10'], new_log10=True, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
-
-#        pyplot.plot(oldwave, oldflux)
-#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
-#        pyplot.show()
 
         # Mask any pixels where the template resolution was too low to
         # match to the galaxy resolution
@@ -1186,7 +1128,7 @@ class TemplateLibrary:
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
-        if not self.quiet and self.loggers is not None:
+        if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
         for i in range(self.ntpl):
             # Observed wavelengths
@@ -1240,11 +1182,13 @@ class TemplateLibrary:
 #            pyplot.plot(wave, flux[i,:], 'g')
 #            pyplot.show()
 
-        print('     After resampling (target): ', self.spectral_step)
-        print(' After resampling (calculated): ', spectral_coordinate_step(wave, log=True))
-
-        if not self.quiet and self.loggers is not None:
+        if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
+            log_output(self.loggers, 1, logging.INFO,
+                       'After resampling (target): {0}'.format(self.spectral_step))
+            log_output(self.loggers, 1, logging.INFO,
+                       'After resampling (calculated): {0}'.format(spectral_coordinate_step(wave,
+                                                                                        log=True)))
 
 #        pyplot.plot(oldwave, oldflux)
 #        pyplot.plot(wave, flux[0,:], 'g')
@@ -1512,6 +1456,7 @@ class TemplateLibrary:
 
         # Use the DRP file object to set the spectral resolution and
         # velocity scale to match to.
+        # TODO: Need to update the matching for 'DISP' in new LOGCUBEs?
         if drpf is not None:
             if drpf.hdu is None:
                 if not self.quiet:
@@ -1557,7 +1502,7 @@ class TemplateLibrary:
 
         # Check that the path for or to the file is defined
         ofile = self.file_path()
-        if ofile is None:
+        if self.hardcopy and ofile is None:
             raise ValueError('File path for output file is undefined!')
 
 #        if not force and self.velocity_offset is not None \
@@ -1566,10 +1511,11 @@ class TemplateLibrary:
 #            force = True
 
         # Read and use a pre-existing file
-        if os.path.isfile(ofile) and not clobber:
+        if self.hardcopy and os.path.isfile(ofile) and not clobber:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
-            self.hdu = fits.open(ofile, checksum=self.checksum)
+#            self.hdu = fits.open(ofile, checksum=self.checksum)
+            self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
             self.file_list = glob.glob(self.library['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
@@ -1581,7 +1527,7 @@ class TemplateLibrary:
             return
 
         # Warn the user that the file will be overwritten
-        if os.path.isfile(ofile):
+        if self.hardcopy and os.path.isfile(ofile):
             if not self.quiet:
                 warnings.warn('Overwriting existing file: {0}'.format(self.processed_file))
             os.remove(ofile)
@@ -1592,8 +1538,10 @@ class TemplateLibrary:
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
         # Write the fits file
         if self.hardcopy:
-            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-                      symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+            DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                              symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+#            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+#                      symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

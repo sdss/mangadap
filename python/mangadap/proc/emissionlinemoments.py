@@ -22,15 +22,6 @@ A class hierarchy that measures moments of the observed emission lines.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
 
         import glob
         import os
@@ -42,11 +33,12 @@ A class hierarchy that measures moments of the observed emission lines.
 
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+        from ..util.fileio import init_record_array, rec_to_fits_type
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
         from ..util.log import log_output
         from ..util.constants import constants
+        from ..util.parser import DefaultConfig
         from ..par.parset import ParSet
         from ..par.artifactdb import ArtifactDB
         from ..par.emissionmomentsdb import EmissionMomentsDB
@@ -66,10 +58,11 @@ A class hierarchy that measures moments of the observed emission lines.
         redshift when stellar continuum is provided.
     | **09 Jan 2017**: (KBW) Generalized so that it no longer reads in
         StellarContinuumModel object.
+    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
+    | **27 Feb 2017**: (KBW) Use DefaultConfig for ini files.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 
@@ -84,15 +77,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
 import os
@@ -105,10 +89,11 @@ import astropy.constants
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
+from ..util.parser import DefaultConfig
 from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
@@ -151,13 +136,13 @@ class EmissionLineMomentsDef(ParSet):
 
 def validate_emission_line_moments_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a set of emission-line moment measurements.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
+    emission-line moment measurement parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the emission-line moments as needed
-            by :class:`EmissionLineMomentsDef'
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
+            to contain defining parameters of the emission-line moments
+            as needed by :class:`EmissionLineMomentsDef'
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -166,18 +151,9 @@ def validate_emission_line_moments_config(cnfg):
             be found.
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
-        raise KeyError('Keyword \'key\' must be provided.')
-    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
-        cnfg['default']['minimum_snr']= '0.0'
-
-    if 'artifact_mask' not in cnfg.options('default') \
-            or cnfg['default']['artifact_mask'] is None:
-        cnfg['default']['artifact_mask'] = 'None'
-
-    if 'emission_passbands' not in cnfg.options('default') \
-            or cnfg['default']['emission_passbands'] is None:
-        raise ValueError('Must provide a keyword with the emission-line bandpass filter to use!')
+    required_keywords = ['key', 'emission_passbands']
+    if not cnfg.all_required(required_keywords):
+        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
 
 def available_emission_line_moment_databases(dapsrc=None):
@@ -205,7 +181,6 @@ def available_emission_line_moment_databases(dapsrc=None):
             files could be found.
         KeyError: Raised if the emission-line moment database keywords
             are not all unique.
-        NameError: Raised if ConfigParser is not correctly imported.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -229,17 +204,15 @@ def available_emission_line_moment_databases(dapsrc=None):
     moment_set_list = []
     for f in ini_files:
         # Read the config file
-        cnfg = ConfigParser(allow_no_value=True)
-        cnfg.read(f)
+        cnfg = DefaultConfig(f)
         # Ensure it has the necessary elements to define the template
         # library
         validate_emission_line_moments_config(cnfg)
 
-        moment_set_list += [ EmissionLineMomentsDef(cnfg['default']['key'],
-                                                    eval(cnfg['default']['minimum_snr']), 
-                                                None if cnfg['default']['artifact_mask'] == 'None' \
-                                                    else cnfg['default']['artifact_mask'],
-                                                    cnfg['default']['emission_passbands']) ]
+        moment_set_list += [ EmissionLineMomentsDef(cnfg['key'],
+                                                    cnfg.getfloat('minimum_snr', default=0.),
+                                                    cnfg['artifact_mask'],
+                                                    cnfg['emission_passbands']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
@@ -451,9 +424,9 @@ class EmissionLineMoments:
         return [ ('ID',numpy.int),
                  ('NAME','<U{0:d}'.format(name_len)),
                  ('RESTWAVE', numpy.float),
-                 ('PASSBAND', numpy.float, 2),
-                 ('BLUEBAND', numpy.float, 2),
-                 ('REDBAND', numpy.float, 2)
+                 ('PASSBAND', numpy.float, (2,)),
+                 ('BLUEBAND', numpy.float, (2,)),
+                 ('REDBAND', numpy.float, (2,))
                ]
 
     
@@ -622,26 +595,26 @@ class EmissionLineMoments:
         return [ ('BINID',numpy.int),
                  ('BINID_INDEX',numpy.int),
                  ('REDSHIFT', numpy.float),
-                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), nmom),
-                 ('BCEN', numpy.float, nmom), 
-                 ('BCONT', numpy.float, nmom), 
-                 ('BCONTERR', numpy.float, nmom),
-                 ('RCEN', numpy.float, nmom), 
-                 ('RCONT', numpy.float, nmom), 
-                 ('RCONTERR', numpy.float, nmom), 
-                 ('CNTSLOPE', numpy.float, nmom),
-                 ('FLUX', numpy.float, nmom), 
-                 ('FLUXERR', numpy.float, nmom),
-                 ('MOM1', numpy.float, nmom), 
-                 ('MOM1ERR', numpy.float, nmom),
-                 ('MOM2', numpy.float, nmom), 
-                 ('MOM2ERR', numpy.float, nmom),
-                 ('SINST', numpy.float, nmom),
-                 ('BMED', numpy.float, nmom), 
-                 ('RMED', numpy.float, nmom), 
-                 ('EWCONT', numpy.float, nmom), 
-                 ('EW', numpy.float, nmom), 
-                 ('EWERR', numpy.float, nmom)
+                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nmom,)),
+                 ('BCEN', numpy.float, (nmom,)), 
+                 ('BCONT', numpy.float, (nmom,)), 
+                 ('BCONTERR', numpy.float, (nmom,)),
+                 ('RCEN', numpy.float, (nmom,)), 
+                 ('RCONT', numpy.float, (nmom,)), 
+                 ('RCONTERR', numpy.float, (nmom,)), 
+                 ('CNTSLOPE', numpy.float, (nmom,)),
+                 ('FLUX', numpy.float, (nmom,)), 
+                 ('FLUXERR', numpy.float, (nmom,)),
+                 ('MOM1', numpy.float, (nmom,)), 
+                 ('MOM1ERR', numpy.float, (nmom,)),
+                 ('MOM2', numpy.float, (nmom,)), 
+                 ('MOM2ERR', numpy.float, (nmom,)),
+                 ('SINST', numpy.float, (nmom,)),
+                 ('BMED', numpy.float, (nmom,)), 
+                 ('RMED', numpy.float, (nmom,)), 
+                 ('EWCONT', numpy.float, (nmom,)), 
+                 ('EW', numpy.float, (nmom,)), 
+                 ('EWERR', numpy.float, (nmom,))
                ]
 
 
@@ -1255,13 +1228,15 @@ class EmissionLineMoments:
         """
         Write the hdu object to the file.
         """
-        # Restructure the map
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        # Writeh the HDU
-        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
-        # Restructure the map
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                          loggers=self.loggers, quiet=self.quiet)
+#        # Restructure the map
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+#        # Writeh the HDU
+#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
+#                  quiet=self.quiet)
+#        # Restructure the map
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1278,7 +1253,8 @@ class EmissionLineMoments:
         if self.hdu is not None:
             self.hdu.close()
 
-        self.hdu = fits.open(ifile, checksum=checksum)
+#        self.hdu = fits.open(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
@@ -1291,9 +1267,9 @@ class EmissionLineMoments:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         self.missing_bins = self._get_missing_bins()
