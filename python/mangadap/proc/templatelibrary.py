@@ -766,8 +766,10 @@ class TemplateLibrary:
         Read the 'raw' versions of the template library; i.e., the
         library before it has been resolution and sampling matched to a
         DRP file.
+
+        The file list read by the search key is sorted for consistency.
         """
-        self.file_list = glob.glob(self.library['file_search'])
+        self.file_list = numpy.sort(glob.glob(self.library['file_search']))
         self.ntpl = len(self.file_list)
         npix = self._get_nchannels()
         if not self.quiet:

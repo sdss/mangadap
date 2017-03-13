@@ -336,6 +336,7 @@ class BoxcarFilter():
         # Find the first and last unflagged pixels in the good vectors
         pixcoo = numpy.ma.MaskedArray(numpy.array([numpy.arange(self.npix)]*ngood),
                                       mask=badpix[goodvec,:]).astype(int)
+#        print('PIXCOO: ', pixcoo.shape)
         mini = numpy.ma.amin(pixcoo, axis=1)
         maxi = numpy.ma.amax(pixcoo, axis=1)
 
