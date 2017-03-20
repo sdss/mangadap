@@ -748,7 +748,7 @@ class Covariance:
         return arr
         
 
-    def show(self, channel=None, zoom=None, ofile=None):
+    def show(self, channel=None, zoom=None, ofile=None, log10=False):
         """
         Convert the (selected) covariance matrix to a filled array and
         plot the array using `matplotlib.pyplot.imshow`_.  If an output
@@ -780,17 +780,19 @@ class Covariance:
 
         # Print the plot to the screen if no output file is provided.
         if ofile is None:
-            im = pyplot.imshow(a, interpolation='nearest', origin='lower')
+            im = pyplot.imshow(numpy.ma.log10(a) if log10 else a,
+                               interpolation='nearest', origin='lower')
             pyplot.colorbar()
             pyplot.show()
             return
 
         # Print the plot to the designated output file
         fig = pyplot.figure(1)
-        im = pyplot.imshow(a, interpolation='nearest', origin='lower')
+        im = pyplot.imshow(numpy.ma.log10(a) if log10 else a,
+                           interpolation='nearest', origin='lower')
         pyplot.colorbar()
         fig.canvas.print_figure(ofile)
-        pyplot.show()
+        fig.clear()
         
 
     def find(self, channel=None):

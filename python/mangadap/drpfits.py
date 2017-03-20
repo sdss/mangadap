@@ -1231,10 +1231,14 @@ class DRPFits:
                                                 waverange=waverange)
 
 
-    def spectral_resolution(self, ext=None, toarray=False):
+    def spectral_resolution(self, ext=None, toarray=False): #, fix=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
+
+        .. todo::
+            Add an internal fix that interpolates over masked values in
+            the DRP file.
 
         Args:
             ext (str): (**Optional**) Specify the extension with the
@@ -1264,6 +1268,12 @@ class DRPFits:
 #            ii = i*self.spatial_shape[0] + i
 #            print(self.spatial_shape[0], i, ii)
 #            pyplot.plot(self['WAVE'].data, sres[ii,:])
+#            pyplot.show()
+#            exit()
+#            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[149,:])
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[150,:])
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[151,:])
 #            pyplot.show()
 #            exit()
             return numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
