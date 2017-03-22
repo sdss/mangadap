@@ -53,6 +53,10 @@ KBW (??         ): tag 2.1
       StellarContinuumModelDef parameters to accommodate the new
       filtering approach.  Removed all but one StellarContinuumModel
       method.
+    - Include an estimate of the stellar velocity dispersion correction
+      based on fitting the native resolution optimized template to the
+      same spectrum that has been rsolution matched to object spectrum
+      being fit.
 
 TO FIX:
     - emission-line moment masks

@@ -105,6 +105,7 @@ from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
 from ..util.instrument import spectrum_velocity_scale, resample_vector, spectral_resolution
+from ..util.instrument import match_spectral_resolution
 from ..util.constants import constants
 from ..contrib.ppxf import ppxf, _templates_rfft, _losvd_rfft
 from ..contrib import ppxf_util
@@ -1163,7 +1164,119 @@ class PPXFFit(StellarKinematicsFit):
 #        return ppxf_fit
 
 
-    def _dispersion_correction(self, obj_sres, gpm):
+    def _fit_dispersion_correction(self, result):
+        """
+        Calculate the dipsersion correction:
+          - Construct the optimized, redshifted template *without* the
+            convolution with the best-fitting LOSVD.
+          - Convolve it with the resolution difference in the data.
+          - Use pPXF to fit the matched version to the matched version;
+            this should be the dispersion correction.
+        """
+
+        # Construct the model spectra with only the resolution
+        # difference
+        model_matched_sres = numpy.ma.empty(self.obj_flux.shape, dtype=float)
+        model_template = numpy.empty((self.nobj, self.tpl_flux.shape[1]), dtype=float)
+        start = numpy.empty(self.nobj, dtype=int)
+        end = numpy.empty(self.nobj, dtype=int)
+        old_guess_kin = self.guess_kin.copy()
+        model_tpl_to_use = numpy.zeros((self.nobj, self.nobj), dtype=bool)
+        res_match_offset = numpy.zeros(self.nobj, dtype=float)
+        for i in range(self.nobj):
+            if not self.obj_to_fit[i]:
+                continue
+            # Get the composite template
+            model_template[i,:] = numpy.dot(result[i].tplwgt, self.tpl_flux[result[i].tpl_to_use,:])
+            model_tpl_to_use[i,i] = True
+
+            # Get the redshift
+            v, _ = PPXFFit.convert_velocity(result[i].kin[0], numpy.array([0.0]))
+            redshift = v/astropy.constants.c.to('km/s').value
+
+#            pyplot.plot(self.tpl_wave, self.tpl_sres.sres())
+#            pyplot.plot(self.obj_wave[result[i].start:result[i].end],
+#                        self.obj_sres[i,result[i].start:result[i].end])
+#            pyplot.show()
+#            exit()
+
+#            obj_sres_obj = spectral_resolution(self.obj_wave/(1+redshift), self.obj_sres[i,:])
+#            self.tpl_sres.match(obj_sres_obj)
+#            indx = (self.tpl_wave > obj_sres_obj.wave()[result[i].start]) \
+#                        & (self.tpl_wave < obj_sres_obj.wave()[result[i].end-1])
+#            print(obj_sres_obj.wave()[result[i].start])
+#            print(obj_sres_obj.wave()[result[i].end-1])
+#            print(len(self.tpl_wave))
+#            print(numpy.sum(indx))
+#            pyplot.plot(self.tpl_wave[indx], self.tpl_sres.sig_pd[indx])
+#            pyplot.show()
+#            exit()
+
+            # Match the spectral resolution
+            tmp_model, sres, res_match_offset[i], mask, ivar = \
+                    match_spectral_resolution(self.tpl_wave, model_template[i,:],
+                                              self.tpl_sres.sres(),
+                                              self.obj_wave/(1+redshift), self.obj_sres[i,:],
+                                              min_sig_pix=1.0, log10=True, new_log10=True,
+                                              quiet=True, no_offset=False)
+
+#            print('Resolution match offset: ', res_match_offset[i])
+#            print('Masked pixels: {0}/{1}'.format(numpy.sum(mask), len(mask)))
+#            pyplot.plot(self.tpl_wave, model_template[i,:])
+#            pyplot.plot(self.tpl_wave, tmp_model)
+#            pyplot.show()
+            
+            # Resample to match the object spectra
+            inRange = self.tpl_wave[[0,-1]] * (1.0 + redshift)
+            _, model_matched_sres[:] = resample_vector(tmp_model, xRange=inRange, inLog=True,
+                                                       newRange=self.obj_wave[[0,-1]],
+                                                       newpix=self.obj_wave.size, newLog=True,
+                                                       flat=False)
+
+#            pyplot.plot(self.tpl_wave, model_template[i,:])
+#            pyplot.plot(self.obj_wave, model_matched_sres[i,:])
+#            pyplot.show()
+
+            start[i] = result[i].start
+            end[i] = result[i].end
+
+#            pyplot.plot(self.tpl_wave, model_template[i,:])
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], model_matched_sres[i,start[i]:end[i]])
+#            pyplot.show()
+
+            model_matched_sres[i,:start[i]] = 0.0
+            model_matched_sres[i,:start[i]] = numpy.ma.masked
+            model_matched_sres[i,end[i]:] = 0.0
+            model_matched_sres[i,end[i]:] = numpy.ma.masked
+
+            self.guess_kin[i,0] = numpy.log(redshift+1)*astropy.constants.c.to('km/s').value
+            self.guess_kin[i,1] = 50        # !! HARDCODED !!
+        
+        # Fit the model to the resolution-matched model
+        model_ferr = numpy.ma.ones(self.obj_flux.shape, dtype=float)
+        model_ferr[ numpy.ma.getmaskarray(model_matched_sres) ] = numpy.ma.masked
+        result_corr = self._run_fit_iteration(model_matched_sres, model_ferr, start, end,
+                                              self.base_velocity, model_template,
+                                              obj_to_fit=self.obj_to_fit,
+                                              tpl_to_use=model_tpl_to_use, degree=-1, mdegree=0)#,
+                                              #plot=True)
+
+        self.guess_kin = old_guess_kin
+
+        dispersion_correction_err = numpy.array([ rc.fit_failed() or rc.reached_maxiter()
+                                                                        for rc in result_corr ])
+        indx = numpy.invert(dispersion_correction_err)
+        dispersion_correction = numpy.zeros(self.nobj, dtype=float)
+        dispersion_correction[indx] = numpy.array([ numpy.square(rc.kin[1]) - numpy.square(sigoff) 
+                                for rc, sigoff in zip(result_corr[indx], res_match_offset[indx]) ])
+        dispersion_correction = numpy.ma.sqrt(dispersion_correction).filled(0.0)
+
+        return dispersion_correction, dispersion_correction_err
+        
+
+
+
+    def _nominal_dispersion_correction(self, obj_sres, gpm):
         """
         Calculate the dispersion corrections as the quadrature
         difference between the spectral resolution of the template and
@@ -1245,7 +1358,7 @@ class PPXFFit(StellarKinematicsFit):
             - corrected velocity dispersion must be in the range 50-400
               km/s
         """
-        sigcor = numpy.square(model_par['KIN'][:,1]) - numpy.square(model_par['SIGMACORR'])
+        sigcor = numpy.square(model_par['KIN'][:,1]) - numpy.square(model_par['SIGMACORR_EMP'])
         indx = (sigcor < 2500.) | (sigcor > 1.6e5)
         if numpy.sum(indx) == 0:
             return
@@ -1366,11 +1479,11 @@ class PPXFFit(StellarKinematicsFit):
 
             # Calculate the dispersion correction if necessary
             if not self.matched_resolution:
-                model_par['SIGMACORR'][i], err = self._dispersion_correction(self.obj_sres[i],
-                                                                             result[i].gpm)
+                model_par['SIGMACORR_SRES'][i], err \
+                        = self._nominal_dispersion_correction(self.obj_sres[i], result[i].gpm)
                 if err:
                     model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
-                                                                'BAD_SIGMACORR')
+                                                                'BAD_SIGMACORR_SRES')
 
         #---------------------------------------------------------------
         # Test if kinematics are reliable
@@ -1382,6 +1495,14 @@ class PPXFFit(StellarKinematicsFit):
                                                                numpy.zeros(self.nobj))
         model_par['KIN'][:,0], model_par['KINERR'][:,0] \
                 = PPXFFit.convert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
+
+        #---------------------------------------------------------------
+        # Calculate the dispersion corrections, if necessary
+        if not self.matched_resolution:
+            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(result)
+            if numpy.sum(err) > 0:
+                model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
+                                                              'BAD_SIGMACORR_EMP')
 
         #---------------------------------------------------------------
         return model_flux, model_mask, model_par
@@ -1660,10 +1781,7 @@ class PPXFFit(StellarKinematicsFit):
         # - Mode
         self._check_mode(iteration_mode, reject_boxcar, filter_boxcar, filter_operation,
                          filter_iterations, mdegree)
-        # - Templates
-        self.tpl_wave, self.tpl_flux, self.tpl_sres \
-                = PPXFFit.check_templates(tpl_wave, tpl_flux, tpl_sres=tpl_sres)
-        self.ntpl, self.npix_tpl = self.tpl_flux.shape
+
         # - Objects
         self.obj_wave, self.obj_flux, self.obj_ferr, self.obj_sres \
                 = PPXFFit.check_objects(obj_wave, obj_flux, obj_ferr=obj_ferr, obj_sres=obj_sres)
@@ -1671,22 +1789,21 @@ class PPXFFit(StellarKinematicsFit):
         self.input_obj_mask = numpy.ma.getmaskarray(self.obj_flux).copy()
         self.obj_to_fit = numpy.any(numpy.invert(self.input_obj_mask), axis=1)
         print('Objects to fit: {0}/{1}'.format(numpy.sum(self.obj_to_fit), self.nobj))
+
+        # - Input pixel scale
+        self.velscale, self.velscale_ratio \
+                = PPXFFit.check_pixel_scale(tpl_wave, self.obj_wave,
+                                            velscale_ratio=velscale_ratio, dvtol=dvtol)
+        # - Templates
+        self.tpl_wave, self.tpl_flux, self.tpl_sres \
+                = PPXFFit.check_templates(tpl_wave, tpl_flux, tpl_sres=tpl_sres,
+                                          velscale_ratio=self.velscale_ratio)
+        self.ntpl, self.npix_tpl = self.tpl_flux.shape
+
         # - Template usage (needs to know the number of object spectra)
         self._check_template_usage_flags(usetpl)
         # - Input kinematics
         self._check_input_kinematics(guess_redshift, guess_dispersion)
-        # - Input pixel scale
-        self.velscale, self.velscale_ratio \
-                = PPXFFit.check_pixel_scale(self.tpl_wave, self.obj_wave,
-                                            velscale_ratio=velscale_ratio, dvtol=dvtol)
-        # Force the number of template pixels to be an integer number of
-        # object pixels
-        if self.velscale_ratio > 1:
-            self.npix_tpl -= self.npix_tpl % self.velscale_ratio
-            self.tpl_flux = self.tpl_flux[:,:self.npix_tpl]
-            self.tpl_wave = self.tpl_wave[:self.npix_tpl]
-#            self.tpl_sres = self.tpl_sres[:self.npix_tpl]
-
         # - Spectral resolution
         self._check_resolution_match(matched_resolution)
         # - Selected wavelength range: always has shape (self.nobj,2)
@@ -2093,7 +2210,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def check_templates(tpl_wave, tpl_flux, tpl_sres=None):
+    def check_templates(tpl_wave, tpl_flux, tpl_sres=None, velscale_ratio=None):
         r"""
         Check that the input template data is valid for use with
         pPXFFit.  Static so that it can also be called by
@@ -2109,10 +2226,23 @@ class PPXFFit(StellarKinematicsFit):
                              'wavelength array.')
         if tpl_sres is not None and tpl_sres.shape != tpl_wave.shape:
             raise ValueError('Provided template resolution vector does not have the correct shape.')
-        _tpl_sres = None if tpl_sres is None \
-                            else spectral_resolution(tpl_wave, tpl_sres, log10=True)
+
+        # Force the number of template pixels to be an integer number of
+        # object pixels
+        if velscale_ratio is not None and velscale_ratio > 1:
+            npix_tpl = len(tpl_wave) - len(tpl_wave) % velscale_ratio
+            _tpl_wave = tpl_wave[:npix_tpl]
+            _tpl_flux = tpl_flux[:,:npix_tpl]
+            _tpl_sres = None if tpl_sres is None else tpl_sres[:npix_tpl]
+        else:
+            _tpl_wave = tpl_wave
+            _tpl_flux = tpl_flux
+            _tpl_sres = tpl_sres
+
+        _tpl_sres = None if _tpl_sres is None \
+                            else spectral_resolution(_tpl_wave, _tpl_sres, log10=True)
         # TODO: Allow spectral resolution to be spectrum dependent?
-        return tpl_wave, tpl_flux, _tpl_sres
+        return _tpl_wave, _tpl_flux, _tpl_sres
 
 
     @staticmethod
@@ -2414,16 +2544,16 @@ class PPXFFit(StellarKinematicsFit):
         If redshift_only is true, ignore the LOSVD and simply shift the
         model to the correct redshift.
         """
-        # Check the input spectra
-        _tpl_wave, _tpl_flux, _ = PPXFFit.check_templates(tpl_wave, tpl_flux)
-        ntpl = _tpl_flux.shape[0]
-        _obj_wave, _obj_flux, _, _ = PPXFFit.check_objects(obj_wave, obj_flux)
-        nobj = _obj_flux.shape[0]
-
         # Check the spectral sampling
         _velscale, _velscale_ratio \
-                = PPXFFit.check_pixel_scale(_tpl_wave, _obj_wave, velscale_ratio=velscale_ratio,
+                = PPXFFit.check_pixel_scale(tpl_wave, obj_wave, velscale_ratio=velscale_ratio,
                                              dvtol=dvtol)
+        # Check the input spectra
+        _obj_wave, _obj_flux, _, _ = PPXFFit.check_objects(obj_wave, obj_flux)
+        nobj = _obj_flux.shape[0]
+        _tpl_wave, _tpl_flux, _ = PPXFFit.check_templates(tpl_wave, tpl_flux,
+                                                          velscale_ratio=_velscale_ratio)
+        ntpl = _tpl_flux.shape[0]
 
         # Check the shape of the input model parameter database
         if model_par['BINID'].size != nobj:

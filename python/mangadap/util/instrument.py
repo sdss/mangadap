@@ -506,12 +506,13 @@ class spectral_resolution:
         the attributes :attr:`sig_pd` and :attr:`sig_mask`.  See
         :func:`GaussianKernelDifference`.
         """
-        indx = numpy.where(numpy.isclose(sig2_pd, 0.0))
-        nindx = where_not(indx, sig2_pd.size)
+        indx = numpy.isclose(sig2_pd, 0.0)
+        nindx = numpy.invert(indx)
         self.sig_pd = sig2_pd.copy()
         self.sig_pd[nindx] = sig2_pd[nindx]/numpy.sqrt(numpy.absolute(sig2_pd[nindx]))
         self.sig_pd[indx] = 0.0
-        self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
+#        self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
+        self.sig_mask = numpy.array(self.sig_pd < self.min_sig).astype(numpy.uint)
 
 
     def _convert_vd2pd(self, sig2_vd):
@@ -643,15 +644,23 @@ class spectral_resolution:
             \geq -\epsilon_\sigma\ ,
         
         the behavior of :func:`convolution_variable_sigma` should not be
-        affected.
+        affected.  However, in regions with
     
-        Even so, there may be spectral regions that do not have
-        :math:`\sigma_{p,d} \geq -\epsilon_\sigma`; for such spectral
-        regions there are three choices:
+        .. math::
+    
+            \sigma_{p,d} \equiv \sigma^2_{p,d}/\sqrt{|\sigma^2_{p,d}|}
+            \leq \epsilon_\sigma\ ,
+
+        the behavior of :func:`convolution_variable_sigma` does *not*
+        produce an accurate convolution!        
+    
+        To deal with spectral regions that do not have
+        :math:`\sigma_{p,d} \geq \epsilon_\sigma`, there are three
+        choices:
 
             (**Option 1**) trim the spectral range to only those
             spectral regions where the existing resolution is better
-            than the target resolution,
+            than the target resolution up to this limit,
         
             (**Option 2**) match the existing resolution to the target
             resolution up to some constant offset that must be accounted
@@ -666,15 +675,15 @@ class spectral_resolution:
         default behavior.  Currently, Option 3 is not allowed.
 
         For Option 1, pixels with :math:`\sigma_{p,d} <
-        -\epsilon_\sigma` are masked (*sigma_mask = 1*); however, the
+        \epsilon_\sigma` are masked (*sigma_mask = 1*); however, the
         returned values of :math:`\sigma_{p,d}` are left unchanged.
 
         For Option 2, we define
 
         .. math::
 
-            \sigma^2_{v,o} = -{\rm min}(\sigma^2_{v,d}) - {\rm
-            max}(\epsilon_\sigma \delta v)^2
+            \sigma^2_{v,o} = | {\rm min}(0.0, {\rm min}(\sigma^2_{v,d})
+            - {\rm max}(\epsilon_\sigma \delta v)^2) |
 
         where :math:`\delta v` is constant for the logarithmically
         binned spectrum and is wavelength dependent for the linearly
@@ -685,7 +694,7 @@ class spectral_resolution:
             dv = self.c * (2.0*(_wave[1:] - _wave[0:-1]) / (_wave[1:] + _wave[0:-1]))
 
         If :math:`\sigma^2_{v,o} > 0.0`, it must be that :math:`{\rm
-        min}(\sigma^2_{v,d}) < -{\rm max}(\epsilon_\sigma \delta v)^2`,
+        min}(\sigma^2_{v,d}) < {\rm max}(\epsilon_\sigma \delta v)^2`,
         such that an offset should be applied.  In that case, the
         returned kernel parameters are
 
@@ -698,22 +707,12 @@ class spectral_resolution:
         pixels are masked, and :math:`\sqrt{\sigma^2_{v,o}}` is returned
         for the offset.  Otherwise, the offset is set to 0.
 
-        .. todo::
-
-            Allow to check cases when the convolution kernel is
-            indpendent of wavelength such that the convolution can be
-            sped up by performing the convolution using an FFT.  For
-            example, in the case where the spectrum is logarithmically
-            binned and both :math:`R_1` and :math:`R_2` are
-            *independent* of wavelength, the convolution kernel is
-            independent of wavelength.
-
         Args:
             new_sres (:class:`spectral_resolution`): Spectral resolution
                 to match to.
             no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}
                 = 0` by masking regions with :math:`\sigma_{p,d} <
-                -\epsilon_\sigma`; i.e., the value of this arguments
+                \epsilon_\sigma`; i.e., the value of this arguments
                 selects Option 1 (True) or Option 2 (False).
             min_sig_pix (float): (**Optional**) Minimum value of the
                 standard deviation allowed before assuming the kernel is
@@ -745,16 +744,18 @@ class spectral_resolution:
 
         # Option 2:
         else:
+            # 1% fudge so pixel at min_sig is not masked!
+            fudge = 1.01
+            
             # Calculate the velocity step of each pixel
             dv = self.c * (2.0*(_wave[1:] - _wave[0:-1]) / (_wave[1:] + _wave[0:-1]))
             # Get the needed *velocity* offset (this is the square)
-            self.sig_vo = - numpy.amin(sig2_vd) - numpy.square(self.min_sig * numpy.amax(dv))
+            self.sig_vo = fudge*numpy.absolute(min(0.0, numpy.amin(sig2_vd)
+                                                  - numpy.square(self.min_sig * numpy.amax(dv))))
             # Apply it if it's larger than 0
             if self.sig_vo > 0:
                 sig2_vd += self.sig_vo
                 self.sig_vo = numpy.sqrt(self.sig_vo)
-            else:
-                self.sig_vo = 0.0
 
             # Convert the variance to pixel coordinates
             sig2_pd = self._convert_vd2pd(sig2_vd)
@@ -798,7 +799,8 @@ class spectral_resolution:
             ValueError: Raised if the kernel properties have not yet
                 been defined.
         """
-        if None in [self.min_sig, self.sig_pd, self.sig_mask, self.sig_vo]:
+        if self.min_sig is None or self.sig_pd is None or self.sig_mask is None \
+                or self.sig_vo is None:
 #            print('WARNING: No kernel difference yet defined.  Assuming 0.')
 #            self.ZeroGaussianKernelDifference()
             raise ValueError('No kernel defined yet.  Run GaussianKernelDifference first.')

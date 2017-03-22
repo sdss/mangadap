@@ -1259,7 +1259,8 @@ class construct_maps_file:
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
-                stellar_continuum['PAR'].data['SIGMACORR'],
+# FIX THIS !!
+                stellar_continuum['PAR'].data['SIGMACORR_EMP'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
                 stellar_continuum['PAR'].data['FABSRESID'][:,3],
                 stellar_continuum['PAR'].data['RCHI2'],
