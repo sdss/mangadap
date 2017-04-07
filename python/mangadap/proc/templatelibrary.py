@@ -199,6 +199,14 @@ bitmasks for the template library spectra.
         Allow to specify how the resolution and sampling are matched to
         the DRP data.  The :class:`TemplateLibrary` class should be
         generalized to make this more transparent (and unnecessary).
+    | **03 Apr 2017**: (KBW) Include arguments for
+        :func:`mangadap.util.instrument.match_spectral_resolution` that
+        specify the minimum sigma in pixels for the convolution kernel
+        and any offset in the resolution required in the call for the
+        template library.  Check that the resampling of the spectrum
+        does not reach the two-pixel resolution limit; flag the spectrum
+        in those regions that do and change the resolution to the two
+        pixel limit.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -236,6 +244,7 @@ from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1ds
 from ..util.fitsutil import DAPFitsUtil
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
+from ..util.instrument import spectrum_velocity_scale, angstroms_per_pixel
 from ..util.parser import DefaultConfig
 from .util import _select_proc_method, HDUList_mask_wavelengths
 
@@ -437,9 +446,6 @@ class TemplateLibraryBitMask(BitMask):
         dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'spectral_template_bits.ini'))
-#        t = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
-#                                                  'bitmasks', 'spectral_template_bits.ini'))
-#        BitMask.__init__(self, t.keys(), t.descr)
 
 
 class TemplateLibrary:
@@ -601,10 +607,10 @@ class TemplateLibrary:
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
                  match_to_drp_resolution=True, velscale_ratio=None, sres=None, velocity_offset=0.0,
-                 spectral_step=None, log=True, wavelength_range=None, renormalize=True, dapver=None,
-                 analysis_path=None, directory_path=None, processed_file=None, read=True,
-                 process=True, hardcopy=True, symlink_dir=None, clobber=False, checksum=False,
-                 loggers=None, quiet=False):
+                 min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
+                 wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
+                 directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
+                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.version = '2.1'
         self.loggers = loggers
@@ -616,6 +622,8 @@ class TemplateLibrary:
         # Define the properties needed to modify the spectral resolution
         self.sres = None
         self.velocity_offset = None
+        self.min_sig_pix = None
+        self.no_offset = None
 
         # Define the target spectral sampling properties
         self.spectral_step = None
@@ -658,13 +666,13 @@ class TemplateLibrary:
         # Read and process the library
         self.process_template_library(drpf=drpf, match_to_drp_resolution=match_to_drp_resolution,
                                       velscale_ratio=velscale_ratio, sres=sres,
-                                      velocity_offset=velocity_offset, spectral_step=spectral_step,
-                                      log=log, wavelength_range=wavelength_range,
-                                      renormalize=renormalize, dapver=dapver,
-                                      analysis_path=analysis_path, directory_path=directory_path,
-                                      processed_file=processed_file, hardcopy=hardcopy,
-                                      symlink_dir=symlink_dir, clobber=clobber, loggers=loggers,
-                                      quiet=quiet)
+                                      velocity_offset=velocity_offset, min_sig_pix=min_sig_pix,
+                                      no_offset=no_offset, spectral_step=spectral_step, log=log,
+                                      wavelength_range=wavelength_range, renormalize=renormalize,
+                                      dapver=dapver, analysis_path=analysis_path,
+                                      directory_path=directory_path, processed_file=processed_file,
+                                      hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber,
+                                      loggers=loggers, quiet=quiet)
 
 
     def __del__(self):
@@ -1043,11 +1051,14 @@ class TemplateLibrary:
         # match_spectral_resolution
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Modifying spectral resolution ... ')
+        print('min_sig_pix: ', self.min_sig_pix)
+#        print(spectrum_velocity_scale(self.hdu['WAVE'].data))
         self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, ivar = \
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                       self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
-                                      self.sres.sres(), min_sig_pix=0.0,
-                                      log10=self.library['log10'], new_log10=True, quiet=self.quiet)
+                                      self.sres.sres(), min_sig_pix=self.min_sig_pix,
+                                      no_offset=self.no_offset, log10=self.library['log10'],
+                                      new_log10=True, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
 
@@ -1125,7 +1136,19 @@ class TemplateLibrary:
         min_flux = numpy.amin(self.hdu['FLUX'].data.ravel())
         # the observed pixels are
         observed = numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
+        # An array used to count the number of pixels combined when
+        # rebinning
+        unity = numpy.ones(self.hdu['FLUX'].data.shape, dtype=float)
         
+        # Number of pixels per resolution element
+        ang_per_pix = numpy.ones(self.hdu['FLUX'].data.shape, dtype=float)
+        for i in range(self.ntpl):
+            ang_per_pix[i,:] = angstroms_per_pixel(self.hdu['WAVE'].data[i,:],
+                                                   log=self.library['log10'], base=10.)
+        pix_per_fwhm = numpy.ma.divide(numpy.ma.divide(self.hdu['WAVE'].data,
+                                                        self.hdu['SPECRES'].data),
+                                        ang_per_pix)
+
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
@@ -1142,11 +1165,7 @@ class TemplateLibrary:
                                               newLog=self.log10_sampling, dx=self.spectral_step,
                                               ext_value=min_flux-100., conserve=False, flat=False)
 
-#            pyplot.step(oldwave, oldflux, where='mid')
-#            pyplot.step(wave, flux[i,:], 'g', where='mid')
-#            pyplot.show()
-
-            # Find the unobserved pixels, set them to have 0. flux, and
+            # Find the unobserved pixels, set them to have no flux, and
             # flag them as having no data
             indx = numpy.where(flux[i,:] < min_flux-10.)
             flux[i,indx] = 0.0
@@ -1155,16 +1174,47 @@ class TemplateLibrary:
             # Resample the spectral resolution by simple interpolation.
             # Select the good pixels
             indx = numpy.where(numpy.invert(flux[i,:] < min_flux-10.))
-            # define the interpolator (uses linear interpolation; k=1)
-#            interpolator = InterpolatedUnivariateSpline(self.hdu['WAVE'].data[i,:].ravel(),
-#                                                        self.hdu['SPECRES'].data[i,:].ravel(), k=1)
-            interpolator = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
+            # and interpolate
+            sres[i,indx] = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
                                                 self.hdu['SPECRES'].data[i,:].ravel(),
-                                                fill_value='extrapolate')
-            # And then interpolate
-            sres[i,indx] = interpolator(wave[indx])
+                                                fill_value='extrapolate')(wave[indx])
 
-            # Finally, rebin the masks:
+            # Get the number of new pixels combined for each new one
+            _, npix = resample_vector(unity[i,observed[i,:]].ravel(),
+                                      xRange=[wave_in[0], wave_in[-1]],
+                                      inLog=self.library['log10'], newRange=fullRange,
+                                      newLog=self.log10_sampling, dx=self.spectral_step,
+                                      ext_value=min_flux-100., conserve=True, flat=False)
+            # and the number of new pixels per resolution element
+            _pix_per_fwhm = interpolate.interp1d(self.hdu['WAVE'].data[i,observed[i,:]].ravel(),
+                                                 pix_per_fwhm[i,observed[i,:]].ravel(),
+                                                 fill_value='extrapolate')(wave) / npix
+            # Correct resolution for any resampling that results in
+            # less than 2 pixels per resolution element
+            indx = _pix_per_fwhm < 2
+            if numpy.sum(indx) > 0:
+
+                # !! EDIT THIS FOR PRODUCTION VERSION !!
+                print('hit two pixel limit!')
+                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
+                pyplot.plot(wave, sres[i,:])
+                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
+                pyplot.plot(wave, sres[i,:])
+                pyplot.show()
+                exit()
+                mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
+
+#            print(spectral_coordinate_step(oldwave))
+#            print(spectrum_velocity_scale(wave))
+#            pyplot.step(oldwave, oldflux, where='mid', color='k', lw=2)
+#            pyplot.plot(oldwave[:-1], numpy.diff(oldwave), color='C3')
+#            pyplot.plot(oldwave[:-1], astropy.constants.c.to('km/s').value * numpy.diff(oldwave)
+#                                    / (oldwave[:-1]+numpy.diff(oldwave)/2), color='r')
+#            pyplot.step(wave, flux[i,:], where='mid', color='C2', lw=1)
+#            pyplot.step(wave, npix, where='mid', color='C0', lw=1)
+#            pyplot.show()
+
+            # Rebin the other masks:
             # Pixels outside the wavelength limits
             indx = self._rebin_masked(i, 'WAVE_INVALID', fullRange, rmsk_lim=0.1)
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
@@ -1239,59 +1289,6 @@ class TemplateLibrary:
         return os.path.join(self.directory_path, self.processed_file)
 
 
-#    def dlogLam(self, quiet=True):
-#        """
-#        Return the logarithmic wavelength sampling of the spectra.
-#
-#        Always assumes the base of the logarithm is 10!
-#
-#        Returns:
-#            float : Logarithmic wavelength sampling.  Returns None if
-#                the velocity scale is not defined.
-#
-#        """
-#        if self.velscale is None:
-#            if not quiet:
-#                warnings.warn('Velocity scale undefined!')
-#            return None
-#
-#        return self.velscale / numpy.log(10.0) / astropy.constants.c.to('km/s').value
-
-
-#    def velocity_step(self, quiet=True):
-#        """
-#        If the library is logarithmically sampled, return the pixel
-#        scale in km/s.
-#
-#        Always assumes the base of the logarithm is 10!
-#
-#        Args:
-#            quiet (bool) : Suppress warning that library is linearly sampled.
-#
-#        Returns:
-#            float: Pixel scale in km/s for logarithmic wavelength
-#            sampling.  Returns None if the sampling is linear.
-#
-#        Raises:
-#            ValueError: Raised if library has not been processed.
-#
-#        .. todo::
-#
-#            - Allow to provide the velocity step, even if the library
-#              has not been processed.  Would then return a vector with
-#              the sampling of each spectrum.
-#
-#        """
-#        if not self.processed:
-#            raise ValueError('Template has not been processed!')
-#        if not self.log10_sampling:
-#            if not quiet:
-#                warnings.warn('Template library is not logarithmically sampled in wavelength!')
-#            return None
-#
-#        return self.spectral_step * numpy.log(10.0) * astropy.constants.c.to('km/s').value
-
-
     def read_raw_template_library(self, library_key=None, tpllib_list=None, dapsrc=None):
         """
         Read the identified template library.  If all the arguments are
@@ -1318,13 +1315,12 @@ class TemplateLibrary:
 
     def process_template_library(self, library_key=None, tpllib_list=None, dapsrc=None, drpf=None,
                                  match_to_drp_resolution=True, velscale_ratio=None, sres=None,
-                                 velocity_offset=0.0, spectral_step=None, log=True,
-                                 wavelength_range=None, renormalize=True, dapver=None,
-                                 analysis_path=None, directory_path=None, processed_file=None,
-                                 hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
-                                 quiet=False):
+                                 velocity_offset=0.0, min_sig_pix=0.0, no_offset=True,
+                                 spectral_step=None, log=True, wavelength_range=None,
+                                 renormalize=True, dapver=None, analysis_path=None,
+                                 directory_path=None, processed_file=None, hardcopy=True,
+                                 symlink_dir=None, clobber=False, loggers=None, quiet=False):
         """
-
         Process the template library for use in analyzing object
         spectra.  Primary steps are to:
 
@@ -1477,6 +1473,8 @@ class TemplateLibrary:
             self.spectral_step = spectral_step
 
         self.velocity_offset = velocity_offset
+        self.min_sig_pix = min_sig_pix
+        self.no_offset = no_offset
 
         # Adjust for the velocity scale ratio between the template and
         # object data to be fit

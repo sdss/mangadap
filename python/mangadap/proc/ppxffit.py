@@ -105,7 +105,7 @@ from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
 from ..util.instrument import spectrum_velocity_scale, resample_vector, spectral_resolution
-from ..util.instrument import match_spectral_resolution
+from ..util.instrument import match_spectral_resolution, angstroms_per_pixel
 from ..util.constants import constants
 from ..contrib.ppxf import ppxf, _templates_rfft, _losvd_rfft
 from ..contrib import ppxf_util
@@ -710,6 +710,18 @@ class PPXFFit(StellarKinematicsFit):
                 for the fit to each object spectrum
             plot (bool): (**Optional**) Produce the default ppxf fit
                 plot.
+            fixed_kin (array): (**Optional**) Fix the kinematics to the
+                values in this array.  Size is :math:`N_{\rm spec}\times
+                N_{\rm moments}`.  Default is to leave the kinematics
+                free and use :attr:`guess_kin` as the initial guess.
+            degree (int): (**Optional**) Additive polynomial order.
+                Default is to use the internal attribute :attr:`degree`.
+            mdegree (int): (**Optional**) Multiplicative polynomial
+                order.  Default is to use the internal attribute
+                :attr:`mdegree`.
+            dof (int): (**Optional**) Number of degrees of freedom in
+                the fit.  Default is to use the internal attribute
+                :attr:`dof`.
 
         Returns:
             numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
@@ -1170,8 +1182,11 @@ class PPXFFit(StellarKinematicsFit):
           - Construct the optimized, redshifted template *without* the
             convolution with the best-fitting LOSVD.
           - Convolve it with the resolution difference in the data.
-          - Use pPXF to fit the matched version to the matched version;
+          - Use pPXF to fit the matched version to the unmatched version;
             this should be the dispersion correction.
+
+          - 
+
         """
 
         # Construct the model spectra with only the resolution
@@ -1183,6 +1198,10 @@ class PPXFFit(StellarKinematicsFit):
         old_guess_kin = self.guess_kin.copy()
         model_tpl_to_use = numpy.zeros((self.nobj, self.nobj), dtype=bool)
         res_match_offset = numpy.zeros(self.nobj, dtype=float)
+
+        tpl_ang_per_pix = angstroms_per_pixel(self.tpl_wave, log=True, base=10.)
+        unity = numpy.ones(self.tpl_wave.size, dtype=float)
+
         for i in range(self.nobj):
             if not self.obj_to_fit[i]:
                 continue
@@ -1220,25 +1239,43 @@ class PPXFFit(StellarKinematicsFit):
                                               min_sig_pix=1.0, log10=True, new_log10=True,
                                               quiet=True, no_offset=False)
 
-#            print('Resolution match offset: ', res_match_offset[i])
-#            print('Masked pixels: {0}/{1}'.format(numpy.sum(mask), len(mask)))
+            pix_per_fwhm = numpy.ma.divide(numpy.ma.divide(self.tpl_wave, sres), tpl_ang_per_pix)
+            pix_per_fwhm = interpolate.interp1d(self.tpl_wave, pix_per_fwhm,
+                                                fill_value='extrapolate')(self.obj_wave)
+
+            print('Resolution match offset: ', res_match_offset[i])
+            print('Masked pixels: {0}/{1}'.format(numpy.sum(mask), len(mask)))
 #            pyplot.plot(self.tpl_wave, model_template[i,:])
 #            pyplot.plot(self.tpl_wave, tmp_model)
+#            pyplot.plot(self.tpl_wave, tmp_model - model_template[i,:])
 #            pyplot.show()
-            
+
             # Resample to match the object spectra
             inRange = self.tpl_wave[[0,-1]] * (1.0 + redshift)
             _, model_matched_sres[:] = resample_vector(tmp_model, xRange=inRange, inLog=True,
                                                        newRange=self.obj_wave[[0,-1]],
                                                        newpix=self.obj_wave.size, newLog=True,
                                                        flat=False)
+            _, npix = resample_vector(unity, xRange=inRange, inLog=True,
+                                      newRange=self.obj_wave[[0,-1]], newpix=self.obj_wave.size,
+                                      newLog=True, conserve=True, flat=False)
 
 #            pyplot.plot(self.tpl_wave, model_template[i,:])
 #            pyplot.plot(self.obj_wave, model_matched_sres[i,:])
 #            pyplot.show()
+#
+#            pyplot.plot(self.obj_wave, npix)
+#            pyplot.show()
+
+            new_pix_per_fwhm = numpy.ma.divide(pix_per_fwhm, npix)
+            indx = new_pix_per_fwhm < 2
+            print('Number below 2 pixels: {0}'.format(numpy.sum(indx)))
 
             start[i] = result[i].start
             end[i] = result[i].end
+
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], new_pix_per_fwhm[start[i]:end[i]])
+#            pyplot.show()
 
 #            pyplot.plot(self.tpl_wave, model_template[i,:])
 #            pyplot.plot(self.obj_wave[start[i]:end[i]], model_matched_sres[i,start[i]:end[i]])
@@ -1258,8 +1295,11 @@ class PPXFFit(StellarKinematicsFit):
         result_corr = self._run_fit_iteration(model_matched_sres, model_ferr, start, end,
                                               self.base_velocity, model_template,
                                               obj_to_fit=self.obj_to_fit,
-                                              tpl_to_use=model_tpl_to_use, degree=-1, mdegree=0)#,
+                                              tpl_to_use=model_tpl_to_use)#, #degree=-1, mdegree=0,
                                               #plot=True)
+
+#        print([rc.kin[1] for rc in result_corr])
+#        print(res_match_offset)
 
         self.guess_kin = old_guess_kin
 
@@ -1503,6 +1543,7 @@ class PPXFFit(StellarKinematicsFit):
             if numpy.sum(err) > 0:
                 model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
                                                               'BAD_SIGMACORR_EMP')
+#            print(model_par['SIGMACORR_EMP'])
 
         #---------------------------------------------------------------
         return model_flux, model_mask, model_par

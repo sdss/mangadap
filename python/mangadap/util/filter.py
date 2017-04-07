@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 A set of functions used to filter arrays.
 
 *License*:
@@ -27,7 +26,8 @@ A set of functions used to filter arrays.
 
 *Revision history*:
     | **26 Jan 2017**: Original implementation by K. Westfall (KBW)
-
+    | **06 Apr 2017**: Interpolate sigma vectors as well as the smoothed
+        vectors in :class:`BoxcarFilter`.
 """
 
 from __future__ import division
@@ -40,7 +40,6 @@ if sys.version > '3':
     long = int
 
 import numpy
-#import time
 from scipy import interpolate, sparse
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
@@ -274,7 +273,6 @@ class BoxcarFilter():
 
         self.smoothed_y = numpy.ma.divide(self.smoothed_y, self.smoothed_n)
         self.smoothed_y[self.output_mask] = numpy.ma.masked
-        self.output_mask = numpy.ma.getmaskarray(self.smoothed_y)
 
         self.sigma_y = numpy.ma.sqrt((numpy.ma.divide(smoothed_y2, self.smoothed_n)
                                             - numpy.square(self.smoothed_y))
@@ -282,6 +280,11 @@ class BoxcarFilter():
                         if self.local_sigma else \
                             numpy.ma.MaskedArray(numpy.array([numpy.std(self.y - self.smoothed_y,
                                                                         axis=1)]*self.npix).T)
+
+        self.output_mask = numpy.ma.getmaskarray(self.smoothed_y) \
+                                | numpy.ma.getmaskarray(self.sigma_y) 
+        
+        self.smoothed_y[self.output_mask] = numpy.ma.masked
         self.sigma_y[self.output_mask] = numpy.ma.masked
 
         return
@@ -324,8 +327,12 @@ class BoxcarFilter():
         Interpolate the smoothed image across the masked regions.
         Leading and trailing masked regions of each row are set to the
         first and last unmasked value, respectively.
+
+        interpolate both the smoothed data and the sigma
+
         """
-        # Boolean arrays with bad pixels
+        # Boolean arrays with bad pixels (should be the same for both
+        # smoothed_y and sigma_y)
         badpix = numpy.ma.getmaskarray(self.smoothed_y)
 
         # Deal with any vectors that are fully masked
@@ -336,7 +343,6 @@ class BoxcarFilter():
         # Find the first and last unflagged pixels in the good vectors
         pixcoo = numpy.ma.MaskedArray(numpy.array([numpy.arange(self.npix)]*ngood),
                                       mask=badpix[goodvec,:]).astype(int)
-#        print('PIXCOO: ', pixcoo.shape)
         mini = numpy.ma.amin(pixcoo, axis=1)
         maxi = numpy.ma.amax(pixcoo, axis=1)
 
@@ -344,15 +350,24 @@ class BoxcarFilter():
         self.smoothed_y[veci,0] = numpy.array([self.smoothed_y[i,m] for i,m in zip(veci, mini)])
         self.smoothed_y[veci,-1] = numpy.array([self.smoothed_y[i,m] for i,m in zip(veci, maxi)])
 
-        # Create the interpolator
+        self.sigma_y[veci,0] = numpy.array([self.sigma_y[i,m] for i,m in zip(veci, mini)])
+        self.sigma_y[veci,-1] = numpy.array([self.sigma_y[i,m] for i,m in zip(veci, maxi)])
+
+        # Detach badpix from self.smoothed_y
+        badpix = numpy.ma.getmaskarray(self.smoothed_y).copy()
+
+        # Interpolate the smoothed array
         x = numpy.ma.MaskedArray(numpy.arange(self.nvec*self.npix), mask=badpix)
         interpolator = interpolate.interp1d(x.compressed(), self.smoothed_y.compressed(),
                                             assume_sorted=True, fill_value='extrapolate')
-
-        # Interpolate the values for the bad pixels
         self.smoothed_y.ravel()[badpix.ravel()] = interpolator(x.data[badpix.ravel()])
-        # Set any fully bad vectors to 0.0
         self.smoothed_y[numpy.invert(goodvec),:] = 0.0
+
+        # Interpolate the sigma array
+        interpolator = interpolate.interp1d(x.compressed(), self.sigma_y.compressed(),
+                                            assume_sorted=True, fill_value='extrapolate')
+        self.sigma_y.ravel()[badpix.ravel()] = interpolator(x.data[badpix.ravel()])
+        self.sigma_y[numpy.invert(goodvec),:] = 0.0
 
 
     def smooth(self, y, mask=None, boxcar=None, lo=None, hi=None, niter=None, local_sigma=None):

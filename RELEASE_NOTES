@@ -57,6 +57,11 @@ KBW (??         ): tag 2.1
       based on fitting the native resolution optimized template to the
       same spectrum that has been rsolution matched to object spectrum
       being fit.
+    - Changed velocity dispersion correction calculation for stellar
+      kinematics: Old version used mean resolution difference between
+      galaxy and template spectra.  New version uses a fit of the
+      best-fitting model template to a resolution-matched version of
+      itself. 
 
 TO FIX:
     - emission-line moment masks

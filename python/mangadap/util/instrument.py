@@ -1,8 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
-Provides a set of functions to handle instrumental effects.
+Provides a set of functions to handle instrumental sampling and
+resolution effects.
 
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
@@ -56,6 +56,7 @@ Provides a set of functions to handle instrumental effects.
     | **25 Oct 2016**: (KBW) Modified :func:`spectral_coordinate_step`
         to be a mean over the full spectrum to avoid numerical precision
         errors.
+    | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.
 """
 
 from __future__ import division
@@ -103,6 +104,7 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
         the step in log(angstroms).
     """
     dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
+#    print(dw)
 #    print('mean: ', numpy.mean(dw))
 #    print('sdev: ', numpy.std(dw))
     return numpy.mean(dw)
@@ -130,6 +132,18 @@ def spectrum_velocity_scale(wave):
     """
     return astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave, log=True,
                                                                          base=numpy.exp(1.))
+
+
+def angstroms_per_pixel(wave, log=False, base=10.0):
+    """
+    Return a vector with the angstroms per pixel at each channel
+    assuming the wavelength array is binned either linearly or
+    log-linearly.
+    """
+    ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
+    if log:
+        ang_per_pix *= wave*numpy.log(base)
+    return ang_per_pix
 
 
 class convolution_integral_element:
@@ -278,6 +292,8 @@ class VariableGaussianKernel:
     """
     def __init__(self, sigma, minsig=0.01, nsig=3.0, integral=False):
         self.n = sigma.size                                     # Vector length
+        if self.n == 0:
+            raise ValueError('Input sigma has zero length!')
         self.sigma = sigma.clip(min=minsig)                     # Force sigmas to minimum 
         self.p = int(numpy.ceil(numpy.amax(nsig*self.sigma)))   # Kernel covers up to nsig*sigma
         self.m = 2*self.p + 1                                   # Kernel length
@@ -1020,6 +1036,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
     if nsres == 1 and sres_dim == 1:
+#        print('one')
         res[0] = spectral_resolution(wave, sres, log10=log10)
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
@@ -1027,14 +1044,18 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             res[i] = res[0]
 #        pyplot.plot(wave, res[0].sig_pd)
 #        pyplot.show()
-#        exit()
     else:
+#        print('multiple')
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
             res[i] = spectral_resolution(_wave, _sres, log10=log10)
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
+#            pyplot.plot(_wave, res[i].sig_pd)
+#            pyplot.plot(_wave, numpy.sqrt(res[i]._convert_pd2vd(numpy.square(res[i].sig_pd))))
+#            pyplot.show()
+#    exit()
 
     # Force all the offsets to be the same, if requested
     if not no_offset and not variable_offset:

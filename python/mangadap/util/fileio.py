@@ -44,6 +44,8 @@ Provides a set of file I/O routines.
     | **25 Aug 2016**: (KBW) Added :func:`channel_dictionary`
     | **23 Feb 2017**: (KBW) create_symlink now creates the directory if
         it doesn't exist
+    | **23 Mar 2017**: (KBW) Force type of header keywords in
+        :func:`wavelength_vector`.
 
 .. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
@@ -77,10 +79,10 @@ def wavelength_vector(npix, header, log10=False):
     coordinates in the header.  The function uses CRVAL1, CRPIX1,
     CDELT1.
     """
-    crval = header['CRVAL1']
-    crpix = header['CRPIX1']
-    cdelt = header['CDELT1']
-    wave = ((numpy.arange(1.0,npix+1) - crpix)*cdelt + crval).astype(numpy.float64)
+    crval = float(header['CRVAL1'])
+    crpix = int(header['CRPIX1'])
+    cdelt = float(header['CDELT1'])
+    wave = (numpy.arange(1.0,npix+1) - crpix)*cdelt + crval
     return numpy.power(10., wave) if log10 else wave
 
 
