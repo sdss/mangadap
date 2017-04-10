@@ -1185,7 +1185,10 @@ class PPXFFit(StellarKinematicsFit):
           - Use pPXF to fit the matched version to the unmatched version;
             this should be the dispersion correction.
 
-          - 
+        .. todo::
+            Decide how to deal with regions below 2-pixel resolution in
+            synthetic spectrum being fit.  How does this alter the
+            correction?
 
         """
 
@@ -1243,8 +1246,8 @@ class PPXFFit(StellarKinematicsFit):
             pix_per_fwhm = interpolate.interp1d(self.tpl_wave, pix_per_fwhm,
                                                 fill_value='extrapolate')(self.obj_wave)
 
-            print('Resolution match offset: ', res_match_offset[i])
-            print('Masked pixels: {0}/{1}'.format(numpy.sum(mask), len(mask)))
+#            print('Resolution match offset: ', res_match_offset[i])
+#            print('Masked pixels: {0}/{1}'.format(numpy.sum(mask), len(mask)))
 #            pyplot.plot(self.tpl_wave, model_template[i,:])
 #            pyplot.plot(self.tpl_wave, tmp_model)
 #            pyplot.plot(self.tpl_wave, tmp_model - model_template[i,:])
@@ -1269,7 +1272,10 @@ class PPXFFit(StellarKinematicsFit):
 
             new_pix_per_fwhm = numpy.ma.divide(pix_per_fwhm, npix)
             indx = new_pix_per_fwhm < 2
-            print('Number below 2 pixels: {0}'.format(numpy.sum(indx)))
+#            print('Number below 2 pixels: {0}'.format(numpy.sum(indx)))
+
+            # TODO: Decide how to deal with regions below 2-pixel
+            # resolution
 
             start[i] = result[i].start
             end[i] = result[i].end
@@ -1312,8 +1318,6 @@ class PPXFFit(StellarKinematicsFit):
         dispersion_correction = numpy.ma.sqrt(dispersion_correction).filled(0.0)
 
         return dispersion_correction, dispersion_correction_err
-        
-
 
 
     def _nominal_dispersion_correction(self, obj_sres, gpm):

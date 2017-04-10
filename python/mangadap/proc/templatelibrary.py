@@ -1051,7 +1051,7 @@ class TemplateLibrary:
         # match_spectral_resolution
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Modifying spectral resolution ... ')
-        print('min_sig_pix: ', self.min_sig_pix)
+#        print('min_sig_pix: ', self.min_sig_pix)
 #        print(spectrum_velocity_scale(self.hdu['WAVE'].data))
         self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, ivar = \
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,

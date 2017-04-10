@@ -150,6 +150,7 @@ from .util.constants import constants
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
+from .util.filter import interpolate_masked_vector
 from .config.defaults import default_idlutils_dir, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
@@ -1231,7 +1232,7 @@ class DRPFits:
                                                 waverange=waverange)
 
 
-    def spectral_resolution(self, ext=None, toarray=False): #, fix=False):
+    def spectral_resolution(self, ext=None, toarray=False, fill=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
@@ -1251,6 +1252,9 @@ class DRPFits:
                 file is a CUBE object, similar to
                 :func:`DRPFits.copy_to_array`.  Default is to return an
                 object with the same shape as the flux array.
+            fill (bool): (**Optional**) Fill masked values by
+                interpolation.  Default is to leave leave masked pixels
+                in returned array.
 
         Returns:
             `numpy.ma.MaskedArray`_ : Masked array with the spectral
@@ -1276,7 +1280,12 @@ class DRPFits:
 #            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[151,:])
 #            pyplot.show()
 #            exit()
-            return numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+            if fill:
+                _sres = sres.reshape(self.nspec, -1)
+                for i in range(self.nspec):
+                    _sres[i,:] = interpolate_masked_vector(_sres[i,:])
+            return _sres.reshape(sres.shape)
         elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
             sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
                                                         * numpy.prod(self.spatial_shape)))
