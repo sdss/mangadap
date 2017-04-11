@@ -389,6 +389,8 @@ class PPXFFit(StellarKinematicsFit):
         self.filt_mdegree = None
         self.moments = None
 
+        self.fixed_kinematics = None
+
 
     @staticmethod
     def iteration_modes():
@@ -680,14 +682,15 @@ class PPXFFit(StellarKinematicsFit):
 
 
     def _run_fit_iteration(self, obj_flux, obj_ferr, start, end, base_velocity, tpl_flux,
-                           obj_to_fit=None, tpl_to_use=None, plot=False, fixed_kin=None,
-                           degree=None, mdegree=None, dof=None):
+                           guess_kin, fixed_kinematics, obj_to_fit=None, tpl_to_use=None,
+                           degree=None, mdegree=None, dof=None, plot=False):
         r"""
         Fit all the object spectra in obj_flux.
 
         .. todo::
             - Take advantage of the fact that ppxf() now allows you to
               provide the FFT of the templates.
+            - Calculate DOF in this function?
 
         Args:
             obj_flux (numpy.ma.MaskedArray): Size is :math:`N_{\rm
@@ -703,6 +706,10 @@ class PPXFFit(StellarKinematicsFit):
                 template spectra.
             tpl_flux (array): Size is :math:`N_{\rm tpl}\times N_{\rm
                 tpl chan}`, template spectra
+            guess_kin (array): Initial guess for kinematics.  Size is
+                :math:`N_{\rm spec}\times N_{\rm moments}`.
+            fixed_kinematics (bool): Fix the kinematics to the input
+                values during the fit.
             obj_to_fit (array): (**Optional**) Size is :math:`N_{\rm
                 spec}`, boolean flag to fit object spectrum
             tpl_to_use (array): (**Optional**) Size is :math:`N_{\rm
@@ -710,10 +717,6 @@ class PPXFFit(StellarKinematicsFit):
                 for the fit to each object spectrum
             plot (bool): (**Optional**) Produce the default ppxf fit
                 plot.
-            fixed_kin (array): (**Optional**) Fix the kinematics to the
-                values in this array.  Size is :math:`N_{\rm spec}\times
-                N_{\rm moments}`.  Default is to leave the kinematics
-                free and use :attr:`guess_kin` as the initial guess.
             degree (int): (**Optional**) Additive polynomial order.
                 Default is to use the internal attribute :attr:`degree`.
             mdegree (int): (**Optional**) Multiplicative polynomial
@@ -727,20 +730,20 @@ class PPXFFit(StellarKinematicsFit):
             numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
             :class:`PPXFFitResult`.
         """
-
         # Get the list of templates to use
         nspec = obj_flux.shape[0]
         _obj_to_fit = numpy.ones(nspec, dtype=bool) if obj_to_fit is None else obj_to_fit
         ntpl = tpl_flux.shape[0]
         _tpl_to_use = numpy.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use
 
-        input_kin = self.guess_kin if fixed_kin is None else fixed_kin
-        moments = self.moments if fixed_kin is None else -self.moments
+#        input_kin = self.guess_kin if fixed_kin is None else fixed_kin
+        moments = -self.moments if fixed_kinematics else self.moments
         degree = self.degree if degree is None else degree
         mdegree = self.mdegree if mdegree is None else mdegree
         dof = self.dof if dof is None else dof
 
-        linear = fixed_kin is not None and mdegree < 1
+#        linear = fixed_kin is not None and mdegree < 1
+        linear = fixed_kinematics and mdegree < 1
 
         # Create the object to hold all the fits
         result = numpy.empty(nspec, dtype=object)
@@ -772,7 +775,8 @@ class PPXFFit(StellarKinematicsFit):
             result[i] = PPXFFitResult(degree, mdegree, start[i], end[i], _tpl_to_use[i,:],
                             ppxf(tpl_flux[tpl_to_use[i,:],:].T, obj_flux.data[i,start[i]:end[i]],
                                  obj_ferr.data[i,start[i]:end[i]], self.velscale,
-                                 input_kin[i,:], velscale_ratio=self.velscale_ratio,
+#                                 input_kin[i,:], velscale_ratio=self.velscale_ratio,
+                                 guess_kin[i,:], velscale_ratio=self.velscale_ratio,
                                  goodpixels=gpm, bias=self.bias, degree=degree, mdegree=mdegree,
                                  moments=moments, vsyst=-base_velocity[i], quiet=(not plot),
                                  plot=plot, linear=linear), ntpl)
@@ -831,7 +835,8 @@ class PPXFFit(StellarKinematicsFit):
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'First fit to global spectrum.')
         result = self._run_fit_iteration(global_spectrum, global_spectrum_err, start, end,
-                                         base_vel, self.tpl_flux, tpl_to_use=usetpl, plot=plot)
+                                         base_vel, self.tpl_flux, self.guess_kin,
+                                         self.fixed_kinematics, tpl_to_use=usetpl, plot=plot)
 
         # Return if pPXF failed
         if result[0].fit_failed():
@@ -846,7 +851,8 @@ class PPXFFit(StellarKinematicsFit):
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fit to global spectrum after rejection.')
         return self._run_fit_iteration(global_spectrum, global_spectrum_err, start, end,
-                                       base_vel, self.tpl_flux, tpl_to_use=usetpl, plot=plot)[0]
+                                       base_vel, self.tpl_flux, self.guess_kin,
+                                       self.fixed_kinematics, tpl_to_use=usetpl, plot=plot)[0]
 
 
     def _fill_ppxf_par(self, kin, no_shift=True):
@@ -976,6 +982,7 @@ class PPXFFit(StellarKinematicsFit):
             log_output(self.loggers, 1, logging.INFO, 'Fit to all spectra.')
         result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.spectrum_start,
                                          self.spectrum_end, self.base_velocity, templates,
+                                         self.guess_kin, self.fixed_kinematics,
                                          obj_to_fit=self.obj_to_fit, tpl_to_use=tpl_to_use,
                                          plot=plot)
         if not self._mode_includes_rejection():
@@ -1004,8 +1011,8 @@ class PPXFFit(StellarKinematicsFit):
         if self.filter_iterations == 0:
             return self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
                                            self.spectrum_end, self.base_velocity, templates,
-                                           obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use,
-                                           plot=plot)
+                                           self.guess_kin, self.fixed_kinematics,
+                                           obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use, plot=plot)
 
         #---------------------------------------------------------------
         # Iteratively filter, fit and reject outliers
@@ -1047,10 +1054,11 @@ class PPXFFit(StellarKinematicsFit):
                 warnings.warn('There are masked template pixels!')
             result = self._run_fit_iteration(obj_flux_filt, obj_ferr_filt, self.spectrum_start,
                                              self.spectrum_end, self.base_velocity,
-                                             tpl_flux_filt.data, obj_to_fit=obj_to_fit,
-                                             tpl_to_use=tpl_to_use_filt, plot=plot,
-                                             degree=self.filt_degree, mdegree=self.filt_mdegree,
-                                             dof=self.filt_dof)
+                                             tpl_flux_filt.data, self.guess_kin,
+                                             self.fixed_kinematics, obj_to_fit=obj_to_fit,
+                                             tpl_to_use=tpl_to_use_filt, degree=self.filt_degree,
+                                             mdegree=self.filt_mdegree, dof=self.filt_dof,
+                                             plot=plot)
 
             if i == self.filter_iterations - 1:
                 break
@@ -1071,8 +1079,8 @@ class PPXFFit(StellarKinematicsFit):
         # with a multiplicative polynomial
         result = self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
                                          self.spectrum_end, self.base_velocity, templates,
-                                         obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use, plot=plot,
-                                         fixed_kin=best_fit_kin)
+                                         best_fit_kin, True, obj_to_fit=obj_to_fit,
+                                         tpl_to_use=tpl_to_use, plot=plot)
 
         # Replace the kinematic errors
         for i in range(len(result)):
@@ -1198,7 +1206,7 @@ class PPXFFit(StellarKinematicsFit):
         model_template = numpy.empty((self.nobj, self.tpl_flux.shape[1]), dtype=float)
         start = numpy.empty(self.nobj, dtype=int)
         end = numpy.empty(self.nobj, dtype=int)
-        old_guess_kin = self.guess_kin.copy()
+        guess_kin = self.guess_kin.copy()
         model_tpl_to_use = numpy.zeros((self.nobj, self.nobj), dtype=bool)
         res_match_offset = numpy.zeros(self.nobj, dtype=float)
 
@@ -1292,22 +1300,20 @@ class PPXFFit(StellarKinematicsFit):
             model_matched_sres[i,end[i]:] = 0.0
             model_matched_sres[i,end[i]:] = numpy.ma.masked
 
-            self.guess_kin[i,0] = numpy.log(redshift+1)*astropy.constants.c.to('km/s').value
-            self.guess_kin[i,1] = 50        # !! HARDCODED !!
+            guess_kin[i,0] = numpy.log(redshift+1)*astropy.constants.c.to('km/s').value
+            guess_kin[i,1] = 50        # !! HARDCODED !!
         
         # Fit the model to the resolution-matched model
         model_ferr = numpy.ma.ones(self.obj_flux.shape, dtype=float)
         model_ferr[ numpy.ma.getmaskarray(model_matched_sres) ] = numpy.ma.masked
         result_corr = self._run_fit_iteration(model_matched_sres, model_ferr, start, end,
-                                              self.base_velocity, model_template,
-                                              obj_to_fit=self.obj_to_fit,
+                                              self.base_velocity, model_template, guess_kin,
+                                              False, obj_to_fit=self.obj_to_fit,
                                               tpl_to_use=model_tpl_to_use)#, #degree=-1, mdegree=0,
                                               #plot=True)
 
 #        print([rc.kin[1] for rc in result_corr])
 #        print(res_match_offset)
-
-        self.guess_kin = old_guess_kin
 
         dispersion_correction_err = numpy.array([ rc.fit_failed() or rc.reached_maxiter()
                                                                         for rc in result_corr ])
@@ -1885,13 +1891,17 @@ class PPXFFit(StellarKinematicsFit):
         self.mdegree = mdegree
         self.filt_degree = filt_degree
         self.filt_mdegree = filt_mdegree
-        self.moments = moments
+        self.moments = numpy.absolute(moments)
+        self.fixed_kinematics = moments < 0
         self.dof = self.moments + max(self.mdegree, 0)
         if self.degree >= 0:
             self.dof += self.degree+1
         self.filt_dof = self.moments + max(self.filt_mdegree, 0)
         if self.filt_degree >= 0:
             self.filt_dof += self.filt_degree+1
+        if self.fixed_kinematics:
+            self.dof -= self.moments
+            self.filt_dof -= self.moments
 
         #---------------------------------------------------------------
         # Report the input checks/results
@@ -1906,6 +1916,8 @@ class PPXFFit(StellarKinematicsFit):
                                                                             *self.sigma_limits))
             log_output(self.loggers, 1, logging.INFO, 'Iteration mode: {0}'.format(
                                                                             self.iteration_mode))
+            log_output(self.loggers, 1, logging.INFO, 'Kinematics fixed: {0}'.format(
+                                                                            self.fixed_kinematics))
             log_output(self.loggers, 2, logging.INFO, 'Model degrees of freedom: {0}'.format(
                                                                             self.dof+self.ntpl))
             if self.iteration_mode == 'fit_reject_filter':
