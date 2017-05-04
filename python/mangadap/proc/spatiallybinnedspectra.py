@@ -1326,7 +1326,7 @@ class SpatiallyBinnedSpectra:
             # - If the user wants the single resolution vector for the
             #   entire cube (spec_res = cube), then that extension is
             #   defined explicitly
-            # - Currently the only other options is spec_res=spaxel.  in
+            # - Currently the only other options is spec_res=spaxel.  In
             #   that case, the extension is set to None so that the
             #   DRPFits class can properly decide which data to return
             #   based on whether or not the DISP extension is present.

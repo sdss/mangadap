@@ -1210,7 +1210,8 @@ class StellarContinuumModel:
         min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
         max_good_pix = numpy.ma.amax(pix, axis=dispaxis)
         for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
-            if isinstance(s, numpy.ma.core.MaskedConstant) or isinstance(e, numpy.ma.core.MaskedConstant):
+            if isinstance(s, numpy.ma.core.MaskedConstant) \
+                    or isinstance(e, numpy.ma.core.MaskedConstant):
                 if not quiet:
                     warnings.warn('Encountered full continuum fit is masked.')
                 continue

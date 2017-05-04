@@ -475,7 +475,7 @@ class DAPFitsUtil:
 
         The data type of the output arrays is set by the input type if
         the provided dtype is None; otherwise, the code attempts to case
-        each output cube accordint to each element of dtype.
+        each output map according to each element of dtype.
 
         Returns a tuple if the number of arrays is larger than one so
         that they can be caught by individual variables.

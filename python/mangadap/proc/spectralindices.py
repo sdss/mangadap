@@ -436,9 +436,9 @@ class BandheadIndices:
         n = numpy.ma.zeros(self.nindx, dtype=numpy.float)
         d = numpy.ma.zeros(self.nindx, dtype=numpy.float)
         n[blue_n] = self.blue_continuum[blue_n]
-        d[~blue_n] = self.blue_continuum[~blue_n]
-        n[~blue_n] = self.red_continuum[~blue_n]
         d[blue_n] = self.red_continuum[blue_n]
+        n[~blue_n] = self.red_continuum[~blue_n]
+        d[~blue_n] = self.blue_continuum[~blue_n]
 
         nerr = numpy.ma.zeros(self.nindx)
         derr = numpy.ma.zeros(self.nindx)
@@ -1210,12 +1210,12 @@ class SpectralIndices:
                         else ~bhddb.dummy & (bhddb['integrand'] == 'fnu')
         good_bhd_fnu = numpy.zeros(nindx, dtype=numpy.bool)
         if nbhd > 0:
-            good_bhd_fnu[:nbhd][bhd_fnu] = True
+            good_bhd_fnu[nabs:][bhd_fnu] = True
         bhd_flambda = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
                         else ~bhddb.dummy & (bhddb['integrand'] == 'flambda')
         good_bhd_flambda = numpy.zeros(nindx, dtype=numpy.bool)
         if nbhd > 0:
-            good_bhd_flambda[:nbhd][bhd_flambda] = True
+            good_bhd_flambda[nabs:][bhd_flambda] = True
 
         # Initialize the output data
         measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))

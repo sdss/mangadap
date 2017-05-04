@@ -1265,6 +1265,7 @@ class DRPFits:
             raise ValueError('No extension: {0}'.format(ext))
 
         if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
+#            print('using DISP')
             disp = self.copy_to_array(ext='DISP') if toarray else \
                         numpy.ma.MaskedArray(self.hdu['DISP'].data.copy())
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
@@ -1285,8 +1286,10 @@ class DRPFits:
                 _sres = sres.reshape(self.nspec, -1)
                 for i in range(self.nspec):
                     _sres[i,:] = interpolate_masked_vector(_sres[i,:])
-            return _sres.reshape(sres.shape)
+                sres = _sres.reshape(sres.shape)
+            return sres
         elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
+#            print('using SPECRES')
             sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
                                                         * numpy.prod(self.spatial_shape)))
             return sres if toarray else sres.reshape(*self.spatial_shape,self.nwave)
@@ -1997,6 +2000,8 @@ class DRPFits:
 #        var = numpy.zeros(self.nspec, dtype=numpy.float64)
 #        indx = numpy.where(self.hdu['IVAR'].data[:,channel] > 0.)
 #        var[indx] = 1.0/self.hdu['IVAR'].data[indx,channel]
+
+        # TODO: Change to using Covariance.from_matrix_multiplication
 
         # Set the covariance matrix of the spectra to be a diagonal
         # matrix with the provided variances

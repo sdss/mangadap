@@ -62,10 +62,13 @@ KBW (??         ): tag 2.1
       galaxy and template spectra.  New version uses a fit of the
       best-fitting model template to a resolution-matched version of
       itself. 
+    - MAPS and LOGCUBE files set to single-precision float for survey
+      output.
+    - BINID in MAPS and LOGCUBE files set to int32 type for survey
+      output.
 
 TO FIX:
     - emission-line moment masks
-    - BINID bitpix
     - Some config examples are out of date!
 
 --------------------------------------------------------------------------------

@@ -352,13 +352,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
-                            loggers=loggers)
+                            loggers=loggers, single_precision=True)
 
         construct_cube_file(drpf, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
-                            loggers=loggers)
+                            loggers=loggers, single_precision=True)
 
     #-------------------------------------------------------------------
     # End log

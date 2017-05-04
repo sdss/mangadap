@@ -21,9 +21,13 @@ the MaNGA Data Analysis Pipeline (DAP).
     | **08 Jun 2016**: Original Implementation by K. Westfall (KBW)
     | **25 Aug 2016**: (KBW) Added :func:`DAPFits.unique_indices`,
         :func:`DAPFits.unique_mask`, and :func:`DAPFits.channel_map`
+    | **Feb 2017**: (KBW) Merged construct maps and cube functions here
+        and removed dapmaps.py and dapcube.py.
+    | ** 3 May 2017**: (KBW) Allow output maps and cube types to be
+        single-precision (float32) floats, and changed BINID from int
+        (defaults to 64-bit) to int32.
 
 .. todo::
-    - Merge this with dapmaps.py and dapcube.py?
     - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
       not just the former.
 
@@ -576,12 +580,15 @@ class construct_maps_file:
     def __init__(self, drpf, obs=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
                  nsa_redshift=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False):
+                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False,
+                 single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
         self.loggers = None if loggers is None else loggers
         self.quiet = quiet
+
+        self.float_dtype = 'float32' if single_precision else 'float'
 
         #---------------------------------------------------------------
         # Check input types
@@ -667,7 +674,7 @@ class construct_maps_file:
         # Construct the BINID extension
         binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum,
                                              emission_line_moments, emission_line_model,
-                                             spectral_indices)
+                                             spectral_indices, dtype='int32')
         # Binned spectra:
         bspeclist = self.binned_spectra_maps(prihdr, obs, binned_spectra)
         # Stellar-continuum fits:
@@ -779,47 +786,47 @@ class construct_maps_file:
                                     if output_file is None else str(output_file)
 
 
-    def _set_multichannel_arrays(self, emission_line_moments, emission_line_model,
-                                 spectral_indices):
-    
-        self.multichannel_arrays = [ 'SPX_SKYCOO', 'SPX_ELLCOO', 'BINID', 'BIN_LWSKYCOO',
-                                     'BIN_LWELLCOO', 'STELLAR_CONT_FRESID' ]
-        if emission_line_moments.nmom > 1:
-            self.multichannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
-                                          'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
-        if emission_line_model.neml > 1:
-            self.multichannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
-                                          'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
-                                          'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
-                                          'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-                                          'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
-        if spectral_indices.nindx > 1:
-            self.multichannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
-                                          'SPECINDEX_CORR' ]
-
-
-
-    def _set_singlechannel_arrays(self, emission_line_moments, emission_line_model,
-                                  spectral_indices):
-    
-        self.singlechannel_arrays = [ 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR', 'BIN_AREA',
-                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
-                                      'BIN_SNR', 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
-                                      'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
-                                      'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
-                                      'STELLAR_CONT_RCHI2' ]
-        if emission_line_moments.nmom == 1:
-            self.singlechannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
-                                           'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
-        if emission_line_model.neml == 1:
-            self.singlechannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
-                                           'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
-                                           'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
-                                           'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-                                           'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
-        if spectral_indices.nindx == 1:
-            self.singlechannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
-                                           'SPECINDEX_CORR' ]
+#    def _set_multichannel_arrays(self, emission_line_moments, emission_line_model,
+#                                 spectral_indices):
+#    
+#        self.multichannel_arrays = [ 'SPX_SKYCOO', 'SPX_ELLCOO', 'BINID', 'BIN_LWSKYCOO',
+#                                     'BIN_LWELLCOO', 'STELLAR_CONT_FRESID' ]
+#        if emission_line_moments.nmom > 1:
+#            self.multichannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
+#                                          'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+#        if emission_line_model.neml > 1:
+#            self.multichannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
+#                                          'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
+#                                          'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
+#                                          'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+#                                          'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
+#        if spectral_indices.nindx > 1:
+#            self.multichannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
+#                                          'SPECINDEX_CORR' ]
+#
+#
+#
+#    def _set_singlechannel_arrays(self, emission_line_moments, emission_line_model,
+#                                  spectral_indices):
+#    
+#        self.singlechannel_arrays = [ 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR', 'BIN_AREA',
+#                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
+#                                      'BIN_SNR', 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
+#                                      'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
+#                                      'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
+#                                      'STELLAR_CONT_RCHI2' ]
+#        if emission_line_moments.nmom == 1:
+#            self.singlechannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
+#                                           'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+#        if emission_line_model.neml == 1:
+#            self.singlechannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
+#                                           'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
+#                                           'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
+#                                           'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+#                                           'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
+#        if spectral_indices.nindx == 1:
+#            self.singlechannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
+#                                           'SPECINDEX_CORR' ]
 
 
     def _consolidate_donotuse(self, mask):
@@ -1096,20 +1103,23 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # On-sky coordinates
-        spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape, -1)
+        spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape,
+                                                                      -1).astype(self.float_dtype)
         # Elliptical coordinates
         spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
         spx_ellcoo = numpy.repeat(spx_ellcoo, [2,1], axis=2)
         if obs is not None:
             spx_ellcoo[:,:,1] /= obs['reff']
+        spx_ellcoo = spx_ellcoo.astype(self.float_dtype)
         # Bin signal
-        signal = rdxqa['SPECTRUM'].data['SIGNAL'].copy().reshape(self.spatial_shape)
+        signal = rdxqa['SPECTRUM'].data['SIGNAL'].copy().reshape(self.spatial_shape
+                                                                    ).astype(self.float_dtype)
         # Bin inverse variance
         ivar = rdxqa['SPECTRUM'].data['VARIANCE'].copy().reshape(self.spatial_shape)
-        ivar = numpy.ma.power(ivar, -1).filled(0.0)
+        ivar = numpy.ma.power(ivar, -1).filled(0.0).astype(self.float_dtype)
         # Bin S/N
-        snr = rdxqa['SPECTRUM'].data['SNR'].copy().reshape(self.spatial_shape)
-
+        snr = rdxqa['SPECTRUM'].data['SNR'].copy().reshape(self.spatial_shape
+                                                                ).astype(self.float_dtype)
         # Organize the extension data
         data = [ spx_skycoo, spx_ellcoo, signal, ivar, snr ]
 
@@ -1184,15 +1194,17 @@ class construct_maps_file:
                 binned_spectra['BINS'].data['SNR']
               ]
 
+        dtypes = [self.float_dtype]*len(arr)
+
         # Bin index
         bin_indx = binned_spectra['BINID'].data.copy().ravel()
 
         # Remap the data to the DRP spatial shape
-        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         # Get the normalized radius
         if obs is not None:
-            arr[3] /= obs['reff']
+            arr[3] = (arr[3]/obs['reff']).astype(self.float_dtype)
 
         # Organize the extension data
         data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:5]).transpose(1,2,0) ] \
@@ -1240,8 +1252,11 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
                                                 hduclas2='QUALITY', err=True,
                                                 bit_type=self.bitmask.minimum_dtype()),
-                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
-                                                bunit='km/s'),
+#                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
+#                                                bunit='km/s'),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_SIGMACORR',
+                                                multichannel=True, bunit='km/s',
+                                                channel_names=['resolution difference', 'fit']),
                 DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_CONT_FRESID',
                                                 multichannel=True,
                                                 channel_names=['68th percentile',
@@ -1260,12 +1275,15 @@ class construct_maps_file:
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
 # FIX THIS !!
+                stellar_continuum['PAR'].data['SIGMACORR_SRES'],
                 stellar_continuum['PAR'].data['SIGMACORR_EMP'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
                 stellar_continuum['PAR'].data['FABSRESID'][:,3],
                 stellar_continuum['PAR'].data['RCHI2'],
                 stellar_continuum['PAR'].data['MASK']
               ]
+
+        dtypes = [self.float_dtype]*(len(arr)-1) + [arr[-1].dtype.name]
 
         # Bin index
         bin_indx = stellar_continuum['BINID'].data.copy().ravel()
@@ -1281,7 +1299,7 @@ class construct_maps_file:
 #        exit()
 
         # Remap the data to the DRP spatial shape
-        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
         
         # Get the masks
         vel_mask = self._stellar_continuum_mask_to_map_mask(stellar_continuum, arr[-1].copy())
@@ -1289,13 +1307,20 @@ class construct_maps_file:
                                                             for_dispersion=True)
 
         # Organize the extension data
+#        data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
+#                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
         data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
+                    + [ numpy.array(arr[4:6]).transpose(1,2,0),
+                        numpy.array(arr[6:8]).transpose(1,2,0), arr[8] ]
 #        for i,d in enumerate(data):
 #            if len(d.shape) == 2:
 #                print(i+1)
 #                pyplot.imshow(d, origin='lower', interpolation='nearest')
 #                pyplot.show()
+#        exit()
+
+#        print(data, hdr, ext)
+#        print(len(data), len(hdr), len(ext))
 #        exit()
 
         #---------------------------------------------------------------
@@ -1365,11 +1390,14 @@ class construct_maps_file:
         arr += [ emission_line_moments['ELMMNTS'].data['MASK'][:,m]
                     for m in range(emission_line_moments.nmom) ]
 
+        dtypes = [self.float_dtype]*(len(arr)-emission_line_moments.nmom) \
+                        + [a.dtype.name for a in arr[-emission_line_moments.nmom:]]
+
         # Bin index
         bin_indx = emission_line_moments['BINID'].data.copy().ravel()
 
         # Remap the data to the DRP spatial shape
-        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         data = [ numpy.array(arr[emission_line_moments.nmom*i:
                                  emission_line_moments.nmom*(i+1)]).transpose(1,2,0) 
@@ -1486,11 +1514,14 @@ class construct_maps_file:
         arr += [ emission_line_model['EMLDATA'].data['MASK'][:,m]
                     for m in range(emission_line_model.neml) ]
 
+        dtypes = [self.float_dtype]*(len(arr)-emission_line_model.neml) \
+                        + [a.dtype.name for a in arr[-emission_line_model.neml:]]
+
         # Bin index
         bin_indx = emission_line_model['BINID'].data.copy().ravel()
 
         # Remap the data to the DRP spatial shape
-        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         data = [ numpy.array(arr[emission_line_model.neml*i:
                                  emission_line_model.neml*(i+1)]).transpose(1,2,0) \
@@ -1565,11 +1596,15 @@ class construct_maps_file:
         arr += [ spectral_indices['SINDX'].data['INDX_DISPCORR'][:,m]
                     for m in range(spectral_indices.nindx) ]
 
+        dtypes = [self.float_dtype]*(len(arr)-2*spectral_indices.nindx) \
+                        + [a.dtype.name for a in arr[-2*spectral_indices.nindx:-spectral_indices.nindx]] \
+                        + [self.float_dtype]*spectral_indices.nindx
+
         # Bin index
         bin_indx = spectral_indices['BINID'].data.copy().ravel()
 
         # Remap the data to the DRP spatial shape
-        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr))
+        arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         data = [ numpy.array(arr[spectral_indices.nindx*i:
                                  spectral_indices.nindx*(i+1)]).transpose(1,2,0) \
@@ -1600,12 +1635,14 @@ class construct_cube_file:
     """
     def __init__(self, drpf, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
                  dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False):
+                 output_file=None, clobber=True, loggers=None, quiet=False, single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
         self.loggers = None if loggers is None else loggers
         self.quiet = quiet
+
+        self.float_dtype = 'float32' if single_precision else 'float'
 
         #---------------------------------------------------------------
         # Check input types
@@ -1685,7 +1722,7 @@ class construct_cube_file:
 
         # Get the BINIDs
         binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
-                                             emission_line_model, None)
+                                             emission_line_model, None, dtype='int32')
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
@@ -1930,19 +1967,21 @@ class construct_cube_file:
         # Reddened flux data
         flux, ivar = binned_spectra.galext.apply(binned_spectra_3d_hdu['FLUX'].data, deredden=False,
                                                  ivar=binned_spectra_3d_hdu['IVAR'].data)
+        flux = flux.astype(self.float_dtype)
+        ivar = ivar.astype(self.float_dtype)
         # Best-fitting composite model
         model = stellar_continuum_3d_hdu['FLUX'].data + emission_line_model_3d_hdu['FLUX'].data \
                     + emission_line_model_3d_hdu['BASE'].data
         # with reddening
-        model = binned_spectra.galext.apply(model, deredden=False)
+        model = binned_spectra.galext.apply(model, deredden=False).astype(self.float_dtype)
 
         # Spectral mask
         mask = self._get_model_and_data_mask(binned_spectra, binned_spectra_3d_hdu,
                                                  stellar_continuum, stellar_continuum_3d_hdu,
                                                  emission_line_model, emission_line_model_3d_hdu)
 
-        data = [ flux, ivar, mask, binned_spectra['WAVE'].data.copy(),
-                 binned_spectra['REDCORR'].data.copy(), model ]
+        data = [ flux, ivar, mask, binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
+                 binned_spectra['REDCORR'].data.copy().astype(self.float_dtype), model ]
 
         # Return the primary header and the list of HDUs
         return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
@@ -2010,14 +2049,14 @@ class construct_cube_file:
         # Get the mask data
         mask = self._get_emission_line_model_mask(emission_line_model, emission_line_model_3d_hdu)
 
-        data = [ model, base, mask ]
+        data = [ model.astype(self.float_dtype), base.astype(self.float_dtype), mask ]
 
         return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
 
 #-----------------------------------------------------------------------
 def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_line_moments,
-                             emission_line_model, spectral_indices):
+                             emission_line_model, spectral_indices, dtype=None):
 
     """
     Combine the bin IDs from the different analysis steps into a single
@@ -2047,7 +2086,9 @@ def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_l
     if spectral_indices is not None:
         binid[:,:,4] = spectral_indices['BINID'].data
 
-    return DAPFitsUtil.list_of_image_hdus([ binid ], [ hdr ], [ 'BINID' ])
+    _dtype = 'int' if dtype is None else dtype
+
+    return DAPFitsUtil.list_of_image_hdus([ binid.astype(_dtype) ], [ hdr ], [ 'BINID' ])
 
 
 def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
