@@ -45,7 +45,7 @@ A class hierarchy that fits the emission lines.
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .elric import Elric, ElricPar, GaussianLineProfile
-        from .util import _select_proc_method
+        from .util import select_proc_method
 
 *Class usage examples*:
     Add examples!
@@ -95,11 +95,10 @@ from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar, GaussianLineProfile
-from .util import _select_proc_method
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -324,15 +323,15 @@ class EmissionLineModel:
                  quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -345,9 +344,9 @@ class EmissionLineModel:
         Select the modeling method
         """
         # Grab the specific method
-        self.method = _select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                          available_func=available_emission_line_modeling_methods,
-                                          dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
+                                         available_func=available_emission_line_modeling_methods,
+                                         dapsrc=dapsrc)
 
         # Instantiate the artifact and emission-line databases
         self.artdb = None if self.method['artifacts'] is None else \

@@ -45,7 +45,7 @@ A class hierarchy that measures moments of the observed emission lines.
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
         from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
-        from .util import _select_proc_method
+        from .util import select_proc_method
 
 *Class usage examples*:
     Add examples!
@@ -102,11 +102,10 @@ from .bandpassfilter import passband_integral, passband_integrated_width, passba
 from .bandpassfilter import passband_integrated_mean, passband_weighted_mean, pseudocontinuum
 from .bandpassfilter import emission_line_equivalent_width
 from .spectralfitting import EmissionLineFit
-from .util import _select_proc_method
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -314,15 +313,15 @@ class EmissionLineMoments:
                      quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -335,10 +334,10 @@ class EmissionLineMoments:
         Select the database of bandpass filters.
         """
         # Grab the specific database
-        self.database = _select_proc_method(database_key, EmissionLineMomentsDef,
-                                            method_list=database_list,
-                                            available_func=available_emission_line_moment_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, EmissionLineMomentsDef,
+                                           method_list=database_list,
+                                           available_func=available_emission_line_moment_databases,
+                                           dapsrc=dapsrc)
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \

@@ -80,9 +80,6 @@ from .misc import where_not
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
-__credits__ = ['K. Westfall', 'D. Wilkinson', 'O. Steele', 'D. Thomas' ]
-
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
     Return the sampling step for the input wavelength vector.

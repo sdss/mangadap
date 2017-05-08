@@ -47,7 +47,7 @@ A class hierarchy that performs the stellar-continuum fitting.
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .ppxffit import PPXFFitPar, PPXFFit
-        from .util import _select_proc_method
+        from .util import select_proc_method
 
 *Class usage examples*:
         Add examples
@@ -111,11 +111,10 @@ from ..config.defaults import default_dap_method, default_dap_method_path
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .ppxffit import PPXFFitPar, PPXFFit
-from .util import _select_proc_method
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -437,16 +436,16 @@ class StellarContinuumModel:
                  clobber=clobber, loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
-
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
+#
 
     def __getitem__(self, key):
         return self.hdu[key]
@@ -457,10 +456,10 @@ class StellarContinuumModel:
         Select the method
         """
         # Grab the specific method
-        self.method = _select_proc_method(method_key, StellarContinuumModelDef,
-                                          method_list=method_list,
-                                        available_func=available_stellar_continuum_modeling_methods,
-                                          dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, StellarContinuumModelDef,
+                                         method_list=method_list,
+                                       available_func=available_stellar_continuum_modeling_methods,
+                                         dapsrc=dapsrc)
 
 
     def _fill_method_par(self, dapsrc=None, dapver=None, analysis_path=None, tpl_symlink_dir=None):

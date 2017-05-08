@@ -55,8 +55,6 @@ if sys.version > '3':
 import numpy
 from scipy import linalg
 
-__author__ = 'Kyle Westfall'
-
 def polygon_winding_number(polygon, point):
     """
     Determine the winding number of a 2D polygon about a point.  The

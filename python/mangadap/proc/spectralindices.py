@@ -50,7 +50,7 @@ A class hierarchy that performs the spectral-index measurements.
         from .emissionlinemodel import EmissionLineModel
         from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
         from .bandpassfilter import passband_weighted_mean
-        from .util import _select_proc_method, flux_to_fnu
+        from .util import select_proc_method, flux_to_fnu
 
 
 *Class usage examples*:
@@ -116,11 +116,10 @@ from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
 from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
 from .bandpassfilter import passband_weighted_mean, pseudocontinuum
-from .util import _select_proc_method, flux_to_fnu
+from .util import select_proc_method, flux_to_fnu
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -528,15 +527,15 @@ class SpectralIndices:
                      clobber=clobber, loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -551,10 +550,10 @@ class SpectralIndices:
 
         """
         # Grab the specific database
-        self.database = _select_proc_method(database_key, SpectralIndicesDef,
-                                            method_list=database_list,
-                                            available_func=available_spectral_index_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, SpectralIndicesDef,
+                                           method_list=database_list,
+                                           available_func=available_spectral_index_databases,
+                                           dapsrc=dapsrc)
 
         # Instantiate the artifact, absorption-index, and bandhead-index
         # databases
@@ -992,16 +991,16 @@ class SpectralIndices:
         return [ ('BINID',numpy.int),
                  ('BINID_INDEX',numpy.int),
                  ('REDSHIFT', numpy.float),
-                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), nindx),
-                 ('BCEN', numpy.float, nindx), 
-                 ('BCONT', numpy.float, nindx), 
-                 ('BCONTERR', numpy.float, nindx),
-                 ('RCEN', numpy.float, nindx), 
-                 ('RCONT', numpy.float, nindx), 
-                 ('RCONTERR', numpy.float, nindx), 
-                 ('INDX_DISPCORR', numpy.float, nindx), 
-                 ('INDX', numpy.float, nindx), 
-                 ('INDXERR', numpy.float, nindx)
+                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
+                 ('BCEN', numpy.float, (nindx,)), 
+                 ('BCONT', numpy.float, (nindx,)), 
+                 ('BCONTERR', numpy.float, (nindx,)),
+                 ('RCEN', numpy.float, (nindx,)), 
+                 ('RCONT', numpy.float, (nindx,)), 
+                 ('RCONTERR', numpy.float, (nindx,)), 
+                 ('INDX_DISPCORR', numpy.float, (nindx,)), 
+                 ('INDX', numpy.float, (nindx,)), 
+                 ('INDXERR', numpy.float, (nindx,))
                ]
 
 

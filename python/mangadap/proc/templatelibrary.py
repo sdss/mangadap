@@ -72,7 +72,7 @@ bitmasks for the template library spectra.
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
         from ..util.parser import DefaultConfig
-        from .util import _select_proc_method, HDUList_mask_wavelengths
+        from .util import select_proc_method, HDUList_mask_wavelengths
 
 .. warning::
 
@@ -246,11 +246,10 @@ from ..util.instrument import resample_vector, resample_vector_npix, spectral_re
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
 from ..util.instrument import spectrum_velocity_scale, angstroms_per_pixel
 from ..util.parser import DefaultConfig
-from .util import _select_proc_method, HDUList_mask_wavelengths
+from .util import select_proc_method, HDUList_mask_wavelengths
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -555,7 +554,6 @@ class TemplateLibrary:
             template library.
 
     Attributes:
-        version (str): Version number
         bitmask (BitMask): A BitMask object used to toggle mask values;
             see :func:`TemplateLibraryBitMask`.
         library (:class:`TemplateLibraryDef`): Parameter set required to
@@ -612,7 +610,6 @@ class TemplateLibrary:
                  directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
                  symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
-        self.version = '2.1'
         self.loggers = loggers
         self.quiet = quiet
 
@@ -675,15 +672,15 @@ class TemplateLibrary:
                                       loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the template library object by ensuring that the
-        fits file is properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the template library object by ensuring that the
+#        fits file is properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -694,7 +691,7 @@ class TemplateLibrary:
         """
         Select the library from the provided list.  Used to set
         :attr:`library`; see
-        :func:`mangadap.proc.util._select_proc_method`.
+        :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
             library_key (str): Keyword of the selected library.
@@ -709,9 +706,9 @@ class TemplateLibrary:
                 :func:`mangadap.config.defaults.default_dap_source`.
         """
         # Get the details of the selected template library
-        self.library = _select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-                                           available_func=available_template_libraries,
-                                           dapsrc=dapsrc)
+        self.library = select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
+                                          available_func=available_template_libraries,
+                                          dapsrc=dapsrc)
 
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
@@ -935,7 +932,7 @@ class TemplateLibrary:
                                   fits.ImageHDU(soff, name='SIGOFF')
                                 ])
 
-        self.hdu['PRIMARY'].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
+#        self.hdu['PRIMARY'].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
         self.hdu['PRIMARY'].header['LIBKEY'] = (self.library['key'], 'Library identifier')
 
 

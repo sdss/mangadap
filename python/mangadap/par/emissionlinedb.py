@@ -33,7 +33,7 @@ support classes and functions.
         from pydl.pydlutils.yanny import yanny
         from .parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import _select_proc_method
+        from ..proc.util import select_proc_method
         from ..config.defaults import default_dap_source
 
 *Class usage examples*:
@@ -111,10 +111,9 @@ from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from ..proc.util import _select_proc_method
+from ..proc.util import select_proc_method
 from ..config.defaults import default_dap_source
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -349,7 +348,6 @@ class EmissionLineDB(ParDatabase):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Attributes:
-        version (str): Version number
         database (str): Keyword of the selected database to use.
         neml (int): Number of emission lines in the database
 
@@ -360,13 +358,11 @@ class EmissionLineDB(ParDatabase):
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
 
-        self.version = '1.0'
-
         # Get the details of the selected database
-        self.database = _select_proc_method(database_key, SpectralFeatureDBDef,
-                                            method_list=emldb_list,
-                                            available_func=available_emission_line_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
+                                           method_list=emldb_list,
+                                           available_func=available_emission_line_databases,
+                                           dapsrc=dapsrc)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

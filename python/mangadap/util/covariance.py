@@ -191,8 +191,6 @@ from matplotlib import pyplot
 
 from .fitsutil import DAPFitsUtil
 
-__author__ = 'Kyle B. Westfall'
-
 class Covariance:
     r"""
     A general utility for storing, manipulating, and file I/O of large

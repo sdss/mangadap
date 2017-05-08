@@ -44,8 +44,6 @@ from scipy import interpolate, sparse
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 
-__author__ = 'Kyle Westfall'
-
 def high_pass_filter(flux, dw=0, k=None, Dw=None):
     """
     Pulled from FIREFLY's hpf() function and edited on 17 Nov 2016.

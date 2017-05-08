@@ -1,10 +1,4 @@
 
-__author__ = 'Kyle B. Westfall'
-__copyright__ = '(c) 2017, SDSS-IV/MaNGA Pipeline Group'
-__credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Michele Cappellari' ]
-__license__ = 'BSD3'
-__version__ = '2.1'
-__maintainer__ = 'Kyle B. Westfall'
-__email__ = 'westfall@ucolick.org'
-__status__ = 'Development'
+from .util.version import __author__, __copyright__, __credits__, __license__, __version__
+from .util.version import __maintainer__, __email__, __status__
 

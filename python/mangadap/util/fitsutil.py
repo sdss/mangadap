@@ -71,8 +71,7 @@ from .bitmask import BitMask
 from .log import log_output
 from .fileio import compress_file, create_symlink
 from .pixelmask import SpectralPixelMask
-
-__author__ = 'Kyle B. Westfall'
+from .version import __version__
 
 class DAPFitsUtil:
     r"""
@@ -141,8 +140,7 @@ class DAPFitsUtil:
         hdr['VERSAST'] = (astropy.__version__, 'Astropy version')
         import pydl
         hdr['VERSPYDL'] = (pydl.__version__, 'pydl version')
-        import mangadap
-        hdr['VERSDAP'] = (mangadap.__version__, 'MaNGA DAP version')
+        hdr['VERSDAP'] = (__version__, 'MaNGA DAP version')
 
         return hdr
 

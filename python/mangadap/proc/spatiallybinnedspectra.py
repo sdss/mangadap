@@ -117,11 +117,10 @@ from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
-from .util import _select_proc_method #, _fill_vector
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -534,15 +533,15 @@ class SpatiallyBinnedSpectra:
                          symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -556,10 +555,10 @@ class SpatiallyBinnedSpectra:
 
         """
         # Grab the specific method
-        self.method = _select_proc_method(method_key, SpatiallyBinnedSpectraDef,
-                                          method_list=method_list,
-                                          available_func=available_spatial_binning_methods,
-                                          dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, SpatiallyBinnedSpectraDef,
+                                         method_list=method_list,
+                                         available_func=available_spatial_binning_methods,
+                                         dapsrc=dapsrc)
 
 
     def _fill_method_par(self, good_spec):

@@ -50,8 +50,6 @@ from pydl.pydlutils.yanny import yanny
 
 from .parset import ParSet, ParDatabase
 
-__author__ = 'Kyle B. Westfall'
-
 class AnalysisPlan(ParSet):
     """
     Generic class to handle MaNGA DAP analysis plans.

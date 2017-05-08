@@ -71,7 +71,6 @@ from .parset import ParSet
 from ..config.defaults import default_dap_source
 from ..util.parser import DefaultConfig
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 

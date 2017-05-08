@@ -54,9 +54,6 @@ from matplotlib import pyplot
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import MaxNLocator
 
-__author__ = 'Kyle B. Westfall'
-__credits__ = [ 'K. Westfall', 'M. Cappellari' ]
-
 ##############################################################################
 
 def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow_prep=False,

@@ -73,8 +73,6 @@ from .proc.spectralindices import SpectralIndices
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle Westfall'
-
 #-----------------------------------------------------------------------
 class DAPQualityBitMask(BitMask):
     """
@@ -224,15 +222,15 @@ class DAPFits:
             self.read_par()
 
 
-    def __del__(self):
-        """
-        Destroy the dapfile object, ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Destroy the dapfile object, ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):

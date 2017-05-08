@@ -60,8 +60,6 @@ if sys.version > '3':
 
 import numpy
 
-__author__ = 'Kyle B. Westfall'
-
 class ParSet:
     """
 

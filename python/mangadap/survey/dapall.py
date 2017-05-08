@@ -53,7 +53,7 @@ from ..par.analysisplan import AnalysisPlanSet
 from .drpcomplete import DRPComplete
 from ..config import defaults
 from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, channel_dictionary
-from ..proc.util import _select_proc_method
+from ..proc.util import select_proc_method
 from ..proc.absorptionindexdb import AbsorptionIndexDB
 from ..proc.bandheadindexdb import BandheadIndexDB
 from ..proc.emissionlinedb import EmissionLineDB
@@ -61,8 +61,6 @@ from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_
 from ..proc.emissionlinemodel import EmissionLineModelDef, available_emission_line_modeling_methods
 
 from matplotlib import pyplot
-
-__author__ = 'Kyle Westfall'
 
 def growth(a, growth_fracs, default=-9999.):
     _a = a.compressed() if isinstance(a, numpy.ma.MaskedArray) else numpy.atleast_1d(a).ravel()
@@ -120,9 +118,6 @@ class DAPall:
         # Check the input type
         if not isinstance(plan, AnalysisPlanSet):
             raise TypeError('Input plan must have type AnalysisPlanSet.')
-
-        # Set version
-        self.version = '0.1'
 
         # Path definitions
         self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
@@ -187,8 +182,8 @@ class DAPall:
 
     @staticmethod
     def _number_of_spectral_indices(key, dapsrc=None):
-        db = _select_proc_method(key, SpectralIndicesDef,
-                                 available_func=available_spectral_index_databases, dapsrc=dapsrc)
+        db = select_proc_method(key, SpectralIndicesDef,
+                                available_func=available_spectral_index_databases, dapsrc=dapsrc)
         nabs = 0 if db['absindex'] is None \
                     else AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc).nsets
         nbhd = 0 if db['bandhead'] is None \
@@ -198,9 +193,9 @@ class DAPall:
 
     @staticmethod
     def _number_of_emission_lines(key, dapsrc=None):
-        db = _select_proc_method(key, EmissionLineModelDef,
-                                 available_func=available_emission_line_modeling_methods,
-                                 dapsrc=dapsrc)
+        db = select_proc_method(key, EmissionLineModelDef,
+                                available_func=available_emission_line_modeling_methods,
+                                dapsrc=dapsrc)
         return EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets
 
 
@@ -307,17 +302,17 @@ class DAPall:
                  ('HA_DISP_HI', numpy.float),
                  ('HA_DISP_HI_CLIP', numpy.float),
                  ('EML_NAME', '<U{0:d}'.format(self.str_len['EML_NAME']*neml)),
-                 ('EML_FLUX_TOTAL', numpy.float, neml),
-                 ('EML_SB_1RE', numpy.float, neml),
-                 ('EML_SB_PEAK', numpy.float, neml),
-#                 ('EML_EW_PEAK', numpy.float, neml),
+                 ('EML_FLUX_TOTAL', numpy.float, (neml,)),
+                 ('EML_SB_1RE', numpy.float, (neml,)),
+                 ('EML_SB_PEAK', numpy.float, (neml,)),
+#                 ('EML_EW_PEAK', numpy.float, (neml,)),
                  ('SPINDX_NAME', '<U{0:d}'.format(self.str_len['SPINDX_NAME']*nindx)),
-                 ('SPINDX_LO', numpy.float, nindx),
-                 ('SPINDX_MD', numpy.float, nindx),
-                 ('SPINDX_HI', numpy.float, nindx),
-                 ('SPINDX_LO_CLIP', numpy.float, nindx),
-                 ('SPINDX_MD_CLIP', numpy.float, nindx),
-                 ('SPINDX_HI_CLIP', numpy.float, nindx)#,
+                 ('SPINDX_LO', numpy.float, (nindx,)),
+                 ('SPINDX_MD', numpy.float, (nindx,)),
+                 ('SPINDX_HI', numpy.float, (nindx,)),
+                 ('SPINDX_LO_CLIP', numpy.float, (nindx,)),
+                 ('SPINDX_MD_CLIP', numpy.float, (nindx,)),
+                 ('SPINDX_HI_CLIP', numpy.float, (nindx,))#,
 #                 ('SFR', numpy.float)
                ]
 
@@ -691,7 +686,7 @@ class DAPall:
         hdr['DATE'] = (time.strftime('%Y-%m-%d',time.gmtime()), 'UTC date created')
         hdr['DRPVER'] = (self.drpver, 'DRP version')
         hdr['DAPVER'] = (self.dapver, 'DAP version')
-        hdr['DAPALLV'] = (self.version, 'DAPall code version')
+#        hdr['DAPALLV'] = (self.version, 'DAPall code version')
 
 #        print(db['EML_NAME'].shape)
 #        print(db['EML_NAME'].dtype)

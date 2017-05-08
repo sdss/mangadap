@@ -68,12 +68,8 @@ import os.path
 import warnings
 from pydl.pydlutils.yanny import yanny
 
-#from ..util.yanny import yanny
 from .parset import ParSet
 from ..drpfits import DRPFits
-
-__author__ = 'Kyle B. Westfall'
-
 
 class ObsInputPar(ParSet):
     r"""

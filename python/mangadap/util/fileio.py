@@ -70,9 +70,6 @@ import numpy
 from astropy.io import fits
 from .log import log_output
 
-__author__ = 'Kyle B. Westfall'
-
-
 def wavelength_vector(npix, header, log10=False):
     """
     Return a vector with wavelength coordinates drawn from the WCS

@@ -58,7 +58,6 @@ import astropy.constants
 from ..util.bitmask import BitMask
 from ..util.constants import constants
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 

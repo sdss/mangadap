@@ -67,6 +67,8 @@ KBW (??         ): tag 2.1
     - BINID in MAPS and LOGCUBE files set to int32 type for survey
       output.
 
+    - General improvements to the documentation
+
 TO FIX:
     - emission-line moment masks
     - Some config examples are out of date!

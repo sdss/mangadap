@@ -17,7 +17,7 @@ Provides the main wrapper function for the MaNGA DAP.
         from __future__ import print_function
         from __future__ import absolute_import
         from __future__ import unicode_literals
-    
+
         import sys
         if sys.version > '3':
             long = int
@@ -26,19 +26,37 @@ Provides the main wrapper function for the MaNGA DAP.
         import resource
         import time
         import os
-        from ..drpfits import DRPFits
-        from ..util.log import init_DAP_logging, module_logging, log_output
-        from ..proc.reductionassessments import ReductionAssessment
+        import warnings
+        import numpy
 
+        import astropy.constants
+
+        from ..config.defaults import default_drp_version, default_dap_version
+        from ..config.defaults import default_analysis_path, default_dap_method
+        from ..config.defaults import default_dap_method_path
+        from ..util.log import init_DAP_logging, module_logging, log_output
+        from ..util.version import __version__
+        from ..drpfits import DRPFits
+        from ..par.obsinput import ObsInputPar
+        from ..par.analysisplan import AnalysisPlanSet
+        from ..proc.reductionassessments import ReductionAssessment
+        from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from ..proc.stellarcontinuummodel import StellarContinuumModel
+        from ..proc.emissionlinemoments import EmissionLineMoments
+        from ..proc.emissionlinemodel import EmissionLineModel
+        from ..proc.spectralindices import SpectralIndices
+        from ..dapfits import construct_maps_file, construct_cube_file
+        
 *Usage*:
     Add usage examples
 
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.
     | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!
+    | **05 May 2017: (KBW) Clean up documentation; use import to get
+        __version__
 
 """
-
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -58,9 +76,10 @@ import numpy
 import astropy.constants
 
 from ..config.defaults import default_drp_version, default_dap_version
-from ..config.defaults import default_analysis_path, default_dap_method, default_dap_method_path
+from ..config.defaults import default_analysis_path, default_dap_method
+from ..config.defaults import default_dap_method_path
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..util.fitsutil import DAPFitsUtil
+from ..util.version import __version__
 from ..drpfits import DRPFits
 from ..par.obsinput import ObsInputPar
 from ..par.analysisplan import AnalysisPlanSet
@@ -72,6 +91,8 @@ from ..proc.emissionlinemodel import EmissionLineModel
 from ..proc.spectralindices import SpectralIndices
 from ..dapfits import construct_maps_file, construct_cube_file
 
+# For testing/debugging
+from ..util.fitsutil import DAPFitsUtil
 from matplotlib import pyplot
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
@@ -79,50 +100,49 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     """
     Main wrapper function for the MaNGA DAP.
 
-    .. todo::
-
-        The aim is for this to be called once per ${plate}-${ifudesign}
-        (set by obs), ${binmode}_${tpl}_${contmode} (set by plan)
-        combination.  I.e., any set of plans are only done to construct
-        a *single* consolidated file.  However, at the moment, each
-        individual plan creates the consolidated file.  Incorporating
-        the results from multiple plans into a single consolidated file
-        requires some development.
+    This function is designed to be called once per PLATE-IFUDESIGN as
+    set by the provided :class:`mangadap.par.obsinput.ObsInputPar`
+    instance.  The :class:`mangadap.par.analysisplan.AnalysisPlanSet`
+    instance sets the types of analyses to perform on this observation.
+    Each analysis plan results in a MAPS and model LOGCUBE file.
 
     The procedure is as follows:
-
         - Read the DRP fits file specified by `obs`
         - For each plan in `plan`:
-
-            - Construct the S/N in the DRP cube (plan dependent because
-              wavelength range for S/N can change)
-            - Bin the spectra
-            - Fit the stellar continuum for stellar kinematics
-            - Measure the emission-line moments
-            - Fit parameterized line profiles to the emission lines
+            - Determine basic assessments of the data, including the S/N
+              and spaxel coordinates.  See
+              :class:`mangadap.proc.reductionassessments.ReductionAssessment`.
+            - Bin the spectra.  See
+              :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+            - Fit the stellar continuum for stellar kinematics.  See
+              :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`.
+            - Measure the emission-line moments.  See
+              :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`.
+            - Fit parameterized line profiles to the emission lines.
+              See
+              :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.
             - Subtract the fitted emission-line models and measure the
-              spectral indices
-            - Construct the primary output file based on the plan results.
+              spectral indices.  See
+              :class:`mangadap.proc.spectralindices.SpectralIndices`.
+            - Construct the primary output files based on the plan
+              results.  See :func:`mangadap.dapfits.construct_maps_file`
+              and :func:`mangadap.dapfits.construct_cube_file`.
 
-    Verbose levels:
-
+    Verbose levels (still under development):
         0. Nothing but errors.
         1. Basic status updates. E.g., start and end of each block,
            minor progress within blocks.
         2. Block-level and sub-function updates.
         3. Same as above, with figures.
 
-        .. warning::
-
-            The above is still in development.
-
     Args:
-        obs (dict, :class:`mangadap.par.obsinput.ObsInputPar`): Object with
-            the input parameters.
+        obs (dict, :class:`mangadap.par.obsinput.ObsInputPar`): Object
+            with the input parameters.
         plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
-            Object with the analysis plan to implement.
+            Object with the analysis plans to implement.
         dbg (bool) : (**Optional**) Flag to run the DAP in debug mode,
-            see above; default is False.
+            see above; default is False.  Limited use; still under
+            development.
         log (str) : (**Optional**) File name for log output, see above;
             no log file is produced by default.
         verbose (int) : (**Optional**) Verbosity level, see above;
@@ -145,10 +165,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             :func:`mangadap.config.defaults.default_analysis_path`.
 
     Returns:
-        int: Status flag
-
-        .. todo::
-            Need to make this status flag meaningful
+        int: Status flag (under development; currently always 0)
 
     """
     # Check input
@@ -164,9 +181,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     loggers = module_logging(__name__, verbose)
 
     log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline')
     log_output(loggers, 1, logging.INFO, '-'*50)
-    import mangadap
-    log_output(loggers, 1, logging.INFO, '   DAPVERS: {0}'.format(mangadap.__version__))
+    log_output(loggers, 1, logging.INFO, '   VERSION: {0}'.format(__version__))
     log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
     t = time.clock()
@@ -175,7 +192,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     log_output(loggers, 1, logging.INFO, '   3D MODE: {0}'.format(obs['mode']))
     log_output(loggers, 1, logging.INFO, '   N PLANS: {0}'.format(plan.nplans))
     log_output(loggers, 1, logging.INFO, '-'*50)
-    # TODO: Print plan details
 
     status = 0
 
@@ -185,7 +201,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     _drpver = default_drp_version() if drpver is None else drpver
     _dapver = default_dap_version() if dapver is None else dapver
     drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
-                   redux_path=redux_path, directory_path=directory_path)
+                   redux_path=redux_path, directory_path=directory_path, read=True)
     log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
 
     # Set the the analysis path and make sure it exists
@@ -200,9 +216,21 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     # Iterate over plans:
     for i in range(plan.nplans):
 
-        plan_ref_dir = default_dap_method_path(default_dap_method(plan=plan[i]), plate=obs['plate'],
-                                               ifudesign=obs['ifudesign'], ref=True, drpver=drpver,
-                                               dapver=dapver, analysis_path=_analysis_path)
+        method = default_dap_method(plan=plan[i])
+        method_dir = default_dap_method_path(method, plate=obs['plate'], ifudesign=obs['ifudesign'],
+                                             drpver=drpver, dapver=dapver,
+                                             analysis_path=_analysis_path)
+        method_ref_dir = default_dap_method_path(method, plate=obs['plate'],
+                                                 ifudesign=obs['ifudesign'], ref=True,
+                                                 drpver=drpver, dapver=dapver,
+                                                 analysis_path=_analysis_path)
+
+        log_output(loggers, 1, logging.INFO, '-'*50)
+        log_output(loggers, 1, logging.INFO, '{0:^50}'.format('Plan {0}'.format(i+1)))
+        log_output(loggers, 1, logging.INFO, '-'*50)
+        log_output(loggers, 1, logging.INFO, '    METHOD: {0}'.format(method))
+        log_output(loggers, 1, logging.INFO, '    OUTPUT: {0}'.format(method_dir))
+        log_output(loggers, 1, logging.INFO, 'REF OUTPUT: {0}'.format(method_ref_dir))
 
         #---------------------------------------------------------------
         # S/N Assessments
@@ -210,8 +238,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
-                                        symlink_dir=plan_ref_dir, clobber=plan['drpqa_clobber'][i],
-                                        loggers=loggers)
+                                        symlink_dir=method_ref_dir,
+                                        clobber=plan['drpqa_clobber'][i], loggers=loggers)
  
         #---------------------------------------------------------------
         # Spatial Binning
@@ -219,7 +247,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
                                            dapsrc=dapsrc, analysis_path=_analysis_path,
-                                           symlink_dir=plan_ref_dir,
+                                           symlink_dir=method_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
 #        test_3d_hdu = binned_spectra.construct_3d_hdu()
@@ -257,7 +285,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                     StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
                                           guess_vel=obs['vel'], guess_sig=obs['vdisp'],
                                           dapsrc=dapsrc, analysis_path=_analysis_path,
-                                          tpl_symlink_dir=plan_ref_dir,
+                                          tpl_symlink_dir=method_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
 
@@ -340,7 +368,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                     SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
-                                    analysis_path=_analysis_path, tpl_symlink_dir=plan_ref_dir,
+                                    analysis_path=_analysis_path, tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
 
         #-------------------------------------------------------------------

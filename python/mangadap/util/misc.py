@@ -51,8 +51,6 @@ import numpy
 #import time
 #from scipy import sparse
 
-__author__ = 'Kyle Westfall'
-
 def line_coeff(p1, p2):
     r"""
     Given two points on a line return the slope and intercept calculated as

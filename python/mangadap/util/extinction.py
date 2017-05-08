@@ -53,8 +53,6 @@ from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
 
 
-__author__ = 'Kyle Westfall'
-
 def default_calzetti_rv():
     return 4.05
 

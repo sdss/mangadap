@@ -69,7 +69,6 @@ from ..util.covariance import Covariance
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 

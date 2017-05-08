@@ -30,7 +30,7 @@ exceptions.
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **03 Feb 2016**: (KBW) Added :func:`check_environmental_variable`
+    | **03 Feb 2016**: (KBW) Added :func:`check_environment_variable`
 """
 
 from __future__ import division
@@ -44,8 +44,6 @@ if sys.version > '3':
 
 import inspect
 from os import environ
-
-__author__ = 'Kyle Westfall'
 
 def print_frame(prefix):
     """

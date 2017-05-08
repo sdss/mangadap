@@ -46,7 +46,7 @@ once per DRP data file.
         from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
         from ..util.log import log_output
         from ..util.parser import DefaultConfig
-        from .util import _select_proc_method
+        from .util import select_proc_method
 
 *Class usage examples*:
     Add examples!
@@ -98,11 +98,11 @@ from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
-from .util import _select_proc_method
+from .util import select_proc_method
 
+# Used for testing/debugging
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -141,7 +141,7 @@ class ReductionAssessmentDef(ParSet):
 
 def validate_reduction_assessment_config(cnfg):
     """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig object that
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object that
     provides the reduction-assessment method parameters.
 
     Args:
@@ -185,32 +185,32 @@ def validate_reduction_assessment_config(cnfg):
 
 def available_reduction_assessments(dapsrc=None):
     """
-    Return the list of available reduction assessment methods.  The
-    following methods are available with the DAP.
 
-    .. todo::
-        The table below needs to be updated.
+    Return the list of available reduction assessment methods.  To get a
+    list of default methods provided by the DAP do::
 
-    +------------+---------------+---------+---------+
-    |            |    Wavelength |      In |         |
-    |        Key |   Range (ang) | Vacuum? |   Covar |
-    +============+===============+=========+=========+
-    |       SNRR | 5600.1-6750.0 |    True |    True |
-    +------------+---------------+---------+---------+
+        from mangadap.proc.reductionassessments import available_reduction_assessments
+        rdx_methods = available_reduction_assessments()
+        print(rdx_methods)
 
-    .. warning::
+    Each element in the `rdx_methods` list is an instance of
+    :class:`ReductionAssessmentDef`, which  is printed using the
+    :class:`ParSet` base class representation function.
 
-        Function is currently only valid for Python 3.2 or greater!
+    New methods can be included by adding ini config files to
+    `$MANGADAP_DIR/python/mangadap/config/reduction_assessments`.  See
+    an example file at
+    `$MANGADAP_DIR/python/mangadap/config/example_ini/example_reduction_assessment_config.ini`.
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
+            directory (i.e., $MANGADAP_DIR).  If not provided, the
+            default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-        list: A list of
-        :func:`mangadap.proc.reductionassessments.ReductionAssessmentDef`
-        objects, each defining a separate assessment method.
+        list: A list of :func:`ReductionAssessmentDef` objects, each
+        defining a separate assessment method.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -222,14 +222,6 @@ def available_reduction_assessments(dapsrc=None):
         NameError: Raised if either ConfigParser or
             ExtendedInterpolation are not correctly imported.  The
             latter is a *Python 3 only module*!
-
-    .. todo::
-        - Add backup function for Python 2.
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
     """
     # Check the source directory exists
     dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
@@ -272,15 +264,13 @@ def available_reduction_assessments(dapsrc=None):
 
 class ReductionAssessment:
     r"""
-
-    Object used to perform and store a number of assessments of a DRP
-    file needed for handling of the data by the DAP.  These assessments
-    need only be done once per DRP data file.
+    Object used to perform and store assessments of a DRP file needed
+    for handling of the data by the DAP.  These assessments need only be
+    done once per DRP data file.
 
     See :func:`compute` for the provided data.
 
     Args:
-
         method_key (str): Keyword selecting the assessment method to
             use.
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) to
@@ -298,6 +288,8 @@ class ReductionAssessment:
             :class:`ReductionAssessmentDef` objects that define the
             parameters required to perform the assessments of the DRP
             file.  The *method_key* must select one of these objects.
+            Default is to construct list using
+            :func:`available_reduction_assessments`.
         dapver (str): (**Optional**) DAP version, which is used to
             define the default DAP analysis path.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_version`
@@ -312,7 +304,7 @@ class ReductionAssessment:
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
             defined by
-            :func:`mangadap.config.defaults.default_reduction_assessments_file`.
+            :func:`mangadap.config.defaults.default_dap_file_name`.
         hardcopy (bool): (**Optional**) Flag to write the data to a fits
             file.  Default is True.
         symlink_dir (str): (**Optional**) Create a symlink to the file
@@ -328,8 +320,7 @@ class ReductionAssessment:
             output.  Default is False.
 
     Attributes:
-        version (str): Version number
-        method (:class:`mangadap.par.ParSet`):  Parameters defining the
+        method (:class:`ReductionAssessmentDef`):  Parameters defining the
             method to use for the reduction assessments.
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
@@ -344,11 +335,10 @@ class ReductionAssessment:
         directory_path (str): The exact path for the output file.
             Default is defined by
             :func:`mangadap.config.defaults.default_dap_common_path`.
-        output_file (str): The name of the file for the
-            computed assessments.  The full path of the output file will
-            be :attr:`directory_path`/:attr:`output_file`.  Default is
-            defined by
-            :func:`mangadap.config.defaults.default_reduction_assessments_file`.
+        output_file (str): The name of the file for the computed
+            assessments.  The full path of the output file will be
+            :attr:`directory_path`/:attr:`output_file`.  Default is
+            defined by :func:`_set_paths`.
         hardcopy (bool): Flag to keep a hardcopy of the data by writing
             the data to a fits file.
         symlink_dir (str): Symlink created to the file in this directory
@@ -363,13 +353,11 @@ class ReductionAssessment:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
                  quiet=False):
                  
-        self.version = '1.0'
         self.loggers = None
         self.quiet = False
 
@@ -401,15 +389,15 @@ class ReductionAssessment:
                      symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -418,32 +406,32 @@ class ReductionAssessment:
 
     def _define_method(self, method_key, method_list=None, dapsrc=None):
         """
-        Select the assessment method from the provided list.  Used to set
-        :attr:`method` and :attr:`methodparset`; see
-        :func:`mangadap.proc.util._select_proc_method`.
+        Select the assessment method from the provided list.  Used to
+        set :attr:`method`; see
+        :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
             method_key (str): Keyword of the selected method.  Available
                 methods are provided by
                 :func:`available_reduction_assessments`
             method_list (list): (**Optional**) List of
-                :class:`ReductionAssessmentDef' objects that define the
+                :class:`ReductionAssessmentDef` objects that define the
                 parameters required to assess the reduced data.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
                 :func:`mangadap.config.defaults.default_dap_source`.
         """
-        self.method = _select_proc_method(method_key, ReductionAssessmentDef,
-                                                method_list=method_list,
-                                                available_func=available_reduction_assessments,
-                                                dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, ReductionAssessmentDef,
+                                         method_list=method_list,
+                                         available_func=available_reduction_assessments,
+                                         dapsrc=dapsrc)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
-        Set the I/O path to the processed template library.  Used to set
-        :attr:`directory_path` and :attr:`output_file`.  If not
-        provided, the defaults are set using, respectively,
+        Set the I/O paths.  Used to set :attr:`directory_path` and
+        :attr:`output_file`.  If not provided, the defaults are set
+        using, respectively,
         :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
@@ -454,8 +442,8 @@ class ReductionAssessment:
             analysis_path (str): The path to the top-level directory
                 containing the DAP output files for a given DRP and DAP
                 version.
-            output_file (str): The name of the file with the reduction assessments.
-                See :func:`compute`.
+            output_file (str): The name of the file with the reduction
+                assessments.  See :func:`compute`.
         """
         # Set the output directory path
         self.directory_path = default_dap_common_path(plate=self.drpf.plate,
@@ -484,15 +472,7 @@ class ReductionAssessment:
                  ('SNR',numpy.float)
                ]
 
-#    def _correl_dtype(self):
-#        r"""
-#        Construct the record array data type for the output fits
-#        extension.
-#        """
-#        return [ ('INDX', numpy.int, (2,) ),
-#                 ('CORREL', numpy.float)
-#               ]
-
+    
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
@@ -529,7 +509,6 @@ class ReductionAssessment:
                 output_file=None, hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
                 quiet=False):
         r"""
-
         Compute and output the main data products.  The list of HDUs
         are:
             - ``PRIMARY`` : Empty apart from the header information.
@@ -549,14 +528,13 @@ class ReductionAssessment:
               vector of two integers.
             - ``SKY_COO`` : On-sky X and Y coordinates.  Coordinates are
               sky-right offsets from the object center; i.e., positive X
-              is along the direction of positive right ascension.  For
-              CUBE files, this is the position of the spaxel.  For RSS
-              files, this is the flux-weighted mean over the wavelength
-              range of the calculation.
+              is along the direction of positive right ascension.  See
+              :class:`mangadap.drpfits.DRPFits.mean_sky_coordinates`.
             - ``ELL_COO`` : Elliptical (semi-major axis) radius and
               azimuth angle from N through East with respect to the
               photometric position angle; based on the provided
-              ellipticity parameters.
+              ellipticity parameters.  See
+              :class:`mangadap.util.geometry.SemiMajorAxisCoo`.
             - ``FGOODPIX`` : Fraction of good pixels in each spectrum.
             - ``MINEQMAX`` : Flag that min(flux) = max(flux) in the
               spectrum; i.e., the spaxel has no data.
@@ -617,6 +595,7 @@ class ReductionAssessment:
             self.loggers = loggers
         self.quiet = quiet
 
+        # Check the input DRPFits object
         if drpf is None:
             raise ValueError('Must provide DRP file object to compute assessments.')
         if not isinstance(drpf, DRPFits):
@@ -634,6 +613,7 @@ class ReductionAssessment:
         if ofile is None:
             raise ValueError('File path for output file is undefined!')
 
+        # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'REDUCTION ASSESSMENT COMPUTATIONS:')
@@ -652,7 +632,6 @@ class ReductionAssessment:
                 log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
 
             # Read the existing output file
-#            self.hdu = fits.open(ofile, checksum=self.checksum)
             self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
 
             # Construct the correlation matrix with the appropriate
@@ -846,8 +825,6 @@ class ReductionAssessment:
         if self.hardcopy:
             DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers)
-#            write_hdu(self.hdu, ofile, clobber=clobber, checksum=True,
-#                      symlink_dir=self.symlink_dir, loggers=self.loggers)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

@@ -160,8 +160,6 @@ from .config.defaults import default_manga_fits_root
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
-
 def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
                  redux_path=None, directory_path=None):
     """
@@ -513,20 +511,20 @@ class DRPFits:
             self.open_hdu(checksum=self.checksum)
 
 
-    def __del__(self):
-        """
-        Deconstruct the DRPFits object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
-        self.wcs = None
-        self.shape = None
-        self.spatial_shape = None
-        self.nspec = None
-        self.spatial_index = None
+#    def __del__(self):
+#        """
+#        Deconstruct the DRPFits object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
+#        self.wcs = None
+#        self.shape = None
+#        self.spatial_shape = None
+#        self.nspec = None
+#        self.spatial_index = None
 
 
     def __getitem__(self, key):
