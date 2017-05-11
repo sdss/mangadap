@@ -67,7 +67,6 @@ Implements an emission-line profile fitting class.
         :class:`StellarContinuumModel`.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
 .. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
 
@@ -114,7 +113,6 @@ from .util import residual_growth
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -1338,16 +1336,18 @@ class Elric(EmissionLineFit):
     def _assess_and_save_fit(self, i, j, model_fit_par, model_eml_par):
         """
         Assess the result of the LineProfileFit results.
-            x Check the success failure
-            x Calculate the chi2, rchi2, rms, fractional_rms, residuals,
-              fractional_residuals
-            x Compare the fit parameters to the bounds
+
+            - (DONE) Check the success failure
+            - (DONE) Calculate the chi2, rchi2, rms, fractional_rms,
+              residuals, fractional_residuals
+            - (DONE) Compare the fit parameters to the bounds
             - Check the chi-square and residuals?
             - Check the velocity offset wrt the input
             - For multiple lines, check the order of the lines matches
               the guess parameters
             - For multiple component lines, check the ordering of the
               subcomponents
+
         """
         # Instantiate the returned flag that the parameter are near the
         # imposed boundary; only meaningful if the fit did not fail

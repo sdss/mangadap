@@ -92,6 +92,8 @@ the MaNGA Data Reduction Pipeline (DRP).
         :class:`mangadap.util.fitsutil.DAPFitsUtil`, what's left are wrapper
         functions for the more general functions in
         :class:`mangadap.util.fitsutil.DAPFitsUtil`.
+    | **17 Feb 2017**: (KBW) Return nominal inverse variance in
+        :func:`DRPFits.regrid_wavelength_plane` if requested.
 
 .. todo::
 
@@ -116,6 +118,7 @@ the MaNGA Data Reduction Pipeline (DRP).
 .. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
 .. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
 .. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+.. _shapely: https://pypi.python.org/pypi/Shapely
 
 """
 
@@ -148,6 +151,7 @@ from .util.constants import constants
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
+from .util.filter import interpolate_masked_vector
 from .config.defaults import default_idlutils_dir, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
@@ -156,8 +160,6 @@ from .config.defaults import default_regrid_sigma
 from .config.defaults import default_manga_fits_root
 
 from matplotlib import pyplot
-
-__author__ = 'Kyle B. Westfall'
 
 def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
                  redux_path=None, directory_path=None):
@@ -413,7 +415,8 @@ class DRPFits:
             files, this is a single element with the number of fibers;
             for CUBE files, this has the x and y dimensions of the data
             cube.  *These are transposed w.r.t. the read-in DRP file!*
-        nspec (int) : Number of spectra in the DRP file; this is just::
+        nspec (int) : Number of spectra in the DRP file; this is just:
+            ::
                 
                 self.nspec = numpy.prod(self.spatial_shape)
         
@@ -435,7 +438,8 @@ class DRPFits:
             CUBE files and 1 for RSS files.  This means that the
             internal data array restructures the input fits data for the
             CUBE files.
-        nwave (int): The number of wavelength channels; this is just::
+        nwave (int): The number of wavelength channels; this is just:
+            ::
 
                 self.nwave = self.shape[self.dispaxis]
 
@@ -510,20 +514,20 @@ class DRPFits:
             self.open_hdu(checksum=self.checksum)
 
 
-    def __del__(self):
-        """
-        Deconstruct the DRPFits object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
-        self.wcs = None
-        self.shape = None
-        self.spatial_shape = None
-        self.nspec = None
-        self.spatial_index = None
+#    def __del__(self):
+#        """
+#        Deconstruct the DRPFits object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
+#        self.wcs = None
+#        self.shape = None
+#        self.spatial_shape = None
+#        self.nspec = None
+#        self.spatial_index = None
 
 
     def __getitem__(self, key):
@@ -1048,16 +1052,24 @@ class DRPFits:
             raise FileNotFoundError('Cannot open file: {0}'.format(inp))
 
         # Open the fits file, but do NOT allow the file to be
-        # overwritten
-        self.hdu = fits.open(inp, mode='readonly', checksum=checksum)
+        # overwritten.
+        # TODO: This takes a while because it's restructuring ALL of the
+        # image arrays.  Can I expedite this somehow?
+        self.hdu = DAPFitsUtil.read(inp, permissions='readonly', checksum=checksum)
         self.ext = [ h.name for h in self.hdu ]
         self._set_spectral_arrays()
 
-        # Reformat and initialize properties of the data
-        if self.mode == 'CUBE':
-            DAPFitsUtil.restructure_cube(self.hdu, ext=self.spectral_arrays)
-        elif self.mode == 'RSS':
-            DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+#        # Reformat and initialize properties of the data
+#        if self.mode == 'CUBE':
+#            DAPFitsUtil.restructure_cube(self.hdu, ext=self.spectral_arrays)
+#        elif self.mode == 'RSS':
+#            DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+
+        # If RSS data, transpose the hdus so that the spectra are
+        # organized along rows.
+        if self.mode == 'RSS':
+            self.hdu = DAPFitsUtil.transpose_image_data(self.hdu)
+
         self.shape = self.hdu['FLUX'].data.shape
         self.spatial_shape = DAPFitsUtil.get_spatial_shape(self.shape, self.dispaxis)
         self.nspec = numpy.prod(self.spatial_shape)
@@ -1221,10 +1233,14 @@ class DRPFits:
                                                 waverange=waverange)
 
 
-    def spectral_resolution(self, ext=None, toarray=False):
+    def spectral_resolution(self, ext=None, toarray=False, fill=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
+
+        .. todo::
+            Add an internal fix that interpolates over masked values in
+            the DRP file.
 
         Args:
             ext (str): (**Optional**) Specify the extension with the
@@ -1237,6 +1253,9 @@ class DRPFits:
                 file is a CUBE object, similar to
                 :func:`DRPFits.copy_to_array`.  Default is to return an
                 object with the same shape as the flux array.
+            fill (bool): (**Optional**) Fill masked values by
+                interpolation.  Default is to leave leave masked pixels
+                in returned array.
 
         Returns:
             `numpy.ma.MaskedArray`_ : Masked array with the spectral
@@ -1247,7 +1266,7 @@ class DRPFits:
             raise ValueError('No extension: {0}'.format(ext))
 
         if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
-            print('Use DISP')
+#            print('using DISP')
             disp = self.copy_to_array(ext='DISP') if toarray else \
                         numpy.ma.MaskedArray(self.hdu['DISP'].data.copy())
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
@@ -1257,12 +1276,24 @@ class DRPFits:
 #            pyplot.plot(self['WAVE'].data, sres[ii,:])
 #            pyplot.show()
 #            exit()
-            return numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+#            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[149,:])
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[150,:])
+#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[151,:])
+#            pyplot.show()
+#            exit()
+            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+            if fill:
+                _sres = sres.reshape(self.nspec, -1)
+                for i in range(self.nspec):
+                    _sres[i,:] = interpolate_masked_vector(_sres[i,:])
+                sres = _sres.reshape(sres.shape)
+            return sres
         elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
-            print('Use SPECRES')
+#            print('using SPECRES')
             sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
                                                         * numpy.prod(self.spatial_shape)))
-            return sres if toarray else sres.reshape(-1,self.nwave)
+            return sres if toarray else sres.reshape(*self.spatial_shape,self.nwave)
         return None
 
 
@@ -1569,32 +1600,32 @@ class DRPFits:
         return [numpy.amin(XY[:,0]),numpy.amax(XY[:,0])], [numpy.amin(XY[:,1]),numpy.amax(XY[:,1])] 
 
 
-    def gri_composite(self):
-        """
-        Return the world coordinates (see :func:`world_mesh`) and flux
-        in the reconstructed gri image data (in nanomaggies).  The shape
-        of the Z array is (NX,NY,3), with the g, r, and i image data in
-        Z[:,:,0], Z[:,:,1], and Z[:,:,2], respectively.
-
-        .. warning::
-            The reconstructed imaging data are not provided as part of
-            the 'RSS' files; three 'None's are returned for 'RSS' files.
-
-        Returns:
-            numpy.ndarray: Three arrays with, respectively, the world X,
-            world Y, and Z.
-        """
-
-        if self.mode == 'RSS':
-            return None, None, None
-
-        X, Y = self.world_mesh() 
-        #X,Y = self.pix_mesh()
-
-        Z = numpy.transpose(numpy.array([ self.hdu['GIMG'].data.T, self.hdu['RIMG'].data.T, \
-                            self.hdu['IIMG'].data.T ] ), axes=(1,2,0))
-
-        return X, Y, Z
+#    def gri_composite(self):
+#        """
+#        Return the world coordinates (see :func:`world_mesh`) and flux
+#        in the reconstructed gri image data (in nanomaggies).  The shape
+#        of the Z array is (NX,NY,3), with the g, r, and i image data in
+#        Z[:,:,0], Z[:,:,1], and Z[:,:,2], respectively.
+#
+#        .. warning::
+#            The reconstructed imaging data are not provided as part of
+#            the 'RSS' files; three 'None's are returned for 'RSS' files.
+#
+#        Returns:
+#            numpy.ndarray: Three arrays with, respectively, the world X,
+#            world Y, and Z.
+#        """
+#
+#        if self.mode == 'RSS':
+#            return None, None, None
+#
+#        X, Y = self.world_mesh() 
+#        #X,Y = self.pix_mesh()
+#
+#        Z = numpy.transpose(numpy.array([ self.hdu['GIMG'].data.T, self.hdu['RIMG'].data.T, \
+#                            self.hdu['IIMG'].data.T ] ), axes=(1,2,0))
+#
+#        return X, Y, Z
 
 
     def regrid_transfer_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None,
@@ -1795,7 +1826,8 @@ class DRPFits:
 
 
     def regrid_wavelength_plane(self, channel, pixelscale=None, recenter=None, width_buffer=None,
-                                rlim=None, sigma=None, quiet=False):
+                                rlim=None, sigma=None, quiet=False, return_ivar=False,
+                                return_covar=False):
         r"""
         Return the reconstructed image for the specified wavelength
         channel.
@@ -1814,9 +1846,10 @@ class DRPFits:
         where :math:`{\mathbf F}` is the vector of fluxes in the
         selected wavelength channel for all the fiber measurements in
         the field of view and :math:`{\mathbf I}` is the pre-formatted
-        (flattened) reconstructed image of that wavelength channel.  On
-        output, :math:`{\mathbf I}` is rearranged into a 2D array of
-        size :attr:`ny` by :attr:`nx`.
+        (flattened) reconstructed image of that wavelength channel.
+
+        **On output, :math:`{\mathbf I}` is rearranged into a 2D array
+        of size :attr:`nx` by :attr:`ny`.**
 
         .. warning::
             Because the internal data structure is transposed with
@@ -1838,6 +1871,9 @@ class DRPFits:
             sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
             quiet (bool): (**Optional**) Suppress terminal output
+            return_ivar (bool): (**Optional**) Return the nominal
+                inverse variance image (i.e. the diagonal of the
+                covariance matrix).
 
         Returns:
             numpy.ndarray: The reconstructed image for the specified
@@ -1862,14 +1898,24 @@ class DRPFits:
                                  + 'wavelength-channel image for DRP-produced CUBE files.')
 
             self.open_hdu(checksum=self.checksum)
-            return self.hdu['FLUX'].data[:,:,channel].T.copy()
+            return self.hdu['FLUX'].data[:,:,channel].copy()
 
         # Set the transfer matrix (set to self.regrid_T; don't need to
         # keep the returned matrix)
         self.regrid_transfer_matrix(channel, pixelscale, recenter, width_buffer, rlim, sigma, quiet)
 
+        flux = self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)
         # Return the regridded data with the proper shape (nx by ny)
-        return (self.regrid_T.dot(self.hdu['FLUX'].data[:,channel]).reshape(self.nx,self.ny)).T
+        if not return_ivar:
+            return flux
+
+        covar = self._formal_covariance_matrix(channel, pixelscale, recenter, width_buffer, rlim,
+                                               sigma)
+        if return_covar:
+            return flux, covar
+            
+        return flux, numpy.ma.power(numpy.diagonal(covar.toarray()), \
+                                    -1).filled(0.0).reshape(self.nx,self.ny)
 
 
     def _formal_covariance_matrix(self, channel, pixelscale, recenter, width_buffer, rlim, sigma,
@@ -1952,13 +1998,16 @@ class DRPFits:
                                     quiet)
 
         # Get the variance values, ignoring those that are <= 0
-        var = numpy.zeros(self.nspec, dtype=numpy.float64)
-        indx = numpy.where(self.hdu['IVAR'].data[:,channel] > 0.)
-        var[indx] = 1.0/self.hdu['IVAR'].data[indx,channel]
+#        var = numpy.zeros(self.nspec, dtype=numpy.float64)
+#        indx = numpy.where(self.hdu['IVAR'].data[:,channel] > 0.)
+#        var[indx] = 1.0/self.hdu['IVAR'].data[indx,channel]
+
+        # TODO: Change to using Covariance.from_matrix_multiplication
 
         # Set the covariance matrix of the spectra to be a diagonal
         # matrix with the provided variances
-        Sigma = sparse.coo_matrix( (var,
+        Sigma = sparse.coo_matrix((numpy.ma.power(self.hdu['IVAR'].data[:,channel],
+                                                  -1.0).filled(0.0),
                                     (numpy.arange(0,self.nspec),numpy.arange(0,self.nspec))), \
                                   shape=(self.nspec, self.nspec)).tocsr()
 
@@ -2311,7 +2360,7 @@ class DRPFits:
             print('Covariance Cube Done                     ')
 
         # Don't provide input indices if the full cube is calculated
-        return Covariance(inp=CovCube, input_indx=_channels) if not csr else CovCube
+        return Covariance(CovCube, input_indx=_channels) if not csr else CovCube
 
 
     def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,
@@ -2437,8 +2486,8 @@ class DRPFits:
         # Return the regridded data with the proper shape (nx by ny)
         Tc = self.regrid_T.sum(axis=1).flatten()
         Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
-        return (numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu['DISP'].data[:,channel]))
-                    / Tc ).reshape(self.nx, self.ny)).T
+        return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu['DISP'].data[:,channel]))
+                                                / Tc ).reshape(self.nx, self.ny)
 
 
     def pointing_offset(self):
@@ -2457,12 +2506,28 @@ class DRPFits:
 
 
     def mean_sky_coordinates(self, waverange=None, offset=True, flag=None, fluxwgt=False):
-        """
-        Compute the mean sky coordinates for each of the spectra.  For
-        CUBE files, this just returns the spaxel coordinates; the
-        coordinates do not change as a function of wavelength.  For the
-        RSS files, this returns either the unweighted or flux-weighted
-        XPOS and YPOS values.
+        r"""
+        Compute the mean sky coordinates for each spectrum.
+        
+        For CUBE files, this just returns the spaxel coordinates in
+        arcseconds relative to the object center, where the object
+        center is :math:`(\alpha_0,\delta_0) = ({\rm OBJRA},{\rm
+        OBJDEC)` as provided in the primary header, and
+
+        .. math::
+            
+            x &= (\alpha - \alpha_0) \cos \delta_0 \\
+            y &= (\delta - \delta_0)
+
+        The coordinate grid, :math:`(\alpha, \delta)` is based on the
+        WCS coordinates in the header as returned by :func:`world_mesh`.
+
+        For RSS files, this returns either the unweighted or
+        flux-weighted XPOS and YPOS values.  For observations where the
+        pointing center is different from the object center, the
+        returned coordinates are relative to the object center if
+        offset=True (default) and relative to the pointing center if
+        offset=False.
 
         .. warning::
             
@@ -2470,7 +2535,7 @@ class DRPFits:
             in low-flux regimes.
 
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
+            waverange (array-like): (**Optional**) Two-element array
                 with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
@@ -2489,8 +2554,6 @@ class DRPFits:
             :attr:`spatial_index` in case you want to recreate the a map
             for the CUBE files.
 
-        Raises:
-            KeyError : Raised if `ext` is not a valid extension.
         """
         if self.mode == 'CUBE':
             x, y = self.world_mesh()
@@ -2526,10 +2589,44 @@ class DRPFits:
         return numpy.ma.mean(xpos, axis=1), numpy.ma.mean(ypos, axis=1)
 
 
-    def flux_stats(self, waverange=None, covar=False, correlation=False, covar_wave=None,
-                   average_covar=False):
-        """
-        Compute the flux, noise, S/N, and covariance.
+    def flux_stats(self, waverange=None, covar=False, correlation=False, covar_wave=None):
+#                    , average_covar=False):
+        r"""
+        Compute the mean flux, propagated error in the mean flux, and
+        mean S/N over the specified wavelength range; if the wavelength
+        range is not specified, the quantities are calculated over the
+        full spectral range.
+
+        If an RSS file, no covariance is calculated.
+
+        If a CUBE file and covar is True, the code will calculate the
+        covariance matrix at the specified wavelength (see
+        :func:`covariance_matrix`).  If covar_wave is not provided, the
+        covariance is calculated at the center wavelength of the
+        provided wavelength range.
+
+        Args:
+            waverange (array-like): (**Optional**) Starting and ending
+                wavelength over which to calculate the statistics.
+                Default is to use the full wavelength range.
+            covar (bool): (**Optional**) Flag to calculate covariance
+                matrix.
+            correlation (bool): (**Optional**) Flag to convert the
+                covariance matrix to a correlation matrix on ouput.
+            covar_wave (double): (**Optional**) Wavelength to use for
+                the covariance calculation.
+
+        Returns:
+            numpy.ndarray: Four objects are returned: the mean flux, the
+            propagated variance in the mean flux, the mean S/N, and the
+            covariance/correlation matrix for a single wavelength
+            channel.  If the object is an RSS file or no covariance
+            calculation is requested, the last returned object is None.
+    
+        Raises:
+            ValueError: Raised of a provided wavelength range object
+                does not have two elements.
+
         """
         if waverange is not None and len(waverange) != 2:
             raise ValueError('Provided wavelength range must be a two-element vector.')
@@ -2549,26 +2646,26 @@ class DRPFits:
         if self.mode == 'RSS' or not covar:
             return signal, variance, snr, None
 
-        if average_covar:
-            if waverange is None:
-                warnings.warn('Calculating average covariance over *all* channels.  Sit tight...')
-            start_wave = self.hdu['WAVE'].data[0] if waverange is None else waverange[0]
-            end_wave = self.hdu['WAVE'].data[-1] if waverange is None else waverange[1]
-            start = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - start_wave) )[0]
-            end = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - end_wave) )[0]+1
-            C = self.covariance_cube(channels=numpy.arange(start,end))
-            if correlation:
-                C.to_correlation()
-            meanC = numpy.mean(C.toarray(), axis=0)
-            i, j = numpy.meshgrid(numpy.arange(C.shape[1]), numpy.arange(C.shape[2]))
-            C = Covariance(inp=sparse.coo_matrix((meanC[meanC > 0].ravel(),
-                                                    (i[meanC > 0].ravel(), j[meanC > 0].ravel())),
-                                                 shape=C.shape[1:]).tocsr())
-            return signal, variance, snr, C
+#        if average_covar:
+#            if waverange is None:
+#                warnings.warn('Calculating average covariance over *all* channels.  Sit tight...')
+#            start_wave = self.hdu['WAVE'].data[0] if waverange is None else waverange[0]
+#            end_wave = self.hdu['WAVE'].data[-1] if waverange is None else waverange[1]
+#            start = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - start_wave) )[0]
+#            end = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - end_wave) )[0]+1
+#            C = self.covariance_cube(channels=numpy.arange(start,end))
+#            if correlation:
+#                C.to_correlation()
+#            meanC = numpy.mean(C.toarray(), axis=0)
+#            i, j = numpy.meshgrid(numpy.arange(C.shape[1]), numpy.arange(C.shape[2]))
+#            C = Covariance(sparse.coo_matrix((meanC[meanC > 0].ravel(),
+#                                              (i[meanC > 0].ravel(), j[meanC > 0].ravel())),
+#                                                 shape=C.shape[1:]).tocsr())
+#            return signal, variance, snr, C
 
         # Only calculate the covariance at the central, or input, wavelength
         _covar_wave = ((self.hdu['WAVE'].data[0]+self.hdu['WAVE'].data[-1])/2. \
-                        if waverange is None else (numpy.sum(waverange)/2.)) \
+                        if waverange is None else numpy.mean(waverange)) \
                             if covar_wave is None else covar_wave
         channel = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - _covar_wave) )[0]
 
@@ -2589,11 +2686,32 @@ class DRPFits:
 
 
     def binned_on_sky_area(self, bin_indx, x=None, y=None):
-        """
-
+        r"""
         Compute the on-sky area of a set of binned spectra.  For CUBE
         files, this is just the number of spaxels in the bin times the
         spaxel area (as given by :attr:`pixelscale`).
+
+        For RSS files, this will try to calculate the overlapping area
+        of the fibers using the `shapely`_ python package:
+
+            - The fibers "beams" are all renormalized to have an area of
+              pi arcsec^2 by the DRP, so it's radius 1 arcsec
+            - This function will provide the *total* area, not the
+              integration-weighted effective area.
+
+        Args:
+            bin_indx (array-like): A vector with size :math:`N_{\rm
+                spec}` the gives which spaxels or fibers were included
+                in each bin.  Valid bins have indices of :math:`\geq 0`.
+            x (array-like): (**Optional**) On-sky :math:`x` coordinate.
+                Default is to calculate :math:`x` and :math:`y` using
+                :func:`mean_sky_coordinates` with no arguments.
+            y (array-like): (**Optional**) On-sky :math:`y` coordinate.
+                Default is to calculate :math:`x` and :math:`y` using
+                :func:`mean_sky_coordinates` with no arguments.
+
+        Returns:
+            numpy.ndarray : The on-sky area of each bin.
 
         """
         unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
@@ -2604,11 +2722,6 @@ class DRPFits:
                 self.pixelscale = default_cube_pixelscale()
             return (nbin*numpy.square(self.pixelscale)).astype(float)
 
-        # For RSS files, try to calculate the overlapping area of the
-        # fibers
-
-        # The fibers "beams" are all renormalized to have an area of pi
-        # arcsec^2, so it's "radius" 1 arcsec
         try:
             if x is None or y is None:
                 x, y = self.mean_sky_coordinates()

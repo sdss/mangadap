@@ -119,8 +119,6 @@ from .. import drpfits
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from ..util.exception_tools import print_frame
 
-__author__ = 'Kyle Westfall'
-
 class DRPComplete:
     """Find DRP files ready for analysis and write parameter files.
 
@@ -143,19 +141,21 @@ class DRPComplete:
             numbers.  Default is returned as the second element in
             :func:`mangadap.config.defaults.default_plate_target_files`.
         drpver (str): (**Optional**) DRP version, which is:
+        
                 - used to define the default DRP redux path
                 - used when declaring a drpfits instance
                 - used in the name of the drpcomplete fits file
                 - included as a header keyword in the output file
+                
             Default is defined by
-            :func:`mangadap.config.defaults.default_drp_version`
-
+            :func:`mangadap.config.defaults.default_drp_version`.
         redux_path (str): (**Optional**) The path to the top level directory
             containing the DRP output files; this is the same as the
             *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.
             Default is defined by
             :func:`mangadap.config.defaults.default_redux_path`.
         dapver (str): (**Optional**) DAP version, which is:
+
                 - used to define the default DAP analysis path
                 - included as a header keyword in the output drpcomplete
                   fits file
@@ -882,7 +882,7 @@ class DRPComplete:
     def write(self, platelist, ifudesignlist, modes, mangaid, objra, objdec, catid, catindx,
               trg_version, trg_id, manga_trg1, manga_trg3, vel, veldisp, ell, pa, Reff, drpver=None,
               redux_path=None, dapver=None, analysis_path=None, clobber=True):
-        """
+        r"""
         Write the drpcomplete fits binary table.
 
         Header keywords are:
@@ -898,15 +898,15 @@ class DRPComplete:
             1. PLATE (1J): Plate number
             2. IFUDESIGN (1J): IFU design
             3. MODES (1B): Modes available 
-                * MODES=1: only 'CUBE' file is available
-                * MODES=2: both 'CUBE' and 'RSS' files are available
+                - MODES=1: only 'CUBE' file is available
+                - MODES=2: both 'CUBE' and 'RSS' files are available
 
             4. MANGAID (*n* A): MaNGA ID (same as 'CATID-CATINDX')
             5. OBJRA (1D): Object right ascension
             6. OBJDEC (1D): Object declination
             7. CATID (1J): Catalog ID used for target selection
             8. CATINDX (1J): Index in catalog with target data
-            9. TRG_VERSION (*n*A): Version of the catalog (e.g., NSA)
+            9. TRG_VERSION (*n* A): Version of the catalog (e.g., NSA)
                 used in targetting (def='NULL' if not available)
             10. TRG_ID (1J): Target ID in catalog (def=-9999 if not
                 available)

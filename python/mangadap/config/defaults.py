@@ -62,6 +62,9 @@ MaNGA DAP, such as paths and file names.
         to
         :func:`mangadap.config.inputdata.available_template_libraries`.
         No longer need ConfigParser here.
+    | **05 May 2017**: (KBW) :func:`default_dap_version` returns
+        internal version if MANGADAP_VER environmental variable is not
+        defined.
 
     | **12 Jul 2016**: (KBW) Changed :func:`default_manga_fits_root` to
         accommodate MAPS output name.
@@ -81,10 +84,9 @@ import os.path
 from os import environ
 import glob
 import numpy
-from mangadap.util.exception_tools import check_environment_variable
 
-__author__ = 'Kyle B. Westfall'
-
+from ..util.exception_tools import check_environment_variable
+from ..util.version import __version__
 
 def default_idlutils_dir():
     """
@@ -214,11 +216,16 @@ def default_dap_source():
 def default_dap_version():
     """
     Return the DAP version defined by the environmental variable
-    MANGADAP_VER.
-
+    MANGADAP_VER.  If that environmental variable does not exist,
+    `mangadap.__version__` is returned.
     """
-    check_environment_variable('MANGADAP_VER')
-    return environ['MANGADAP_VER']
+    no_environ_var=False
+    try:
+        check_environment_variable('MANGADAP_VER')
+    except EnvironmentError as e:
+        warnings.warn('$MANGADAP_VER undefined in environment; returning internal version')
+        no_environ_var = True
+    return __version__ if no_environ_var else environ['MANGADAP_VER']
 
 
 def default_analysis_path(drpver=None, dapver=None):

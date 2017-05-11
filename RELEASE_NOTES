@@ -34,10 +34,44 @@ KBW (??         ): tag 2.1
     - Include a map mask in reference files
     - Allow rundap to read the plate, ifu, and mode combinations to
       analyze from a file
+    - Include filtering approach in stellar kinematics fitting
+    - Incorporate ppxf v6.0.6
+    - Reading/writing of fits data is now done using DAPFitsUtil.  When
+      reading with this utility, the fits image data are automatically
+      restructured into a row-major ordering to ease the confusion
+      between the way astropy.io.fits provides the data and the ordering
+      of the NAXIS keywords.  At the moment, this restructuring does not
+      mess up the WCS coordinates in the header; however, depending on
+      any development of astropy.io.fits in the future, this may become
+      a problem.  This feels like a big mess at the moment, but there's
+      no easy way around it.
+    - Restructured how the covariance data are read and written to
+      adhere to the format already adopted by the DRP.  The Covariance
+      class should now be able to seemlessly read the broad-band
+      correlation matrices provided in the LOGCUBE files.
+    - Added DefaultConfig class to help manage config files.  Edited the
+      StellarContinuumModelDef parameters to accommodate the new
+      filtering approach.  Removed all but one StellarContinuumModel
+      method.
+    - Include an estimate of the stellar velocity dispersion correction
+      based on fitting the native resolution optimized template to the
+      same spectrum that has been rsolution matched to object spectrum
+      being fit.
+    - Changed velocity dispersion correction calculation for stellar
+      kinematics: Old version used mean resolution difference between
+      galaxy and template spectra.  New version uses a fit of the
+      best-fitting model template to a resolution-matched version of
+      itself. 
+    - MAPS and LOGCUBE files set to single-precision float for survey
+      output.
+    - BINID in MAPS and LOGCUBE files set to int32 type for survey
+      output.
+    - Added NeIII and higher-order Balmer series lines (up to H10).
+    - General improvements to the documentation
 
 TO FIX:
     - emission-line moment masks
-    - BINID bitpix
+    - Some config examples are out of date!
 
 --------------------------------------------------------------------------------
 KBW (04 Aug 2016): tag 2.0.2

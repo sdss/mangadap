@@ -22,15 +22,6 @@ A class hierarchy that fits the emission lines.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
         
         import glob
         import os
@@ -47,14 +38,14 @@ A class hierarchy that fits the emission lines.
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
+        from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
         from ..util.log import log_output
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .elric import Elric, ElricPar, GaussianLineProfile
-        from .util import _select_proc_method
+        from .util import select_proc_method
 
 *Class usage examples*:
     Add examples!
@@ -63,10 +54,12 @@ A class hierarchy that fits the emission lines.
     | **26 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
         redshift when stellar continuum is provided.
+    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
+.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
 
 """
@@ -80,15 +73,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
 import os
@@ -105,18 +89,18 @@ from ..par.emissionlinedb import EmissionLineDB
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim, write_hdu
+from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
+from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar, GaussianLineProfile
-from .util import _select_proc_method
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -153,47 +137,21 @@ class EmissionLineModelDef(ParSet):
 
 def validate_emission_line_modeling_method_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define an emission-line modeling method.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
+    emission-line modeling method parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the emission-line modeling method
-            needed by :class:`EmissionLineModelDef'
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
+            to contain defining parameters of the emission-line modeling
+            method needed by :class:`EmissionLineModelDef`
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
         ValueError: Raised if keys have unacceptable values.
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
+    if 'key' not in cnfg:
         raise KeyError('Keyword \'key\' must be provided.')
-    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
-        cnfg['default']['minimum_snr']= '0.0'
-
-    if 'artifact_mask' not in cnfg.options('default') \
-            or cnfg['default']['artifact_mask'] is None:
-        cnfg['default']['artifact_mask'] = 'None'
-
-    if 'emission_lines' not in cnfg.options('default') \
-            or cnfg['default']['emission_lines'] is None:
-        raise ValueError('Must provide a keyword with the emission-line parameters to use!')
-
-#    if 'profile_type' not in cnfg.options('default') or cnfg['default']['emission_lines'] is None:
-#        warnings.warn('No profile provided.  Assuming Gaussian.')
-#        cnfg['default']['profile_type'] = 'GaussianLineProfile'
-#
-#    if 'number_of_components' not in cnfg.options('default') \
-#            or cnfg['default']['number_of_components'] is None:
-#        cnfg['default']['number_of_components'] = '1'
-
-    if 'baseline_order' not in cnfg.options('default') \
-            or cnfg['default']['baseline_order'] is None:
-        cnfg['default']['baseline_order'] = '-1'
-
-    if 'window_buffer' not in cnfg.options('default') \
-            or cnfg['default']['window_buffer'] is None:
-        cnfg['default']['window_buffer'] = '25'
 
 
 def available_emission_line_modeling_methods(dapsrc=None):
@@ -221,7 +179,6 @@ def available_emission_line_modeling_methods(dapsrc=None):
             files could be found.
         KeyError: Raised if the emission-line modeling method keywords
             are not all unique.
-        NameError: Raised if ConfigParser is not correctly imported.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -245,25 +202,20 @@ def available_emission_line_modeling_methods(dapsrc=None):
     method_list = []
     for f in ini_files:
         # Read the config file
-        cnfg = ConfigParser(allow_no_value=True)
-        cnfg.read(f)
+        cnfg = DefaultConfig(f)
         # Ensure it has the necessary elements to define the template
         # library
         validate_emission_line_modeling_method_config(cnfg)
 
         # Currently only implement Elric for fitting the emission lines
-        fitpar = ElricPar(None, cnfg['default'].getint('baseline_order'),
-                          cnfg['default'].getfloat('window_buffer'), None, None,
-                          minimum_snr=cnfg['default'].getfloat('minimum_snr'))
+        fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
+                          None, None, minimum_snr=cnfg.getfloat('minimum_snr'))
         fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
         fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
-        method_list += [ EmissionLineModelDef(cnfg['default']['key'],
-                                              eval(cnfg['default']['minimum_snr']),
-                                              None if cnfg['default']['artifact_mask'] == 'None' \
-                                                    else cnfg['default']['artifact_mask'],
-                                              cnfg['default']['emission_lines'], fitpar, fitclass,
-                                              fitfunc) ]
+        method_list += [ EmissionLineModelDef(cnfg['key'], cnfg.getfloat('minimum_snr',default=0.0),
+                                              cnfg['artifact_mask'], cnfg['emission_lines'], fitpar,
+                                              fitclass, fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -372,15 +324,15 @@ class EmissionLineModel:
                  quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -393,9 +345,9 @@ class EmissionLineModel:
         Select the modeling method
         """
         # Grab the specific method
-        self.method = _select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                          available_func=available_emission_line_modeling_methods,
-                                          dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
+                                         available_func=available_emission_line_modeling_methods,
+                                         dapsrc=dapsrc)
 
         # Instantiate the artifact and emission-line databases
         self.artdb = None if self.method['artifacts'] is None else \
@@ -744,7 +696,7 @@ class EmissionLineModel:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'EMISSION-LINE PROFILE FITTING:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('EMISSION-LINE PROFILE FITTING'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
                                                             self.binned_spectra.nbins))
@@ -883,21 +835,25 @@ class EmissionLineModel:
         # it
         if match_DRP:
             hdu = self.construct_3d_hdu()
-            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.binned_spectra.drpf.mode,
-                                     self.spectral_arrays, self.image_arrays, clobber=clobber,
-                                     checksum=True, loggers=self.loggers, quiet=self.quiet)
+            DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
+                              loggers=self.loggers, quiet=self.quiet)
+#            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.binned_spectra.drpf.mode,
+#                                     self.spectral_arrays, self.image_arrays, clobber=clobber,
+#                                     checksum=True, loggers=self.loggers, quiet=self.quiet)
             return
 
-        # Restructure the spectral arrays as if they're RSS data, and
-        # restructure any maps
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        # Write the HDU
-        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-                  quiet=self.quiet)
-        # Revert back to the python native storage for internal use
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                          loggers=self.loggers, quiet=self.quiet) 
+#        # Restructure the spectral arrays as if they're RSS data, and
+#        # restructure any maps
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+#        # Write the HDU
+#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
+#                  quiet=self.quiet)
+#        # Revert back to the python native storage for internal use
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -913,7 +869,8 @@ class EmissionLineModel:
         if self.hdu is not None:
             self.hdu.close()
 
-        self.hdu = fits.open(ifile, checksum=checksum)
+#        self.hdu = fits.open(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
@@ -926,10 +883,10 @@ class EmissionLineModel:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read the modeling parameters
         if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):

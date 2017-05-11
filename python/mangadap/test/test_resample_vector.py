@@ -76,7 +76,7 @@ from os import remove
 import os.path
 from time import clock
 
-from mangadap.util.instrument import resample_vector, log_rebin
+from mangadap.util.instrument import resample_vector #, log_rebin
 
 from matplotlib import pyplot
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     X, Y = resample_vector(y, xRange=[x[0],x[-1]], newRange=newRange, newpix=40, newLog=True,
                            flat=False)
 
-    Ym, Xm, scale = log_rebin([x[0],x[-1]], y, log10=True, newRange=newRange, wave_in_ang=True, oversample=6)
+#    Ym, Xm, scale = log_rebin([x[0],x[-1]], y, log10=True, newRange=newRange, wave_in_ang=True, oversample=6)
 
 #    print(X)
 #    print(Y)
@@ -128,8 +128,8 @@ if __name__ == '__main__':
     pyplot.plot(X, Y, color='g')
     pyplot.scatter(Xf, Yf, color='r')
     pyplot.plot(Xf, Yf, color='r')
-    pyplot.scatter(Xm, Ym, color='k')
-    pyplot.plot(Xm, Ym, color='k')
+#    pyplot.scatter(Xm, Ym, color='k')
+#    pyplot.plot(Xm, Ym, color='k')
     pyplot.show()
 
     print('Elapsed time: {0} seconds'.format(clock() - t))

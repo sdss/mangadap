@@ -69,7 +69,6 @@ from ..util.covariance import Covariance
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -408,7 +407,6 @@ class VoronoiBinning(SpatialBinning):
         SpatialBinning.__init__(self, 'voronoi', par=par)
         self.covar = None
 
-#    def sn_calculation_no_covariance(self, signal, noise, index): 
     def sn_calculation_no_covariance(self, index, signal, noise): 
         """
         S/N calculation built to match the requirements of
@@ -420,7 +418,6 @@ class VoronoiBinning(SpatialBinning):
         return  numpy.sum(signal[index]) / numpy.sqrt(numpy.sum(numpy.square(noise[index])))
 
 
-#    def sn_calculation_covariance_matrix(self, signal, noise, index):
     def sn_calculation_covariance_matrix(self, index, signal, noise):
         """
         Calculate the S/N using a full covariance matrix.
@@ -430,7 +427,6 @@ class VoronoiBinning(SpatialBinning):
         return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[i,j]))
 
 
-#    def sn_calculation_calibrate_noise(self, signal, noise, index):
     def sn_calculation_calibrate_noise(self, index, signal, noise):
         r"""
         Calculate the S/N using a calibration of the S/N following:

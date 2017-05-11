@@ -23,23 +23,6 @@ support classes and functions.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
         
         import os.path
         from os import environ
@@ -50,15 +33,8 @@ support classes and functions.
         from pydl.pydlutils.yanny import yanny
         from .parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import _select_proc_method
+        from ..proc.util import select_proc_method
         from ..config.defaults import default_dap_source
-
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_,
-    :func:`available_emission_line_databases` is not python 2
-    compiliant.
 
 *Class usage examples*:
     To define an emission line::
@@ -110,7 +86,6 @@ support classes and functions.
     | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
         in database.
 
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -126,25 +101,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import os.path
 from os import environ
@@ -155,10 +111,9 @@ from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from ..proc.util import _select_proc_method
+from ..proc.util import select_proc_method
 from ..config.defaults import default_dap_source
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -183,7 +138,7 @@ class EmissionLinePar(ParSet):
         restwave (float) : The rest wavelength of the line in angstroms
             *in vacuum*.
         action (str) : (**Optional**) Describes how the line should be
-            treated.  Possible values are:
+            treated; default is ``'f'``.  Possible values are:
 
             - ``'i'``: ignore the line, as if the line were commented
               out.
@@ -195,13 +150,14 @@ class EmissionLinePar(ParSet):
               masked, the wavelength of the line is NOT adjusted for the
               redshift of the object spectrum.
 
-            Default is ``'f'``.
         flux (float) : (**Optional**) **Relative** flux of the emission
             (positive) or absorption (negative) lines.  This should most
             often be unity if ``line='l'`` and indicates the ratio of
             line flux if ``line='dN'``.  Default is 1.0.
-        mode (float) : (**Optional**) Fitting mode for the line.
-            Possible values are:
+
+        mode (float) : (**Optional**) Fitting mode for the line; default
+            is ``'f'``.  Possible values are:
+
                 - ``'f'``: Fit the line independently of all others in
                   its own window.
                 - ``'wN'``: Fit the line with untied parameters, but use
@@ -217,7 +173,7 @@ class EmissionLinePar(ParSet):
                   dispersion tied to the line with index N.
                 - ``'aN'``: Fit the line with the flux, velocity, and
                   velocity dispersion tied to the line with index N.
-            Default is ``'f'``.
+
         profile (str): (**Optional**)  The class definition of the
             profile shape.  This is kept as a string until it is used.
             Once it is used, it is converted to the class name using::
@@ -393,7 +349,6 @@ class EmissionLineDB(ParDatabase):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Attributes:
-        version (str): Version number
         database (str): Keyword of the selected database to use.
         neml (int): Number of emission lines in the database
 
@@ -404,13 +359,11 @@ class EmissionLineDB(ParDatabase):
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
 
-        self.version = '1.0'
-
         # Get the details of the selected database
-        self.database = _select_proc_method(database_key, SpectralFeatureDBDef,
-                                            method_list=emldb_list,
-                                            available_func=available_emission_line_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
+                                           method_list=emldb_list,
+                                           available_func=available_emission_line_databases,
+                                           dapsrc=dapsrc)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

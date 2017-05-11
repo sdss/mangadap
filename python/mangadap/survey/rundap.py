@@ -141,11 +141,10 @@ from ..config.defaults import default_dap_par_file, default_dap_plan_file
 from ..util.exception_tools import print_frame
 from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink
+from ..util.version import __version__
 from .mangampl import MaNGAMPL
 from ..par.analysisplan import AnalysisPlanSet
 from . import util
-
-__author__ = 'Kyle Westfall'
 
 class rundap:
     r"""
@@ -178,7 +177,7 @@ class rundap:
             the terminal with command-line arguments that should be
             parsed.
         quiet (bool): (**Optional**) Suppress output
-        version (bool): (**Optional**) Print the class version and
+        print_version (bool): (**Optional**) Print the class version and
             return
         strictver (bool): (**Optional**) Strictly check the version
             requirements for this version of the dap.  Default is True,
@@ -285,9 +284,7 @@ class rundap:
             accompanied by a list of plates, ifus, and modes to analyze.
             In this case, :attr:`clobber` is implicitly true.
         quiet (bool): Suppress output
-        version (bool): Print the class version and return.  Needed as
-            an attribute so that it can be read and returned from the
-            command line.
+        print_version (bool): Print the version and then return
         strictver (bool): Strictly check the version requirements for
             this version of the dap.  If True, an exception is raised if
             the expected version are not the same as the environment.
@@ -336,16 +333,12 @@ class rundap:
         drpc (:class:`mangadap.survey.drpcomplete.DRPComplete`):
             Database of the available DRP files and the parameters
             necessary to write the DAP par files.
-
-    .. todo::
-        - Move the version checking to mangampl.py
-
     """
     def __init__(self,
                  # Run mode options
                  daily=None, all=None, clobber=None, redo=None,
                  # STDIO options
-                 console=None, quiet=False, version=None,
+                 console=None, quiet=False, print_version=False,
                  # Override default environmental variables
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None, 
                  # Definitions used to set files to process
@@ -366,7 +359,7 @@ class rundap:
         self.clobber = clobber
         self.redo = redo
         self.quiet = quiet
-        self.version = version
+        self.print_version = print_version
 
         # Override environment
         self.strictver = strictver
@@ -436,8 +429,8 @@ class rundap:
             raise ValueError('No processing steps requested!')
 
         # Only print the version of the DAP
-        if self.version:
-            print('This is version 2.0')
+        if self.print_version:
+            print('DAP Version: {0}'.format(__version__))
             return
 
 #        print('Plates:')
@@ -637,7 +630,8 @@ class rundap:
                                  'to -vv', default=0)
         parser.add_argument("--quiet", help="suppress screen output", action="store_true",
                             default=False)
-        parser.add_argument("--version", help="rundap version", action="store_true", default=False)
+        parser.add_argument("--print_version", help="print DAP version and stop",
+                            action="store_true", default=False)
        
         # These arguments are used to override default behavior
         parser.add_argument("--loose", help="Only throw warnings if the versioning is "
@@ -726,8 +720,8 @@ class rundap:
             self.clobber = arg.clobber
         if arg.quiet is not None:
             self.quiet = arg.quiet
-        if arg.version is not None:
-            self.version = arg.version
+        if arg.print_version is not None:
+            self.print_version = arg.print_version
 
         # Set the versions to use
         # Will OVERWRITE existing input from __init__()
@@ -1068,8 +1062,9 @@ class rundap:
 
         Conditions that the DAP has completes its processing of the
         given DRP file:
+
             - the output path for the DAP file exists
-            - within the path, the *.done touch file exits
+            - within the path, the \*.done touch file exits
 
         .. todo::
 
@@ -1298,8 +1293,7 @@ class rundap:
             output sent to STDERR.
 
         Raises:
-            Exception: Raised if DAP module version is not correctly
-                defined.
+            Exception: Raised if DAP version is not correctly defined.
         """
         # Check that the path exists, creating it if not
         self._check_paths(plate, ifudesign)

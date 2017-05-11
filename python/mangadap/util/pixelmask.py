@@ -59,7 +59,6 @@ from ..par.emissionlinedb import EmissionLineDB
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -120,6 +119,12 @@ class PixelMask:
         """
         self._set_shape(x, ny=ny)
         _rng = numpy.atleast_2d(rng)
+
+        # Account for any undefined limits
+        _rng[numpy.equal(_rng[:,0], None),0] = x[0]-1
+        _rng[numpy.equal(_rng[:,1], None),1] = x[-1]+1
+
+        # Generate the mask
         mask = numpy.any( numpy.array([ numpy.logical_and(x>l, x<u) \
                                         for l,u in zip(_rng[:,0], _rng[:,1])]), axis=0)
         return mask if len(self.shape) == 1 else numpy.array([mask]*self.shape[0])

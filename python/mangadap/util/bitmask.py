@@ -119,9 +119,6 @@ import numpy
 import os
 import textwrap
 from pydl.pydlutils.yanny import yanny
-#from .yanny import yanny
-
-__author__ = 'Kyle B. Westfall'
 
 class BitMask:
     """

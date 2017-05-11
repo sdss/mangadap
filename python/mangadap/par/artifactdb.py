@@ -36,7 +36,7 @@ spectra in an RSS or CUBE file.
         from pydl.pydlutils.yanny import yanny
         from .parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import _select_proc_method
+        from ..proc.util import select_proc_method
 
 *Class usage examples*:
     Add example usage!
@@ -69,9 +69,8 @@ from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from ..proc.util import _select_proc_method
+from ..proc.util import select_proc_method
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -169,7 +168,6 @@ class ArtifactDB(ParDatabase):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Attributes:
-        version (str): Version number
         database (:class:`mangadap.par.ParSet`): Database parameters.
         nart (int): Number of artifacts in the database
 
@@ -180,13 +178,11 @@ class ArtifactDB(ParDatabase):
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
 
-        self.version = '1.0'
-
         # Get the details of the selected database
-        self.database = _select_proc_method(database_key, SpectralFeatureDBDef,
-                                            method_list=artdb_list,
-                                            available_func=available_artifact_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
+                                           method_list=artdb_list,
+                                           available_func=available_artifact_databases,
+                                           dapsrc=dapsrc)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

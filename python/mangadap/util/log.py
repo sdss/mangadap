@@ -23,11 +23,14 @@ Logging routines.
             long = int
 
         import logging
+        import warnings
 
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW)
+    | **05 May 2017**: (KBW) Clean up the documentation
 
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
+.. _logging.level: https://docs.python.org/3/library/logging.html#logging-levels
 
 """
 
@@ -43,13 +46,20 @@ if sys.version > '3':
 import logging
 import warnings
 
-__author__ = 'Kyle Westfall'
-
 def init_DAP_logging(log, simple_warnings=True, append=False):
     """
+    Initialize the logging preferences for the DAP.
+
+    Args:
+        log (str): File with log output.
+        simple_warnings (bool): (**Optional**) Shorten warning messages.
+        append (bool): (**Optional**) Append new log messages to
+            existing log file; if False, file is overwritten.
+
     .. todo::
-        - Use a file with the logging configuration.  See:
+        Use a file with the logging configuration.  See:
         https://docs.python.org/3.5/howto/logging.html#handler-basic
+
     """
 
     # Remove existing root logging
@@ -92,6 +102,16 @@ def module_logging(name, verbose):
     
     
 def log_output(loggers, v, lvl, message):
+    """
+    Write message to the log.
+
+    Args:
+        loggers (`logging.Logger`_):  Objects collecting the log for a
+            given run of the DAP.
+        v (int): Verbosity level of message.
+        lvl (`logging.level`_):  Logging level
+        message (str): Message to log.
+    """
     if loggers is None:
         print(message)
         return
@@ -103,6 +123,9 @@ def log_output(loggers, v, lvl, message):
 
 
 def short_warning(message, category, filename, lineno, file=None, line=None):
+    """
+    Return the format for a short warning message.
+    """
     return ' %s: %s' % (category.__name__, message)
     
 

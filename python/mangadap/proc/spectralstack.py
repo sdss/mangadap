@@ -30,7 +30,6 @@ Stack some spectra!
 
         from ..par.parset import ParSet
         from ..util.covariance import Covariance
-        from ..util.misc import inverse_with_zeros
 
 *Class usage examples*:
 
@@ -75,12 +74,10 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
-from ..util.misc import inverse_with_zeros
 from ..util.constants import constants
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -182,7 +179,8 @@ class SpectralStack():
         self.wave = None
         self.flux = None
         self.fluxsqr = None
-        self.flux_sdev = None
+        self.fluxmean = None
+        self.fluxsdev = None
         self.npix = None
         self.ivar = None
         self.sres = None
@@ -232,9 +230,9 @@ class SpectralStack():
         if covariance_mode in [ 'none', 'calibrate']:
             return True
         if covariance_mode in [ 'full', 'approx_correlation' ] \
-                and (covar.dim != 3 or covar.shape[0] != nwave):
+                and (covar.dim != 3 or covar.shape[-1] != nwave):
             return False
-        if covar.shape[-1] != nspec:
+        if covar.shape[0] != nspec:
             return False
         return True
 
@@ -328,16 +326,19 @@ class SpectralStack():
         self.fluxsqr = numpy.ma.dot(rt, numpy.square(flux))
         self.npix = numpy.ma.dot(rt, numpy.invert(numpy.ma.getmaskarray(flux))).astype(int)
 
-        if sres is not None:
+        if sres is None:
+            self.sres = None
+        else:
             Tc = rt.sum(axis=1).ravel()
             Tc[~(Tc>0)] = 1.0
             self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2))/Tc[:,None], -0.5)
 
         if ivar is None:
+            self.ivar = None
             return
 
         # No covariance so:
-        self.ivar = numpy.ma.power( numpy.ma.dot(numpy.power(rt, 2.0), numpy.ma.power(ivar, -1.)),
+        self.ivar = numpy.ma.power(numpy.ma.dot(numpy.power(rt, 2.0), numpy.ma.power(ivar, -1.)),
                                    -1.)
         
 #        pyplot.plot(self.wave, ivar[20*44+20,:])
@@ -349,71 +350,73 @@ class SpectralStack():
         """
         Stack the spectra and incorporate covariance.
         
-        Return the
-        sum of the flux, the sum of the flux squared, the number of
-        points in each sum, and the covariance.
-
         ivar must not be none if covariance_mode is channels or wavelengths
 
         Size has to match self.rebin_T
         """
-        # If calibrating, first stack without covariance, and the
-        # renormalize the error.  Covar is expected to be a single float
+        # First stack without covariance. This sets self.flux,
+        # self.fluxsqr, self.npix, self.ivar, self.sres.
         self._stack_without_covariance(flux, ivar=ivar, sres=sres)
 
+        # If calibrating the noise based on the equation,
+        #   Noise_corrected = Noise_nocovar * (1 + f * log10(N))
+        # apply it and return
         if covariance_mode == 'calibrate':
-            if ivar is not None:
+            if self.ivar is not None:
                 self.ivar /= numpy.square(1.0 + covar*numpy.ma.log10(self.npix))
             return
 
-        nwave = flux.shape[1]
-        if covariance_mode in [ 'channels', 'wavelengths' ]:
-            nchan = covar.shape[0]
-            nbin = self.flux.shape[0]
-            self.covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
-            variance_ratio = numpy.ma.zeros( (nbin,nchan), dtype=numpy.float)
-            for i in range(nchan):
-                j = covar.input_indx[i]
-                cov_array = covar._with_lower_triangle(plane=j)
-                self.covar[i] = sparse.triu(self.rebin_T.dot(
+        # Check that the code knows what to do otherwise
+        if covariance_mode not in [ 'channels', 'wavelengths', 'approx_correlation', 'full' ]:
+            raise ValueError('Unknown covariance mode: {0}'.format(covariance_mode))
+
+        # Recalibrate the error based on a selection of covariance
+        # channels
+        recalibrate_ivar = covariance_mode in [ 'channels', 'wavelengths' ]
+        if recalibrate_ivar and self.ivar is None:
+            raise ValueError('Must provide ivar to recalibrate based on covar.')
+
+        # Setup for output
+        nbin = self.flux.shape[0]
+        nchan = covar.shape[-1]
+        self.covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        variance_ratio = numpy.ma.zeros( (nbin,nchan), dtype=numpy.float) \
+                            if recalibrate_ivar else None
+
+        # Calculate the covariance in the stack
+        for i in range(nchan):
+            j = covar.input_indx[i]
+            cov_array = covar._with_lower_triangle(channel=j)
+            self.covar[i] = sparse.triu(self.rebin_T.dot(
                                              cov_array.dot(self.rebin_T.T))).tocsr()
-#                pyplot.scatter(numpy.sqrt(self.covar[i].diagonal()), numpy.sqrt(1./self.ivar[:,j]),
-#                               marker='.', s=30, lw=0, color='k')
+
+            # Get the variance ratio
+            if recalibrate_ivar:
                 variance_ratio[:,i] = self.covar[i].diagonal() * self.ivar[:,j]
-#                variance_ratio.mask[:,i] = self.ivar.mask[:,j]
                 variance_ratio[numpy.ma.getmaskarray(self.ivar)[:,j],i] = numpy.ma.masked
+#            pyplot.scatter(numpy.sqrt(self.covar[i].diagonal()), numpy.sqrt(1./self.ivar[:,j]),
+#                           marker='.', s=30, lw=0, color='k')
 #            pyplot.show()
 
-#            print(numpy.sum(variance_ratio.mask))
-#            for i in range(nbin):
-##                pyplot.scatter(numpy.arange(nchan), variance_ratio[i,:], marker='.', s=30, lw=0)
-#                pyplot.plot(numpy.arange(nchan), variance_ratio[i,:], lw=0.5)
-#            pyplot.xlabel(r'Covariance Channel')
-#            pyplot.ylabel(r'$C_{ii}\ I_{ii}$')
-#            pyplot.show()
-#            exit()
+#        print(numpy.sum(variance_ratio.mask))
+#        for i in range(nbin):
+##            pyplot.scatter(numpy.arange(nchan), variance_ratio[i,:], marker='.', s=30, lw=0)
+#            pyplot.plot(numpy.arange(nchan), variance_ratio[i,:], lw=0.5)
+#        pyplot.xlabel(r'Covariance Channel')
+#        pyplot.ylabel(r'$C_{ii}\ I_{ii}$')
+#        pyplot.show()
+        
+        self.covar = Covariance(self.covar, input_indx=covar.input_indx)
+#       self.covar.show(channel=self.covar.input_indx[0])
 
-            # Below commented because there's a better way to do this
-            # with, e.g., [:,None] indexing
-#            ratio = numpy.array([numpy.ma.mean( variance_ratio, axis=1 )]*nwave).T
-#            ratio = numpy.array([numpy.ma.median( variance_ratio, axis=1 )]*nwave).T
-#            self.ivar = (numpy.ma.power(_ratio, -1.0).ravel()*self.ivar.ravel()).reshape(-1,nwave)
+        # Set ivar by recalibrating the existing data
+        if recalibrate_ivar:
             ratio = numpy.ma.median( variance_ratio, axis=1 )
             self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
-            self.covar = Covariance(inp=self.covar, input_indx=covar.input_indx)
-#            j = self.covar.input_indx[0]
-#            self.covar.show(plane=j)
             return
 
-        if covariance_mode in [ 'approx_correlation', 'full' ]:
-            self.covar = numpy.empty(nwave, dtype=sparse.csr.csr_matrix)
-            for i in range(nwave):
-                self.covar[i] = sparse.triu(self.rebin_T.dot(
-                                             covar[i].cov.dot(self.rebin_T.T))).tocsr()
-            self.covar = Covariance(inp=self.covar)
-            return
-
-        raise ValueError('Unknown covariance mode: {0}'.format(covariance_mode))
+        # Get the inverse variance from the full covariance matrix
+        self.ivar = numpy.ma.power(self.covar.variance(), -1.).filled(0.0)
 
 
     def _covar_in_mean(self):
@@ -426,28 +429,33 @@ class SpectralStack():
         if self.covar is None:
             return None
         
-        nchan = self.covar.shape[0]
+        nchan = self.covar.shape[-1]
         nbin = self.flux.shape[0]
         inpix = numpy.ma.power(self.npix, -1.)
         covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
         for i in range(nchan):
             j = self.covar.input_indx[i]
-            _inpix = numpy.ma.MaskedArray( [inpix[:,j]]*nbin ).T
-            _inpix = (_inpix.ravel() * _inpix.T.ravel()).reshape(nbin,nbin)
+            _inpix = inpix[:,j,None]*inpix[None,:,j]
+            covar[i] = sparse.triu(self.covar.toarray(channel=j) * _inpix).tocsr()
+#            _inpix = numpy.ma.MaskedArray( [inpix[:,j]]*nbin ).T
+#            _inpix = (_inpix.ravel() * _inpix.T.ravel()).reshape(nbin,nbin)
+#            covar[i] = sparse.triu((self.covar.toarray(channel=j).ravel()
+#                                            * _inpix.ravel()).reshape(nbin,nbin)).tocsr()
 #            pyplot.imshow(_inpix, origin='lower', interpolation='nearest')
 #            pyplot.colorbar()
 #            pyplot.show()
-#            self.covar.show(plane=j)
-#            pyplot.imshow((self.covar.toarray(plane=j).ravel()*_inpix.ravel()).reshape(nbin,nbin),
+
+#            self.covar.show(channel=j)
+
+#            pyplot.imshow((self.covar.toarray(channel=j).ravel()*_inpix.ravel()).reshape(nbin,nbin),
 #                          origin='lower', interpolation='nearest')
 #            pyplot.colorbar()
 #            pyplot.show()
-            covar[i] = sparse.triu((self.covar.toarray(plane=j).ravel()
-                                            * _inpix.ravel()).reshape(nbin,nbin)).tocsr()
+
 #            pyplot.imshow(covar[i].toarray(), origin='lower', interpolation='nearest')
 #            pyplot.colorbar()
 #            pyplot.show()
-        return Covariance(inp=covar, input_indx=self.covar.input_indx)
+        return Covariance(covar, input_indx=self.covar.input_indx)
             
 
     @staticmethod
@@ -674,7 +682,8 @@ class SpectralStack():
         _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
+#        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
+        var = None if ivar is None else numpy.ma.power(ivar, -1).filled(0.0)
 
         # Resample each spectrum
         for i in range(nspec):
@@ -696,8 +705,9 @@ class SpectralStack():
         _mask = _mask.astype(bool)
 
         return _wave, numpy.ma.MaskedArray(_flux, mask=_mask), \
-               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask), \
-               _sres
+                    numpy.ma.MaskedArray(numpy.ma.power(_ivar, -1).filled(0.0), mask=_mask), _sres
+
+#               numpy.ma.MaskedArray(inverse_with_zeros(_ivar, absolute=False), mask=_mask), \
 
 
     @staticmethod
@@ -793,6 +803,9 @@ class SpectralStack():
 
         Register a set of spectra to the same wavelength range given a
         set of velocity offsets.
+
+        The internal attributes are always kept as the sum, not the
+        mean, of the spectra.
 
         .. todo:
             - Allow for renormalization of spectra before stacking.
@@ -921,22 +934,22 @@ class SpectralStack():
 
         # Calculate the standard deviation in the flux, even if the flux
         # operation is to sum the data
-        mean = self.flux/self.npix
-        sdev = numpy.ma.sqrt((self.fluxsqr/self.npix - numpy.square(mean))
-                                * self.npix*numpy.ma.power((self.npix-1), -1.))
+        self.fluxmean = self.flux/self.npix
+        self.fluxsdev = numpy.ma.sqrt((self.fluxsqr/self.npix - numpy.square(self.fluxmean))
+                                            * self.npix*numpy.ma.power((self.npix-1), -1.))
 
-        # If summing, then the stacking procedure is done
+        # Return the stacked data
         if operation == 'sum':
-            return self.wave, self.flux, sdev, self.npix, self.ivar, self.sres, self.covar
+            return self.wave, self.flux, self.fluxsdev, self.npix, self.ivar, self.sres, self.covar
+        return self._get_stack_mean()
 
-        # If stacking to the mean, calculate the inverse variance of the
-        # mean
-        covar = self._covar_in_mean()
-#        print(covar.input_indx)
-#        covar.show(plane=0)
 
-        return self.wave, mean, sdev, self.npix, self.ivar * numpy.square(self.npix), \
-                    self.sres, covar
+    def _get_stack_mean(self):
+        """
+        Return the mean of the stacked spectra using the internal data.
+        """
+        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
+                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
 
 
         

@@ -41,9 +41,29 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import os
 import sys
 if sys.version > '3':
     long = int
+    try:
+        from configparser import ConfigParser
+    except ImportError:
+        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
+    try:
+        from configparser import ExtendedInterpolation
+    except ImportError:
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
+else:
+    try:
+        from ConfigParser import ConfigParser
+    except ImportError:
+        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
+    try:
+        from ConfigParser import ExtendedInterpolation
+    except ImportError:
+        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
+                      ImportWarning)
 
 from .exception_tools import print_frame
 
@@ -211,4 +231,57 @@ def parse_dap_file_name(name):
     return plate, ifudesign, mode, bintype, niter
 
     
+class DefaultConfig:
+    """
+    A wrapper for the ConfigParser class that handles None values and
+    provides some convenience functions.
+    """
+    def __init__(self, f=None, interpolate=False):
+        self.cnfg = ConfigParser(os.environ, allow_no_value=True,
+                                 interpolation=ExtendedInterpolation()) \
+                        if interpolate else ConfigParser(allow_no_value=True)
+        if f is not None:
+            self.cnfg.read(f)
+
+    def __getitem__(self, key):
+        return self.cnfg['default'][key]
+
+    def __iter__(self):
+        return self.cnfg.options('default').__iter__()
+
+    def read(self, f):
+        return self.cnfg.read(f)
+
+    def keyword_specified(self, key):
+        return key in self and self[key] is not None
+
+    def all_required(self, keys):
+        for k in keys:
+            if k not in self or self[k] is None:
+                return False
+        return True
+
+    def get(self, key, default=None):
+        return default if key not in self or self.cnfg['default'][key] is None \
+                        else self.cnfg['default'][key]
+
+    def getint(self, key, default=None):
+        return default if key not in self or self.cnfg['default'][key] is None \
+                        else self.cnfg['default'].getint(key)
+
+    def getbool(self, key, default=None):
+        return default if key not in self or self.cnfg['default'][key] is None \
+                        else self.cnfg['default'].getboolean(key)
+
+    def getfloat(self, key, default=None):
+        return default if key not in self or self.cnfg['default'][key] is None \
+                        else self.cnfg['default'].getfloat(key)
+
+    def getlist(self, key, evaluate=False, default=None):
+        if key not in self or self.cnfg['default'][key] is None:
+            return default
+        return [ eval(e.strip()) if evaluate else e.strip() \
+                    for e in self.cnfg['default'][key].split(',') ]
+
+
 

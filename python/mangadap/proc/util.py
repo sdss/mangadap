@@ -48,9 +48,6 @@ import scipy.interpolate
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
-
-
 def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \
                              mask_ext='MASK', invert=False):
     """
@@ -91,29 +88,30 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
     return hdu
 
 
-def _select_proc_method(method_key, method_type, method_list=None, available_func=None,
-                        dapsrc=None):
+def select_proc_method(method_key, method_type, method_list=None, available_func=None, dapsrc=None):
     r"""
-
     Select a method from a list.  One of method_list or available_func
     must be provided.
 
     Args:
         method_key (str): Keyword used to select the method.
-        method_list (list): (Optional) List of methods from which to
+        method_type (object): Object type to check *method_list*
+            against.
+        method_list (list): (**Optional**) List of methods from which to
             find the selection keyword.  If none is provided,
             *available_func* **must** be provided.
-        available_func (callable): (Optional) Callable function that
-            returns a list of default methods in place of *method_list.
+        available_func (callable): (**Optional**) Callable function that
+            returns a list of default methods in place of *method_list*.
             For example, see
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
-        dapsrc (str): (Optional) Root path to the DAP source
+        dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-        :class:`mangadap.par.ParSet`: A set of parameters used to define
-        a method or database.
+        object: An object with base class :class:`mangadap.par.ParSet`,
+        containing a set of parameters used to define a method or
+        database.
 
     Raises:
         KeyError: Raised if the selected keyword is not among the
@@ -152,13 +150,13 @@ def _select_proc_method(method_key, method_type, method_list=None, available_fun
     return method_list[indx]
     
 
-def _fill_vector(v, length, missing, value):
-    if v.size == length:
-        v[missing] = value
-        return v
-    _v = numpy.full(length, value, dtype=v.dtype)
-    _v[ list(set( numpy.arange(length) ) - set(missing)) ] = v
-    return _v
+#def _fill_vector(v, length, missing, value):
+#    if v.size == length:
+#        v[missing] = value
+#        return v
+#    _v = numpy.full(length, value, dtype=v.dtype)
+#    _v[ list(set( numpy.arange(length) ) - set(missing)) ] = v
+#    return _v
 
 
 def flux_to_fnu(wave, flambda, unit_norm=1e-17):

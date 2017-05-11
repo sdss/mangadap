@@ -27,15 +27,6 @@ procedures.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
         
         import glob
         import os.path
@@ -51,6 +42,7 @@ procedures.
         from ..config.defaults import default_dap_file_name
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
+        from ..util.parser import DefaultConfig
         from ..drpfits import DRPFits
 
 *Class usage examples*:
@@ -75,12 +67,12 @@ procedures.
         include convenience functions that construct the cube for each
         extension as requested.
     | **06 Dec 2016**: (KBW) Significantly restructured.
+    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
-
+.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
 .. todo::
     - Check binning an RSS file
@@ -96,15 +88,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!')
 
 import glob
 import os
@@ -121,7 +104,8 @@ import astropy.constants
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu, create_symlink
+from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
+from ..util.parser import DefaultConfig
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.covariance import Covariance
@@ -133,11 +117,10 @@ from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
-from .util import _select_proc_method #, _fill_vector
+from .util import select_proc_method
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -227,12 +210,12 @@ class SpatiallyBinnedSpectraDef(ParSet):
 
 def validate_spatial_binning_scheme_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a spatial binning scheme.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
+    spatial-binning scheme parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the binning method as needed by
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
+            the spatial-binning method parameters as needed by
             :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`.
 
     Raises:
@@ -242,77 +225,31 @@ def validate_spatial_binning_scheme_config(cnfg):
             be found.
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
-        raise KeyError('Keyword \'key\' must be provided.')
-    if 'method' not in cnfg.options('default'):
-        raise KeyError('Keyword \'method\' must be provided.')
 
-    if 'galactic_reddening' not in cnfg.options('default') \
-            or cnfg['default']['galactic_reddening'] is None:
-        cnfg['default']['galactic_reddening'] = None
-    if 'galactic_rv' not in cnfg.options('default') or cnfg['default']['galactic_rv'] is None:
-        cnfg['default']['galactic_rv'] = '3.1'
+    required_keywords = [ 'key', 'method', 'spec_res' ]
+    if not cnfg.all_required(required_keywords):
+        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
-    if 'minimum_snr' not in cnfg.options('default') or cnfg['default']['minimum_snr'] is None:
-        cnfg['default']['minimum_snr'] = '0.0'
-
-    if 'operation' not in cnfg.options('default') or cnfg['default']['operation'] is None:
-        cnfg['default']['operation'] = 'mean'
-
-    if 'velocity_register' not in cnfg.options('default') \
-            or cnfg['default']['velocity_register'] is None:
-        cnfg['default']['velocity_register'] = 'False'
-
-    if 'stack_covariance_mode' not in cnfg.options('default') \
-            or cnfg['default']['stack_covariance_mode'] is None:
-        cnfg['default']['stack_covariance_mode'] = 'none'
-
-    spec_res_options = SpatiallyBinnedSpectra.spectral_resolution_options()
-    if 'spec_res' not in cnfg.options('default') \
-            or cnfg['default']['spec_res'] not in spec_res_options:
-        raise ValueError('Must define how to treat the spectral resolution.  Options are:'
-                         '{0}'.format(spec_res_options))
+    if cnfg['method'] not in [ 'none', 'global', 'voronoi', 'radial' ]:
+        raise ValueError('Unknown binning method: {0}'.format(cnfg['method']))
 
     covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
-    if cnfg['default']['stack_covariance_mode'] in covar_par_needed_modes \
-            and ('stack_covariance_par' not in cnfg.options('default') \
-                    or cnfg['default']['stack_covariance_par'] is None):
-        raise ValueError('For covariance mode = {0}, must provide a parameter!'.format(
-                         cnfg['default']['stack_covariance_mode']))
-        
-    if 'stack_covariance_par' not in cnfg.options('default') \
-            or cnfg['default']['stack_covariance_par'] is None:
-        cnfg['default']['stack_covariance_par'] = 'none'
+    if cnfg['stack_covariance_mode'] in covar_par_needed_modes \
+                and not cnfg.keyword_specified('stack_covariance_par'):
+        raise ValueError('must provide a parameter for covariance mode {0}.'.format(
+                         cnfg['stack_covariance_mode']))
 
-    if 'noise_calib' not in cnfg.options('default') \
-            or cnfg['default']['noise_calib'] is None:
-        cnfg['default']['noise_calib'] = 'None'
-
-    if cnfg['default']['method'] in [ 'none', 'global' ]:
+    if cnfg['method'] in [ 'none', 'global' ]:
         return
 
-    if cnfg['default']['method'] == 'voronoi':
-        if 'target_snr' not in cnfg.options('default'):
-            raise KeyError('Keyword \'target_snr\' must be provided for Voronoi binning.')
-        return
+    if cnfg['method'] == 'voronoi' and not cnfg.keyword_specified('target_snr'):
+        raise KeyError('Keyword \'target_snr\' must be provided for Voronoi binning.')
 
-    if cnfg['default']['method'] == 'radial':
-        if 'center' not in cnfg.options('default'):
-            raise KeyError('Keyword \'center\' must be provided for radial binning.')
-        if 'pa' not in cnfg.options('default'):
-            raise KeyError('Keyword \'pa\' must be provided for radial binning.')
-        if 'ell' not in cnfg.options('default'):
-            raise KeyError('Keyword \'ell\' must be provided for radial binning.')
-        if 'radii' not in cnfg.options('default'):
-            raise KeyError('Keyword \'radii\' must be provided for radial binning.')
+    required_keywords = [ 'center', 'pa', 'ell', 'radii' ]
+    if cnfg['method'] == 'radial' and not cnfg.all_required(required_keywords):
+        raise KeyError('Keywords {0} must all have valid values for radial binning.'.format(
+                        required_keywords))
 
-        if 'radius_scale' not in cnfg.options('default') or cnfg['default']['radius_scale'] is None:
-            cnfg['default']['radius_scale'] = '1.0'
-        if 'log_step' not in cnfg.options('default') or cnfg['default']['log_step'] is None:
-            cnfg['default']['log_step'] = 'False'
-        return
-
-    raise ValueError('{0} is not a recognized binning method.'.format(cnfg['default']['method']))
 
 
 def available_spatial_binning_methods(dapsrc=None):
@@ -381,7 +318,6 @@ def available_spatial_binning_methods(dapsrc=None):
             could be found.
         KeyError: Raised if the binning method keywords are not all
             unique.
-        NameError: Raised if ConfigParser is not correctly imported.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -405,30 +341,27 @@ def available_spatial_binning_methods(dapsrc=None):
     binning_methods = []
     for f in ini_files:
         # Read the config file
-        cnfg = ConfigParser(allow_no_value=True)
-        cnfg.read(f)
+        cnfg = DefaultConfig(f=f)
         # Ensure it has the necessary elements to define the template
         # library
         validate_spatial_binning_scheme_config(cnfg)
-        if cnfg['default']['method'] == 'global':
+        if cnfg['method'] == 'global':
             binpar = None
             binclass = spatialbinning.GlobalBinning()
             binfunc = binclass.bin_index
-        elif cnfg['default']['method'] == 'radial':
-            center = [ float(e.strip()) for e in cnfg['default']['center'].split(',') ]
-            radii = [ float(e.strip()) for e in cnfg['default']['radii'].split(',') ]
+        elif cnfg['method'] == 'radial':
+            center = cnfg.getlist('center', evaluate=True)
+            radii = cnfg.getlist('radii', evaluate=True)
             radii[2] = int(radii[2])
-            binpar = spatialbinning.RadialBinningPar(center, cnfg['default'].getfloat('pa'),
-                                                     cnfg['default'].getfloat('ell'),
-                                                     cnfg['default'].getfloat('radius_scale'),
-                                                     radii, cnfg['default'].getboolean('log_step'))
+            binpar = spatialbinning.RadialBinningPar(center, cnfg.getfloat('pa', default=0.),
+                                                     cnfg.getfloat('ell', default=0.),
+                                                     cnfg.getfloat('radius_scale', default=1.),
+                                                     radii, cnfg.getbool('log_step', default=False))
             binclass = spatialbinning.RadialBinning()
             binfunc = binclass.bin_index
-        elif cnfg['default']['method'] == 'voronoi':
-            covar = 1.0 if cnfg['default']['noise_calib'] == 'None' \
-                        else cnfg['default'].getfloat('noise_calib')
-            binpar = spatialbinning.VoronoiBinningPar(cnfg['default'].getfloat('target_snr'),
-                                                      None, None, covar)
+        elif cnfg['method'] == 'voronoi':
+            binpar = spatialbinning.VoronoiBinningPar(cnfg.getfloat('target_snr'), None, None,
+                                                      cnfg.getfloat('noise_calib'))
             binclass = spatialbinning.VoronoiBinning()
             binfunc = binclass.bin_index
         else:   # Do not bin!
@@ -436,27 +369,23 @@ def available_spatial_binning_methods(dapsrc=None):
             binclass = None
             binfunc = None
 
-        stack_spec_res = cnfg['default']['spec_res'] == 'spaxel'
+        stack_spec_res = cnfg['spec_res'] == 'spaxel'
 
-        stackpar = SpectralStackPar(cnfg['default']['operation'],
-                                    cnfg['default'].getboolean('velocity_register'),
-                                    None,
-                                    cnfg['default']['stack_covariance_mode'],
+        stackpar = SpectralStackPar(cnfg.get('operation', default='mean'),
+                                    cnfg.getbool('velocity_register', default=False), None,
+                                    cnfg.get('stack_covariance_mode', default='none'),
                                     SpectralStack.parse_covariance_parameters(
-                                            cnfg['default']['stack_covariance_mode'],
-                                            cnfg['default']['stack_covariance_par']),
+                                            cnfg.get('stack_covariance_mode', default='none'),
+                                            cnfg['stack_covariance_par']),
                                     stack_spec_res)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
-        binning_methods += [ SpatiallyBinnedSpectraDef(cnfg['default']['key'],
-                                       None if cnfg['default']['galactic_reddening'] == 'None' \
-                                            else cnfg['default']['galactic_reddening'],
-                                                       eval(cnfg['default']['galactic_rv']),
-                                                       cnfg['default'].getfloat('minimum_snr'),
+        binning_methods += [ SpatiallyBinnedSpectraDef(cnfg['key'], cnfg['galactic_reddening'],
+                                                       cnfg.getfloat('galactic_rv', default=3.1),
+                                                       cnfg.getfloat('minimum_snr', default=0.),
                                                        binpar, binclass, binfunc, stackpar,
-                                                       stackclass, stackfunc,
-                                                       cnfg['default']['spec_res']) ]
+                                                       stackclass, stackfunc, cnfg['spec_res']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \
@@ -604,15 +533,15 @@ class SpatiallyBinnedSpectra:
                          symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the data object by ensuring that the fits file is
-        properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the data object by ensuring that the fits file is
+#        properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -626,10 +555,10 @@ class SpatiallyBinnedSpectra:
 
         """
         # Grab the specific method
-        self.method = _select_proc_method(method_key, SpatiallyBinnedSpectraDef,
-                                          method_list=method_list,
-                                          available_func=available_spatial_binning_methods,
-                                          dapsrc=dapsrc)
+        self.method = select_proc_method(method_key, SpatiallyBinnedSpectraDef,
+                                         method_list=method_list,
+                                         available_func=available_spatial_binning_methods,
+                                         dapsrc=dapsrc)
 
 
     def _fill_method_par(self, good_spec):
@@ -1099,7 +1028,6 @@ class SpatiallyBinnedSpectra:
         the object.  See :func:`construct_3d_hdu` if you want to convert
         the object into a DRP-like datacube.
         """
-
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
         if stack_sres is None:
@@ -1135,6 +1063,10 @@ class SpatiallyBinnedSpectra:
         indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & ~drp_bad
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
+        # Fill the covariance HDUs
+        if self.covariance is not None:
+            pri_hdr, ivar_hdu, covar_hdu = self.covariance.output_hdus(hdr=pri_hdr)
+
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=stack_flux.data, name='FLUX'),
@@ -1157,14 +1089,7 @@ class SpatiallyBinnedSpectra:
 
         # Fill the covariance matrix
         if self.covariance is not None:
-            cov_hdr = fits.Header()
-            indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
-            self.hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
-                                                            if var_col is None else \
-                                                            [ indx_col, var_col, covar_col ]),
-                                                        name='COVAR', header=cov_hdr) ]
-            if plane_col is not None:
-                self.hdu += [ fits.BinTableHDU.from_columns([plane_col], name='COVAR_PLANE') ]
+            self.hdu += [ covar_hdu ]
 
 
     def file_name(self):
@@ -1331,7 +1256,7 @@ class SpatiallyBinnedSpectra:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'SPATIALLY BINNING SPECTRA:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('SPATIALLY BINNING SPECTRA'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
             log_output(self.loggers, 1, logging.INFO, 'Total spectra: {0}'.format(
@@ -1400,7 +1325,7 @@ class SpatiallyBinnedSpectra:
             # - If the user wants the single resolution vector for the
             #   entire cube (spec_res = cube), then that extension is
             #   defined explicitly
-            # - Currently the only other options is spec_res=spaxel.  in
+            # - Currently the only other options is spec_res=spaxel.  In
             #   that case, the extension is set to None so that the
             #   DRPFits class can properly decide which data to return
             #   based on whether or not the DISP extension is present.
@@ -1433,7 +1358,7 @@ class SpatiallyBinnedSpectra:
                     covar = None
 
                 if isinstance(covar, Covariance):
-                    covar = DAPFitsUtil.spaxel_to_bin_covariance(covar, bin_indx.ravel())
+                    covar = covar.spaxel_to_bin_covariance(bin_indx.ravel())
 
             # Deredden the spectra if the method requests it
             flux, ivar, _, covar = self._apply_reddening(flux, ivar, None, covar)
@@ -1593,7 +1518,7 @@ class SpatiallyBinnedSpectra:
 
         # TODO: Move this to the Covariance class?
         if self.covariance is not None:
-            self.covariance = DAPFitsUtil.bin_to_spaxel_covariance(self.covariance, bin_indx)
+            covariance = self.covariance.bin_to_spaxel_covariance(bin_indx)
 
 #        print(self.covariance.input_indx)
 #        self.covariance.show(plane=self.covariance.input_indx[0])
@@ -1625,14 +1550,18 @@ class SpatiallyBinnedSpectra:
 
         # Primary header is identical regardless of the shape of the
         # extensions
-        hdr = self.hdu['PRIMARY'].header.copy()
+        pri_hdr = self.hdu['PRIMARY'].header.copy()
         cube_hdr = DAPFitsUtil.build_cube_header(self.drpf, 'K Westfall <westfall@ucolick.org>')
+
+        # Fill the covariance HDUs
+        if self.covariance is not None:
+            pri_hdr, ivar_hdu, covar_hdu = covariance.output_hdus(reshape=True, hdr=pri_hdr)
 
         # Save the data to the hdu attribute
         # TODO: Strip headers of sub extensions of everything but
         # the WCS and HDUCLAS information.  Key WCS information in
         # BINID.
-        hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
+        hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                              fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
                              fits.ImageHDU(data=ivar, header=cube_hdr, name='IVAR'),
                              fits.ImageHDU(data=mask_bit_values, header=cube_hdr, name='MASK'),
@@ -1645,19 +1574,9 @@ class SpatiallyBinnedSpectra:
                              self.hdu['BINS'].copy()
                            ])
 
-        # No covariance
-        if self.covariance is None:
-            return hdu
-
         # Fill the covariance matrix
-        cov_hdr = fits.Header()
-        indx_col, covar_col, var_col, plane_col = self.covariance.binary_columns(hdr=cov_hdr)
-        hdu += [ fits.BinTableHDU.from_columns( ([ indx_col, covar_col ] \
-                                                   if var_col is None else \
-                                                   [ indx_col, var_col, covar_col ]),
-                                               name='COVAR', header=cov_hdr) ]
-        if plane_col is not None:
-            hdu += [ fits.BinTableHDU.from_columns([plane_col], name='COVAR_PLANE') ]
+        if self.covariance is not None:
+            self.hdu += [ covar_hdu ]
 
         return hdu
 
@@ -1670,22 +1589,27 @@ class SpatiallyBinnedSpectra:
         # it
         if match_DRP:
             hdu = self.construct_3d_hdu()
-            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.drpf.mode, self.spectral_arrays,
-                                     self.image_arrays, clobber=clobber, checksum=True,
-                                     symlink_dir=self.symlink_dir, loggers=self.loggers,
-                                     quiet=self.quiet)
+            DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
+                              symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+#            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.drpf.mode, self.spectral_arrays,
+#                                     self.image_arrays, clobber=clobber, checksum=True,
+#                                     symlink_dir=self.symlink_dir, loggers=self.loggers,
+#                                     quiet=self.quiet)
             return
 
-        # Restructure the spectral arrays as if they're RSS data, and
-        # restructure any maps
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-        # Write the HDU
-        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-                  symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-        # Revert back to the python native storage for internal use
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                          symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
+
+#        # Restructure the spectral arrays as if they're RSS data, and
+#        # restructure any maps
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
+#        # Write the HDU
+#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+#                  symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+#        # Revert back to the python native storage for internal use
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1720,7 +1644,8 @@ class SpatiallyBinnedSpectra:
         if self.hdu is not None:
             self.hdu.close()
 
-        self.hdu = fits.open(ifile, checksum=checksum)
+#        self.hdu = fits.open(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
@@ -1733,15 +1658,21 @@ class SpatiallyBinnedSpectra:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
+#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
+#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read and construct the covariance object
         try:
-            self.covariance = Covariance(source=self.hdu, primary_ext='COVAR',
-                                         plane_ext='COVAR_PLANE')
+            self.covariance = Covariance.from_fits(self.hdu, ivar_ext=None, row_major=True,
+                                                   correlation=True)
+            i, j = Covariance.reshape_indices(self.covariance.shape[0],
+                                              self.covariance.input_index)
+
+            var = numpy.ma.power(self.hdu['IVAR'].data[:,:,self.covariance.input_index],
+                                 -1).filled(0.0).reshape(-1, self.covariance.shape[-1])
+            self.covariance = self.covariance.apply_new_variance(var)
         except:
             if not self.quiet:
                 warnings.warn('Unable to find/read covariance data.')
@@ -1776,7 +1707,7 @@ class SpatiallyBinnedSpectra:
 
 
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
-        """
+        r"""
         Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
         specific for :class:`SpatiallyBinnedSpectra`.
 

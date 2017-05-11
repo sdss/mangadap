@@ -1,8 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
-Provides a set of functions to handle instrumental effects.
+Provides a set of functions to handle instrumental sampling and
+resolution effects.
 
 *License*:
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
@@ -56,6 +56,7 @@ Provides a set of functions to handle instrumental effects.
     | **25 Oct 2016**: (KBW) Modified :func:`spectral_coordinate_step`
         to be a mean over the full spectrum to avoid numerical precision
         errors.
+    | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.
 """
 
 from __future__ import division
@@ -79,9 +80,6 @@ from .misc import where_not
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
-__credits__ = ['K. Westfall', 'D. Wilkinson', 'O. Steele', 'D. Thomas' ]
-
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
     Return the sampling step for the input wavelength vector.
@@ -103,6 +101,7 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
         the step in log(angstroms).
     """
     dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
+#    print(dw)
 #    print('mean: ', numpy.mean(dw))
 #    print('sdev: ', numpy.std(dw))
     return numpy.mean(dw)
@@ -130,6 +129,18 @@ def spectrum_velocity_scale(wave):
     """
     return astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave, log=True,
                                                                          base=numpy.exp(1.))
+
+
+def angstroms_per_pixel(wave, log=False, base=10.0):
+    """
+    Return a vector with the angstroms per pixel at each channel
+    assuming the wavelength array is binned either linearly or
+    log-linearly.
+    """
+    ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
+    if log:
+        ang_per_pix *= wave*numpy.log(base)
+    return ang_per_pix
 
 
 class convolution_integral_element:
@@ -278,6 +289,8 @@ class VariableGaussianKernel:
     """
     def __init__(self, sigma, minsig=0.01, nsig=3.0, integral=False):
         self.n = sigma.size                                     # Vector length
+        if self.n == 0:
+            raise ValueError('Input sigma has zero length!')
         self.sigma = sigma.clip(min=minsig)                     # Force sigmas to minimum 
         self.p = int(numpy.ceil(numpy.amax(nsig*self.sigma)))   # Kernel covers up to nsig*sigma
         self.m = 2*self.p + 1                                   # Kernel length
@@ -506,12 +519,13 @@ class spectral_resolution:
         the attributes :attr:`sig_pd` and :attr:`sig_mask`.  See
         :func:`GaussianKernelDifference`.
         """
-        indx = numpy.where(numpy.isclose(sig2_pd, 0.0))
-        nindx = where_not(indx, sig2_pd.size)
+        indx = numpy.isclose(sig2_pd, 0.0)
+        nindx = numpy.invert(indx)
         self.sig_pd = sig2_pd.copy()
         self.sig_pd[nindx] = sig2_pd[nindx]/numpy.sqrt(numpy.absolute(sig2_pd[nindx]))
         self.sig_pd[indx] = 0.0
-        self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
+#        self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
+        self.sig_mask = numpy.array(self.sig_pd < self.min_sig).astype(numpy.uint)
 
 
     def _convert_vd2pd(self, sig2_vd):
@@ -548,6 +562,24 @@ class spectral_resolution:
         return self.interpolator.y
 
 
+    def instrumental_dispersion(self, w=None):
+        r"""
+
+        Return the instrumental dispersion by converting from :math:`R`
+        to :math:`\sigma_{v,inst}` according to:
+            
+        .. math::
+            
+            \sigma_{v,inst} = \frac{c}{\sqrt{8\ln 2}\ R}.
+
+        If w is None, just convert the internal interpolator values.
+        Otherwise, return the values sampled at w.
+        """
+        if w is None:
+            return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator.y).filled(0.0)
+        return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator(w)).filled(0.0)
+
+
     def match(self, new_sres, no_offset=True, min_sig_pix=0.0):
         """
         Currently only an alias for :func:`GaussianKernelDifference`.
@@ -569,7 +601,7 @@ class spectral_resolution:
         .. math::
     
             \sigma_\lambda = \frac{\lambda}{f R}, \ \ {\rm where} \ \  f
-            = \frac{{\rm FWHM_\lambda}}{\sigma_\lambda}.
+            = \frac{{\rm FWHM_\lambda}}{\sigma_\lambda} = \sqrt{8\ln 2}.
 
         Assuming a Gaussian (in angstroms) line-spread function:
 
@@ -625,15 +657,23 @@ class spectral_resolution:
             \geq -\epsilon_\sigma\ ,
         
         the behavior of :func:`convolution_variable_sigma` should not be
-        affected.
+        affected.  However, in regions with
     
-        Even so, there may be spectral regions that do not have
-        :math:`\sigma_{p,d} \geq -\epsilon_\sigma`; for such spectral
-        regions there are three choices:
+        .. math::
+    
+            \sigma_{p,d} \equiv \sigma^2_{p,d}/\sqrt{|\sigma^2_{p,d}|}
+            \leq \epsilon_\sigma\ ,
+
+        the behavior of :func:`convolution_variable_sigma` does *not*
+        produce an accurate convolution!        
+    
+        To deal with spectral regions that do not have
+        :math:`\sigma_{p,d} \geq \epsilon_\sigma`, there are three
+        choices:
 
             (**Option 1**) trim the spectral range to only those
             spectral regions where the existing resolution is better
-            than the target resolution,
+            than the target resolution up to this limit,
         
             (**Option 2**) match the existing resolution to the target
             resolution up to some constant offset that must be accounted
@@ -648,15 +688,15 @@ class spectral_resolution:
         default behavior.  Currently, Option 3 is not allowed.
 
         For Option 1, pixels with :math:`\sigma_{p,d} <
-        -\epsilon_\sigma` are masked (*sigma_mask = 1*); however, the
+        \epsilon_\sigma` are masked (*sigma_mask = 1*); however, the
         returned values of :math:`\sigma_{p,d}` are left unchanged.
 
         For Option 2, we define
 
         .. math::
 
-            \sigma^2_{v,o} = -{\rm min}(\sigma^2_{v,d}) - {\rm
-            max}(\epsilon_\sigma \delta v)^2
+            \sigma^2_{v,o} = | {\rm min}(0.0, {\rm min}(\sigma^2_{v,d})
+            - {\rm max}(\epsilon_\sigma \delta v)^2) |
 
         where :math:`\delta v` is constant for the logarithmically
         binned spectrum and is wavelength dependent for the linearly
@@ -667,7 +707,7 @@ class spectral_resolution:
             dv = self.c * (2.0*(_wave[1:] - _wave[0:-1]) / (_wave[1:] + _wave[0:-1]))
 
         If :math:`\sigma^2_{v,o} > 0.0`, it must be that :math:`{\rm
-        min}(\sigma^2_{v,d}) < -{\rm max}(\epsilon_\sigma \delta v)^2`,
+        min}(\sigma^2_{v,d}) < {\rm max}(\epsilon_\sigma \delta v)^2`,
         such that an offset should be applied.  In that case, the
         returned kernel parameters are
 
@@ -680,22 +720,12 @@ class spectral_resolution:
         pixels are masked, and :math:`\sqrt{\sigma^2_{v,o}}` is returned
         for the offset.  Otherwise, the offset is set to 0.
 
-        .. todo::
-
-            Allow to check cases when the convolution kernel is
-            indpendent of wavelength such that the convolution can be
-            sped up by performing the convolution using an FFT.  For
-            example, in the case where the spectrum is logarithmically
-            binned and both :math:`R_1` and :math:`R_2` are
-            *independent* of wavelength, the convolution kernel is
-            independent of wavelength.
-
         Args:
             new_sres (:class:`spectral_resolution`): Spectral resolution
                 to match to.
             no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}
                 = 0` by masking regions with :math:`\sigma_{p,d} <
-                -\epsilon_\sigma`; i.e., the value of this arguments
+                \epsilon_\sigma`; i.e., the value of this arguments
                 selects Option 1 (True) or Option 2 (False).
             min_sig_pix (float): (**Optional**) Minimum value of the
                 standard deviation allowed before assuming the kernel is
@@ -727,16 +757,18 @@ class spectral_resolution:
 
         # Option 2:
         else:
+            # 1% fudge so pixel at min_sig is not masked!
+            fudge = 1.01
+            
             # Calculate the velocity step of each pixel
             dv = self.c * (2.0*(_wave[1:] - _wave[0:-1]) / (_wave[1:] + _wave[0:-1]))
             # Get the needed *velocity* offset (this is the square)
-            self.sig_vo = - numpy.amin(sig2_vd) - numpy.square(self.min_sig * numpy.amax(dv))
+            self.sig_vo = fudge*numpy.absolute(min(0.0, numpy.amin(sig2_vd)
+                                                  - numpy.square(self.min_sig * numpy.amax(dv))))
             # Apply it if it's larger than 0
             if self.sig_vo > 0:
                 sig2_vd += self.sig_vo
                 self.sig_vo = numpy.sqrt(self.sig_vo)
-            else:
-                self.sig_vo = 0.0
 
             # Convert the variance to pixel coordinates
             sig2_pd = self._convert_vd2pd(sig2_vd)
@@ -780,7 +812,8 @@ class spectral_resolution:
             ValueError: Raised if the kernel properties have not yet
                 been defined.
         """
-        if None in [self.min_sig, self.sig_pd, self.sig_mask, self.sig_vo]:
+        if self.min_sig is None or self.sig_pd is None or self.sig_mask is None \
+                or self.sig_vo is None:
 #            print('WARNING: No kernel difference yet defined.  Assuming 0.')
 #            self.ZeroGaussianKernelDifference()
             raise ValueError('No kernel defined yet.  Run GaussianKernelDifference first.')
@@ -832,7 +865,7 @@ class spectral_resolution:
 
 def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=None, mask=None, 
                               min_sig_pix=0.0, no_offset=True, variable_offset=False, log10=False,
-                              new_log10=False):
+                              new_log10=False, quiet=False):
     r"""
     Adjust the existing spectral resolution of a spectrum to a **lower**
     resolution as best as possible.  The primary functionality is in
@@ -1000,6 +1033,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
     if nsres == 1 and sres_dim == 1:
+#        print('one')
         res[0] = spectral_resolution(wave, sres, log10=log10)
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
@@ -1007,14 +1041,18 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             res[i] = res[0]
 #        pyplot.plot(wave, res[0].sig_pd)
 #        pyplot.show()
-#        exit()
     else:
+#        print('multiple')
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
             res[i] = spectral_resolution(_wave, _sres, log10=log10)
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
+#            pyplot.plot(_wave, res[i].sig_pd)
+#            pyplot.plot(_wave, numpy.sqrt(res[i]._convert_pd2vd(numpy.square(res[i].sig_pd))))
+#            pyplot.show()
+#    exit()
 
     # Force all the offsets to be the same, if requested
     if not no_offset and not variable_offset:
@@ -1034,19 +1072,18 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     if nspec == 1 and spec_dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
-        print('running the convolution')
         if ivar is None:
             out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
         else:
             out_flux[indx], out_ivar[indx] \
                     = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
                                                  ye=None if ivar is None else noise[indx])
-        print('done')
         out_sres[indx] = res[0].adjusted_resolution(indx=indx)
         out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
     else:
         for i in range(0,nspec):
-            print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
+            if not quiet:
+                print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
             if ivar is None:
                 out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
@@ -1058,12 +1095,13 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 #           out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
             out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (mask[i,:] == 1)).astype(numpy.uint)
-            if nsres == 1 and i == 0:
+            if len(out_sres.shape) == 1 and i == 0:
                 out_sres[indx] = res[i].adjusted_resolution(indx=indx)
                 continue
-            elif nsres > 1:
+            else:
                 out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
-        print('Matching resolution ... DONE         ')
+        if not quiet:
+            print('Matching resolution ... DONE         ')
 
     # TODO: Add this functionality from the IDL version?
     #

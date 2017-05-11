@@ -53,8 +53,6 @@ from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
 
 
-__author__ = 'Kyle Westfall'
-
 def default_calzetti_rv():
     return 4.05
 
@@ -413,7 +411,7 @@ class GalacticExtinction:
 
 
     def compute(self, wave, ebv, rv=None, coeffs=None):
-        """
+        r"""
         Compute the reddening curve of the desired form.
 
         Args:
@@ -497,7 +495,7 @@ class GalacticExtinction:
             ivar (numpy.ndarray): The flux inverse variance to use for
                 the error propagation.  Default will not return an
                 inverse variance array.
-            deredden (bool): (**Optional**) Flag to **de**redden the
+            deredden (bool): (**Optional**) Flag to **deredden** the
                 spectrum; if set to false, the function will instead
                 redden the provided fluxes.
 

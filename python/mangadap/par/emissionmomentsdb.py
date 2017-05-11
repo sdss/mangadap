@@ -36,7 +36,7 @@ moments.
         from .parset import ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
         from ..proc.bandpassfilter import BandPassFilterPar
-        from ..proc.util import _select_proc_method
+        from ..proc.util import select_proc_method
 
 *Class usage examples*:
     Emission-line moment databases are defined using SDSS parameter
@@ -79,7 +79,6 @@ moments.
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
 
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -103,9 +102,8 @@ from pydl.pydlutils.yanny import yanny
 from .parset import ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
 from ..proc.bandpassfilter import BandPassFilterPar
-from ..proc.util import _select_proc_method
+from ..proc.util import select_proc_method
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -165,20 +163,19 @@ class EmissionMomentsDB(ParDatabase):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Attributes:
-        version (str): Version number
         database (str): Keyword of the selected database to use.
         neml (int): Number of emission-line bandpass filters in the
             database
     """
     def __init__(self, database_key, emldb_list=None, dapsrc=None):
 
-        self.version = '1.0'
-
         # Get the details of the selected database
-        self.database = _select_proc_method(database_key, SpectralFeatureDBDef,
-                                            method_list=emldb_list,
-                                        available_func=available_emission_bandpass_filter_databases,
-                                            dapsrc=dapsrc)
+        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
+                                           method_list=emldb_list,
+                                       available_func=available_emission_bandpass_filter_databases,
+                                           dapsrc=dapsrc)
+#        print(self.database['key'])
+#        print(self.database['file_path'])
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

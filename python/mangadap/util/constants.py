@@ -45,8 +45,6 @@ if sys.version > '3':
 
 import numpy
 
-__author__ = 'Kyle Westfall'
-
 class constants:
     r"""
     Defines the following set of constants:

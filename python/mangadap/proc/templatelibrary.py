@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
-"""
+r"""
 
 Class that reads and prepares template libraries for use in fitting the
 stellar-continuum of a spectrum.  See
@@ -50,24 +50,6 @@ bitmasks for the template library spectra.
         import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!')
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!')
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!')
-
 
         import glob
         import os
@@ -86,17 +68,12 @@ bitmasks for the template library spectra.
         from ..config.defaults import default_dap_source, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.log import log_output
-        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, write_hdu
+        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
         from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
-        from .util import _select_proc_method, HDUList_mask_wavelengths
+        from ..util.parser import DefaultConfig
+        from .util import select_proc_method, HDUList_mask_wavelengths
 
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_, :func:`available_template_libraries`
-    is not python 2 compiliant.
-    
 *Class usage examples*:
     Assuming you have the default directory structure setup, you can do::
 
@@ -216,10 +193,17 @@ bitmasks for the template library spectra.
         Allow to specify how the resolution and sampling are matched to
         the DRP data.  The :class:`TemplateLibrary` class should be
         generalized to make this more transparent (and unnecessary).
+    | **03 Apr 2017**: (KBW) Include arguments for
+        :func:`mangadap.util.instrument.match_spectral_resolution` that
+        specify the minimum sigma in pixels for the convolution kernel
+        and any offset in the resolution required in the call for the
+        template library.  Check that the resampling of the spectrum
+        does not reach the two-pixel resolution limit; flag the spectrum
+        in those regions that do and change the resolution to the two
+        pixel limit.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 """
 
@@ -232,25 +216,6 @@ import sys
 import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import glob
 import os
@@ -264,20 +229,21 @@ from astropy.io import fits
 import astropy.constants
 from pydl.goddard.astro import airtovac
 
-from ..util.bitmask import BitMask
 from ..par.parset import ParSet
 from ..config.defaults import default_dap_source, default_dap_common_path
 from ..config.defaults import default_dap_file_name
+from ..util.bitmask import BitMask
 from ..util.log import log_output
-from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
-from ..util.fileio import write_hdu, create_symlink
+from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
+from ..util.fitsutil import DAPFitsUtil
 from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
-from .util import _select_proc_method, HDUList_mask_wavelengths
+from ..util.instrument import spectrum_velocity_scale, angstroms_per_pixel
+from ..util.parser import DefaultConfig
+from .util import select_proc_method, HDUList_mask_wavelengths
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -322,13 +288,12 @@ class TemplateLibraryDef(ParSet):
 
 def validate_spectral_template_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a template library.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
+    the template library parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of the template library needed by
-            :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`.
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
+            the template library parameters to validate.
 
     Raises:
         KeyError: Raised if required keyword does not exist.
@@ -336,27 +301,16 @@ def validate_spectral_template_config(cnfg):
 
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
-        raise KeyError('Keyword \'key\' must be provided.')
-    if 'file_search' not in cnfg.options('default'):
-        raise KeyError('Keyword \'file_search\' must be provided.')
-    if 'fwhm' not in cnfg.options('default') and 'sres_ext' not in cnfg.options('default'):
-        raise KeyError('Must provided keyword \'fwhm\' or \'sres_ext\'.')
-
-    # Put in default values
-    if 'in_vacuum' not in cnfg.options('default') or cnfg['default']['in_vacuum'] is None:
-        cnfg['default']['in_vacuum'] = 'False'
-    if 'wave_limit' not in cnfg.options('default') or cnfg['default']['wave_limit'] is None:
-        cnfg['default']['wave_limit'] = 'None, None'
-    if 'lower_flux_limit' not in cnfg.options('default') \
-      or cnfg['default']['lower_flux_limit'] is None:
-        cnfg['default']['lower_flux_limit'] = 'None'
-    if 'log10' not in cnfg.options('default') or cnfg['default']['log10'] is None:
-        cnfg['default']['log10'] = 'False'
+    required_keywords = [ 'key', 'file_search' ]
+    if not cnfg.all_required(required_keywords):
+        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
+    
+    if not cnfg.keyword_specified('fwhm') and not cnfg.keyword_specified('sres_ext'):
+        raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
 
 
 def available_template_libraries(dapsrc=None):
-    """
+    r"""
     Return the list of library keys, the searchable string of the 1D
     template library fits files for the template libraries available for
     use by the DAP, the FWHM of the libraries, and whether or not the
@@ -367,7 +321,7 @@ def available_template_libraries(dapsrc=None):
 
     +-----------------+------------+---------+-------------+-------+
     |                 |   Spectral |         |  Wavelength | Lower |
-    |             KEY |  res (ang) | Vacuum? | Range (ang) | Limit |
+    |             KEY |  res (ang) |  Vacuum | Range (ang) | Limit |
     +=================+============+=========+=============+=======+
     |        M11MARCS |       2.73 |      No |        full |  None |
     +-----------------+------------+---------+-------------+-------+
@@ -394,10 +348,6 @@ def available_template_libraries(dapsrc=None):
     |     MIUSCATTHIN |       2.51 |      No | 3480 - 9430 |  None |
     +-----------------+------------+---------+-------------+-------+
 
-    .. warning::
-
-        Function is currently only valid for Python 3.2 or greater!
-
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
@@ -415,9 +365,6 @@ def available_template_libraries(dapsrc=None):
             be found.
         KeyError: Raised if the template-library keywords are not all
             unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
 
     .. todo::
         - Add backup function for Python 2.
@@ -441,28 +388,25 @@ def available_template_libraries(dapsrc=None):
     # Build the list of library definitions
     template_libraries = []
     for f in ini_files:
-        # Read the config file
-        cnfg = ConfigParser(os.environ, allow_no_value=True, interpolation=ExtendedInterpolation())
-        cnfg.read(f)
-        # Ensure it has the necessary elements to define the template
-        # library
+        # Read and validate the config file
+        cnfg = DefaultConfig(f=f, interpolate=True)
         validate_spectral_template_config(cnfg)
+
         # Convert wave_limit and lower_flux_limit to types acceptable by
         # TemplateLibraryDef
-        wave_limit = numpy.array([ None if 'None' in e else float(e.strip()) \
-                                        for e in cnfg['default']['wave_limit'].split(',') ])
-        lower_flux_limit = None if cnfg['default']['lower_flux_limit'] is 'None' else \
-                           cnfg['default'].getfloat('lower_flux_limit')
+        wave_limit = None if cnfg['wave_limit'] is None \
+                        else numpy.array(cnfg.getlist('wave_limit', evaluate=True))
+        if wave_limit is not None and len(wave_limit) != 2:
+            raise ValueError('Must specify two wavelength limits, can be \'None, None\'.')
+
         # Append the definition of the template library 
         template_libraries += \
-            [ TemplateLibraryDef(key=cnfg['default']['key'],
-                                 file_search=cnfg['default']['file_search'],
-                                 fwhm=cnfg['default'].getfloat('fwhm'),
-                                 sres_ext=cnfg['default']['sres_ext'],
-                                 in_vacuum=cnfg['default'].getboolean('in_vacuum'),
+            [ TemplateLibraryDef(key=cnfg['key'], file_search=cnfg['file_search'],
+                                 fwhm=cnfg.getfloat('fwhm'), sres_ext=cnfg['sres_ext'],
+                                 in_vacuum=cnfg.getbool('in_vacuum', default=False),
                                  wave_limit=wave_limit,
-                                 lower_flux_limit=lower_flux_limit,
-                                 log10=cnfg['default'].getboolean('log10') )
+                                 lower_flux_limit=cnfg.getfloat('lower_flux_limit'),
+                                 log10=cnfg.getbool('log10', default=False) )
             ]
 
     # Check the keywords of the libraries are all unique
@@ -491,9 +435,6 @@ class TemplateLibraryBitMask(BitMask):
         dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'spectral_template_bits.ini'))
-#        t = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
-#                                                  'bitmasks', 'spectral_template_bits.ini'))
-#        BitMask.__init__(self, t.keys(), t.descr)
 
 
 class TemplateLibrary:
@@ -522,6 +463,13 @@ class TemplateLibrary:
 
     .. todo::
         - below is out of date.
+        - Only works with DRP files that have log-linear wavelength
+          binning!
+        - Allow to process, where process is just to change the
+          sampling or the resolution (not necessarily both).
+        - Need to make this more general, removing all dependence on
+          DRPFits object.  This would simplify the functionality to
+          change how the resolution and sampling matching is specified.
 
     On initialization, if the DRP file object is not provided (is None),
     the default behavior is to read the raw template library if
@@ -569,7 +517,7 @@ class TemplateLibrary:
             the template library.
         log (bool) : (**Optional**) Flag to force the library to be
             logarithmically sampled in wavelength.
-        wavelength_range (list or numpy.ndarray) : (**Optional**) Force
+        wavelength_range (array-like) : (**Optional**) Force
             the template library to covert this spectral range.
             Unobserved spectral regions will be flagged.
         renormalize (bool) : (**Optional**) After processing,
@@ -603,7 +551,6 @@ class TemplateLibrary:
             template library.
 
     Attributes:
-        version (str): Version number
         bitmask (BitMask): A BitMask object used to toggle mask values;
             see :func:`TemplateLibraryBitMask`.
         library (:class:`TemplateLibraryDef`): Parameter set required to
@@ -643,24 +590,14 @@ class TemplateLibrary:
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
             the DAP file
 
-    .. todo::
-        - Only works with DRP files that have log-linear wavelength
-          binning!
-        - Allow to process, where process is just to change the
-          sampling or the resolution (not necessarily both).
-        - Need to make this more general, removing all dependence on
-          DRPFits object.  This would simplify the functionality to
-          change how the resolution and sampling matching is specified.
-
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
                  match_to_drp_resolution=True, velscale_ratio=None, sres=None, velocity_offset=0.0,
-                 spectral_step=None, log=True, wavelength_range=None, renormalize=True, dapver=None,
-                 analysis_path=None, directory_path=None, processed_file=None, read=True,
-                 process=True, hardcopy=True, symlink_dir=None, clobber=False, checksum=False,
-                 loggers=None, quiet=False):
+                 min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
+                 wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
+                 directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
+                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
-        self.version = '2.1'
         self.loggers = loggers
         self.quiet = quiet
 
@@ -670,6 +607,8 @@ class TemplateLibrary:
         # Define the properties needed to modify the spectral resolution
         self.sres = None
         self.velocity_offset = None
+        self.min_sig_pix = None
+        self.no_offset = None
 
         # Define the target spectral sampling properties
         self.spectral_step = None
@@ -712,24 +651,24 @@ class TemplateLibrary:
         # Read and process the library
         self.process_template_library(drpf=drpf, match_to_drp_resolution=match_to_drp_resolution,
                                       velscale_ratio=velscale_ratio, sres=sres,
-                                      velocity_offset=velocity_offset, spectral_step=spectral_step,
-                                      log=log, wavelength_range=wavelength_range,
-                                      renormalize=renormalize, dapver=dapver,
-                                      analysis_path=analysis_path, directory_path=directory_path,
-                                      processed_file=processed_file, hardcopy=hardcopy,
-                                      symlink_dir=symlink_dir, clobber=clobber, loggers=loggers,
-                                      quiet=quiet)
+                                      velocity_offset=velocity_offset, min_sig_pix=min_sig_pix,
+                                      no_offset=no_offset, spectral_step=spectral_step, log=log,
+                                      wavelength_range=wavelength_range, renormalize=renormalize,
+                                      dapver=dapver, analysis_path=analysis_path,
+                                      directory_path=directory_path, processed_file=processed_file,
+                                      hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber,
+                                      loggers=loggers, quiet=quiet)
 
 
-    def __del__(self):
-        """
-        Deconstruct the template library object by ensuring that the
-        fits file is properly closed.
-        """
-        if self.hdu is None:
-            return
-        self.hdu.close()
-        self.hdu = None
+#    def __del__(self):
+#        """
+#        Deconstruct the template library object by ensuring that the
+#        fits file is properly closed.
+#        """
+#        if self.hdu is None:
+#            return
+#        self.hdu.close()
+#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -740,14 +679,14 @@ class TemplateLibrary:
         """
         Select the library from the provided list.  Used to set
         :attr:`library`; see
-        :func:`mangadap.proc.util._select_proc_method`.
+        :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
             library_key (str): Keyword of the selected library.
                 Available libraries are proved by
                 :func:`available__template_libraries`
             tpllib_list (list): (**Optional**) List of 
-                :class:`TemplateLibraryDef'
+                :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
                 interpret a template library.
             dapsrc (str): (**Optional**) Root path to the DAP source
@@ -755,9 +694,9 @@ class TemplateLibrary:
                 :func:`mangadap.config.defaults.default_dap_source`.
         """
         # Get the details of the selected template library
-        self.library = _select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-                                           available_func=available_template_libraries,
-                                           dapsrc=dapsrc)
+        self.library = select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
+                                          available_func=available_template_libraries,
+                                          dapsrc=dapsrc)
 
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
@@ -820,8 +759,10 @@ class TemplateLibrary:
         Read the 'raw' versions of the template library; i.e., the
         library before it has been resolution and sampling matched to a
         DRP file.
+
+        The file list read by the search key is sorted for consistency.
         """
-        self.file_list = glob.glob(self.library['file_search'])
+        self.file_list = numpy.sort(glob.glob(self.library['file_search']))
         self.ntpl = len(self.file_list)
         npix = self._get_nchannels()
         if not self.quiet:
@@ -979,7 +920,7 @@ class TemplateLibrary:
                                   fits.ImageHDU(soff, name='SIGOFF')
                                 ])
 
-        self.hdu['PRIMARY'].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
+#        self.hdu['PRIMARY'].header['VDAPTPL'] = (self.version, 'Version of DAP template reader')
         self.hdu['PRIMARY'].header['LIBKEY'] = (self.library['key'], 'Library identifier')
 
 
@@ -1085,8 +1026,8 @@ class TemplateLibrary:
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
 
-#        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
-#        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
+        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
+        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 #        pyplot.show()
 
@@ -1095,17 +1036,16 @@ class TemplateLibrary:
         # match_spectral_resolution
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Modifying spectral resolution ... ')
+#        print('min_sig_pix: ', self.min_sig_pix)
+#        print(spectrum_velocity_scale(self.hdu['WAVE'].data))
         self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, ivar = \
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                       self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
-                                      self.sres.sres(), min_sig_pix=0.0,
-                                      log10=self.library['log10'], new_log10=True)
+                                      self.sres.sres(), min_sig_pix=self.min_sig_pix,
+                                      no_offset=self.no_offset, log10=self.library['log10'],
+                                      new_log10=True, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
-
-#        pyplot.plot(oldwave, oldflux)
-#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g') 
-#        pyplot.show()
 
         # Mask any pixels where the template resolution was too low to
         # match to the galaxy resolution
@@ -1181,12 +1121,24 @@ class TemplateLibrary:
         min_flux = numpy.amin(self.hdu['FLUX'].data.ravel())
         # the observed pixels are
         observed = numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
+        # An array used to count the number of pixels combined when
+        # rebinning
+        unity = numpy.ones(self.hdu['FLUX'].data.shape, dtype=float)
         
+        # Number of pixels per resolution element
+        ang_per_pix = numpy.ones(self.hdu['FLUX'].data.shape, dtype=float)
+        for i in range(self.ntpl):
+            ang_per_pix[i,:] = angstroms_per_pixel(self.hdu['WAVE'].data[i,:],
+                                                   log=self.library['log10'], base=10.)
+        pix_per_fwhm = numpy.ma.divide(numpy.ma.divide(self.hdu['WAVE'].data,
+                                                        self.hdu['SPECRES'].data),
+                                        ang_per_pix)
+
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
-        if not self.quiet and self.loggers is not None:
+        if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
         for i in range(self.ntpl):
             # Observed wavelengths
@@ -1198,11 +1150,7 @@ class TemplateLibrary:
                                               newLog=self.log10_sampling, dx=self.spectral_step,
                                               ext_value=min_flux-100., conserve=False, flat=False)
 
-#            pyplot.step(oldwave, oldflux, where='mid')
-#            pyplot.step(wave, flux[i,:], 'g', where='mid')
-#            pyplot.show()
-
-            # Find the unobserved pixels, set them to have 0. flux, and
+            # Find the unobserved pixels, set them to have no flux, and
             # flag them as having no data
             indx = numpy.where(flux[i,:] < min_flux-10.)
             flux[i,indx] = 0.0
@@ -1211,16 +1159,47 @@ class TemplateLibrary:
             # Resample the spectral resolution by simple interpolation.
             # Select the good pixels
             indx = numpy.where(numpy.invert(flux[i,:] < min_flux-10.))
-            # define the interpolator (uses linear interpolation; k=1)
-#            interpolator = InterpolatedUnivariateSpline(self.hdu['WAVE'].data[i,:].ravel(),
-#                                                        self.hdu['SPECRES'].data[i,:].ravel(), k=1)
-            interpolator = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
+            # and interpolate
+            sres[i,indx] = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
                                                 self.hdu['SPECRES'].data[i,:].ravel(),
-                                                fill_value='extrapolate')
-            # And then interpolate
-            sres[i,indx] = interpolator(wave[indx])
+                                                fill_value='extrapolate')(wave[indx])
 
-            # Finally, rebin the masks:
+            # Get the number of new pixels combined for each new one
+            _, npix = resample_vector(unity[i,observed[i,:]].ravel(),
+                                      xRange=[wave_in[0], wave_in[-1]],
+                                      inLog=self.library['log10'], newRange=fullRange,
+                                      newLog=self.log10_sampling, dx=self.spectral_step,
+                                      ext_value=min_flux-100., conserve=True, flat=False)
+            # and the number of new pixels per resolution element
+            _pix_per_fwhm = interpolate.interp1d(self.hdu['WAVE'].data[i,observed[i,:]].ravel(),
+                                                 pix_per_fwhm[i,observed[i,:]].ravel(),
+                                                 fill_value='extrapolate')(wave) / npix
+            # Correct resolution for any resampling that results in
+            # less than 2 pixels per resolution element
+            indx = _pix_per_fwhm < 2
+            if numpy.sum(indx) > 0:
+
+                # !! EDIT THIS FOR PRODUCTION VERSION !!
+                print('hit two pixel limit!')
+                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
+                pyplot.plot(wave, sres[i,:])
+                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
+                pyplot.plot(wave, sres[i,:])
+                pyplot.show()
+                exit()
+                mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
+
+#            print(spectral_coordinate_step(oldwave))
+#            print(spectrum_velocity_scale(wave))
+#            pyplot.step(oldwave, oldflux, where='mid', color='k', lw=2)
+#            pyplot.plot(oldwave[:-1], numpy.diff(oldwave), color='C3')
+#            pyplot.plot(oldwave[:-1], astropy.constants.c.to('km/s').value * numpy.diff(oldwave)
+#                                    / (oldwave[:-1]+numpy.diff(oldwave)/2), color='r')
+#            pyplot.step(wave, flux[i,:], where='mid', color='C2', lw=1)
+#            pyplot.step(wave, npix, where='mid', color='C0', lw=1)
+#            pyplot.show()
+
+            # Rebin the other masks:
             # Pixels outside the wavelength limits
             indx = self._rebin_masked(i, 'WAVE_INVALID', fullRange, rmsk_lim=0.1)
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
@@ -1240,11 +1219,13 @@ class TemplateLibrary:
 #            pyplot.plot(wave, flux[i,:], 'g')
 #            pyplot.show()
 
-        print('     After resampling (target): ', self.spectral_step)
-        print(' After resampling (calculated): ', spectral_coordinate_step(wave, log=True))
-
-        if not self.quiet and self.loggers is not None:
+        if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
+            log_output(self.loggers, 1, logging.INFO,
+                       'After resampling (target): {0}'.format(self.spectral_step))
+            log_output(self.loggers, 1, logging.INFO,
+                       'After resampling (calculated): {0}'.format(spectral_coordinate_step(wave,
+                                                                                        log=True)))
 
 #        pyplot.plot(oldwave, oldflux)
 #        pyplot.plot(wave, flux[0,:], 'g')
@@ -1293,59 +1274,6 @@ class TemplateLibrary:
         return os.path.join(self.directory_path, self.processed_file)
 
 
-#    def dlogLam(self, quiet=True):
-#        """
-#        Return the logarithmic wavelength sampling of the spectra.
-#
-#        Always assumes the base of the logarithm is 10!
-#
-#        Returns:
-#            float : Logarithmic wavelength sampling.  Returns None if
-#                the velocity scale is not defined.
-#
-#        """
-#        if self.velscale is None:
-#            if not quiet:
-#                warnings.warn('Velocity scale undefined!')
-#            return None
-#
-#        return self.velscale / numpy.log(10.0) / astropy.constants.c.to('km/s').value
-
-
-#    def velocity_step(self, quiet=True):
-#        """
-#        If the library is logarithmically sampled, return the pixel
-#        scale in km/s.
-#
-#        Always assumes the base of the logarithm is 10!
-#
-#        Args:
-#            quiet (bool) : Suppress warning that library is linearly sampled.
-#
-#        Returns:
-#            float: Pixel scale in km/s for logarithmic wavelength
-#            sampling.  Returns None if the sampling is linear.
-#
-#        Raises:
-#            ValueError: Raised if library has not been processed.
-#
-#        .. todo::
-#
-#            - Allow to provide the velocity step, even if the library
-#              has not been processed.  Would then return a vector with
-#              the sampling of each spectrum.
-#
-#        """
-#        if not self.processed:
-#            raise ValueError('Template has not been processed!')
-#        if not self.log10_sampling:
-#            if not quiet:
-#                warnings.warn('Template library is not logarithmically sampled in wavelength!')
-#            return None
-#
-#        return self.spectral_step * numpy.log(10.0) * astropy.constants.c.to('km/s').value
-
-
     def read_raw_template_library(self, library_key=None, tpllib_list=None, dapsrc=None):
         """
         Read the identified template library.  If all the arguments are
@@ -1372,13 +1300,12 @@ class TemplateLibrary:
 
     def process_template_library(self, library_key=None, tpllib_list=None, dapsrc=None, drpf=None,
                                  match_to_drp_resolution=True, velscale_ratio=None, sres=None,
-                                 velocity_offset=0.0, spectral_step=None, log=True,
-                                 wavelength_range=None, renormalize=True, dapver=None,
-                                 analysis_path=None, directory_path=None, processed_file=None,
-                                 hardcopy=True, symlink_dir=None, clobber=False, loggers=None,
-                                 quiet=False):
-        """
-
+                                 velocity_offset=0.0, min_sig_pix=0.0, no_offset=True,
+                                 spectral_step=None, log=True, wavelength_range=None,
+                                 renormalize=True, dapver=None, analysis_path=None,
+                                 directory_path=None, processed_file=None, hardcopy=True,
+                                 symlink_dir=None, clobber=False, loggers=None, quiet=False):
+        r"""
         Process the template library for use in analyzing object
         spectra.  Primary steps are to:
 
@@ -1457,7 +1384,7 @@ class TemplateLibrary:
                 the template library.
             log (bool) : (**Optional**) Flag to force the library to be
                 logarithmically sampled in wavelength.
-            wavelength_range (list or numpy.ndarray) : (**Optional**) Force the
+            wavelength_range (array-like) : (**Optional**) Force the
                 template library to covert this spectral range.  Unobserved
                 spectral regions will be flagged.
             renormalize (bool) : (**Optional**) After processing, renormalize
@@ -1512,6 +1439,7 @@ class TemplateLibrary:
 
         # Use the DRP file object to set the spectral resolution and
         # velocity scale to match to.
+        # TODO: Need to update the matching for 'DISP' in new LOGCUBEs?
         if drpf is not None:
             if drpf.hdu is None:
                 if not self.quiet:
@@ -1530,6 +1458,8 @@ class TemplateLibrary:
             self.spectral_step = spectral_step
 
         self.velocity_offset = velocity_offset
+        self.min_sig_pix = min_sig_pix
+        self.no_offset = no_offset
 
         # Adjust for the velocity scale ratio between the template and
         # object data to be fit
@@ -1557,7 +1487,7 @@ class TemplateLibrary:
 
         # Check that the path for or to the file is defined
         ofile = self.file_path()
-        if ofile is None:
+        if self.hardcopy and ofile is None:
             raise ValueError('File path for output file is undefined!')
 
 #        if not force and self.velocity_offset is not None \
@@ -1566,10 +1496,11 @@ class TemplateLibrary:
 #            force = True
 
         # Read and use a pre-existing file
-        if os.path.isfile(ofile) and not clobber:
+        if self.hardcopy and os.path.isfile(ofile) and not clobber:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
-            self.hdu = fits.open(ofile, checksum=self.checksum)
+#            self.hdu = fits.open(ofile, checksum=self.checksum)
+            self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
             self.file_list = glob.glob(self.library['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
@@ -1581,7 +1512,7 @@ class TemplateLibrary:
             return
 
         # Warn the user that the file will be overwritten
-        if os.path.isfile(ofile):
+        if self.hardcopy and os.path.isfile(ofile):
             if not self.quiet:
                 warnings.warn('Overwriting existing file: {0}'.format(self.processed_file))
             os.remove(ofile)
@@ -1592,8 +1523,10 @@ class TemplateLibrary:
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
         # Write the fits file
         if self.hardcopy:
-            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-                      symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+            DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+                              symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
+#            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+#                      symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

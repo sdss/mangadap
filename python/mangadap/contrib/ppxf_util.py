@@ -1,6 +1,6 @@
-#######################################################################
+###############################################################################
 #
-# Copyright (C) 2001-2015, Michele Cappellari
+# Copyright (C) 2001-2016, Michele Cappellari
 # E-mail: michele.cappellari_at_physics.ox.ac.uk
 #
 # This software is provided as is without any warranty whatsoever.
@@ -9,58 +9,30 @@
 # provided this copyright and disclaimer are included unchanged
 # at the beginning of the file. All other rights are reserved.
 #
-#######################################################################
+###############################################################################
+
+# This file contains the following independent programs:
+#
+# 1) log_rebin() to rebin a spectrum logarithmically
+# 2) determine_goodpixels() to mask gas emission lines for pPXF
+# 3) vac_to_air() to convert vacuum to air wavelengths
+# 4) air_to_vac() to convert air to vacuum wavelengths
+# 5) emission_lines() to create gas emission line templates for pPXF
+# 6) gaussian_filter1d() to convolve a spectrum with a variable sigma
+# 7) plot_weights_2d() to plot an image of the 2-dime weights
+
+from __future__ import print_function
+
+import numpy as np
+from scipy import special, ndimage
+import matplotlib.pyplot as plt
+
+from astropy.io import fits
+
+###############################################################################
 #
 # NAME:
 #   LOG_REBIN
-#
-# PURPOSE:
-#   Logarithmically rebin a spectrum, while rigorously conserving the flux.
-#   Basically the photons in the spectrum are simply redistributed according
-#   to a new grid of pixels, with non-uniform size in the spectral direction.
-#
-#   This routine makes the `standard' zero-order assumption that the spectrum
-#   is *constant* within each pixels. It is possible to perform log-rebinning
-#   by assuming the spectrum is represented by a piece-wise polynomial of
-#   higher degree, while still obtaining a uniquely defined linear problem,
-#   but this reduces to a deconvolution and amplifies noise.
-#
-# CALLING SEQUENCE:
-#   LOG_REBIN, lamRange, spec, specNew, logLam, $
-#       OVERSAMPLE=oversample, VELSCALE=velScale, /FLUX
-#
-# INPUTS:
-#   LAMRANGE: two elements vector containing the central wavelength
-#       of the first and last pixels in the spectrum, which is assumed
-#       to have constant wavelength scale! E.g. from the values in the
-#       standard FITS keywords: LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].
-#       It must be LAMRANGE[0] < LAMRANGE[1].
-#   SPEC: input spectrum.
-#
-# OUTPUTS:
-#   SPECNEW: logarithmically rebinned spectrum.
-#   LOGLAM: log(lambda) (*natural* logarithm: ALOG) of the central
-#       wavelength of each pixel. This is the log of the geometric
-#       mean of the borders of each pixel.
-#
-# KEYWORDS:
-#   FLUX: Set this keyword to preserve total flux. In this case the
-#       log rebinning changes the pixels flux in proportion to their
-#       dLam so the following command will show large differences
-#       beween the spectral shape before and after LOG_REBIN:
-#
-#           plot, exp(logLam), specNew  # Plot log-rebinned spectrum
-#           oplot, range(lamRange[0],lamRange[1],n_elements(spec)), spec
-#
-#       By defaul, when this keyword is *not* set, the above two lines
-#       produce two spectra that almost perfectly overlap each other.
-#   OVERSAMPLE: Oversampling can be done, not to loose spectral resolution,
-#       especally for extended wavelength ranges and to avoid aliasing.
-#       Default: OVERSAMPLE=1 ==> Same number of output pixels as input.
-#   VELSCALE: velocity scale in km/s per pixels. If this variable is
-#       not defined, then it will contain in output the velocity scale.
-#       If this variable is defined by the user it will be used
-#       to set the output number of pixels and wavelength scale.
 #
 # MODIFICATION HISTORY:
 #   V1.0.0: Using interpolation. Michele Cappellari, Leiden, 22 October 2001
@@ -81,15 +53,7 @@
 #   V3.0.0: Translated from IDL into Python. MC, Santiago, 23 November 2013
 #   V3.1.0: Fully vectorized log_rebin. Typical speed up by two orders of magnitude.
 #       MC, Oxford, 4 March 2014
-#   V3.2.0: Included gaussian_filter1d routine, which is a replacement for
-#       the Scipy routine with the same name, to be used with variable sigma
-#       per pixel. MC, Oxford, 10 October 2015
-#
-#----------------------------------------------------------------------
-
-from __future__ import print_function
-
-import numpy as np
+#   V3.1.1: Updated documentation. MC, Oxford, 16 August 2016
 
 def log_rebin(lamRange, spec, oversample=False, velscale=None, flux=False):
     """
@@ -102,15 +66,37 @@ def log_rebin(lamRange, spec, oversample=False, velscale=None, flux=False):
     linearly-spaced pixels, onto the new logarithmically-spaced pixels. 
     The output was tested to agree with the analytic solution.
 
+    :param lamRange: two elements vector containing the central wavelength
+        of the first and last pixels in the spectrum, which is assumed
+        to have constant wavelength scale! E.g. from the values in the
+        standard FITS keywords: LAMRANGE = CRVAL1 + [0,CDELT1*(NAXIS1-1)].
+        It must be LAMRANGE[0] < LAMRANGE[1].
+    :param spec: input spectrum.
+    :param oversample: Oversampling can be done, not to loose spectral resolution,
+        especally for extended wavelength ranges and to avoid aliasing.
+        Default: OVERSAMPLE=1 ==> Same number of output pixels as input.
+    :param velscale: velocity scale in km/s per pixels. If this variable is
+        not defined, then it will contain in output the velocity scale.
+        If this variable is defined by the user it will be used
+        to set the output number of pixels and wavelength scale.
+    :param flux: (boolean) True to preserve total flux. In this case the
+        log rebinning changes the pixels flux in proportion to their
+        dLam so the following command will show large differences
+        beween the spectral shape before and after LOG_REBIN:
+
+           plt.plot(exp(logLam), specNew)  # Plot log-rebinned spectrum
+           plt.plot(np.linspace(lamRange[0], lamRange[1], spec.size), spec)
+
+        By defaul, when this is False, the above two lines produce
+        two spectra that almost perfectly overlap each other.
+    :return: [specNew, logLam, velscale]
+
     """
     lamRange = np.asarray(lamRange)
-    if len(lamRange) != 2:
-        raise ValueError('lamRange must contain two elements')
-    if lamRange[0] >= lamRange[1]:
-        raise ValueError('It must be lamRange[0] < lamRange[1]')
+    assert len(lamRange) == 2, 'lamRange must contain two elements'
+    assert lamRange[0] < lamRange[1], 'It must be lamRange[0] < lamRange[1]'
     s = spec.shape
-    if len(s) != 1:
-        raise ValueError('input spectrum must be a vector')
+    assert len(s) == 1, 'input spectrum must be a vector'
     n = s[0]
     if oversample:
         m = int(n*oversample)
@@ -145,32 +131,31 @@ def log_rebin(lamRange, spec, oversample=False, velscale=None, flux=False):
 
     return specNew, logLam, velscale
 
-#----------------------------------------------------------------------
+###############################################################################
 #
-# PPXF_DETERMINE_GOODPIXELS: Example routine to generate the vector of goodPixels
-#     to be used as input keyword for the routine PPXF. This is useful to mask
-#     gas emission lines or atmospheric absorptions.
-#     It can be trivially adapted to mask different lines.
+# NAME:
+#   DETERMINE_GOODPIXELS
 #
-# INPUT PARAMETERS:
-# - LOGLAM: Natural logarithm ALOG(wave) of the wavelength in Angstrom
-#     of each pixel of the log rebinned *galaxy* spectrum.
-# - LAMRANGETEMP: Two elements vectors [lamMin2,lamMax2] with the minimum and
-#     maximum wavelength in Angstrom in the stellar *template* used in PPXF.
-# - Z: Estimate of the galaxy redshift.
-#
-# V1.0.0: Michele Cappellari, Leiden, 9 September 2005
-# V1.0.1: Made a separate routine and included additional common emission lines.
-#   MC, Oxford 12 January 2012
-# V2.0.0: Translated from IDL into Python. MC, Oxford, 10 December 2013
-# V2.0.1: Updated line list. MC, Oxford, 8 January 2014
-# V2.0.2: Use redshift instead of velocity as input for higher accuracy at large z.
-#   MC, Lexington, 31 March 2015
+# MODIFICATION HISTORY:
+#   V1.0.0: Michele Cappellari, Leiden, 9 September 2005
+#   V1.0.1: Made a separate routine and included additional common emission lines.
+#       MC, Oxford 12 January 2012
+#   V2.0.0: Translated from IDL into Python. MC, Oxford, 10 December 2013
+#   V2.0.1: Updated line list. MC, Oxford, 8 January 2014
+#   V2.0.2: Use redshift instead of velocity as input for higher accuracy at large z.
+#       MC, Lexington, 31 March 2015
 
 def determine_goodpixels(logLam, lamRangeTemp, z):
     """
     Generates a list of goodpixels to mask a given set of gas emission
     lines. This is meant to be used as input for PPXF.
+
+    :param logLam: Natural logarithm np.log(wave) of the wavelength in
+        Angstrom of each pixel of the log rebinned *galaxy* spectrum.
+    :param lamRangeTemp: Two elements vectors [lamMin2, lamMax2] with the minimum
+        and maximum wavelength in Angstrom in the stellar *template* used in PPXF.
+    :param z: Estimate of the galaxy redshift.
+    :return: vector of goodPixels to be used as input for pPXF
 
     """
 #                     -----[OII]-----    Hdelta   Hgamma   Hbeta   -----[OIII]-----   [OI]    -----[NII]-----   Halpha   -----[SII]-----
@@ -188,116 +173,244 @@ def determine_goodpixels(logLam, lamRangeTemp, z):
 
     return np.where(flag == 0)[0]
 
-#------------------------------------------------------------------------------
-# V1.0.0: Michele Cappellari, Oxford, 7 January 2014
-# V1.1.0: Fixes [OIII] and [NII] doublets to the theoretical flux ratio.
+###############################################################################
+
+def vac_to_air(lam_vac):
+    """
+    Convert vacuum to air wavelengths using
+    equation (1) of Ciddor 1996, Applied Optics 35, 1566
+        http://dx.doi.org/10.1364/AO.35.001566
+
+    :param lam_vac - Wavelength in Angstroms
+    :return: lam_air - Wavelength in Angstroms
+
+    """
+    sigma2 = (1e4/lam_vac)**2
+    fact = 1 + 5.792105e-2/(238.0185 - sigma2) + 1.67917e-3/(57.362 - sigma2)
+
+    return lam_vac/fact
+
+###############################################################################
+
+def air_to_vac(lam_air):
+    """
+    Convert air to vacuum wavelengths using
+    equation (1) of Ciddor 1996, Applied Optics 35, 1566
+        http://dx.doi.org/10.1364/AO.35.001566
+    :param lam_air - Wavelength in Angstroms
+    :return: lam_vac - Wavelength in Angstroms
+
+    """
+    sigma2 = (1e4/lam_air)**2
+    fact = 1 + 5.792105e-2/(238.0185 - sigma2) + 1.67917e-3/(57.362 - sigma2)
+
+    return lam_air*fact
+
+###############################################################################
+
+def emline(logLam_temp, line_wave, FWHM_gal):
+    """
+    Instrumental Gaussian line spread function integrated within the
+    pixels borders. The function is normalized in such a way that
+
+        integ.sum() = 1
+
+    For sigma=FWHM_gal/2.355 larger than one pixels, this function
+    quickly converges to the normalized Gaussian function:
+
+        gauss = dLogLam * np.exp(-0.5*(x/xsig)**2) / (np.sqrt(2*np.pi)*xsig)
+
+    :param logLam_temp: np.log(wavelength) in Angstrom
+    :param line_wave: lines wavelength in Angstrom
+    :param FWHM_gal: FWHM in Angstrom. This can be a scalar or the
+        name of a function wich returns the FWHM for given wavelength.
+    :return: LSF computed for every logLam_temp
+
+    """
+    if callable(FWHM_gal):
+        FWHM_gal = FWHM_gal(line_wave)
+
+    # Compute pixels borders for Gaussian integration
+    logLamBorders = (logLam_temp[1:] + logLam_temp[:-1])/2
+    xsig = FWHM_gal/2.355/line_wave    # sigma in x=logLambda units
+
+    # Perform pixel integration
+    x = logLamBorders[:, None] - np.log(line_wave)
+    integ = 0.5*np.diff(special.erf(x/(np.sqrt(2)*xsig)), axis=0)
+
+    return np.pad(integ, ((1,), (0,)), 'constant')
+
+###############################################################################
+# NAME:
+#   EMISSION_LINES
+#
+# MODIFICATION HISTORY:
+#   V1.0.0: Michele Cappellari, Oxford, 7 January 2014
+#   V1.1.0: Fixes [OIII] and [NII] doublets to the theoretical flux ratio.
 #       Returns line names together with emission lines templates.
 #       MC, Oxford, 3 August 2014
-# V1.1.1: Only returns lines included within the estimated fitted wavelength range.
+#   V1.1.1: Only returns lines included within the estimated fitted wavelength range.
 #       This avoids identically zero gas templates being included in the PPXF fit
-#       which can cause numearical instabilities in the solution of the system.
+#       which can cause numerical instabilities in the solution of the system.
 #       MC, Oxford, 3 September 2014
+#   V1.2.0: Perform integration over the pixels of the Gaussian line spread function
+#       using the new function emline(). Thanks to Eric Emsellem for the suggestion.
+#       MC, Oxford, 10 August 2016
+#   V1.2.1: Allow FWHM_gal to be a function of wavelength. MC, Oxford, 16 August 2016
 
 def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     """
-    Generates an array of Gaussian emission lines to be used as templates in PPXF.
-    Additional lines can be easily added by editing this procedure.
+    Generates an array of Gaussian emission lines to be used as gas templates in PPXF.
+    These templates represent the instrumental line spread function (LSF) at the
+    set of wavelengths of each emission line.
 
-    - logLam_temp is the natural log of the wavelength of the templates in Angstrom.
-      logLam_temp should be the same as that of the stellar templates.
+    Additional lines can be easily added by editing the code of this procedure,
+    which is meant as a template to be modified by the users where needed.
 
-    - lamRange_gal is the estimated rest-frame fitted wavelength range
-      Typically lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z),
-      where wave is the observed wavelength of the fitted galaxy pixels and
-      z is an initial very rough estimate of the galaxy redshift.
+    For accuracy the Gaussians are integrated over the pixels boundaries.
+    This integration is only useful for quite unresolved Gaussians but one should
+    keep in mind that, if the LSF is not well resolved, the input spectrum is not
+    properly sampled and one is wasting useful information from the spectrograph!
 
-    - FWHM_gal is the instrumantal FWHM of the galaxy spectrum under study in
-      Angstrom. Here it is assumed constant. It could be a function of wavelength.
+    The [OI], [OIII] and [NII] doublets are fixed at theoretical flux ratio~3.
 
-    - The [OI], [OIII] and [NII] doublets are fixed at theoretical flux ratio~3.
+    :param logLam_temp: is the natural log of the wavelength of the templates in
+        Angstrom. logLam_temp should be the same as that of the stellar templates.
+    :param lamRange_gal: is the estimated rest-frame fitted wavelength range
+        Typically lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z),
+        where wave is the observed wavelength of the fitted galaxy pixels and
+        z is an initial rough estimate of the galaxy redshift.
+    :param FWHM_gal: is the instrumantal FWHM of the galaxy spectrum under study
+        in Angstrom. One can pass either a scalar or the name "func" of a function
+        func(wave) which returns the FWHM for a given vector of input wavelengths.
+    :return: emission_lines, line_names, line_wave
 
     """
-    lam = np.exp(logLam_temp)
-    sigma = FWHM_gal/2.355 # Assumes instrumental sigma is constant in Angstrom
-
-    # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha  (air wavelengths)
-    line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])
+    # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha
+    line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])  # air wavelengths
     line_names = np.array(['Hdelta', 'Hgamma', 'Hbeta', 'Halpha'])
-    emission_lines = np.exp(-0.5*((lam[:,np.newaxis] - line_wave)/sigma)**2)
+    emission_lines = emline(logLam_temp, line_wave, FWHM_gal)
 
     #                 -----[OII]-----    -----[SII]-----
-    lines = np.array([3726.03, 3728.82, 6716.47, 6730.85])
+    lines = np.array([3726.03, 3728.82, 6716.47, 6730.85])  # air wavelengths
     names = np.array(['[OII]3726', '[OII]3729', '[SII]6716', '[SII]6731'])
-    gauss = np.exp(-0.5*((lam[:,np.newaxis] - lines)/sigma)**2)
-    emission_lines = np.column_stack([emission_lines, gauss])
+    gauss = emline(logLam_temp, lines, FWHM_gal)
+    emission_lines = np.append(emission_lines, gauss, 1)
     line_names = np.append(line_names, names)
     line_wave = np.append(line_wave, lines)
 
+    # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[OIII]-----
-    lines = np.array([4958.92, 5006.84])
-    doublet = np.exp(-0.5*((lam - lines[1])/sigma)**2) + 0.35*np.exp(-0.5*((lam - lines[0])/sigma)**2)
-    emission_lines = np.column_stack([emission_lines, doublet])
+    lines = np.array([4958.92, 5006.84])    # air wavelengths
+    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
+    emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OIII]5007d') # single template for this doublet
     line_wave = np.append(line_wave, lines[1])
 
+    # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                  -----[OI]-----
-    lines = np.array([6363.67, 6300.30])
-    doublet = np.exp(-0.5*((lam - lines[1])/sigma)**2) + 0.33*np.exp(-0.5*((lam - lines[0])/sigma)**2)
-    emission_lines = np.column_stack([emission_lines, doublet])
+    lines = np.array([6300.30, 6363.67])    # air wavelengths
+    doublet = emline(logLam_temp, lines[0], FWHM_gal) + 0.33*emline(logLam_temp, lines[1], FWHM_gal)
+    emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OI]6300d') # single template for this doublet
-    line_wave = np.append(line_wave, lines[1])
+    line_wave = np.append(line_wave, lines[0])
 
+    # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[NII]-----
-    lines = np.array([6548.03, 6583.41])
-    doublet = np.exp(-0.5*((lam - lines[1])/sigma)**2) + 0.34*np.exp(-0.5*((lam - lines[0])/sigma)**2)
-    emission_lines = np.column_stack([emission_lines, doublet])
+    lines = np.array([6548.03, 6583.41])    # air wavelengths
+    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
+    emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[NII]6583d') # single template for this doublet
     line_wave = np.append(line_wave, lines[1])
 
     # Only include lines falling within the estimated fitted wavelength range.
-    # This is important to avoid instabilities in the PPXF system solution
+    # This is important to avoid instabilities in the pPXF system solution
     #
     w = (line_wave > lamRange_gal[0]) & (line_wave < lamRange_gal[1])
     emission_lines = emission_lines[:, w]
     line_names = line_names[w]
     line_wave = line_wave[w]
 
-#    print('Emission lines included in gas templates:')
-#    print(line_names)
+    print('Emission lines included in gas templates:')
+    print(line_names)
 
     return emission_lines, line_names, line_wave
 
-#------------------------------------------------------------------------------
+###############################################################################
+# NAME:
+#   GAUSSIAN_FILTER1D
+#
+# MODIFICATION HISTORY:
+#   V1.0.0: Written as a replacement for the Scipy routine with the same name,
+#       to be used with variable sigma per pixel. MC, Oxford, 10 October 2015
 
 def gaussian_filter1d(spec, sig):
     """
-    Convolve a spectrum by a Gaussian with different sigma for every
-    pixel, given by the vector "sigma" with the same size as "spec".
+    Convolve a spectrum by a Gaussian with different sigma for every pixel.
     If all sigma are the same this routine produces the same output as
     scipy.ndimage.gaussian_filter1d, except for the border treatment.
     Here the first/last p pixels are filled with zeros.
-    When creating  template library for SDSS data, this implementation
-    is 60x faster than the naive loop over pixels.
+    When creating a template library for SDSS data, this implementation
+    is 60x faster than a naive for loop over pixels.
+
+    :param spec: vector with the spectrum to convolve
+    :param sig: vector of sigma values (in pixels) for every pixel
+    :return: spec convolved with a Gaussian with dispersion sig
 
     """
-
     sig = sig.clip(0.01)  # forces zero sigmas to have 0.01 pixels
     p = int(np.ceil(np.max(3*sig)))
     m = 2*p + 1  # kernel size
-#    x2 = np.linspace(-p, p, m)**2
-    x2 = np.square(np.linspace(-p, p, m))
+    x2 = np.linspace(-p, p, m)**2
 
     n = spec.size
     a = np.zeros((m, n))
     for j in range(m):   # Loop over the small size of the kernel
         a[j, p:-p] = spec[j:n-m+j+1]
 
-#    gau = np.exp(-x2[:, None]/(2*sig**2))
-    gau = np.exp(-x2[:, None]/(2*np.square(sig)))
+    gau = np.exp(-x2[:, None]/(2*sig**2))
     gau /= np.sum(gau, 0)[None, :]  # Normalize kernel
 
     conv_spectrum = np.sum(a*gau, 0)
 
     return conv_spectrum
 
-#------------------------------------------------------------------------------
+###############################################################################
+# MODIFICATION HISTORY:
+#   V1.0.0: Written. Michele Cappellari, Oxford, 25 November 2016
+
+def plot_weights_2d(xgrid, ygrid, weights, xlabel="log Age (yr)", ylabel="[M/H]",
+                    title="Mass Fraction", nodots=False, colorbar=True, **kwargs):
+    """
+    Plot an image of the 2-dim weights, as a function of xgrid and ygrid.
+    This function allows for non-uniform spacing in x or y.
+
+    """
+    assert xgrid.shape == ygrid.shape == weights.shape, 'Input arrays (xgrid, ygrid, weights) must have the same size'
+    assert len(xgrid.shape) == 2, '(xgrid, ygrid, weights) must be 2-dim arrays'
+
+    x = xgrid[:, 0]
+    y = ygrid[0, :]
+    xb = (x[1:] + x[:-1])/2  # grid borders
+    yb = (y[1:] + y[:-1])/2
+    xb = np.hstack([1.5*x[0] - x[1]/2, xb, 1.5*x[-1] - x[-2]/2])
+    yb = np.hstack([1.5*y[0] - y[1]/2, yb, 1.5*y[-1] - y[-2]/2])
+
+    # pcolormesh() is used below to allow for irregular spacing in the
+    # sampling of the stellar population parameters (e.g. metallicity)
+
+    ax = plt.gca()
+    pc = plt.pcolormesh(xb, yb, weights.T, cmap=kwargs.get("cmap", "viridis"))
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    if not nodots:
+        plt.plot(xgrid, ygrid, 'w,')
+    plt.axis([xb.min(), xb.max(), yb.min(), yb.max()])
+    if colorbar:
+        plt.colorbar(pc)
+        plt.sca(ax)  # Activate main plot before returning
+
+    return pc
+
+###############################################################################

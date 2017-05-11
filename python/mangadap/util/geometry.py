@@ -39,7 +39,8 @@ Provides a set of utility functions dealing with computational geometry.
     | **08 Sep 2016**: (KBW) Allow :func:`point_inside_polygon` to
         accept multiple coordinates.
 
-.. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html#scipy.linalg.lu_factor
+.. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html
+.. _scipy.linalg.lu_solve: https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html
 
 """
 
@@ -54,8 +55,6 @@ if sys.version > '3':
 
 import numpy
 from scipy import linalg
-
-__author__ = 'Kyle Westfall'
 
 def polygon_winding_number(polygon, point):
     """

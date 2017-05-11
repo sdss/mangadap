@@ -63,7 +63,6 @@ from ..util.instrument import _pixel_borders
 
 from matplotlib import pyplot
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 

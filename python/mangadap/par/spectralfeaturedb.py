@@ -25,28 +25,8 @@ class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
         from __future__ import unicode_literals
 
         import sys
-        import warnings
         if sys.version > '3':
             long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-            try:
-                from configparser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                            ImportWarning)
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-            try:
-                from ConfigParser import ExtendedInterpolation
-            except ImportError:
-                warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                            ImportWarning)
 
         import os.path
         from os import environ
@@ -55,21 +35,15 @@ class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
 
         from .parset import ParSet
         from ..config.defaults import default_dap_source
-
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_,
-    :func:`available_absorption_index_databases` is not python 2
-    compiliant.
+        from ..util.parser import DefaultConfig
 
 *Class usage examples*:
     Add usage examples
     
 *Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
-
-.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html#configparser.ConfigParser
+    | **25 Feb 2017**: (KBW) Change to using
+        :class:`mangadap.util.parser.DefaultConfig`
 
 """
 
@@ -79,28 +53,8 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import sys
-import warnings
 if sys.version > '3':
     long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import configparser!  Beware!', ImportWarning)
-    try:
-        from configparser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        warnings.warn('Unable to import ConfigParser!  Beware!', ImportWarning)
-    try:
-        from ConfigParser import ExtendedInterpolation
-    except ImportError:
-        warnings.warn('Unable to import ExtendedInterpolation!  Some configurations will fail!',
-                      ImportWarning)
 
 import os.path
 from os import environ
@@ -109,8 +63,8 @@ import numpy
 
 from .parset import ParSet
 from ..config.defaults import default_dap_source
+from ..util.parser import DefaultConfig
 
-__author__ = 'Kyle B. Westfall'
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -132,23 +86,21 @@ class SpectralFeatureDBDef(ParSet):
 
 def validate_spectral_feature_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a spectral-feature database.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
+    the spectral-feature database parameters.
 
     Args:
-        cnfg (`configparser.ConfigParser`_): Object meant to contain
-            defining parameters of a spectral-feature database.
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
+            spectral-feature database parameters.
 
     Raises:
         KeyError: Raised if required keyword does not exist.
-        ValueError: Raised if key has unacceptable value.
 
     """
     # Check for required keywords
-    if 'key' not in cnfg.options('default'):
-        raise KeyError('Keyword \'key\' must be provided.')
-    if 'file_path' not in cnfg.options('default'):
-        raise KeyError('Keyword \'file_path\' must be provided.')
+    for k in [ 'key', 'file_path']:
+        if k not in cnfg:
+            raise KeyError('No keyword \'{0}\' in spectral feature config!'.format(k))
 
 
 def available_spectral_feature_databases(sub_directory, dapsrc=None):
@@ -194,15 +146,11 @@ def available_spectral_feature_databases(sub_directory, dapsrc=None):
     # Build the list of library definitions
     databases = []
     for f in ini_files:
-        # Read the config file
-        cnfg = ConfigParser(environ, allow_no_value=True, interpolation=ExtendedInterpolation())
-        cnfg.read(f)
-        # Ensure it has the necessary elements to define the
-        # absorption-line index database
+        # Read and validate the config file
+        cnfg = DefaultConfig(f=f, interpolate=True)
         validate_spectral_feature_config(cnfg)
         # Append the definition of the absorption-line index database
-        databases += [ SpectralFeatureDBDef(key=cnfg['default']['key'],
-                                            file_path=cnfg['default']['file_path']) ]
+        databases += [ SpectralFeatureDBDef(key=cnfg['key'], file_path=cnfg['file_path']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([db['key'] for db in databases]) )) != len(databases):
