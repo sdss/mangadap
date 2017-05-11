@@ -138,7 +138,7 @@ class EmissionLinePar(ParSet):
         restwave (float) : The rest wavelength of the line in angstroms
             *in vacuum*.
         action (str) : (**Optional**) Describes how the line should be
-            treated.  Possible values are:
+            treated; default is ``'f'``.  Possible values are:
 
             - ``'i'``: ignore the line, as if the line were commented
               out.
@@ -150,13 +150,14 @@ class EmissionLinePar(ParSet):
               masked, the wavelength of the line is NOT adjusted for the
               redshift of the object spectrum.
 
-            Default is ``'f'``.
         flux (float) : (**Optional**) **Relative** flux of the emission
             (positive) or absorption (negative) lines.  This should most
             often be unity if ``line='l'`` and indicates the ratio of
             line flux if ``line='dN'``.  Default is 1.0.
-        mode (float) : (**Optional**) Fitting mode for the line.
-            Possible values are:
+
+        mode (float) : (**Optional**) Fitting mode for the line; default
+            is ``'f'``.  Possible values are:
+
                 - ``'f'``: Fit the line independently of all others in
                   its own window.
                 - ``'wN'``: Fit the line with untied parameters, but use
@@ -172,7 +173,7 @@ class EmissionLinePar(ParSet):
                   dispersion tied to the line with index N.
                 - ``'aN'``: Fit the line with the flux, velocity, and
                   velocity dispersion tied to the line with index N.
-            Default is ``'f'``.
+
         profile (str): (**Optional**)  The class definition of the
             profile shape.  This is kept as a string until it is used.
             Once it is used, it is converted to the class name using::

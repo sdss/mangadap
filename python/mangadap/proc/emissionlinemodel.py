@@ -58,6 +58,8 @@ A class hierarchy that fits the emission lines.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
+.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
 
 """
@@ -135,14 +137,13 @@ class EmissionLineModelDef(ParSet):
 
 def validate_emission_line_modeling_method_config(cnfg):
     """ 
-
     Validate the :class:`mangadap.util.parser.DefaultConfig` with the
     emission-line modeling method parameters.
 
     Args:
         cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
             to contain defining parameters of the emission-line modeling
-            method needed by :class:`EmissionLineModelDef'
+            method needed by :class:`EmissionLineModelDef`
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -695,7 +696,7 @@ class EmissionLineModel:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'EMISSION-LINE PROFILE FITTING:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('EMISSION-LINE PROFILE FITTING'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
                                                             self.binned_spectra.nbins))

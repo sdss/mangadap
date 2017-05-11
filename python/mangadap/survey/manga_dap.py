@@ -53,7 +53,7 @@ Provides the main wrapper function for the MaNGA DAP.
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.
     | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!
-    | **05 May 2017: (KBW) Clean up documentation; use import to get
+    | **05 May 2017**: (KBW) Clean up documentation; use import to get
         __version__
 
 """
@@ -97,7 +97,7 @@ from matplotlib import pyplot
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
               directory_path=None, dapver=None, dapsrc=None, analysis_path=None):
-    """
+    r"""
     Main wrapper function for the MaNGA DAP.
 
     This function is designed to be called once per PLATE-IFUDESIGN as
@@ -181,7 +181,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     loggers = module_logging(__name__, verbose)
 
     log_output(loggers, 1, logging.INFO, '-'*50)
-    log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline')
+    log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline'))
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '   VERSION: {0}'.format(__version__))
     log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
@@ -194,6 +194,9 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     log_output(loggers, 1, logging.INFO, '-'*50)
 
     status = 0
+    if obs['mode'] != 'CUBE':
+        status = 1
+        raise NotImplementedError('DAP can currently only analyze CUBE files.')
 
     #-------------------------------------------------------------------
     # Declare the DRP fits file
@@ -203,6 +206,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
                    redux_path=redux_path, directory_path=directory_path, read=True)
     log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
+
+    # Test if the RSS file exists
+    drpf_rss = DRPFits(obs['plate'], obs['ifudesign'], 'RSS', drpver=_drpver,
+                       redux_path=redux_path, directory_path=directory_path, read=False)
+    if not os.path.isfile(drpf_rss.file_path()):
+        warnings.warn('RSS counterpart not available.  Some functionality may be limited!')
+    del drpf_rss
 
     # Set the the analysis path and make sure it exists
     _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
@@ -240,7 +250,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         symlink_dir=method_ref_dir,
                                         clobber=plan['drpqa_clobber'][i], loggers=loggers)
- 
+
         #---------------------------------------------------------------
         # Spatial Binning
         #---------------------------------------------------------------

@@ -72,7 +72,7 @@ procedures.
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
-
+.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
 .. todo::
     - Check binning an RSS file
@@ -1256,7 +1256,7 @@ class SpatiallyBinnedSpectra:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'SPATIALLY BINNING SPECTRA:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('SPATIALLY BINNING SPECTRA'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
             log_output(self.loggers, 1, logging.INFO, 'Total spectra: {0}'.format(
@@ -1707,7 +1707,7 @@ class SpatiallyBinnedSpectra:
 
 
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
-        """
+        r"""
         Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
         specific for :class:`SpatiallyBinnedSpectra`.
 

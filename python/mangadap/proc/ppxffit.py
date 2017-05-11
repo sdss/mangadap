@@ -77,6 +77,7 @@ Implements a wrapper class for pPXF.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
 

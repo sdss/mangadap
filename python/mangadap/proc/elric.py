@@ -1336,16 +1336,18 @@ class Elric(EmissionLineFit):
     def _assess_and_save_fit(self, i, j, model_fit_par, model_eml_par):
         """
         Assess the result of the LineProfileFit results.
-            x Check the success failure
-            x Calculate the chi2, rchi2, rms, fractional_rms, residuals,
-              fractional_residuals
-            x Compare the fit parameters to the bounds
+
+            - (DONE) Check the success failure
+            - (DONE) Calculate the chi2, rchi2, rms, fractional_rms,
+              residuals, fractional_residuals
+            - (DONE) Compare the fit parameters to the bounds
             - Check the chi-square and residuals?
             - Check the velocity offset wrt the input
             - For multiple lines, check the order of the lines matches
               the guess parameters
             - For multiple component lines, check the ordering of the
               subcomponents
+
         """
         # Instantiate the returned flag that the parameter are near the
         # imposed boundary; only meaningful if the fit did not fail

@@ -101,7 +101,7 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
             find the selection keyword.  If none is provided,
             *available_func* **must** be provided.
         available_func (callable): (**Optional**) Callable function that
-            returns a list of default methods in place of *method_list.
+            returns a list of default methods in place of *method_list*.
             For example, see
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
         dapsrc (str): (**Optional**) Root path to the DAP source

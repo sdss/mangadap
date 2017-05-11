@@ -26,9 +26,11 @@ data/bandhead_indices/README -text
 data/bandhead_indices/bhbasic.par -text
 data/bandhead_indices/bhd4000.par -text
 data/emission_bandpass_filters/README -text
+data/emission_bandpass_filters/elb_mpl5.par -text
 data/emission_bandpass_filters/elbfull.par -text
 data/emission_bandpass_filters/elbstrong.par -text
 data/emission_lines/README -text
+data/emission_lines/elp_mpl5.par -text
 data/emission_lines/elpext.par -text
 data/emission_lines/elpfull.par -text
 data/emission_lines/elpstrong.par -text
@@ -2626,8 +2628,10 @@ python/mangadap/config/spatial_binning/nre.ini -text
 python/mangadap/config/spatial_binning/rad.ini -text
 python/mangadap/config/spatial_binning/re1025.ini -text
 python/mangadap/config/spatial_binning/spx.ini -text
+python/mangadap/config/spatial_binning/spx_cres.ini -text
 python/mangadap/config/spatial_binning/vor05.ini -text
 python/mangadap/config/spatial_binning/vor10.ini -text
+python/mangadap/config/spatial_binning/vor10_cres.ini -text
 python/mangadap/config/spatial_binning/vor30.ini -text
 python/mangadap/config/spectral_indices/bhindxn.ini -text
 python/mangadap/config/spectral_indices/indxe.ini -text
@@ -2703,6 +2707,7 @@ python/mangadap/util/mapping.py -text
 python/mangadap/util/misc.py -text
 python/mangadap/util/parser.py -text
 python/mangadap/util/pixelmask.py -text
+python/mangadap/util/version.py -text
 scripts/mdap_environment.bash -text
 scripts/mdap_minimal_bashrc.bash -text
 scripts/mdap_setup.bash -text

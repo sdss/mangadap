@@ -118,6 +118,7 @@ the MaNGA Data Reduction Pipeline (DRP).
 .. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
 .. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
 .. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+.. _shapely: https://pypi.python.org/pypi/Shapely
 
 """
 
@@ -414,7 +415,8 @@ class DRPFits:
             files, this is a single element with the number of fibers;
             for CUBE files, this has the x and y dimensions of the data
             cube.  *These are transposed w.r.t. the read-in DRP file!*
-        nspec (int) : Number of spectra in the DRP file; this is just::
+        nspec (int) : Number of spectra in the DRP file; this is just:
+            ::
                 
                 self.nspec = numpy.prod(self.spatial_shape)
         
@@ -436,7 +438,8 @@ class DRPFits:
             CUBE files and 1 for RSS files.  This means that the
             internal data array restructures the input fits data for the
             CUBE files.
-        nwave (int): The number of wavelength channels; this is just::
+        nwave (int): The number of wavelength channels; this is just:
+            ::
 
                 self.nwave = self.shape[self.dispaxis]
 
@@ -2503,12 +2506,28 @@ class DRPFits:
 
 
     def mean_sky_coordinates(self, waverange=None, offset=True, flag=None, fluxwgt=False):
-        """
-        Compute the mean sky coordinates for each of the spectra.  For
-        CUBE files, this just returns the spaxel coordinates; the
-        coordinates do not change as a function of wavelength.  For the
-        RSS files, this returns either the unweighted or flux-weighted
-        XPOS and YPOS values.
+        r"""
+        Compute the mean sky coordinates for each spectrum.
+        
+        For CUBE files, this just returns the spaxel coordinates in
+        arcseconds relative to the object center, where the object
+        center is :math:`(\alpha_0,\delta_0) = ({\rm OBJRA},{\rm
+        OBJDEC)` as provided in the primary header, and
+
+        .. math::
+            
+            x &= (\alpha - \alpha_0) \cos \delta_0 \\
+            y &= (\delta - \delta_0)
+
+        The coordinate grid, :math:`(\alpha, \delta)` is based on the
+        WCS coordinates in the header as returned by :func:`world_mesh`.
+
+        For RSS files, this returns either the unweighted or
+        flux-weighted XPOS and YPOS values.  For observations where the
+        pointing center is different from the object center, the
+        returned coordinates are relative to the object center if
+        offset=True (default) and relative to the pointing center if
+        offset=False.
 
         .. warning::
             
@@ -2516,7 +2535,7 @@ class DRPFits:
             in low-flux regimes.
 
         Args:
-            waverange (array-like) : (**Optional**) Two-element array
+            waverange (array-like): (**Optional**) Two-element array
                 with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
@@ -2535,8 +2554,6 @@ class DRPFits:
             :attr:`spatial_index` in case you want to recreate the a map
             for the CUBE files.
 
-        Raises:
-            KeyError : Raised if `ext` is not a valid extension.
         """
         if self.mode == 'CUBE':
             x, y = self.world_mesh()
@@ -2574,8 +2591,42 @@ class DRPFits:
 
     def flux_stats(self, waverange=None, covar=False, correlation=False, covar_wave=None):
 #                    , average_covar=False):
-        """
-        Compute the flux, noise, S/N, and covariance.
+        r"""
+        Compute the mean flux, propagated error in the mean flux, and
+        mean S/N over the specified wavelength range; if the wavelength
+        range is not specified, the quantities are calculated over the
+        full spectral range.
+
+        If an RSS file, no covariance is calculated.
+
+        If a CUBE file and covar is True, the code will calculate the
+        covariance matrix at the specified wavelength (see
+        :func:`covariance_matrix`).  If covar_wave is not provided, the
+        covariance is calculated at the center wavelength of the
+        provided wavelength range.
+
+        Args:
+            waverange (array-like): (**Optional**) Starting and ending
+                wavelength over which to calculate the statistics.
+                Default is to use the full wavelength range.
+            covar (bool): (**Optional**) Flag to calculate covariance
+                matrix.
+            correlation (bool): (**Optional**) Flag to convert the
+                covariance matrix to a correlation matrix on ouput.
+            covar_wave (double): (**Optional**) Wavelength to use for
+                the covariance calculation.
+
+        Returns:
+            numpy.ndarray: Four objects are returned: the mean flux, the
+            propagated variance in the mean flux, the mean S/N, and the
+            covariance/correlation matrix for a single wavelength
+            channel.  If the object is an RSS file or no covariance
+            calculation is requested, the last returned object is None.
+    
+        Raises:
+            ValueError: Raised of a provided wavelength range object
+                does not have two elements.
+
         """
         if waverange is not None and len(waverange) != 2:
             raise ValueError('Provided wavelength range must be a two-element vector.')
@@ -2635,11 +2686,32 @@ class DRPFits:
 
 
     def binned_on_sky_area(self, bin_indx, x=None, y=None):
-        """
-
+        r"""
         Compute the on-sky area of a set of binned spectra.  For CUBE
         files, this is just the number of spaxels in the bin times the
         spaxel area (as given by :attr:`pixelscale`).
+
+        For RSS files, this will try to calculate the overlapping area
+        of the fibers using the `shapely`_ python package:
+
+            - The fibers "beams" are all renormalized to have an area of
+              pi arcsec^2 by the DRP, so it's radius 1 arcsec
+            - This function will provide the *total* area, not the
+              integration-weighted effective area.
+
+        Args:
+            bin_indx (array-like): A vector with size :math:`N_{\rm
+                spec}` the gives which spaxels or fibers were included
+                in each bin.  Valid bins have indices of :math:`\geq 0`.
+            x (array-like): (**Optional**) On-sky :math:`x` coordinate.
+                Default is to calculate :math:`x` and :math:`y` using
+                :func:`mean_sky_coordinates` with no arguments.
+            y (array-like): (**Optional**) On-sky :math:`y` coordinate.
+                Default is to calculate :math:`x` and :math:`y` using
+                :func:`mean_sky_coordinates` with no arguments.
+
+        Returns:
+            numpy.ndarray : The on-sky area of each bin.
 
         """
         unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
@@ -2650,11 +2722,6 @@ class DRPFits:
                 self.pixelscale = default_cube_pixelscale()
             return (nbin*numpy.square(self.pixelscale)).astype(float)
 
-        # For RSS files, try to calculate the overlapping area of the
-        # fibers
-
-        # The fibers "beams" are all renormalized to have an area of pi
-        # arcsec^2, so it's "radius" 1 arcsec
         try:
             if x is None or y is None:
                 x, y = self.mean_sky_coordinates()

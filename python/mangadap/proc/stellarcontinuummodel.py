@@ -74,6 +74,8 @@ A class hierarchy that performs the stellar-continuum fitting.
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
+.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+
 
 """
 
@@ -879,7 +881,7 @@ class StellarContinuumModel:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'STELLAR CONTINUUM FITTING:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('STELLAR CONTINUUM FITTING'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
                                                             self.binned_spectra.nbins))

@@ -174,6 +174,8 @@ class EmissionMomentsDB(ParDatabase):
                                            method_list=emldb_list,
                                        available_func=available_emission_bandpass_filter_databases,
                                            dapsrc=dapsrc)
+#        print(self.database['key'])
+#        print(self.database['file_path'])
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

@@ -511,6 +511,7 @@ class ReductionAssessment:
         r"""
         Compute and output the main data products.  The list of HDUs
         are:
+
             - ``PRIMARY`` : Empty apart from the header information.
             - ``SPECTRUM`` : Extension with the main, per-spectrum
               measurements; see below.
@@ -522,6 +523,7 @@ class ReductionAssessment:
               :func:`mangadap.util.covariance.Covariance.write`.
 
         The ``SPECTRUM`` extension contains the following columns:
+
             - ``DRP_INDEX`` : Array coordinates in the DRP file; see
               :attr:`mangadap.drpfits.DRPFits.spatial_index`.  For RSS
               files, this is a single integer; for CUBE files, it is a
@@ -616,7 +618,8 @@ class ReductionAssessment:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'REDUCTION ASSESSMENT COMPUTATIONS:')
+            log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('REDUCTION ASSESSMENT'
+                                                                       ' COMPUTATIONS'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
                                                                             self.directory_path))

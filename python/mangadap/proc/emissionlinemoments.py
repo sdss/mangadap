@@ -141,7 +141,7 @@ def validate_emission_line_moments_config(cnfg):
     Args:
         cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
             to contain defining parameters of the emission-line moments
-            as needed by :class:`EmissionLineMomentsDef'
+            as needed by :class:`EmissionLineMomentsDef`
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -212,6 +212,10 @@ def available_emission_line_moment_databases(dapsrc=None):
                                                     cnfg.getfloat('minimum_snr', default=0.),
                                                     cnfg['artifact_mask'],
                                                     cnfg['emission_passbands']) ]
+
+#    for db in moment_set_list:
+#        print(db['key'])
+#        print(db['passbands'])
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
@@ -338,6 +342,9 @@ class EmissionLineMoments:
                                            method_list=database_list,
                                            available_func=available_emission_line_moment_databases,
                                            dapsrc=dapsrc)
+
+        print(self.database['key'])
+        print(self.database['passbands'])
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
@@ -1064,7 +1071,7 @@ class EmissionLineMoments:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'EMISSION-LINE MOMENTS:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('EMISSION-LINE MOMENTS'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
                                                             self.binned_spectra.nbins))

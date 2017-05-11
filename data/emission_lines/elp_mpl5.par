@@ -57,9 +57,4 @@ DAPEML  38  HeI     5877.243   vac  f   1.000    f  GaussianLineProfile  1  1  {
 DAPEML  59  SIII    8831.8     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 8801.8  8821.8 } { 8841.8  8861.8 }
 DAPEML  60  SIII    9071.1     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9041.1  9061.1 } { 9081.1  9101.1 }
 DAPEML  61  SIII    9533.2     vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9503.2  9523.2 } { 9543.2  9563.2 }
-DAPEML  21  H10     3798.9826  vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3771.5  3791.5 } { 3806.5  3826.5 }
-DAPEML  22  H9      3836.4790  vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
-DAPEML  23  NeIII   3869.86    vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
-DAPEML  24  H8      3890.1576  vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
-DAPEML  25  NeIII   3968.59    vac  f   1.000    f  GaussianLineProfile  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3938.6  3958.6 } { 3978.6  3998.6 }
 

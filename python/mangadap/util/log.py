@@ -57,8 +57,9 @@ def init_DAP_logging(log, simple_warnings=True, append=False):
             existing log file; if False, file is overwritten.
 
     .. todo::
-        - Use a file with the logging configuration.  See:
+        Use a file with the logging configuration.  See:
         https://docs.python.org/3.5/howto/logging.html#handler-basic
+
     """
 
     # Remove existing root logging

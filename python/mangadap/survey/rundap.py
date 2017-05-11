@@ -1062,8 +1062,9 @@ class rundap:
 
         Conditions that the DAP has completes its processing of the
         given DRP file:
+
             - the output path for the DAP file exists
-            - within the path, the *.done touch file exits
+            - within the path, the \*.done touch file exits
 
         .. todo::
 

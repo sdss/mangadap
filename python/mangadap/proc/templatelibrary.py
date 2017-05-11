@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
-"""
+r"""
 
 Class that reads and prepares template libraries for use in fitting the
 stellar-continuum of a spectrum.  See
@@ -74,12 +74,6 @@ bitmasks for the template library spectra.
         from ..util.parser import DefaultConfig
         from .util import select_proc_method, HDUList_mask_wavelengths
 
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_, :func:`available_template_libraries`
-    is not python 2 compiliant.
-    
 *Class usage examples*:
     Assuming you have the default directory structure setup, you can do::
 
@@ -316,7 +310,7 @@ def validate_spectral_template_config(cnfg):
 
 
 def available_template_libraries(dapsrc=None):
-    """
+    r"""
     Return the list of library keys, the searchable string of the 1D
     template library fits files for the template libraries available for
     use by the DAP, the FWHM of the libraries, and whether or not the
@@ -327,7 +321,7 @@ def available_template_libraries(dapsrc=None):
 
     +-----------------+------------+---------+-------------+-------+
     |                 |   Spectral |         |  Wavelength | Lower |
-    |             KEY |  res (ang) | Vacuum? | Range (ang) | Limit |
+    |             KEY |  res (ang) |  Vacuum | Range (ang) | Limit |
     +=================+============+=========+=============+=======+
     |        M11MARCS |       2.73 |      No |        full |  None |
     +-----------------+------------+---------+-------------+-------+
@@ -353,10 +347,6 @@ def available_template_libraries(dapsrc=None):
     +-----------------+------------+---------+-------------+-------+
     |     MIUSCATTHIN |       2.51 |      No | 3480 - 9430 |  None |
     +-----------------+------------+---------+-------------+-------+
-
-    .. warning::
-
-        Function is currently only valid for Python 3.2 or greater!
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
@@ -473,6 +463,13 @@ class TemplateLibrary:
 
     .. todo::
         - below is out of date.
+        - Only works with DRP files that have log-linear wavelength
+          binning!
+        - Allow to process, where process is just to change the
+          sampling or the resolution (not necessarily both).
+        - Need to make this more general, removing all dependence on
+          DRPFits object.  This would simplify the functionality to
+          change how the resolution and sampling matching is specified.
 
     On initialization, if the DRP file object is not provided (is None),
     the default behavior is to read the raw template library if
@@ -520,7 +517,7 @@ class TemplateLibrary:
             the template library.
         log (bool) : (**Optional**) Flag to force the library to be
             logarithmically sampled in wavelength.
-        wavelength_range (list or numpy.ndarray) : (**Optional**) Force
+        wavelength_range (array-like) : (**Optional**) Force
             the template library to covert this spectral range.
             Unobserved spectral regions will be flagged.
         renormalize (bool) : (**Optional**) After processing,
@@ -592,15 +589,6 @@ class TemplateLibrary:
         symlink_dir (str): Symlink created to the file in this directory
         hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
             the DAP file
-
-    .. todo::
-        - Only works with DRP files that have log-linear wavelength
-          binning!
-        - Allow to process, where process is just to change the
-          sampling or the resolution (not necessarily both).
-        - Need to make this more general, removing all dependence on
-          DRPFits object.  This would simplify the functionality to
-          change how the resolution and sampling matching is specified.
 
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
@@ -698,7 +686,7 @@ class TemplateLibrary:
                 Available libraries are proved by
                 :func:`available__template_libraries`
             tpllib_list (list): (**Optional**) List of 
-                :class:`TemplateLibraryDef'
+                :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
                 interpret a template library.
             dapsrc (str): (**Optional**) Root path to the DAP source
@@ -1317,7 +1305,7 @@ class TemplateLibrary:
                                  renormalize=True, dapver=None, analysis_path=None,
                                  directory_path=None, processed_file=None, hardcopy=True,
                                  symlink_dir=None, clobber=False, loggers=None, quiet=False):
-        """
+        r"""
         Process the template library for use in analyzing object
         spectra.  Primary steps are to:
 
@@ -1396,7 +1384,7 @@ class TemplateLibrary:
                 the template library.
             log (bool) : (**Optional**) Flag to force the library to be
                 logarithmically sampled in wavelength.
-            wavelength_range (list or numpy.ndarray) : (**Optional**) Force the
+            wavelength_range (array-like) : (**Optional**) Force the
                 template library to covert this spectral range.  Unobserved
                 spectral regions will be flagged.
             renormalize (bool) : (**Optional**) After processing, renormalize

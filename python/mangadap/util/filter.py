@@ -182,10 +182,11 @@ def build_smoothing_mask(x, pix_buffer, default=None, mask_x=None):
     Construct a mask for the provided vector that masks the first and
     last pix_buffer pixels in the coordinate vector.
     
-    The mask is instantiated as fully unmasked, unless a default mask is provided.
+    The mask is instantiated as fully unmasked, unless a default mask is
+    provided.
     
     To mask specified ranges in x, provide mask_x with a shape
-    :math:`N_{\rm mask}\times 2$ where each mask is defined by the
+    :math:`N_{\rm mask}\times 2` where each mask is defined by the
     starting and ending value of x to exclude.
     """
     # Smooth the ratio of the data to the model

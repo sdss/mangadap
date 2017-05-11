@@ -66,7 +66,7 @@ KBW (??         ): tag 2.1
       output.
     - BINID in MAPS and LOGCUBE files set to int32 type for survey
       output.
-
+    - Added NeIII and higher-order Balmer series lines (up to H10).
     - General improvements to the documentation
 
 TO FIX:

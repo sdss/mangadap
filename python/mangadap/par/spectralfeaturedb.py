@@ -35,13 +35,7 @@ class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
 
         from .parset import ParSet
         from ..config.defaults import default_dap_source
-
-.. warning::
-
-    Because of the use of the ``ExtendedInterpolation`` in
-    `configparser.ConfigParser`_,
-    :func:`available_absorption_index_databases` is not python 2
-    compiliant.
+        from ..util.parser import DefaultConfig
 
 *Class usage examples*:
     Add usage examples
@@ -92,8 +86,8 @@ class SpectralFeatureDBDef(ParSet):
 
 def validate_spectral_feature_config(cnfg):
     """ 
-    Validate the `configparser.ConfigParser`_ object that is meant to
-    define a spectral-feature database.
+    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
+    the spectral-feature database parameters.
 
     Args:
         cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with

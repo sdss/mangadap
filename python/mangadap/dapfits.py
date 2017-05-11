@@ -14,6 +14,43 @@ the MaNGA Data Analysis Pipeline (DAP).
 *Imports and python version compliance*:
     ::
 
+        from __future__ import print_function
+        from __future__ import division
+        from __future__ import absolute_import
+        from __future__ import unicode_literals
+
+        import sys
+        if sys.version > '3':
+            long = int
+
+        import logging
+        import time
+        import os
+        import numpy
+        import warnings
+
+        from astropy.wcs import WCS
+        from astropy.io import fits
+        import astropy.constants
+
+        from .drpfits import DRPFits, DRPQuality3DBitMask
+        from .util.fitsutil import DAPFitsUtil
+        from .util.bitmask import BitMask
+        from .util.log import log_output
+        from .util.fileio import channel_dictionary
+        from .util.exception_tools import print_frame
+        from .par.obsinput import ObsInputPar
+        from .config.defaults import default_drp_version, default_dap_source, default_dap_version
+        from .config.defaults import default_dap_par_file, default_analysis_path
+        from .config.defaults import default_dap_method, default_dap_method_path
+        from .config.defaults import default_dap_file_name
+        from .proc.reductionassessments import ReductionAssessment
+        from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .proc.stellarcontinuummodel import StellarContinuumModel
+        from .proc.emissionlinemoments import EmissionLineMoments
+        from .proc.emissionlinemodel import EmissionLineModel
+        from .proc.spectralindices import SpectralIndices
+
 *Class usage examples*:
     Add some usage comments here!
 
@@ -63,7 +100,8 @@ from .util.exception_tools import print_frame
 from .par.obsinput import ObsInputPar
 from .config.defaults import default_drp_version, default_dap_source, default_dap_version
 from .config.defaults import default_dap_par_file, default_analysis_path
-from .config.defaults import default_dap_method, default_dap_method_path, default_dap_file_name
+from .config.defaults import default_dap_method, default_dap_method_path
+from .config.defaults import default_dap_file_name
 from .proc.reductionassessments import ReductionAssessment
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .proc.stellarcontinuummodel import StellarContinuumModel
@@ -625,7 +663,7 @@ class construct_maps_file:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'CONSTRUCTING OUTPUT MAPS:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('CONSTRUCTING OUTPUT MAPS'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
                                                                             self.directory_path))
@@ -707,7 +745,7 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
-        # is not within a factor of two.
+        # is not within the factor below
         if emission_line_moments is not None and emission_line_model is not None:
             factor = 5.0
             indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
@@ -933,7 +971,7 @@ class construct_maps_file:
 
         Second moments not provided so no need to include UNDEFINED_MOM2
 
-        Need to further assess *_INCOMP to see if these lead to bad values (BADVALUE).
+        Need to further assess \*_INCOMP to see if these lead to bad values (BADVALUE).
         """
 
         # Copy the binning mask
@@ -1029,7 +1067,7 @@ class construct_maps_file:
 
         DIVBYZERO propagated to MATHERROR
 
-        Need to further assess *_INCOMP to see if these lead to bad values (BADVALUE).
+        Need to further assess \*_INCOMP to see if these lead to bad values (BADVALUE).
         """
 
         # Copy the common mask
@@ -1665,7 +1703,7 @@ class construct_cube_file:
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'CONSTRUCTING OUTPUT MODEL CUBE:')
+            log_output(loggers, 1, logging.INFO, '{0:^50}'.format('CONSTRUCTING OUTPUT MODEL CUBE'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
                                                                             self.directory_path))
