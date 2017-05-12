@@ -19,10 +19,11 @@ from matplotlib.ticker import NullFormatter
 
 from astropy.io import fits
 
-from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.dapfits import DAPMapsBitMask
 from mangadap.config.defaults import default_dap_method, default_dap_method_path
 from mangadap.config.defaults import default_dap_plan_file
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.util.fileio import channel_dictionary
 
 #-----------------------------------------------------------------------------
 
@@ -42,16 +43,16 @@ def growth_lim(a, lim, fac, midpoint=None, default=[0., 1.]):
     return [ mid - Da/2, mid + Da/2 ]
 
     
-def column_dictionary(hdu, ext):
-    columndict = {}
-    for k, v in hdu[ext].header.items():
-        if k[0] == 'C':
-            try:
-                i = int(k[1:])-1
-            except ValueError:
-                continue
-            columndict[v] = i
-    return columndict
+#def column_dictionary(hdu, ext):
+#    columndict = {}
+#    for k, v in hdu[ext].header.items():
+#        if k[0] == 'C':
+#            try:
+#                i = int(k[1:])-1
+#            except ValueError:
+#                continue
+#            columndict[v] = i
+#    return columndict
 
 
 def init_ax(fig, pos):
@@ -83,15 +84,16 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     hdu = fits.open(ifile)
 
     # Check everything is finite
-    # TODO: Change this to a soft fault?
-    num_ext = 43
+    num_ext = len(hdu)
     for i in range(num_ext):
-        if not numpy.all(numpy.isfinite(hdu[i+1].data)):
-            raise ValueError('HDU {0} contains infs or NaNs!'.format(hdu[i+1].data))
+        if hdu[i].data is None:
+            continue
+        if not numpy.all(numpy.isfinite(hdu[i].data)):
+            raise ValueError('HDU {0} contains infs or NaNs!'.format(hdu[i].name))
 
     # Build the column dictionaries
-    emline = column_dictionary(hdu, 'EMLINE_GFLUX')
-    specindex = column_dictionary(hdu, 'SPECINDEX')
+    emline = channel_dictionary(hdu, 'EMLINE_GFLUX')
+    specindex = channel_dictionary(hdu, 'SPECINDEX')
 
     # Get the data to plot
     spxflx = numpy.ma.MaskedArray(hdu['SPX_MFLUX'].data.copy())
