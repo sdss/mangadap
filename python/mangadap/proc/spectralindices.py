@@ -48,7 +48,8 @@ A class hierarchy that performs the spectral-index measurements.
         from .templatelibrary import TemplateLibrary
         from .stellarcontinuummodel import StellarContinuumModel
         from .emissionlinemodel import EmissionLineModel
-        from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
+        from .bandpassfilter import passband_integral, passband_integrated_width
+        from .bandpassfilter import passband_integrated_mean
         from .bandpassfilter import passband_weighted_mean
         from .util import select_proc_method, flux_to_fnu
 
@@ -73,6 +74,7 @@ A class hierarchy that performs the spectral-index measurements.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
+.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
 
 
 """
@@ -114,15 +116,12 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
-from .bandpassfilter import passband_integral, passband_integrated_width, passband_integrated_mean
+from .bandpassfilter import passband_integral, passband_integrated_width
+from .bandpassfilter import passband_integrated_mean
 from .bandpassfilter import passband_weighted_mean, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
 from matplotlib import pyplot
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 class SpectralIndicesDef(ParSet):
     """
@@ -275,9 +274,14 @@ class SpectralIndicesBitMask(BitMask):
 # TODO: These two should have the same base class
 class AbsorptionLineIndices:
     """
-    Measure a set of spectral indices.
+    Measure a set of spectral indices in a single spectrum.
+
+    By default, the center of the two side-bands is the flux-weighted
+    center; set weighted_center=False to get use the unweighted center
+    of the band.
     """
-    def __init__(self, wave, flux, bluebands, redbands, mainbands, err=None, log=True, units=None):
+    def __init__(self, wave, flux, bluebands, redbands, mainbands, err=None, log=True, units=None,
+                 weighted_center=True):
 
         # Check the shape of the input spectrum
         if len(flux.shape) != 1:
@@ -300,35 +304,25 @@ class AbsorptionLineIndices:
         self.order = None
 
         # Get the two pseudocontinua and the flux-weighted band centers
+        # pseudocontinuum returns center, continuum, and continuum_err
+        # as MaskedArrays; by default center is the flux-weighted center
         self.blue_center, self.blue_continuum, self.blue_continuum_err, self.blue_incomplete, \
-            self.blue_empty = pseudocontinuum(wave, flux, passband=bluebands, err=err, log=log)
-
-#        print(self.blue_center)
-#        print('')
-#        print(self.blue_continuum)
-#        print('')
+            self.blue_empty = pseudocontinuum(wave, flux, passband=bluebands, err=err, log=log,
+                                              weighted_center=weighted_center)
 
         self.red_center, self.red_continuum, self.red_continuum_err, self.red_incomplete, \
-            self.red_empty = pseudocontinuum(wave, flux, passband=redbands, err=err, log=log)
-#        print(self.red_center)
-#        print('')
-#        print(self.red_continuum)
-#        print('')
-
-        
-#       # TEST: Change to center instead of flux-weighted center
-#        self.blue_center = numpy.mean(bluebands, axis=1).ravel()
-#        self.red_center = numpy.mean(redbands, axis=1).ravel()
+            self.red_empty = pseudocontinuum(wave, flux, passband=redbands, err=err, log=log,
+                                             weighted_center=weighted_center)
 
         # Get the parameters for the linear continuum across the
         # primary passband
         self.continuum_m = (self.red_continuum - self.blue_continuum) \
                                 / (self.red_center - self.blue_center)
         self.continuum_b = self.blue_continuum - self.blue_center * self.continuum_m
-#        print(self.continuum_m)
-#        print('')
-#        print(self.continuum_b)
-#        print('')
+
+#        print('Number of non-finite continuum m,b: {0} {1}'.format(
+#                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_m))),
+#                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_b)))))
 
         # Compute the continuum normalized indices.  This has to be done
         # in a for loop because the continuum is index-dependent
@@ -338,25 +332,18 @@ class AbsorptionLineIndices:
         self.main_empty = numpy.zeros(self.nindx, dtype=numpy.bool)
         self.divbyzero = numpy.zeros(self.nindx, dtype=numpy.bool)
 
-        for i,m in enumerate(mainbands):
+        lg10 = numpy.log(10.0)
 
+        for i,m in enumerate(mainbands):
+            if self.blue_empty[i] or self.red_empty[i]:
+                continue
+                
             # From Worthey et al. 1994, eqns. 2 and 3
             cont = self.continuum_b[i] + self.continuum_m[i]*wave
             integrand = 1.0 - flux/cont if self.units[i] == 'ang' else flux/cont
 
             # Calculate the integral over the passband
-#            print(self.units[i])
-#            print(m)
-#            dw = numpy.diff(wave[0:2])[0]
-#            print(dw)
-#            print(self.index[i])
             self.index[i] = passband_integral(wave, integrand, passband=m, log=log)
-#            print(self.index[i])
-#            tmp = numpy.logical_and(wave > m[0], wave < m[1])
-#            print(numpy.sum(integrand[tmp])*dw)
-#            tmp = numpy.logical_and(wave > bluebands[i,0], wave < redbands[i,1])
-#            pyplot.plot(wave[tmp], integrand[tmp])
-#            pyplot.show()
             if err is not None:
                 self.index_err[i] = numpy.sqrt(passband_integral(wave, numpy.square(err/cont),
                                                passband=m, log=log))
@@ -379,26 +366,21 @@ class AbsorptionLineIndices:
 #                eint = numpy.sqrt(passband_integral(wave, numpy.square(err), passband=m, log=log))
 #                self.index_err[i] = abs(interval*eint/cint)
 
-            # Convert the index to magnitudes
+            # Convert the index to magnitudes using Worthey et al. 1994,
+            # eqn. 3: The passband interval cancels out of the error
+            # propagation.  The error calculation is done first so as to
+            # not replace the linear calculation of the index.
             if self.units[i] == 'mag':
-                if not interval > 0.0:
-                    self.divbyzero[i] = True
-                    self.index[i] = 0.0
-                    self.index_err[i] = 0.0
-                else:
-                    # Worthey et al. 1994, eqn. 3: The passband interval
-                    # cancels out of the error propagation.  The error
-                    # calculation is done first so as to not replace the
-                    # linear calculation of the index.
-                    self.index_err[i] = numpy.absolute(2.5 * self.index_err[i] / self.index[i] 
-                                                        / numpy.log(10.0))
-                    self.index[i] = -2.5 * numpy.ma.log10(self.index[i] / interval)
-#        print('')
+                self.divbyzero[i] = not ((numpy.absolute(interval) > 0) & (self.index[i] > 0))
+                if not self.divbyzero[i]:
+                    # If err is None, self.index_err=0
+                    self.index_err[i] = numpy.absolute(2.5*self.index_err[i]/self.index[i]/lg10)
+                    self.index[i] = -2.5 * numpy.log10(self.index[i]/interval)
 
 
 class BandheadIndices:
     """
-    Measure a set of bandhead indices.
+    Measure a set of bandhead indices in a single spectrum.
     """
     def __init__(self, wave, flux, bluebands, redbands, err=None, log=True, order=None):
 
@@ -423,46 +405,75 @@ class BandheadIndices:
             self.order = order
 
         # Get the two pseudocontinua and the flux-weighted band centers
+        # pseudocontinuum returns center, continuum, and continuum_err
+        # as MaskedArrays
         self.blue_center, self.blue_continuum, self.blue_continuum_err, self.blue_incomplete, \
             self.blue_empty = pseudocontinuum(wave, flux, passband=bluebands, err=err, log=log)
 
         self.red_center, self.red_continuum, self.red_continuum_err, self.red_incomplete, \
             self.red_empty = pseudocontinuum(wave, flux, passband=redbands, err=err, log=log)
-        
-        # Initialize the arrays to hold the numerator and denominator
-        blue_n = order == 'b_r'
-
-        n = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-        d = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-        n[blue_n] = self.blue_continuum[blue_n]
-        d[blue_n] = self.red_continuum[blue_n]
-        n[~blue_n] = self.red_continuum[~blue_n]
-        d[~blue_n] = self.blue_continuum[~blue_n]
-
-        nerr = numpy.ma.zeros(self.nindx)
-        derr = numpy.ma.zeros(self.nindx)
-        if self.blue_continuum_err is not None:
-            nerr[blue_n] = self.blue_continuum_err[blue_n]
-            derr[~blue_n] = self.blue_continuum_err[~blue_n]
-        if self.red_continuum_err is not None:
-            nerr[~blue_n] = self.red_continuum_err[~blue_n]
-            derr[blue_n] = self.red_continuum_err[blue_n]
 
         # Determine which indices have both a valid index and index
         # error calculation
         self.main_incomplete = None
         self.main_empty = None
-        self.divbyzero = ~((numpy.absolute(d) > 0) & (numpy.absolute(n) > 0))
+        # TODO: this definition of divbyzero may not actually reflect a
+        # division by zero?
+        self.divbyzero = numpy.invert(numpy.absolute(self.red_continuum.filled(0.0)) > 0) \
+                            | numpy.invert(numpy.absolute(self.blue_continuum.filled(0.0)) > 0)
 
-        # Calculate the indices and their nominal errors
-        self.index = numpy.zeros(self.nindx, dtype=numpy.float)
-        self.index[~self.divbyzero] = n[~self.divbyzero]/d[~self.divbyzero]
-        self.index_err = numpy.zeros(self.nindx, dtype=numpy.float)
-        self.index_err[~self.divbyzero] = numpy.sqrt(
-                            numpy.square(nerr[~self.divbyzero]*self.index[~self.divbyzero]
-                                            / n[~self.divbyzero])
-                          + numpy.square(derr[~self.divbyzero]*self.index[~self.divbyzero]
-                                            / d[~self.divbyzero]) )
+        # Calculate the index in the correct order
+        blue_n = order == 'b_r'
+        self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+        self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
+                                             self.red_continuum[blue_n]).filled(0.0)
+        self.index[~blue_n] = numpy.ma.divide(self.red_continuum[~blue_n],
+                                              self.blue_continuum[~blue_n]).filled(0.0)
+
+        # Calculate the index errors
+        berr = numpy.ma.zeros(self.nindx) if self.blue_continuum_err is None \
+                                            else self.blue_continuum_err
+        rerr = numpy.ma.zeros(self.nindx) if self.red_continuum_err is None \
+                                            else self.red_continuum_err
+        # Error is independent of ratio order when written in this way
+        self.index_err = numpy.ma.sqrt(
+                            numpy.square(numpy.ma.divide(berr*self.index,self.blue_continuum)) +
+                            numpy.square(numpy.ma.divide(rerr*self.index,self.red_continuum))
+                                      ).filled(0.0)
+
+
+
+#        n = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+#        d = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+#        n[blue_n] = self.blue_continuum[blue_n]
+#        d[blue_n] = self.red_continuum[blue_n]
+#        n[~blue_n] = self.red_continuum[~blue_n]
+#        d[~blue_n] = self.blue_continuum[~blue_n]
+#
+#        nerr = numpy.ma.zeros(self.nindx)
+#        derr = numpy.ma.zeros(self.nindx)
+#        if self.blue_continuum_err is not None:
+#            nerr[blue_n] = self.blue_continuum_err[blue_n]
+#            derr[~blue_n] = self.blue_continuum_err[~blue_n]
+#        if self.red_continuum_err is not None:
+#            nerr[~blue_n] = self.red_continuum_err[~blue_n]
+#            derr[blue_n] = self.red_continuum_err[blue_n]
+#
+#        # Determine which indices have both a valid index and index
+#        # error calculation
+#        self.main_incomplete = None
+#        self.main_empty = None
+#        self.divbyzero = ~((numpy.absolute(d) > 0) & (numpy.absolute(n) > 0))
+#
+#        # Calculate the indices and their nominal errors
+#        self.index = numpy.zeros(self.nindx, dtype=numpy.float)
+#        self.index[~self.divbyzero] = n[~self.divbyzero]/d[~self.divbyzero]
+#        self.index_err = numpy.zeros(self.nindx, dtype=numpy.float)
+#        self.index_err[~self.divbyzero] = numpy.sqrt(
+#                            numpy.square(nerr[~self.divbyzero]*self.index[~self.divbyzero]
+#                                            / n[~self.divbyzero])
+#                          + numpy.square(derr[~self.divbyzero]*self.index[~self.divbyzero]
+#                                            / d[~self.divbyzero]) )
 
 
 class SpectralIndices:
@@ -493,7 +504,8 @@ class SpectralIndices:
 
         self.nabs, self.nbhd = self.count_indices(self.absdb, self.bhddb)
         self.nindx = self.nabs + self.nbhd
-        self.correct_indices = self.database['compute_corrections']
+        self.compute_corrections = False
+        self.correct_indices = False            # !! HARDCODED !!
 
         self.binned_spectra = None
         self.redshift = None
@@ -640,11 +652,7 @@ class SpectralIndices:
             hdr['ELFKEY'] = (self.emission_line_model.method['key'],
                                 'Emission-line modeling method keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-#        if len(self.missing_bins) > 0:
-#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
-#        hdr['SICORR'] = (self.correct_indices, 'Indices corrected for velocity dispersion')
-        # Anything else?
-        # Additional database details?
+        hdr['SICORR'] = (self.compute_corrections, 'Velocity dispersion corrections computed')
         return hdr
 
 
@@ -978,7 +986,45 @@ class SpectralIndices:
 
 
     @staticmethod
+    def apply_dispersion_corrections(indx, indxcorr, err=None, unit='ang'):
+        """
+        Apply a set of dispersion corrections.  Errors in the dispersion
+        corrections are assumed to be negligible.
+
+        Args:
+            indx (array-like): Indices to correct.
+            indxcorr (array-like): Index corrections.
+            err (array-like): (**Optional**) Error in the indices.
+            unit (str): (**Optional**) Unit of the index; must be either
+                magnitudes (mag) or angstroms (ang).  Default is
+                angstroms.
+    
+        Returns:
+            numpy.ndarray: The corrected indices and errors are
+            returned.  If no errors are returned, the second returned
+            object is None.
+
+        Raises:
+            ValueError: Raised if the unit is not ang or mag.
+
+        """
+        if unit not in [ 'ang', 'mag' ]:
+            raise ValueError('Unit must be mag or ang.')
+
+        if unit == 'ang':
+            _indx = indx * indxcorr
+            _err = None if err is None else err * numpy.absolute(indxcorr)
+        else:
+            _indx = indx + indxcorr
+            _err = None if err is None else err.copy()
+        return _indx, _err
+
+
+    @staticmethod
     def count_indices(absdb, bhddb):
+        r"""
+        Count the total number (absorption-line and bandhead) indices.
+        """
         return 0 if absdb is None else absdb.nsets, 0 if bhddb is None else bhddb.nsets
 
 
@@ -1155,10 +1201,66 @@ class SpectralIndices:
     @staticmethod
     def measure_indices(absdb, bhddb, wave, flux, ivar=None, mask=None, redshift=None,
                         bitmask=None):
-        """
+        r"""
         Measure the spectral indices in a set of spectra.
 
-        If not input as masked arrays, flux is converted to one.
+        Args:
+            absdb
+                (:class:`mangadap.par.aborptionlinedb.AbsorptionIndexDB`):
+                Database with the absorption-line index definitions.
+                Can be None.
+            bhddb
+                (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`):
+                Database with the bandhead index definitions.
+            wave (array-like): 1D vector with the wavelength of each
+                pixel.  *Assumed to be logarithmically binned in
+                radius.*
+            flux (array-like): 2D array with the flux, ordered as
+                :math:`N_{\rm spec}\times N_{\rm wave}`.  Can be a
+                numpy.ma.MaskedArray; masked pixels will be ignored in
+                the measurement.
+            ivar (array-like): (**Optional**) Inverse variance in the
+                flux.  Must match flux array shape.  Used to calculate
+                propagated errors in the index.  Default is that errors
+                are ignored.
+            mask (array-like): (**Optional**) Boolean array flagging to
+                ignore (mask=True) or include (mask=False) each flux
+                measurement in the index calculation.
+            redshift (array-like): (**Optional**) Redshift to use for
+                each spectrum when determining the index.  Must have the
+                correct length compared to the flux array.  Default is
+                to assume the spectra are at rest wavelength.
+            bitmask (:class:`mangadap.util.bitmask.BitMask`):
+                (**Optional**)  If an index is flagged for some reason
+                (see :func:`set_masks`), this object is used to set the
+                mask value; this should typically be
+                :class:`SpectralIndicesBitMask` object.  If not
+                provided, the masked values are all set to True (False
+                otherwise).
+
+        Returns:
+            `numpy.recarray`_: A record array with the following
+            columns, each with one element per spectrum:
+
+                 0. ``BINID``: Bin identifier
+                 1. ``BINID_INDEX``: Index of the bin identifier
+                 2. ``REDSHIFT``: Redshift used for measurement
+                 3. ``MASK``: Boolean or maskbit value for index
+                 4. ``BCEN``: Blue passband center
+                 5. ``BCONT``: Blue passband pseudo-continuum
+                 6. ``BCONTERR``: Error in the above
+                 7. ``RCEN``: Red passband center
+                 8. ``RCONT``: Red passband pseudo-continuum
+                 9. ``RCONTERR``: Error in the above
+                10. ``INDX_DISPCORR``: Index dispersion correction
+                11. ``INDX``: Index value
+                12. ``INDXERR``: Error in the above
+
+            This function does not add the ``BINID``, ``BINID_INDEX``,
+            or ``INDX_DISPCORR`` values.  Each element in columns 3-12
+            are vectors with a length of :math:`N_{\rm index}` --- the
+            total number of indices calcualte (see
+            :func:`count_indices`).
 
         """
         # Check the input databases
@@ -1361,8 +1463,14 @@ class SpectralIndices:
             if stellar_continuum.hdu is None:
                 raise ValueError('Provided StellarContinuumModel is undefined!')
             self.stellar_continuum = stellar_continuum
-        if self.stellar_continuum is not None and self.database['compute_corrections']:
+        self.compute_corrections = self.database['compute_corrections']
+        if self.stellar_continuum is None and self.compute_corrections:
             warnings.warn('Cannot compute dispersion corrections without StellarContinuumModel.')
+            self.compute_corrections = False
+
+        # Can only correct the indices if the corrections are provided
+        if not self.compute_corrections and self.correct_indices:
+            warnings.warn('Cannot apply corrections because they are not being computed.')
             self.correct_indices = False
 
         # EmissionLineModel object used to subtract emission lines
@@ -1456,56 +1564,64 @@ class SpectralIndices:
 
         #---------------------------------------------------------------
         # Determine the velocity dispersion corrections, if requested.
+        if self.compute_corrections:
 
-        # Get the template spectra to use
-        replacement_templates = None if self.database['fwhm'] < 0 \
+            # Get the template spectra to use
+            replacement_templates = None if self.database['fwhm'] < 0 \
                     else self._resolution_matched_templates(dapsrc=dapsrc, dapver=dapver,
                                                             analysis_path=analysis_path,
                                                             tpl_symlink_dir=tpl_symlink_dir)
 
-        # Get the continuum with and without the LOSVD convolution
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing models with LOSVD')
-        continuum = self.stellar_continuum.fill_to_match(self.binned_spectra,
+            # Get the continuum with and without the LOSVD convolution
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Constructing models with LOSVD')
+            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra,
                                                         replacement_templates=replacement_templates)
         
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
-        continuum_dcnvlv = self.stellar_continuum.fill_to_match(self.binned_spectra,
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
+            continuum_dcnvlv = self.stellar_continuum.fill_to_match(self.binned_spectra,
                                                         replacement_templates=replacement_templates,
-                                                        redshift_only=True)
+                                                                    redshift_only=True)
         
 
-        # Get the corrections by performing the measurements on the
-        # best-fitting continuum models, with and without the velocity
-        # dispersion broadening
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Calculating dispersion corrections using stellar continuum model...')
-        measurements['INDX_DISPCORR'], good_ang, good_mag \
-                = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
-                                                        self.binned_spectra['WAVE'].data,
-                                                        flux, continuum[good_snr,:],
-                                                        continuum_dcnvlv[good_snr,:],
-                                                        redshift=self.redshift[good_snr],
-                                                        bitmask=self.bitmask)
+            # Get the corrections by performing the measurements on the
+            # best-fitting continuum models, with and without the
+            # velocity dispersion broadening
+            if not self.quiet:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Calculating dispersion corrections using stellar continuum model...')
+            measurements['INDX_DISPCORR'], good_ang, good_mag \
+                    = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
+                                                                self.binned_spectra['WAVE'].data,
+                                                                       flux, continuum[good_snr,:],
+                                                                       continuum_dcnvlv[good_snr,:],
+                                                                redshift=self.redshift[good_snr],
+                                                                       bitmask=self.bitmask)
+            # Flag bad corrections
+            bad_correction = ~good_ang & ~good_mag
+            measurements['MASK'][bad_correction] = self.bitmask.turn_on(
+                                                            measurements['MASK'][bad_correction],
+                                                            'NO_DISPERSION_CORRECTION')
+            # Apply the corrections
+            if self.correct_indices:
+                measurements['INDX'][good_ang], measurements['INDXERR'][good_ang] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX'][good_ang],
+                                                    measurements['INDX_DISPCORR'][good_ang],
+                                                    err=measurements['INDXERR'][good_ang],
+                                                                       unit='ang')
+                measurements['INDX'][good_mag], measurements['INDXERR'][good_mag] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX'][good_mag],
+                                                    measurements['INDX_DISPCORR'][good_mag],
+                                                    err=measurements['INDXERR'][good_mag],
+                                                                       unit='mag')
+
 
         # Add in the ancillary information and initialize the bins
         measurements['BINID'] = self.binned_spectra['BINS'].data['BINID'][good_snr]
         measurements['BINID_INDEX'] = numpy.arange(self.binned_spectra.nbins)[good_snr]
-
-        # Flag bad corrections
-        bad_correction = ~good_ang & ~good_mag
-        measurements['MASK'][bad_correction] = self.bitmask.turn_on(
-                                                        measurements['MASK'][bad_correction],
-                                                        'NO_DISPERSION_CORRECTION')
-
-#        # Apply the corrections
-#        if self.correct_indices:
-#            measurements['INDX'][good_ang] *= measurements['INDX_DISPCORR'][good_ang]
-#            measurements['INDXERR'][good_ang] \
-#                    *= numpy.absolute(measurements['INDX_DISPCORR'][good_ang])
-#            measurements['INDX'][good_mag] += measurements['INDX_DISPCORR'][good_mag]
 
         #---------------------------------------------------------------
         # Initialize the header keywords

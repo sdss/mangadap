@@ -57,6 +57,8 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
         temporarily).
     | **11 Oct 2016**: (KBW) Moved version checking to here (previously
         in rundap.py).
+    | **11 May 2017**: (KBW) Update MPL-6 dependencies; remove
+        module_file function
 
 """
 
@@ -106,9 +108,7 @@ class MaNGAMPL:
     +--------+-------------+------------+--------+--------+--------+
     | MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.2 |
     +--------+-------------+------------+--------+--------+--------+
-    | MPL-6  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  trunk |
-    +--------+-------------+------------+--------+--------+--------+
-    | trunk  |       0.2.0 |    v5_5_26 | v1_3_1 |  trunk |  trunk |
+    | MPL-6  |       0.2.1 |    v5_5_29 | v1_5_0 | v2_2_0 |  trunk |
     +--------+-------------+------------+--------+--------+--------+
 
     **Python versions**
@@ -117,9 +117,7 @@ class MaNGAMPL:
     +========+========+========+========+============+=========+=======+================+
     | MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |       None |   1.1.2 | 0.5.0 |            yes |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
-    | MPL-6  |  3.5.2 | 1.11.2 | 0.18.1 |      1.5.3 |   1.2.1 | 0.5.2 |            N/A |
-    +--------+--------+--------+--------+------------+---------+-------+----------------+
-    | trunk  |  3.5.2 | 1.12.0 | 0.18.1 |      2.0.0 |   1.3.0 | 0.5.3 |            N/A |
+    | trunk  |  3.5.3 | 1.12.0 | 0.19.0 |      2.0.0 |   1.3.0 | 0.5.3 |            N/A |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
 
     .. note::
@@ -242,10 +240,8 @@ class MaNGAMPL:
                                        None,     None,     None,       None,    None,     None ],
                                 [ 'MPL-5',   '0.2.0', 'v5_5_26', 'v1_3_1', 'v2_0_1',  '2.0.2',
                                     '3.5.1', '1.11.0', '0.17.1',       None,  '1.1.2', '0.5.0' ],
-                                [ 'MPL-6',   '0.2.0', 'v5_5_26', 'v1_3_1', 'v2_0_1',  'trunk',
-                                    '3.5.2', '1.11.2', '0.18.1',    '1.5.3',  '1.2.1', '0.5.2' ],
-                                [ 'trunk',   '0.2.0', 'v5_5_26', 'v1_3_1',  'trunk',  'trunk',
-                                    '3.5.2', '1.12.0', '0.18.1',    '2.0.0',  '1.3.0', '0.5.3' ]
+                                [ 'trunk',   '0.2.1', 'v5_5_29', 'v1_5_0', 'v2_2_0',  'trunk',
+                                    '3.5.3', '1.12.0', '0.19.0',    '2.0.0',  '1.3.0', '0.5.3' ]
                               ])
         nmpl = mpl_def.shape[1]
         if write:
@@ -338,32 +334,32 @@ class MaNGAMPL:
             self._version_mismatch('pydl', self.pydlver, pydl.__version__, quiet=quiet)
 
 
-    def module_file(self):
-        """
-        Return the name of the module file specific to the MPL to analyze.
-
-        .. warning::
-            This function is incomplete in the sense that not all MPLs
-            listed in the above table have an associated module file.
-
-        Returns:
-            str: Name of the manga module to load.  E.g. 'manga/mpl3'
-            for MPL-3.
-        """
-        if self.mplver == 'MPL-1':
-            return 'manga/westfall3_mpl1'
-        elif self.mplver == 'MPL-2':
-            return 'manga/westfall3_mpl2'
-        elif self.mplver == 'MPL-3':
-            return 'manga/mpl3'
-        elif self.mplver == 'MPL-4':
-            return 'manga/mpl4'
-        elif self.mplver == 'MPL-5':
-            return 'manga/mpl5'
-        elif self.mplver == 'MPL-6':
-            return 'manga/mpl6'
-        else:
-            return 'manga/westfall3_mpl1'
+#    def module_file(self):
+#        """
+#        Return the name of the module file specific to the MPL to analyze.
+#
+#        .. warning::
+#            This function is incomplete in the sense that not all MPLs
+#            listed in the above table have an associated module file.
+#
+#        Returns:
+#            str: Name of the manga module to load.  E.g. 'manga/mpl3'
+#            for MPL-3.
+#        """
+#        if self.mplver == 'MPL-1':
+#            return 'manga/westfall3_mpl1'
+#        elif self.mplver == 'MPL-2':
+#            return 'manga/westfall3_mpl2'
+#        elif self.mplver == 'MPL-3':
+#            return 'manga/mpl3'
+#        elif self.mplver == 'MPL-4':
+#            return 'manga/mpl4'
+#        elif self.mplver == 'MPL-5':
+#            return 'manga/mpl5'
+#        elif self.mplver == 'MPL-6':
+#            return 'manga/mpl6'
+#        else:
+#            return 'manga/westfall3_mpl1'
 
 
     def show(self):

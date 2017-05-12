@@ -1213,8 +1213,8 @@ class StellarContinuumModel:
         for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
             if isinstance(s, numpy.ma.core.MaskedConstant) \
                     or isinstance(e, numpy.ma.core.MaskedConstant):
-                if not quiet:
-                    warnings.warn('Encountered full continuum fit is masked.')
+#                if not quiet:
+#                    warnings.warn('Full continuum fit is masked.')
                 continue
             c.mask[s:e] = False
 
