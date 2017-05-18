@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Class that performs a number of assessments of a DRP file needed for
 handling of the data by the DAP.  These assessments need only be done
 once per DRP data file.
@@ -59,6 +58,8 @@ once per DRP data file.
         to :class:`ReductionAssessment`, removed verbose 
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
     | **27 Feb 2017**: (KBW) Use DefaultConfig.
+    | **17 May 2017**: (KBW) Added ability to use a response function
+        for the flux statistics.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -123,17 +124,21 @@ class ReductionAssessmentDef(ParSet):
         waverange (numpy.ndarray, list) : A two-element vector with the
             starting and ending wavelength (angstroms in VACUUM) within
             which to calculate the signal-to-noise
+        response_func (array-like): A two-column array with a response
+            function to use for the S/N calculation.  The columns must
+            br the wavelength and amplitude of the response function,
+            respectively.
         covariance (str) : Type of covariance measurement to produce
     """
-    def __init__(self, key, waverange, covariance):
+    def __init__(self, key, waverange=None, response_func=None, covariance=False):
         # Perform some checks of the input
         ar_like = [ numpy.ndarray, list ]
         #covar_opt = covariance_options()
         
-        pars =   [ 'key', 'waverange', 'covariance' ]
-        values = [   key,   waverange,   covariance ]
+        pars =   [ 'key', 'waverange', 'response_func', 'covariance' ]
+        values = [   key,   waverange,   response_func,   covariance ]
         #options = [ None,        None,    covar_opt ]
-        dtypes = [   str,     ar_like,         bool ]
+        dtypes = [   str,     ar_like,         ar_like,         bool ]
 
         #ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
@@ -167,25 +172,21 @@ def validate_reduction_assessment_config(cnfg):
         raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
     def_range = cnfg.keyword_specified('wave_limits')
-    def_par = cnfg.keyword_specified('par_file')
     def_response = cnfg.keyword_specified('response_function_file')
 
-    if numpy.sum([ def_range, def_par, def_response] ) != 1:
-        raise ValueError('Method undefined.  Must provide one and only one of \'wave_limits\' or '
-                         '\'par_file\' or \'response_function_file\'.')
+    if numpy.sum([ def_range, def_response] ) != 1:
+        raise ValueError('Method undefined.  Must provide either \'waverange\' or '
+                         '\'response_function_file\'.')
 
-    if def_par and not os.path.isfile(cnfg['par_file']):
-        raise FileNotFoundError('par_file does not exist: {0}'.format(cnfg['par_file']))
     if def_response and not os.path.isfile(cnfg['response_function_file']):
         raise FileNotFoundError('response_function_file does not exist: {0}'.format(
                                 cnfg['response_function_file']))
 
-    return def_range, def_par, def_response
+    return def_range, def_response
 
 
 def available_reduction_assessments(dapsrc=None):
-    """
-
+    r"""
     Return the list of available reduction assessment methods.  To get a
     list of default methods provided by the DAP do::
 
@@ -241,17 +242,25 @@ def available_reduction_assessments(dapsrc=None):
         cnfg = DefaultConfig(f=f, interpolate=True)
         # Ensure it has the necessary elements to define the template
         # library
-        def_range, def_par, def_response = validate_reduction_assessment_config(cnfg)
+#        def_range, def_par, def_response = validate_reduction_assessment_config(cnfg)
+        def_range, def_response = validate_reduction_assessment_config(cnfg)
         in_vacuum = cnfg.getbool('in_vacuum', default=False)
         if def_range:
             waverange = cnfg.getlist('wave_limits', evaluate=True)
             if not in_vacuum:
                 waverange = airtovac(waverange)
-            assessment_methods += [ ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
+            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], waverange=waverange,
                                                            covariance=cnfg.getbool('covariance',
                                                                             default=False)) ]
+        elif def_response:
+            response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
+            if not in_vacuum:
+                response[:,0] = airtovac(response[:,0])
+            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], response_func=response,
+                                                           covariance=cnfg.getbool('covariance',
+                                                                                   default=False)) ]
         else:
-            raise NotImplementedError('Cannot use par_file or response_function_file yet!')
+            raise ValueError('Must define a wavelength range or a response function.')
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in assessment_methods ]) )) \
@@ -674,11 +683,16 @@ class ReductionAssessment:
         if ell is not None:
             self.ell = ell
 
+        # Only mask pixels with the following flags set
+        flags = ['DONOTUSE', 'FORESTAR']
+
         # Initialize the record array for the SPECTRUM extension
         spectrum_data = init_record_array(drpf.nspec, self._per_spectrum_dtype())
         spectrum_data['DRP_INDEX'] = numpy.asarray(tuple(drpf.spatial_index))
         spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1] \
-                = drpf.mean_sky_coordinates(waverange=self.method['waverange'], offset=True)
+                = drpf.mean_sky_coordinates(waverange=self.method['waverange'],
+                                            response_func=self.method['response_func'],
+                                            offset=True, flag=flags)
 
 #        print(spectrum_data['DRP_INDEX'].shape)
 #        print(spectrum_data['DRP_INDEX'][0:drpf.nx,0])
@@ -699,7 +713,7 @@ class ReductionAssessment:
 #                       s=30, color='k', lw=0)
 #        pyplot.show()
        
-        flux = drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
+        flux = drpf.copy_to_masked_array(flag=flags)
         spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)),axis=1) \
                                             / flux.shape[1]
        
@@ -716,7 +730,9 @@ class ReductionAssessment:
 
         # Get the wavelength range
         waverange = [ drpf['WAVE'].data[0], drpf['WAVE'].data[-1] ] \
-                        if self.method['waverange'] is None else self.method['waverange']
+                    if self.method['waverange'] is None and self.method['response_func'] is None \
+                    else (self.method['waverange'] if self.method['waverange'] is not None else
+                        [ self.method['response_func'][0,0], self.method['response_func'][-1,0] ])
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Wavelength range for S and N calculation: {0:.1f} -- {1:.1f}'.format(
@@ -732,16 +748,19 @@ class ReductionAssessment:
         # wavelength range.  In the latter case, and exception is
         # raised!
         if self.method['covariance']:
-            self.covar_wave = numpy.sum(self.method['waverange'])/2.
-            self.covar_channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data
-                                                               - self.covar_wave) )[0]
+            self.covar_wave = drpf._covariance_wavelength(waverange=self.method['waverange'],
+                                                        response_func=self.method['response_func'],
+                                                          flag=flags)
+            self.covar_channel = numpy.argsort(numpy.absolute(drpf['WAVE'].data-self.covar_wave))[0]
+
             # TODO: Make this fraction an input parameter!
             goodfrac = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8)
 
             off = 1
             sign = 1
             while self.covar_wave > waverange[0] and self.covar_wave < waverange[1] \
-                    and numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)) > 0:
+                    and numpy.sum(goodfrac & numpy.invert(drpf['IVAR'].data[:,:,self.covar_channel]
+                                                          > 0)) > 0:
                 self.covar_channel += sign*off
                 self.covar_wave = drpf['WAVE'].data[self.covar_channel]
 #                print(self.covar_wave, self.covar_channel, off, sign,
@@ -764,6 +783,8 @@ class ReductionAssessment:
         # wavelength range
         spectrum_data['SIGNAL'], spectrum_data['VARIANCE'], spectrum_data['SNR'], self.correlation \
                 = drpf.flux_stats(waverange=self.method['waverange'],
+                                  response_func=self.method['response_func'],
+                                  flag=['DONOTUSE', 'FORESTAR'],
                                   covar=self.method['covariance'], correlation=True,
                                   covar_wave=self.covar_wave)
 
@@ -771,6 +792,7 @@ class ReductionAssessment:
         # of the variance in the single, specified channel.
         if self.method['covariance']:
             self.correlation = self.correlation.apply_new_variance(spectrum_data['VARIANCE'])
+#            self.correlation.show()
 
 #        t = (spectrum_data['FGOODPIX'].reshape(drpf.spatial_shape) > 0.8) & \
 #                        (drpf.bitmask.flagged(drpf['MASK'].data[:,:,self.covar_channel],

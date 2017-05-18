@@ -86,14 +86,16 @@ the MaNGA Data Reduction Pipeline (DRP).
         :func:`DRPFits.spectral_resolution_header`.
     | **06 Dec 2016**: (KBW) Removed wavelength_mask function, now uses
         :class:`mangadap.util.pixelmask.SpectralPixelMask`.  Moved the
-        main functionality of
-        :func:`mangadap.drpfits.DRPFits.copy_to_array` and
-        :func:`mangadap.drpfits.DRPFits.copy_to_masked_array` to
-        :class:`mangadap.util.fitsutil.DAPFitsUtil`, what's left are wrapper
-        functions for the more general functions in
+        main functionality of :func:`DRPFits.copy_to_array` and
+        :func:`DRPFits.copy_to_masked_array` to
+        :class:`mangadap.util.fitsutil.DAPFitsUtil`, what's left are
+        wrapper functions for the more general functions in
         :class:`mangadap.util.fitsutil.DAPFitsUtil`.
     | **17 Feb 2017**: (KBW) Return nominal inverse variance in
         :func:`DRPFits.regrid_wavelength_plane` if requested.
+    | **17 May 2017**: (KBW) Include a response function in
+        :func:`DRPFits.flux_stats` and
+        :func:`DAPFits.mean_sky_coordinates`.
 
 .. todo::
 
@@ -136,6 +138,7 @@ import numpy
 import warnings
 
 from scipy import sparse
+from scipy import interpolate
 from astropy.io import fits
 from astropy.wcs import WCS
 
@@ -152,6 +155,7 @@ from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
 from .util.filter import interpolate_masked_vector
+from .util.instrument import spectral_coordinate_step
 from .config.defaults import default_idlutils_dir, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
@@ -2109,6 +2113,30 @@ class DRPFits:
         return Covariance(C) if not csr else C
 
 
+    def _interpolated_response_function(self, response_func):
+        if response_func is None:
+            return numpy.ones(self.nwave, dtype=float)
+        
+        interp = interpolate.interp1d(response_func[:,0], response_func[:,1], bounds_error=False,
+                                      fill_value=0.0, assume_sorted=True)
+        return interp(self['WAVE'].data)
+
+
+    def _covariance_wavelength(self, waverange=None, response_func=None, flag=None):
+        if waverange is None and response_func is None:
+            return (self['WAVE'].data[0]+self['WAVE'].data[-1])/2.
+
+        flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
+
+        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        _response_func = self._interpolated_response_function(response_func)
+        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+                                        *_response_func[None,:]*dw[None,:], axis=1)
+        return numpy.ma.mean(numpy.ma.divide(numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+                                                *(self['WAVE'].data* _response_func*dw)[None,:],
+                                                       axis=1), response_integral))
+
+
     def covariance_matrix(self, channel, pixelscale=None, recenter=None, width_buffer=None, 
                           rlim=None, sigma=None, sigma_rho=None, csr=False, quiet=False):
         r"""
@@ -2505,7 +2533,8 @@ class DRPFits:
                ((self.hdu[0].header['IFUDEC'] - self.hdu[0].header['OBJDEC']) * 3600.)
 
 
-    def mean_sky_coordinates(self, waverange=None, offset=True, flag=None, fluxwgt=False):
+    def mean_sky_coordinates(self, waverange=None, response_func=None, offset=True, flag=None,
+                             fluxwgt=False):
         r"""
         Compute the mean sky coordinates for each spectrum.
         
@@ -2539,6 +2568,9 @@ class DRPFits:
                 with the first and last wavelength to include in the
                 computation.  Default is to use the full wavelength
                 range.
+            response_func (array-like): (**Optional**) A two-column
+                array with the wavelength and transmission of a
+                broad-band response function to use for the calculation.
             offset (bool) : Offset the coordinates to the object
                 coordinates.
             flag (str or list): (**Optional**) (List of) Flag names that
@@ -2565,32 +2597,29 @@ class DRPFits:
         # The negative here is because the XPOS extension has negative
         # offsets going toward increasing RA.
         xoff, yoff = self.pointing_offset() if offset else 0.0, 0.0
-        xpos = xoff - self.copy_to_masked_array(ext='XPOS', flag=flag)
-        ypos = yoff + self.copy_to_masked_array(ext='YPOS', flag=flag)
+        xpos = xoff - self.copy_to_masked_array(ext='XPOS', waverange=waverange, flag=flag)
+        ypos = yoff + self.copy_to_masked_array(ext='YPOS', waverange=waverange, flag=flag)
         if fluxwgt:
-            flux = self.copy_to_masked_array(ext='FLUX', flag=flag)
+            flux = self.copy_to_masked_array(ext='FLUX', waverange=waverange, flag=flag)
 
-        # Done this way so that computation of wavelength mask only done
-        # once
-        if waverange is not None:
-            wavemask = SpectralPixelMask(waverange=waverange).boolean(self.hdu['WAVE'].data,
-                                                                      nspec=self.nspec)
-#            wavemask = self.wavelength_mask(waverange=waverange,toarray=True).reshape(-1,self.nwave)
-            xpos[wavemask] = numpy.ma.masked
-            ypos[wavemask] = numpy.ma.masked
-            if fluxwgt:
-                flux[wavemask] = numpy.ma.masked
+        # Set the response function
+        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        _response_func = self._interpolated_response_function(response_func)
 
         # Get the normalization and return the flux- or un-weighted coordinates
         if fluxwgt:
-            fluxsum = numpy.ma.sum(flux,axis=1)
-            return numpy.ma.sum(flux*xpos,axis=1)/fluxsum, numpy.ma.sum(flux*ypos,axis=1)/fluxsum
+            norm = numpy.ma.sum(flux*_response_func[None,:]*dw[None,:], axis=1)
+            return numpy.ma.sum(flux*xpos*_response_func[None,:]*dw[None,:],axis=1)/norm, \
+                    numpy.ma.sum(flux*ypos*_response_func[None,:]*dw[None,:],axis=1)/norm
 
-        return numpy.ma.mean(xpos, axis=1), numpy.ma.mean(ypos, axis=1)
+        norm = numpy.sum(numpy.invert(numpy.ma.getmaskarray(xpos))*_response_func[None,:]
+                                *dw[None,:], axis=1)
+        return numpy.ma.sum(xpos*_response_func[None,:]*dw[None,:],axis=1)/norm, \
+                    numpy.ma.sum(ypos*_response_func[None,:]*dw[None,:],axis=1)/norm
 
 
-    def flux_stats(self, waverange=None, covar=False, correlation=False, covar_wave=None):
-#                    , average_covar=False):
+    def flux_stats(self, waverange=None, response_func=None, flag=None, covar=False,
+                   correlation=False, covar_wave=None):
         r"""
         Compute the mean flux, propagated error in the mean flux, and
         mean S/N over the specified wavelength range; if the wavelength
@@ -2609,6 +2638,13 @@ class DRPFits:
             waverange (array-like): (**Optional**) Starting and ending
                 wavelength over which to calculate the statistics.
                 Default is to use the full wavelength range.
+            response_func (array-like): (**Optional**) A two-column
+                array with the wavelength and transmission of a
+                broad-band response function to use for the calculation.
+            flag (str or list): (**Optional**) (List of) Flag names that
+                are considered when deciding if a pixel should be
+                masked.  The names *must* be a valid bit name as defined
+                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).
             covar (bool): (**Optional**) Flag to calculate covariance
                 matrix.
             correlation (bool): (**Optional**) Flag to convert the
@@ -2630,43 +2666,68 @@ class DRPFits:
         """
         if waverange is not None and len(waverange) != 2:
             raise ValueError('Provided wavelength range must be a two-element vector.')
+        if response_func is not None:
+            if len(response_func.shape) != 2:
+                raise ValueError('Response function object must be two dimensional.')
+            if response_func.shape[1] != 2:
+                raise ValueError('Response function object must only have two columns.')
 
         # Grab the masked arrays
-        flux = self.copy_to_masked_array(waverange=waverange)
-        ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange)
+        flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
+        ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange, flag=flag)
         snr = flux*numpy.ma.sqrt(ivar)
-        nsum = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)), axis=1)
 
-        # Get the mean signal, variance, and signal-to-noise
-        signal = numpy.ma.sum(flux, axis=1)/nsum
-        variance = numpy.ma.sum(numpy.ma.power(ivar, -1.), axis=1)/nsum
-        snr = numpy.ma.sum(snr, axis=1)/nsum
+        # Set the response function
+        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        _response_func = self._interpolated_response_function(response_func)
+
+#        print(flux.shape)
+#        n = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux)), axis=1)
+#        print(n)
+#        i = numpy.argsort(n)[-1]
+#        print(i)
+#
+#        pyplot.plot(self['WAVE'].data, dw)
+#        pyplot.plot(self['WAVE'].data, flux[i,:])
+#        pyplot.plot(self['WAVE'].data, ivar[i,:])
+#        pyplot.plot(self['WAVE'].data, snr[i,:])
+#        pyplot.plot(self['WAVE'].data, _response_func)
+#        pyplot.show()
+#        exit()
+
+        # Get the moments
+        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+                                        *(_response_func*dw)[None,:], axis=1)
+        signal = numpy.ma.divide(numpy.ma.sum(flux*(_response_func*dw)[None,:], axis=1),
+                                 response_integral)
+        variance = numpy.ma.divide(numpy.ma.sum(numpy.ma.power(ivar, -1.) \
+                                    * (_response_func*dw)[None,:], axis=1), response_integral)
+        snr = numpy.ma.divide(numpy.ma.sum(snr*(_response_func*dw)[None,:], axis=1),
+                              response_integral)
+
+#        pyplot.imshow(response_integral.reshape(self.spatial_shape).T, origin='lower',
+#                      interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(signal.reshape(self.spatial_shape).T, origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(variance.reshape(self.spatial_shape).T, origin='lower', interpolation='nearest')
+#        pyplot.show()
+#
+#        pyplot.imshow(snr.reshape(self.spatial_shape).T, origin='lower', interpolation='nearest')
+#        pyplot.show()
 
         # No computation of spatial covariance needed or requested
         if self.mode == 'RSS' or not covar:
             return signal, variance, snr, None
 
-#        if average_covar:
-#            if waverange is None:
-#                warnings.warn('Calculating average covariance over *all* channels.  Sit tight...')
-#            start_wave = self.hdu['WAVE'].data[0] if waverange is None else waverange[0]
-#            end_wave = self.hdu['WAVE'].data[-1] if waverange is None else waverange[1]
-#            start = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - start_wave) )[0]
-#            end = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - end_wave) )[0]+1
-#            C = self.covariance_cube(channels=numpy.arange(start,end))
-#            if correlation:
-#                C.to_correlation()
-#            meanC = numpy.mean(C.toarray(), axis=0)
-#            i, j = numpy.meshgrid(numpy.arange(C.shape[1]), numpy.arange(C.shape[2]))
-#            C = Covariance(sparse.coo_matrix((meanC[meanC > 0].ravel(),
-#                                              (i[meanC > 0].ravel(), j[meanC > 0].ravel())),
-#                                                 shape=C.shape[1:]).tocsr())
-#            return signal, variance, snr, C
-
         # Only calculate the covariance at the central, or input, wavelength
-        _covar_wave = ((self.hdu['WAVE'].data[0]+self.hdu['WAVE'].data[-1])/2. \
-                        if waverange is None else numpy.mean(waverange)) \
-                            if covar_wave is None else covar_wave
+        _covar_wave = covar_wave if covar_wave is not None \
+                        else self._covariance_wavelength(waverange=waverange,
+                                                         response_func=response_func,
+                                                         flag=flag)
+
         channel = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - _covar_wave) )[0]
 
 #        t = self.bitmask.flagged(self.hdu['MASK'].data[:,:,channel],

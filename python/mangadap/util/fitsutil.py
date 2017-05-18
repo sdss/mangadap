@@ -946,8 +946,10 @@ class DAPFitsUtil:
         mask = SpectralPixelMask(waverange=waverange).boolean(hdu['WAVE'].data, nspec=nspec)
 
         # Add in any bitmasks
-        if bitmask is not None:
+        if _mask_ext is not None and bitmask is not None:
             mask |= bitmask.flagged(hdu[_mask_ext].data.reshape(nspec,-1), flag=flag)
+        if _mask_ext is not None and bitmask is None:
+            mask |= (hdu[_mask_ext].data > 0)
 
         # Create the output MaskedArray
         a = numpy.ma.MaskedArray(hdu[_ext].data.copy().reshape(nspec,-1), mask=mask)

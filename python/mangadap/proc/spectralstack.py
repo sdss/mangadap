@@ -76,7 +76,7 @@ from ..par.parset import ParSet
 from ..util.covariance import Covariance
 from ..util.constants import constants
 
-from matplotlib import pyplot
+from matplotlib import pyplot, rc
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -329,7 +329,7 @@ class SpectralStack():
         if sres is None:
             self.sres = None
         else:
-            Tc = rt.sum(axis=1).ravel()
+            Tc = numpy.sum(rt, axis=1)
             Tc[~(Tc>0)] = 1.0
             self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2))/Tc[:,None], -0.5)
 
@@ -405,18 +405,54 @@ class SpectralStack():
 #        pyplot.xlabel(r'Covariance Channel')
 #        pyplot.ylabel(r'$C_{ii}\ I_{ii}$')
 #        pyplot.show()
-        
+
         self.covar = Covariance(self.covar, input_indx=covar.input_indx)
 #       self.covar.show(channel=self.covar.input_indx[0])
 
         # Set ivar by recalibrating the existing data
         if recalibrate_ivar:
             ratio = numpy.ma.median( variance_ratio, axis=1 )
+#            self._recalibrate_ivar_figure(ratio, ofile='ivar_calibration.pdf')
+
             self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
             return
 
         # Get the inverse variance from the full covariance matrix
         self.ivar = numpy.ma.power(self.covar.variance(), -1.).filled(0.0)
+
+
+    def _recalibrate_ivar_figure(self, ratio, ofile=None):
+            font = { 'size' : 20 }
+            rc('font', **font)
+
+            w,h = pyplot.figaspect(1)
+            fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+
+            ax = fig.add_axes([0.2,0.2,0.7,0.53])
+            ax.minorticks_on()
+            ax.tick_params(which='major', length=10)
+            ax.tick_params(which='minor', length=5)
+            ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-', lw=0.5)
+
+            nbin = numpy.sum(self.rebin_T.toarray(), axis=1)
+            mod_nbin = numpy.arange(0, numpy.amax(nbin), 0.1)+1
+            ax.scatter(nbin, numpy.sqrt(ratio), marker='.', s=50, lw=0, color='k', zorder=3)
+            ax.plot(mod_nbin, 1+1.62*numpy.log10(mod_nbin), color='C3', zorder=2)
+
+            ax.text(0.5, -0.16, r'$N_{\rm bin}$', horizontalalignment='center',
+                    verticalalignment='center', transform=ax.transAxes)
+            ax.text(-0.18, 0.5, r'$n_{\rm measured}/n_{\rm no\ covar}$',
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax.transAxes, rotation='vertical')
+            ax.text(0.95, 0.07, '7815-1902', horizontalalignment='right',
+                    verticalalignment='center', transform=ax.transAxes)
+
+            if ofile is None:
+                pyplot.show()
+            else:
+                fig.canvas.print_figure(ofile, bbox_inches='tight')
+            fig.clear()
+            pyplot.close(fig)
 
 
     def _covar_in_mean(self):

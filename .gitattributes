@@ -34,6 +34,11 @@ data/emission_lines/elp_mpl5.par -text
 data/emission_lines/elpext.par -text
 data/emission_lines/elpfull.par -text
 data/emission_lines/elpstrong.par -text
+data/filter_response/gunn_2001_g_response.db -text
+data/filter_response/gunn_2001_i_response.db -text
+data/filter_response/gunn_2001_r_response.db -text
+data/filter_response/gunn_2001_u_response.db -text
+data/filter_response/gunn_2001_z_response.db -text
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0030000000_z_0.02.fits -text svneol=unset#unset
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0035000000_z_0.02.fits -text svneol=unset#unset
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0040000000_z_0.02.fits -text svneol=unset#unset
