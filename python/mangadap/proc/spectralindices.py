@@ -27,7 +27,6 @@ A class hierarchy that performs the spectral-index measurements.
         import os.path
         import numpy
         from astropy.io import fits
-        import astropy.constants
 
         from ..par.parset import ParSet
         from ..par.artifactdb import ArtifactDB
@@ -36,7 +35,7 @@ A class hierarchy that performs the spectral-index measurements.
         from ..config.defaults import default_dap_source, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..config.defaults import default_dap_common_path
-        from ..util.instrument import spectral_resolution, match_spectral_resolution
+        from ..util.instrument import SpectralResolution, match_spectral_resolution
         from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
         from ..util.fitsutil import DAPFitsUtil
         from ..util.fileio import init_record_array, rec_to_fits_type
@@ -95,7 +94,6 @@ import logging
 
 import numpy
 from astropy.io import fits
-import astropy.constants
 
 from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
@@ -104,7 +102,7 @@ from ..par.bandheadindexdb import BandheadIndexDB
 from ..config.defaults import default_dap_source, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..config.defaults import default_dap_common_path
-from ..util.instrument import spectral_resolution, match_spectral_resolution
+from ..util.instrument import SpectralResolution, match_spectral_resolution
 from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
@@ -122,6 +120,7 @@ from .bandpassfilter import passband_weighted_mean, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
 from matplotlib import pyplot
+import astropy.constants
 
 class SpectralIndicesDef(ParSet):
     """

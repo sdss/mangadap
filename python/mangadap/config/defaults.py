@@ -91,7 +91,6 @@ from ..util.version import __version__
 def default_idlutils_dir():
     """
     Return the default IDLUTILS directory.
-
     """
     check_environment_variable('IDLUTILS_DIR')
     return environ['IDLUTILS_DIR']
@@ -101,7 +100,6 @@ def default_drp_version():
     """
     Return the DRP version defined by the environmental variable
     MANGADRP_VER.
-
     """
     check_environment_variable('MANGADRP_VER')
     return environ['MANGADRP_VER']
@@ -143,7 +141,6 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
     # Make sure the redux path is set
     if redux_path is None:
         redux_path = default_redux_path(drpver=drpver)
-
     return os.path.join(redux_path, str(plate), 'stack')
 
 
@@ -187,27 +184,10 @@ def default_regrid_sigma():
     return 0.7
 
 
-#def default_cube_covariance_file(plate, ifudesign):
-#    """
-#    Return the default name for the covariance calculated for a 'CUBE'
-#    fits file.
-#
-#    Args:
-#        plate (int): Plate number
-#        ifudesign (int): IFU design number
-#    
-#    Returns:
-#        str: The default name of the covariance file.
-#    """
-#    root = default_manga_fits_root(plate, ifudesign, 'CUBE')
-#    return ('{0}_COVAR.fits'.format(root))
-
-
 def default_dap_source():
     """
     Return the root path to the DAP source directory using the
     environmental variable MANGADAP_DIR.
-
     """
     check_environment_variable('MANGADAP_DIR')
     return environ['MANGADAP_DIR']
@@ -252,31 +232,11 @@ def default_analysis_path(drpver=None, dapver=None):
     return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
 
 
-#def default_dap_directory_path(plate, ifudesign, drpver=None, dapver=None, analysis_path=None):
-#    Return the exact directory path with the DAP file.
-#
-#    Args:
-#        plate (int): Plate number
-#        ifudesign (int): IFU design number
-#        drpver (str): (Optional) DRP version.  Default is to use
-#            :func:`default_drp_version`.
-#        dapver (str): (Optional) DAP version.  Default is to use
-#            :func:`default_dap_version`.
-#        analysis_path (str): (Optional) Path to the root analysis
-#            directory.  Default is to use :func:`default_analysis_path`
-#
-#    Returns:
-#        str: Path to the directory with DAP output files
-#
-#    # Make sure the DRP version is set
-#    if analysis_path is None:
-#        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
-#
-#    return os.path.join(analysis_path, str(plate), str(ifudesign))
 def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None,
                             analysis_path=None):
     """
-    Return the path to the top-level reference path for a given plate.
+    Return the path to the path to the directory with data common to
+    multiple binning schemes.
 
     Args:
         plate (int): (**Optional**) Plate number, for reference
@@ -313,9 +273,9 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
 def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
                        continuum_method=None):
     """
-    Return the method for a provided plan.  The name is currently built
-    using the keyword used to identify the methods for building the
-    binned spectra and the stellar continuum models.
+    Return the method for a provided plan.  The name currently uses the
+    keyword identifiers for the binned spectra and the stellar continuum
+    models.
     """
     if plan is not None:
         if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
@@ -387,37 +347,6 @@ def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=Fa
     if not qa and not ref:
         return output_path
     return os.path.join(output_path, ('qa' if qa else 'ref'))
-
-
-#def default_dap_method_path(method_dir, plate, drpver=None, dapver=None, analysis_path=None):
-#    """
-#    Return the path to the top-level path for specific DAP method and a
-#    given plate.
-#
-#    Args:
-#        method_dir (str): Name to give subdirectory for the specific
-#            method used to create the data.  This is completely
-#            unconstrained, except that it must have non-zero length.
-#        plate (int): (**Optional**) Plate number, for reference
-#            directory of a specific plate.
-#        drpver (str): (**Optional**) DRP version.  Default is to use
-#            :func:`default_drp_version`.
-#        dapver (str): (**Optional**) DAP version.  Default is to use
-#            :func:`default_dap_version`.
-#        analysis_path (str): (**Optional**) Path to the root analysis
-#            directory.  Default is to use :func:`default_analysis_path`
-#
-#    Returns:
-#        str: Path to the directory with DAP output files
-#    """
-#    if len(method_dir) == 0:
-#        raise ValueError('method_dir undefined!')
-#
-#    # Make sure the DRP version is set
-#    if analysis_path is None:
-#        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
-#
-#    return os.path.join(analysis_path, method_dir, str(plate))
 
 
 def default_manga_fits_root(plate, ifudesign, mode=None):

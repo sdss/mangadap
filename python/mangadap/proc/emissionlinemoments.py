@@ -37,12 +37,12 @@ A class hierarchy that measures moments of the observed emission lines.
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
         from ..util.log import log_output
-        from ..util.constants import constants
         from ..util.parser import DefaultConfig
         from ..par.parset import ParSet
         from ..par.artifactdb import ArtifactDB
         from ..par.emissionmomentsdb import EmissionMomentsDB
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from .stellarcontinuummodel import StellarContinuumModel
         from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
         from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
         from .util import select_proc_method
@@ -60,6 +60,9 @@ A class hierarchy that measures moments of the observed emission lines.
         StellarContinuumModel object.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
     | **27 Feb 2017**: (KBW) Use DefaultConfig for ini files.
+    | **31 May 2017**: (KBW) Revert to using
+        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
+        on input
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -98,6 +101,7 @@ from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+from .stellarcontinuummodel import StellarContinuumModel
 from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
 from .bandpassfilter import passband_integrated_mean, passband_weighted_mean, pseudocontinuum
 from .bandpassfilter import emission_line_equivalent_width
@@ -266,11 +270,10 @@ class EmissionLineMoments:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, database_key, binned_spectra, redshift=None, continuum=None,
-                 continuum_method=None, database_list=None, artifact_list=None, bandpass_list=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, database_key, binned_spectra, stellar_continuum=None, redshift=None,
+                 database_list=None, artifact_list=None, bandpass_list=None, dapsrc=None,
+                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
+                 hardcopy=True, clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -286,9 +289,8 @@ class EmissionLineMoments:
         self.nmom = self.momdb.nsets
 
         self.binned_spectra = None
+        self.stellar_continuum = None
         self.redshift = None
-        self.continuum = None
-        self.continuum_method = None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -310,11 +312,10 @@ class EmissionLineMoments:
         self.missing_bins = None
 
         # Run the assessments of the DRP file
-        self.measure(binned_spectra, redshift=redshift, continuum=continuum,
-                     continuum_method=continuum_method, dapsrc=dapsrc, dapver=dapver,
-                     analysis_path=analysis_path, directory_path=directory_path,
-                     output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
-                     quiet=quiet)
+        self.measure(binned_spectra, stellar_continuum=stellar_continuum, redshift=redshift,
+                     dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
+                     directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
+                     clobber=clobber, loggers=loggers, quiet=quiet)
 
 
 #    def __del__(self):
@@ -342,9 +343,8 @@ class EmissionLineMoments:
                                            method_list=database_list,
                                            available_func=available_emission_line_moment_databases,
                                            dapsrc=dapsrc)
-
-        print(self.database['key'])
-        print(self.database['passbands'])
+#        print(self.database['key'])
+#        print(self.database['passbands'])
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
@@ -374,8 +374,10 @@ class EmissionLineMoments:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
+        continuum_method = None if self.stellar_continuum is None \
+                                else self.stellar_continuum.method['key']
         method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    continuum_method=self.continuum_method)
+                                    continuum_method=continuum_method)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -386,8 +388,8 @@ class EmissionLineMoments:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if self.continuum_method is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.continuum_method)
+        if continuum_method is not None:
+            ref_method = '{0}-{1}'.format(ref_method, continuum_method)
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
@@ -412,8 +414,8 @@ class EmissionLineMoments:
         hdr['ELMMINSN'] = (self.database['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.database['artifacts'], 'Artifact database keyword')
         hdr['MOMDB'] = (self.database['passbands'], 'Emission-line moments database keyword')
-        if self.continuum_method is not None:
-            hdr['SCKEY'] = (self.continuum_method, 'Stellar-continuum model keyword')
+        if self.stellar_continuum is not None:
+            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
 #        if len(self.missing_bins) > 0:
 #            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
@@ -492,52 +494,22 @@ class EmissionLineMoments:
         Set the redshift to apply to each spectrum.
         """
         self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=numpy.float)
+        if redshift is None and self.stellar_continuum is None:
+            return
+
         if redshift is None:
+            self.redshift, _ = self.stellar_continuum.matched_guess_kinematics(self.binned_spectra)
             return
 
         _redshift = numpy.atleast_1d(redshift)
-        if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
+        if len(_redshift) == 1:
+            self.redshift, _ = self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
+                                                                               redshift=redshift)
+        elif len(_redshift) == self.binned_spectra.nbins:
+            self.redshift = _redshift.copy()
+        else:
             raise ValueError('Provided redshift must be either a single value or match the ' \
                              'number of binned spectra.')
-        self.redshift = numpy.full(self.binned_spectra.nbins, redshift, dtype=float) \
-                            if len(_redshift) == 1 else _redshift.copy()
-
-
-#    def _spectra_for_measurements(self, good_snr):
-#        """
-#        Compile the set of spectra for the emission-line moment
-#        measurements.  If a stellar continuum model is provided, this
-#        function will also provide the model-subtracted flux and a
-#        boolean array flagged with regions where the model was not
-#        subtracted from the data.
-#
-#        .. todo::
-#            - Need to match this with what is done in :class:`Elric`
-#
-#        """
-#        # Get the data arrays
-#        flux = self.binned_spectra.copy_to_masked_array(flag=self.binned_spectra.do_not_fit_flags())
-#        ivar = self.binned_spectra.copy_to_masked_array(ext='IVAR',
-#                                                        flag=self.binned_spectra.do_not_fit_flags())
-#        # Mask any pixels in the pixel mask
-#        indx = self.pixelmask.boolean(self.binned_spectra['WAVE'].data,
-#                                      nspec=self.binned_spectra.nbins)
-#        flux[indx] = numpy.ma.masked
-#        ivar[indx] = numpy.ma.masked
-#
-#        if self.continuum is None:
-#            return flux[good_snr,:], ivar[good_snr,:], None, None
-#        continuum_subtracted_flux, no_continuum \
-#                    = self.binned_spectra.continuum_subtracted_spectra(self.continuum)
-#        return flux[good_snr,:], ivar[good_snr,:], continuum_subtracted_flux[good_snr,:], \
-#                    no_continuum[good_snr,:]
-#
-##        for i in range(flux.shape[0]):
-##            pyplot.step(wave, flux[i,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=2)
-##            pyplot.plot(wave, model[i,:], linestyle='-', color='r', lw=1.5, zorder=1, alpha=0.5)
-##            pyplot.step(wave, model_subtracted_flux[i,:], where='mid', linestyle='-', color='g',
-##                        lw=0.5, zorder=3)
-##            pyplot.show()
 
 
     @staticmethod
@@ -1024,13 +996,12 @@ class EmissionLineMoments:
         return os.path.join(self.directory_path, self.output_file)
 
 
-    def measure(self, binned_spectra, redshift=None, continuum=None, continuum_method=None,
-                dapsrc=None, dapver=None, analysis_path=None, directory_path=None, output_file=None,
+    def measure(self, binned_spectra, stellar_continuum=None, redshift=None, dapsrc=None,
+                dapver=None, analysis_path=None, directory_path=None, output_file=None,
                 hardcopy=True, clobber=False, loggers=None, quiet=False):
         """
         Measure the emission-line moments using the binned spectra.
         """
-
         # Initialize the reporting
         if loggers is not None:
             self.loggers = loggers
@@ -1046,13 +1017,17 @@ class EmissionLineMoments:
         self.binned_spectra = binned_spectra
 
         # Continuum accounts for underlying absorption
-        self.continuum = None
+        if stellar_continuum is not None \
+                and not isinstance(stellar_continuum, StellarContinuumModel):
+            raise TypeError('Must provide a valid StellarContinuumModel object.')
+        self.stellar_continuum = stellar_continuum
+        continuum = None if self.stellar_continuum is None \
+                        else stellar_continuum.fill_to_match(self.binned_spectra)
         if continuum is not None:
             if continuum.shape != self.binned_spectra['FLUX'].data.shape:
                 raise ValueError('Provided continuum does not match shape of the binned spectra.')
-            self.continuum = continuum if isinstance(continuum, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(continuum)
-            self.continuum_method = continuum_method
+            if not isinstance(continuum, numpy.ma.MaskedArray):
+                continuum = numpy.ma.MaskedArray(continuum)
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.nspec
@@ -1121,10 +1096,10 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        flux, ivar = EmissionLineFit.get_binned_data(self.binned_spectra, pixelmask=self.pixelmask,
-                                                     select=good_snr)
+        flux, ivar = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
+                                                        pixelmask=self.pixelmask, select=good_snr)
         _redshift = self.redshift[good_snr]
-        _continuum = None if self.continuum is None else self.continuum[good_snr,:]
+        _continuum = None if continuum is None else continuum[good_snr,:]
         sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
 
         #---------------------------------------------------------------

@@ -68,6 +68,7 @@ KBW (??         ): tag 2.1
       output.
     - Added NeIII and higher-order Balmer series lines (up to H10).
     - General improvements to the documentation
+    - New emission-line module Sasuke that uses pPXF to fit the lines.
 
 TO FIX:
     - emission-line moment masks

@@ -29,6 +29,7 @@ values that are **not** available elsewhere, such as
 
 *Revision history*:
     | **28 May 2015**: Original implementation by K. Westfall (KBW)
+    | **01 Jun 2017**: (KBW) Changed attributes to class globals
 
 .. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
 
@@ -45,14 +46,14 @@ if sys.version > '3':
 
 import numpy
 
-class constants:
+class DAPConstants:
     r"""
     Defines the following set of constants:
 
     +-----------------------------+-------------------------------+
     | Attribute                   | Value                         |
     +=============================+===============================+
-    | :attr:`sig2fwhm`            | :math:`2\sqrt{2\ln(2)}`       |
+    | :attr:`sig2fwhm`            | :math:`\sqrt{8\ln(2)}`       |
     +-----------------------------+-------------------------------+
     | :attr:`rad2arcs`            | :math:`3600\frac{180}{\pi}`   |
     +-----------------------------+-------------------------------+
@@ -69,15 +70,18 @@ class constants:
             Gregorian years) in seconds.
 
     """
+    # Convert from sigma to FWHM: FWHM = sig2fwhm * sig
+    sig2fwhm = numpy.sqrt(8.0 * numpy.log(2.0))
+
+    # Convert from radians to arcseconds: arcsec = rad2arcs * radians
+    rad2arcs = 60*60*180/numpy.pi
+
+    # Length of one sidereal year in seconds ()
+    sidereal_year = 31558175.779
+
     def __init__(self):
-
-        # Convert from sigma to FWHM: FWHM = sig2fwhm * sig
-        self.sig2fwhm = 2.0 * numpy.sqrt(2.0 * numpy.log(2.0))
-
-        # Convert from radians to arcseconds: arcsec = rad2arcs * radians
-        self.rad2arcs = 60*60*180/numpy.pi
-
-        # Length of one sidereal year in seconds ()
-        self.sidereal_year = 31558175.779
+        self.sig2fwhm = constants.sig2fwhm
+        self.rad2arcs = constants.rad2arcs
+        self.sidereal_year = constants.sidereal_year
 
 

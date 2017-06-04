@@ -38,7 +38,6 @@ Implements an emission-line profile fitting class.
         from ..util.fileio import init_record_array
         from ..util.instrument import spectrum_velocity_scale, resample_vector
         from ..util.log import log_output
-        from ..util.constants import constants
         from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
@@ -65,14 +64,18 @@ Implements an emission-line profile fitting class.
         :func:`StellarContinuumModel.reset_continuum_mask_window`
         function from :class:`Elric` to be a member of
         :class:`StellarContinuumModel`.
+    | **24 May 2017**: (KBW) Moved _check_db to
+        :func:`mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database`
+        and moved fill_equivalent_width to
+        :func:`mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width`.
+        Moved _per_fitting_window_dtype from EmissionLineFit to
+        :class:`Elric`.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
 .. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.modeling: http://docs.astropy.org/en/stable/modeling/index.html
-.. _astropy.modeling.FittableModel: http://docs.astropy.org/en/stable/api/astropy.modeling.FittableModel.html
 .. _astropy.modeling.polynomial.Legendre1D: http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Legendre1D.html
 .. _astropy.modeling.models.CompoundModel: http://docs.astropy.org/en/stable/modeling/compound-models.html
 
@@ -96,336 +99,24 @@ import numpy
 from scipy import interpolate, integrate, optimize
 from scipy.special import erf
 import astropy.constants
-from astropy.modeling import FittableModel, Parameter
+from astropy.modeling.polynomial import Legendre1D
 
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, resample_vector
 from ..util.log import log_output
-from ..util.constants import constants
 from ..util.pixelmask import SpectralPixelMask
+from ..util import lineprofiles
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
-from .bandpassfilter import emission_line_equivalent_width
 from .util import residual_growth
 
 from matplotlib import pyplot
 
 # Add strict versioning
 # from distutils.version import StrictVersion
-
-from astropy.modeling import FittableModel, Parameter
-from astropy.modeling.polynomial import Legendre1D
-
-# BASE PROFILE DEFINITIONS ---------------------------------------------
-class GaussianLineProfile(FittableModel):
-    r"""
-    Define a Gaussian line profile as parameterized by its zeroth
-    moment, mean, and standard deviation:
-
-    .. math::
-
-        \mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
-        \exp\left(\frac{-(x-\mu)^2}{2\sigma^2}\right)
-
-    The base class is `astropy.modeling.FittableModel`_, which
-    facilitates its use in combining multiple components and other
-    models in the `astropy.modeling`_ suite.
-    """
-    # Inputs the x positions
-    inputs = ('x',)
-    # Returns the renormalized Gaussian PDF at each x position
-    outputs = ('y',)
-
-    # Parameters are the peak value of the profile, the profile mean,
-    # and the profile standard deviation (sigma)
-    zmom=Parameter(default=1.0)
-    mean=Parameter(default=0.0)
-    sigma=Parameter(default=1.0)
-
-    
-    @staticmethod
-    def evaluate(x, zmom, mean, sigma):
-        # Discrete samples
-        return zmom * numpy.exp(-0.5*numpy.square((x - mean)/sigma)) / numpy.sqrt(2*numpy.pi)/sigma
-#        # Integrated over a pixel
-#        diff = (x-mean)/pixelscale
-#        denom = numpy.sqrt(2.0)*sigma/pixelscale
-#        return zmom * (erf((diff+0.5)/denom) - erf((diff-0.5)/denom))/2.
-
-
-    @staticmethod
-    def fit_deriv(x, zmom, mean, sigma):
-        y = GaussianLineProfile.evaluate(x,zmom,mean,sigma)
-        d_zmom = y/zmom
-        d_mean = y*(x-mean)/numpy.square(sigma)
-        d_sigma = y*(numpy.square(x-mean)/numpy.power(sigma,3) - 1.0/sigma)
-        return [d_zmom, d_mean, d_sigma]
-
-
-    @staticmethod
-    def flux(zmom, mean, sigma):
-        return zmom
-
-
-    @staticmethod
-    def flux_err(zmom, mean, sigma, zmome, meane, sigmae):
-        return zmome
-
-
-    @staticmethod
-    def moment(order, zmom, mean, sigma):
-        if order == 0:
-            return zmom
-        if order == 1:
-            return mean
-        if order == 2:
-            return sigma
-
-
-    @staticmethod
-    def moment_err(order, zmom, mean, sigma, zmome, meane, sigmae):
-        if order == 0:
-            return zmome
-        if order == 1:
-            return meane
-        if order == 2:
-            return sigmae
-
-
-    @staticmethod
-    def integral(zmom, mean, sigma):
-        return integrate.quad( GaussianLineProfile.evaluate, -sigma, sigma, args=(zmom,mean,sigma))
-
-    
-    @staticmethod
-    def scale_flux(zmom, mean, sigma, fac):
-        return [zmom*fac, mean, sigma]
-
-
-    @staticmethod
-    def fix_flux():
-        return [ True, False, False ]
-
-    
-    @staticmethod
-    def mean_indx():
-        return 1
-
-    
-    @staticmethod
-    def shift_mean(zmom, mean, sigma, shift):
-        return [zmom, mean+shift, sigma ]
-
-    
-    @staticmethod
-    def fix_mean():
-        return [ False, True, False ]
-
-    
-    @staticmethod
-    def scale_stddev(zmom, mean, sigma, fac):
-        return [zmom, mean, sigma*fac ]
-
-
-    @staticmethod
-    def fix_stddev():
-        return [ False, False, True ]
-
-    
-#-----------------------------------------------------------------------
-
-   
-#-----------------------------------------------------------------------
-class NCompLineProfile:
-    """
-    Construct a single line profile from many components with the same
-    profile parameterization.
-    """
-    def __init__(self, ncomp, par=None, err=None, profile=GaussianLineProfile):
-        # Check the type of the profile to use
-        if not issubclass(profile, FittableModel):
-            raise TypeError('Profile must be a subclass of FittableModel.')
-        self.profile_class = profile
-
-        # Ensure that the profile can be defined
-        if not ncomp > 0:
-            raise ValueError('Number of input components must be 1 or higher!')
-
-        # Calculate and save the number of parameters
-        self.ncomp = ncomp
-        self.npar_per_component = len(self.profile_class.param_names)
-        self.npar = self.ncomp*self.npar_per_component
-
-        # Check the parameter vector, if provided
-        if par is not None and len(par.shape) > 2:
-            raise ValueError('Input parameter array should only be one or two dimensional.')
-        _par = None if par is None else par.ravel()
-        if _par is not None and len(_par) != self.npar:
-            raise ValueError('Incorrect number of parameters provided')
-        self.par = None if _par is None else _par.reshape(self.ncomp,-1).astype(float)
-
-        # Check the parameter vector, if provided
-        if err is not None and len(err.shape) > 2:
-            raise ValueError('Input parameter error array should only be one or two dimensional.')
-        _err = None if err is None else err.ravel()
-        if _err is not None and len(_err) != self.npar:
-            raise ValueError('Incorrect number of parameter errors provided')
-        self.err = None if _err is None else _err.reshape(self.ncomp,-1).astype(float)
-
-        # Build the profile function
-        self.profile = self.profile_class() \
-                if self.par is None else self.profile_class(*self.par[0])
-        for i in range(1,ncomp):
-            self.profile += self.profile_class() \
-                    if self.par is None else self.profile_class(*self.par[i])
-
-
-    def __call__(self, x, par=None):
-        return self.sample(x,par)
-
-
-    def _quick_sample(self, x):
-        """
-        Sample without providing/checking new input parameters.
-        """
-        return self.profile.evaluate(x, *self.par.ravel())
-
-
-    def _mom1_integrand(self, x):
-        return x*self._quick_sample(x)
-
-
-    def _mom2_integrand(self, x):
-        return x*x*self._quick_sample(x)
-    
-
-    def assign_par(self, par):
-        _par = par.ravel() if len(par.shape) == 2 else par
-        if len(_par) != self.npar:
-            raise ValueError('Incorrect number of parameters provided')
-        self.par = _par.copy().reshape(self.ncomp,-1)
-
-
-    def assign_err(self, err):
-        _err = err.ravel() if len(err.shape) == 2 else err
-        if len(_err) != self.npar:
-            raise ValueError('Incorrect number of parameters provided')
-        self.err = _err.copy().reshape(self.ncomp,-1)
-
-
-    def sample(self, x, par=None):
-        if par is not None:
-            self.assign_par(par)
-        return self._quick_sample(x)
-
-
-    def flux(self, par=None):
-        if par is not None:
-            self.assign_par(par)
-        return numpy.sum( [ self.profile_class.flux(*p) \
-                            for p in numpy.take(self.par,numpy.arange(self.ncomp),axis=0) ] )
-
-
-    def flux_err(self, par=None, err=None):
-        if par is not None:
-            self.assign_par(par)
-        if err is not None:
-            self.assign_err(err)
-        return numpy.sum([ self.profile_class.flux_err(*p, *e) \
-                           for p,e in zip(numpy.take(self.par,numpy.arange(self.ncomp),axis=0),
-                                          numpy.take(self.err,numpy.arange(self.ncomp),axis=0)) ] )
-
-
-    def moment(self, order=0, par=None):
-        """
-        .. todo::
-            impose some reasonable limits for the integrals
-        """
-        if par is not None:
-            self.assign_par(par)
-
-        if self.ncomp == 1:
-            return self.profile_class.moment(order, *self.par[0,:])
-
-        flux = self.flux(par=par)
-        if order == 0:
-            return flux
-
-        mom1, _ = integrate.quad(self._mom1_integrand, -numpy.inf, numpy.inf)
-        if order == 1:
-            return mom1/flux
-        mom2, _ = integrate.quad(self._mom2_integrand, -numpy.inf, numpy.inf)
-        return numpy.sqrt(mom2/flux-numpy.square(mom1/flux))
-
-    
-    def moment_err(self, order=0, par=None, err=None):
-        """
-        .. todo::
-            impose some reasonable limits for the integrals
-        """
-        if self.err is None and err is None:
-            return 0.0
-
-        if par is not None:
-            self.assign_par(par)
-        if err is not None:
-            self.assign_err(err)
-
-        if self.ncomp == 1:
-            return self.profile_class.moment_err(order, *self.par[0,:], *self.err[0,:])
-        raise NotImplementedError('Unable to calculate error for multiple components.')
-
-    
-    def scale_flux(self, fac):
-        for i in range(self.ncomp):
-            self.par[i,:] = self.profile_class.scale_flux(*self.par[i,:], fac)
-
-
-    def set_flux(self, flx):
-        self.scale_flux( flx/self.flux() )
-
-
-    def fix_flux(self):
-        return numpy.array(self.profile_class.fix_flux()*self.ncomp)
-
-
-    def mean_indx(self):
-        return [ self.profile_class.mean_indx()+i*self.ncomp for i in range(self.ncomp) ]
-            
-
-    def shift_mean(self, shift):
-        for i in range(self.ncomp):
-            self.par[i,:] = self.profile_class.shift_mean(*self.par[i,:], shift)
-
-    
-    def set_mean(self, mean):
-        self.shift_mean( mean-self.moment(order=1) )
-
-    
-    def fix_mean(self):
-        return numpy.array(self.profile_class.fix_mean()*self.ncomp)
-
-
-    def scale_stddev(self, fac):
-        if self.ncomp != 1:
-            raise NotImplementedError('Cannot scale the standard deviation of multi-component profiles.')
-        self.par[0,:] = self.profile_class.scale_stddev(*self.par[0,:], fac)
-
-
-    def set_stddev(self, stddev):
-        self.scale_stddev( stddev/self.moment(order=2) )
-
-
-    def fix_stddev(self):
-        if self.ncomp != 1:
-            raise NotImplementedError('Cannot fix the standard deviation of multi-component profiles.')
-        return numpy.array(self.profile_class.fix_stddev()*self.ncomp)
-
-#-----------------------------------------------------------------------
-
 
 # Main fitting engine --------------------------------------------------
 class LineProfileFit:
@@ -561,7 +252,7 @@ class LineProfileFit:
         _profile_list = profile_list if isinstance(profile_list, list) else [profile_list]
         self.nlines = len(_profile_list)
         for i in range(self.nlines):
-            if not isinstance(_profile_list[i], NCompLineProfile):
+            if not isinstance(_profile_list[i], lineprofiles.NCompLineProfile):
                 raise TypeError('LineProfileFit only works with NCompLineProfile objects.')
 
         # Construct and check the parameter vectors
@@ -750,7 +441,6 @@ class ElricPar(ParSet):
     def __init__(self, emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
                  minimum_snr=None, pixelmask=None, stellar_continuum=None):
 
-        arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
 
@@ -760,7 +450,7 @@ class ElricPar(ParSet):
                      minimum_snr, pixelmask, stellar_continuum ]
         defaults = [ None, -1,   25.0, None, None, 0.0, None, None ]
         dtypes =   [ EmissionLineDB, int, in_fl, arr_in_fl, arr_in_fl, in_fl, SpectralPixelMask,
-                     arr_like ]
+                     StellarContinuumModel ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
 
@@ -869,7 +559,7 @@ class ElricFittingWindow:
             raise TypeError('Appended index must be a single integer.')
         if not isinstance(restwave, float):
             raise TypeError('Appended restwavelength must be a single float.')
-        if not isinstance(profile, NCompLineProfile):
+        if not isinstance(profile, lineprofiles.NCompLineProfile):
             raise TypeError('Appended profile must have type NCompLineProfile.')
         if len(fixed_par.shape) != 1 or len(fixed_par) != profile.npar:
             raise TypeError('Appended fixed parameter must be a vector with the correct length.')
@@ -971,6 +661,33 @@ class Elric(EmissionLineFit):
 
 
     @staticmethod
+    def _per_fitting_window_dtype(nwin, max_npar, mask_dtype):
+        r"""
+        Construct the record array data type for the output fits
+        extension.
+        """
+
+        return [ ('BINID',numpy.int),
+                 ('BINID_INDEX',numpy.int),
+                 ('MASK', mask_dtype, (nwin,)),
+                 ('NPIXFIT',numpy.int,(nwin,)),
+                 ('PAR',numpy.float,(nwin,max_npar)),
+                 ('ERR',numpy.float,(nwin,max_npar)),
+                 ('LOBND',numpy.float,(nwin,max_npar)),
+                 ('UPBND',numpy.float,(nwin,max_npar)),
+                 ('FIXED',numpy.bool,(nwin,max_npar)),
+#                 ('TIED',numpy.int,(nwin,max_npar)),
+                 ('IGNORE',numpy.bool,(nwin,max_npar)),
+                 ('CHI2',numpy.float,(nwin,)),
+                 ('RCHI2',numpy.float,(nwin,)),
+                 ('RMS',numpy.float,(nwin,)),
+                 ('RESID',numpy.float,(nwin,7)),
+                 ('FRAC_RMS',numpy.float,(nwin,)),
+                 ('FRAC_RESID',numpy.float,(nwin,7))
+               ]
+
+
+    @staticmethod
     def _find_tied_index(index, emission_lines):
         i = numpy.where(emission_lines['index'] == index)[0]
         if len(i) > 1:
@@ -1049,10 +766,11 @@ class Elric(EmissionLineFit):
             db_indx = numpy.array([_db_indx[i]])
             line_index = numpy.array([primary_index[i]])
             restwave = numpy.array([ self.emission_lines['restwave'][primary_line][i] ])
-            profile_set = numpy.array([ NCompLineProfile(
+            profile_set = numpy.array([ lineprofiles.NCompLineProfile(
                                         self.emission_lines['ncomp'][primary_line][i],
                                         par=self.emission_lines['par'][primary_line][i],
-                                profile=eval(self.emission_lines['profile'][primary_line][i])) ])
+                                        profile=eval('lineprofiles.'
+                                            +self.emission_lines['profile'][primary_line][i])) ])
             fixed_par = self.emission_lines['fix'][primary_line][i].astype(bool).reshape(1,-1)
             bounds = numpy.array([ [l,u] \
                                     for l,u in zip(self.emission_lines['lobnd'][primary_line][i],
@@ -1086,8 +804,10 @@ class Elric(EmissionLineFit):
 
             # Append the line to this fitting window
             self.fitting_window[base_indx].append(i, e['index'], e['restwave'],
-                                                  NCompLineProfile(e['ncomp'], par=e['par'],
-                                                                   profile=eval(e['profile'])),
+                                                  lineprofiles.NCompLineProfile(e['ncomp'],
+                                                                                par=e['par'],
+                                                                   profile=eval('lineprofiles.'
+                                                                                +e['profile'])),
                                                   e['fix'],
                     numpy.array([ [l,u] for l,u in zip(e['lobnd'], e['hibnd']) ]).reshape(-1,2),
                                                   e['log_bnd'], bool(e['output_model']))
@@ -1182,38 +902,38 @@ class Elric(EmissionLineFit):
         return fitting_mask
 
 
-    @staticmethod
-    def _check_db(emission_lines):
-
-        # Check the input type
-        if not isinstance(emission_lines, EmissionLineDB):
-            raise TypeError('Input database must have type EmissionLineDB.')
-
-        # Check the database itself
-        neml = emission_lines.nsets
-        for i in range(neml):
-            profile = eval(emission_lines['profile'][i])
-            npar = len(profile.param_names)
-            if emission_lines['par'][i].size != npar*emission_lines['ncomp'][i]:
-                raise ValueError('Provided {0} parameters, but expected {1}.'.format(
-                                  emission_lines['par'][i].size, npar*emission_lines['ncomp'][i]))
-            if emission_lines['fix'][i].size != npar*emission_lines['ncomp'][i]:
-                raise ValueError('Provided {0} fix flags, but expected {1}.'.format(
-                                  emission_lines['fix'][i].size, npar*emission_lines['ncomp'][i]))
-            if numpy.any([f not in [0, 1] for f in emission_lines['fix'][i] ]):
-                warnings.warn('Fix values should only be 0 or 1; non-zero values interpreted as 1.')
-            if emission_lines['lobnd'][i].size != npar*emission_lines['ncomp'][i]:
-                raise ValueError('Provided {0} lower bounds, but expected {1}.'.format(
-                                  emission_lines['lobnd'][i].size,
-                                  npar*emission_lines['ncomp'][i]))
-            if emission_lines['hibnd'][i].size != npar*emission_lines['ncomp'][i]:
-                raise ValueError('Provided {0} upper bounds, but expected {1}.'.format(
-                                  emission_lines['hibnd'][i].size,
-                                  npar*emission_lines['ncomp'][i]))
-            if emission_lines['log_bnd'][i].size != npar*emission_lines['ncomp'][i]:
-                raise ValueError('Provided {0} log boundaries designations, but expected '
-                                 '{1}.'.format(emission_lines['log_bnd'][i].size,
-                                               npar*emission_lines['ncomp'][i]))
+#    @staticmethod
+#    def _check_db(emission_lines):
+#
+#        # Check the input type
+#        if not isinstance(emission_lines, EmissionLineDB):
+#            raise TypeError('Input database must have type EmissionLineDB.')
+#
+#        # Check the database itself
+#        neml = emission_lines.nsets
+#        for i in range(neml):
+#            profile = eval(emission_lines['profile'][i])
+#            npar = len(profile.param_names)
+#            if emission_lines['par'][i].size != npar*emission_lines['ncomp'][i]:
+#                raise ValueError('Provided {0} parameters, but expected {1}.'.format(
+#                                  emission_lines['par'][i].size, npar*emission_lines['ncomp'][i]))
+#            if emission_lines['fix'][i].size != npar*emission_lines['ncomp'][i]:
+#                raise ValueError('Provided {0} fix flags, but expected {1}.'.format(
+#                                  emission_lines['fix'][i].size, npar*emission_lines['ncomp'][i]))
+#            if numpy.any([f not in [0, 1] for f in emission_lines['fix'][i] ]):
+#                warnings.warn('Fix values should only be 0 or 1; non-zero values interpreted as 1.')
+#            if emission_lines['lobnd'][i].size != npar*emission_lines['ncomp'][i]:
+#                raise ValueError('Provided {0} lower bounds, but expected {1}.'.format(
+#                                  emission_lines['lobnd'][i].size,
+#                                  npar*emission_lines['ncomp'][i]))
+#            if emission_lines['hibnd'][i].size != npar*emission_lines['ncomp'][i]:
+#                raise ValueError('Provided {0} upper bounds, but expected {1}.'.format(
+#                                  emission_lines['hibnd'][i].size,
+#                                  npar*emission_lines['ncomp'][i]))
+#            if emission_lines['log_bnd'][i].size != npar*emission_lines['ncomp'][i]:
+#                raise ValueError('Provided {0} log boundaries designations, but expected '
+#                                 '{1}.'.format(emission_lines['log_bnd'][i].size,
+#                                               npar*emission_lines['ncomp'][i]))
 
 
     @staticmethod
@@ -1354,8 +1074,8 @@ class Elric(EmissionLineFit):
         near_bound = False
 
         # Assign the fitting window
-        model_eml_par['WIN_INDEX'][i,self.fitting_window[j].db_indx] = j
-#        print(model_eml_par['WIN_INDEX'][i,:])
+        model_eml_par['FIT_INDEX'][i,self.fitting_window[j].db_indx] = j
+#        print(model_eml_par['FIT_INDEX'][i,:])
 
         # If the parameters are bounded, save the bounds
         npar = self.bestfit[i,j].npar
@@ -1530,41 +1250,41 @@ class Elric(EmissionLineFit):
 #        pyplot.show()
 
 
-    def _correct_velocity_dispersion(self, model_eml_par):
-        """
-        Use the **previously calculated** instrumental velocity
-        dispersion to correct the measured velocity dispersions of the
-        lines to the astrophysical velocity dispersion.
-        """
-
-        # Correct the second moments for the instrumental dispersion
-        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
-        defined[indx] = model_eml_par['SINST'][indx] < model_eml_par['KIN'][indx,1]
-        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
-        nonzero[indx] = numpy.absolute(model_eml_par['SINST'][indx] 
-                                            - model_eml_par['KIN'][indx,1]) > 0
-
-#        orig = model_eml_par['KIN'].copy()
-
-        model_eml_par['KINERR'][nonzero,1] \
-                    = 2.0*model_eml_par['KIN'][nonzero,1]*model_eml_par['KINERR'][nonzero,1]
-        model_eml_par['KIN'][nonzero,1] = numpy.square(model_eml_par['KIN'][nonzero,1]) \
-                                                - numpy.square(model_eml_par['SINST'][nonzero])
-        model_eml_par['KIN'][nonzero,1] = model_eml_par['KIN'][nonzero,1] \
-                            / numpy.sqrt(numpy.absolute(model_eml_par['KIN'][nonzero,1]))
-        model_eml_par['KINERR'][nonzero,1] /= numpy.absolute(2.*model_eml_par['KIN'][nonzero,1])
-
-        # Flag undefined values
-        model_eml_par['MASK'][indx & ~defined] \
-                = self.bitmask.turn_on(model_eml_par['MASK'][indx & ~defined], 'UNDEFINED_SIGMA')
-
-#        flg = self.bitmask.flagged(model_eml_par['MASK'], flag='UNDEFINED_SIGMA')
-#        pyplot.scatter(orig[nonzero & flg,1], model_eml_par['KIN'][nonzero & flg,1], marker='.',
-#                       s=30, color='0.8')
-#        pyplot.scatter(orig[nonzero & ~flg,1], model_eml_par['KIN'][nonzero & ~flg,1], marker='.',
-#                       s=30, color='k')
-#        pyplot.show()
-
+# NEVER TESTED
+#    def _correct_velocity_dispersion(self, model_eml_par):
+#        """
+#        Use the **previously calculated** instrumental velocity
+#        dispersion to correct the measured velocity dispersions of the
+#        lines to the astrophysical velocity dispersion.
+#        """
+#
+#        # Correct the second moments for the instrumental dispersion
+#        defined = numpy.zeros(indx.shape, dtype=numpy.bool)
+#        defined[indx] = model_eml_par['SINST'][indx] < model_eml_par['KIN'][indx,1]
+#        nonzero = numpy.zeros(indx.shape, dtype=numpy.bool)
+#        nonzero[indx] = numpy.absolute(model_eml_par['SINST'][indx] 
+#                                            - model_eml_par['KIN'][indx,1]) > 0
+#
+##        orig = model_eml_par['KIN'].copy()
+#
+#        model_eml_par['KINERR'][nonzero,1] \
+#                    = 2.0*model_eml_par['KIN'][nonzero,1]*model_eml_par['KINERR'][nonzero,1]
+#        model_eml_par['KIN'][nonzero,1] = numpy.square(model_eml_par['KIN'][nonzero,1]) \
+#                                                - numpy.square(model_eml_par['SINST'][nonzero])
+#        model_eml_par['KIN'][nonzero,1] = model_eml_par['KIN'][nonzero,1] \
+#                            / numpy.sqrt(numpy.absolute(model_eml_par['KIN'][nonzero,1]))
+#        model_eml_par['KINERR'][nonzero,1] /= numpy.absolute(2.*model_eml_par['KIN'][nonzero,1])
+#
+#        # Flag undefined values
+#        model_eml_par['MASK'][indx & ~defined] \
+#                = self.bitmask.turn_on(model_eml_par['MASK'][indx & ~defined], 'UNDEFINED_SIGMA')
+#
+##        flg = self.bitmask.flagged(model_eml_par['MASK'], flag='UNDEFINED_SIGMA')
+##        pyplot.scatter(orig[nonzero & flg,1], model_eml_par['KIN'][nonzero & flg,1], marker='.',
+##                       s=30, color='0.8')
+##        pyplot.scatter(orig[nonzero & ~flg,1], model_eml_par['KIN'][nonzero & ~flg,1], marker='.',
+##                       s=30, color='k')
+##        pyplot.show()
 
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
@@ -1588,17 +1308,29 @@ class Elric(EmissionLineFit):
         if binned_spectra.hdu is None:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
 
+        # Continuum accounts for underlying absorption
+        if par['stellar_continuum'] is not None \
+                and not isinstance(par['stellar_continuum'], StellarContinuumModel):
+            raise TypeError('Must provide a valid StellarContinuumModel object.')
+        continuum = None if par['stellar_continuum'] is None \
+                        else par['stellar_continuum'].fill_to_match(binned_spectra)
+        if continuum is not None:
+            if continuum.shape != binned_spectra['FLUX'].data.shape:
+                raise ValueError('Provided continuum does not match shape of the binned spectra.')
+            if not isinstance(continuum, numpy.ma.MaskedArray):
+                continuum = numpy.ma.MaskedArray(continuum)
+
         # Get the data arrays to fit
         good_snr = binned_spectra.above_snr_limit(par['minimum_snr'])
-        flux, ivar = EmissionLineFit.get_binned_data(binned_spectra, pixelmask=par['pixelmask'],
-                                                     select=good_snr)
+        flux, ivar = EmissionLineFit.get_spectra_to_fit(binned_spectra, pixelmask=par['pixelmask'],
+                                                        select=good_snr)
 
         # Return the fitted data
         model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par \
                 = self.fit(binned_spectra['WAVE'].data, flux, par['emission_lines'],
                            ivar=ivar, sres=binned_spectra['SPECRES'].data.copy()[good_snr,:],
-                           continuum=par['stellar_continuum'][good_snr,:],
-                           base_order=par['base_order'], window_buffer=par['window_buffer'],
+                           continuum=continuum[good_snr,:], base_order=par['base_order'],
+                           window_buffer=par['window_buffer'],
                            guess_redshift=par['guess_redshift'][good_snr],
                            guess_dispersion=par['guess_dispersion'][good_snr], loggers=loggers,
                            quiet=quiet)
@@ -1612,9 +1344,10 @@ class Elric(EmissionLineFit):
         model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[good_snr]
 
         # Add the equivalent width data
-        Elric.fill_equivalent_width(binned_spectra['WAVE'].data, flux, par['emission_lines'],
-                                    model_eml_par, redshift=par['guess_redshift'][good_snr],
-                                    bitmask=self.bitmask)
+        EmissionLineFit.measure_equivalent_width(binned_spectra['WAVE'].data, flux,
+                                                 par['emission_lines'], model_eml_par,
+                                                 redshift=par['guess_redshift'][good_snr],
+                                                 bitmask=self.bitmask)
 
         # Only return model and model parameters for the *fitted*
         # spectra
@@ -1641,9 +1374,9 @@ class Elric(EmissionLineFit):
         self.quiet = quiet
 
         # Check the input emission-line database
-        Elric._check_db(emission_lines)
+        EmissionLineFit.check_emission_line_database(emission_lines)
         self.emission_lines = emission_lines
-        self.neml = self.emission_lines.nsets
+        self.neml = self.emission_lines.neml
 
         # Prepare the spectra for fitting
         self.wave = wave
@@ -1689,7 +1422,7 @@ class Elric(EmissionLineFit):
 
         # Model parameters and fit quality
         model_fit_par = init_record_array(self.nspec,
-                                          self._per_fitting_window_dtype(self.nwindows, max_npar,
+                                          Elric._per_fitting_window_dtype(self.nwindows, max_npar,
                                                                 self.bitmask.minimum_dtype()))
         model_fit_par['BINID'] = numpy.arange(self.nspec)
         model_fit_par['BINID_INDEX'] = numpy.arange(self.nspec)
@@ -1964,11 +1697,11 @@ class Elric(EmissionLineFit):
 
 #            print('Windows with parameters near boundary: {0}'.format(total_near_bound))
 
-            # Determine the instrumental dispersion at the line centers
-            indx = ~self.bitmask.flagged(model_eml_par['MASK'][i,:],
-                                         flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'NEAR_BOUND',
-                                               'UNDEFINED_COVAR' ])
-            model_eml_par['SINST'][i,indx] \
+            # Determine the instrumental dispersion correction at the line centers
+            indx = numpy.invert(self.bitmask.flagged(model_eml_par['MASK'][i,:],
+                                                     flag=['INSUFFICIENT_DATA', 'FIT_FAILED',
+                                                           'NEAR_BOUND', 'UNDEFINED_COVAR' ]))
+            model_eml_par['SIGMACORR'][i,indx] \
                     = EmissionLineFit.instrumental_dispersion(self.wave, self.sres[i,:],
                                                               emission_lines['restwave'][indx],
                                                               model_eml_par['KIN'][i,indx,0])
@@ -1987,58 +1720,4 @@ class Elric(EmissionLineFit):
 
         return self.wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 
-
-    @staticmethod
-    def fill_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None, redshift=None,
-                              bitmask=None):
-        """
-        The flux array is expected to have size Nspec x Nwave.
-
-        Provided previous emission-line fits, this function adds the
-        equivalent width measurements to the output database.
-
-        Errors currently *do not* include the errors in the continuum
-        measurement; only the provided error in the flux.
-
-        Raises:
-            ValueError: Raised if the length of the spectra, errors, or
-                mask does not match the length of the wavelength array;
-                raised if the wavelength, redshift, or dispersion arrays
-                are not 1D vectors; and raised if the number of
-                redshifts or dispersions is not a single value or the
-                same as the number of input spectra.
-        """
-
-        # Check the input emission-line database
-        Elric._check_db(emission_lines)
-
-        # If the redshift is NOT provided, use the fitted velocity
-        _redshift = numpy.mean(model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value,
-                               axis=1) if redshift is None else redshift
-
-        # Calculate the wavelength at which to measure the continuum.
-#        if redshift is None:
-#            z = model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value
-#            line_center = (1+z)*emission_lines['restwave'][None,:]
-#        else:
-        # To match what is done by
-        # :class:`mangadap.proc.emissionlineMoments.EmissionLineMoments`
-        line_center = (1+_redshift)[:,None]*emission_lines['restwave'][None,:]
-
-        # Compute the equivalent widths.  The checking done by
-        # EmissionLineFit.check_and_prep_input is *identical* to what is
-        # done within emission_line_equivalent_width()
-        model_eml_par['BMED'], model_eml_par['RMED'], pos, model_eml_par['EWCONT'], \
-                model_eml_par['EW'], model_eml_par['EWERR'] \
-                        = emission_line_equivalent_width(wave, flux,
-                                                         emission_lines['blueside'],
-                                                         emission_lines['redside'], line_center,
-                                                         model_eml_par['FLUX'], mask=mask,
-                                                         redshift=_redshift,
-                                                         line_flux_err=model_eml_par['FLUXERR'])
-
-        # Flag non-positive measurements
-        if bitmask is not None:
-            model_eml_par['MASK'][~pos] = bitmask.turn_on(model_eml_par['MASK'][~pos],
-                                                          'NON_POSITIVE_CONTINUUM')
 

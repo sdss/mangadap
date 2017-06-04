@@ -29,7 +29,6 @@ A class hierarchy that fits the emission lines.
         
         import numpy
         from astropy.io import fits
-        import astropy.constants
         
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
@@ -55,6 +54,9 @@ A class hierarchy that fits the emission lines.
     | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
         redshift when stellar continuum is provided.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
+    | **31 May 2017**: (KBW) Revert to using
+        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
+        on input
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -80,7 +82,6 @@ import logging
 
 import numpy
 from astropy.io import fits
-import astropy.constants
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
@@ -95,8 +96,10 @@ from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
+from .stellarcontinuummodel import StellarContinuumModel
 from .bandpassfilter import emission_line_equivalent_width
-from .elric import Elric, ElricPar, GaussianLineProfile
+from .elric import Elric, ElricPar
+from .sasuke import Sasuke, SasukePar
 from .util import select_proc_method
 
 from matplotlib import pyplot
@@ -109,6 +112,9 @@ class EmissionLineModelDef(ParSet):
     """
     A class that holds the parameters necessary to perform the
     emission-line profile fits.
+
+    .. todo::
+        Include waverange?
 
     Args:
         key (str): Keyword used to distinguish between different
@@ -207,11 +213,25 @@ def available_emission_line_modeling_methods(dapsrc=None):
         # library
         validate_emission_line_modeling_method_config(cnfg)
 
-        # Currently only implement Elric for fitting the emission lines
-        fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
-                          None, None, minimum_snr=cnfg.getfloat('minimum_snr'))
-        fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
-        fitfunc = fitclass.fit_SpatiallyBinnedSpectra
+        if cnfg['fit_method'] == 'elric':
+            # Chose to use Elric: Parameter set has defaults to handle
+            # missing or None values for baseline_order, window_buffer,
+            # and minimum_snr
+            fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
+                              None, None, minimum_snr=cnfg.getfloat('minimum_snr'))
+            fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
+        elif cnfg['fit_method'] == 'sasuke':
+            # Chose to use Sasuke: Parameter set has defaults to handle
+            # missing or None values for reject_boxcar, bias, moments,
+            # degree, mdegree
+            fitpar = SasukePar(None, None, guess_redshift=None, guess_dispersion=None,
+                               minimum_snr=cnfg.getfloat('minimum_snr'), pixelmask=None,
+                               reject_boxcar=cnfg.getint('reject_boxcar'),
+                               bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
+                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'))
+            fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
         method_list += [ EmissionLineModelDef(cnfg['key'], cnfg.getfloat('minimum_snr',default=0.0),
                                               cnfg['artifact_mask'], cnfg['emission_lines'], fitpar,
@@ -249,7 +269,6 @@ class EmissionLineModelBitMask(BitMask):
 
 class EmissionLineModel:
     r"""
-
     Class that holds the emission-line model fits.
 
     Args:
@@ -267,11 +286,11 @@ class EmissionLineModel:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, method_key, binned_spectra, redshift=None, dispersion=None, continuum=None,
-                 continuum_method=None, method_list=None, artifact_list=None,
-                 emission_line_db_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False,
-                 checksum=False, loggers=None, quiet=False):
+    def __init__(self, method_key, binned_spectra, stellar_continuum=None, redshift=None,
+                 dispersion=None, method_list=None, artifact_list=None, emission_line_db_list=None,
+                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -284,13 +303,12 @@ class EmissionLineModel:
         self._define_method(method_key, method_list=method_list, artifact_list=artifact_list,
                             emission_line_db_list=emission_line_db_list, dapsrc=dapsrc)
 
-        self.neml = self.emldb.nsets
+        self.neml = self.emldb.neml
 
         self.binned_spectra = None
         self.redshift = None
         self.dispersion = None
-        self.continuum = None
-        self.continuum_method = None
+        self.stellar_continuum = None
 
         # Define the output directory and file
         self.directory_path = None      # Set in _set_paths
@@ -317,11 +335,10 @@ class EmissionLineModel:
         self.missing_models = None
 
         # Fit the binned spectra
-        self.fit(binned_spectra, redshift=redshift, dispersion=dispersion, continuum=continuum,
-                 continuum_method=continuum_method, dapsrc=dapsrc, dapver=dapver,
-                 analysis_path=analysis_path, directory_path=directory_path,
-                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
-                 quiet=quiet)
+        self.fit(binned_spectra, stellar_continuum=stellar_continuum, redshift=redshift,
+                 dispersion=dispersion, dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
+                 directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
+                 clobber=clobber, loggers=loggers, quiet=quiet)
 
 
 #    def __del__(self):
@@ -377,8 +394,10 @@ class EmissionLineModel:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
+        continuum_method = None if self.stellar_continuum is None \
+                                else self.stellar_continuum.method['key']
         method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    continuum_method=self.continuum_method)
+                                    continuum_method=continuum_method)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -389,8 +408,8 @@ class EmissionLineModel:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if self.continuum_method is not None:
-            ref_method = '{0}-{1}'.format(ref_method, self.continuum_method)
+        if continuum_method is not None:
+            ref_method = '{0}-{1}'.format(ref_method, continuum_method)
         ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
@@ -413,8 +432,8 @@ class EmissionLineModel:
         hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
         hdr['EMLDB'] = (self.method['emission_lines'], 'Emission-line database keyword')
-        if self.continuum_method is not None:
-            hdr['SCKEY'] = (self.continuum_method, 'Stellar-continuum model keyword')
+        if self.stellar_continuum is not None:
+            hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
 #        if len(self.missing_models) > 0:
 #            hdr['EMPTYEL'] = (str(self.missing_models), 'List of bins w/o EL model')
@@ -428,14 +447,14 @@ class EmissionLineModel:
         Construct the record array data type for the output fits
         extension.
         """
-        return [ ('ID',numpy.int),
+        return [ ('ID', int),
                  ('NAME','<U{0:d}'.format(name_len)),
-                 ('RESTWAVE', numpy.float),
+                 ('RESTWAVE', float),
                  ('ACTION', '<U1'),
-                 ('FLUXRATIO', numpy.float),
+                 ('FLUXRATIO', float),
                  ('MODE','<U{0:d}'.format(mode_len)),
                  ('PROFILE', '<U{0:d}'.format(prof_len)),
-                 ('NCOMP', numpy.int)
+                 ('NCOMP', int)
                ]
 
 
@@ -465,12 +484,23 @@ class EmissionLineModel:
         Set the initial redshift and velocity dispersion for each
         spectrum.  Directly provided redshifts take precedence over
         those in the StellarContinuumModel object, if both are provided.
-        The dispersions are **never** drawn from the stellar kinematics,
-        but set to default_dispersion if they're not provided.
-        """
 
-        # Redshift
-        self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=numpy.float)
+        The default_dispersion does *not* take precedence over *any*
+        provided disperison.  This is treated the same as the 0.0
+        redshift assigned if both `redshift` and
+        :attr:`stellar_continuum` are None.
+        """
+        # Get the redshift and dispersion measured for the stars if the
+        # stellar continuum is present
+        sc_redshift, sc_dispersion = (None, None) if self.stellar_continuum is None else \
+                self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
+                        redshift=redshift, dispersion=default_dispersion
+                                                if dispersion is None else dispersion)
+
+        # Redshift: use the stellar continuum values if present,
+        # otherwise set the default to 0.
+        self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=float) \
+                            if redshift is None else sc_redshift
         if redshift is not None:
             _redshift = numpy.atleast_1d(redshift)
             if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
@@ -480,8 +510,10 @@ class EmissionLineModel:
                                 if len(_redshift) == 1 else _redshift.copy()
 
         # Same for dispersion
-        self.dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion,
-                                     dtype=numpy.float)
+        # Redshift: use the stellar continuum values if present,
+        # otherwise set the default to 0.
+        self.dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion, dtype=float) \
+                            if dispersion is None else sc_dispersion
         if dispersion is not None:
             _dispersion = numpy.atleast_1d(dispersion)
 
@@ -489,7 +521,7 @@ class EmissionLineModel:
                 raise ValueError('Provided dispersion must be either a single value or match the ' \
                                  'number of binned spectra.')
             self.dispersion = numpy.full(self.binned_spectra.nbins, dispersion, dtype=float) \
-                                if len(_redshift) == 1 else _dispersion.copy()
+                                if len(_dispersion) == 1 else _dispersion.copy()
 
 
     def _fill_method_par(self, dapsrc=None, analysis_path=None):
@@ -503,8 +535,8 @@ class EmissionLineModel:
         self.method['fitpar']['guess_dispersion'] = self.dispersion
         self.method['fitpar']['emission_lines'] = self.emldb
         self.method['fitpar']['pixelmask'] = self.pixelmask
-        if self.continuum is not None:
-            self.method['fitpar']['stellar_continuum'] = self.continuum
+        if self.stellar_continuum is not None:
+            self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
 
 
     def _add_method_header(self, hdr):
@@ -647,14 +679,11 @@ class EmissionLineModel:
         return os.path.join(self.directory_path, self.output_file)
 
 
-    def fit(self, binned_spectra, redshift=None, dispersion=None, continuum=None,
-            continuum_method=None, dapsrc=None, dapver=None, analysis_path=None,
-            directory_path=None, output_file=None, hardcopy=True, clobber=False, loggers=None,
-            quiet=False):
+    def fit(self, binned_spectra, stellar_continuum=None, redshift=None, dispersion=None,
+            dapsrc=None, dapver=None, analysis_path=None, directory_path=None, output_file=None,
+            hardcopy=True, clobber=False, loggers=None, quiet=False):
         """
-
         Fit the emission lines.
-
         """
         # Initialize the reporting
         if loggers is not None:
@@ -671,13 +700,10 @@ class EmissionLineModel:
         self.binned_spectra = binned_spectra
 
         # Continuum accounts for underlying absorption
-        self.continuum = None
-        if continuum is not None:
-            if continuum.shape != self.binned_spectra['FLUX'].data.shape:
-                raise ValueError('Provided continuum does not match shape of the binned spectra.')
-            self.continuum = continuum if isinstance(continuum, numpy.ma.MaskedArray) \
-                                    else numpy.ma.MaskedArray(continuum)
-            self.continuum_method = continuum_method
+        if stellar_continuum is not None \
+                and not isinstance(stellar_continuum, StellarContinuumModel):
+            raise TypeError('Must provide a valid StellarContinuumModel object.')
+        self.stellar_continuum = stellar_continuum
 
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape

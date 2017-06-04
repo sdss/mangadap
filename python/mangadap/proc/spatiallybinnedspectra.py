@@ -33,7 +33,6 @@ procedures.
         from os import remove, environ
         from scipy import sparse
         from astropy.io import fits
-        import astropy.constants
         import time
         import numpy
 
@@ -99,7 +98,6 @@ from scipy import sparse
 
 from astropy.wcs import WCS
 from astropy.io import fits
-import astropy.constants
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
@@ -899,9 +897,6 @@ class SpatiallyBinnedSpectra:
             extension of :attr:`hdu`.
     
         """
-
-        print('getting binned table data')
-
         # Get the unique bins and the number of spectra in each bin
         unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
 
@@ -990,7 +985,6 @@ class SpatiallyBinnedSpectra:
 
         # Compute the area covered by each bin
         bin_data['AREA'] = self.drpf.binned_on_sky_area(bin_indx, x=x, y=y)
-        print(bin_data['AREA'])
 
         # Calculate the fractional area of the bin covered by the
         # spectra, if possible; if not, the fractional area is unity
