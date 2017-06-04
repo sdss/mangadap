@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Copyright (C) 2001-2016, Michele Cappellari
+# Copyright (C) 2001-2017, Michele Cappellari
 # E-mail: michele.cappellari_at_physics.ox.ac.uk
 #
 # This software is provided as is without any warranty whatsoever.
@@ -19,15 +19,13 @@
 # 4) air_to_vac() to convert air to vacuum wavelengths
 # 5) emission_lines() to create gas emission line templates for pPXF
 # 6) gaussian_filter1d() to convolve a spectrum with a variable sigma
-# 7) plot_weights_2d() to plot an image of the 2-dime weights
+# 7) plot_weights_2d() to plot an image of the 2-dim weights
 
 from __future__ import print_function
 
 import numpy as np
-from scipy import special, ndimage
+from scipy import special, fftpack
 import matplotlib.pyplot as plt
-
-from astropy.io import fits
 
 ###############################################################################
 #
@@ -207,38 +205,68 @@ def air_to_vac(lam_air):
     return lam_air*fact
 
 ###############################################################################
+# NAME:
+#   EMLINE
+#
+# MODIFICATION HISTORY:
+#   V1.0.0: Written using analytic pixel integration.
+#       Michele Cappellari, Oxford, 10 August 2016
+#   V2.0.0: Define lines in frequency domain for a rigorous
+#       convolution within pPXF at any sigma. 
+#       Introduced `pixel` keyword for optional pixel convolution.
+#       MC, Oxford, 26 May 2017
 
-def emline(logLam_temp, line_wave, FWHM_gal):
+def emline(logLam_temp, line_wave, FWHM_gal, pixel=True):
     """
-    Instrumental Gaussian line spread function integrated within the
-    pixels borders. The function is normalized in such a way that
+    Instrumental Gaussian line spread function (LSF), 
+    optionally integrated within the pixels. The function 
+    is normalized in such a way that
+    
+            line.sum() = 1
+    
+    When the LSF is not severey undersampled, and when 
+    pixel=False, the output of this function is nearly 
+    indistinguishable from a normalized Gaussian:
+    
+      x = (logLam_temp - np.log(line_wave))/dx
+      gauss = np.exp(-0.5*(x/xsig)**2)
+      gauss /= np.sqrt(2*np.pi)*xsig
 
-        integ.sum() = 1
-
-    For sigma=FWHM_gal/2.355 larger than one pixels, this function
-    quickly converges to the normalized Gaussian function:
-
-        gauss = dLogLam * np.exp(-0.5*(x/xsig)**2) / (np.sqrt(2*np.pi)*xsig)
-
+    However, to deal rigorously with the possibility of severe 
+    undersampling, this Gaussian is defined analytically in 
+    frequency domain and transformed numerically to time domain. 
+    This makes the convolution exact within pPXF regardless of sigma.
+    
     :param logLam_temp: np.log(wavelength) in Angstrom
-    :param line_wave: lines wavelength in Angstrom
+    :param line_wave: Vector of lines wavelength in Angstrom
     :param FWHM_gal: FWHM in Angstrom. This can be a scalar or the
         name of a function wich returns the FWHM for given wavelength.
+    :param pixel: set to True to perform integration over the pixels.
     :return: LSF computed for every logLam_temp
 
     """
     if callable(FWHM_gal):
         FWHM_gal = FWHM_gal(line_wave)
 
-    # Compute pixels borders for Gaussian integration
-    logLamBorders = (logLam_temp[1:] + logLam_temp[:-1])/2
-    xsig = FWHM_gal/2.355/line_wave    # sigma in x=logLambda units
+    n = logLam_temp.size
+    npad = fftpack.next_fast_len(n)
+    nl = npad//2 + 1  # Expected length of rfft
 
-    # Perform pixel integration
-    x = logLamBorders[:, None] - np.log(line_wave)
-    integ = 0.5*np.diff(special.erf(x/(np.sqrt(2)*xsig)), axis=0)
+    dx = (logLam_temp[-1] - logLam_temp[0])/(n - 1)
+    x0 = (np.log(line_wave) - logLam_temp[0])/dx
+    xsig = FWHM_gal/2.355/line_wave/dx    # sigma in pixels units
+    w = np.linspace(0, np.pi, nl)[:, None]
 
-    return np.pad(integ, ((1,), (0,)), 'constant')
+    # Gaussian with sigma=xsig and center=x0,
+    # optionally convolved with an unitary pixel UnitBox[]
+    # analytically defined in frequency domain
+    # and numerically transformed to time domain
+    rfft = np.exp(-0.5*(w*xsig)**2 - 1j*w*x0)
+    if pixel:
+        rfft *= np.sinc(w/(2*np.pi))
+    line = np.fft.irfft(rfft, n=npad, axis=0)
+
+    return line[:n, :]
 
 ###############################################################################
 # NAME:
@@ -286,6 +314,7 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     :return: emission_lines, line_names, line_wave
 
     """
+
     # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha
     line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])  # air wavelengths
     line_names = np.array(['Hdelta', 'Hgamma', 'Hbeta', 'Halpha'])
@@ -378,16 +407,20 @@ def gaussian_filter1d(spec, sig):
 ###############################################################################
 # MODIFICATION HISTORY:
 #   V1.0.0: Written. Michele Cappellari, Oxford, 25 November 2016
+#   V1.0.1: Set `edgecolors` keyword in pcolormesh.
+#       MC, Oxford, 14 March 2017
 
-def plot_weights_2d(xgrid, ygrid, weights, xlabel="log Age (yr)", ylabel="[M/H]",
-                    title="Mass Fraction", nodots=False, colorbar=True, **kwargs):
+def plot_weights_2d(xgrid, ygrid, weights, xlabel="log Age (yr)",
+                    ylabel="[M/H]", title="Mass Fraction", nodots=False,
+                    colorbar=True, **kwargs):
     """
     Plot an image of the 2-dim weights, as a function of xgrid and ygrid.
     This function allows for non-uniform spacing in x or y.
 
     """
-    assert xgrid.shape == ygrid.shape == weights.shape, 'Input arrays (xgrid, ygrid, weights) must have the same size'
-    assert len(xgrid.shape) == 2, '(xgrid, ygrid, weights) must be 2-dim arrays'
+    assert xgrid.shape == ygrid.shape == weights.shape, \
+        'Input arrays (xgrid, ygrid, weights) must have the same size'
+    assert xgrid.ndim == 2, '(xgrid, ygrid, weights) must be 2-dim arrays'
 
     x = xgrid[:, 0]
     y = ygrid[0, :]
@@ -400,13 +433,12 @@ def plot_weights_2d(xgrid, ygrid, weights, xlabel="log Age (yr)", ylabel="[M/H]"
     # sampling of the stellar population parameters (e.g. metallicity)
 
     ax = plt.gca()
-    pc = plt.pcolormesh(xb, yb, weights.T, cmap=kwargs.get("cmap", "viridis"))
+    pc = plt.pcolormesh(xb, yb, weights.T, edgecolors='face', **kwargs)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
     if not nodots:
         plt.plot(xgrid, ygrid, 'w,')
-    plt.axis([xb.min(), xb.max(), yb.min(), yb.max()])
     if colorbar:
         plt.colorbar(pc)
         plt.sca(ax)  # Activate main plot before returning

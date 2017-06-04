@@ -74,7 +74,6 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
-from ..util.constants import constants
 
 from matplotlib import pyplot, rc
 

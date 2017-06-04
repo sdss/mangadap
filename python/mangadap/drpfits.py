@@ -150,7 +150,7 @@ except ImportError:
 
 from .util.fitsutil import DAPFitsUtil
 from .util.bitmask import BitMask
-from .util.constants import constants
+from .util.constants import DAPConstants
 from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
@@ -1280,13 +1280,13 @@ class DRPFits:
 #            pyplot.plot(self['WAVE'].data, sres[ii,:])
 #            pyplot.show()
 #            exit()
-#            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+#            sres = numpy.ma.power(DAPConstants.sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
 #            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[149,:])
 #            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[150,:])
 #            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[151,:])
 #            pyplot.show()
 #            exit()
-            sres = numpy.ma.power(constants().sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
+            sres = numpy.ma.power(DAPConstants.sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
             if fill:
                 _sres = sres.reshape(self.nspec, -1)
                 for i in range(self.nspec):

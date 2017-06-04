@@ -1545,7 +1545,7 @@ class construct_maps_file:
                     for m in range(emission_line_model.neml) ]
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
                                 -2).filled(0.0) for m in range(emission_line_model.neml) ]
-        arr += [ emission_line_model['EMLDATA'].data['SINST'][:,m]
+        arr += [ emission_line_model['EMLDATA'].data['SIGMACORR'][:,m]
                     for m in range(emission_line_model.neml) ]
         arr += [ emission_line_model['EMLDATA'].data['MASK'][:,m]
                     for m in range(emission_line_model.neml) ]
@@ -1587,7 +1587,7 @@ class construct_maps_file:
 
         if spectral_indices is None:
             # Construct and return the empty hdus
-            return DAPFitsUtil.empty_hdu(ext)
+            return DAPFitsUtil.empty_hdus(ext)
 
         #---------------------------------------------------------------
         # Add data to the primary header

@@ -75,7 +75,7 @@ from scipy import integrate, interpolate
 from scipy.special import erf
 import astropy.constants
 
-from .constants import constants
+from .constants import DAPConstants
 from .misc import where_not
 
 from matplotlib import pyplot
@@ -398,7 +398,7 @@ def convolution_variable_sigma(y, sigma, ye=None, integral=False):
     return VariableGaussianKernel(sigma, integral=integral).convolve(y,ye=ye)
 
 
-class spectral_resolution:
+class SpectralResolution:
     r"""
     
     Container class for the resolution, :math:`R =
@@ -437,8 +437,6 @@ class spectral_resolution:
             held by this object for later reference if needed.
         log10 (bool): Flag that the spectrum has been binned
             logarithmically (base 10) in wavelength
-        cnst (:class:`mangadap.util.constants`): Used to define the
-            conversion factor between a Gaussian sigma and FWHM
         c (float): The speed of light; provided by `astropy.constants`_.
         dv (float): The velocity step per pixel in km/s.  Defined using
             :func:`spectrum_velocity_scale` if :attr:`log10` is True;
@@ -451,13 +449,15 @@ class spectral_resolution:
             :func:`GaussianKernelDifference`.
         sig_pd (numpy.ndarray): The standard deviation in pixels
             required to match the spectral resolution of this object to
-            the resolution defined by a different spectral_resolution
-            object.  See :func:`GaussianKernelDifference`.
+            the resolution defined by a different
+            :class:`SpectralResolution` object.  See
+            :func:`GaussianKernelDifference`.
         sig_mask (numpy.ndarray): A *uint* vector used to identify
             measurements of :attr:`sig_pd` that should **not** be used
             to match the spectral resolution of this object to the
-            resolution defined by a different spectral_resolution
-            object.  See :func:`GaussianKernelDifference`.
+            resolution defined by a different
+            :class:`SpectralResolution` object.  See
+            :func:`GaussianKernelDifference`.
         sig_vo (float): A constant offset of the kernal standard
             deviation **in km/s** that has been applied to
             :attr:`sig_pd`.  See :func:`GaussianKernelDifference`.
@@ -495,7 +495,6 @@ class spectral_resolution:
 #            self.interpolator = InterpolatedUnivariateSpline(wave, sres, k=1, ext=interp_ext)
         self.interpolator = interpolate.interp1d(wave, sres, fill_value=interp_ext)
         self.log10 = log10
-        self.cnst = constants()
         self.c = astropy.constants.c.to('km/s').value
 
         self.dv = spectrum_velocity_scale(wave) if log10 else None
@@ -576,8 +575,8 @@ class spectral_resolution:
         Otherwise, return the values sampled at w.
         """
         if w is None:
-            return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator.y).filled(0.0)
-        return numpy.ma.divide(self.c, self.cnst.sig2fwhm*self.interpolator(w)).filled(0.0)
+            return numpy.ma.divide(self.c, DAPConstants.sig2fwhm*self.interpolator.y).filled(0.0)
+        return numpy.ma.divide(self.c, DAPConstants.sig2fwhm*self.interpolator(w)).filled(0.0)
 
 
     def match(self, new_sres, no_offset=True, min_sig_pix=0.0):
@@ -591,7 +590,7 @@ class spectral_resolution:
         r"""
         Determine the parameters of a Gaussian kernel required to
         convert the resolution of this object to the resolution of a
-        different the :class:`spectral_resolution` object, *new_sres*.
+        different the :class:`SpectralResolution` object, *new_sres*.
 
         The spectral resolution is defined as :math:`R =
         \lambda/\Delta\lambda`, where :math:`\Delta\lambda` is the FWHM
@@ -721,7 +720,7 @@ class spectral_resolution:
         for the offset.  Otherwise, the offset is set to 0.
 
         Args:
-            new_sres (:class:`spectral_resolution`): Spectral resolution
+            new_sres (:class:`SpectralResolution`): Spectral resolution
                 to match to.
             no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}
                 = 0` by masking regions with :math:`\sigma_{p,d} <
@@ -742,7 +741,7 @@ class spectral_resolution:
 
         # Determine the variance (in angstroms) of Gaussian needed to match
         # input resolution to the new values
-        sig2_wd = numpy.square(_wave/self.cnst.sig2fwhm) \
+        sig2_wd = numpy.square(_wave/DAPConstants.sig2fwhm) \
                   * (1.0/numpy.square(interp_sres) - 1.0/numpy.square(_sres))
         # Convert to km/s
         sig2_vd = numpy.square(self.c/_wave) * sig2_wd
@@ -854,11 +853,11 @@ class spectral_resolution:
 
         """
         if indx is None:
-            return 1.0/numpy.sqrt( numpy.square(self.cnst.sig2fwhm/self.c) \
+            return 1.0/numpy.sqrt( numpy.square(DAPConstants.sig2fwhm/self.c) \
                                    * self._convert_pd2vd(self.sig_pd*numpy.absolute(self.sig_pd)) \
                                    + 1.0/numpy.square(self.sres()) )
 
-        return 1.0/numpy.sqrt( numpy.square(self.cnst.sig2fwhm/self.c) \
+        return 1.0/numpy.sqrt( numpy.square(DAPConstants.sig2fwhm/self.c) \
                             * (self._convert_pd2vd(self.sig_pd*numpy.absolute(self.sig_pd)))[indx] \
                                + 1.0/numpy.square(self.sres()[indx]) )
 
@@ -869,13 +868,13 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     r"""
     Adjust the existing spectral resolution of a spectrum to a **lower**
     resolution as best as possible.  The primary functionality is in
-    :class:`spectral_resolution`, which determines the Gaussian kernel
+    :class:`SpectralResolution`, which determines the Gaussian kernel
     parameters needed to match the resolution, and
     :func:`convolve_variable_sigma`, which actually performs the
     convolution to match the resolution.
 
     In particular, see
-    :func:`spectral_resolution.GaussianKernelDifference` for a
+    :func:`SpectralResolution.GaussianKernelDifference` for a
     description of how the kernel parameters are determined and how
     regions where the target resolution is **higher** than the existing
     resolution.  In this case, one of the options is to adopt an offset
@@ -920,7 +919,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             0` by masking regions with :math:`\sigma_{p,d} <
             -\epsilon_\sigma`; i.e., the value of this arguments selects
             Option 1 (True) or Option 2 (False).  See
-            :func:`spectral_resolution.GaussianKernelDifference`.
+            :func:`SpectralResolution.GaussianKernelDifference`.
         min_sig_pix (float): (**Optional**) Minimum value of the
             standard deviation in pixels allowed before assuming the
             kernel is a Delta function.
@@ -946,7 +945,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
               resolution-matched spectra at the provided wavelengths.
             - A 1D vector with any constant offset in resolution **in
               km/s** between the targetted value and the result.  See
-              :func:`spectral_resolution.GaussianKernelDifference`.
+              :func:`SpectralResolution.GaussianKernelDifference`.
             - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array
               with a *uint* mask for the resolution-matched flux sampled
               at the input wavelengths.  This is returned regardless of
@@ -1013,7 +1012,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
     # Raise a warning if the new_sres vector will have to be
     # extrapolated for the input wavelengths
-    if numpy.amin(wave) < new_sres_wave[0] or numpy.amax(wave) > new_sres_wave[-1]:
+    if not quiet and (numpy.amin(wave) < new_sres_wave[0] or numpy.amax(wave) > new_sres_wave[-1]):
         warnings.warn('Mapping to the new spectral resolution will require extrapolating the' \
                       ' provided input vectors!')
 
@@ -1026,7 +1025,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     spec_dim = len(flux.shape)
     sres_dim = len(sres.shape)
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
-    new_res = spectral_resolution(new_sres_wave, new_sres, log10=new_log10)
+    new_res = SpectralResolution(new_sres_wave, new_sres, log10=new_log10)
 
     res = numpy.empty(nspec, dtype=object)
 
@@ -1034,7 +1033,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # new resolution
     if nsres == 1 and sres_dim == 1:
 #        print('one')
-        res[0] = spectral_resolution(wave, sres, log10=log10)
+        res[0] = SpectralResolution(wave, sres, log10=log10)
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
         for i in range(1,nspec):
@@ -1046,7 +1045,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
-            res[i] = spectral_resolution(_wave, _sres, log10=log10)
+            res[i] = SpectralResolution(_wave, _sres, log10=log10)
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
 #            pyplot.plot(_wave, res[i].sig_pd)
@@ -1083,7 +1082,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     else:
         for i in range(0,nspec):
             if not quiet:
-                print('Matching resolution ... {0}/{1}'.format(i+1,nspec), end='\r')
+                print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
             indx = numpy.where(res[i].sig_pd > min_sig_pix)
             if ivar is None:
                 out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
@@ -1101,7 +1100,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             else:
                 out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
         if not quiet:
-            print('Matching resolution ... DONE         ')
+            print('Matching resolution: {0}/{0}'.format(nspec))
 
     # TODO: Add this functionality from the IDL version?
     #

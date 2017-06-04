@@ -260,34 +260,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                            symlink_dir=method_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
-#        test_3d_hdu = binned_spectra.construct_3d_hdu()
-#        print(binned_spectra.nbins)
-#        print(test_3d_hdu['WAVE'].data.shape)
-#        print(test_3d_hdu['FLUX'].data.shape)
-#
-#        print('missing bins: {0}'.format(binned_spectra.missing_bins))
-#
-#        wave = binned_spectra['WAVE'].data
-#        flux = binned_spectra.copy_to_masked_array(ext='FLUX')
-#        sres = binned_spectra.copy_to_masked_array(ext='SPECRES')
-#
-#        for f in flux:
-#            pyplot.step(wave, f, lw=0.5)
-#        pyplot.show()
-#
-#        for s in sres:
-#           pyplot.plot(wave, s, lw=0.5)
-#        pyplot.plot(drpf['WAVE'].data, drpf['SPECRES'].data, lw=2)
-#        pyplot.show()
-
-#        print('Effective Radius: ', obs['reff'])
-
-#        pyplot.plot(drpf['WAVE'].data, drpf['FLUX'].data[28,28,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[28,28,:])
-#        pyplot.plot(binned_spectra['WAVE'].data,
-#                    binned_spectra['FLUX'].data[28,28,:]/binned_spectra['REDCORR'].data)
-#        pyplot.show()
-
         #---------------------------------------------------------------
         # Stellar Continuum Fit
         #---------------------------------------------------------------
@@ -299,76 +271,34 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
 
-#        print('after fit')
-#        bin_indx = stellar_continuum['BINID'].data.copy().ravel()
-###        pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower', interpolation='nearest')
-###        pyplot.show()
-##
-##
-#        vel = DAPFitsUtil.redshift_to_Newtonian_velocity(
-#                                    stellar_continuum['PAR'].data['KIN'][:,0], nsa_redshift)
-#
-#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
-#                                                  stellar_continuum['PAR'].data['KIN'][:,0]),
-#                      origin='lower', interpolation='nearest')
-#        pyplot.show()
-#
-#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
-#                                                  stellar_continuum['PAR'].data['KIN'][:,1]),
-#                      origin='lower', interpolation='nearest')
-#        pyplot.show()
-#
-#        print('nbin: {0}'.format(numpy.sum(bin_indx > -1)))    
-
-
-#        print(stellar_continuum['PAR'].data['KIN'][:,1])
-#        print(stellar_continuum['PAR'].data['SIGMACORR'])
-
-#        test_3d_hdu = stellar_continuum.construct_3d_hdu()
-#        print(stellar_continuum.nmodels)
-#        print(test_3d_hdu['WAVE'].data.shape)
-#        print(test_3d_hdu['FLUX'].data.shape)
-
         #---------------------------------------------------------------
-        # Continuum and spectra for emission line fitting
-        #---------------------------------------------------------------
-        # Procedure:
-        # Set the continuum
-        # Get the moments
-        # | Construct a rdxqa-like object with the S, N, SNR based on
-        # |   some combintion of the emission-line moments
-        # | For each stellar-continuum bin with nspax>1, rebin spaxels
-        # |   based on emission-line S, N, SNR.
-        # | Reset the continuum for the new bins
-        # Fit the emission lines
-
-        #---------------------------------------------------------------
-        continuum = stellar_continuum.fill_to_match(binned_spectra)
-        redshift, dispersion = stellar_continuum.matched_guess_kinematics(binned_spectra,
-                                                                          redshift=nsa_redshift,
-                                                                          dispersion=100.0)
-
+        # For both the emission-line measurements (moments and model):
+        # To use the NSA redshift for all moments:
+        #   - set redshift=nsa_redshift
+        # To use the stellar kinematics to set the redshift:
+        #   - set redshift=None
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
         emission_line_moments = None if plan['elmom_key'][i] is None else \
-                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra, redshift=redshift,
-                                        continuum=continuum,
-                                        continuum_method=stellar_continuum.method['key'],
+                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+                                        stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
-        # Force all dispersions to be 100 km/s to start (instead of the
-        # stellar velocity dipsersion)
-        dispersion[:] = 100.0
+        # To use a fixed velocity dispersion for the initial guess, e.g.:
+        #   - set dispersion=100.0
+        # To use the stellar kinematics as the initial guess:
+        #   - set dispersion=None
+        # The provided redshift is only the initial guess for the
+        # emission-line model (it's FIXED for the moment measurements).
         emission_line_model = None if plan['elfit_key'][i] is None else \
-                    EmissionLineModel(plan['elfit_key'][i], binned_spectra, redshift=redshift,
-                                      dispersion=dispersion, continuum=continuum,
-                                      continuum_method=stellar_continuum.method['key'],
-                                      dapsrc=dapsrc, analysis_path=_analysis_path,
+                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
                                       clobber=plan['elfit_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------

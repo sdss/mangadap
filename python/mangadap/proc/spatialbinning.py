@@ -26,7 +26,6 @@ Binning!
         import numpy
         from scipy import sparse
         from astropy.io import fits
-        import astropy.constants
 
         from ..par.parset import ParSet
         from ..util.geometry import SemiMajorAxisCoo
@@ -60,7 +59,6 @@ if sys.version > '3':
 import numpy
 from scipy import sparse
 from astropy.io import fits
-import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.geometry import SemiMajorAxisCoo

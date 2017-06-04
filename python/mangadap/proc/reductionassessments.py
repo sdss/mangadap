@@ -34,7 +34,6 @@ once per DRP data file.
         from scipy import sparse
         from pydl.goddard.astro import airtovac
         from astropy.io import fits
-        import astropy.constants
 
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
@@ -87,7 +86,6 @@ import numpy
 from scipy import sparse
 from pydl.goddard.astro import airtovac
 from astropy.io import fits
-import astropy.constants
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet

@@ -69,7 +69,7 @@ bitmasks for the template library spectra.
         from ..config.defaults import default_dap_file_name
         from ..util.log import log_output
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
-        from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
+        from ..util.instrument import resample_vector, resample_vector_npix, SpectralResolution
         from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
         from ..util.parser import DefaultConfig
         from .util import select_proc_method, HDUList_mask_wavelengths
@@ -236,7 +236,7 @@ from ..util.bitmask import BitMask
 from ..util.log import log_output
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
 from ..util.fitsutil import DAPFitsUtil
-from ..util.instrument import resample_vector, resample_vector_npix, spectral_resolution
+from ..util.instrument import resample_vector, resample_vector_npix, SpectralResolution
 from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
 from ..util.instrument import spectrum_velocity_scale, angstroms_per_pixel
 from ..util.parser import DefaultConfig
@@ -457,7 +457,7 @@ class TemplateLibrary:
     can be used with a non-DRP spectrum.  In the latter case, the user
     must supply the velocity scale of the pixel for the logarithmically
     resampled template library, and a
-    :class:`mangadap.util.instrument.spectral_resolution` object the
+    :class:`mangadap.util.instrument.SpectralResolution` object the
     defines the instrumental resolution of the spectrum/spectra to be
     analyzed.
 
@@ -503,7 +503,7 @@ class TemplateLibrary:
             provided :class:`mangadap.drpfits.DRPFits` object is this
             many times larger than the pixels in the resampled template
             spectrum.
-        sres (:class:`mangadap.util.instrument.spectral_resolution`):
+        sres (:class:`mangadap.util.instrument.SpectralResolution`):
             (**Optional**) The object is used simply to access the
             spectral resolution and associated wavelength coordinate
             vector needed when matching the spectral resolution of the
@@ -560,7 +560,7 @@ class TemplateLibrary:
         ntpl (int): Number of template spectra in the library
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
-        sres (:class:`mangadap.util.instrument.spectral_resolution`):
+        sres (:class:`mangadap.util.instrument.SpectralResolution`):
             The object is used simply to access the spectral resolution
             and associated wavelength coordinate vector needed when
             matching the spectral resolution of the template library;
@@ -1370,7 +1370,7 @@ class TemplateLibrary:
                 provided :class:`mangadap.drpfits.DRPFits` object is
                 this many times larger than the pixels in the resampled
                 template spectrum.
-            sres (:class:`mangadap.util.instrument.spectral_resolution`):
+            sres (:class:`mangadap.util.instrument.SpectralResolution`):
                 (**Optional**) The object is used simply to access the
                 spectral resolution and associated wavelength coordinate
                 vector needed when matching the spectral resolution of
@@ -1445,8 +1445,8 @@ class TemplateLibrary:
                 if not self.quiet:
                     warnings.warn('DRP file previously unopened.  Reading now.')
                 drpf.open_hdu()
-            self.sres = spectral_resolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
-                                            log10=True) if match_to_drp_resolution else None
+            self.sres = SpectralResolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
+                                           log10=True) if match_to_drp_resolution else None
             # Set this by default, but need DRPFits to return if the
             # file is logarithmically sampled!
             self.log10_sampling = True

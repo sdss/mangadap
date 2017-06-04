@@ -214,8 +214,11 @@ class SpectralPixelMask(PixelMask):
 
         Returns:
             numpy.ndarray : A 1D float array of the correct shape with
-                the kinematics 
+            the kinematics 
 
+        Raises:
+            ValueError: Raised if the length of the `kin` array is not
+            the same as the number of emission lines in :attr:`emldb`.
         """
         if kin is None:
             return None
@@ -230,26 +233,46 @@ class SpectralPixelMask(PixelMask):
 
     def _get_emission_line_bands(self, velocity_offsets=0.0, sigma=250.0, nsigma=3.0):
         r"""
+        Set the emission-line masks, using the emission-line parameters
+        defined by :attr:`emldb` (see
+        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
 
-        Set the emission-line masks based on the redshift and dispersion
-        of the line.
+        All emission lines in the database, except for those marked with
+        `action==i` are masked.
+        
+        The center of the masked region is constructed using
+        `emldb['restwave']` and the provided velocity
+        (`velocity_offset`).  The velocity of any lines marked as sky
+        (`action==s`) is always set to 0.
+        
+        The width of the mask is set to be :math:`\pm n_\sigma \sigma`
+        about this center, where both :math:`n_\sigma` and
+        :math:`\sigma` are parameters (`nsigma`, `sigma`).  If `sigma` is
+        None, `emldb['sig']` is used for each line.
 
         Args:
-            velocity_offsets (float, numpy.ndarray): (**Optional**) One
-                or more velocity offsets to apply to the emission-line
-                bands. Default is to apply no velocity offset.
-            sigma (float, numpy.ndarray): (**Optional**) One or more
-                velocity dispersions to use for setting the width of the
-                emission-line band.  Default is a width based on a
-                dispersion of 250 km/s.
-            nsigma (float, numpy.ndarray): (**Optional**) One or more
-                numbers that sets the width of the band in units of the
-                provided velocity dipsersions.
+            velocity_offsets (float, numpy.ndarray): (**Optional**) The
+                velocity offset to apply to each emission-line mask.
+                Must be either a single number or one number per
+                emission line.  Assumed to be 0 if set to None.
+            sigma (float, numpy.ndarray): (**Optional**) Line velocity
+                dispersions used to set the mask width.  Must be either
+                a single number or one number per emission line.  If
+                None, the dispersion provided by the emission-line
+                database is used (`emldb['sig']`).
+            nsigma (float, numpy.ndarray): (**Optional**) The half-width
+                of the band in units of the provided velocity
+                dipsersions.  Must be either a single number or one
+                number per emission line.  Cannot be None.
 
         Returns:
             numpy.ndarray : A :math:`N_l \times 2` array with the
-                wavelength limits of the emission-line bands.
+            wavelength limits of the emission-line bands.
 
+        Raises:
+            ValueError: Raised if `nsigma` is None, or any `nsigma` is
+            not greater than 0; raised if the half-width of any mask is
+            not greater than 0.
         """
 
         # Mask everything but the lines to ignore
@@ -263,6 +286,8 @@ class SpectralPixelMask(PixelMask):
         _nsigma = self._check_eml_kin_argument(nsigma)
         if _nsigma is None:
             raise ValueError('Must provide the number of sigma to cover with the mask.')
+        if numpy.any(numpy.invert(_nsigma > 0)):
+            raise ValueError('Must provide a non-zero number of sigma for mask hal-fwidth.')
 
         # Get the mask centers
         _velocity_offsets = self._check_eml_kin_argument(velocity_offsets)
@@ -274,6 +299,8 @@ class SpectralPixelMask(PixelMask):
         # Get the mask widths
         _sigma = self._check_eml_kin_argument(sigma)
         halfwidth = _nsigma[indx] * (self.emldb['sig'][indx] if _sigma is None else _sigma[indx])
+        if numpy.any(numpy.invert(halfwidth > 0)):
+            raise ValueError('All emission-line mask half-widths must be larger than 0.')
 
         return numpy.array([ center*(1.0-halfwidth/astropy.constants.c.to('km/s').value),
                              center*(1.0+halfwidth/astropy.constants.c.to('km/s').value) ]).T
@@ -374,12 +401,21 @@ class SpectralPixelMask(PixelMask):
         """
         Construct a bit mask that signifies pixels as outside the
         desired wavelength range, as being affected by an artifact, and
-        being designated as an emission-line region.
+        being designated as an emission-line region.  To simply flag the
+        pixels as a binary masked or unmasked, use :func:`boolean`.
 
         Args:
+            bitmask (:class:`mangadap.util.bitmask.BitMask`): Bitmask
+                used to flag pixels.  The flags waverange_flag,
+                art_flag, and eml_flag *must* be defined in the provided
+                instance of BitMask.
             wave (numpy.ndarray): Wavelength coordinate vector
             nspec (int): (**Optional**) Number of spectra to mask.
                 Default is just one.
+            mask (numpy.array): (**Optional**) Baseline mask to add
+                pixels masks.  Should have data type that matches
+                provided bitmask.  Default is to start with all pixels
+                unmasked.
             velocity_offsets (float, numpy.ndarray): (**Optional**) One
                 or more velocity offsets to apply to the emission-line
                 bands on a spectrum-by-spectrum basis. Default is to
@@ -392,6 +428,15 @@ class SpectralPixelMask(PixelMask):
                 numbers that sets the width of the band in units of the
                 provided velocity dipsersions band on a line-by-line
                 basis.
+            waverange_flag (str): (**Optional**) Bitmask name used to
+                flag a pixel as outside of the desired wavelength range.
+                Default is 'OUTSIDE_RANGE'.
+            art_flag (str): (**Optional**) Bitmask name used to flag a
+                pixel being affected by an artifact.  Default is
+                'ARTIFACT'.
+            eml_flag (str): (**Optional**) Bitmask name used to flag a
+                pixel being within an emission-line region.  Default is
+                'EML_REGION'.
 
         Returns:
             numpy.ndarray : Bit mask of the correct shape.

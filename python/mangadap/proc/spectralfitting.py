@@ -56,7 +56,10 @@ from scipy.interpolate import interp1d
 import astropy.constants
 
 from ..util.bitmask import BitMask
-from ..util.constants import constants
+from ..util.constants import DAPConstants
+from ..util import lineprofiles
+from ..par.emissionlinedb import EmissionLineDB
+from .bandpassfilter import emission_line_equivalent_width
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -144,13 +147,13 @@ class EmissionLineFit(SpectralFitting):
         """
         return [ ('BINID', numpy.int),
                  ('BINID_INDEX', numpy.int),
-                 ('WIN_INDEX', numpy.int, (neml,)),
+                 ('FIT_INDEX', numpy.int, (neml,)),
                  ('MASK', mask_dtype, (neml,)),
                  ('FLUX', numpy.float, (neml,)),
                  ('FLUXERR', numpy.float, (neml,)),
                  ('KIN', numpy.float, (neml,nkin)),
                  ('KINERR', numpy.float, (neml,nkin)),
-                 ('SINST', numpy.float, (neml,)),
+                 ('SIGMACORR', numpy.float, (neml,)),
                  ('BMED', numpy.float, (neml,)),
                  ('RMED', numpy.float, (neml,)),
                  ('EWCONT', numpy.float, (neml,)),
@@ -158,47 +161,21 @@ class EmissionLineFit(SpectralFitting):
                  ('EWERR', numpy.float, (neml,))
                ]
 
-#                 ('EWOF',numpy.float,neml),
-#                 ('EWOFERR',numpy.float,neml)
-#                 ('EW',numpy.float,neml),
-#                 ('EWERR',numpy.float,neml)
-#                 ('COMBKIN',numpy.float,nkin),
-#                 ('COMBKINERR',numpy.float,nkin),
-#                 ('COMBKINSTD',numpy.float,nkin),
-#                 ('COMBKINN',numpy.int),
 
     @staticmethod
-    def _per_fitting_window_dtype(nwin, max_npar, mask_dtype):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
+    def get_spectra_to_fit(binned_spectra, pixelmask=None, select=None, error=False):
         """
-
-        return [ ('BINID',numpy.int),
-                 ('BINID_INDEX',numpy.int),
-                 ('MASK', mask_dtype, (nwin,)),
-                 ('NPIXFIT',numpy.int,(nwin,)),
-                 ('PAR',numpy.float,(nwin,max_npar)),
-                 ('ERR',numpy.float,(nwin,max_npar)),
-                 ('LOBND',numpy.float,(nwin,max_npar)),
-                 ('UPBND',numpy.float,(nwin,max_npar)),
-                 ('FIXED',numpy.bool,(nwin,max_npar)),
-#                 ('TIED',numpy.int,(nwin,max_npar)),
-                 ('IGNORE',numpy.bool,(nwin,max_npar)),
-                 ('CHI2',numpy.float,(nwin,)),
-                 ('RCHI2',numpy.float,(nwin,)),
-                 ('RMS',numpy.float,(nwin,)),
-                 ('RESID',numpy.float,(nwin,7)),
-                 ('FRAC_RMS',numpy.float,(nwin,)),
-                 ('FRAC_RESID',numpy.float,(nwin,7))
-               ]
-
-    @staticmethod
-    def get_binned_data(binned_spectra, pixelmask=None, select=None):
+        Get the spectra to fit during the emission-line fitting.
+        """
         # Grab the spectra
         flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
         ivar = binned_spectra.copy_to_masked_array(ext='IVAR',
                                                    flag=binned_spectra.do_not_fit_flags())
+        # Convert inverse variance to error
+        if error:
+            ivar = numpy.ma.power(ivar, -0.5)
+            flux[numpy.ma.getmaskarray(ivar)] = numpy.ma.masked
+            
         # Mask any pixels in the pixel mask
         if pixelmask is not None:
             indx = pixelmask.boolean(binned_spectra['WAVE'].data, nspec=binned_spectra.nbins)
@@ -206,7 +183,7 @@ class EmissionLineFit(SpectralFitting):
             ivar[indx] = numpy.ma.masked
         
         _select = numpy.ones(binned_spectra.nbins, dtype=bool) if select is None else select
-        return flux[select,:], ivar[select,:]
+        return flux[_select,:], ivar[_select,:]
 
 
     @staticmethod
@@ -345,10 +322,157 @@ class EmissionLineFit(SpectralFitting):
 
         interpolator = interp1d(wave, sres, fill_value='extrapolate', assume_sorted=True)
         c = astropy.constants.c.to('km/s').value
-        return c / interpolator((cz/c + 1.0) * restwave)/constants().sig2fwhm
+        return c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
 
 
+    @staticmethod
+    def check_emission_line_database(emldb, wave=None, check_par=True):
+        r"""
+        Check the emission-line database.  Modes are checked by
+        :class:`mangadap.par.emissionlinedb.EmissionLinePar`, and the
+        indices are checked to be unique by
+        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
 
+            - The type of the object must be
+              :class:`mangadap.par.emissionlinedb.EmissionLineDB`
+            - The provided profile type of each line must be a defined
+              class.
+            - At least one line must have mode=`f`
+            - All tied lines must be tied to a line with a correctly
+              specified index.
+            - Warnings will be provided for any line with a centroid
+              that falls outside of the provided wavelength range.
+            - The database must provide at least one valid line.
+
+        Args:
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+                Emission-line database.
+            wave (array-like)
+
+        Raises:
+            TypeError: Raised if the provided object is not an instance
+                of :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
+            ValueError: Raised if any line has a mode of `x` or if the
+                database does not provide a valid definition for any
+                templates.
+            NameError: Raised if a defined profile type is not known.
+        """
+
+        # Check the object type
+        if not isinstance(emldb, EmissionLineDB):
+            raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
+
+        # Check the profile type
+        unique_profiles = numpy.unique(emldb['profile'])
+        for u in unique_profiles:
+            try:
+                eval('lineprofiles.'+u)
+            except NameError as e:
+                raise NameError('Profile type {0} not defined in'
+                                'mangadap.util.lineprofiles!'.format(u))
+
+        # There must be one primary line
+        if not numpy.any([m[0] == 'f' for m in emldb['mode']]):
+            raise ValueError('At least one line in the database must have mode=f.')
+
+        # Check that there are lines to fit
+        lines_to_fit = emldb['action'] == 'f'
+        if numpy.sum(lines_to_fit) == 0:
+            raise ValueError('No lines to fit in the database!')
+        if wave is not None:
+            _wave = numpy.asarray(wave)
+            if len(_wave.shape) != 1:
+                raise ValueError('Provided wavelengths must be a single vector.')
+            lines_in_range = numpy.array([rw > _wave[0] and rw < _wave[-1] 
+                                                for rw in emldb['restwave']]) 
+            if numpy.sum(lines_to_fit & lines_in_range) == 0:
+                raise ValueError('No lines to fit in the provided spectral range!')
+
+        # Check that the tied line indices exist in the database
+        for m in emldb['mode']:
+            if m[0] == 'f':
+                continue
+            tied_index = int(m[1:])
+            if numpy.sum(emldb['index'] == tied_index) == 0:
+                raise ValueError('No line with index={0} to tie to!'.format(tied_index))
+
+        # Only check the provided parameters if requested
+        if not check_par:
+            return
+
+        # Check the provided parameters, fix flags, and bounds
+        for i in range(emldb.neml):
+            profile = eval('lineprofiles.'+emldb['profile'][i])
+            npar = len(profile.param_names)
+            if emldb['par'][i].size != npar*emldb['ncomp'][i]:
+                raise ValueError('Provided {0} parameters, but expected {1}.'.format(
+                                  emldb['par'][i].size, npar*emldb['ncomp'][i]))
+            if emldb['fix'][i].size != npar*emldb['ncomp'][i]:
+                raise ValueError('Provided {0} fix flags, but expected {1}.'.format(
+                                  emldb['fix'][i].size, npar*emldb['ncomp'][i]))
+            if numpy.any([f not in [0, 1] for f in emldb['fix'][i] ]):
+                warnings.warn('Fix values should only be 0 or 1; non-zero values interpreted as 1.')
+            if emldb['lobnd'][i].size != npar*emldb['ncomp'][i]:
+                raise ValueError('Provided {0} lower bounds, but expected {1}.'.format(
+                                  emldb['lobnd'][i].size, npar*emldb['ncomp'][i]))
+            if emldb['hibnd'][i].size != npar*emldb['ncomp'][i]:
+                raise ValueError('Provided {0} upper bounds, but expected {1}.'.format(
+                                  emldb['hibnd'][i].size, npar*emldb['ncomp'][i]))
+            if emldb['log_bnd'][i].size != npar*emldb['ncomp'][i]:
+                raise ValueError('Provided {0} log boundaries designations, but expected '
+                                 '{1}.'.format(emldb['log_bnd'][i].size, npar*emldb['ncomp'][i]))
+
+
+    @staticmethod
+    def measure_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None,
+                                 redshift=None, bitmask=None, checkdb=True):
+        """
+        The flux array is expected to have size Nspec x Nwave.
+
+        Provided previous emission-line fits, this function adds the
+        equivalent width measurements to the output database.
+
+        Errors currently *do not* include the errors in the continuum
+        measurement; only the provided error in the flux.
+
+        Raises:
+            ValueError: Raised if the length of the spectra, errors, or
+                mask does not match the length of the wavelength array;
+                raised if the wavelength, redshift, or dispersion arrays
+                are not 1D vectors; and raised if the number of
+                redshifts or dispersions is not a single value or the
+                same as the number of input spectra.
+        """
+
+        # Check the input emission-line database
+        if checkdb:
+            EmissionLineFit.check_emission_line_database(emission_lines)
+
+        # If the redshift is NOT provided, use the fitted velocity
+        _redshift = numpy.mean(model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value,
+                               axis=1) if redshift is None else redshift
+
+        # Calculate the wavelength at which to measure the continuum,
+        # matching what is done by
+        # :class:`mangadap.proc.emissionlineMoments.EmissionLineMoments`
+        line_center = (1+_redshift)[:,None]*emission_lines['restwave'][None,:]
+
+        # Compute the equivalent widths.  The checking done by
+        # EmissionLineFit.check_and_prep_input is *identical* to what is
+        # done within emission_line_equivalent_width()
+        model_eml_par['BMED'], model_eml_par['RMED'], pos, model_eml_par['EWCONT'], \
+                model_eml_par['EW'], model_eml_par['EWERR'] \
+                        = emission_line_equivalent_width(wave, flux,
+                                                         emission_lines['blueside'],
+                                                         emission_lines['redside'], line_center,
+                                                         model_eml_par['FLUX'], mask=mask,
+                                                         redshift=_redshift,
+                                                         line_flux_err=model_eml_par['FLUXERR'])
+
+        # Flag non-positive measurements
+        if bitmask is not None:
+            model_eml_par['MASK'][~pos] = bitmask.turn_on(model_eml_par['MASK'][~pos],
+                                                          'NON_POSITIVE_CONTINUUM')
 
 
 

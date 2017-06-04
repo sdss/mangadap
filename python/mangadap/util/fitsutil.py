@@ -28,6 +28,7 @@ higher-level classes).
         import warnings
 
         from astropy.io import fits
+        import astropy.constants
 
 *Class usage examples*:
     Add some usage comments here!

@@ -500,7 +500,7 @@ class BitMask:
             TypeError: Raised if the provided *flag* does not contain
                 one or more strings.
         """
-        if not isinstance(value, int):
+        if not isinstance(value, (int, numpy.integer)):
             raise TypeError('Input must be a single integer.')
         if value <= 0:
             return []

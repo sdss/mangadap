@@ -104,7 +104,7 @@ from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import rec_to_fits_type
-from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
+from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale, SpectralResolution
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
@@ -525,7 +525,7 @@ class StellarContinuumModel:
         else:
             # Set the spectral resolution
             wave = self.binned_spectra['WAVE'].data
-            sres = spectral_resolution(wave, wave/resolution_fwhm, log10=True)
+            sres = SpectralResolution(wave, wave/resolution_fwhm, log10=True)
 
             # Set the file designation for this template library.
             # TODO: Move this to config.default?
@@ -1260,7 +1260,7 @@ class StellarContinuumModel:
 
 
     def matched_guess_kinematics(self, binned_spectra, redshift=None, dispersion=100.0,
-                                 constant=False):
+                                 constant=False, cz=False):
         """
         Return the guess redshift and velocity dispersion for all the
         spectra based on the stellar kinematics.
@@ -1282,10 +1282,14 @@ class StellarContinuumModel:
 
         # Just return the single value
         if constant:
-            return numpy.full(binned_spectra.nbins, _redshift, dtype=float), \
-                        numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
+            str_z = numpy.full(binned_spectra.nbins, _redshift, dtype=float)
+            if cz:
+                str_z *= astropy.constants.c.to('km/s').value
+            return str_z, numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
 
         str_z = str_z.filled(_redshift)
+        if cz:
+            str_z *= astropy.constants.c.to('km/s').value
         str_d = str_d.filled(_dispersion)
 
         if binned_spectra is self.binned_spectra:
@@ -1300,6 +1304,31 @@ class StellarContinuumModel:
                 _str_z[j] = str_z[i]
                 _str_d[j] = str_d[i]
             return _str_z, _str_d
+
+        raise NotImplementedError('Can only match to internal binned_spectra.')
+
+
+    def matched_template_flags(self, binned_spectra):
+        """
+        Return the templates used during the fit to each spectrum,
+        matched to the spectra in the binned_spectra object.  For
+        spectra with no models, the flags are all set to true.
+        """
+        if binned_spectra is self.binned_spectra:
+            usetpl = self.hdu['PAR'].data['TPLWGT'] > 0
+
+            # Number of models matches the numbers of bins
+            if binned_spectra.nbins == self.nmodels:
+                print('returning usetpl')
+                return usetpl
+    
+            # Fill in bins with no models with masked zeros
+            print('Fill in bins with no models with masked zeros')
+            ntpl = self.method['fitpar']['template_library'].ntpl
+            _usetpl = numpy.ones((binned_spectra.nbins,ntpl), dtype=bool)
+            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
+                _usetpl[j,:] = usetpl[i,:]
+            return _usetpl
 
         raise NotImplementedError('Can only match to internal binned_spectra.')
 
