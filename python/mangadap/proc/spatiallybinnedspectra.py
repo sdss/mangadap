@@ -118,6 +118,7 @@ from .spectralstack import SpectralStackPar, SpectralStack
 from .util import select_proc_method
 
 from matplotlib import pyplot
+from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -480,6 +481,7 @@ class SpatiallyBinnedSpectra:
         - Allow velocity offsets for registration.
    
     """
+    @profile
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
@@ -1051,10 +1053,10 @@ class SpatiallyBinnedSpectra:
                                                 self.drpf.bitmask, self.bitmask, out_mask=map_mask)
         drp_bad = (map_mask > 0)
         # Add the spectra with low spectral coverage
-        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & ~drp_bad
+        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
         # Add the spectra with low S/N
-        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & ~drp_bad
+        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Fill the covariance HDUs

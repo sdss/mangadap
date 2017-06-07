@@ -131,7 +131,7 @@ Defines a class used to store and interface with covariance matrices.
         Corr = Covariance(ifile='correlation_matrix.fits')
         Corr.revert_correlation()
 
-        assert ~(numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
+        assert not (numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
                             - Corr.toarray(channel=2000))) > 0.0)
 
 *Revision history*:

@@ -119,8 +119,9 @@ from .bandpassfilter import passband_integrated_mean
 from .bandpassfilter import passband_weighted_mean, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
-from matplotlib import pyplot
 import astropy.constants
+from matplotlib import pyplot
+from memory_profiler import profile
 
 class SpectralIndicesDef(ParSet):
     """
@@ -352,7 +353,7 @@ class AbsorptionLineIndices:
             interval = passband_integrated_width(wave, flux, passband=m, log=log)
             interval_frac = interval / numpy.diff(m)[0]
             self.main_incomplete[i] = interval_frac < 1.0
-            self.main_empty[i] = ~(interval_frac > 0.0)
+            self.main_empty[i] = numpy.invert(interval_frac > 0.0)
 
 #            # TEST: Change calculation
 #            cont = self.continuum_b[i] + self.continuum_m[i]*wave
@@ -426,8 +427,8 @@ class BandheadIndices:
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
-        self.index[~blue_n] = numpy.ma.divide(self.red_continuum[~blue_n],
-                                              self.blue_continuum[~blue_n]).filled(0.0)
+        self.index[numpy.invert(blue_n)] = numpy.ma.divide(self.red_continuum[numpy.invert(blue_n)],
+                                              self.blue_continuum[numpy.invert(blue_n)]).filled(0.0)
 
         # Calculate the index errors
         berr = numpy.ma.zeros(self.nindx) if self.blue_continuum_err is None \
@@ -481,6 +482,7 @@ class SpectralIndices:
     Class that holds the spectral-index measurements.
 
     """
+    @profile
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_list=None,
                  absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
@@ -737,10 +739,6 @@ class SpectralIndices:
         return passband_database
 
 
-#    def _assign_spectral_arrays(self):
-#        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
-
-
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
@@ -751,30 +749,8 @@ class SpectralIndices:
 
     def _get_missing_bins(self):
         good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
-
-
-#    def _check_snr(self):
-#        # binned_spectra['BINS'].data['SNR'] has length
-#        # binned_spectra.nbins
-#        return self.binned_spectra['BINS'].data['SNR'] > self.database['minimum_snr']
-
-    
-#    def _missing_flags(self):
-#        return numpy.array([ b in self.missing_bins for b in numpy.arange(self.nbins)])
-#
-
-#    def _bins_to_measure(self):
-#        """
-#        Determine which bins to use for the spectral-index measurements.
-#        They must not be designated as "missing" and they must have
-#        sufficient S/N.
-#        """
-#        return (self._check_snr()) & ~(self._missing_flags())
-##        good_bins = (self._check_snr()) & ~(self._missing_flags())
-##        good_bins[2] = False
-##        return good_bins
 
 
     def _assign_redshifts(self, redshift):
@@ -845,7 +821,7 @@ class SpectralIndices:
         flux and ivar are expected to be masked arrays
         """
         # Revert flux and ivar to unmasked arrays
-        mask = numpy.ma.getmaskarray(flux)
+        mask = numpy.ma.getmaskarray(flux).copy()
         flux = numpy.asarray(flux)
         ivar = numpy.asarray(ivar)
         nspec = flux.shape[0]
@@ -971,8 +947,9 @@ class SpectralIndices:
 
         # Determine which indices have good measurements
         angu, magu = SpectralIndices.unit_selection(absdb, bhddb)
-        good_ang = ~bad_indx & (numpy.array([angu]*nspec)) & (numpy.absolute(indx['INDX']) > 0)
-        good_mag = ~bad_indx & (numpy.array([magu]*nspec))
+        good_ang = numpy.invert(bad_indx) & (numpy.array([angu]*nspec)) \
+                        & (numpy.absolute(indx['INDX']) > 0)
+        good_mag = numpy.invert(bad_indx) & (numpy.array([magu]*nspec))
 
         print('Good angstrom indices: ', numpy.sum(good_ang))
         print('Good magnitude indices: ', numpy.sum(good_mag))
@@ -1087,36 +1064,6 @@ class SpectralIndices:
             noise = numpy.ma.sqrt(1.0 /_ivar)
 
         return _flux, noise, _redshift
-
-
-#    @staticmethod
-#    def sideband_pseudocontinua(wave, spec, sidebands, noise=None, log=True):
-#        """Get the side-band integrals in a single spectrum."""
-#
-#        # Calculate the pseudo-continua in the sidebands
-#        nbands = sidebands.shape[0]
-#        
-#        pseudocontinuum, pseudocontinuum_error \
-#                    = passband_integrated_mean(wave, spec, passband=sidebands, err=noise, log=log)
-#        flux_weighted_center, _fwc_err \
-#                    = passband_weighted_mean(wave, spec, wave, passband=sidebands, log=log)
-#
-#        # Calculate the fraction of the band that is covered by unmasked
-#        # pixels
-#        interval_frac = passband_integrated_width(wave, spec, passband=sidebands, log=log) \
-#                                / numpy.diff(sidebands, axis=1).ravel()
-#
-##        if len(spec.shape) > 1:
-##            pyplot.step(wave, spec[0], where='mid', color='k', lw=0.5, zorder=1)
-##            pyplot.step(wave, spec[1], where='mid', color='g', lw=0.5, zorder=2)
-##        else:
-##            pyplot.step(wave, spec, where='mid', color='k', lw=0.5, zorder=1)
-##        pyplot.scatter(flux_weighted_center-1.0, pseudocontinuum, marker='.', s=50,
-##                       color='b', lw=0, zorder=3)
-##        pyplot.show()
-#
-#        return flux_weighted_center, pseudocontinuum, pseudocontinuum_error, \
-#                            interval_frac < 1.0, ~(interval_frac > 0.0)
 
 
     @staticmethod
@@ -1296,23 +1243,23 @@ class SpectralIndices:
 
         # Get the list of good indices of each type
         abs_fnu = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
-                        else ~absdb.dummy & (absdb['integrand'] == 'fnu')
+                        else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'fnu')
         good_abs_fnu = numpy.zeros(nindx, dtype=numpy.bool)
         if nabs > 0:
             good_abs_fnu[:nabs][abs_fnu] = True
         abs_flambda = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
-                        else ~absdb.dummy & (absdb['integrand'] == 'flambda')
+                        else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'flambda')
         good_abs_flambda = numpy.zeros(nindx, dtype=numpy.bool)
         if nabs > 0:
             good_abs_flambda[:nabs][abs_flambda] = True
 
         bhd_fnu = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
-                        else ~bhddb.dummy & (bhddb['integrand'] == 'fnu')
+                        else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'fnu')
         good_bhd_fnu = numpy.zeros(nindx, dtype=numpy.bool)
         if nbhd > 0:
             good_bhd_fnu[nabs:][bhd_fnu] = True
         bhd_flambda = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
-                        else ~bhddb.dummy & (bhddb['integrand'] == 'flambda')
+                        else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'flambda')
         good_bhd_flambda = numpy.zeros(nindx, dtype=numpy.bool)
         if nbhd > 0:
             good_bhd_flambda[nabs:][bhd_flambda] = True
@@ -1598,7 +1545,7 @@ class SpectralIndices:
                                                                 redshift=self.redshift[good_snr],
                                                                        bitmask=self.bitmask)
             # Flag bad corrections
-            bad_correction = ~good_ang & ~good_mag
+            bad_correction = numpy.invert(good_ang) & numpy.invert(good_mag)
             measurements['MASK'][bad_correction] = self.bitmask.turn_on(
                                                             measurements['MASK'][bad_correction],
                                                             'NO_DISPERSION_CORRECTION')

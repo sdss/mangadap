@@ -610,12 +610,6 @@ class BitMask:
             raise TypeError('Provided bit name must be a string!')
         return value & ~(1 << self.bits[flag])
 
-#        if flag == 'NULL':
-#            raise ValueError('Flag name NULL is invalid!')
-#        if isinstance(flag, str):
-#            raise Exception('Provided bit name must be a string!')
-#        return value & ~(1 << self.bits[flag])
-
 
     def consolidate(self, value, flag_set, consolidated_flag):
         """

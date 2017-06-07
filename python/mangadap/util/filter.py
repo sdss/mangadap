@@ -442,7 +442,7 @@ def smooth_masked_vector(x, nsmooth):
     """
     n = off_diagonal_identity(x.size, nsmooth)*numpy.invert(numpy.ma.getmaskarray(x))[None,:]
     nn = numpy.sum(n,axis=1)
-    return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=~(nn>0) | x.mask)/nn
+    return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=numpy.invert(nn>0) | x.mask)/nn
 
 
 def interpolate_masked_vector(y):
@@ -452,7 +452,8 @@ def interpolate_masked_vector(y):
     """
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)
-    interpolator = interpolate.interp1d(x[~indx],y[~indx],fill_value='extrapolate')
+    interpolator = interpolate.interp1d(x[numpy.invert(indx)], y[numpy.invert(indx)],
+                                        fill_value='extrapolate')
     _y = y.data.copy()
     _y[indx] = interpolator(x[indx])
     return _y
@@ -481,7 +482,7 @@ def boxcar_smooth_vector(x, boxcar, mask=None, lo=None, hi=None, niter=None, ret
 
     if numpy.all([ x is None for x in [ lo, hi, niter ]]):
         if return_mask:
-            return sx, numpy.ma.getmaskarray(_x)
+            return sx, numpy.ma.getmaskarray(_x).copy()
         return sx
     
     _niter = -1 if niter is None else niter
@@ -489,7 +490,7 @@ def boxcar_smooth_vector(x, boxcar, mask=None, lo=None, hi=None, niter=None, ret
     i=0
     while i > -1:
         sig = numpy.std((_x - sx).compressed())
-        mask = numpy.ma.getmaskarray(_x)
+        mask = numpy.ma.getmaskarray(_x).copy()
         if lo is not None:
             mask = numpy.logical_or(mask, _x.data - sx < -lo*sig)
         if hi is not None:
@@ -514,7 +515,7 @@ def boxcar_smooth_vector(x, boxcar, mask=None, lo=None, hi=None, niter=None, ret
     pyplot.show()
 
     if return_mask:
-        return sx, numpy.ma.getmaskarray(_x)
+        return sx, numpy.ma.getmaskarray(_x).copy()
     return sx
 
 

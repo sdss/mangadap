@@ -103,6 +103,7 @@ from .sasuke import Sasuke, SasukePar
 from .util import select_proc_method
 
 from matplotlib import pyplot
+from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -286,6 +287,7 @@ class EmissionLineModel:
         quiet (bool): Suppress all terminal and logging output.
 
     """
+    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None, redshift=None,
                  dispersion=None, method_list=None, artifact_list=None, emission_line_db_list=None,
                  dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
@@ -599,7 +601,7 @@ class EmissionLineModel:
 
     def _get_missing_models(self):
         good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
 
 

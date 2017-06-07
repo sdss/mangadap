@@ -116,6 +116,7 @@ from .ppxffit import PPXFFitPar, PPXFFit
 from .util import select_proc_method
 
 from matplotlib import pyplot
+from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -388,6 +389,7 @@ class StellarContinuumModel:
         - Allow for a prior?
 
     """
+    @profile
     def __init__(self, method_key, binned_spectra, guess_vel, guess_sig=None,
                  method_list=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
@@ -709,7 +711,7 @@ class StellarContinuumModel:
 
     def _get_missing_models(self):
         good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
 
 
@@ -1173,8 +1175,8 @@ class StellarContinuumModel:
                 and not isinstance(replacement_templates, TemplateLibrary):
             raise TypeError('Provided template replacements must have type TemplateLibrary.')
 
-        select = ~self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
-                                       flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA'])
+        select = numpy.invert(self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
+                                            flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
         templates = self.method['fitpar']['template_library'] if replacement_templates is None \
                                             else replacement_templates
 
@@ -1206,7 +1208,7 @@ class StellarContinuumModel:
 
         nspec,npix = _continuum.shape
         pix = numpy.ma.MaskedArray(numpy.array([ numpy.arange(npix) ]*nspec),
-                                   mask=numpy.ma.getmaskarray(_continuum))
+                                   mask=numpy.ma.getmaskarray(_continuum).copy())
 
         min_good_pix = numpy.ma.amin(pix, axis=dispaxis)
         max_good_pix = numpy.ma.amax(pix, axis=dispaxis)

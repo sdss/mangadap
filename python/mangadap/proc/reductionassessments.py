@@ -101,6 +101,7 @@ from .util import select_proc_method
 
 # Used for testing/debugging
 from matplotlib import pyplot
+from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -360,6 +361,7 @@ class ReductionAssessment:
         quiet (bool): Suppress all terminal and logging output.
 
     """
+    @profile
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
@@ -766,7 +768,8 @@ class ReductionAssessment:
                 sign *= -1
                 off += 1
 
-            if numpy.sum(goodfrac & ~(drpf['IVAR'].data[:,:,self.covar_channel] > 0)) > 0:
+            if numpy.sum(goodfrac &
+                                numpy.invert(drpf['IVAR'].data[:,:,self.covar_channel] > 0)) > 0:
                 raise ValueError('Unable to find wavelength channel within fully valid data.')
             
             if not self.quiet:

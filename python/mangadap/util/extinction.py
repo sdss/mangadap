@@ -107,7 +107,7 @@ def reddening_vector_calzetti(wave, ebv, rv=None):
 
     # Extinction curve
     ext = numpy.ma.zeros(_wave.size, dtype=numpy.float)
-    ext[~w1 & ~w2] = numpy.ma.masked
+    ext[numpy.invert(w1) & numpy.invert(w2)] = numpy.ma.masked
     ext[w1] = 2.659*(-1.857 + 1.040*k[w1]) + _rv
     ext[w2] = 2.659*(polyval(k[w2], [-2.156, 1.509, -0.198, 0.011])) + _rv
 
@@ -319,7 +319,7 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
     splpts_uv_ext, ext[w1] = uv_ext[:2], uv_ext[2:] 
 
     # Return if no optical/IR part
-    if numpy.sum(~w1) == 0:
+    if numpy.sum(numpy.invert(w1)) == 0:
         return numpy.ma.power(10., 0.4*ext*ebv)
 
     # Optical/IR portion
@@ -334,7 +334,7 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
                                                                7.97809e-04, -4.45636e-05]) ]) )
     tck = scipy.interpolate.splrep(numpy.append(splpts_oi_k,splpts_uv_k),
                                    numpy.append(splpts_oi_ext,splpts_uv_ext), s=0)
-    ext[~w1] = scipy.interpolate.splev(k[~w1], tck)
+    ext[numpy.invert(w1)] = scipy.interpolate.splev(k[numpy.invert(w1)], tck)
 
     return numpy.ma.power(10., 0.4*ext*ebv)
 

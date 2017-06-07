@@ -847,7 +847,7 @@ class DAPFitsUtil:
                                                        unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
-        nwave = numpy.sum(~numpy.ma.getmaskarray(masked_data)[0,:])
+        nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data))[0,:])
         if nwave == 0:
             raise ValueError('Full wavelength range has been masked!')
         # Compression returns a flattened array, so it needs to be
