@@ -66,14 +66,10 @@ Implements a wrapper class for pPXF.
         ppxf v6.0.4; mpfit object no longer returned, only mpfit status.
 
 .. todo::
-    - Include input to :func:`PPXFFit.fit` that allows the user to
-      specify a subset of templates to use for each object spectrum.
-    - Additional iteration modes?
-        - Allow the fit to continue to iterate until the velocity is not
-          up against one of the +/- 2000 km/s limits?  Could be useful
-          for poor redshift guesses.
-    - Keep track of which templates were non-zero in the fit to the
-      global spectrum, if it's fit
+
+    Allow new iteration mode that iteratively fits until the velocity is
+    not up against one of the +/- 2000 km/s limits?  Could be useful for
+    poor redshift guesses.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -1097,11 +1093,10 @@ class PPXFFit(StellarKinematicsFit):
             obj_flux[numpy.ma.getmaskarray(obj_flux_filt)] = numpy.ma.masked
             obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
 
-        # Reset template flags back to original, and add the smoothed
-        # object spectra into the best-fitting models, and recalculate
-        # the pPXF chi2
+        # Reset template flags back to original, add the smoothed object
+        # spectra into the best-fitting models, and recalculate chi-sqr
         for i in range(self.nobj):
-            if result[i] is None:
+            if result[i] is None or result[i].fit_failed():
                 continue
             result[i].tpl_to_use = tpl_to_use[i,:]
             if self.filter_operation == 'divide':
@@ -1110,7 +1105,8 @@ class PPXFFit(StellarKinematicsFit):
                 result[i].bestfit += sm_obj_flux[i,result[i].start:result[i].end]
             chi = (obj_flux[i,result[i].start:result[i].end] - result[i].bestfit)[result[i].gpm] \
                         / obj_ferr[i,result[i].start:result[i].end][result[i].gpm]
-            result[i].robust_rchi2 = numpy.sum(numpy.square(chi))/(chi.size - result[i].kin.size)
+            result[i].robust_rchi2 = numpy.sum(numpy.square(chi))/(chi.size - result[i].kin.size -
+                                                                   max(self.filt_mdegree, 0))
 #            pyplot.plot(self.obj_wave[result[i].start:result[i].end],
 #                        self.obj_flux[i,result[i].start:result[i].end], color='k', lw=0.5)
 #            pyplot.plot(self.obj_wave[result[i].start:result[i].end],
@@ -1122,7 +1118,7 @@ class PPXFFit(StellarKinematicsFit):
 
         #---------------------------------------------------------------
         #---------------------------------------------------------------
-        # THIS IS THE OLD CODE APPROACH !!
+        # THIS CODE IS THE OLD APPROACH !!
         #---------------------------------------------------------------
 #        # Reset template flags back to original, unfiltered flags and
 #        # construct the optimized template based on the filtered fit
@@ -1695,14 +1691,17 @@ class PPXFFit(StellarKinematicsFit):
             # Save the model parameters and figures of merit
             # Number of fitted pixels
             model_par['NPIXFIT'][i] = len(result[i].gpm)
-            # Template weights
+            # Template weights and errors
             if self._mode_uses_global_template():
                 model_par['TPLWGT'][i] = result[i].tplwgt[0]*global_fit_result.tplwgt
+                model_par['TPLWGTERR'][i] = result[i].tplwgterr[0]*global_fit_result.tplwgt
             else:
                 model_par['TPLWGT'][i][result[i].tpl_to_use] = result[i].tplwgt
+                model_par['TPLWGTERR'][i][result[i].tpl_to_use] = result[i].tplwgterr
             # Templates used
             model_par['USETPL'][i] = result[i].tpl_to_use
             # Additive polynomial coefficients
+            # TODO: Save nominal polynomial errors as well?
             if self.degree >= 0 and result[i].addcoef is not None:
                 model_par['ADDCOEF'][i] = result[i].addcoef
             if self.mdegree > 0 and result[i].multcoef is not None:
