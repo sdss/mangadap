@@ -164,7 +164,7 @@ from .config.defaults import default_regrid_sigma
 from .config.defaults import default_manga_fits_root
 
 from matplotlib import pyplot
-from memory_profiler import profile
+#from memory_profiler import profile
 
 def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
                  redux_path=None, directory_path=None):

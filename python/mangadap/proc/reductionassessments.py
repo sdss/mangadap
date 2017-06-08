@@ -101,7 +101,7 @@ from .util import select_proc_method
 
 # Used for testing/debugging
 from matplotlib import pyplot
-from memory_profiler import profile
+#from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion

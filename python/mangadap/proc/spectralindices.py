@@ -121,7 +121,7 @@ from .util import select_proc_method, flux_to_fnu
 
 import astropy.constants
 from matplotlib import pyplot
-from memory_profiler import profile
+#from memory_profiler import profile
 
 class SpectralIndicesDef(ParSet):
     """
