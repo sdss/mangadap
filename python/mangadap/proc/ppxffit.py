@@ -1029,7 +1029,7 @@ class PPXFFit(StellarKinematicsFit):
                                            templates_rfft, self.guess_kin,
                                            fix_kinematics=self.fix_kinematics,
                                            obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use,
-                                           plot=plot)
+                                           weight_errors=True, plot=plot)
 
         #---------------------------------------------------------------
         # Iteratively filter, fit and reject outliers
@@ -1694,10 +1694,12 @@ class PPXFFit(StellarKinematicsFit):
             # Template weights and errors
             if self._mode_uses_global_template():
                 model_par['TPLWGT'][i] = result[i].tplwgt[0]*global_fit_result.tplwgt
-                model_par['TPLWGTERR'][i] = result[i].tplwgterr[0]*global_fit_result.tplwgt
+                if result[i].tplwgterr is not None:
+                    model_par['TPLWGTERR'][i] = result[i].tplwgterr[0]*global_fit_result.tplwgt
             else:
                 model_par['TPLWGT'][i][result[i].tpl_to_use] = result[i].tplwgt
-                model_par['TPLWGTERR'][i][result[i].tpl_to_use] = result[i].tplwgterr
+                if result[i].tplwgterr is not None:
+                    model_par['TPLWGTERR'][i][result[i].tpl_to_use] = result[i].tplwgterr
             # Templates used
             model_par['USETPL'][i] = result[i].tpl_to_use
             # Additive polynomial coefficients
@@ -2799,8 +2801,8 @@ class PPXFFit(StellarKinematicsFit):
             # the binned spectra
             inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
             _, model[:] = resample_vector(composite_template, xRange=inRange, inLog=True,
-                                                 newRange=obj_wave[[0,-1]], newpix=obj_wave.size,
-                                                 newLog=True, flat=False)
+                                          newRange=obj_wave[[0,-1]], newpix=obj_wave.size,
+                                          newLog=True, flat=False)
             model[:_start] = 0.0
             model[:_start] = numpy.ma.masked
             model[_end:] = 0.0
@@ -2815,18 +2817,17 @@ class PPXFFit(StellarKinematicsFit):
             # Account for a modulus in the number of object pixels in
             # the template spectra
             if _velscale_ratio > 1:
-                npix_temp = composite_template.size - composite_template.size % _velscale_ratio
-                _composite_template = composite_template[:npix_temp].reshape(-1,1)
-                npix_temp //= _velscale_ratio
+                npix_tpl = composite_template.size - composite_template.size % _velscale_ratio
+                _composite_template = composite_template[:npix_tpl].reshape(1,-1)
             else:
-                _composite_template = composite_template
-                npix_temp = composite_template.size
+                _composite_template = composite_template.reshape(1,-1)
+            npix_tpl = _composite_template.shape[1]
 
             # Get the FFT of the composite template
-            ctmp_rfft = _templates_rfft(_composite_template)
+            npad = fftpack.next_fast_len(npix_tpl)
+            ctmp_rfft = numpy.fft.rfft(_composite_template, npad, axis=1)
 
             # Construct the LOSVD parameter vector
-            vj = numpy.append(0, numpy.cumsum(_moments)[:-1])
             par = kin.copy()
             # Convert the velocity to pixel units
             if revert_velocity:
@@ -2834,22 +2835,22 @@ class PPXFFit(StellarKinematicsFit):
             # Convert the velocity dispersion to ignore the
             # resolution difference
             par[1] = numpy.sqrt(numpy.square(par[1]) - numpy.square(sigma_corr))
-           
             # Convert the kinematics to pixel units
             par[0:2] /= velscale
 
-            # Construct the FFT of the LOSVD kernel
-            npad = ctmp_rfft.shape[0]
-            kern_rfft = _losvd_rfft(par, 1, _moments, npad, 1, vsyst/velscale, _velscale_ratio, 0.0)
-
             # Construct the model spectrum
-            _model = numpy.fft.irfft(ctmp_rfft[:,0] * kern_rfft[:,0,0]).ravel()
+            kern_rfft = _losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
+                                    _velscale_ratio, 0.0)
+            _model = numpy.fft.irfft(ctmp_rfft[0,:] * kern_rfft[:,0,0])[:npix_tpl]
             if _velscale_ratio > 1:
-                _model = numpy.mean(_model[:npix_temp*_velscale_ratio].reshape(-1,_velscale_ratio),
-                                    axis=1)
+                _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1)
             
             # Copy the model to the output vector
             model[_start:_end] = _model[:_end-_start]
+
+#            pyplot.plot(tpl_wave[:npix_tpl], _composite_template[0,:])
+#            pyplot.plot(obj_wave, model)
+#            pyplot.show()
 
         # Account for the polynomials
         x = numpy.linspace(-1, 1, _end-_start)

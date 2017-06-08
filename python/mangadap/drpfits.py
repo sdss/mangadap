@@ -449,7 +449,7 @@ class DRPFits:
                 self.nwave = self.shape[self.dispaxis]
 
     """
-    @profile
+#    @profile
     def __init__(self, plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
                  read=False, checksum=False):
 

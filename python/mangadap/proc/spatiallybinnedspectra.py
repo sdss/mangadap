@@ -481,7 +481,7 @@ class SpatiallyBinnedSpectra:
         - Allow velocity offsets for registration.
    
     """
-    @profile
+#    @profile
     def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,

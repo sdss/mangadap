@@ -361,7 +361,7 @@ class ReductionAssessment:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    @profile
+#    @profile
     def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,

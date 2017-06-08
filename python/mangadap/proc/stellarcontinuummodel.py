@@ -389,7 +389,7 @@ class StellarContinuumModel:
         - Allow for a prior?
 
     """
-    @profile
+#    @profile
     def __init__(self, method_key, binned_spectra, guess_vel, guess_sig=None,
                  method_list=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,

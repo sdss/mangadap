@@ -287,7 +287,7 @@ class EmissionLineModel:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    @profile
+#    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None, redshift=None,
                  dispersion=None, method_list=None, artifact_list=None, emission_line_db_list=None,
                  dapsrc=None, dapver=None, analysis_path=None, directory_path=None,

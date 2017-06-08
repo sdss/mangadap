@@ -482,7 +482,7 @@ class SpectralIndices:
     Class that holds the spectral-index measurements.
 
     """
-    @profile
+#    @profile
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_list=None,
                  absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
