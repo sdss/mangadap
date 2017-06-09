@@ -1178,15 +1178,13 @@ class TemplateLibrary:
             # less than 2 pixels per resolution element
             indx = _pix_per_fwhm < 2
             if numpy.sum(indx) > 0:
-
                 # !! EDIT THIS FOR PRODUCTION VERSION !!
-                print('hit two pixel limit!')
-                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
-                pyplot.plot(wave, sres[i,:])
-                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
-                pyplot.plot(wave, sres[i,:])
-                pyplot.show()
-                exit()
+                warnings.warn('Resampling has cause resolution below the two pixel limit!')
+#                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
+#                pyplot.plot(wave, sres[i,:])
+#                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
+#                pyplot.plot(wave, sres[i,:])
+#                pyplot.show()
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
 
 #            print(spectral_coordinate_step(oldwave))
