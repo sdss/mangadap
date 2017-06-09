@@ -1026,8 +1026,8 @@ class TemplateLibrary:
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
 
-        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
-        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
+#        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
+#        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 #        pyplot.show()
 
