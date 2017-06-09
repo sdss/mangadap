@@ -452,6 +452,8 @@ def interpolate_masked_vector(y):
     """
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)
+    if numpy.sum(numpy.invert(indx)) == 0:
+        return numpy.zeros(y.size, dtype=y.dtype.name)
     interpolator = interpolate.interp1d(x[numpy.invert(indx)], y[numpy.invert(indx)],
                                         fill_value='extrapolate')
     _y = y.data.copy()
