@@ -1083,7 +1083,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             warnings.warn('Encountered ValueError: {0} ; continuing but resolution is NOT '
                           'changed and mask is set.'.format(e))
             out_mask = numpy.ones(flux.shape, dtype=numpy.uint)
-            
     else:
         for i in range(0,nspec):
             if not quiet:
@@ -1099,7 +1098,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                                                          ye=None if ivar is None else
                                                             noise[i,indx].ravel())
                 out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
-                                        | (mask[i,:] == 1)).astype(numpy.uint)
+                                        | (_mask[i,:] == 1)).astype(numpy.uint)
                 if len(out_sres.shape) == 1 and i == 0:
                     out_sres[indx] = res[i].adjusted_resolution(indx=indx)
                 else:
