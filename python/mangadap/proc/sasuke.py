@@ -100,291 +100,11 @@ from .bandpassfilter import emission_line_equivalent_width
 from .util import residual_growth
 from .ppxffit import PPXFFit, PPXFFitResult
 
+#from .emission_line_template import EmissionLineTemplates
+
 # For debugging
 from matplotlib import pyplot
 
-class EmissionLineTemplates:
-    r"""
-    Construct a set of emission-line templates based on an emission-line
-    database.
-
-    Args:
-        wave (array-like): A single wavelength vector with the
-            wavelengths for the template spectra.
-        sigma_inst (float,array-like): The single value or value as a
-            function of wavelength for the instrumental dispersion to
-            use for the template construction.
-        log (bool): (**Optional**) Flag that the wavelengths have been
-            sampled geometrically.
-        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'): (**Optional**)
-            Emission-line database that is parsed to setup which lines
-            to include in the same template because they are modeled as
-            having the same velocity, velocity dispersion and flux
-            ratio.  If not provided, no templates are constructed in
-            instantiation; to build the templates using an existing
-            instantiation, use :func:`build_templates`.
-
-    """
-    def __init__(self, wave, sigma_inst, log=True, emldb=None, loggers=None, quiet=False):
-
-        self.loggers=None
-        self.quiet=None
-
-        self.wave = numpy.asarray(wave)
-        if len(self.wave.shape) != 1:
-            raise ValueError('Provided wavelengths must be a single vector.')
-
-        _sinst = numpy.full(self.wave.size, sigma_inst, dtype=float) \
-                    if isinstance(sigma_inst, (int, float)) else numpy.asarray(sigma_inst)
-        if _sinst.shape != self.wave.shape:
-            raise ValueError('Provided sigma_inst must be a single number or a vector with the'
-                             'same length as the wavelength vector.')
-        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True)
-
-        self.dv = numpy.full(self.wave.size, spectrum_velocity_scale(wave), dtype=float) if log \
-                    else astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave)/wave
-
-        self.emldb = None           # Original database
-        self.ntpl = None            # Number of templates
-        self.flux = None            # Template fluxes
-        self.tpli = None            # Template associated with each emission line
-        self.comp = None            # Kinematic component associated with each template
-        self.vgrp = None            # Velocity group associated with each template
-        self.sgrp = None            # Sigma group associated with each template
-        self.eml_sigma_inst = None  # Instrumental dispersion at the center of each line
-
-        if emldb is not None:
-            self.build_templates(emldb, loggers=loggers, quiet=quiet)
-
-
-    def _tied_index(self, i, primary=False):
-        """
-        Return the index of the line to which this one is tied and it's
-        primary line, which can be the same.
-        """
-        db_rows = numpy.arange(self.emldb.neml)
-        indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
-        if not primary:
-            return indx
-        max_iter = 100
-        j = 0
-        while self.emldb['mode'][indx] != 'f' and j < max_iter:
-            indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][indx][1:])][0]
-            j+=1
-        if j == max_iter:
-            raise ValueError('Line {0} (index={1}) does not trace back to a primary line!'.format(
-                                i, self.emldb['index'][i]))
-        return indx
-
-
-    def _parse_emission_line_database(self):
-        r"""
-        Parse the input emission-line database; see
-        :class:`mangadap.par.emissionlinedb.EmissionLinePar`.
-
-        Only lines with `action=f` are included in any template.  The
-        array :attr:`tpli` provides the index of the template with each
-        line in the emission-line database.  Lines that are not assigned
-        to any template, either because they do not have `action=f` or
-        their center lies outside the wavelength range in :attr:`wave`,
-        are given an index of -1.
-
-        Only lines with `mode=a` (i.e., tie flux, velocity, and velocity
-        dispersion) are included in the same template.
-
-        Lines with tied velocities are assigned the same velocity
-        component (:attr:`vcomp`) and lines with the tied velocity
-        dispersions are assigned the same sigma component
-        (:attr:`scomp`).
-
-        .. warning::
-            The construction of templates for use with :class:`Sasuke`
-            does *not* allow one to tie fluxes while leaving the
-            velocities and/or velocity dispersions as independent.
-
-        """
-        # Get the list of lines to ignore
-        ignore_line = self.emldb['action'] != 'f'
-
-        # The total number of templates to construct is the number of
-        # lines in the database minus the number of lines with mode=aN
-        tied_all = numpy.array([m[0] == 'a' for m in self.emldb['mode']])
-        self.ntpl = self.emldb.neml - numpy.sum(ignore_line) - numpy.sum(tied_all)
-
-        # Initialize the components
-        self.comp = numpy.zeros(self.ntpl, dtype=int)-1
-        self.vgrp = numpy.zeros(self.ntpl, dtype=int)-1
-        self.sgrp = numpy.zeros(self.ntpl, dtype=int)-1
-
-        # All the primary lines go into individual templates, kinematic
-        # components, velocity groups, and sigma groups
-        self.tpli = numpy.zeros(self.emldb.neml, dtype=int)-1
-        primary_line = (self.emldb['mode'] == 'f') & numpy.invert(ignore_line)
-        nprimary = numpy.sum(primary_line)
-        self.tpli[primary_line] = numpy.arange(nprimary)
-        self.comp[:nprimary] = numpy.arange(nprimary)
-        self.vgrp[:nprimary] = numpy.arange(nprimary)
-        self.sgrp[:nprimary] = numpy.arange(nprimary)
-
-        finished = primary_line | ignore_line
-        while numpy.sum(finished) != self.emldb.neml:
-            # Find the indices of lines that are tied to finished lines
-            for i in range(self.emldb.neml):
-                if finished[i]:
-                    continue
-                indx = self._tied_index(i)
-                if not finished[indx]:
-                    continue
-
-                finished[i] = True
-
-                # Mode=a: Line is part of an existing template
-                if self.emldb['mode'][i][0] == 'a':
-                    self.tpli[i] = self.tpli[indx]
-                # Mode=k: Line is part of a different template but an
-                # existing kinematic component
-                if self.emldb['mode'][i][0] == 'k':
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = self.comp[self.tpli[indx]]
-                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
-                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
-                # Mode=v: Line is part of a different template and
-                # kinematic component with an untied sigma, but tied to
-                # an existing velocity group
-                if self.emldb['mode'][i][0] == 'v':
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
-                    self.sgrp[self.tpli[i]] = numpy.amax(self.sgrp)+1
-                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
-                # Mode=s: Line is part of a different template and
-                # kinematic component with an untied velocity, but tied
-                # to an existing sigma group
-                if self.emldb['mode'][i][0] == 's':
-                    self.tpli[i] = numpy.amax(self.tpli)+1
-                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
-                    self.vgrp[self.tpli[i]] = numpy.amax(self.vgrp)+1
-                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
-
-        # Debug:
-        if numpy.any(self.comp < 0) or numpy.any(self.vgrp < 0) or numpy.any(self.sgrp < 0):
-            raise ValueError('DEBUG: Incorrect parsing of emission-line database.')
-
-
-    def check_database(self, emldb):
-        r"""
-        Check that the provided emission-line database can be used with
-        the :class:`EmissionLineTemplates` class.  Most checks are
-        performed by
-        :func:`mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database`.
-
-        Additional checks specific to :class:`EmissionLineTemplates`
-        are:
-            - Any lines with mode `w` is treated as `f` and a warning is
-              provided.
-            - The :class:`EmissionLineTemplates` object *cannot* be used
-              with mode `x`; any lines with this mode will cause a
-              ValueError to be raised..
-
-        This function does *not* check if the initial parameters
-        provided by the database are consistent with other elements in
-        the database because they are not used to construct the
-        templates.
-
-        Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
-                Emission-line database.
-
-        Raises:
-            TypeError: Raised if the provided object is not an instance
-                of :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
-            ValueError: Raised if any line has a mode of `x` or if the
-                database does not provide a valid definition for any
-                templates.
-            NameError: Raised if a defined profile type is not known.
-        """
-        EmissionLineFit.check_emission_line_database(emldb, wave=self.wave, check_par=False)
-
-        # Check that no lines only tie the fluxes
-        if numpy.any([m[0] == 'x' for m in emldb['mode']]):
-            raise ValueError('Cannot tie only fluxes in an EmissionLineTemplates object.')
-
-        # Warn user of any lines with mode=w
-        if numpy.any([m[0] == 'w' for m in emldb['mode']]):
-            warnings.warn('Any line with mode=w treated the same as mode=f.')
-
-
-    def build_templates(self, emldb, loggers=None, quiet=False):
-        r"""
-        Build the set of templates for a given emission-line database.
-        The function uses the current values in :attr:`wave` and
-        :attr:`sigma_inst`.
-
-        Warn the user if any line is undersampled; i.e., the FWHM of the
-        line is less than 2.1 or sigma < 0.9.
-
-        Warn the user if any line grouped in the same template falls
-        outside the spectral range.
-
-        Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
-                Emission-line database.
-
-        Returns:
-            numpy.ndarray: Returns 4 arrays: (1) the set of templates
-            with shape :math:`N_{\rm tpl}\times N_{\rm wave}`, (2) the
-            kinematic component assignement for each template, (3) the
-            velocity group associated with each template, and (4) the
-            sigma group assocated with each template.
-        """
-        #---------------------------------------------------------------
-        # Initialize the reporting
-        if loggers is not None:
-            self.loggers = loggers
-        self.quiet = quiet
-
-        #---------------------------------------------------------------
-        # Check the database can be used with this class
-        self.check_database(emldb)
-        # Save a pointer to the database
-        self.emldb = emldb
-        # Parse the database for construction of the templates
-        self._parse_emission_line_database()
-
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of emission lines to fit: {0}'.format(numpy.sum(self.tpli>-1)))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of emission-line templates: {0}'.format(len(self.comp)))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of emission-line kinematic components: {0}'.format(
-                                                                    numpy.amax(self.comp)+1))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of emission-line velocity groups: {0}'.format(
-                                                                    numpy.amax(self.vgrp)+1))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of emission-line sigma groups: {0}'.format(
-                                                                    numpy.amax(self.sgrp)+1))
-
-        # Get the instrumental dispersion at the center of each line
-        self.eml_sigma_inst = self.sigma_inst(self.emldb['restwave'])
-
-        # Constuct the templates
-        self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
-        for i in range(self.ntpl):
-            # Find all the lines associated with this template:
-            index = numpy.arange(self.emldb.neml)[self.tpli == i]
-            # Add each line to the template
-            for j in index:
-                profile = eval('lineprofiles.'+self.emldb['profile'][j])()
-                p = profile.parameters_from_moments(self.emldb['flux'][j], 0.0,
-                                                    self.eml_sigma_inst[j])
-                v = astropy.constants.c.to('km/s').value*(self.wave/self.emldb['restwave'][j]-1)
-                srt = numpy.argsort(numpy.absolute(v))
-                if self.eml_sigma_inst[j]/self.dv[srt[0]] < 0.9:
-                    warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
-                self.flux[i,:] += profile(v, p)
-
-        return self.flux, self.comp, self.vgrp, self.sgrp
 
 
 class SasukePar(ParSet):
@@ -412,6 +132,9 @@ class SasukePar(ParSet):
                      SpectralPixelMask, int, in_fl, int, int, int ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
+
+
+
 
 
 class Sasuke(EmissionLineFit):
@@ -521,13 +244,18 @@ class Sasuke(EmissionLineFit):
                  ('ABSRESID',numpy.float,(5,)),
                  ('FRMS',numpy.float),
                  ('FABSRESID',numpy.float,(5,))
-               ]
+               ] 
+
 
 
     def _run_fit_iteration(self, obj_flux, obj_ferr, obj_to_fit, weight_errors=False,
                            component_fits=False, plot=False):
         r"""
         Fit all the object spectra in obj_flux.
+        
+        (FB)  This function fits all the spectra in the cube and returns a  PPXFFitResult 
+        object with the resulting fit paramters
+        
 
         Returns:
             numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
@@ -540,22 +268,26 @@ class Sasuke(EmissionLineFit):
         result = numpy.empty(self.nobj, dtype=object)
 
         # Fit each spectrum
+#$$$$$$$$ (FB) this is where the code looks over all the spectra in the cube 
         for i in range(self.nobj):
             print('Running pPXF fit on spectrum: {0}/{1}'.format(i+1,self.nobj), end='\r')
             # Meant to ignore this spectrum
+#$$$$$$$$ (FB) NO idea what this is doing, but probalby not important            
             if not obj_to_fit[i]:
                 result[i] = None
                 continue
 
             # Get the pixels to fit for this spectrum
-            gpm = numpy.where(~(obj_flux.mask[i, self.spectrum_start[i]:self.spectrum_end[i]]))[0]
+            gpm = numpy.where( ~ (obj_flux.mask[i, self.spectrum_start[i]:self.spectrum_end[i]]) )[0]
 
             # Check if there is sufficient data for the fit
             ntpl_to_use = numpy.sum(self.tpl_to_use[i,:])
             if len(gpm) < self.dof+ntpl_to_use:
-                if not self.quiet:
+#$$$$$$$$ (FB) If insufficient data, then throw a warning 
+                if not self.quiet:                                        
                     warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
                                   '(dof={2}).'.format(len(gpm), i+1, self.dof+ntpl_to_use))
+#$$$$$$$$ (FB) If insufficient data, generate the PPXFFitResult object with None and go to next spectrum (continue)
                 result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
                                           self.spectrum_end[i], self.tpl_to_use[i,:],
                                           None, self.ntpl)
@@ -565,17 +297,8 @@ class Sasuke(EmissionLineFit):
             if plot:
                 pyplot.clf()
 
-#            print(self.tpl_comp)
-#            print(self.tpl_to_use.shape[1])
-#            print(numpy.sum(self.tpl_to_use[i,:]))
-#            print(self.tpl_comp[self.tpl_to_use[i,:]])
-#
-#            print(self.comp_start_kin[i].tolist())
-#            print(type(self.comp_start_kin[i].tolist()))
-
-            result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
-                                      self.spectrum_end[i], self.tpl_to_use[i,:],
-                            ppxf(self.tpl_flux[self.tpl_to_use[i,:],:].T,
+#$$$$$$$$ (FB) fit spectrum with ppxf and get ppxf output
+            _ppxf=ppxf(self.tpl_flux[self.tpl_to_use[i,:],:].T,
                                  obj_flux.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
                                  obj_ferr.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
                                  self.velscale, self.comp_start_kin[i].tolist(), bias=self.bias, 
@@ -584,8 +307,13 @@ class Sasuke(EmissionLineFit):
                                  moments=self.comp_moments, plot=plot, quiet=(not plot),
                                  templates_rfft=self.tpl_rfft[self.tpl_to_use[i,:],:].T,
                                  tied=self.tied, velscale_ratio=self.velscale_ratio,
-                                 vsyst=-self.base_velocity[i]), self.ntpl,
-                                 weight_errors=weight_errors, component_fits=component_fits)
+                                 vsyst=-self.base_velocity[i])
+
+#$$$$$$$$ (FB) package PPXF output in DAP-specific results object                                 
+            result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
+                                      self.spectrum_end[i], self.tpl_to_use[i,:],
+                                      _ppxf, self.ntpl,
+                                      weight_errors=weight_errors, component_fits=component_fits)
 
             # TODO: check output
 #            if result[i].kin[1] < 0:
@@ -600,54 +328,80 @@ class Sasuke(EmissionLineFit):
                 pyplot.show()
 
         print('Running pPXF fit on spectrum: {0}/{0}'.format(self.nobj))
+#$$$$$$$$ (FB) this function returns a  PPXFFitResult object         
         return result
 
 
     def _fit_all_spectra(self, plot=False, plot_file_root=None):
         """
         Fit all spectra provided.
+        
+        $$$$$$$$ (FB) this is a wrapper to   _run_fit_iteration which allows the 
+        user to run a second fit with outlier rejection (DO WE NEED THIS?)
+        For testing and simplicity I killed this functionality
+        INSTEAD REUSE THIS FUCTION
+        TO DO:
+            1. run first fit iteration with single stellar template (fixed kin) 
+            and all lines tied
+            2. depixelise (break bins)
+            3. run second iteration with preferred parameters
+        
+        
         """
-        run_rejection = self.reject_boxcar is not None
-        #---------------------------------------------------------------
-        # Fit the spectra
+#        run_rejection = self.reject_boxcar is not None
+#        #---------------------------------------------------------------
+#        # Fit the spectra
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO,
+#                       'Number of object spectra to fit: {0}/{1}'.format(
+#                            numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
+#        result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.obj_to_fit,
+#                                         weight_errors=(not run_rejection),
+#                                         component_fits=(not run_rejection), plot=plot)
+#        if not run_rejection:
+#            # Only a single fit so return
+#            return result
+#
+#        #---------------------------------------------------------------
+#        # Rejection iteration
+#
+#        # Copy the input as to not overwrite the input masks
+#        obj_flux = self.obj_flux.copy()
+#        obj_ferr = self.obj_ferr.copy()
+#        obj_to_fit = self.obj_to_fit.copy()
+#
+#        # Save which were not fit successfully
+#        obj_to_fit &= numpy.invert(numpy.array([ r is None or r.fit_failed() for r in result ]))
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO,
+#                       'Number of object spectra to fit (excluding failed fits): {0}/{1}'.format(
+#                            numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
+#
+#        # Reject model outliers
+#        obj_flux = PPXFFit.reject_model_outliers(obj_flux, result, rescale=False,
+#                                                 local_sigma=True, boxcar=self.reject_boxcar,
+#                                                 loggers=self.loggers, quiet=self.quiet)
+#        obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
+#
+#        # Return results of refit (only ever do one rejection iteration
+#        return self._run_fit_iteration(obj_flux, obj_ferr, obj_to_fit, weight_errors=True,
+#                                       component_fits=True, plot=plot)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Number of object spectra to fit: {0}/{1}'.format(
                             numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
         result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.obj_to_fit,
-                                         weight_errors=(not run_rejection),
-                                         component_fits=(not run_rejection), plot=plot)
-        if not run_rejection:
-            # Only a single fit so return
-            return result
-
-        #---------------------------------------------------------------
-        # Rejection iteration
-
-        # Copy the input as to not overwrite the input masks
-        obj_flux = self.obj_flux.copy()
-        obj_ferr = self.obj_ferr.copy()
-        obj_to_fit = self.obj_to_fit.copy()
-
-        # Save which were not fit successfully
-        obj_to_fit &= numpy.invert(numpy.array([ r is None or r.fit_failed() for r in result ]))
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of object spectra to fit (excluding failed fits): {0}/{1}'.format(
-                            numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
-
-        # Reject model outliers
-        obj_flux = PPXFFit.reject_model_outliers(obj_flux, result, rescale=False,
-                                                 local_sigma=True, boxcar=self.reject_boxcar,
-                                                 loggers=self.loggers, quiet=self.quiet)
-        obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
-
-        # Return results of refit (only ever do one rejection iteration
-        return self._run_fit_iteration(obj_flux, obj_ferr, obj_to_fit, weight_errors=True,
-                                       component_fits=True, plot=plot)
-
+                                         weight_errors=True,
+                                         component_fits=True, plot=plot)
+        return result
 
     def _emission_line_only_model(self, result):
+        """
+        $$$$$$$$ (FB) I think this function genrates the emission line model from
+        the results object. The model is a flux vector made up by a sum of Gaussians
+        I imagine result[i].bestfit_compis a Gaussian. Need to check with Kyle
+        
+        """
 
         # Models originally fully masked
         model_eml_flux = numpy.ma.MaskedArray(numpy.zeros(self.obj_flux.shape, dtype=float),
@@ -661,8 +415,14 @@ class Sasuke(EmissionLineFit):
         return model_eml_flux
 
 
+#----------------------------------------------------------------------------
+# (FB) THESE FUNCTIONS SET FLAGS ON THE KINEMATICS
+#----------------------------------------------------------------------------
     def _is_near_bounds(self, kin, kininp, vel_indx, sig_indx, lbound, ubound, tol_frac=1e-2):
         """
+        (FB) This function sets flags on the kinematics based on vicinty to
+        bounds. DOES THIS APPLY TO EMISSION LINES AS WELL?
+        
         Check if the fitted kinematics are near the imposed limits.
         
         The definition of "near" is that the velocity and higher moments
@@ -694,6 +454,8 @@ class Sasuke(EmissionLineFit):
 
     def _validate_dispersions(self, model_eml_par, rng=[0,400]):
         """
+        (FB) More flagging of kinematic paramters. DOES THIS APPLY TO EMISSION LINES? 
+        
         Check that the corrected velocity dispersion are in the provided range.
         """
         _rng = numpy.square(rng)
@@ -707,8 +469,12 @@ class Sasuke(EmissionLineFit):
         model_eml_par['MASK'][indx] = self.bitmask.turn_on(model_eml_par['MASK'][indx], 'BAD_SIGMA')
 
         return model_eml_par
+#----------------------------------------------------------------------------
 
 
+#----------------------------------------------------------------------------
+# (FB) SAVE RESULTS
+#----------------------------------------------------------------------------
     def _save_results(self, etpl, result, model_mask, model_fit_par, model_eml_par):
         """
         Save the results of the ppxf fit for each spectrum to the model
@@ -976,6 +742,9 @@ class Sasuke(EmissionLineFit):
                 Spectra to fit.
             par (SasukePar): Parameters provided from the DAP to the
                 general Sasuke fitting algorithm (:func:`fit`).
+                dictionary of objects
+                -st cont model, whic 
+                
             loggers (list): (**Optional**) List of `logging.Logger`_ objects
                 to log progress; ignored if quiet=True.  Logging is done
                 using :func:`mangadap.util.log.log_output`.  Default is
@@ -1014,6 +783,12 @@ class Sasuke(EmissionLineFit):
         # now this just pulls out the binned spectra
         flux, ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra, pixelmask=par['pixelmask'],
                                                         error=True)
+        
+                                                        
+#        binned_spectra['FLUX']
+        
+#        binned_spectra['BINDID'] 2D map
+#        binned_spectra['BINDID'] 2D map
         # TODO: Also may want to include pixels rejected during stellar
         # kinematics fit
         nobj = flux.shape[0]
@@ -1043,6 +818,7 @@ class Sasuke(EmissionLineFit):
         # spectra with insufficient S/N or where pPXF failed to the
         # median redshift/dispersion of the fitted spectra.  We'll need
         # to revisit this
+
         stellar_velocity, stellar_dispersion = (None, None) if par['stellar_continuum'] is None \
                         else par['stellar_continuum'].matched_guess_kinematics(binned_spectra,
                                                                                cz=True)
@@ -1354,17 +1130,17 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Report the input checks/results
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velscale))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
-                                                                            self.velscale_ratio))
-            log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
-                                                                            *self.sigma_limits))
-            log_output(self.loggers, 1, logging.INFO, 'Model degrees of freedom: {0}'.format(
-                                                                            self.dof+self.ntpl))
-            log_output(self.loggers, 1, logging.INFO, 'Number of tied parameters: {0}'.format(
-                            0 if self.tied is None else
-                            self.nfree_kin + numpy.sum(self.comp_moments[self.comp_moments < 0])))
+#        if not self.quiet:
+#            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velscale))
+#            log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
+#                                                                            self.velscale_ratio))
+#            log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
+#                                                                            *self.sigma_limits))
+#            log_output(self.loggers, 1, logging.INFO, 'Model degrees of freedom: {0}'.format(
+#                                                                            self.dof+self.ntpl))
+#            log_output(self.loggers, 1, logging.INFO, 'Number of tied parameters: {0}'.format(
+#                            0 if self.tied is None else
+#                            self.nfree_kin + numpy.sum(self.comp_moments[self.comp_moments < 0])))
 
         #---------------------------------------------------------------
         # Initialize the output arrays.  This is done here for many of
@@ -1430,6 +1206,10 @@ class Sasuke(EmissionLineFit):
         t = time.clock()
 #        warnings.warn('debugging!')
 #        self.obj_to_fit[ numpy.arange(self.nobj)[self.obj_to_fit][2:] ] = False
+        
+#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&
+#&&&&& (FB) use _fit_all_spectra
+#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&
         result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
@@ -1437,6 +1217,9 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Save the results
+#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&
+#&&&&& (FB) use _save_results function
+#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&#&&&&&
         model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
                 = self._save_results(etpl, result, model_mask, model_fit_par, model_eml_par)
 
@@ -1444,6 +1227,294 @@ class Sasuke(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')
 
         return self.obj_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
+
+
+#%%%%
+
+# (FB) to himself: DO NOT MODIFY ANYTHING BELOW THIS
+class EmissionLineTemplates:
+    r"""
+    Construct a set of emission-line templates based on an emission-line
+    database. Input to Sasuke
+
+    Args:
+        wave (array-like): A single wavelength vector with the
+            wavelengths for the template spectra.
+        sigma_inst (float,array-like): The single value or value as a
+            function of wavelength for the instrumental dispersion to
+            use for the template construction.
+        log (bool): (**Optional**) Flag that the wavelengths have been
+            sampled geometrically.
+        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'): (**Optional**)
+            Emission-line database that is parsed to setup which lines
+            to include in the same template because they are modeled as
+            having the same velocity, velocity dispersion and flux
+            ratio.  If not provided, no templates are constructed in
+            instantiation; to build the templates using an existing
+            instantiation, use :func:`build_templates`.
+
+    """
+    def __init__(self, wave, sigma_inst, log=True, emldb=None, loggers=None, quiet=False):
+
+        self.loggers=None
+        self.quiet=None
+
+        self.wave = numpy.asarray(wave)
+        if len(self.wave.shape) != 1:
+            raise ValueError('Provided wavelengths must be a single vector.')
+
+        _sinst = numpy.full(self.wave.size, sigma_inst, dtype=float) \
+                    if isinstance(sigma_inst, (int, float)) else numpy.asarray(sigma_inst)
+        if _sinst.shape != self.wave.shape:
+            raise ValueError('Provided sigma_inst must be a single number or a vector with the'
+                             'same length as the wavelength vector.')
+        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True)
+
+        self.dv = numpy.full(self.wave.size, spectrum_velocity_scale(wave), dtype=float) if log \
+                    else astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave)/wave
+
+        self.emldb = None           # Original database
+        self.ntpl = None            # Number of templates
+        self.flux = None            # Template fluxes
+        self.tpli = None            # Template associated with each emission line
+        self.comp = None            # Kinematic component associated with each template
+        self.vgrp = None            # Velocity group associated with each template
+        self.sgrp = None            # Sigma group associated with each template
+        self.eml_sigma_inst = None  # Instrumental dispersion at the center of each line
+
+#        if database is given then load the emission line database and build the templates
+        if emldb is not None:
+            self.build_templates(emldb, loggers=loggers, quiet=quiet)
+
+
+    def _tied_index(self, i, primary=False):
+        """
+        Return the index of the line to which this one is tied and it's
+        primary line, which can be the same.
+        """
+        db_rows = numpy.arange(self.emldb.neml)
+        indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
+        if not primary:
+            return indx
+        max_iter = 100
+        j = 0
+        while self.emldb['mode'][indx] != 'f' and j < max_iter:
+            indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][indx][1:])][0]
+            j+=1
+        if j == max_iter:
+            raise ValueError('Line {0} (index={1}) does not trace back to a primary line!'.format(
+                                i, self.emldb['index'][i]))
+        return indx
+
+
+    def _parse_emission_line_database(self):
+        r"""
+        Parse the input emission-line database; see
+        :class:`mangadap.par.emissionlinedb.EmissionLinePar`.
+
+        Only lines with `action=f` are included in any template.  The
+        array :attr:`tpli` provides the index of the template with each
+        line in the emission-line database.  Lines that are not assigned
+        to any template, either because they do not have `action=f` or
+        their center lies outside the wavelength range in :attr:`wave`,
+        are given an index of -1.
+
+        Only lines with `mode=a` (i.e., tie flux, velocity, and velocity
+        dispersion) are included in the same template.
+
+        Lines with tied velocities are assigned the same velocity
+        component (:attr:`vcomp`) and lines with the tied velocity
+        dispersions are assigned the same sigma component
+        (:attr:`scomp`).
+
+        .. warning::
+            The construction of templates for use with :class:`Sasuke`
+            does *not* allow one to tie fluxes while leaving the
+            velocities and/or velocity dispersions as independent.
+
+        """
+        # Get the list of lines to ignore
+        ignore_line = self.emldb['action'] != 'f'
+
+        # The total number of templates to construct is the number of
+        # lines in the database minus the number of lines with mode=aN
+        tied_all = numpy.array([m[0] == 'a' for m in self.emldb['mode']])
+        self.ntpl = self.emldb.neml - numpy.sum(ignore_line) - numpy.sum(tied_all)
+
+        # Initialize the components
+        self.comp = numpy.zeros(self.ntpl, dtype=int)-1
+        self.vgrp = numpy.zeros(self.ntpl, dtype=int)-1
+        self.sgrp = numpy.zeros(self.ntpl, dtype=int)-1
+
+        # All the primary lines go into individual templates, kinematic
+        # components, velocity groups, and sigma groups
+        self.tpli = numpy.zeros(self.emldb.neml, dtype=int)-1
+        primary_line = (self.emldb['mode'] == 'f') & numpy.invert(ignore_line)
+        nprimary = numpy.sum(primary_line)
+        self.tpli[primary_line] = numpy.arange(nprimary)
+        self.comp[:nprimary] = numpy.arange(nprimary)
+        self.vgrp[:nprimary] = numpy.arange(nprimary)
+        self.sgrp[:nprimary] = numpy.arange(nprimary)
+
+        finished = primary_line | ignore_line
+        while numpy.sum(finished) != self.emldb.neml:
+            # Find the indices of lines that are tied to finished lines
+            for i in range(self.emldb.neml):
+                if finished[i]:
+                    continue
+                indx = self._tied_index(i)
+                if not finished[indx]:
+                    continue
+
+                finished[i] = True
+
+                # Mode=a: Line is part of an existing template
+                if self.emldb['mode'][i][0] == 'a':
+                    self.tpli[i] = self.tpli[indx]
+                # Mode=k: Line is part of a different template but an
+                # existing kinematic component
+                if self.emldb['mode'][i][0] == 'k':
+                    self.tpli[i] = numpy.amax(self.tpli)+1
+                    self.comp[self.tpli[i]] = self.comp[self.tpli[indx]]
+                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
+                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
+                # Mode=v: Line is part of a different template and
+                # kinematic component with an untied sigma, but tied to
+                # an existing velocity group
+                if self.emldb['mode'][i][0] == 'v':
+                    self.tpli[i] = numpy.amax(self.tpli)+1
+                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
+                    self.sgrp[self.tpli[i]] = numpy.amax(self.sgrp)+1
+                    self.vgrp[self.tpli[i]] = self.vgrp[self.tpli[indx]]
+                # Mode=s: Line is part of a different template and
+                # kinematic component with an untied velocity, but tied
+                # to an existing sigma group
+                if self.emldb['mode'][i][0] == 's':
+                    self.tpli[i] = numpy.amax(self.tpli)+1
+                    self.comp[self.tpli[i]] = numpy.amax(self.comp)+1
+                    self.vgrp[self.tpli[i]] = numpy.amax(self.vgrp)+1
+                    self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
+
+        # Debug:
+        if numpy.any(self.comp < 0) or numpy.any(self.vgrp < 0) or numpy.any(self.sgrp < 0):
+            raise ValueError('DEBUG: Incorrect parsing of emission-line database.')
+
+
+    def check_database(self, emldb):
+        r"""
+        Check that the provided emission-line database can be used with
+        the :class:`EmissionLineTemplates` class.  Most checks are
+        performed by
+        :func:`mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database`.
+
+        Additional checks specific to :class:`EmissionLineTemplates`
+        are:
+            - Any lines with mode `w` is treated as `f` and a warning is
+              provided.
+            - The :class:`EmissionLineTemplates` object *cannot* be used
+              with mode `x`; any lines with this mode will cause a
+              ValueError to be raised..
+
+        This function does *not* check if the initial parameters
+        provided by the database are consistent with other elements in
+        the database because they are not used to construct the
+        templates.
+
+        Args:
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+                Emission-line database.
+
+        Raises:
+            TypeError: Raised if the provided object is not an instance
+                of :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
+            ValueError: Raised if any line has a mode of `x` or if the
+                database does not provide a valid definition for any
+                templates.
+            NameError: Raised if a defined profile type is not known.
+        """
+        EmissionLineFit.check_emission_line_database(emldb, wave=self.wave, check_par=False)
+
+        # Check that no lines only tie the fluxes
+        if numpy.any([m[0] == 'x' for m in emldb['mode']]):
+            raise ValueError('Cannot tie only fluxes in an EmissionLineTemplates object.')
+
+        # Warn user of any lines with mode=w
+        if numpy.any([m[0] == 'w' for m in emldb['mode']]):
+            warnings.warn('Any line with mode=w treated the same as mode=f.')
+
+
+    def build_templates(self, emldb, loggers=None, quiet=False):
+        r"""
+        Build the set of templates for a given emission-line database.
+        The function uses the current values in :attr:`wave` and
+        :attr:`sigma_inst`.
+
+        Warn the user if any line is undersampled; i.e., the FWHM of the
+        line is less than 2.1 or sigma < 0.9.
+
+        Warn the user if any line grouped in the same template falls
+        outside the spectral range.
+
+        Args:
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+                Emission-line database.
+
+        Returns:
+            numpy.ndarray: Returns 4 arrays: (1) the set of templates
+            with shape :math:`N_{\rm tpl}\times N_{\rm wave}`, (2) the
+            kinematic component assignement for each template, (3) the
+            velocity group associated with each template, and (4) the
+            sigma group assocated with each template.
+        """
+        #---------------------------------------------------------------
+        # Initialize the reporting
+        if loggers is not None:
+            self.loggers = loggers
+        self.quiet = quiet
+
+        #---------------------------------------------------------------
+        # Check the database can be used with this class
+        self.check_database(emldb)
+        # Save a pointer to the database
+        self.emldb = emldb
+        # Parse the database for construction of the templates
+        self._parse_emission_line_database()
+
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission lines to fit: {0}'.format(numpy.sum(self.tpli>-1)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission-line templates: {0}'.format(len(self.comp)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission-line kinematic components: {0}'.format(
+                                                                    numpy.amax(self.comp)+1))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission-line velocity groups: {0}'.format(
+                                                                    numpy.amax(self.vgrp)+1))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of emission-line sigma groups: {0}'.format(
+                                                                    numpy.amax(self.sgrp)+1))
+
+        # Get the instrumental dispersion at the center of each line
+        self.eml_sigma_inst = self.sigma_inst(self.emldb['restwave'])
+
+        # Constuct the templates
+        self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
+        for i in range(self.ntpl):
+            # Find all the lines associated with this template:
+            index = numpy.arange(self.emldb.neml)[self.tpli == i]
+            # Add each line to the template
+            for j in index:
+                profile = eval('lineprofiles.'+self.emldb['profile'][j])()
+                p = profile.parameters_from_moments(self.emldb['flux'][j], 0.0,
+                                                    self.eml_sigma_inst[j])
+                v = astropy.constants.c.to('km/s').value*(self.wave/self.emldb['restwave'][j]-1)
+                srt = numpy.argsort(numpy.absolute(v))
+                if self.eml_sigma_inst[j]/self.dv[srt[0]] < 0.9:
+                    warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
+                self.flux[i,:] += profile(v, p)
+
+        return self.flux, self.comp, self.vgrp, self.sgrp
 
 
 
