@@ -512,10 +512,10 @@ class Sasuke(EmissionLineFit):
                            component_fits=False, plot=False):
         r"""
         Execute a specific fit iteration.  This is used by
-        :func:`_fit_all_spectra` to run through as set of fit iteration.
-        All spectra in *obj_flux* are fit with a specific set of ppxf
-        parameters.  Additional iteration modes can be added by
-        including new arguments to the function.
+        :func:`_fit_all_spectra` to run through as set of fit
+        iterations.  All spectra in *obj_flux* are fit with a specific
+        set of ppxf parameters.  Additional iteration modes can be added
+        by including new arguments to the function.
         
         (FB)  This function fits all the spectra in the cube and returns
         a  PPXFFitResult object with the resulting fit paramters
@@ -1638,9 +1638,6 @@ class Sasuke(EmissionLineFit):
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
         self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
-        print(self.comp_moments)
-        print(self.comp_moments.shape)
-        exit()
 
         # Set which components are gas components
         self.gas_comp = numpy.ones(self.ncomp, dtype=bool)
