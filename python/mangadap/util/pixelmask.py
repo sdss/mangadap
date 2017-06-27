@@ -465,9 +465,12 @@ class SpectralPixelMask(PixelMask):
         _mask = numpy.zeros(wavemask.shape, dtype=bitmask.minimum_dtype()) \
                     if mask is None else mask
 
-        _mask[wavemask] = bitmask.turn_on(_mask[wavemask], flag=waverange_flag)
-        _mask[artmask] = bitmask.turn_on(_mask[artmask], flag=art_flag)
-        _mask[emlmask] = bitmask.turn_on(_mask[emlmask], flag=eml_flag)
+        if numpy.sum(wavemask) > 0:
+            _mask[wavemask] = bitmask.turn_on(_mask[wavemask], flag=waverange_flag)
+        if numpy.sum(artmask) > 0:
+            _mask[artmask] = bitmask.turn_on(_mask[artmask], flag=art_flag)
+        if numpy.sum(emlmask) > 0:
+            _mask[emlmask] = bitmask.turn_on(_mask[emlmask], flag=eml_flag)
         return _mask
 
 
