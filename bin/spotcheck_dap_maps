@@ -12,8 +12,7 @@ import numpy
 
 from argparse import ArgumentParser
 
-#import matplotlib
-#matplotlib.use('Agg')
+import matplotlib
 from matplotlib import pyplot, rc
 from matplotlib.ticker import NullFormatter
 
@@ -499,8 +498,13 @@ if __name__ == '__main__':
                         "execution plan to use instead of the default" , default=None)
 
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+    parser.add_argument('--normal_backend', dest='bgagg', type=bool, action='store_false',
+                        default=True)
 
     arg = parser.parse_args()
+
+    if arg.bgagg:
+        matplotlib.use('Agg')
 
     # Set the the analysis path and make sure it exists
     analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
