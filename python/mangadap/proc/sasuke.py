@@ -1012,6 +1012,8 @@ class Sasuke(EmissionLineFit):
             model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
             # - Template weights
             model_fit_par['TPLWGT'][i,result[i].tpl_to_use] = result[i].tplwgt
+            tplwgterr = numpy.zeros(self.ntpl, dtype=float)
+            tplwgterr[result[i].tpl_to_use] = result[i].tplwgterr
             # Additive polynomial coefficients
             if self.degree >= 0 and result[i].addcoef is not None:
                 model_fit_par['ADDCOEF'][i,:] = result[i].addcoef
@@ -1088,10 +1090,9 @@ class Sasuke(EmissionLineFit):
 
                 # EmissionLineTemplates constructs each line to have the
                 # flux provided by the emission-line database
-                model_eml_par['FLUX'][i,j] = result[i].tplwgt[self.eml_tpli[j]] \
+                model_eml_par['FLUX'][i,j] = model_fit_par['TPLWGT'][i,self.eml_tpli[j]] \
                                                 * self.emldb['flux'][j]
-                model_eml_par['FLUXERR'][i,j] = result[i].tplwgterr[self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j]
+                model_eml_par['FLUXERR'][i,j] = tplwgterr[self.eml_tpli[j]] * self.emldb['flux'][j]
 
                 # Use the flattened vectors to set the kinematics
                 indx = par_indx[self.eml_compi[j]]

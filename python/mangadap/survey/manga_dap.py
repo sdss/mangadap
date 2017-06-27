@@ -312,6 +312,20 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 #                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
         
         c = astropy.constants.c.to('km/s').value
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, 
+#                                      redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7],
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+        
+        c = astropy.constants.c.to('km/s').value
         emission_line_model = None if plan['elfit_key'][i] is None else \
                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
                                      stellar_continuum=stellar_continuum,
