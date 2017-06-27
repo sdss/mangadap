@@ -52,6 +52,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
+.. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
 
 """
 
@@ -822,8 +823,8 @@ class Sasuke(EmissionLineFit):
         
         """
         _rng = numpy.square(rng)
-        _fit_eml = numpy.ones(model_eml_par['SIGMACORR'].shape, dtype=numpy.bool)
-        _fit_eml[:,numpy.invert(self.fit_eml)] = False
+        _fit_eml = numpy.zeros(model_eml_par['SIGMACORR'].shape, dtype=numpy.bool)
+        _fit_eml[:,self.fit_eml] = True
         sigcor = numpy.square(model_eml_par['KIN'][:,:,1]) \
                         - numpy.square(model_eml_par['SIGMACORR'][:,:])
         indx = ((sigcor < _rng[0]) | (sigcor > _rng[1])) & _fit_eml
@@ -846,10 +847,6 @@ class Sasuke(EmissionLineFit):
         the results for each emission line.  The function also assesses
         the data to set any necessary flags.  Much of this is the same
         as :class:`mangadap.proc.ppxffit.PPXFFit._save_results`.
-
-        .. todo::
-            - Need to check this.  There could be something wrong with
-              parsing the data into the individual emission lines.
 
         Args:
             etpl (:class:`EmissionLineTemplates`): The object used to
@@ -882,6 +879,13 @@ class Sasuke(EmissionLineFit):
         # Get the model spectra
         model_flux = PPXFFit.compile_model_flux(self.obj_flux, result)
         model_eml_flux = self._emission_line_only_model(result)
+#        pyplot.step(self.obj_wave, self.obj_flux[0,:], where='mid', color='k')
+#        pyplot.plot(self.obj_wave, model_flux[0,:])
+#        pyplot.plot(self.obj_wave, model_eml_flux[0,:])
+#        pyplot.show()
+#        print(result[0].tplwgt.shape)
+#        print(result[0].tplwgt[self.nstpl:])
+#        print(result[0].tplwgterr[self.nstpl:])
 
         # Save the pixel statistics
         model_fit_par['BEGPIX'] = self.spectrum_start
@@ -932,12 +936,21 @@ class Sasuke(EmissionLineFit):
             for k in range(nmom):
                 par_indx[j][k] = start+k if len(self.tied[j][k]) == 0 \
                                         else int(self.tied[j][k].split('[')[1].split(']')[0])
-            vel_indx[par_indx[j][0]] = True
-            sig_indx[par_indx[j][1]] = True
+#            vel_indx[par_indx[j][0]] = True
+#            sig_indx[par_indx[j][1]] = True
+            vel_indx[start+0] = True
+            sig_indx[start+1] = True
             lbound += [ lboundi[:nmom] ]
             ubound += [ uboundi[:nmom] ]
         lbound = numpy.concatenate(tuple(lbound))
         ubound = numpy.concatenate(tuple(ubound))
+
+#        print(self.tpl_comp)
+#        print(self.tpl_vgrp)
+#        print(self.tpl_sgrp)
+#        print(lbound)
+#        print(ubound)
+#        print(numpy.concatenate(tuple(par_indx)))
 
         # The set of gas templates, and the kinematic component,
         # velocity group, and sigma group associated with each
@@ -996,20 +1009,20 @@ class Sasuke(EmissionLineFit):
             # - Number of fitted pixels
             model_fit_par['NPIXFIT'][i] = len(result[i].gpm)
             # - Templates used
-            model_fit_par['USETPL'][i] = result[i].tpl_to_use
+            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
             # - Template weights
-            model_fit_par['TPLWGT'][i][result[i].tpl_to_use] = result[i].tplwgt
+            model_fit_par['TPLWGT'][i,result[i].tpl_to_use] = result[i].tplwgt
             # Additive polynomial coefficients
             if self.degree >= 0 and result[i].addcoef is not None:
-                model_fit_par['ADDCOEF'][i] = result[i].addcoef
+                model_fit_par['ADDCOEF'][i,:] = result[i].addcoef
             if self.mdegree > 0 and result[i].multcoef is not None:
-                model_fit_par['MULTCOEF'][i] = result[i].multcoef
+                model_fit_par['MULTCOEF'][i,:] = result[i].multcoef
             # Flattened input kinematics vector
-            model_fit_par['KININP'][i] = numpy.concatenate(tuple(self.comp_start_kin[i]))
+            model_fit_par['KININP'][i,:] = numpy.concatenate(tuple(self.comp_start_kin[i]))
             # Flattened best-fit kinematics vector
-            model_fit_par['KIN'][i] = numpy.concatenate(tuple(result[i].kin))
+            model_fit_par['KIN'][i,:] = numpy.concatenate(tuple(result[i].kin))
             # Flattened kinematic error vector
-            model_fit_par['KINERR'][i] = numpy.concatenate(tuple(result[i].kinerr))
+            model_fit_par['KINERR'][i,:] = numpy.concatenate(tuple(result[i].kinerr))
             # Chi-square
             model_fit_par['RCHI2'][i] = model_fit_par['CHI2'][i] \
                                         / (model_fit_par['NPIXFIT'][i] 
@@ -1017,16 +1030,21 @@ class Sasuke(EmissionLineFit):
             model_fit_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
             # Get growth statistics for the residuals
-            model_fit_par['ABSRESID'][i] = residual_growth((residual[i,:]).compressed(),
+            model_fit_par['ABSRESID'][i,:] = residual_growth((residual[i,:]).compressed(),
                                                        [0.68, 0.95, 0.99])
-            model_fit_par['FABSRESID'][i] = residual_growth(fractional_residual[i,:].compressed(),
+            model_fit_par['FABSRESID'][i,:] = residual_growth(fractional_residual[i,:].compressed(),
                                                         [0.68, 0.95, 0.99])
 
             #-----------------------------------------------------------
             # Test if the kinematics are near the imposed boundaries.
-            near_bound, near_lower_bound = self._is_near_bounds(model_fit_par['KIN'][i],
-                                                                model_fit_par['KININP'][i],
+            near_bound, near_lower_bound = self._is_near_bounds(model_fit_par['KIN'][i,:],
+                                                                model_fit_par['KININP'][i,:],
                                                                 vel_indx, sig_indx, lbound, ubound)
+
+#            print(model_fit_par['KININP'][i,:])
+#            print(numpy.concatenate(tuple(result[i].kin)))
+#            print(near_bound)
+#            print(near_lower_bound)
 
             # Add the *global* flag for the fit.
             # TODO: These are probably too general.
@@ -1051,20 +1069,28 @@ class Sasuke(EmissionLineFit):
                         = PPXFFit.convert_velocity(model_fit_par['KIN'][i,vel_indx],
                                                    model_fit_par['KINERR'][i,vel_indx])
 
+#            print(len(self.eml_compi))
+#            print(self.eml_compi)
+
             # Divvy up the fitted parameters into the result for each
             # emission line
             for j in range(self.neml):
                 if not self.fit_eml[j]:
                     continue
+#                print(self.emldb['name'][j], self.emldb['restwave'][j], self.emldb['flux'][j],
+#                      self.eml_tpli[j], result[i].tplwgt[self.eml_tpli[j]])
+#                pyplot.plot(self.tpl_wave, self.tpl_flux[self.eml_tpli[j],:])
+#                pyplot.show()
+#                exit()
 
                 # The "fit index" is the component of the line
                 model_eml_par['FIT_INDEX'][i,j] = self.eml_compi[j]
 
                 # EmissionLineTemplates constructs each line to have the
                 # flux provided by the emission-line database
-                model_eml_par['FLUX'][i,j] = result[i].tplwgt[self.eml_compi[j]] \
+                model_eml_par['FLUX'][i,j] = result[i].tplwgt[self.eml_tpli[j]] \
                                                 * self.emldb['flux'][j]
-                model_eml_par['FLUXERR'][i,j] = result[i].tplwgterr[self.eml_compi[j]] \
+                model_eml_par['FLUXERR'][i,j] = result[i].tplwgterr[self.eml_tpli[j]] \
                                                 * self.emldb['flux'][j]
 
                 # Use the flattened vectors to set the kinematics
@@ -1629,7 +1655,7 @@ class Sasuke(EmissionLineFit):
             self.tpl_comp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.comp+1)
             self.tpl_vgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.vgrp+1)
             self.tpl_sgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.sgrp+1)
-            self.eml_tpli[self.fit_eml] += 1
+            self.eml_tpli[self.fit_eml] += self.nstpl
             self.eml_compi[self.fit_eml] += 1
             self.ncomp = numpy.amax(self.tpl_comp)+1
             self.comp_moments = numpy.array([-stellar_moments] + [moments]*(self.ncomp-1))
@@ -1791,7 +1817,35 @@ class Sasuke(EmissionLineFit):
 class EmissionLineTemplates:
     r"""
     Construct a set of emission-line templates based on an emission-line
-    database. Input to Sasuke
+    database for use in :class:`Sasuke`.
+
+    The templates are constructed based on the constraints provided by
+    the emission-line database.  See
+    :class:`mangadap.par.emissionlinedb.EmissionLinePar` for the
+    structure of each row in the database and an explanation for each of
+    its columns.  The selected profile type for each line **must** have
+    a `parameters_from_moments` method the returns the parameters of the
+    line provided the first three moments (moments 0, 1, and 2).
+
+    Only lines with `action=f` are included in any template.  The array
+    :attr:`tpli` provides the index of the template that contains each
+    line in the emission-line database.  Lines that are not assigned to
+    any template --- either because they do not have `action=f` or their
+    center lies outside the wavelength range in :attr:`wave` --- are
+    given an index of -1.
+
+    Only lines with `mode=a` (i.e., tie flux, velocity, and velocity
+    dispersion) are included in the same template.
+
+    Lines with tied velocities are assigned the same velocity component
+    (:attr:`vgrp`) and lines with the tied velocity dispersions are
+    assigned the same sigma component (:attr:`sgrp`).
+
+    .. warning::
+
+        The construction of templates for use with :class:`Sasuke` does
+        *not* allow one to tie fluxes while leaving the velocities
+        and/or velocity dispersions as independent.
 
     Args:
         wave (array-like): A single wavelength vector with the
@@ -1808,6 +1862,54 @@ class EmissionLineTemplates:
             ratio.  If not provided, no templates are constructed in
             instantiation; to build the templates using an existing
             instantiation, use :func:`build_templates`.
+        loggers (list): (**Optional**) List of `logging.Logger`_ objects
+            to log progress; ignored if quiet=True.  Logging is done
+            using :func:`mangadap.util.log.log_output`.  Default is no
+            logging.  This can be reset in some methods.
+        quiet (bool): (**Optional**) Suppress all terminal and logging
+            output.  Default is False.
+
+    Attributes:
+        wave (numpy.ndarray): Array with the wavelength of each pixel
+            for all the constructed templates.  Shape is :math:`N_{\rm
+            pix}`.
+        sigma_inst (`scipy.interpolate.interp1d`_): The object used to
+            interpolate the instrumental dispersion at the rest
+            wavelength of each spectral line.
+        dv (numpy.ndarray): The width of each spectral pixel in km/s.
+        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+            Database with the emission-line parameters.  Shape is
+            (:math:`N_{\rm pix}`,).
+        ntpl (int): Total number of templates.
+        flux (numpy.ndarray): The template spectra.  Shape is
+            :math:`(N_{\rm tpl},N_{\rm pix})`.
+        tpli (numpy.ndarray): The index of the template containing each
+            emission line.  Any emission-lines with `tpli==-1` means
+            that the emission line was not included in any template,
+            which should only occur for lines with ``action==i` in the
+            database.  Shape is (:math:`N_{\rm eml}`,).
+        comp (numpy.ndarray): The component number assigned to each
+            template.  Templates with the same component number are
+            forced to have the same velocity and velocity dispersion by
+            pPXF.  Shape is (:math:`N_{\rm tpl}`,).
+        vgrp (numpy.ndarray): The velocity group assigned to each
+            template.  Templates in the same velocity group have their
+            velocity parameters tied in pPXF, but the velocity
+            dispersion parameters are independent.  Shape is
+            (:math:`N_{\rm tpl}`,).
+        sgrp (numpy.ndarray): The velocity disperison (sigma) group
+            assigned to each template.  Templates in the same sigma
+            group have their velocity dispersion parameters tied in
+            pPXF, but the velocity parameters are independent.  Shape is
+            (:math:`N_{\rm tpl}`,).
+        eml_sigma_inst (numpy.ndarray): The instrumental dispersion at
+            the rest wavelength of each emission line.  This is mostly
+            used to aid the velocity dispersion corrections determined
+            by :class:`Sasuke`.  Shape is (:math:`N_{\rm eml}`,).
+        loggers (list): List of `logging.Logger`_ objects to log
+            progress; ignored if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.
+        quiet (bool): Suppress all terminal and logging output.
 
     """
     def __init__(self, wave, sigma_inst, log=True, emldb=None, loggers=None, quiet=False):
@@ -1838,15 +1940,33 @@ class EmissionLineTemplates:
         self.sgrp = None            # Sigma group associated with each template
         self.eml_sigma_inst = None  # Instrumental dispersion at the center of each line
 
-#        if database is given then load the emission line database and build the templates
+        # If emission-line database is provided, use it to build the templates
         if emldb is not None:
             self.build_templates(emldb, loggers=loggers, quiet=quiet)
 
 
     def _tied_index(self, i, primary=False):
         """
-        Return the index of the line to which this one is tied and it's
-        primary line, which can be the same.
+        Return the index of the line to which this one is tied.
+        
+        The result may be that this line is tied to one that is also
+        tied to a second line.  If that's the case, the ``primary``
+        keyword can be use to trace the parameter tying back to the
+        independent line.
+
+        Arg:
+            i (int): The index of the line in the database.
+            primary (bool): (**Optional**) Trace the line tying all the
+                way back to the independent (primary) line.
+
+        Return:
+            int: The index of the line to which this one is tied.
+
+        Raises:
+            ValueError: Raised if the primary option is selected and the
+                line does not trace back to a primary line.  This
+                represents a poorly constructed emission-line database
+                and should be avoided!
         """
         db_rows = numpy.arange(self.emldb.neml)
         indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
@@ -1869,24 +1989,35 @@ class EmissionLineTemplates:
         :class:`mangadap.par.emissionlinedb.EmissionLinePar`.
 
         Only lines with `action=f` are included in any template.  The
-        array :attr:`tpli` provides the index of the template with each
-        line in the emission-line database.  Lines that are not assigned
-        to any template, either because they do not have `action=f` or
-        their center lies outside the wavelength range in :attr:`wave`,
-        are given an index of -1.
+        array :attr:`tpli` provides the index of the template that
+        contains each line in the emission-line database.  Lines that
+        are not assigned to any template --- either because they do not
+        have `action=f` or their center lies outside the wavelength
+        range in :attr:`wave` --- are given an index of -1.
 
         Only lines with `mode=a` (i.e., tie flux, velocity, and velocity
         dispersion) are included in the same template.
 
         Lines with tied velocities are assigned the same velocity
-        component (:attr:`vcomp`) and lines with the tied velocity
+        component (:attr:`vgrp`) and lines with the tied velocity
         dispersions are assigned the same sigma component
-        (:attr:`scomp`).
+        (:attr:`sgrp`).
 
         .. warning::
+
             The construction of templates for use with :class:`Sasuke`
             does *not* allow one to tie fluxes while leaving the
             velocities and/or velocity dispersions as independent.
+
+        This is an entirely internal procedure, taking no arguments and
+        only assigning results to self.
+
+        Raises:
+            ValueError: Raised if the parsing of the database leaves
+                some templates without an assigned component, velocity
+                group, and/or sigma group.  This implies an error in the
+                construction of the emission-line database, not the code
+                itself.
 
         """
         # Get the list of lines to ignore
@@ -2003,13 +2134,25 @@ class EmissionLineTemplates:
         r"""
         Build the set of templates for a given emission-line database.
         The function uses the current values in :attr:`wave` and
-        :attr:`sigma_inst`.
+        :attr:`sigma_inst`.  Any existing templates from a previous call
+        to :func:`build_templates` or from the object instantiation will
+        be overwritten using the provided emission-line database.
 
-        Warn the user if any line is undersampled; i.e., the FWHM of the
-        line is less than 2.1 or sigma < 0.9.
+        See :func:`check_database` for the requirements of the provided
+        emission-line database, and see
+        :func:`_parse_emission_line_database` for how the database is
+        interpretted when constructing the templates.
 
-        Warn the user if any line grouped in the same template falls
-        outside the spectral range.
+        The function constructs and returns the following attributes:
+        :attr:`flux`, :attr:`comp`, :attr:`vgrp`, and :attr:`sgrp` 
+
+        .. todo::
+
+            - Warn the user if any line is undersampled; i.e., the FWHM
+              of the line is less than 2.1 or sigma < 0.9.
+
+            - Warn the user if any line grouped in the same template
+              falls outside the spectral range.
 
         Args:
             emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
@@ -2061,13 +2204,22 @@ class EmissionLineTemplates:
             index = numpy.arange(self.emldb.neml)[self.tpli == i]
             # Add each line to the template
             for j in index:
+                # Declare an instance of the desired profile
                 profile = eval('lineprofiles.'+self.emldb['profile'][j])()
-                p = profile.parameters_from_moments(self.emldb['flux'][j], 0.0,
-                                                    self.eml_sigma_inst[j])
+                # Calculate the template flux required to get a unity
+                # integral over velocity that is unity
+                line_flux = self.emldb['flux'][j] * astropy.constants.c.to('km/s').value \
+                                            / self.emldb['restwave'][j]
+                # Use the first three moments of the line to set the
+                # parameters
+                p = profile.parameters_from_moments(line_flux, 0.0, self.eml_sigma_inst[j])
+                # Convert the spectrum coordinates to velocity
                 v = astropy.constants.c.to('km/s').value*(self.wave/self.emldb['restwave'][j]-1)
+                # Warn the user if the line is undersampled.
                 srt = numpy.argsort(numpy.absolute(v))
                 if self.eml_sigma_inst[j]/self.dv[srt[0]] < 0.9:
                     warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
+                # Add the line to the flux in this template
                 self.flux[i,:] += profile(v, p)
 
         return self.flux, self.comp, self.vgrp, self.sgrp
