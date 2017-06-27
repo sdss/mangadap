@@ -1465,7 +1465,8 @@ class PPXFFit(StellarKinematicsFit):
                                                     or rcls is None or rcls.fit_failed()
                                                         or rcls.reached_maxiter() 
                                         for rcl, rcls in zip(result_wlosvd, result_wlosvd_msres) ])
-            indx = numpy.invert(dispersion_correction_err)
+            dispersion_correction_err &= self.obj_to_fit
+            indx = numpy.invert(dispersion_correction_err) & self.obj_to_fit
 
             disp_wlosvd = numpy.zeros(self.nobj, dtype=float)
             disp_wlosvd[indx] = numpy.array([ rc.kin[1] for rc in result_wlosvd[indx] ])
@@ -1605,7 +1606,7 @@ class PPXFFit(StellarKinematicsFit):
               km/s
         """
         sigcor = numpy.square(model_par['KIN'][:,1]) - numpy.square(model_par['SIGMACORR_EMP'])
-        indx = (sigcor < 2500.) | (sigcor > 1.6e5)
+        indx = ((sigcor < 2500.) | (sigcor > 1.6e5)) & self.obj_to_fit
         if numpy.sum(indx) == 0:
             return
         model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'BAD_SIGMA')
@@ -1641,6 +1642,7 @@ class PPXFFit(StellarKinematicsFit):
             # No fit was performed
             if result[i] is None:
                 model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
+                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'NO_FIT')
                 continue
 
             # No fit attempted because of insufficient data
