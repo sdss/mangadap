@@ -296,7 +296,8 @@ class PPXFFitResult(object):
         self.tplwgt = None if ppxf_fit is None else ppxf_fit.weights[0:ntpl].copy()
         self.tplwgterr = None
         if ppxf_fit is not None and weight_errors:
-            design_matrix = ppxf_fit.matrix/ppxf_fit.noise[:, None]
+            design_matrix = ppxf_fit.matrix[ppxf_fit.goodpixels,:] \
+                                / ppxf_fit.noise[ppxf_fit.goodpixels, None]
             covariance_matrix = numpy.linalg.inv(numpy.matmul(design_matrix.T, design_matrix))
             self.tplwgterr = numpy.sqrt(numpy.diag(covariance_matrix))[degree+1:]
         self.addcoef = None if ppxf_fit is None or degree < 0 else ppxf_fit.polyweights.copy()
