@@ -285,6 +285,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
+                                        
+        
 
         #---------------------------------------------------------------
         # Emission-line Fit
@@ -294,13 +296,45 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # To use the stellar kinematics as the initial guess:
         #   - set dispersion=None
         # The provided redshift is only the initial guess for the
-        # emission-line model (it's FIXED for the moment measurements).
-        emission_line_model = None if plan['elfit_key'][i] is None else \
-                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
-                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
-                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
-                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+        # emission-line model (it's FIXED for the moment measurements
+        # above).
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, 
+#                                      redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7],
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+        
+        c = astropy.constants.c.to('km/s').value
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+
+#        emission_line_model = None if plan['elfit_key'][i] is None else \
+#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+#                                      stellar_continuum=stellar_continuum, 
+#                                      redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7],
+#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+        
+        c = astropy.constants.c.to('km/s').value
+        emission_line_model = None if plan['elfit_key'][i] is None else \
+                   EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+                                     stellar_continuum=stellar_continuum,
+                                     redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7]/c,
+                                     dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+                                     clobber=plan['elfit_clobber'][i], loggers=loggers)
+        
+        
+        
         #---------------------------------------------------------------
         # Spectral-Index Measurements
         #---------------------------------------------------------------
@@ -327,6 +361,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_model=emission_line_model,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
                             loggers=loggers, single_precision=True)
+
+        # Force memory to be freed
+        del spectral_indices
+        del emission_line_model
+        del emission_line_moments
+        del stellar_continuum
+        del binned_spectra
+        del rdxqa
 
     #-------------------------------------------------------------------
     # End log

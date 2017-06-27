@@ -1832,8 +1832,8 @@ class construct_cube_file:
         if binned_spectra is None:
             return mask
 
-        indx = ~(binned_spectra_3d_hdu['IVAR'].data > 0) \
-                    | ~(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
+        indx = numpy.invert(binned_spectra_3d_hdu['IVAR'].data > 0) \
+                    | numpy.invert(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
         mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
 
         indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag='FORESTAR')

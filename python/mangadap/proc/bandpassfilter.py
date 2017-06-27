@@ -223,7 +223,7 @@ def passband_median(x, y, passband=None):
     indx = numpy.array([ numpy.arange(_x.size)[numpy.logical_and(_x > p[0], _x < p[1])]
                                 for p in passband ])
     nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
-    if ~numpy.all(nonzero):
+    if not numpy.all(nonzero):
         warnings.warn('Returning empty passbands with median values of 0!')
     return numpy.array([ 0.0 if len(ii) == 0 else numpy.median(_y[ii]) for ii in indx ])
 
@@ -378,7 +378,8 @@ def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=Tru
 #                   color='b', lw=0, zorder=3)
 #    pyplot.show()
 
-    return band_center, continuum, continuum_error, interval_frac < 1.0, ~(interval_frac > 0.0)
+    return band_center, continuum, continuum_error, interval_frac < 1.0, \
+                numpy.invert(interval_frac > 0.0)
 
 
 def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroid, line_flux,

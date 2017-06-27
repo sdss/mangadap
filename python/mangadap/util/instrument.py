@@ -1065,40 +1065,48 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     out_ivar = None if ivar is None else numpy.ma.MaskedArray(ivar.copy())
     noise = None if ivar is None else numpy.ma.sqrt(1.0/out_ivar)
     out_sres = sres.copy()
-    if mask is None:
-        mask = numpy.zeros(flux.shape, dtype=numpy.uint)
-    out_mask = mask.copy()
+    _mask = numpy.zeros(flux.shape, dtype=numpy.uint) if mask is None else mask
+    out_mask = _mask.copy()
 
     if nspec == 1 and spec_dim == 1:
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
-        if ivar is None:
-            out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
-        else:
-            out_flux[indx], out_ivar[indx] \
-                    = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
-                                                 ye=None if ivar is None else noise[indx])
-        out_sres[indx] = res[0].adjusted_resolution(indx=indx)
-        out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
+        try:
+            if ivar is None:
+                out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
+            else:
+                out_flux[indx], out_ivar[indx] \
+                        = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
+                                                     ye=None if ivar is None else noise[indx])
+            out_sres[indx] = res[0].adjusted_resolution(indx=indx)
+            out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
+        except ValueError as e:
+            warnings.warn('Encountered ValueError: {0} ; continuing but resolution is NOT '
+                          'changed and mask is set.'.format(e))
+            out_mask = numpy.ones(flux.shape, dtype=numpy.uint)
     else:
         for i in range(0,nspec):
             if not quiet:
                 print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
-            indx = numpy.where(res[i].sig_pd > min_sig_pix)
-            if ivar is None:
-                out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
-                                                              res[i].sig_pd[indx])
-            else:
-                out_flux[i,indx], out_ivar[i,indx] \
-                        = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx],
-                                                ye=None if ivar is None else noise[i,indx].ravel())
-#           out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx])
-            out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
-                                        | (mask[i,:] == 1)).astype(numpy.uint)
-            if len(out_sres.shape) == 1 and i == 0:
-                out_sres[indx] = res[i].adjusted_resolution(indx=indx)
-                continue
-            else:
-                out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
+            try:
+                indx = numpy.where(res[i].sig_pd > min_sig_pix)
+                if ivar is None:
+                    out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
+                                                                  res[i].sig_pd[indx])
+                else:
+                    out_flux[i,indx], out_ivar[i,indx] \
+                            = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx],
+                                                         ye=None if ivar is None else
+                                                            noise[i,indx].ravel())
+                out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
+                                        | (_mask[i,:] == 1)).astype(numpy.uint)
+                if len(out_sres.shape) == 1 and i == 0:
+                    out_sres[indx] = res[i].adjusted_resolution(indx=indx)
+                else:
+                    out_sres[i,indx] = res[i].adjusted_resolution(indx=indx)
+            except ValueError as e:
+                warnings.warn('Encountered ValueError: {0} ; continuing but resolution is NOT '
+                              'changed and mask is set.'.format(e))
+                out_mask[i,:] = numpy.ones(flux.shape[1], dtype=numpy.uint)
         if not quiet:
             print('Matching resolution: {0}/{0}'.format(nspec))
 

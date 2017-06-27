@@ -1026,8 +1026,8 @@ class TemplateLibrary:
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
 
-        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
-        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
+#        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
+#        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
 #        pyplot.show()
 
@@ -1178,15 +1178,13 @@ class TemplateLibrary:
             # less than 2 pixels per resolution element
             indx = _pix_per_fwhm < 2
             if numpy.sum(indx) > 0:
-
                 # !! EDIT THIS FOR PRODUCTION VERSION !!
-                print('hit two pixel limit!')
-                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
-                pyplot.plot(wave, sres[i,:])
-                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
-                pyplot.plot(wave, sres[i,:])
-                pyplot.show()
-                exit()
+                warnings.warn('Resampling has cause resolution below the two pixel limit!')
+#                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.)
+#                pyplot.plot(wave, sres[i,:])
+#                sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
+#                pyplot.plot(wave, sres[i,:])
+#                pyplot.show()
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
 
 #            print(spectral_coordinate_step(oldwave))
