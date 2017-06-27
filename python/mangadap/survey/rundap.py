@@ -350,8 +350,8 @@ class rundap:
                  # Flags for script contents
                  log=False, dapproc=True, plots=True, verbose=0,
                  # Cluster options
-                 label='mangadap', nodes=9, qos=None, umask='0027',walltime='240:00:00', hard=True,
-                 create=False, submit=False, queue=None):
+                 label='mangadap', nodes=9, cpus=None, qos=None, umask='0027',walltime='240:00:00',
+                 hard=True, create=False, submit=False, queue=None):
 
         # Save run-mode options
         self.daily = daily
@@ -404,6 +404,7 @@ class rundap:
         # Cluster queue keywords
         self.label = label
         self.nodes = nodes
+        self.cpus = cpus
         self.qos = qos
         self.umask = umask
         self.walltime = walltime
@@ -682,6 +683,10 @@ class rundap:
         parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
         parser.add_argument("--nodes", type=int, help='number of nodes to use in cluster',
                             default=18)
+        parser.add_argument("--cpus", type=int,
+                            help='number of cpus to use per node.  Default is to use all available'
+                                 '; otherwise, set to minimum of provided number and number of '
+                                 'processors per node', default=None)
         parser.add_argument("--fast", dest='qos', type=str, help='qos state', default=None)
         parser.add_argument("--umask", type=str, help='umask bit for cluster job', default='0027')
         parser.add_argument("--walltime", type=str, help='walltime for cluster job',
@@ -784,6 +789,8 @@ class rundap:
             self.umask = arg.umask
         if arg.nodes is not None:
             self.nodes = arg.nodes
+        if arg.cpus is not None:
+            self.cpus = arg.cpus
         if arg.walltime is not None:
             self.walltime = arg.walltime
         if arg.qos is not None:
@@ -907,16 +914,19 @@ class rundap:
                     ppn = 20
                 else:
                     ppn = 16
+                cpus = ppn if self.cpus is None else min(self.cpus, ppn)
                 self.queue.create(label=self.label, nodes=self.nodes, umask=self.umask,
-                                  walltime=self.walltime, queue=self.q, ppn=ppn)
+                                  walltime=self.walltime, queue=self.q, ppn=ppn, cpus=cpus)
             else:
                 # self.q can be None when submitting to both the
                 # Portsmouth and Utah clusters.  In this case, the
                 # default queue destination and ppn is correct.  qos is
                 # also set, but this should only be used when submitting
                 # to Utah.
+                ppn = 16
+                cpus = ppn if self.cpus is None else min(self.cpus, ppn)
                 self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos,
-                                  umask=self.umask, walltime=self.walltime)
+                                  umask=self.umask, walltime=self.walltime, ppn=ppn, cpus=cpus)
        
         # Create the script files, regardless of whether or not they are
         # submitted to the queue, appending the scripts to the queue if
