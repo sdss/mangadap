@@ -12,7 +12,6 @@ import numpy
 
 from argparse import ArgumentParser
 
-import matplotlib
 from matplotlib import pyplot, rc
 from matplotlib.ticker import NullFormatter
 
@@ -503,8 +502,7 @@ if __name__ == '__main__':
     arg = parser.parse_args()
 
     if arg.bgagg:
-        matplotlib.use('Agg', warn=False, force=True)
-        from matplotlib import pyplot
+        pyplot.switch_backend('agg')
 
     # Set the the analysis path and make sure it exists
     analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
