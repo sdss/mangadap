@@ -498,8 +498,7 @@ if __name__ == '__main__':
                         "execution plan to use instead of the default" , default=None)
 
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
-    parser.add_argument('--normal_backend', dest='bgagg', type=bool, action='store_false',
-                        default=True)
+    parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
     arg = parser.parse_args()
 
