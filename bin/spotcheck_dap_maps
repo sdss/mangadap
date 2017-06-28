@@ -501,7 +501,7 @@ if __name__ == '__main__':
     arg = parser.parse_args()
 
     if arg.bgagg:
-        matplotlib.use('Agg')
+        matplotlib.use('Agg', warn=False, force=True)
     from matplotlib import pyplot, rc
     from matplotlib.ticker import NullFormatter
 
