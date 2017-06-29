@@ -306,9 +306,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # moment measurements, use the value for the nearest good bin
         bad_bins = numpy.append(emission_line_moments.missing_bins,
                 emission_line_moments['ELMMNTS'].data['BINID'][halpha_mom1_masked]).astype(int)
-        nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
-        bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
-        halpha_mom1_redshift[bad_bin_index] = halpha_mom1_redshift[nearest_good_bin_index]
+#        nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+#        bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+#        halpha_mom1_redshift[bad_bin_index] = halpha_mom1_redshift[nearest_good_bin_index]
+        if len(bad_bins) > 0:
+            nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+            bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+            halpha_mom1_redshift[bad_bin_index] = halpha_mom1_redshift[nearest_good_bin_index]
         #---------------------------------------------------------------
 
         #---------------------------------------------------------------
