@@ -484,20 +484,33 @@ class EmissionLineModel:
     def _assign_input_kinematics(self, redshift, dispersion, default_dispersion=100.0):
         """
         Set the initial redshift and velocity dispersion for each
-        spectrum.  Directly provided redshifts take precedence over
+        spectrum.
+        
+        In terms of precedence, directly provided redshifts override
         those in the StellarContinuumModel object, if both are provided.
-
         The default_dispersion does *not* take precedence over *any*
-        provided disperison.  This is treated the same as the 0.0
-        redshift assigned if both `redshift` and
-        :attr:`stellar_continuum` are None.
+        provided disperison.
+
+        If both redshift and :attr:`stellar_continuum` are None, the
+        redshift is set to 0.0.  If both dispersion and
+        :attr:`stellar_continuum` are None, the dispersion is set to
+        default_dispersion.
+
+        To get the stellar kinematics, the function calls
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_guess_kinematics`.
+        In this fuction, the provided redshift and dispersion must be a
+        single value or None; therefore, the means of any vectors
+        provided as redshift or disperison are passsed to this function
+        instead of the full vector.
+
         """
         # Get the redshift and dispersion measured for the stars if the
         # stellar continuum is present
         sc_redshift, sc_dispersion = (None, None) if self.stellar_continuum is None else \
                 self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
-                        redshift=redshift, dispersion=default_dispersion
-                                                if dispersion is None else dispersion)
+                                redshift=None if redshift is None else numpy.ma.mean(redshift),
+                                dispersion=default_dispersion if dispersion is None 
+                                                                else numpy.ma.mean(dispersion))
 
         # Redshift: use the stellar continuum values if present,
         # otherwise set the default to 0.

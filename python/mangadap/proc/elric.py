@@ -1440,8 +1440,9 @@ class Elric(EmissionLineFit):
 #                print('Window: {0}/{1}'.format(j+1, self.nwindows))
 #                for p in self.fitting_window[j].profile_set:
 #                    print(p.par)
-            if not self.quiet:
-                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nspec))
+#            if not self.quiet:
+#                log_output(self.loggers, 1, logging.INFO, 'Fit: {0}/{1}'.format(i+1,self.nspec))
+            print('Fit: {0}/{1}'.format(i+1,self.nspec), end='\r')
 
             # Get the fitting mask for each emission-line in each window
             fitting_mask = self._fit_masks(self.wave, self.fitting_window, self.redshift[i],
@@ -1702,6 +1703,7 @@ class Elric(EmissionLineFit):
                                                               emission_lines['restwave'][indx],
                                                               model_eml_par['KIN'][i,indx,0])
 
+        print('Fit: {0}/{0}'.format(i+1,self.nspec))
         # Remove the lines from the full model to just provide the
         # baseline model
         model_base -= model_flux

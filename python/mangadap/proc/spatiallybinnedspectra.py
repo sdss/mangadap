@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 A class hierarchy that perform that spatially bins a set of
 two-dimensional data.
 
@@ -94,7 +93,7 @@ import time
 import logging
 import numpy
 
-from scipy import sparse
+from scipy import sparse, spatial
 
 from astropy.wcs import WCS
 from astropy.io import fits
@@ -1776,4 +1775,93 @@ class SpatiallyBinnedSpectra:
                                        missing_bins=self.missing_bins if include_missing else None,
                                               nbins=self.nbins,
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
+
+
+    def get_bin_indices(self, bins):
+        """
+        Return the indices of the bins in the BIN table.
+
+        Args:
+            bins (array-like): The bin ID numbers to find
+        
+        Returns:
+            numpy.ndarray: Integer array with the index of each bin ID in
+            the BINID columns of the BINS extension.
+        """
+        return numpy.array([numpy.where(self.hdu['BINS'].data['BINID'] == b)[0][0] for b in bins])
+        
+
+
+    def find_nearest_bin(self, input_bins, weighted=False, indices=False):
+        """
+        Use a KDTree to find the bins nearest to and excluding a list of
+        input bins.
+
+        Args:
+            input_bins (array-like): One or more bin ID numbers to use
+                to locate the bin nearest to it based on its on-sky
+                coordinates.  The list must be a unique set.
+            weighted (bool): (**Optional**) Use the weighted coordinates
+                (LW_SKY_COO) instead of the unweighted coordinates
+                (SKY_COO) when finding the nearest bin.
+            indices (bool): (**Optional**) Return the indices of the
+                nearest bins instead of their ID number (default).
+        Returns:
+            numpy.ndarray: The bin IDs, one per input bin, of the bin
+            closest to each input bin.  Any bins that are in
+            :attr:`missing_bins` have a return value of -1; there are no
+            coordinates for these bins.
+
+        Raises:
+            ValueError: Raised if the set of input bins is not unique or
+                contains bin IDs that are not present.
+
+        """
+        # Check the input bin IDs
+        _input_bins = numpy.atleast_1d(input_bins)
+        single_value = len(_input_bins) == 1 and not isinstance(input_bins, (list, numpy.ndarray))
+        if len(numpy.unique(_input_bins)) != len(_input_bins):
+            raise ValueError('Must provide a unique set of input bin IDs.')
+        maxbinid = numpy.amax(self.hdu['BINS'].data['BINID'])
+        if numpy.amin(_input_bins) < 0 or numpy.amax(_input_bins) > maxbinid:
+            return ValueError('Input contains invalid bin IDs.')
+
+        # Account for any missing bins
+        valid_input_bin = numpy.ones(_input_bins.size, dtype=bool) if len(self.missing_bins) == 0 \
+                            else numpy.invert([ ib in self.missing_bins for ib in _input_bins ])
+        if not numpy.all(valid_input_bin):
+            warnings.warn('Input bin IDs include missing bins.  Returned as -1.')
+        _input_bins = _input_bins[valid_input_bin]
+
+        # Select the coordinate column
+        col = 'LW_SKY_COO' if weighted else 'SKY_COO'
+
+        # The reference bins are all bins EXCEPT those provided
+        reference_bin = numpy.in1d(self.hdu['BINS'].data['BINID'], _input_bins, assume_unique=True,
+                                   invert=True)
+
+        # Get the coordinates of the reference grid
+        ref_coo = numpy.array([ self.hdu['BINS'].data[col][reference_bin,0],
+                                self.hdu['BINS'].data[col][reference_bin,1] ]).T
+
+        # Construct the KDTree
+        kd = spatial.KDTree(ref_coo)
+
+        # Get the indices of the input bins in the internal list
+        input_bin_indx = self.get_bin_indices(_input_bins)
+
+        # Get the coordinates of the bins to match to the nearest
+        # reference bin
+        input_coo = numpy.array([ self.hdu['BINS'].data[col][input_bin_indx,0],
+                                  self.hdu['BINS'].data[col][input_bin_indx,1] ]).T
+
+        # Get the indices of the nearest bins
+        dist, nearest_bin = kd.query(input_coo)
+
+        # Return either the bin indices or the bin ID numbers
+        output_bins = numpy.zeros(_input_bins.size, dtype=int) - 1
+        output_bins[valid_input_bin] = numpy.arange(self.nbins)[reference_bin][nearest_bin] \
+                        if indices else self.hdu['BINS'].data['BINID'][reference_bin][nearest_bin]
+
+        return output_bins[0] if single_value else output_bins
 

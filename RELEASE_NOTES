@@ -74,6 +74,8 @@ KBW (??         ): tag 2.1
       order of the filter (full length/smoothing box-1)
     - Calculate and include nominal errors in template weights in output
       reference file for stellar continuum model.
+    - HARDCODED: Use first moment of H-alpha as the initial velocity
+      guess for the emission lines.
 
 TO FIX:
     - emission-line moment masks
