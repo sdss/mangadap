@@ -1352,6 +1352,8 @@ class SpectralIndices:
 #                           s=100, color='r', lw=0)
 #            pyplot.show()
 
+        print('Measuring spectral indices in spectrum: {0}/{0}'.format(nspec))
+
 #        x = numpy.append(center, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
 #        _x = numpy.ma.MaskedArray(x, mask=x==-100)
 #        print(_x)
