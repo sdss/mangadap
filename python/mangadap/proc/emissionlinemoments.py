@@ -109,6 +109,7 @@ from .spectralfitting import EmissionLineFit
 from .util import select_proc_method
 
 from matplotlib import pyplot
+#from memory_profiler import profile
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -270,6 +271,7 @@ class EmissionLineMoments:
         quiet (bool): Suppress all terminal and logging output.
 
     """
+#    @profile
     def __init__(self, database_key, binned_spectra, stellar_continuum=None, redshift=None,
                  database_list=None, artifact_list=None, bandpass_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
@@ -485,7 +487,7 @@ class EmissionLineMoments:
 
     def _get_missing_bins(self):
         good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][~good_snr].tolist()
+        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
 
 
@@ -668,7 +670,7 @@ class EmissionLineMoments:
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
         incomplete = interval_frac < 1.0
-        empty = ~(interval_frac > 0.0)
+        empty = numpy.invert(interval_frac > 0.0)
         if empty:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, incomplete, empty, False, False
 
@@ -846,8 +848,8 @@ class EmissionLineMoments:
             undefined_mom2[:] = False
 
             # Shift the sidebands to the appropriate redshift
-            _bluebands = momdb['blueside'][~momdb.dummy]*(1.0+_redshift[i])
-            _redbands = momdb['redside'][~momdb.dummy]*(1.0+_redshift[i])
+            _bluebands = momdb['blueside'][numpy.invert(momdb.dummy)]*(1.0+_redshift[i])
+            _redbands = momdb['redside'][numpy.invert(momdb.dummy)]*(1.0+_redshift[i])
             __err = None if _err is None else _err[i,:]
             __sres = None if _sres is None else _sres[i,:]
 
@@ -865,22 +867,22 @@ class EmissionLineMoments:
                                 else bitmask.turn_on(measurements['MASK'][i,:],
                                                      'NO_ABSORPTION_CORRECTION')
             else:
-                blue_fraction[~momdb.dummy] \
+                blue_fraction[numpy.invert(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_bluebands,
                                                 log=True) / numpy.diff(_bluebands, axis=1).ravel()
                 indx = numpy.logical_and(blue_fraction > 0.0, blue_fraction < 1.0)
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx], 'BLUE_JUMP')
 
-                red_fraction[~momdb.dummy] \
+                red_fraction[numpy.invert(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_redbands,
                                                 log=True) / numpy.diff(_redbands, axis=1).ravel()
                 indx = numpy.logical_and(red_fraction > 0.0, red_fraction < 1.0)
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx], 'RED_JUMP')
                 
-                indx = (~(blue_fraction > 0) & (red_fraction > 0)) \
-                            | (~(red_fraction > 0) & (blue_fraction > 0))
+                indx = (numpy.invert(blue_fraction > 0) & (red_fraction > 0)) \
+                            | (numpy.invert(red_fraction > 0) & (blue_fraction > 0))
                 measurements['MASK'][i,indx] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,indx],'JUMP_BTWN_SIDEBANDS')
 
@@ -893,7 +895,7 @@ class EmissionLineMoments:
 
                 spec = numpy.ma.append(_flux[i,:].reshape(1,-1), _fluxnc[i,:].reshape(1,-1), axis=0)
                 spec_n = numpy.zeros(nmom, dtype=numpy.int)
-                spec_n[~(jumps)] = 1
+                spec_n[numpy.invert(jumps)] = 1
 
                 # Flag moment calculations as having not been corrected
                 # for stellar absorption
@@ -902,14 +904,14 @@ class EmissionLineMoments:
                                                  'NO_ABSORPTION_CORRECTION')
 
             # Get the blue pseudo continuum
-            measurements['BCEN'][i,~momdb.dummy], measurements['BCONT'][i,~momdb.dummy], conterr, \
-                incomplete[~momdb.dummy], empty[~momdb.dummy] \
+            measurements['BCEN'][i,numpy.invert(momdb.dummy)], \
+                measurements['BCONT'][i,numpy.invert(momdb.dummy)], conterr, \
+                incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _bluebands,
-                                                                  spec_n=spec_n[~momdb.dummy],
-                                                                  err=__err,
-                                                                  weighted_center=False)
+                                                        spec_n=spec_n[numpy.invert(momdb.dummy)],
+                                                                  err=__err, weighted_center=False)
             if __err is not None:
-                measurements['BCONTERR'][i,~momdb.dummy] = conterr
+                measurements['BCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:
                 measurements['MASK'][i,incomplete] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,incomplete], 'BLUE_INCOMP')
@@ -918,14 +920,14 @@ class EmissionLineMoments:
                             else bitmask.turn_on(measurements['MASK'][i,empty], 'BLUE_EMPTY')
 
             # Get the red pseudo continuum
-            measurements['RCEN'][i,~momdb.dummy], measurements['RCONT'][i,~momdb.dummy], conterr, \
-                incomplete[~momdb.dummy], empty[~momdb.dummy] \
+            measurements['RCEN'][i,numpy.invert(momdb.dummy)], \
+                measurements['RCONT'][i,numpy.invert(momdb.dummy)], conterr, \
+                incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _redbands,
-                                                                  spec_n=spec_n[~momdb.dummy],
-                                                                  err=__err,
-                                                                  weighted_center=False)
+                                                          spec_n=spec_n[numpy.invert(momdb.dummy)],
+                                                                  err=__err, weighted_center=False)
             if __err is not None:
-                measurements['RCONTERR'][i,~momdb.dummy] = conterr
+                measurements['RCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:
                 measurements['MASK'][i,incomplete] = True if bitmask is None \
                             else bitmask.turn_on(measurements['MASK'][i,incomplete], 'RED_INCOMP')
@@ -935,7 +937,7 @@ class EmissionLineMoments:
 
             # Get the main passband integral after subtracting the
             # continuum
-            indx = ~momdb.dummy \
+            indx = numpy.invert(momdb.dummy) \
                         & numpy.invert(measurements['MASK'][i,:] if bitmask is None
                                         else bitmask.flagged(measurements['MASK'][i,:],
                                                              flag=['BLUE_EMPTY', 'RED_EMPTY',
@@ -1110,7 +1112,7 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
-        include_band = numpy.array([~self.momdb.dummy]*self.nbins) \
+        include_band = numpy.array([numpy.invert(self.momdb.dummy)]*self.nbins) \
                         & numpy.invert(self.bitmask.flagged(measurements['MASK'],
                                                             flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
@@ -1134,8 +1136,8 @@ class EmissionLineMoments:
                                                          include_band=include_band)
 
         # Flag non-positive measurements
-        measurements['MASK'][include_band & ~pos] \
-                    = self.bitmask.turn_on(measurements['MASK'][include_band & ~pos],
+        measurements['MASK'][include_band & numpy.invert(pos)] \
+                    = self.bitmask.turn_on(measurements['MASK'][include_band & numpy.invert(pos)],
                                            'NON_POSITIVE_CONTINUUM')
 
         #---------------------------------------------------------------
@@ -1165,7 +1167,7 @@ class EmissionLineMoments:
         # Isolate any spaxels with foreground stars
         indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
-        # Get the bins that were blow the S/N limit
+        # Get the bins that were below the S/N limit
         indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                         self.binned_spectra['BINID'].data.ravel(),
                                                         good_snr, dtype='bool')) & (map_mask == 0)

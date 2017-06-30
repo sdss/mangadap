@@ -285,8 +285,35 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
-                                        
-        
+
+        #---------------------------------------------------------------
+        # Get an estimate of the redshift of each bin:
+        #
+        # !! HARDCODED FOR A SPECIFIC EMISSION-LINE MOMENT DATABASE !!
+        #
+        # TODO: Should
+        #   - pass the EmissionLineMoments object to EmissionLineModel
+        #   - include the channel used for this in EmissionLineModelDef
+        #
+        halpha_channel = 7
+        halpha_mom1_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,halpha_channel] > 0
+        # - Use the 1st moment of the H-alpha line
+        halpha_mom1_redshift = numpy.empty(binned_spectra.nbins, dtype=float)
+        halpha_mom1_redshift[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
+                    = emission_line_moments['ELMMNTS'].data['MOM1'][:,halpha_channel] \
+                            / astropy.constants.c.to('km/s').value
+        # - For missing bins in the moment measurements and bad H-alpha
+        # moment measurements, use the value for the nearest good bin
+        bad_bins = numpy.append(emission_line_moments.missing_bins,
+                emission_line_moments['ELMMNTS'].data['BINID'][halpha_mom1_masked]).astype(int)
+#        nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+#        bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+#        halpha_mom1_redshift[bad_bin_index] = halpha_mom1_redshift[nearest_good_bin_index]
+        if len(bad_bins) > 0:
+            nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+            bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+            halpha_mom1_redshift[bad_bin_index] = halpha_mom1_redshift[nearest_good_bin_index]
+        #---------------------------------------------------------------
 
         #---------------------------------------------------------------
         # Emission-line Fit
@@ -296,29 +323,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # To use the stellar kinematics as the initial guess:
         #   - set dispersion=None
         # The provided redshift is only the initial guess for the
-        # emission-line model (it's FIXED for the moment measurements).
-#        emission_line_model = None if plan['elfit_key'][i] is None else \
-#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
-#                                      stellar_continuum=stellar_continuum, redshift=nsa_redshift,
-#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
-#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
-
-#        emission_line_model = None if plan['elfit_key'][i] is None else \
-#                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
-#                                      stellar_continuum=stellar_continuum, 
-#                                      redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7],
-#                                      dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
-#                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
-        
-        c = astropy.constants.c.to('km/s').value
+        # emission-line model (it's FIXED for the moment measurements
+        # above).
         emission_line_model = None if plan['elfit_key'][i] is None else \
                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
                                      stellar_continuum=stellar_continuum,
-                                     redshift=emission_line_moments['ELMMNTS'].data['MOM1'][:,7]/c,
-                                     dispersion=100.0, dapsrc=dapsrc, analysis_path=_analysis_path,
+                                     redshift=halpha_mom1_redshift, dispersion=100.0,
+                                     dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
-        
-        
         
         #---------------------------------------------------------------
         # Spectral-Index Measurements
@@ -346,6 +358,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_model=emission_line_model,
                             dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
                             loggers=loggers, single_precision=True)
+
+        # Force memory to be freed
+        del spectral_indices
+        del emission_line_model
+        del emission_line_moments
+        del stellar_continuum
+        del binned_spectra
+        del rdxqa
 
     #-------------------------------------------------------------------
     # End log

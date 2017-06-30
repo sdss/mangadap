@@ -238,11 +238,11 @@ class SpectralStack():
 
     @staticmethod
     def _get_input_mask(flux, ivar=None, mask=None, dtype=bool):
-        inp_mask = numpy.full(flux.shape, False, dtype=bool) if mask is None else mask
+        inp_mask = numpy.zeros(flux.shape, dtype=bool) if mask is None else mask
         if isinstance(flux, numpy.ma.MaskedArray):
             inp_mask |= numpy.ma.getmaskarray(flux)
         if ivar is not None:
-            inp_mask |= ~(ivar>0)
+            inp_mask |= numpy.invert(ivar>0)
         return inp_mask.astype(dtype)
 
      
@@ -329,7 +329,7 @@ class SpectralStack():
             self.sres = None
         else:
             Tc = numpy.sum(rt, axis=1)
-            Tc[~(Tc>0)] = 1.0
+            Tc[numpy.invert(Tc>0)] = 1.0
             self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2))/Tc[:,None], -0.5)
 
         if ivar is None:

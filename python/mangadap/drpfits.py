@@ -164,6 +164,7 @@ from .config.defaults import default_regrid_sigma
 from .config.defaults import default_manga_fits_root
 
 from matplotlib import pyplot
+#from memory_profiler import profile
 
 def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver=None, 
                  redux_path=None, directory_path=None):
@@ -448,6 +449,7 @@ class DRPFits:
                 self.nwave = self.shape[self.dispaxis]
 
     """
+#    @profile
     def __init__(self, plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
                  read=False, checksum=False):
 
@@ -1109,12 +1111,12 @@ class DRPFits:
             # should be no difference
             flux_direct = hdu['FLUX'].data[:,15,16]
             flux_class = drpf.select( (15,16), order='yx' )
-            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+            assert not numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
             # Or to use more natural x y order
             flux_class = drpf.select( (16,15) )
-            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+            assert not numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
             # Or select the spectrum based on its index
@@ -1122,7 +1124,7 @@ class DRPFits:
                 if t == (15,16):
                     break
             flux_class = drpf.select(i)
-            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+            assert not numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
             # Or use index and the provided spatial_index tuple
@@ -1130,11 +1132,11 @@ class DRPFits:
             t = drpf.spatial_index[i]
             flux_direct = hdu['FLUX'].data[:,t[0],t[1]]
             flux_class = drpf.select(i)
-            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+            assert not numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
             
             flux_class = drpf.select(t)
-            assert ~numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
+            assert not numpy.any( numpy.absolute(flux_direct - flux_class) > 0 ), \
                 'Selection error!'
 
         Args:
@@ -1766,7 +1768,7 @@ class DRPFits:
 
         # Do not include any pixels with zero inverse variance or pixels
         # that have been flagged with the provided mask bits
-        mask = ~(self.hdu['IVAR'].data[:,channel] > 0.0)
+        mask = numpy.invert(self.hdu['IVAR'].data[:,channel] > 0.0)
         if rej_flag is not None:
             _rej_flag = rej_flag if isinstance(rej_flag, list) or rej_flag != 'any' else None
 #            print('rejected pixels')
@@ -2776,7 +2778,7 @@ class DRPFits:
 
         """
         unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
-        indx = ~(unique_bins < 0)
+        indx = numpy.invert(unique_bins < 0)
         nbin = bin_count[indx]
         if self.mode == 'CUBE':
             if self.pixelscale is None:

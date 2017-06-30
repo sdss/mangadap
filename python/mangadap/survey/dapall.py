@@ -444,7 +444,7 @@ class DAPall:
             self.methods = self.plan_methods
         else:
             self.methods = numpy.atleast_1d(methods)
-            if ~numpy.all( [m in self.plan_methods for m in self.methods ]):
+            if not numpy.all( [m in self.plan_methods for m in self.methods ]):
                 raise ValueError('All provided methods must be in provided plan file.')
 
         # Construct the list of files to look for
@@ -575,7 +575,7 @@ class DAPall:
             db['RMAX_RE'][i] = numpy.amax(r_re)
 
             snr = numpy.ma.MaskedArray(dapmaps['BIN_SNR'].data.copy(),
-                                       mask=~(dapmaps['BIN_SNR'].data>0))
+                                       mask=numpy.invert(dapmaps['BIN_SNR'].data>0))
             bin_flux = numpy.ma.MaskedArray(dapmaps['BIN_MFLUX'].data.copy(),
                                        mask=self.maps_bm.flagged(dapmaps['BIN_MFLUX_MASK'].data,
                                                                  'DONOTUSE'))
@@ -593,7 +593,7 @@ class DAPall:
                                     mask=self.maps_bm.flagged(dapmaps['STELLAR_SIGMA_MASK'].data,
                                                               'DONOTUSE')))
             scchi = numpy.ma.MaskedArray(dapmaps['STELLAR_CONT_RCHI2'].data.copy(),
-                                         mask=~(dapmaps['BINID'].data > -1))
+                                         mask=numpy.invert(dapmaps['BINID'].data > -1))
 
             havel = numpy.ma.MaskedArray(dapmaps['EMLINE_GVEL'].data.copy()[emline['Ha-6564'],:,:],
                                          mask=self.maps_bm.flagged(
@@ -638,9 +638,9 @@ class DAPall:
             _havel = havel.copy()
             _havel[center] = numpy.ma.masked
 
-            if numpy.sum(~numpy.ma.getmaskarray(_svel)) > 0:
+            if numpy.sum(numpy.invert(numpy.ma.getmaskarray(_svel))) > 0:
                 svel_clipped = sigma_clip(_svel)
-                star_mask = numpy.ma.getmaskarray(svel_clipped)
+                star_mask = numpy.ma.getmaskarray(svel_clipped).copy()
                 star_flux = numpy.ma.MaskedArray(dapmaps['BIN_MFLUX'].data.copy(), mask=star_mask)
 #                svel_var = numpy.ma.power(numpy.ma.MaskedArray(
 #                                                        dapmaps['STELLAR_VEL_IVAR'].data.copy(),
@@ -658,9 +658,9 @@ class DAPall:
             db['STAR_VEL_LO_CLIP'][i], db['STAR_VEL_HI_CLIP'][i] \
                         = growth(svel_clipped, [0.025,0.975])
 
-            if numpy.sum(~numpy.ma.getmaskarray(_havel)) > 0:
+            if numpy.sum(numpy.invert(numpy.ma.getmaskarray(_havel))) > 0:
                 havel_clipped = sigma_clip(_havel)
-                halp_mask = numpy.ma.getmaskarray(havel_clipped)
+                halp_mask = numpy.ma.getmaskarray(havel_clipped).copy()
                 halp_flux = numpy.ma.MaskedArray(
                                         dapmaps['EMLINE_GFLUX'].data.copy()[emline['Ha-6564'],:,:],
                                         mask=halp_mask)

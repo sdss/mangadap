@@ -102,6 +102,7 @@ class StellarKinematicsFit(SpectralFitting):
                  ('NPIXTOT',numpy.int),
                  ('NPIXFIT',numpy.int),
                  ('TPLWGT',numpy.float,(ntpl,)),
+                 ('TPLWGTERR',numpy.float,(ntpl,)),
                  ('USETPL',numpy.bool,(ntpl,)),
                  ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
                  ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
@@ -471,8 +472,9 @@ class EmissionLineFit(SpectralFitting):
 
         # Flag non-positive measurements
         if bitmask is not None:
-            model_eml_par['MASK'][~pos] = bitmask.turn_on(model_eml_par['MASK'][~pos],
-                                                          'NON_POSITIVE_CONTINUUM')
+            model_eml_par['MASK'][numpy.invert(pos)] \
+                    = bitmask.turn_on(model_eml_par['MASK'][numpy.invert(pos)],
+                                      'NON_POSITIVE_CONTINUUM')
 
 
 
