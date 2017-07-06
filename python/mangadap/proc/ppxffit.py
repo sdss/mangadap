@@ -2203,8 +2203,10 @@ class PPXFFit(StellarKinematicsFit):
         # Initialize the output data
         model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
         model_par = init_record_array(self.nobj,
-                        self._per_stellar_kinematics_dtype(self.ntpl, self.degree+1,
-                                                           max(self.mdegree,0), self.moments,
+                        self._per_stellar_kinematics_dtype(self.ntpl, 
+                                            0 if self._mode_uses_filter() else self.degree+1,
+                                            0 if self._mode_uses_filter() else max(self.mdegree,0),
+                                                           self.moments,
                                                            self.bitmask.minimum_dtype()))
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)
