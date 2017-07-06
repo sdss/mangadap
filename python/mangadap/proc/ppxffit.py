@@ -2190,6 +2190,14 @@ class PPXFFit(StellarKinematicsFit):
                 log_output(self.loggers, 2, logging.INFO,
                            'Effective polynomial order: {0}'.format(
                             self.degree if self.filter_operation == 'subtract' else self.mdegree))
+            else:
+                log_output(self.loggers, 2, logging.INFO,
+                           'Additive polynomial order: {0}'.format(self.degree 
+                                                                if self.degree > -1 else 'None'))
+                log_output(self.loggers, 2, logging.INFO,
+                           'Multiplicative polynomial order: {0}'.format(self.mdegree 
+                                                                if self.mdegree > 0 else 'None'))
+                
 
         #---------------------------------------------------------------
         # Initialize the output data
