@@ -509,12 +509,14 @@ class StellarContinuumModel:
                             dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
                             tpl_symlink_dir=tpl_symlink_dir,
                             velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
-                            match_to_drp_resolution=self.method['fitpar']['match_resolution'])
+                            match_to_drp_resolution=self.method['fitpar']['match_resolution'],
+                            hardcopy=False)
 
 
     def get_template_library(self, dapsrc=None, dapver=None, analysis_path=None,
                              tpl_symlink_dir=None, velocity_offset=None,
-                             match_to_drp_resolution=False, resolution_fwhm=None):
+                             match_to_drp_resolution=False, resolution_fwhm=None,
+                             hardcopy=False):
 
         if resolution_fwhm is None:
             return TemplateLibrary(self.method['fitpar']['template_library_key'],
@@ -522,8 +524,8 @@ class StellarContinuumModel:
                                    match_to_drp_resolution=match_to_drp_resolution,
                                    velscale_ratio=self.method['fitpar']['velscale_ratio'],
                                    dapsrc=dapsrc, analysis_path=analysis_path,
-                                   symlink_dir=tpl_symlink_dir, loggers=self.loggers,
-                                   quiet=self.quiet)
+                                   hardcopy=hardcopy, symlink_dir=tpl_symlink_dir,
+                                   loggers=self.loggers, quiet=self.quiet)
         else:
             # Set the spectral resolution
             wave = self.binned_spectra['WAVE'].data
@@ -549,8 +551,9 @@ class StellarContinuumModel:
             return TemplateLibrary(self.method['fitpar']['template_library_key'], sres=sres,
                                    velocity_offset=velocity_offset, spectral_step=spectral_step,
                                    log=True, dapsrc=dapsrc, directory_path=directory_path,
-                                   symlink_dir=tpl_symlink_dir, processed_file=processed_file,
-                                   loggers=self.loggers, quiet=self.quiet)
+                                   hardcopy=hardcopy, symlink_dir=tpl_symlink_dir,
+                                   processed_file=processed_file, loggers=self.loggers,
+                                   quiet=self.quiet)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
