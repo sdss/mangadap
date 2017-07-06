@@ -474,6 +474,11 @@ class StellarContinuumModel:
 
         It also creates/reads the template library.
 
+        .. todo:
+            
+            HARDCODED now to NEVER save the processed template library.
+            Should add this as an option in StellarContinuumModelDef or PPXFFitPar.
+
         """
         # Report
         if not self.quiet:
