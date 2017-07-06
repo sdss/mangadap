@@ -278,8 +278,8 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                                                             waverange=waverange),
                                 bias=cnfg.getfloat('bias'), degree=cnfg.getint('degree'),
                                 mdegree=cnfg.getint('mdegree'),
-                                filt_degree=cnfg.getint('filt_degree'),
-                                filt_mdegree=cnfg.getint('filt_mdegree'),
+                                filt_degree=cnfg.getint('filter_degree'),
+                                filt_mdegree=cnfg.getint('filter_mdegree'),
                                 moments=cnfg.getint('moments') )
             fitclass = PPXFFit(StellarContinuumModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
