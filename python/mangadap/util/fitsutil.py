@@ -463,7 +463,7 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def reconstruct_map(map_shape, bin_indx, arr, dtype=None):
+    def reconstruct_map(map_shape, bin_indx, arr, dtype=None, quiet=False):
         r"""
         Reconstruct a set of maps with the specified shape based on a
         set of input 1D arrays.  The map shape is expected to be
@@ -514,8 +514,9 @@ class DAPFitsUtil:
         # Need to handle missing bins
         if unique_bins.size != unique_bins[-1]+2 \
                 or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Map values are expected '
-                          'to be sorted by their bin number.')
+            if not quiet:
+                warnings.warn('Bin numbers and indices do not match.  Map values are expected '
+                              'to be sorted by their bin number.')
             unique_bins = numpy.arange(-1,unique_bins.size-1)
 
         # Get the valid bins

@@ -28,11 +28,12 @@ A catch-all module with miscellaneous utility functions.
 *Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **04 Jun 2015**: (KBW) Added :func:`where_not`
+    | **04 Jun 2015**: (KBW) Added where_not
     | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
     | **17 Nov 2016**: (KBW) Added :func:`high_pass_filter`
     | **26 Jan 2017**: (KBW) Created :mod:`mangadap.util.filter` and
         removed the filtering and smoothing functions from this file.
+    | **07 Jul 2017**: (KBW) Removed where_not function.
 
 .. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
 
@@ -79,23 +80,23 @@ def line_coeff(p1, p2):
     return m, b
 
 
-def where_not(indx, size):
-    """
-    Return a tuple with the indices of a vector that were *not* selected
-    by a call to `numpy.where`_.  **The function currently only works
-    for 1D vectors.**
-
-    Args:
-        indx (tuple): Tuple returned by a call to `numpy.where`_ for a
-            1D vector.
-        size (int): Length of the original vector in the call to
-            `numpy.where`_.
-
-    .. warning:: 
-        Performs **no** checks of the input.
-
-    """
-    return (numpy.setdiff1d(numpy.arange(0,size), indx[0]),)
+#def where_not(indx, size):
+#    """
+#    Return a tuple with the indices of a vector that were *not* selected
+#    by a call to `numpy.where`_.  **The function currently only works
+#    for 1D vectors.**
+#
+#    Args:
+#        indx (tuple): Tuple returned by a call to `numpy.where`_ for a
+#            1D vector.
+#        size (int): Length of the original vector in the call to
+#            `numpy.where`_.
+#
+#    .. warning:: 
+#        Performs **no** checks of the input.
+#
+#    """
+#    return (numpy.setdiff1d(numpy.arange(0,size), indx[0]),)
     
 
 #def inverse_with_zeros(v, absolute=True):

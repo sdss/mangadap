@@ -1625,7 +1625,7 @@ class construct_maps_file:
         # Get the data arrays
         arr = [ spectral_indices['SINDX'].data['INDX'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['INDXERR'][:,m]
+        arr += [ numpy.ma.power(spectral_indices['SINDX'].data['INDXERR'][:,m], -2.).filled(0.0)
                     for m in range(spectral_indices.nindx) ]
         arr += [ spectral_indices['SINDX'].data['MASK'][:,m]
                     for m in range(spectral_indices.nindx) ]
@@ -1633,7 +1633,8 @@ class construct_maps_file:
                     for m in range(spectral_indices.nindx) ]
 
         dtypes = [self.float_dtype]*(len(arr)-2*spectral_indices.nindx) \
-                        + [a.dtype.name for a in arr[-2*spectral_indices.nindx:-spectral_indices.nindx]] \
+                        + [a.dtype.name 
+                            for a in arr[-2*spectral_indices.nindx:-spectral_indices.nindx]] \
                         + [self.float_dtype]*spectral_indices.nindx
 
         # Bin index
