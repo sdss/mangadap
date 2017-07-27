@@ -282,6 +282,22 @@ def channel_dictionary(hdu, ext):
     return channel_dict
 
 
+def channel_units(hdu, ext):
+    """
+    Construct an array with the channel units.
+    """
+    nchannels = 1 if len(hdu[ext].data.shape) == 2 else hdu[ext].data.shape[0]
+    channel_units = numpy.empty(nchannels, dtype=object)
+    for k, v in hdu[ext].header.items():
+        if k[0] == 'U':
+            try:
+                i = int(k[1:])-1
+            except ValueError:
+                continue
+            channel_units[i] = v.strip()
+    return channel_units
+
+
 def compress_file(ifile, clobber=False):
     """
     Compress a file using gzip.  The output file has the same name as

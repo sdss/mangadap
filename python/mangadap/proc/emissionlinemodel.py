@@ -205,7 +205,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
-    # Build the list of library definitions
+    # Build the list of method definitions
     method_list = []
     for f in ini_files:
         # Read the config file
@@ -464,6 +464,8 @@ class EmissionLineModel:
         """
         Compile the database with the specifications of each index.
         """
+        if self.emldb is None:
+            return None
         name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
         mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
         prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
@@ -545,16 +547,25 @@ class EmissionLineModel:
         Fill in any remaining modeling parameters.
 
         """
+        # Fit parameters not defined so continue
+        if self.method['fitpar'] is None:
+            return
+
         # Fill the guess kinematics
-        self.method['fitpar']['guess_redshift'] = self.redshift
-        self.method['fitpar']['guess_dispersion'] = self.dispersion
-        self.method['fitpar']['emission_lines'] = self.emldb
-        self.method['fitpar']['pixelmask'] = self.pixelmask
-        if self.stellar_continuum is not None:
+        if 'guess_redshift' in self.method['fitpar'].keys():
+            self.method['fitpar']['guess_redshift'] = self.redshift
+        if 'guess_dispersion' in self.method['fitpar'].keys():
+            self.method['fitpar']['guess_dispersion'] = self.dispersion
+        if 'emission_lines' in self.method['fitpar'].keys():
+            self.method['fitpar']['emission_lines'] = self.emldb
+        if 'pixelmask' in self.method['fitpar'].keys():
+            self.method['fitpar']['pixelmask'] = self.pixelmask
+        if self.stellar_continuum is not None \
+                and 'stellar_continuum' in self.method['fitpar'].keys():
             self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
 
 
-    def _add_method_header(self, hdr):
+    def _add_method_header(self, hdr, model_binid=None):
         """Add fitting method information to the header."""
         if self.method['fitclass'] is not None:
             try:
@@ -571,6 +582,13 @@ class EmissionLineModel:
                 if not self.quiet and self.hardcopy:
                     warnings.warn('Fit parameter class has no toheader() function.  No ' \
                                   'parameters written to header.')
+
+        # If the model bin IDs are provided, assume the data was
+        # rebinned, meaning that the bin ID of this object is not
+        # directly tied to the bin ID for the spatially binned spectra
+        # object (self.binned_spectra)
+        hdr['ELREBIN'] = (model_binid is not None, 'Bin IDs disconnected from SC binning')
+
         return hdr
 
 
@@ -612,14 +630,16 @@ class EmissionLineModel:
         self.image_arrays = [ 'BINID' ]
 
 
-    def _get_missing_models(self):
-        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
-                                + self.binned_spectra.missing_bins) 
+    def _get_missing_models(self, unique_bins=None):
+        if unique_bins is None:
+            good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+            return numpy.sort(self.binned_spectra.missing_bins + 
+                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+        return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
 
-    def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_fit_par,
-                          model_eml_par):
+    def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_eml_par,
+                          model_fit_par=None, model_binid=None):
         """
         Construct :attr:`hdu` that is held in memory for manipulation of
         the object.  See :func:`construct_3d_hdu` if you want to convert
@@ -630,50 +650,83 @@ class EmissionLineModel:
 
         # Initialize the headers
         pri_hdr = self._initialize_primary_header()
-        pri_hdr = self._add_method_header(pri_hdr)
+        pri_hdr = self._add_method_header(pri_hdr, model_binid=model_binid)
         map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
         map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
-        # Add any spaxel not used because it was flagged by the binning
-        # step
-        indx = self.binned_spectra['MAPMASK'].data > 0
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
-        # Isolate any spaxels with foreground stars
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
-        # Get the bins that were blow the S/N limit
-        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
-                                                        self.binned_spectra['BINID'].data.ravel(),
-                                                        good_snr, dtype='bool')) & (map_mask == 0)
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
-        # Get the bin ids with fitted models
-        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
-                                               model_eml_par['BINID'])
+        # Allow the fitting function to redefine the bin IDs associated
+        # with each model
+        if model_binid is None:
+            # Add any spaxel not used because it was flagged by the
+            # binning step
+            indx = self.binned_spectra['MAPMASK'].data > 0
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+            # Isolate any spaxels with foreground stars
+            indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data,
+                                                       'FORESTAR')
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+            # Get the bins that were below the S/N limit
+            indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+                                                    self.binned_spectra['BINID'].data.ravel(),
+                                                    good_snr, dtype='bool')) & (map_mask == 0)
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
+            # Get the bin ids with fitted models
+            bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
+                                                   model_eml_par['BINID'])
+        else:
+            # Assume any model with a binid less than zero is from a
+            # spaxel that was not used
+            indx = model_binid < 0
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+
+            # The number of valid bins MUST match the number of
+            # measurements
+            nvalid = numpy.sum(numpy.invert(indx))
+            if nvalid != len(model_eml_par):
+                raise ValueError('Provided model id does not match the number of measurements.')
+
+            # Get the bin ids with fitted models
+            bin_indx = model_binid
+
+        # Allow the fitting function to return a boolean model mask
+        if model_mask.dtype is numpy.dtype('bool'):
+            _model_mask = numpy.zeros(model_flux.shape, dtype=self.bitmask.minimum_dtype())
+            _model_mask[model_mask] = self.bitmask.turn_on(_model_mask[model_mask], 'DIDNOTUSE')
+        else:
+            _model_mask = model_mask
 
         # Compile the information on the suite of measured indices
         line_database = self._compile_database()
 
         # Save the data to the hdu attribute
+        par_hdu = fits.BinTableHDU(data=None, name='PAR') if line_database is None else \
+                        fits.BinTableHDU.from_columns([ fits.Column(name=n,
+                                                        format=rec_to_fits_type(line_database[n]),
+                                                        array=line_database[n])
+                                                            for n in line_database.dtype.names],
+                                                      name='PAR')
+
+        fit_hdu = fits.BinTableHDU(data=None, name='FIT') if model_fit_par is None else \
+                        fits.BinTableHDU.from_columns([fits.Column(name=n,
+                                                        format=rec_to_fits_type(model_fit_par[n]),
+                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
+                                                        array=model_fit_par[n])
+                                                            for n in model_fit_par.dtype.names],
+                                                      name='FIT')
+
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=model_flux.data, name='FLUX'),
                                   fits.ImageHDU(data=model_base.data, name='BASE'),
-                                  fits.ImageHDU(data=model_mask, name='MASK'),
+                                  fits.ImageHDU(data=_model_mask, name='MASK'),
                                   self.binned_spectra['WAVE'].copy(),
                                   fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
                                                 header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                        format=rec_to_fits_type(line_database[n]),
-                                        array=line_database[n]) for n in line_database.dtype.names],
-                                                         name='PAR'),
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_fit_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
-                                        array=model_fit_par[n]) for n in model_fit_par.dtype.names],
-                                                                    name='FIT'),
+                                  par_hdu, fit_hdu,
                                   fits.BinTableHDU.from_columns([fits.Column(name=n,
                                                         format=rec_to_fits_type(model_eml_par[n]),
                                                         dim=rec_to_fits_col_dim(model_eml_par[n]),
@@ -785,9 +838,9 @@ class EmissionLineModel:
         #---------------------------------------------------------------
         # Fit the spectra
         # Mask should be fully defined within the fitting function
-        model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par = \
-            self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                   loggers=self.loggers, quiet=self.quiet)
+        model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
+                self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
+                                       loggers=self.loggers, quiet=self.quiet)
 
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
@@ -799,12 +852,13 @@ class EmissionLineModel:
 
         # DEBUG
         if model_flux.shape[0] != numpy.sum(good_snr):
-            raise ValueError('Unexpected returned shape of fitted continuum models.')
+            raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------
         # Set the number of models and the missing models
         self.nmodels = model_flux.shape[0]
-        self.missing_models = self._get_missing_models()
+        unique_bins = None if model_binid is None else numpy.unique(model_binid.ravel())
+        self.missing_models = self._get_missing_models(unique_bins=unique_bins)
 
         # Report
         if not self.quiet:
@@ -815,8 +869,8 @@ class EmissionLineModel:
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(good_snr, model_flux, model_base, model_mask, model_fit_par,
-                               model_eml_par)
+        self._construct_2d_hdu(good_snr, model_flux, model_base, model_mask, model_eml_par,
+                               model_fit_par=model_fit_par, model_binid=model_binid)
 
         #---------------------------------------------------------------
         # Write the data, if requested
@@ -934,7 +988,9 @@ class EmissionLineModel:
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 
         self.nmodels = self.hdu['FLUX'].shape[0]
-        self.missing_models = self._get_missing_models()
+        unique_bins = numpy.unique(hdu['BINID'].data.ravel()) \
+                            if self.hdu['PRIMARY'].header['ELREBIN'] else None
+        self.missing_models = self._get_missing_models(unique_bins=unique_bins)
 
 
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
@@ -1032,7 +1088,7 @@ class EmissionLineModel:
             # Fill in bins with no models with masked zeros
             _emission_lines = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
             _emission_lines[:,:] = numpy.ma.masked
-            for i,j in enumerate(self.hdu['FIT'].data['BINID_INDEX']):
+            for i,j in enumerate(self.hdu['EMLDATA'].data['BINID_INDEX']):
                 _emission_lines[j,:] = emission_lines[i,:]
             return _emission_lines
 

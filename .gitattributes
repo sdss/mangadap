@@ -12,6 +12,7 @@ bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
 bin/edit_dap_plan -text
 bin/manga_dap -text
+bin/manga_dap_inspector -text
 bin/mangadap_version -text
 bin/matched_template_library -text
 bin/rundap -text
@@ -1784,6 +1785,7 @@ data/spectral_templates/miles_cluster/MILES_cluster_group_47.fits -text svneol=u
 data/spectral_templates/miles_cluster/MILES_cluster_group_48.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_49.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/README -text
+data/spectral_templates/miles_cluster/mileshc_templates_fluxes.db -text
 data/spectral_templates/miles_thin/MILES_res2.50_lt3.51_lg5.0_fe+0.1.fits -text svneol=unset#unset
 data/spectral_templates/miles_thin/MILES_res2.50_lt3.53_lg0.3_fe-0.2.fits -text svneol=unset#unset
 data/spectral_templates/miles_thin/MILES_res2.50_lt3.53_lg4.9_fe-0.5.fits -text svneol=unset#unset
@@ -2539,6 +2541,8 @@ etc/mangadap.module -text
 examples/Test_LR_MaNGA.py -text
 examples/test_base_class.py -text
 examples/test_log_rebin.py -text
+examples/test_new_binning_scheme.py -text
+examples/test_new_emission_line_fitter.py -text
 examples/test_par.py -text
 examples/test_resolution_matching.py -text
 examples/test_template_library.py -text

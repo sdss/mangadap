@@ -1751,12 +1751,11 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Calculate the dispersion corrections, if necessary
         if not self.matched_resolution:
-            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(result)#,
-                                                                      #baseline_dispersion=100)
+            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
+                                                            result, baseline_dispersion=100)
             if numpy.sum(err) > 0:
                 model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
                                                               'BAD_SIGMACORR_EMP')
-#            print(model_par['SIGMACORR_EMP'])
 
 #        indx = numpy.invert(self.bitmask.flagged(model_par['MASK'],
 #                            flag=['NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
@@ -1826,6 +1825,9 @@ class PPXFFit(StellarKinematicsFit):
                            binned_spectra['WAVE'].data.copy(), obj_flux[good_spec,:],
                            obj_ferr[good_spec,:], par['guess_redshift'][good_spec],
                            par['guess_dispersion'][good_spec], iteration_mode=par['iteration_mode'],
+                           reject_boxcar=par['reject_boxcar'], filter_boxcar=par['filter_boxcar'],
+                           filter_operation=par['filter_operation'],
+                           filter_iterations=par['filter_iterations'], ensemble=True,
                            velscale_ratio=par['velscale_ratio'], mask=par['pixelmask'],
                            matched_resolution=par['match_resolution'],
                            tpl_sres=tpl_sres, obj_sres=obj_sres[good_spec,:],
@@ -2187,13 +2189,23 @@ class PPXFFit(StellarKinematicsFit):
                 log_output(self.loggers, 2, logging.INFO,
                            'Effective polynomial order: {0}'.format(
                             self.degree if self.filter_operation == 'subtract' else self.mdegree))
+            else:
+                log_output(self.loggers, 2, logging.INFO,
+                           'Additive polynomial order: {0}'.format(self.degree 
+                                                                if self.degree > -1 else 'None'))
+                log_output(self.loggers, 2, logging.INFO,
+                           'Multiplicative polynomial order: {0}'.format(self.mdegree 
+                                                                if self.mdegree > 0 else 'None'))
+                
 
         #---------------------------------------------------------------
         # Initialize the output data
         model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
         model_par = init_record_array(self.nobj,
-                        self._per_stellar_kinematics_dtype(self.ntpl, self.degree+1,
-                                                           max(self.mdegree,0), self.moments,
+                        self._per_stellar_kinematics_dtype(self.ntpl, 
+                                            0 if self._mode_uses_filter() else self.degree+1,
+                                            0 if self._mode_uses_filter() else max(self.mdegree,0),
+                                                           self.moments,
                                                            self.bitmask.minimum_dtype()))
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)

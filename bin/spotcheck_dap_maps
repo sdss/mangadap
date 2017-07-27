@@ -22,23 +22,24 @@ from mangadap.config.defaults import default_dap_method, default_dap_method_path
 from mangadap.config.defaults import default_dap_plan_file
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
+from mangadap.proc.util import growth_lim
 
 #-----------------------------------------------------------------------------
 
-def growth_lim(a, lim, fac, midpoint=None, default=[0., 1.]):
-    _a = a.compressed()
-    if len(_a) == 0:
-        return default
-    srt = numpy.ma.argsort(_a)
-    start = int(len(_a)*(1.0-lim)/2)
-    end = int(len(_a)*(lim + (1.0-lim)/2))
-    Da = (_a[srt[end]] - _a[srt[start]])*fac
-    mid = (_a[srt[start]] + _a[srt[end]])/2 if midpoint is None else midpoint
-#    print(start)
-#    print(end)
-#    print(Da)
-#    print(mid)
-    return [ mid - Da/2, mid + Da/2 ]
+#def growth_lim(a, lim, fac, midpoint=None, default=[0., 1.]):
+#    _a = a.compressed()
+#    if len(_a) == 0:
+#        return default
+#    srt = numpy.ma.argsort(_a)
+#    start = int(len(_a)*(1.0-lim)/2)
+#    end = int(len(_a)*(lim + (1.0-lim)/2))
+#    Da = (_a[srt[end]] - _a[srt[start]])*fac
+#    mid = (_a[srt[start]] + _a[srt[end]])/2 if midpoint is None else midpoint
+##    print(start)
+##    print(end)
+##    print(Da)
+##    print(mid)
+#    return [ mid - Da/2, mid + Da/2 ]
 
     
 #def column_dictionary(hdu, ext):
@@ -162,26 +163,26 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     udn4000[~numpy.ma.getmaskarray(udn4000)] = 0.0
 
     # Get the limits to apply
-    flux_lim = growth_lim(numpy.ma.log10(spxflx), 0.90, 1.05)
+    flux_lim = growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05)
     t = numpy.ma.append(numpy.ma.log10(spxsnr), numpy.ma.log10(binsnr))
-    snr_lim = growth_lim(t, 0.90, 1.05)
+    snr_lim = growth_lim(t, 0.90, fac=1.05)
     bin_lim = [ numpy.ma.amin(binid), numpy.ma.amax(binid) ]
 
-    res_lim = growth_lim(numpy.ma.log10(scfres), 0.90, 1.05)
-    chi_lim = growth_lim(scrchi, 0.90, 1.05)
+    res_lim = growth_lim(numpy.ma.log10(scfres), 0.90, fac=1.05)
+    chi_lim = growth_lim(scrchi, 0.90, fac=1.05)
     t = numpy.ma.append(strvel, hagvel)
-    vel_lim = growth_lim(t, 0.85, 1.10, midpoint=0.0)
+    vel_lim = growth_lim(t, 0.85, fac=1.10, midpoint=0.0)
     if vel_lim[0] < -350:
         vel_lim[0] = -350
     if vel_lim[1] > 350:
         vel_lim[1] = 350
     t = numpy.ma.append(numpy.ma.log10(strsig), numpy.ma.log10(hagsig))
-    sig_lim = growth_lim(t, 0.90, 1.05)
+    sig_lim = growth_lim(t, 0.90, fac=1.05)
 
     t = numpy.ma.append( numpy.ma.append(hasflx, hagflx),
                          numpy.ma.append(hbsflx, hbgflx) )
 #    t = numpy.ma.log10(t)
-    hflx_lim = growth_lim(t, 0.95, 1.10)
+    hflx_lim = growth_lim(t, 0.95, fac=1.10)
 #    hflx_lim = [ -0.3, 2.2 ]
     t = numpy.ma.append(d4000, dn4000)
 #    d4000_lim = growth_lim(t, 0.90, 1.05)

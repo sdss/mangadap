@@ -71,9 +71,9 @@ class SpectralFitting():
     """
     Base class for spectral fitting.
     """
-    def __init__(self, fit_type, bitmask, par=None):
+    def __init__(self, fit_type, bitmask=None, par=None):
         self.fit_type = fit_type
-        if not isinstance(bitmask, BitMask):
+        if bitmask is not None and not isinstance(bitmask, BitMask):
             raise TypeError('Input bit mask must have type BitMask.')
         self.bitmask = bitmask
         self.par = par
@@ -85,7 +85,7 @@ class StellarKinematicsFit(SpectralFitting):
     Base class for fitting stellar kinematics.
     """
     def __init__(self, fit_method, bitmask, par=None):
-        SpectralFitting.__init__(self, 'stellar_kinematics', bitmask, par=par)
+        SpectralFitting.__init__(self, 'stellar_kinematics', bitmask=bitmask, par=par)
         self.fit_method = fit_method
 
     @staticmethod
@@ -126,7 +126,7 @@ class CompositionFit(SpectralFitting):
     Base class for fitting the spectral composition.
     """
     def __init__(self, fit_method, bitmask, par=None):
-        SpectralFitting.__init__(self, 'composition', bitmask, par=par)
+        SpectralFitting.__init__(self, 'composition', bitmask=bitmask, par=par)
         self.fit_method = fit_method
 
 
@@ -135,8 +135,8 @@ class EmissionLineFit(SpectralFitting):
     """
     Base class for fitting emission lines.
     """
-    def __init__(self, fit_method, bitmask, par=None):
-        SpectralFitting.__init__(self, 'emission_line', bitmask, par=par)
+    def __init__(self, fit_method, bitmask=None, par=None):
+        SpectralFitting.__init__(self, 'emission_line', bitmask=bitmask, par=par)
         self.fit_method = fit_method
 
 

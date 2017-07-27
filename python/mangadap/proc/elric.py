@@ -1346,7 +1346,7 @@ class Elric(EmissionLineFit):
 
         # Only return model and model parameters for the *fitted*
         # spectra
-        return model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
+        return model_flux, model_base, model_mask, model_fit_par, model_eml_par, None
 
 
     def fit(self, wave, flux, emission_lines, ivar=None, mask=None, sres=None,
