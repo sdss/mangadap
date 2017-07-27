@@ -1751,12 +1751,11 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Calculate the dispersion corrections, if necessary
         if not self.matched_resolution:
-            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(result)#,
-                                                                      #baseline_dispersion=100)
+            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
+                                                            result, baseline_dispersion=100)
             if numpy.sum(err) > 0:
                 model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
                                                               'BAD_SIGMACORR_EMP')
-#            print(model_par['SIGMACORR_EMP'])
 
 #        indx = numpy.invert(self.bitmask.flagged(model_par['MASK'],
 #                            flag=['NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))

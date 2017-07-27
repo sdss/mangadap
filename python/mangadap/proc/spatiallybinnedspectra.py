@@ -252,52 +252,13 @@ def validate_spatial_binning_scheme_config(cnfg):
 
 def available_spatial_binning_methods(dapsrc=None):
     """
-    Return the list of available binning schemes.  The following methods
-    are predefined by the DAP configuration files.
+    Return the list of available binning schemes.
+    
+    The list of available binning schemes is defined by the set of
+    configuration files at::
 
-    Voronoi binning methods:
-    +---------+-----+------+-------+-----------+-------+------+
-    |         | Min |      |  Vel. |     Covar | Covar | Targ |
-    |     Key | S/N | Stat |  Reg. |      Mode |   par |  S/N |
-    +=========+=====+======+=======+===========+=======+======+
-    |   VOR05 | 0.0 | Mean | False | calibrate |  1.62 |    5 |
-    +---------+-----+------+-------+-----------+-------+------+
-    |   VOR10 | 0.0 | Mean | False | calibrate |  1.62 |   10 |
-    +---------+-----+------+-------+-----------+-------+------+
-    |   VOR30 | 0.0 | Mean | False | calibrate |  1.62 |   30 |
-    +---------+-----+------+-------+-----------+-------+------+
-
-    Radial binning methods:
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |          | Min |      | Vel.  |     Covar | Covar |        |    |     | R     |          |       |
-    |      Key | S/N | Stat | Reg.  |      Mode |   par | Center | PA | Ell | Scale |    Radii |   Log |
-    +==========+=====+======+=======+===========+=======+========+====+=====+=======+==========+=======+
-    |   LOGR10 | 0.0 | Mean | False | calibrate |  1.62 |    0,0 | -1 |  -1 |   1.0 | -1,-1,10 |  True |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |  LOGR10V | 0.0 | Mean |  True | calibrate |  1.62 |    0,0 | -1 |  -1 |   1.0 | -1,-1,10 |  True |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |   RE1025 | 0.0 | Mean | False | calibrate |  1.62 |    0,0 | -1 |  -1 |    -1 | 0,2.5,10 | False |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |  RE1025V | 0.0 | Mean |  True | calibrate |  1.62 |    0,0 | -1 |  -1 |    -1 | 0,2.5,10 | False |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-
-    Global binning methods:
-    +----------+-----+------+-------+-----------+-------+
-    |          | Min |      | Vel.  |     Covar | Covar |
-    |      Key | S/N | Stat | Reg.  |      Mode |   par |
-    +==========+=====+======+=======+===========+=======+
-    |   GLOBAL | 0.0 | Mean | False | calibrate |  1.62 |
-    +----------+-----+------+-------+-----------+-------+
-    |  GLOBALV | 0.0 | Mean |  True | calibrate |  1.62 |
-    +----------+-----+------+-------+-----------+-------+
-
-    Unbinned binning methods:
-    +----------+-----+
-    |          | Min |
-    |      Key | S/N |
-    +==========+=====+
-    |   SPAXEL | 0.0 |
-    +----------+-----+
+        config_path = os.path.join(dapsrc, 'python', 'mangadap', 'config', 'spatial_binning')
+        ini_files = glob.glob(os.path.join(config_path, '/*.ini'))
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source

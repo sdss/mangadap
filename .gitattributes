@@ -2541,6 +2541,8 @@ etc/mangadap.module -text
 examples/Test_LR_MaNGA.py -text
 examples/test_base_class.py -text
 examples/test_log_rebin.py -text
+examples/test_new_binning_scheme.py -text
+examples/test_new_emission_line_fitter.py -text
 examples/test_par.py -text
 examples/test_resolution_matching.py -text
 examples/test_template_library.py -text
