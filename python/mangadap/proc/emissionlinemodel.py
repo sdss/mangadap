@@ -305,7 +305,7 @@ class EmissionLineModel:
         self._define_method(method_key, method_list=method_list, artifact_list=artifact_list,
                             emission_line_db_list=emission_line_db_list, dapsrc=dapsrc)
 
-        self.neml = self.emldb.neml
+        self.neml = None if self.emldb is None else self.emldb.neml
 
         self.binned_spectra = None
         self.redshift = None
@@ -842,6 +842,9 @@ class EmissionLineModel:
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
 
+        if self.neml is None:
+            self.neml = model_eml_par['FLUX'].shape[1]
+
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
        
@@ -966,6 +969,13 @@ class EmissionLineModel:
 
 #        self.hdu = fits.open(ifile, checksum=checksum)
         self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
+
+        # Make sure that the number of emission-lines is set
+        _neml = self.hdu['EMLDATA'].data['FLUX'].shape[1]
+        if self.neml is not None and _neml != self.neml:
+            raise ValueError('Num. of emission lines read does not match emission-line database.')
+        if self.neml is None:
+            self.neml = _neml
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
