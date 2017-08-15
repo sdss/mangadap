@@ -52,40 +52,59 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         wave = binned_spectra['WAVE'].data.copy()
         # Velocity step per pixel
         velscale = spectrum_velocity_scale(wave)
-        # Flux and noise masked arrays; shape is (Nspaxels,Nwave) where
-        # Nspaxels is Nx*Ny
+
+        # UNBINNED DATA:
+        # Flux and noise masked arrays; shape is (Nspaxel,Nwave) where
+        # Nspaxel is Nx*Ny
         flux = binned_spectra.drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
         noise = numpy.ma.power(binned_spectra.drpf.copy_to_masked_array(ext='IVAR',
                                     flag=['DONOTUSE', 'FORESTAR']), -0.5)
-        # Spaxel coordinates; shape is (nspaxels,)
+        # stack_sres sets whether or not the spectral resolution is
+        # determined on a per-spaxel basis or with a single vector
+        sres = binned_spectra.drpf.spectral_resolution(toarray=True, fill=True) \
+                    if binned_spectra.method['stackpar']['stack_sres'] else \
+                    binned_spectra.drpf.spectral_resolution(ext='SPECRES', toarray=True, fill=True)
+        # Spaxel coordinates; shape is (Nspaxel,)
         x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
         y = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
-        # Binned flux and binned noise masked arrays; shape is (nbins,nwave)
+
+        # BINNED DATA:
+        # Binned flux and binned noise masked arrays; shape is (Nbin,Nwave)
         flux_binned = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
         noise_binned = numpy.ma.power(binned_spectra.copy_to_masked_array(ext='IVAR',
                                                     flag=binned_spectra.do_not_fit_flags()) , -0.5)
-        # Bin coordinates; shape is (nbins,)
+        sres_binned = binned_spectra.copy_to_array(ext='SPECRES')
+        # Bin coordinates; shape is (Nbin,)
         x_binned = binned_spectra['BINS'].data['SKY_COO'][:,0]
         y_binned = binned_spectra['BINS'].data['SKY_COO'][:,1]
+
+        # Get the best-fitting stellar kinematics for the binned spectra
+        if self.par['stellar_continuum'] is not None:
+            stars_vel, stars_sig \
+                = self.par['stellar_continuum'].matched_guess_kinematics(binned_spectra, cz=True)
+        else:
+            # TODO: Set default stellar kinematics
+            stars_vel, stars_sig = None, None
+
         # Set initial guesses for the velocity and velocity dispersion
         if self.par['guess_redshift'] is not None:
             # Use guess_redshift if provided
-            vel = self.par['guess_redshift'] * astropy.constants.c.to('km/s').value
+            guess_vel = self.par['guess_redshift'] * astropy.constants.c.to('km/s').value
             # And set default velocity dispersion to 100 km/s
-            sig = numpy.full(vel.size, 100, dtype=float)
+            guess_sig = numpy.full(vel.size, 100, dtype=float)
         elif self.par['stellar_continuum'] is not None:
             # Otherwise use the stellar-continuum result
-            vel, sig = self.par['stellar_continuum'].matched_guess_kinematics(binned_spectra,
-                                                                              cz=True)
+            guess_vel, guess_sig = stars_vel.copy(), stars_sig.copy()
         else:
             # TODO: Set default guess kinematics
-            vel, sig = None, None
+            guess_vel, guess_sig = None, None
 
-        # Get the stellar templates;
-        # shape is (Ntemplates, Nwave_templates)
+        # Get the stellar templates and the template resolution;
+        # shape is (Nstartpl, Ntplwave)
         if self.par['stellar_continuum'] is not None:
             stars_templates = self.par['stellar_continuum'].method['fitpar']['template_library']
             stars_templates_wave = stars_templates['WAVE'].data.copy()
+            template_sres = numpy.mean(stars_templates['SPECRES'].data, axis=0)
             stars_templates = stars_templates['FLUX'].data.copy()
             velscale_ratio = self.par['stellar_continuum'].method['fitpar']['velscale_ratio']
             dv = -PPXFFit.ppxf_tpl_obj_voff(stars_templates_wave, wave, velscale,
@@ -93,17 +112,75 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         else:
             # TODO: Default construction of stellar templates
             stars_templates = None
+            template_sres = None
             velscale_ratio = None
             dv = None
 
-        # TODO: Construct gas templates
+        # TODO: Construct gas templates; shape is (Ngastpl, Ntplwave).
+        # Template resolution matched between the stellar and gas
+        # templates?
         gas_templates = None
         gas_names = None
 
         # TODO: Default polynomial orders
         degree = 8 if self.par['degree'] is None else self.par['degree']
         mdegree = 0 if self.par['mdegree'] is None else self.par['mdegree']
-        
+     
+        # --------------------------------------------------------------
+        # CALL TO FIRST_SECOND_ITERATION:
+        # Input is:
+        #   - wave: wavelength vector; shape is (Nwave,)
+        #   - flux: observed, unbinned flux; masked array with shape
+        #     (Nspaxel,Nwave)
+        #   - noise: error in observed, unbinned flux; masked array with
+        #     shape (Nspaxel,Nwave)
+        #   - sres: spectral resolution (R=lambda/delta lambda) as a
+        #     function of wavelength for each unbinned spectrum; shape
+        #     is (Nspaxel,Nwave)
+        #   - flux_binned: binned flux; masked array with shape
+        #     (Nbin,Nwave)
+        #   - noise_binned: noise in binned flux; masked array with
+        #     shape (Nbin,Nwave)
+        #   - sres_binned: spectral resolution (R=lambda/delta lambda)
+        #     as a function of wavelength for each binned spectrum;
+        #     shape is (Nbin,Nwave)
+        #   - velscale: Velocity step per pixel
+        #   - velscale_ratio: Ratio of velocity step per pixel in the
+        #     observed data versus in the template data
+        #   - dv: Velocity offset between the galaxy and template data
+        #     due to the difference in the initial wavelength of the
+        #     spectra
+        #   - stars_vel: Velocity of the stellar component; shape is
+        #     (Nbins,)
+        #   - stars_sig: Velocity dispersion of the stellar component;
+        #     shape is (Nbins,)
+        #   - stars_templates: Stellar templates; shape is (Nstartpl,
+        #     Ntplwave)
+        #   - guess_vel: Initial guess velocity for the gas components;
+        #     shape is (Nbins,)
+        #   - guess_sig: Initial guess velocity dispersion for the gas
+        #     components; shape is (Nbins,)
+        #   - gas_templates: Gas template flux; shape is (Ngastpl,
+        #     Ntplwave)
+        #   - gas_names: Name of the gas templats; shape is (Ngastpl,)
+        #   - template_sres: spectral resolution (R=lambda/delta
+        #     lambda) as a function of wavelength for all the templates
+        #     templates; shape is (Ntplwave,)
+        #   - degree: Additive polynomial order
+        #   - mdegree: Multiplicative polynomial order
+        #   - x: On-sky spaxel x coordinates; shape is (Nspaxel,)
+        #   - y: On-sky spaxel y coordinates; shape is (Nspaxel,)
+        #   - x_binned: On-sky bin x coordinate; shape is (Nbin,)
+        #   - y_binned: On-sky bin y coordinate; shape is (Nbin,)
+        model_flux, model_eml_flux, model_mask, model_binid, eml_flux, eml_fluxerr, \
+                eml_kin, eml_kinerr, eml_sigmacorr \
+                        = first_second_iteration(wave, flux, noise, sres,
+                                                 flux_binned, noise_binned, sres_binned,
+                                                 velscale, velscale_ratio, dv,
+                                                 stars_vel, stars_sig, stars_templates,
+                                                 guess_vel, guess_sig, gas_templates, gas_names,
+                                                 template_sres, degree, mdegree,
+                                                 x, y, x_binned, y_binned)
         # Output is:
         #   - model_flux: stellar-continuum + emission-line model; shape
         #     is (Nmod, Nwave); first axis is ordered by model ID number
@@ -115,7 +192,7 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         #     fitted model; any spaxel without a model should have
         #     model_binid = -1; the number of >-1 IDs must be Nmod;
         #     shape is (Nx,Ny) which is equivalent to:
-        #       flux[:,0].reshape((numpy.sqrt(Nspaxels).astype(int),)*2).shape
+        #       flux[:,0].reshape((numpy.sqrt(Nspaxel).astype(int),)*2).shape
         #   - eml_flux: Flux of each emission line; shape is (Nmod,Neml)
         #   - eml_fluxerr: Error in emission-line fluxes; shape is
         #     (Nmod, Neml)
@@ -128,12 +205,7 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         #     follows:
         #       sigma = numpy.ma.sqrt( numpy.square(eml_kin[:,:,1])
         #                               - numpy.square(eml_sigmacorr))
-        model_flux, model_eml_flux, model_mask, model_binid, eml_flux, eml_fluxerr, \
-                eml_kin, eml_kinerr, eml_sigmacorr \
-                        = first_second_iteration(wave, flux, noise, flux_binned, noise_binned,
-                                                 velscale, velscale_ratio, dv, vel, sig,
-                                                 stars_templates, gas_templates, gas_names,
-                                                 degree, mdegree, x, y, x_binned, y_binned)
+        # --------------------------------------------------------------
         # The ordered indices in the flatted bin ID map with/for each model
         model_srt = numpy.argsort(model_binid.ravel())[model_binid.ravel() > -1]
 
