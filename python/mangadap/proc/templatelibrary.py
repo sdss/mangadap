@@ -271,8 +271,8 @@ class TemplateLibraryDef(ParSet):
             logarithmically in wavelength.
 
     """
-    def __init__(self, key, file_search, fwhm, sres_ext, in_vacuum, wave_limit, lower_flux_limit,
-                 log10): 
+    def __init__(self, key=None, file_search=None, fwhm=None, sres_ext=None, in_vacuum=False,
+                 wave_limit=None, lower_flux_limit=None, log10=False): 
         # Perform some checks of the input
         in_fl = [ int, float ]
         
@@ -869,10 +869,10 @@ class TemplateLibrary:
             if self.library['lower_flux_limit'] is not None:
                 indx = numpy.invert( flux_ > self.library['lower_flux_limit'] )
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'FLUX_INVALID')
-            if self.library['wave_limit'][0] is not None:
+            if self.library['wave_limit'] is not None and self.library['wave_limit'][0] is not None:
                 indx = wave[i,:].ravel() < self.library['wave_limit'][0]
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
-            if self.library['wave_limit'][1] is not None:
+            if self.library['wave_limit'] is not None and self.library['wave_limit'][1] is not None:
                 indx = wave[i,:].ravel() > self.library['wave_limit'][1]
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
 

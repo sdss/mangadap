@@ -66,6 +66,9 @@ procedures.
         extension as requested.
     | **06 Dec 2016**: (KBW) Significantly restructured.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
+
+    | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
+        the LSF.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -1287,8 +1290,10 @@ class SpatiallyBinnedSpectra:
             #   based on whether or not the DISP extension is present.
             # For MPL-5/DR14 data and earlier, the two spectral
             # resolution options should result in identical output!
-            sres = self.drpf.spectral_resolution(ext='SPECRES' if self.method['spec_res'] == 'cube'
-                                                        else None, toarray=True)[good_spec,:]
+            # !! Use the new pre-pixelized LSF measurements !!
+            specres_ext='SPECRES' if self.method['spec_res'] == 'cube' else None
+            sres = self.drpf.spectral_resolution(ext=specres_ext, toarray=True,
+                                                 pre=True)[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack
