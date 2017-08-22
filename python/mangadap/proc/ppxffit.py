@@ -1791,6 +1791,11 @@ class PPXFFit(StellarKinematicsFit):
             raise TypeError('Must provide a SpatiallyBinnedSpectra object for fitting.')
         if binned_spectra.hdu is None:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
+        # If specified, the binned_spectra should have spectral
+        # resolution measurements based on a pre-pixelized Gaussian
+        if 'STCKPRE' in binned_spectra.hdu['PRIMARY'].header \
+                and not binned_spectra.hdu['PRIMARY'].header['STCKPRE']:
+            raise ValueError('PPXFFit expects LSF measurements based on a pre-pixelized Gaussian.')
 
         # TemplateLibrary object always needed
         if par['template_library'] is None \

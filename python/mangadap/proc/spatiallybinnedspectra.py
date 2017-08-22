@@ -331,7 +331,7 @@ def available_spatial_binning_methods(dapsrc=None):
             binclass = None
             binfunc = None
 
-        stack_spec_res = cnfg['spec_res'] == 'spaxel'
+        stack_spec_res = cnfg.get('spec_res') == 'spaxel'
 
         stackpar = SpectralStackPar(cnfg.get('operation', default='mean'),
                                     cnfg.getbool('velocity_register', default=False), None,
@@ -339,7 +339,7 @@ def available_spatial_binning_methods(dapsrc=None):
                                     SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
                                             cnfg['stack_covariance_par']),
-                                    stack_spec_res)
+                                    stack_spec_res, cnfg.getbool('prepixel_sres', default=True))
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 

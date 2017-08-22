@@ -105,24 +105,29 @@ class SpectralStackPar(ParSet):
             needed to perform a given method of handling the covariance.
             See :func:`SpectralStack.covariance_mode_options` for the
             available options.
-
+        stack_sres (bool): Stack the spectral resolution as well as the
+            flux data.
+        prepixel_sres (bool): Use the pre-pixelized spectral resolution.
+            If true and the prepixelized versions are not available, an
+            error will be raised!
     """
-    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres):
+    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres,
+                 prepixel_sres):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
         covar_options = SpectralStack.covariance_mode_options()
         
         pars =     [ 'operation', 'vel_register', 'vel_offsets',  'covar_mode',   'covar_par',
-                        'stack_sres' ]
+                        'stack_sres', 'prepixel_sres' ]
         values =   [   operation,   vel_register,   vel_offsets,    covar_mode,     covar_par,
-                          stack_sres ]
+                          stack_sres,   prepixel_sres ]
         defaults = [      'mean',          False,          None,        'none',          None,
-                                True ]
+                                True,            True ]
         options =  [  op_options,           None,          None, covar_options,          None,
-                                None ]
+                                None,            None ]
         dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like,
-                                bool ]
+                                bool,            bool ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -142,6 +147,7 @@ class SpectralStackPar(ParSet):
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
         hdr['STCKRES'] = (str(self['stack_sres']), 'Spectral resolution stacked')
+        hdr['STCKPRE'] = (str(self['prepixel_sres']), 'Use prepixelized spectral resolution')
         return hdr
 
 
@@ -156,6 +162,7 @@ class SpectralStackPar(ParSet):
         self['covar_mode'] = hdr['STCKCRMD']
         self['covar_par'] = eval(hdr['STCKCRPR'])
         self['stack_sres'] = eval(hdr['STCKRES'])
+        self['prepixel_sres'] = eval(hdr['STCKPRE'])
 
 
 class SpectralStack():
@@ -493,6 +500,14 @@ class SpectralStack():
         return Covariance(covar, input_indx=self.covar.input_indx)
             
 
+    def _get_stack_mean(self):
+        """
+        Return the mean of the stacked spectra using the internal data.
+        """
+        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
+                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
+
+
     @staticmethod
     def operation_options():
         """
@@ -818,7 +833,7 @@ class SpectralStack():
         flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
         ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
         sres = None if par is None or not par['stack_sres'] \
-                else drpf.spectral_resolution(toarray=True, pre=True)
+                else drpf.spectral_resolution(toarray=True, pre=par['prepixel_sres'])
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 
@@ -977,14 +992,6 @@ class SpectralStack():
         if operation == 'sum':
             return self.wave, self.flux, self.fluxsdev, self.npix, self.ivar, self.sres, self.covar
         return self._get_stack_mean()
-
-
-    def _get_stack_mean(self):
-        """
-        Return the mean of the stacked spectra using the internal data.
-        """
-        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
-                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
 
 
         
