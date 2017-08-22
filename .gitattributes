@@ -15,6 +15,7 @@ bin/manga_dap -text
 bin/manga_dap_inspector -text
 bin/mangadap_version -text
 bin/matched_template_library -text
+bin/ppxffit_qa -text
 bin/rundap -text
 bin/spotcheck_dap_maps -text
 bin/write_dap_par -text
