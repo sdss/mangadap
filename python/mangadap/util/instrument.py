@@ -31,7 +31,6 @@ resolution effects.
         import astropy.constants
 
         from .constants import constants
-        from .misc import where_not
 
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
@@ -76,7 +75,6 @@ from scipy.special import erf
 import astropy.constants
 
 from .constants import DAPConstants
-from .misc import where_not
 
 from matplotlib import pyplot
 

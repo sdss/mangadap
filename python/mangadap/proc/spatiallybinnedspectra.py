@@ -66,6 +66,9 @@ procedures.
         extension as requested.
     | **06 Dec 2016**: (KBW) Significantly restructured.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
+
+    | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
+        the LSF.
         
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -252,52 +255,13 @@ def validate_spatial_binning_scheme_config(cnfg):
 
 def available_spatial_binning_methods(dapsrc=None):
     """
-    Return the list of available binning schemes.  The following methods
-    are predefined by the DAP configuration files.
+    Return the list of available binning schemes.
+    
+    The list of available binning schemes is defined by the set of
+    configuration files at::
 
-    Voronoi binning methods:
-    +---------+-----+------+-------+-----------+-------+------+
-    |         | Min |      |  Vel. |     Covar | Covar | Targ |
-    |     Key | S/N | Stat |  Reg. |      Mode |   par |  S/N |
-    +=========+=====+======+=======+===========+=======+======+
-    |   VOR05 | 0.0 | Mean | False | calibrate |  1.62 |    5 |
-    +---------+-----+------+-------+-----------+-------+------+
-    |   VOR10 | 0.0 | Mean | False | calibrate |  1.62 |   10 |
-    +---------+-----+------+-------+-----------+-------+------+
-    |   VOR30 | 0.0 | Mean | False | calibrate |  1.62 |   30 |
-    +---------+-----+------+-------+-----------+-------+------+
-
-    Radial binning methods:
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |          | Min |      | Vel.  |     Covar | Covar |        |    |     | R     |          |       |
-    |      Key | S/N | Stat | Reg.  |      Mode |   par | Center | PA | Ell | Scale |    Radii |   Log |
-    +==========+=====+======+=======+===========+=======+========+====+=====+=======+==========+=======+
-    |   LOGR10 | 0.0 | Mean | False | calibrate |  1.62 |    0,0 | -1 |  -1 |   1.0 | -1,-1,10 |  True |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |  LOGR10V | 0.0 | Mean |  True | calibrate |  1.62 |    0,0 | -1 |  -1 |   1.0 | -1,-1,10 |  True |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |   RE1025 | 0.0 | Mean | False | calibrate |  1.62 |    0,0 | -1 |  -1 |    -1 | 0,2.5,10 | False |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-    |  RE1025V | 0.0 | Mean |  True | calibrate |  1.62 |    0,0 | -1 |  -1 |    -1 | 0,2.5,10 | False |
-    +----------+-----+------+-------+-----------+-------+--------+----+-----+-------+----------+-------+
-
-    Global binning methods:
-    +----------+-----+------+-------+-----------+-------+
-    |          | Min |      | Vel.  |     Covar | Covar |
-    |      Key | S/N | Stat | Reg.  |      Mode |   par |
-    +==========+=====+======+=======+===========+=======+
-    |   GLOBAL | 0.0 | Mean | False | calibrate |  1.62 |
-    +----------+-----+------+-------+-----------+-------+
-    |  GLOBALV | 0.0 | Mean |  True | calibrate |  1.62 |
-    +----------+-----+------+-------+-----------+-------+
-
-    Unbinned binning methods:
-    +----------+-----+
-    |          | Min |
-    |      Key | S/N |
-    +==========+=====+
-    |   SPAXEL | 0.0 |
-    +----------+-----+
+        config_path = os.path.join(dapsrc, 'python', 'mangadap', 'config', 'spatial_binning')
+        ini_files = glob.glob(os.path.join(config_path, '/*.ini'))
 
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
@@ -1326,8 +1290,10 @@ class SpatiallyBinnedSpectra:
             #   based on whether or not the DISP extension is present.
             # For MPL-5/DR14 data and earlier, the two spectral
             # resolution options should result in identical output!
-            sres = self.drpf.spectral_resolution(ext='SPECRES' if self.method['spec_res'] == 'cube'
-                                                        else None, toarray=True)[good_spec,:]
+            # !! Use the new pre-pixelized LSF measurements !!
+            specres_ext='SPECRES' if self.method['spec_res'] == 'cube' else None
+            sres = self.drpf.spectral_resolution(ext=specres_ext, toarray=True,
+                                                 pre=True)[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack

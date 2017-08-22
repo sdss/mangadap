@@ -1364,7 +1364,7 @@ class Sasuke(EmissionLineFit):
         
         # Only return model and model parameters for the *fitted*
         # spectra
-        return model_wave, model_eml_flux, model_eml_base, model_mask, model_fit_par, model_eml_par
+        return model_eml_flux, model_eml_base, model_mask, model_fit_par, model_eml_par, None
 
 
     def fit(self, emission_lines, obj_wave, obj_flux, obj_ferr=None, mask=None, obj_sres=None,

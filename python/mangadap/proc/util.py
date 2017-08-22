@@ -44,7 +44,7 @@ if sys.version > '3':
 import warnings
 import numpy
 import astropy.constants
-import scipy.interpolate
+from scipy import interpolate
 
 from matplotlib import pyplot
 
@@ -213,16 +213,78 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #            bin_change = numpy.repeat(bin_change, rep)
 
 
+# OLD VERSION
+#def residual_growth(resid, growth_samples):
+#    """
+#    Interpolate the growth curve at distinct fractions, bracketed by the
+#    minimum and maximum.
+#    """
+#    np = resid.size
+#    grw = numpy.arange(np).astype(numpy.float)/np
+#    resid_sort = numpy.sort(numpy.absolute(resid))
+#    interp = interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
+#    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
+
+
 def residual_growth(resid, growth_samples):
     """
-    Interpolate the growth curve at distinct fractions, bracketed by the
-    minimum and maximum.
+    Sample a set of residuals at specific the growth intervals.  No
+    interpolation is performed.
     """
     np = resid.size
-    grw = numpy.arange(np).astype(numpy.float)/np
     resid_sort = numpy.sort(numpy.absolute(resid))
-    interp = scipy.interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
-    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
+    i = numpy.zeros(len(growth_samples)+2, dtype=float)
+    i[1:-1] = np*numpy.asarray(growth_samples)
+    i[-1] = np-1
+    i[i < 0] = 0
+    i[i >= np] = np-1
+    return resid_sort[i.astype(int)]
+
+
+def growth_lim(a, lim, fac=1.0, midpoint=None, default=[0., 1.]):
+    """
+    Set the plots limits of an array based on two growth limits.
+
+    Args:
+        a (array-like): Array for which to determine limits.
+        lim (float): Percentage of the array values to cover.
+        fac (float): (**Optional**) Factor to increase the range based
+            on the growth limits.  Default is no increase.
+        midpoint (float): (**Optional**) Force the midpoint of the range
+            to be centered on this value.  Default is to middle of
+            growth range.
+        default (list): (**Optional**) Default range to return if `a`
+            has no data.  Default is 0 to 1.
+
+    Returns:
+        list: Lower and upper limits for the range of a plot of the data
+        in `a`.
+    """
+    # Get the values to plot
+    _a = a.compressed() if isinstance(a, numpy.ma.MaskedArray) else numpy.asarray(a).ravel()
+    if len(_a) == 0:
+        # No data so return the default range
+        return default
+
+    # Sort the values
+    srt = numpy.ma.argsort(_a)
+
+    # Set the starting and ending values based on a fraction of the
+    # growth
+    _lim = 1.0 if lim > 1.0 else lim
+    start = int(len(_a)*(1.0-_lim)/2)
+    end = int(len(_a)*(_lim + (1.0-_lim)/2))
+    if end == len(_a):
+        end -= 1
+
+    # Set the full range and increase it by the provovided factor
+    Da = (_a[srt[end]] - _a[srt[start]])*fac
+
+    # Set the midpoint if not provided
+    mid = (_a[srt[start]] + _a[srt[end]])/2 if midpoint is None else midpoint
+
+    # Return the range for the plotted data
+    return [ mid - Da/2, mid + Da/2 ]
 
 
 def optimal_scale(dat, mod, wgt=None):

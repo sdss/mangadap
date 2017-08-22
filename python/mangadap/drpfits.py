@@ -96,6 +96,8 @@ the MaNGA Data Reduction Pipeline (DRP).
     | **17 May 2017**: (KBW) Include a response function in
         :func:`DRPFits.flux_stats` and
         :func:`DAPFits.mean_sky_coordinates`.
+    | **21 Aug 2017**: (KBW) In spectral resolution function, select
+        pre- vs. post-pixelized Gaussian respresentation.
 
 .. todo::
 
@@ -954,6 +956,8 @@ class DRPFits:
         self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
         if self.mode == 'RSS' or (self.mode == 'CUBE' and 'DISP' in self.ext):
             self.spectral_arrays += [ 'DISP' ]
+        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'PREDISP' in self.ext):
+            self.spectral_arrays += [ 'PREDISP' ]
         if self.mode == 'RSS':
             self.spectral_arrays += [ 'XPOS', 'YPOS' ]
 
@@ -1239,14 +1243,15 @@ class DRPFits:
                                                 waverange=waverange)
 
 
-    def spectral_resolution(self, ext=None, toarray=False, fill=False):
+    def spectral_resolution(self, ext=None, toarray=False, fill=False, pre=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
 
-        .. todo::
-            Add an internal fix that interpolates over masked values in
-            the DRP file.
+        Select the extension 'DISP' or 'SPECRES'.  To get the
+        pre-pixelized versions, set pre=True.  If you set the extension
+        to 'PREDISP' and pre=True, it will try to find the extension
+        'PREPREDISP' and fault.
 
         Args:
             ext (str): (**Optional**) Specify the extension with the
@@ -1262,6 +1267,9 @@ class DRPFits:
             fill (bool): (**Optional**) Fill masked values by
                 interpolation.  Default is to leave leave masked pixels
                 in returned array.
+            pre (bool): (**Optional**) Read the pre-pixelized version of
+                the spectral resolution, instead of the post-pixelized
+                version.  This prepends 'PRE' to the extension name.
 
         Returns:
             `numpy.ma.MaskedArray`_ : Masked array with the spectral
@@ -1271,10 +1279,18 @@ class DRPFits:
         if ext in ['DISP','SPECRES'] and ext not in self.ext:
             raise ValueError('No extension: {0}'.format(ext))
 
-        if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
+        # Set the extension
+        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
+
+        if pre:
+            if 'PRE'+_ext not in self.ext:
+                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
+            _ext = 'PRE'+_ext
+
+        if 'DISP' in _ext:
 #            print('using DISP')
-            disp = self.copy_to_array(ext='DISP') if toarray else \
-                        numpy.ma.MaskedArray(self.hdu['DISP'].data.copy())
+            disp = self.copy_to_array(ext=_ext) if toarray else \
+                        numpy.ma.MaskedArray(self.hdu[_ext].data.copy())
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
 #            i = self.spatial_shape[0]//2
 #            ii = i*self.spatial_shape[0] + i
@@ -1295,15 +1311,15 @@ class DRPFits:
                     _sres[i,:] = interpolate_masked_vector(_sres[i,:])
                 sres = _sres.reshape(sres.shape)
             return sres
-        elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
+        if 'SPECRES' in _ext:
 #            print('using SPECRES')
-            sres = numpy.ma.MaskedArray(numpy.array([self.hdu['SPECRES'].data] 
+            sres = numpy.ma.MaskedArray(numpy.array([self.hdu[_ext].data] 
                                                         * numpy.prod(self.spatial_shape)))
             return sres if toarray else sres.reshape(*self.spatial_shape,self.nwave)
         return None
 
 
-    def spectral_resolution_header(self, ext=None):
+    def spectral_resolution_header(self, ext=None, pre=False):
         """
         Return a fits header for the spectral resolution array.  Copies
         the basic header from the relevant extension in the DRP file.
@@ -1314,17 +1330,31 @@ class DRPFits:
                 'SPECRES'].  The default is None, which means it will
                 return, in order of precedence, the header for 'DISP',
                 'SPECRES', or an empty header if neither are present.
+            pre (bool): (**Optional**) Read the pre-pixelized version of
+                the spectral resolution, instead of the post-pixelized
+                version.  This prepends 'PRE' to the extension name.
         """
         self.open_hdu(checksum=self.checksum)
-
         if ext in ['DISP','SPECRES'] and ext not in self.ext:
             raise ValueError('No extension: {0}'.format(ext))
 
-        if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
-            return self.hdu['DISP'].header.copy()
-        elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
-            return self.hdu['SPECRES'].header.copy()
-        return fits.Header()
+        # Set the extension
+        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
+
+        if pre:
+            if 'PRE'+_ext not in self.ext:
+                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
+            _ext = 'PRE'+_ext
+        return self.hdu[_ext].header.copy()
+        
+#        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+#            raise ValueError('No extension: {0}'.format(ext))
+#
+#        if ext == 'DISP' or (ext is None and 'DISP' in self.ext):
+#            return self.hdu['DISP'].header.copy()
+#        elif ext == 'SPECRES' or (ext is None and 'SPECRES' in self.ext):
+#            return self.hdu['SPECRES'].header.copy()
+#        return fits.Header()
 
 
     def object_data(self):
@@ -2395,7 +2425,7 @@ class DRPFits:
 
     def instrumental_dispersion_plane(self, channel, dispersion_factor=None, pixelscale=None,
                                       recenter=None, width_buffer=None, rlim=None, sigma=None,
-                                      quiet=False):
+                                      pre=False, quiet=False):
         r"""
         Return the instrumental dispersion for the reconstructed 'CUBE'
         wavelength plane.
@@ -2477,6 +2507,9 @@ class DRPFits:
                 image reconstruction kernel in arcseconds.
             sigma (float): (**Optional**) The sigma of the image
                 reconstruction kernel in arcseconds.
+            pre (bool): (**Optional**) Read the pre-pixelized version of
+                the spectral resolution, instead of the post-pixelized
+                version.  This prepends 'PRE' to the extension name.
             quiet (bool): (**Optional**) Suppress terminal output
 
         Returns:
@@ -2516,7 +2549,8 @@ class DRPFits:
         # Return the regridded data with the proper shape (nx by ny)
         Tc = self.regrid_T.sum(axis=1).flatten()
         Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
-        return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu['DISP'].data[:,channel]))
+        ext = 'PREDISP' if pre else 'DISP'
+        return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu[ext].data[:,channel]))
                                                 / Tc ).reshape(self.nx, self.ny)
 
 
