@@ -11,6 +11,7 @@ bin/dap_running.bash -text
 bin/dap_successful.bash -text
 bin/dap_unsuccessful.bash -text
 bin/edit_dap_plan -text
+bin/find_repeat_observations -text
 bin/manga_dap -text
 bin/manga_dap_inspector -text
 bin/mangadap_version -text
