@@ -1831,3 +1831,43 @@ class SpatiallyBinnedSpectra:
 
         return output_bins[0] if single_value else output_bins
 
+
+    def replace_with_data_from_nearest_bin(self, data, bad_bins):
+        """
+        Replace data in the list provided bad bins with the data from
+        the nearest good bin.
+
+        Args:
+            data (array-like): Data for each bin.  The length must be
+                the same as :attr:`nbins`.
+            bad_bins (array-like): The list of indices (must not be a
+                boolean array) with bad values to be replaced.
+        
+        Returns:
+            numpy.ndarray: A new array with the bad data filled with the
+            data from the nearest bin.
+
+        Raises:
+            ValueError: Raised if the input array doesn't have the
+                correct shape or if the list of bad bins has numbers
+                outside the viable range (0,self.nbins-1).
+        """
+        if len(data) != self.nbins:
+            raise ValueError('Input data must have {0} elements.'.format(self.nbins))
+        if numpy.amin(bad_bins) < 0 or numpy.amax(bad_bins) > self.nbins-1:
+            raise ValueError('Bad bins must be between 0 and {0}.'.format(self.nbins-1))
+       
+        # No bad bins so just return the input
+        if len(bad_bins) == 0:
+            return data
+
+        # Find the nearest bins
+        nearest_good_bin_index = self.find_nearest_bin(bad_bins, indices=True)
+        # Get the indices of the bad bins
+        bad_bin_index = self.get_bin_indices(bad_bins)
+        # Replace the data
+        data[bad_bin_index] = data[nearest_good_bin_index]
+
+        return data
+        
+
