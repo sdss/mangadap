@@ -286,7 +286,7 @@ def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
         _continuum_method = str(plan['continuum_key'])
     else:
 #        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
-        if binned_spectral is not None:
+        if binned_spectra is not None:
             _binning_method = binned_spectra.method['key']
         elif binning_method is not None:
             _binning_method = binning_method

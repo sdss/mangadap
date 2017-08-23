@@ -17,15 +17,16 @@ from matplotlib.ticker import NullFormatter, MultipleLocator, LogLocator
 from astropy.io import fits
 
 from mangadap.drpfits import DRPFits
-from mangadap.proc.reductionassessments import ReductionAssessments
-
-from mangadap.util.fitsutil import DAPFitsUtil
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.proc.reductionassessments import ReductionAssessment
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.util import growth_lim
+from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
-from mangadap.config.defaults import default_redux_path, default_drp_directory_path
+from mangadap.config.defaults import default_drp_version, default_dap_version
+from mangadap.config.defaults import default_redux_path, default_analysis_path
 from mangadap.config.defaults import default_dap_method, default_dap_method_path
-from mangadap.config.defaults import default_dap_plan_file
-
+from mangadap.config.defaults import default_dap_file_name, default_dap_plan_file
 
 #-----------------------------------------------------------------------------
 def init_image_ax(fig, pos):
@@ -122,7 +123,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     rc('font', **font)
 
     w,h = pyplot.figaspect(1)
-    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+    fig = pyplot.figure(figsize=(2*w,2*h))
 
 #    Dx = (extent[0]-extent[1])*1.1
 #    x_lim = (extent[0]+extent[1])/2 + Dx*numpy.array([1,-1])/2
@@ -416,7 +417,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
 def gmr_data(plt, ifu, drpver, redux_path):
     # Get the g-r map from the data cube
     drp_cube_file = os.path.join(*DRPFits.default_paths(plt, ifu, 'CUBE', drpver=drpver,
-                                                        redux_path=redux_path)
+                                                        redux_path=redux_path))
     if not os.path.isfile(drp_cube_file):
         raise FileNotFoundError('{0} does not exist!'.format(drp_cube_file))
 
@@ -441,7 +442,7 @@ def rdxqa_data(plt, ifu, plan, drpver, dapver, analysis_path):
 
     hdu = fits.open(rdxqa_file)
     spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
-#    fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
+    fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
     signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
                                       mask=numpy.invert(fgood_map > 0))
     snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
@@ -451,14 +452,15 @@ def rdxqa_data(plt, ifu, plan, drpver, dapver, analysis_path):
     return signal_map, snr_map
 
     
-def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, signal_map=None):
+def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, signal_map=None,
+                             tpl_flux_renorm=None):
     # Get the coefficient data from the StellarContinuumModel object
     sc_file = os.path.join(*StellarContinuumModel.default_paths(plt, ifu, plan['drpqa_key'],
                                                                 plan['bin_key'],
                                                                 plan['continuum_key'],
                                                                 drpver=drpver, dapver=dapver,
                                                                 analysis_path=analysis_path))
-    hdu = fits.open(ifile)
+    hdu = fits.open(sc_file)
     binid_map = hdu['BINID'].data.copy()
 
     if signal_map is None:
@@ -468,7 +470,9 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
         unique_indx = unique_indx[1:]
         signal = signal_map.ravel()[unique_indx][ hdu['PAR'].data['BINID_INDEX'] ]
 
-    w = hdu['PAR'].data['TPLWGT'].copy()/tpl_flux_renorm[None,:]
+    w = hdu['PAR'].data['TPLWGT'].copy()
+    if tpl_flux_renorm is not None:
+        w /= tpl_flux_renorm[None,:]
     wn = w/signal[:,None]
 #    t = numpy.sqrt(numpy.sum(numpy.square(w), axis=1))
     t = numpy.sum(numpy.absolute(w), axis=1)
@@ -508,9 +512,9 @@ def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
     method = default_dap_method(plan=plan)
     directory_path = default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=drpver,
                                              dapver=dapver, analysis_path=analysis_path)
-    maps_file = default_dap_file_name(plt, ifud, method, mode='MAPS')
+    maps_file = default_dap_file_name(plt, ifu, method, mode='MAPS')
     
-    hdu = fits.open(maps_file)
+    hdu = fits.open(os.path.join(directory_path, maps_file))
 
     mask = hdu['BINID'].data[1,:,:] < 0
     
@@ -545,11 +549,12 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
 
     # Get the method, it's root directory, and the qa directories
     method = default_dap_method(plan=plan)
-    method_dir = default_dap_method_path(method, plate=plt, ifudesign=ifu], drpver=_drpver,
+    method_dir = default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
                                          dapver=_dapver, analysis_path=_analysis_path)
     method_qa_dir = default_dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,
                                             drpver=_drpver, dapver=_dapver,
                                             analysis_path=_analysis_path)
+
     # Check that the paths exists
     if not os.path.isdir(method_dir):
         raise NotADirectoryError('{0} is not a directory; run the DAP first!'.format(method_dir))
@@ -558,7 +563,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
 
     # Get the name of the output file
     ofile = os.path.join(method_qa_dir,
-                         'manga-{0}-{1}-MAPS-{2}-ppxffit.png'.format(plate, ifu, method))
+                         'manga-{0}-{1}-MAPS-{2}-ppxffit.png'.format(plt, ifu, method))
 
     # Get the g-r map
     gmr_map = gmr_data(plt, ifu, _drpver, _redux_path)
@@ -569,7 +574,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
     # Get the template weights and additive-polynomial coefficients
     binid_map, t, dt, tn, dtn, a, da, an, dan \
             = continuum_component_data(plt, ifu, plan, _drpver, _dapver, _analysis_path,
-                                       signal_map=signal_map)
+                                       signal_map=signal_map, tpl_flux_renorm=tpl_flux_renorm)
 
     # Map the continuum component data
     t_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), t, quiet=True)
@@ -617,6 +622,7 @@ if __name__ == '__main__':
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
 
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+    parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
     parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
                         ' defaults to $MANGADAP_DIR', default=None)
@@ -661,8 +667,7 @@ if __name__ == '__main__':
         # Construct the plot
         ppxffit_qa_plot(arg.plate, arg.ifudesign, plan, drpver=arg.drpver,
                         redux_path=arg.redux_path, dapver=arg.dapver,
-                        analysis_path=arg.analysis_path, tpl_renorm_file=tpl_renorm_file)
-
+                        analysis_path=arg.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 
