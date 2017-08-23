@@ -100,6 +100,7 @@ Utah.
         log file
     | **11 Oct 2016**: (KBW) Version checking moved to
         :class:`mangadap.survey.mangampl.MaNGAMPL`.
+    | **23 Aug 2016**: (KBW) Include ppxffit QA plots.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -1431,6 +1432,11 @@ class rundap:
 #            file.write('python3 {0} {1}/{2}_files_to_plot.txt dapqa_plottypes.ini \n'.format(
 #                                    pyplot_path, output_path, mode))
             
+            command = 'ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
+                            plate, ifudesign, self.analysis_path, self.plan_file)
+            file.write('{0}\n'.format(command))
+            file.write('\n')
+
             command = 'spotcheck_dap_maps {0} {1} --analysis_path {2} --plan_file {3}'.format(
                             plate, ifudesign, self.analysis_path, self.plan_file)
             file.write('{0}\n'.format(command))
