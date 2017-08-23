@@ -1017,6 +1017,46 @@ class DRPFits:
         return [ 'LIN', 'LOG' ]
 
 
+    @staticmethod
+    def default_paths(plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
+                      output_file=None):
+        """
+        Return the primary directory and file name with the DRP fits
+        LOG-binned file.
+            plate (int): Plate number of the observation.
+            ifudesign (int): IFU design number of the observation.
+            mode (str): 3D mode of the DRP file; must be either 'RSS' or
+                'CUBE'
+            drpver (str): (**Optional**) DRP version.  Default set by
+                :func:`mangadap.config.defaults.default_drp_version`.
+            redux_path (str): (**Optional**) The path to the top level
+                directory containing the DRP output files for a given
+                DRP version.  Default is defined by
+                :func:`mangadap.config.defaults.default_redux_path`.
+            directory_path (str): (**Optional**) The exact path to the
+                DAP reduction assessments file.  Default set by
+                :func:`mangadap.config.defaults.default_dap_common_path`.
+            output_file (str): (**Optional**) The name of the file with
+                the DRP data.  Default set by
+                :func:`mangadap.config.defaults.default_manga_fits_root`.
+
+        Returns:
+            str: Two strings with the path to and name of the DRP data
+            file.
+        """    
+        _directory_path = default_drp_directory_path(plate, drpver=drpver, redux_path=redux_path) \
+                            if directory_path is None else directory_path
+        _output_file = '{0}.fits.gz'.format(default_manga_fits_root(plate, ifudesign,
+                                                                    'LOG{0}'.format(mode))) \
+                            if output_file is None else output_file
+        return _directory_path, _output_file
+
+
+    def file_path(self):
+        """Return the full path to the DRP file"""
+        return os.path.join(self.directory_path, self.file_name())
+
+
     def file_name(self):
         """Return the name of the DRP file"""
         root = default_manga_fits_root(self.plate, self.ifudesign, 'LOG{0}'.format(self.mode))

@@ -579,22 +579,12 @@ class StellarContinuumModel:
                 See :func:`compute`.
 
         """
-        # Set the output directory path
-        method = default_dap_method(binned_spectra=self.binned_spectra, stellar_continuum=self)
-        #method = '{0}-{1}'.format(self.binned_spectra.method['key'], self.method['key'])
-        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      ref=True,
-                                                      drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver, analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
-
-        # Set the output file
-        ref_method = '{0}-{1}-{2}'.format(self.binned_spectra.rdxqa.method['key'],
-                                      self.binned_spectra.method['key'], self.method['key'])
-        self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
-                                        if output_file is None else str(output_file)
+        self.directory_path, self.output_file \
+                = default_paths(self.binned_spectra.drpf.plate, self.binned_spectra.drpf.ifudesign,
+                                self.binned_spectra.rdxqa.method['key'],
+                                self.binned_spectra.method['key'], self.method['key'],
+                                directory_path=directory_path, dapver=dapver,
+                                analysis_path=analysis_path, output_file=output_file)
 
 
     def _initialize_primary_header(self, hdr=None):
@@ -778,6 +768,54 @@ class StellarContinuumModel:
                                             array=model_par[n]) for n in model_par.dtype.names ],
                                                                name='PAR')
                                 ])
+
+    @staticmethod
+    def default_paths(plate, ifudesign, rdxqa_method, binning_method, method_key,
+                      directory_path=None, drpver=None, dapver=None, analysis_path=None,
+                      output_file=None):
+        """
+        Set the default directory and file name for the output file.
+
+        Args:
+            plate (int): Plate number of the observation.
+            ifudesign (int): IFU design number of the observation.
+            rdxqa_method (str): Keyword designating the method used to
+                construct the reductions assessments.
+            bin_method (str): Keyword designating the method use for the
+                spatial binning.
+            method_key (str): Keyword designating the method used for
+                the stellar-continuum fitting.
+            directory_path (str): (**Optional**) The exact path to the
+                DAP stellar-continuum file.  Default set by
+                :func:`mangadap.config.defaults.default_dap_method_path`.
+            drpver (str): (**Optional**) DRP version.  Default set by
+                :func:`mangadap.config.defaults.default_drp_version`.
+            dapver (str): (**Optional**) DAP version.  Default set by
+                :func:`mangadap.config.defaults.default_dap_version`.
+            analysis_path (str): (**Optional**) The path to the
+                top-level directory containing the DAP output files for
+                a given DRP and DAP version. Default set by
+                :func:`mangadap.config.defaults.default_analysis_path`.
+            output_file (str): (**Optional**) The name of the file with
+                the reduction assessments.  Default set by
+                :func:`mangadap.config.defaults.default_dap_file_name`.
+
+        Returns:
+            str: Two strings with the path for the output file and the
+            name of the output file.
+        """
+        # Set the output directory path
+        method = default_dap_method(binning_method=binning_method, continuum_method=method_key)
+        directory_path = default_dap_method_path(method, plate=plate, ifudesign=ifudesign,
+                                                 ref=True, drpver=drpver, dapver=dapver,
+                                                 analysis_path=analysis_path) \
+                                        if directory_path is None else str(directory_path)
+
+        # Set the output file
+        ref_method = '{0}-{1}-{2}'.format(rdxqa_method, binning_method, method_key)
+        output_file = default_dap_file_name(plate, ifudesign, ref_method) \
+                                        if output_file is None else str(output_file)
+        return directory_path, output_file
 
 
     def file_name(self):
