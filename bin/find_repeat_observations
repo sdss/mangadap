@@ -5,6 +5,8 @@ import os
 import warnings
 import time
 
+from argparse import ArgumentParser
+
 from astropy.io import fits
 
 from mangadap.util.bitmask import BitMask
