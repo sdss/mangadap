@@ -425,10 +425,12 @@ class DRPComplete:
         # platetargets now include the redshift from the targetting
         # catalog which is the combination of the NSA data and the
         # ancillary targets; the NSA only redshift column is 'nsa_z'
-        redshift_key = 'z'
+        redshift_key = 'nsa_z'
+#        redshift_key = 'z'
 
         print('Searching platetargets file for observed galaxies...', end='\r')
         for i in range(n_drp):
+#            print(self.platelist[i], self.ifudesignlist[i])
             plttrg_j = 0
             mangaid_i = 'NULL'
             for j in range(ntrg):
@@ -495,7 +497,11 @@ class DRPComplete:
             try:
                 vel[i] = plttrg_data[plttrg_j]['PLTTRGT'][redshift_key][indx][0] \
                             * astropy.constants.c.to('km/s').value
-            except:
+#                print(plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0])
+#                print(plttrg_data[plttrg_j]['PLTTRGT']['z'][indx][0])
+#                print(vel[i])
+            except Exception as e:
+#                print(e)
                 vel[i] = -9999.0
 
             try:

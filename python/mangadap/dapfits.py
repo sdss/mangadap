@@ -63,6 +63,9 @@ the MaNGA Data Analysis Pipeline (DAP).
     | ** 3 May 2017**: (KBW) Allow output maps and cube types to be
         single-precision (float32) floats, and changed BINID from int
         (defaults to 64-bit) to int32.
+    | **24 Aug 2017**: (KBW) Added BADGEOM DAPQUAL bit; signifies 
+        invalid photometric geometry parameters used when instantiating
+        the :class:`mangadap.par.obsinput.ObsInputPar` object.
 
 .. todo::
     - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
@@ -2153,7 +2156,7 @@ def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emiss
 
 
 
-def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, loggers=None,
+def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, loggers=None,
                                 quiet=False):
 
     # Initialize the DAP quality flag
@@ -2166,11 +2169,15 @@ def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, logge
         dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
         dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
 
-    #Signify that the Voronoi binning resulted in a single bin
+    # Signify that the Voronoi binning resulted in a single bin
     if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
             and binned_spectra.method['binclass'].bintype == 'voronoi' \
             and binned_spectra.nbins == 1:
         dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
+
+    # Input photometric geometry and scale were invalid
+    if obs is not None and not (obs.valid_ell and obs.valid_pa and obs.valid_reff):
+        dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
     # Determine if there's a foreground star
     if numpy.sum(drpf.bitmask.flagged(drpf['MASK'].data, flag='FORESTAR')) > 0:
