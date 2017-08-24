@@ -26,7 +26,7 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
     drpc = DRPComplete(drpver=drpver, redux_path=redux_path, dapver=dapver,
                        analysis_path=analysis_path, directory_path=directory_path, readonly=True)
     try:
-        drpc.confirm_access()
+        drpc._confirm_access()
     except FileNotFoundError:
         warnings.warn('DRPComplete file must be present to find repeat observations!')
         raise
@@ -46,15 +46,16 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
     ngal = numpy.sum(valid_galaxy)
     print('# Number of valid galaxies: {0}'.format(ngal))
 
-    mid = drpc['MANGAID'][galaxy].copy()
-    plt = drpc['PLATE'][galaxy].copy()
-    ifu = drpc['IFUDESIGN'][galaxy].copy()
+    mid = drpc['MANGAID'][valid_galaxy].copy()
+    plt = drpc['PLATE'][valid_galaxy].copy()
+    ifu = drpc['IFUDESIGN'][valid_galaxy].copy()
 
     # Find the unique MaNGA IDs
     unid, unid_indx, unid_invs, unid_cnts = numpy.unique(mid, return_index=True,
                                                          return_inverse=True, return_counts=True)
 
     with open(output_file, 'w') as f:
+        double_print(f, '# Number of DRPComplete entries: {0}'.format(mid.size))
         double_print(f, '# Number of unique MaNGA IDs: {0}'.format(unid.size))
         max_rep = numpy.amax(unid_cnts)
         double_print(f, '# Maximum number of repeated observations: {0}'.format(max_rep))
@@ -66,12 +67,12 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
         for i in range(len(unid)):
             if unid_cnts[i] == 1:
                 continue
-            indx = numpy.where(mngid == unid[i])[0]
+            indx = numpy.where(mid == unid[i])[0]
             nempty = max_rep - len(indx)
 
             double_print(f, ' {0:>9s}'.format(unid[i]), end='')
             for j in range(len(indx)):
-                double_print(f, ' {0:>4} {1:>5}'.format(plate[indx[j]], ifudn[indx[j]]), end='')
+                double_print(f, ' {0:>4} {1:>5}'.format(plt[indx[j]], ifu[indx[j]]), end='')
             if nempty > 0:
                 for j in range(nempty):
                     double_print(f, ' {0:>4} {1:>5}'.format(-1, -1), end='')

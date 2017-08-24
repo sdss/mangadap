@@ -572,13 +572,13 @@ class DRPComplete:
         print('Read data: {0} rows'.format(self.nobs))
 
 
-    def _confirm_access(self, reread):
+    def _confirm_access(self, reread=False):
         """
         Check the drpcomplete fits file at :func:`file_path` is
         accessible, and read the data if not yet read.
 
         Args:
-            reread (bool): Force the file to be re-read
+            reread (bool): (**Optional**) Force the file to be re-read
 
         Raises:
             FileNotFoundError: Raised if the drpcomplete fits file does
@@ -1045,7 +1045,7 @@ class DRPComplete:
         if index is None:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
-            self._confirm_access(reread)
+            self._confirm_access(reread=reread)
             if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
@@ -1105,7 +1105,7 @@ class DRPComplete:
         if index is None:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
-            self._confirm_access(reread)
+            self._confirm_access(reread=reread)
             if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
@@ -1143,7 +1143,7 @@ class DRPComplete:
             Exception: Raised if the given *plate* and *ifudesign* were
                 not found.
         """
-        self._confirm_access(reread)
+        self._confirm_access(reread=reread)
 
         for i in range(self.nobs):
             if self.hdu['DRPC'].data['PLATE'][i] == plate \
