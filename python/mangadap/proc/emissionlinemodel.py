@@ -854,8 +854,8 @@ class EmissionLineModel:
         # TODO: Include failed fits in "missing" models?
 
         # DEBUG
-        if model_flux.shape[0] != numpy.sum(good_snr):
-            raise ValueError('Unexpected returned shape of fitted emission-line models.')
+        #if model_flux.shape[0] != numpy.sum(good_snr):
+        #    raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------
         # Set the number of models and the missing models

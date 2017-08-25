@@ -1854,12 +1854,13 @@ class SpatiallyBinnedSpectra:
         """
         if len(data) != self.nbins:
             raise ValueError('Input data must have {0} elements.'.format(self.nbins))
-        if numpy.amin(bad_bins) < 0 or numpy.amax(bad_bins) > self.nbins-1:
-            raise ValueError('Bad bins must be between 0 and {0}.'.format(self.nbins-1))
-       
+            
         # No bad bins so just return the input
         if len(bad_bins) == 0:
             return data
+        
+        if numpy.amin(bad_bins) < 0 or numpy.amax(bad_bins) > self.nbins-1:
+            raise ValueError('Bad bins must be between 0 and {0}.'.format(self.nbins-1))
 
         # Find the nearest bins
         nearest_good_bin_index = self.find_nearest_bin(bad_bins, indices=True)

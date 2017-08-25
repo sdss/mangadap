@@ -457,12 +457,12 @@ class ReductionAssessment:
                 assessments.  See :func:`compute`.
         """
         self.directory_path, self.output_file \
-                = ReductionAssessments.default_paths(self.drpf.plate, self.drpf.ifudesign,
-                                                     self.method['key'],
-                                                     directory_path=directory_path,
-                                                     drpver=self.drpf.drpver, dapver=dapver,
-                                                     analysis_path=analysis_path,
-                                                     output_file=output_file)
+                = ReductionAssessment.default_paths(self.drpf.plate, self.drpf.ifudesign,
+                                                    self.method['key'],
+                                                    directory_path=directory_path,
+                                                    drpver=self.drpf.drpver, dapver=dapver,
+                                                    analysis_path=analysis_path,
+                                                    output_file=output_file)
 
 
     def _per_spectrum_dtype(self):

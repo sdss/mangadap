@@ -580,11 +580,11 @@ class StellarContinuumModel:
 
         """
         self.directory_path, self.output_file \
-                = default_paths(self.binned_spectra.drpf.plate, self.binned_spectra.drpf.ifudesign,
-                                self.binned_spectra.rdxqa.method['key'],
-                                self.binned_spectra.method['key'], self.method['key'],
-                                directory_path=directory_path, dapver=dapver,
-                                analysis_path=analysis_path, output_file=output_file)
+                = self.default_paths(self.binned_spectra.drpf.plate, self.binned_spectra.drpf.ifudesign,
+                                     self.binned_spectra.rdxqa.method['key'],
+                                     self.binned_spectra.method['key'], self.method['key'],
+                                     directory_path=directory_path, dapver=dapver,
+                                     analysis_path=analysis_path, output_file=output_file)
 
 
     def _initialize_primary_header(self, hdr=None):
