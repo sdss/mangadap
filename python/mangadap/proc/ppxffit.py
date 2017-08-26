@@ -108,7 +108,8 @@ from ..contrib.ppxf import ppxf, _losvd_rfft
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .spectralfitting import StellarKinematicsFit
-from .util import residual_growth, optimal_scale
+from .util import sample_growth, optimal_scale
+#from .util import residual_growth, optimal_scale
 
 # For debugging
 from matplotlib import pyplot
@@ -1724,10 +1725,14 @@ class PPXFFit(StellarKinematicsFit):
             model_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
             # Get growth statistics for the residuals
-            model_par['ABSRESID'][i] = residual_growth((residual[i,:]).compressed(),
-                                                       [0.68, 0.95, 0.99])
-            model_par['FABSRESID'][i] = residual_growth(fractional_residual[i,:].compressed(),
-                                                        [0.68, 0.95, 0.99])
+#            model_par['ABSRESID'][i] = residual_growth((residual[i,:]).compressed(),
+#                                                       [0.68, 0.95, 0.99])
+#            model_par['FABSRESID'][i] = residual_growth(fractional_residual[i,:].compressed(),
+#                                                        [0.68, 0.95, 0.99])
+            model_par['ABSRESID'][i] = sample_growth(numpy.ma.absolute(residual[i,:]),
+                                                     [0.0, 0.68, 0.95, 0.99, 1.0])
+            model_par['FABSRESID'][i] = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
+                                                      [0.0, 0.68, 0.95, 0.99, 1.0])
 
             # Calculate the dispersion correction if necessary
             if not self.matched_resolution:

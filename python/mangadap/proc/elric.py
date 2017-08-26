@@ -42,7 +42,7 @@ Implements an emission-line profile fitting class.
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .spectralfitting import EmissionLineFit
-        from .util import residual_growth
+        from .util import sample_growth
 
 *Class usage examples*:
         Add examples
@@ -70,6 +70,9 @@ Implements an emission-line profile fitting class.
         :func:`mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width`.
         Moved _per_fitting_window_dtype from EmissionLineFit to
         :class:`Elric`.
+    | **24 Aug 2017**: (KBW) Use new
+        :func:`mangadap.proc.util.sample_growth` instead of old
+        residual_growth function.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
@@ -111,7 +114,7 @@ from ..util import lineprofiles
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
-from .util import residual_growth
+from .util import sample_growth
 
 from matplotlib import pyplot
 
@@ -1196,7 +1199,9 @@ class Elric(EmissionLineFit):
         model_fit_par['RMS'][i,j] = numpy.sqrt(numpy.mean(numpy.square(resid)))
 #        print('RMS:', model_fit_par['RMS'][i,j])
 
-        model_fit_par['RESID'][i,j] = residual_growth(resid, [0.25, 0.50, 0.75, 0.90, 0.99])
+        model_fit_par['RESID'][i,j] = sample_growth(numpy.ma.absolute(resid),
+                                                    [0.0, 0.25, 0.50, 0.75, 0.90, 0.99, 1.0])
+#        model_fit_par['RESID'][i,j] = residual_growth(resid, [0.25, 0.50, 0.75, 0.90, 0.99])
 #        print('RESID: ', model_fit_par['RESID'][i,j])
 
         fit = self.bestfit[i,j].sample(self.bestfit[i,j].x, par)
@@ -1206,8 +1211,10 @@ class Elric(EmissionLineFit):
             model_fit_par['FRAC_RMS'][i,j] = numpy.sqrt(numpy.mean(numpy.square(frac_resid)))
 #            print('FRMS:', model_fit_par['FRAC_RMS'][i,j])
             if numpy.sum(indx) > 1:
-                model_fit_par['FRAC_RESID'][i,j] = residual_growth(frac_resid,
-                                                               [0.25, 0.50, 0.75, 0.90, 0.99])
+                model_fit_par['FRAC_RESID'][i,j] = sample_growth(numpy.ma.absolute(frac_resid),
+                                                        [0.0, 0.25, 0.50, 0.75, 0.90, 0.99, 1.0])
+#                model_fit_par['FRAC_RESID'][i,j] = residual_growth(frac_resid,
+#                                                               [0.25, 0.50, 0.75, 0.90, 0.99])
 #                print('FRAC_RESID: ', model_fit_par['FRAC_RESID'][i,j])
 
         return near_bound

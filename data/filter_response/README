@@ -1,0 +1,67 @@
+# Response curves taken from:
+# http://www.sdss.org/wp-content/uploads/2017/04/filter_curves.fits
+# 
+# Extracted data are the 'wavelength' and 'respt' columns in each
+# extension.  The wavelengths are assumed to be in vacuum.
+#
+# From the header of the fits file:
+#-----------------------------------------------------------------------
+# 
+# The following file is from Jim Gunn, from June 2001.  It should be
+# self-explanatory; for most purposes, you will want to use the second
+# column.  Consider this file preliminary.
+#
+# These filter curves have been used to calculate the effective
+# wavelengths and the qtdl/l (see Chapter 8 of the Black Book) of the
+# filters; the values are:
+#
+# u 3551 0.0171
+# g 4686 0.0893
+# r 6166 0.0886
+# i 7480 0.0591
+# z 8932 0.0099
+#
+# Table Caption For Response Functions
+# 
+# The first column is the wavelength in \AAngstroms.
+# 
+# The second column (respt) is the quantum efficiency on the sky looking
+# through 1.3 airmasses at APO for a point source.
+# 
+# The third column (resbig) is the QE under these conditions for very
+# large sources (size greater than about 80 pixels) for which the
+# infrared scattering is negligible.  The only filters for which the
+# infrared scattering has any effect are r and i; the scattering in the
+# bluer chips is negligible, and the z chips are not thinned and the
+# phenomenon does not exist.
+# 
+# The fourth column (resnoa) is the response of the third column with
+# {\it no} atmosphere, and the fifth column is the assumed atmospheric
+# transparency at {\it one} airmass at APO.
+# 
+# The tables were constructed using monochromator illumination of the
+# camera with a bandpass of about 100 \AA, sampled for the u filter at
+# 50 \AA intervals and for the others at 100 \AA intervals.  These
+# measurements were compared with measured responses of the component
+# filters and detectors and three additional points were interpolated
+# using these data, two at the extreme toes and one additional (in g, r,
+# and i) at the point of the beginning of the sharp cutoff of the
+# shortpass interference filter.  These points are necessary in order to
+# make spline interpolation of the response data well-behaved. These
+# spline-interpolated response data were then multiplied by measured
+# aluminum reflectivities and scaled atmospheric transmission to produce
+# the tables below. The overall normalization is somewhat uncertain, but
+# this uncertainty does not affect the shapes.  Note, however, that
+# there has been no attempt to remove the finite resolution of the
+# monochromator measurements. These tables are the {\it averages} of the
+# responses for all six of the camera chips with a given filter. The
+# responses are in general very similar except in the z band, where the
+# nonuniformity of the infrared rolloff, presumably associated with
+# varying thickness of the epitaxial layer or perhaps the gate
+# structures in these thick devices, introduces variations in the
+# effective wavelengths of the filters of order 100 \AA. We are
+# currently working on better response functions and will present them
+# when they become available, but these will suffice for most
+# applications. In all cases the first point is a measured point, so the
+# grid of wavelengths at which measurements exist is a subset of the
+# wavelength lists here.  

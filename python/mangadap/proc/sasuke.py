@@ -40,7 +40,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .spectralfitting import EmissionLineFit
-        from .util import residual_growth
+        from .util import sample_growth
 
 *Class usage examples*:
         Add examples
@@ -90,7 +90,8 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
 from .bandpassfilter import emission_line_equivalent_width
-from .util import residual_growth
+from .util import sample_growth
+#from .util import residual_growth
 from .ppxffit import PPXFFit, PPXFFitResult
 
 # For debugging
@@ -1032,10 +1033,15 @@ class Sasuke(EmissionLineFit):
             model_fit_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
             # Get growth statistics for the residuals
-            model_fit_par['ABSRESID'][i,:] = residual_growth((residual[i,:]).compressed(),
-                                                       [0.68, 0.95, 0.99])
-            model_fit_par['FABSRESID'][i,:] = residual_growth(fractional_residual[i,:].compressed(),
-                                                        [0.68, 0.95, 0.99])
+#            model_fit_par['ABSRESID'][i,:] = residual_growth((residual[i,:]).compressed(),
+#                                                       [0.68, 0.95, 0.99])
+#            model_fit_par['FABSRESID'][i,:] = residual_growth(fractional_residual[i,:].compressed(),
+#                                                        [0.68, 0.95, 0.99])
+            model_fit_par['ABSRESID'][i,:] = sample_growth(numpy.ma.absolute(residual[i,:]),
+                                                           [0.0, 0.68, 0.95, 0.99, 1.0])
+            model_fit_par['FABSRESID'][i,:] \
+                        = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
+                                        [0.0, 0.68, 0.95, 0.99, 1.0])
 
             #-----------------------------------------------------------
             # Test if the kinematics are near the imposed boundaries.

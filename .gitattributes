@@ -40,6 +40,7 @@ data/emission_lines/elpfull.par -text
 data/emission_lines/elpmiles.par -text
 data/emission_lines/elpsiii.par -text
 data/emission_lines/elpstrong.par -text
+data/filter_response/README -text
 data/filter_response/gunn_2001_g_response.db -text
 data/filter_response/gunn_2001_i_response.db -text
 data/filter_response/gunn_2001_r_response.db -text
