@@ -625,7 +625,7 @@ class rundap:
         # Wait until the queue is finished
         running = True
         while running:
-            time.sleep(300) 
+            time.sleep(60) 
             percent_complete = self.queue.get_percent_complete()
             print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
             if percent_complete == 100:
