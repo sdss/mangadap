@@ -100,7 +100,8 @@ Utah.
         log file
     | **11 Oct 2016**: (KBW) Version checking moved to
         :class:`mangadap.survey.mangampl.MaNGAMPL`.
-    | **23 Aug 2016**: (KBW) Include ppxffit QA plots.
+    | **23 Aug 2017**: (KBW) Include ppxffit QA plots.
+    | **29 Aug 2017**: (KBW) Include DAPall post-processing.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -334,6 +335,20 @@ class rundap:
         drpc (:class:`mangadap.survey.drpcomplete.DRPComplete`):
             Database of the available DRP files and the parameters
             necessary to write the DAP par files.
+
+    Raises:
+        FileNotFoundError: Raised if a plate-ifu list file is provided
+            but it does not exist, or if the plan file does not exist.
+        ValueError: Raised if all processing steps are turned off, if
+            the selected MPL is undefined; if the fast node is selected
+            with nodes > 1; if multiple run modes are selected; or if
+            the plate list, ifudesign list, or mode list are not
+            provided during a redo mode or if they are provided with any
+            other mode.
+
+    .. todo::
+        Prior allocation is out-of-date.
+
     """
     def __init__(self,
                  # Run mode options
@@ -350,6 +365,9 @@ class rundap:
                  platetargets=None,
                  # Flags for script contents
                  log=False, dapproc=True, plots=True, verbose=0,
+                 # Include the postprocessing script to create the
+                 # DAPall file
+                 build_dapall=False,
                  # Cluster options
                  label='mangadap', nodes=9, cpus=None, qos=None, umask='0027',walltime='240:00:00',
                  hard=True, create=False, submit=False, queue=None):
@@ -401,6 +419,9 @@ class rundap:
         self.dapproc = dapproc
         self.plots = plots
         self.verbose = verbose
+
+        # Build the DAPall file (and any QA plots)
+        self.build_dapall = build_dapall
 
         # Cluster queue keywords
         self.label = label
@@ -527,9 +548,9 @@ class rundap:
         if not self.redo and (self.platelist or self.ifudesignlist or self.modelist):
             raise ValueError('platelist/ifudesignlist/modelist only allowed for redo!')
 
-        # If a plan file is provided, make sure it exists
-        if self.plan_file is not None and not os.path.exists(self.plan_file):
-            raise ValueError('Provided plan file does not exist.')
+#        # If a plan file is provided, make sure it exists
+#        if self.plan_file is not None and not os.path.exists(self.plan_file):
+#            raise ValueError('Provided plan file does not exist.')
 
         # If the prior is to be replaced, make sure all four arguments
         # are provided
@@ -580,13 +601,46 @@ class rundap:
         if self.create:
             self.queue = pbs.queue(verbose=not self.quiet)
 
-        # Run the selected mode
+        # Run the selected mode by filling the queue
         if self.daily:
             self.run_daily()
         if self.all:
             self.run_all(clobber=self.clobber)
         if self.redo:
             self.run_redo()
+
+        # Submit the queue to the cluster
+        if self.create:
+            self.queue.commit(hard=self.hard, submit=self.submit)
+
+        # Construct the DAPall script
+        if self.build_dapall:
+            dapall_scr, dapall_out, dapall_err \
+                        = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
+
+        # If nothing has been submitted, nothing left to do
+        if not self.submit:
+            return
+
+        # Wait until the queue is finished
+        running = True
+        while running:
+            time.sleep(300) 
+            percent_complete = self.queue.get_percent_complete()
+            print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
+            if percent_complete == 100:
+                running = False
+        print('Percent complete ... {0:.1f}%'.format(percent_complete))
+
+        # Set the ready status file for the DAPall script
+        self.set_status(dapall_scr, status='ready')
+
+        # Execute the DAPall script; if it makes it here, create and
+        # submit should be true
+        dapall_queue = pbs.queue(verbose=not self.quiet)
+        self._create_queue(dapall_queue)
+        dapall_queue.append('source {0}'.format(dapall_scr), outfile=dapall_out, errfile=dapall_err)
+        dapall_queue.commit(hard=self.hard, submit=self.submit)
 
 
     # ******************************************************************
@@ -679,6 +733,9 @@ class rundap:
         parser.add_argument("--no_plots", help="Do NOT create QA plots", action="store_true",
                             default=False)
 
+        parser.add_argument("--dapall", action="store_true", default=False,
+                            help='Wait for any individual plate-ifu processes to finish and then'
+                                 'update the DAPall file')
 
         # Read arguments specific to the cluster submission behavior
         parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
@@ -785,6 +842,9 @@ class rundap:
         if self.verbose < arg.verbose:
             self.verbose = arg.verbose
 
+        # Set to construct the dapall file
+        self.build_dapall = arg.dapall
+
         # Set queue keywords
         if arg.umask is not None:
             self.umask = arg.umask
@@ -851,6 +911,55 @@ class rundap:
                 os.makedirs(path)
 
 
+    def _create_queue(self, queue):
+        """
+        Create a queue instance.
+        
+        This function is written to be functional for submission to the
+        cluster queues both at Utah and using the sciama cluster at
+        Portsmouth.  The available queues are:
+
+        +-----------+--------+------+-----------+
+        |     Queue |  Nodes |  PPN |   GB/core |
+        +===========+========+======+===========+
+        | sciama1.q |     80 |   12 |         2 |
+        +-----------+--------+------+-----------+
+        | sciama2.q |     96 |   16 |         4 |
+        +-----------+--------+------+-----------+
+        | sciama3.q |     48 |   20 |       3.2 |
+        +-----------+--------+------+-----------+
+
+        One should **not** submit to sciama3.q without permission from
+        Will Percival.  The default queue is cluster.q (sciama2.q); so
+        basically only use :attr:`q` to select sciama1.q.
+
+        Submissions to Utah should have their queue destination set to
+        None.  However, the fast node can be selected using :attr:`qos`.
+        """
+        if self.q is not None:
+            # Expect to select the queue only when submitting to the
+            # Portsmouth cluster, sciama.  In this case, the number of
+            # nodes is queue dependent, and qos is not set
+            if self.q == 'sciama1.q':
+                ppn = 12
+            elif self.q == 'sciama3.q':
+                ppn = 20
+            else:
+                ppn = 16
+            cpus = ppn if self.cpus is None else min(self.cpus, ppn)
+            queue.create(label=self.label, nodes=self.nodes, umask=self.umask,
+                         walltime=self.walltime, queue=self.q, ppn=ppn, cpus=cpus)
+        else:
+            # self.q can be None when submitting to both the Portsmouth
+            # and Utah clusters.  In this case, the default queue
+            # destination and ppn is correct.  qos is also set, but this
+            # should only be used when submitting to Utah.
+            ppn = 16
+            cpus = ppn if self.cpus is None else min(self.cpus, ppn)
+            queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
+                         walltime=self.walltime, ppn=ppn, cpus=cpus)
+
+
     # Files:
     #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
     #       - *.ready = script/directory is ready for queue submission
@@ -905,29 +1014,7 @@ class rundap:
         # once created, the queue object is treated identically for both
         # the Utah and Portsmouth clusters.
         if self.create:
-            if self.q is not None:
-                # Expect to select the queue only when submitting to the
-                # Portsmouth cluster, sciama.  In this case, the number
-                # of nodes is queue dependent, and qos is not set
-                if self.q == 'sciama1.q':
-                    ppn = 12
-                elif self.q == 'sciama3.q':
-                    ppn = 20
-                else:
-                    ppn = 16
-                cpus = ppn if self.cpus is None else min(self.cpus, ppn)
-                self.queue.create(label=self.label, nodes=self.nodes, umask=self.umask,
-                                  walltime=self.walltime, queue=self.q, ppn=ppn, cpus=cpus)
-            else:
-                # self.q can be None when submitting to both the
-                # Portsmouth and Utah clusters.  In this case, the
-                # default queue destination and ppn is correct.  qos is
-                # also set, but this should only be used when submitting
-                # to Utah.
-                ppn = 16
-                cpus = ppn if self.cpus is None else min(self.cpus, ppn)
-                self.queue.create(label=self.label, nodes=self.nodes, qos=self.qos,
-                                  umask=self.umask, walltime=self.walltime, ppn=ppn, cpus=cpus)
+            self._create_queue(self.queue)
        
         # Create the script files, regardless of whether or not they are
         # submitted to the queue, appending the scripts to the queue if
@@ -939,17 +1026,15 @@ class rundap:
             if self.create:
                 self.queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
                                   errfile=stderrfile)
-                self.set_status(drpf.plate, drpf.ifudesign, status='queued') #, mode=drpf.mode
+                self.set_pltifu_status(drpf.plate, drpf.ifudesign, status='queued')
+                                        #, mode=drpf.mode
             else:
                 print('Preparing for analysis...{0:.1f}%'.format((i+1)*100/ndrp), end='\r')
                 i += 1
-        
-        # Submit the queue to the cluster
-        if self.create:
-            self.queue.commit(hard=self.hard, submit=self.submit)
-        else:
-            print('Preparing for analysis...  DONE')
 
+        if not self.create:
+            print('Preparing for analysis...{0:.1f}%'.format(100))
+        
 
     # ******************************************************************
     #  MaNGA DAP RUN-MODE ROUTINES
@@ -1044,7 +1129,7 @@ class rundap:
     # ******************************************************************
     # Management
     # ******************************************************************
-    def set_status(self, plate, ifudesign, mode=None, status='queued'):
+    def set_pltifu_status(self, plate, ifudesign, mode=None, status='queued'):
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
@@ -1059,11 +1144,21 @@ class rundap:
         """
         # Get the name of the status file        
         root = default_dap_file_root(plate, ifudesign, mode=mode)
-        statfile = os.path.join(self.calling_path, str(plate), str(ifudesign),
-                                '{0}.{1}'.format(root,status))
+        self.set_status(os.path.join(self.calling_path, str(plate), str(ifudesign), root),
+                        status)
+        
 
+    def set_status(self, root, status='queued'):
+        """
+        Generate a general touch file.
+
+        Args:
+            root (str): Full path and root name of the touch file
+            status (str): (**Optional**) That status signifier for the
+                touch file.
+        """
         # Touch the file by opening and closing it
-        file = open(statfile,'w')
+        file = open('{0}.{1}'.format(root, status), 'w')
         file.close()
 
 
@@ -1492,10 +1587,88 @@ class rundap:
             return None, None, None
 
         # Set the status to ready
-        self.set_status(drpf.plate, drpf.ifudesign, status='ready') #, mode=drpf.mode
+        self.set_pltifu_status(drpf.plate, drpf.ifudesign, status='ready') #, mode=drpf.mode
 
         # Return the list of script, stdout, and stderr files
         return sf, of, ef
+
+
+    def write_dapall_script(self, plots=True, clobber=False):
+        """
+        Write the script used to construct the DAPall file and its
+        associated quality assessment plots.
+
+        Args:
+            plots (bool): (**Optional**) Create the QA plots. Default is
+                True.
+            clobber (bool): (**Optional**) Flag to clobber any existing
+                files.
+
+        Returns:
+            str: Three strings with the name of the written script file,
+            the file for the output sent to STDOUT, and the file for the
+            output sent to STDERR.
+
+        Raises:
+            ValueError: Raised if DAP version is not correctly defined.
+        """
+        # Check that the path exists, creating it if not
+        if not os.path.isdir(self.calling_path):
+            os.makedirs(self.calling_path)
+        
+        # Set the names for the script, stdout, and stderr files
+        scriptfile = os.path.join(self.calling_path, 'dapall')
+        stdoutfile = '{0}.out'.format(scriptfile)
+        stderrfile = '{0}.err'.format(scriptfile)
+
+        # Script file already exists, so just return
+        if os.path.exists(scriptfile) and not clobber:
+            return scriptfile, stdoutfile, stderrfile
+
+        # Open the script file and write the date as a commented header
+        # line
+        file = open(scriptfile, 'w')
+        file.write('# Auto-generated batch file\n')
+        file.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+        file.write('\n')
+
+        # Create the started touch file
+        startfile = '{0}.started'.format(scriptfile)
+        file.write('touch {0}\n'.format(startfile))
+        file.write('\n')
+
+        # Command that constructs the DAPall file
+        command = 'constuct_dapall {0} --drpver {1} -r {2} --dapver {3} -a {4}'.format(
+                            self.plan_file, self.mpl.drpver, self.redux_path, self.dapver,
+                            self.analysis_path)
+        if self.verbose > 0:
+            command += (' -'+'v'*self.verbose )
+        file.write('{0}\n'.format(command))
+        file.write('\n')
+
+#        # Add the plotting commands
+#        if plots:
+#            command = 'ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
+#                            plate, ifudesign, self.analysis_path, self.plan_file)
+#            file.write('{0}\n'.format(command))
+#            file.write('\n')
+#
+#            command = 'spotcheck_dap_maps {0} {1} --analysis_path {2} --plan_file {3}'.format(
+#                            plate, ifudesign, self.analysis_path, self.plan_file)
+#            file.write('{0}\n'.format(command))
+#            file.write('\n')
+
+        # Touch the done file
+        donefile = '{0}.done'.format(scriptfile)
+        file.write('touch {0}\n'.format(donefile))
+        file.write('\n')
+
+        file.close()
+        ################################################################
+
+        # Return the script file, file for stdout, and file for stderr
+        return scriptfile, stdoutfile, stderrfile
+    
 
 
 
