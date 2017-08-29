@@ -124,8 +124,8 @@ class DAPQualityBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_quality_bits.ini'))
 
 
@@ -135,8 +135,8 @@ class DAPMapsBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_maps_bits.ini'))
 
 
@@ -146,8 +146,8 @@ class DAPCubeBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_cube_bits.ini'))
 
 
@@ -729,8 +729,10 @@ class construct_maps_file:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Save the data to the hdu attribute
-        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel())
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel(),
+                                           dapsrc=dapsrc)
+        
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
@@ -1677,9 +1679,10 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, drpf, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False, single_precision=False):
+    def __init__(self, drpf, obs=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
+                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False,
+                 single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -1770,7 +1773,7 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
 
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -2196,7 +2199,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, 
     return prihdr
 
 
-def add_snr_metrics_to_header(hdr, drpf, r_re):
+def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
     """
     For all valid spaxels within 1 Re < R < 1.5 Re calculate the median
     S/N and combined S/N (including covariance) in the griz bands.
@@ -2226,7 +2229,8 @@ def add_snr_metrics_to_header(hdr, drpf, r_re):
         FileNotFoundError: Raised if any of the response function files
             cannot be found.
     """
-    filter_response_file = [ os.path.join(self.dapsrc, 'data', 'filter_response',
+    _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    filter_response_file = [ os.path.join(_dapsrc, 'data', 'filter_response',
                                            f) for f in [ 'gunn_2001_g_response.db',
                                                          'gunn_2001_r_response.db',
                                                          'gunn_2001_i_response.db',
@@ -2249,11 +2253,11 @@ def add_snr_metrics_to_header(hdr, drpf, r_re):
     nfilter = len(filter_response_file)
     for i in range(nfilter):
         response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
-        signal, variance, snr, covar = self.drpf.flux_stats(response_func=response_func,
-                                                            flag=['DONOTUSE', 'FORESTAR'],
-                                                            covar=True) #, correlation=True)
+        signal, variance, snr, covar = drpf.flux_stats(response_func=response_func,
+                                                       flag=['DONOTUSE', 'FORESTAR'],
+                                                       covar=True) #, correlation=True)
         # Get the spaxels within the radius limits
-        indx = numpy.arange(r.size)[(r_re > 1) & (r_re < 1.5) & numpy.invert(signal.mask)]
+        indx = numpy.arange(r_re.size)[(r_re > 1) & (r_re < 1.5) & numpy.invert(signal.mask)]
         if len(indx) == 0:
             hdr[key_med[i]] = (0., com_med[i])
             hdr[key_ring[i]] = (0., com_ring[i])
