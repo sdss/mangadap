@@ -1831,8 +1831,8 @@ class EmissionLineTemplates:
     :class:`mangadap.par.emissionlinedb.EmissionLinePar` for the
     structure of each row in the database and an explanation for each of
     its columns.  The selected profile type for each line **must** have
-    a `parameters_from_moments` method the returns the parameters of the
-    line provided the first three moments (moments 0, 1, and 2).
+    a `parameters_from_moments` method that returns the parameters of
+    the line provided the first three moments (moments 0, 1, and 2).
 
     Only lines with `action=f` are included in any template.  The array
     :attr:`tpli` provides the index of the template that contains each
