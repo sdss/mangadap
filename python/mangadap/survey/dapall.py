@@ -1150,7 +1150,7 @@ class DAPall:
             # method)
             r_re = numpy.ma.MaskedArray(dapmaps['SPX_ELLCOO'].data.copy()[1,:,:],
                                         mask=numpy.invert(dapmaps['SPX_SNR'].data > 0))
-#            db['SNR_MED'][i], db['SNR_RING'][i] = self._srd_snr_metric(dapmaps)
+            db['SNR_MED'][i], db['SNR_RING'][i] = self._srd_snr_metric(dapmaps)
 
             # Get the mean surface brightness within 1 Re used by the
             # stellar-continuum fitting (independent of the DAP method)

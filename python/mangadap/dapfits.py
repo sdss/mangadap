@@ -2244,7 +2244,7 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
     com_med = [ 'Median g-band SNR from 1-1.5 Re', 'Median r-band SNR from 1-1.5 Re',
                 'Median i-band SNR from 1-1.5 Re', 'Median z-band SNR from 1-1.5 Re' ]
                     
-    key_ring = ['SNRGRING', 'SNRRRING', 'SNRIRING', 'SNRRING' ]
+    key_ring = ['SNRGRING', 'SNRRRING', 'SNRIRING', 'SNRZRING' ]
     com_ring = [ 'g-band SNR in 1-1.5 Re bin', 'r-band SNR in 1-1.5 Re bin',
                  'i-band SNR in 1-1.5 Re bin', 'z-band SNR in 1-1.5 Re bin' ]
 

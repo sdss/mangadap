@@ -625,7 +625,7 @@ class rundap:
         # Wait until the queue is finished
         running = True
         while running:
-            time.sleep(60) 
+            time.sleep(1) 
             percent_complete = self.queue.get_percent_complete()
             print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
             if percent_complete == 100:
@@ -1638,7 +1638,7 @@ class rundap:
         file.write('\n')
 
         # Command that constructs the DAPall file
-        command = 'constuct_dapall {0} --drpver {1} -r {2} --dapver {3} -a {4}'.format(
+        command = 'construct_dapall {0} --drpver {1} -r {2} --dapver {3} -a {4}'.format(
                             self.plan_file, self.mpl.drpver, self.redux_path, self.dapver,
                             self.analysis_path)
         if self.verbose > 0:
