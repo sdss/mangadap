@@ -157,15 +157,15 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         # Set the wavelength of lines to be in vacuum
         FWHM = wave/sres[0,:]
         FWHM_binned = wave/sres_binned[0,:]
-        def fwhm_drp(line_wave):
-            line_wave *= (1 + numpy.median(self.par['guess_redshift']))
-            index = numpy.argmin(abs(wave-line_wave[:,None]),axis=1) if numpy.asarray(line_wave) is line_wave \
-            else numpy.argmin(abs(wave-line_wave))
+        def fwhm_drp(wave_len0):
+            wave_len = wave_len0*(1 + numpy.median(self.par['guess_redshift']))
+            index = numpy.argmin(abs(wave-wave_len[:,None]),axis=1) if numpy.asarray(wave_len) is wave_len \
+            else numpy.argmin(abs(wave-wave_len))
             return FWHM[index]
-        def fwhm_binned(line_wave):
-            line_wave *= (1 + numpy.median(self.par['guess_redshift']))
-            index = numpy.argmin(abs(wave-line_wave[:,None]),axis=1) if numpy.asarray(line_wave) is line_wave \
-            else numpy.argmin(abs(wave-line_wave))
+        def fwhm_binned(wave_len0):
+            wave_len = wave_len0*(1 + numpy.median(self.par['guess_redshift']))
+            index = numpy.argmin(abs(wave-wave_len[:,None]),axis=1) if numpy.asarray(wave_len) is wave_len \
+            else numpy.argmin(abs(wave-wave_len))
             return FWHM_binned[index]
         lam_range_gal = \
             numpy.array([numpy.min(wave), numpy.max(wave)])/(1 + numpy.median(self.par['guess_redshift']))
