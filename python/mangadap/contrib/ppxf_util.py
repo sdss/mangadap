@@ -245,6 +245,9 @@ def emline(logLam_temp, line_wave, FWHM_gal, pixel=True):
     :return: LSF computed for every logLam_temp
 
     """
+    # (XJ) Change the wavelength of lines to be in vacuum
+    line_wave = air_to_vac(line_wave)
+    
     if callable(FWHM_gal):
         FWHM_gal = FWHM_gal(line_wave)
 
