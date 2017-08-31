@@ -2674,6 +2674,7 @@ python/mangadap/contrib/cap_mpfit.py -text
 python/mangadap/contrib/ppxf.py -text
 python/mangadap/contrib/ppxf_util.py -text
 python/mangadap/contrib/voronoi_2d_binning.py -text
+python/mangadap/contrib/xjmc.py -text
 python/mangadap/dapfits.py -text
 python/mangadap/drpfits.py -text
 python/mangadap/par/__init__.py -text
