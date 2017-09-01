@@ -51,6 +51,10 @@ Stack some spectra!
         bins were included.  They're now excluded, forcing classes like
         :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
         to keep track of missing bins.
+    | **30 Aug 2017**: (KBW) Switch from
+        :func:`mangadap.util.instrument.resample_vector` to
+        :func:`mangadap.util.instrument.resample1d` in untested function
+        :func:`SpectralStack.register`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
@@ -74,6 +78,8 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
+
+from ..util.instrument import resample1d, resample_vector_npix, spectral_coordinate_step
 
 from matplotlib import pyplot, rc
 
@@ -716,11 +722,12 @@ class SpectralStack():
         inp_sres = SpectralStack._get_input_sres(sres, flux.shape[0])
 
         # Input and output spectral range
-        inRange = [wave[0], wave[-1]]
-        outRange = inRange if keep_range else list(min_max_wave(wave, voff))
+#        inRange = [wave[0], wave[-1]]
+        outRange = [wave[0], wave[-1]] if keep_range else list(min_max_wave(wave, voff))
         # Sampling (logarithmic or linear)
-        dw = (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
-                    if log else (wave[1] - wave[0])
+        dw = spectral_coordinate_step(wave, log=log, base=base)
+#        (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
+#                    if log else (wave[1] - wave[0])
         # Output number of pixels
         if keep_range:
             nwave = wave.size
@@ -732,23 +739,34 @@ class SpectralStack():
         _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-#        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
         var = None if ivar is None else numpy.ma.power(ivar, -1).filled(0.0)
 
         # Resample each spectrum
         for i in range(nspec):
-            _wave, _flux[i,:] = resample_vector(flux[i,:].ravel(), xRange=inRange, inLog=log,
-                                                newRange=outRange, newpix=nwave, base=base)
-            _wave, _mask[i,:] = resample_vector(inp_mask[i,:].ravel(), xRange=inRange, inLog=log,
-                                                newRange=outRange, newpix=nwave, base=base,
-                                                ext_value=1)
+            _wave, _flux[i,:] = resample1d(flux[i,:].ravel(), x=wave, inLog=log, newRange=outRange,
+                                           newpix=nwave, base=base)
+            _wave, _mask[i,:] = resample1d(inp_mask[i,:].ravel(), x=wave, inLog=log,
+                                           newRange=outRange, newpix=nwave, base=base, ext_value=1)
             if var is not None:
-                _wave, _ivar[i,:] = resample_vector(var[i,:].ravel(), xRange=inRange, inLog=log,
-                                                    newRange=outRange, newpix=nwave, base=base)
+                _wave, _ivar[i,:] = resample1d(var[i,:].ravel(), x=wave, inLog=log,
+                                               newRange=outRange, newpix=nwave, base=base)
             if inp_sres is not None:
-                _wave, _sres[i,:] = resample_vector(inp_sres[i,:].ravel(), xRange=inRange,
-                                                    inLog=log, newRange=outRange, newpix=nwave,
-                                                    base=base)
+                _wave, _sres[i,:] = resample1d(inp_sres[i,:].ravel(), x=wave, inLog=log,
+                                               newRange=outRange, newpix=nwave, base=base)
+#            _wave, _flux[i,:] = resample_vector(flux[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                newRange=outRange, newpix=nwave, base=base,
+#                                                flat=False)
+#            _wave, _mask[i,:] = resample_vector(inp_mask[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                newRange=outRange, newpix=nwave, base=base,
+#                                                ext_value=1, flat=False)
+#            if var is not None:
+#                _wave, _ivar[i,:] = resample_vector(var[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                    newRange=outRange, newpix=nwave, base=base,
+#                                                    flag=False)
+#            if inp_sres is not None:
+#                _wave, _sres[i,:] = resample_vector(inp_sres[i,:].ravel(), xRange=inRange,
+#                                                    inLog=log, newRange=outRange, newpix=nwave,
+#                                                    base=base, flag=False)
         indx = _mask > 0.5
         _mask[indx] = 1.0
         _mask[numpy.invert(indx)] = 0.0

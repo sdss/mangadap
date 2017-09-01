@@ -34,7 +34,6 @@ Implements an emission-line fitting class that largely wraps pPXF.
         from ..par.parset import ParSet
         from ..par.emissionlinedb import EmissionLineDB
         from ..util.fileio import init_record_array
-        from ..util.instrument import spectrum_velocity_scale, resample_vector
         from ..util.log import log_output
         from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra

@@ -36,7 +36,6 @@ Implements an emission-line profile fitting class.
         from ..par.parset import ParSet
         from ..par.emissionlinedb import EmissionLineDB
         from ..util.fileio import init_record_array
-        from ..util.instrument import spectrum_velocity_scale, resample_vector
         from ..util.log import log_output
         from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -107,7 +106,6 @@ from astropy.modeling.polynomial import Legendre1D
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
-from ..util.instrument import spectrum_velocity_scale, resample_vector
 from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util import lineprofiles

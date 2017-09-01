@@ -31,7 +31,7 @@ Implements a wrapper class for pPXF.
         from ..par.parset import ParSet
         from ..util.bitmask import BitMask
         from ..util.fileio import init_record_array
-        from ..util.instrument import spectrum_velocity_scale, resample_vector
+        from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
         from ..contrib.ppxf import ppxf
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
@@ -64,6 +64,9 @@ Implements a wrapper class for pPXF.
         fit to each spectrum in :func:`PPXFFit.fit` using usetpl kwarg.
     | **17 Feb 2017**: (KBW) Included filtering options.  Changed to use
         ppxf v6.0.4; mpfit object no longer returned, only mpfit status.
+    | **30 Aug 2017**: (KBW) Switch from
+        :func:`mangadap.util.instrument.resample_vector` to
+        :func:`mangadap.util.instrument.resample1d`.
 
 .. todo::
 
@@ -101,7 +104,7 @@ from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
-from ..util.instrument import spectrum_velocity_scale, resample_vector, SpectralResolution
+from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
 from ..util.instrument import match_spectral_resolution, angstroms_per_pixel
 from ..util.constants import DAPConstants
 from ..contrib.ppxf import ppxf, _losvd_rfft
@@ -1397,15 +1400,23 @@ class PPXFFit(StellarKinematicsFit):
 
                 # Resample to match the object spectra
                 inRange = self.tpl_wave[[0,-1]] * (1.0 + nominal_redshift[i])
-                _, model_wlosvd[i,:] = resample_vector(tmp_wlosvd, xRange=inRange, inLog=True,
-                                                       newRange=self.obj_wave[[0,-1]],
-                                                       newpix=self.obj_wave.size, newLog=True,
-                                                       flat=False)
-                _, model_wlosvd_msres[i,:] = resample_vector(tmp_wlosvd_msres, xRange=inRange,
-                                                             inLog=True,
-                                                             newRange=self.obj_wave[[0,-1]],
-                                                             newpix=self.obj_wave.size,
-                                                             newLog=True, flat=False)
+                _, model_wlosvd[i,:] = resample1d(tmp_wlosvd,
+                                                  x=self.tpl_wave*(1 + nominal_redshift[i]),
+                                                  inLog=True, newRange=self.obj_wave[[0,-1]],
+                                                  newpix=self.obj_wave.size, newLog=True)
+                _, model_wlosvd_msres[i,:] = resample1d(tmp_wlosvd_msres,
+                                                        x=self.tpl_wave*(1 + nominal_redshift[i]),
+                                                        inLog=True, newRange=self.obj_wave[[0,-1]],
+                                                        newpix=self.obj_wave.size, newLog=True)
+#                _, model_wlosvd[i,:] = resample_vector(tmp_wlosvd, xRange=inRange, inLog=True,
+#                                                       newRange=self.obj_wave[[0,-1]],
+#                                                       newpix=self.obj_wave.size, newLog=True,
+#                                                       flat=False)
+#                _, model_wlosvd_msres[i,:] = resample_vector(tmp_wlosvd_msres, xRange=inRange,
+#                                                             inLog=True,
+#                                                             newRange=self.obj_wave[[0,-1]],
+#                                                             newpix=self.obj_wave.size,
+#                                                             newLog=True, flat=False)
 
                 # Check 2-pixel resolution limit in resampled data
 #                _, npix = resample_vector(unity, xRange=inRange, inLog=True,
@@ -2770,14 +2781,6 @@ class PPXFFit(StellarKinematicsFit):
         return _v, verr/numpy.absolute(numpy.exp(_v/c))
 
 
-#    @staticmethod
-#    def shift_via_resample(wave, flux, redshift, inLog, outRange, outpix, outLog):
-#        inRange = wave[[0,-1]] * (1.0 + redshift)
-#        new_wave, new_flux = resample_vector(flux, xRange=inRange, inLog=inLog, newRange=outRange,
-#                                             newpix=outpix, newLog=outLog, flat=False)
-#        return new_flux
-
-
     @staticmethod
     def reconstruct_model(tpl_wave, templates, obj_wave, kin, weights, velscale, polyweights=None,
                           mpolyweights=None, start=None, end=None, redshift_only=False,
@@ -2824,10 +2827,12 @@ class PPXFFit(StellarKinematicsFit):
         if _redshift_only:
             # Resample the redshifted template to the wavelength grid of
             # the binned spectra
-            inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
-            _, model[:] = resample_vector(composite_template, xRange=inRange, inLog=True,
-                                          newRange=obj_wave[[0,-1]], newpix=obj_wave.size,
-                                          newLog=True, flat=False)
+            _, model[:] = resample1d(composite_template, x=tpl_wave*(1.0 + redshift), inLog=True,
+                                     newRange=obj_wave[[0,-1]], newpix=obj_wave.size, newLog=True)
+#            inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
+#            _, model[:] = resample_vector(composite_template, xRange=inRange, inLog=True,
+#                                          newRange=obj_wave[[0,-1]], newpix=obj_wave.size,
+#                                          newLog=True, flat=False)
             model[:_start] = 0.0
             model[:_start] = numpy.ma.masked
             model[_end:] = 0.0

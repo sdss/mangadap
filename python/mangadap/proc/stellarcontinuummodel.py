@@ -580,11 +580,14 @@ class StellarContinuumModel:
 
         """
         self.directory_path, self.output_file \
-                = self.default_paths(self.binned_spectra.drpf.plate, self.binned_spectra.drpf.ifudesign,
-                                     self.binned_spectra.rdxqa.method['key'],
-                                     self.binned_spectra.method['key'], self.method['key'],
-                                     directory_path=directory_path, dapver=dapver,
-                                     analysis_path=analysis_path, output_file=output_file)
+                = StellarContinuumModel.default_paths(self.binned_spectra.drpf.plate,
+                                                      self.binned_spectra.drpf.ifudesign,
+                                                      self.binned_spectra.rdxqa.method['key'],
+                                                      self.binned_spectra.method['key'],
+                                                      self.method['key'],
+                                                      directory_path=directory_path, dapver=dapver,
+                                                      analysis_path=analysis_path,
+                                                      output_file=output_file)
 
 
     def _initialize_primary_header(self, hdr=None):
@@ -1282,7 +1285,7 @@ class StellarContinuumModel:
         continuum = self.construct_models(replacement_templates=replacement_templates,
                                           redshift_only=redshift_only) if reconstruct \
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
-        return self.reset_continuum_mask_window(continuum, quiet=self.quiet)
+        return StellarContinuumModel.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
 
     def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
