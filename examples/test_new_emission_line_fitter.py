@@ -125,14 +125,14 @@ class XJMCEmissionLineFitter(EmissionLineFit):
 #        flux = flux0.data[:,mask]
 #        noise = noise0[:,mask]
 
-        flux = binned_spectra.drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
-        ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=['DONOTUSE', 'FORESTAR'])
-        flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
-        noise = numpy.ma.power(ivar, -0.5)
+        flux0 = binned_spectra.drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
+        ivar0 = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=['DONOTUSE', 'FORESTAR'])
+        flux0, ivar0 = binned_spectra.galext.apply(flux0, ivar=ivar0, deredden=True)
+        noise = numpy.ma.power(ivar0, -0.5)
         noise[numpy.invert(noise > 0)] = numpy.ma.masked
 
-        mask_drp = numpy.invert(flux.mask | noise.mask)[:,mask]
-        flux = flux.data[:,mask]
+        mask_drp = numpy.invert(flux0.mask | noise.mask)[:,mask]
+        flux = flux0.data[:,mask]
         noise = noise.filled(0.0)[:,mask]
 
         # stack_sres sets whether or not the spectral resolution is
@@ -416,10 +416,11 @@ if __name__ == '__main__':
 #    vel = nsa_redshift*astropy.constants.c.to('km/s').value
     
     # KBW testing edits
-    redux_path = '/Volumes/repo/MaNGA/redux/v2_2_0'
-    analysis_path = '/Users/westfall/Work/MaNGA/testing/mpl6/emissionlines/analysis/v2_2_0/test'
+#    redux_path = '/Volumes/repo/MaNGA/redux/v2_2_0'
+#    analysis_path = '/Users/westfall/Work/MaNGA/testing/mpl6/emissionlines/analysis/v2_2_0/test'
 #    redux_path='/Users/mac/Desktop/DRP_MPL5/'
-#    analysis_path='/Users/mac/Volumes/External/MaNGA/DAP_Output/MPL-5/2.0.2/'
+    redux_path='/Users/mac/Desktop/DRP_220/'    # v 2_2_0 redux path
+    analysis_path='/Users/mac/Volumes/External/MaNGA/DAP_Output/MPL-5/2.0.2/'
     clobber = False
     
     # Read the DRP LOGCUBE file
