@@ -108,7 +108,8 @@ class capfit(object):
         J1 = self.fdjac(func, p1, f1)
         dd = linalg.norm(J1, axis=0)
         mx = np.max(dd)
-        dd[dd < mx*np.finfo(float).eps] = 1  # As More'+80
+        eps = np.finfo(float).eps
+        dd[dd < eps*(eps + mx)] = 1  # As More'+80
         lam = 0.01*mx**2  # max(diag(J1.T @ J1))
 
         if verbose == 2:
