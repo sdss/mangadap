@@ -191,7 +191,7 @@ class XJMCEmissionLineFitter(EmissionLineFit):
         # templates?
         # Decide whether to use convolved gas templates
         # Set the wavelength of lines to be in vacuum
-        FWHM = wave/sres[0,:]
+        FWHM = wave/numpy.max(sres, axis=0)
         FWHM_binned = wave/sres_binned[0,:]
         def fwhm_drp(wave_len0):
             wave_len = wave_len0*(1 + numpy.median(self.par['guess_redshift']))
