@@ -98,6 +98,8 @@ import numpy
 from scipy import interpolate, fftpack
 import astropy.constants
 
+from captools.ppxf import ppxf, _losvd_rfft
+
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask
 from ..util.pixelmask import PixelMask, SpectralPixelMask
@@ -107,7 +109,6 @@ from ..util.log import log_output
 from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
 from ..util.instrument import match_spectral_resolution, angstroms_per_pixel
 from ..util.constants import DAPConstants
-from ..contrib.ppxf import ppxf, _losvd_rfft
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .spectralfitting import StellarKinematicsFit

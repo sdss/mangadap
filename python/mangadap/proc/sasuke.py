@@ -75,9 +75,10 @@ from scipy import interpolate, fftpack
 
 import astropy.constants
 
+from captools.ppxf import ppxf
+
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
-from ..contrib.ppxf import ppxf
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.instrument import SpectralResolution

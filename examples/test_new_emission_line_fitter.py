@@ -6,6 +6,9 @@ import numpy
 import astropy.constants
 
 from astropy.io import fits
+
+from captools import ppxf_util
+
 from mangadap.drpfits import DRPFits
 from mangadap.proc.reductionassessments import ReductionAssessment
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -21,7 +24,6 @@ from mangadap.par.emissionlinedb import EmissionLineDB
 from mangadap.proc.spectralindices import SpectralIndices
 from mangadap.dapfits import construct_maps_file, construct_cube_file
 
-from mangadap.contrib import ppxf_util
 from mangadap.contrib.xjmc import emline_fitter_with_ppxf
 
 #-----------------------------------------------------------------------------

@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants
 
-from mangadap.contrib.ppxf import ppxf
+from captools.ppxf import ppxf
 
 def calculate_noise(residuals):
 
