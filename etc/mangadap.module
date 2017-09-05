@@ -60,5 +60,5 @@ setenv [string toupper $product]_VER $version
 {needs_idl}prepend-path IDL_PATH +$PRODUCT_DIR/pro
 {needs_bin}prepend-path PATH $PRODUCT_DIR/bin
 {needs_bin}prepend-path PATH $PRODUCT_DIR/scripts
-{needs_bin}prepend-path PYTHONPATH $PRODUCT_DIR/python/mangadap/contrib
+{needs_trunk_python}prepend-path PYTHONPATH $PRODUCT_DIR/python/mangadap/contrib
 {needs_trunk_python}prepend-path PYTHONPATH $PRODUCT_DIR/python
