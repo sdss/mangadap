@@ -1,7 +1,7 @@
 """
 #####################################################################
 
-Copyright (C) 2001-2016, Michele Cappellari
+Copyright (C) 2001-2017, Michele Cappellari
 E-mail: michele.cappellari_at_physics.ox.ac.uk
 
 Updated versions of the software are available from my web page
@@ -215,7 +215,7 @@ MODIFICATION HISTORY:
           MC, London, 19 March 2014
       V3.0.0: Translated from IDL into Python and tested against the original.
           MC, London, 19 March 2014
-      V3.0.1: Support both Python 2.6/2.7 and Python 3. MC, Oxford, 25 May 2014
+      V3.0.1: Support both Python 2.7 and Python 3. MC, Oxford, 25 May 2014
       V3.0.2: Avoid potential runtime warning while plotting.
           MC, Oxford, 2 October 2014
       V3.0.3: Use for loop to calculate Voronoi tessellation of large arrays
@@ -224,17 +224,32 @@ MODIFICATION HISTORY:
           MC, Oxford, 31 March 2016
       V3.0.4: Included keyword "sn_func" to pass a function which
           calculates the S/N of a bin, rather than editing _sn_func().
-          Additional test to prevent the addition of a pixel from
+          Included test to prevent the addition of a pixel from
           ever decreasing the S/N during the accretion stage.
           MC, Oxford, 12 April 2016
+      V3.0.5: Fixed deprecation warning in Numpy 1.11. MC, Oxford, 18 April 2016
+      V3.0.6: Use interpolation='nearest' to avoid crash on MacOS.
+          Thanks to Kyle Westfall (Portsmouth) for reporting the problem.
+          Allow for zero noise. MC, Oxford, 14 June 2016
+      V3.0.7: Print execution time. MC, Oxford, 23 January 2017
+      V3.0.8: New voronoi_tessellation() function. MC, Oxford, 15 February 2017
+      V3.0.9: Do not iterate down to diff==0 in _cvt_equal_mass().
+          Request `pixelsize` when dataset is large. Thanks to Davor Krajnovic
+          (Potsdam) for the feedback. Make `quiet` really quiet.
+          Fixd some instances where sn_func() was not being used (only relevant
+          when passing the `sn_func` keyword). MC, Oxford, 10 July 2017
+      V3.1.0: Use cKDTree for un-weighted Voronoi Tessellation.
+          Removed loop over bins from Lloyd's algorithm with CVT.
+          MC, Oxford, 17 July 2017
 
 """
 
 from __future__ import print_function
 
+from time import clock
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial import distance
+from scipy.spatial import distance, cKDTree
 from scipy import ndimage
 
 #----------------------------------------------------------------------------
@@ -283,15 +298,35 @@ def _sn_func(index, signal=None, noise=None):
 
 #----------------------------------------------------------------------
 
-def _weighted_centroid(x, y, density):
+def voronoi_tessellation(x, y, xnode, ynode, scale):
+    """
+    Computes (Weighted) Voronoi Tessellation of the pixels grid
+
+    """
+    if scale[0] == 1:  # non-weighted VT
+        tree = cKDTree(np.column_stack([xnode, ynode]))
+        classe = tree.query(np.column_stack([x, y]))[1]
+    else:
+        if x.size < 1e4:
+            classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
+        else:  # use for loop to reduce memory usage
+            classe = np.zeros(x.size, dtype=int)
+            for j, (xj, yj) in enumerate(zip(x, y)):
+                classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
+
+    return classe
+
+#----------------------------------------------------------------------
+
+def _centroid(x, y, density):
     """
     Computes weighted centroid of one bin.
     Equation (4) of Cappellari & Copin (2003)
 
     """
     mass = np.sum(density)
-    xBar = np.sum(x*density)/mass
-    yBar = np.sum(y*density)/mass
+    xBar = x.dot(density)/mass
+    yBar = y.dot(density)/mass
 
     return xBar, yBar
 
@@ -312,7 +347,7 @@ def _roundness(x, y, pixelSize):
 
 #----------------------------------------------------------------------
 
-def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
+def _accretion(x, y, signal, noise, targetSN, pixelsize, quiet, sn_func):
     """
     Implements steps (i)-(v) in section 5.1 of Cappellari & Copin (2003)
 
@@ -324,13 +359,16 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
     # For each point, find the distance to all other points and select the minimum.
     # This is a robust but slow way of determining the pixel size of unbinned data.
     #
-    if pixelSize is None:
-        pixelSize = np.min(distance.pdist(np.column_stack([x, y])))
+    if pixelsize is None:
+        if x.size < 1e4:
+            pixelsize = np.min(distance.pdist(np.column_stack([x, y])))
+        else:
+            raise ValueError("Dataset is large: Provide `pixelsize`")
 
     currentBin = np.argmax(signal/noise)  # Start from the pixel with highest S/N
-    SN = signal[currentBin]/noise[currentBin]
+    SN = sn_func(currentBin, signal, noise)
 
-    # Rough estimate of the expected final bin number.
+    # Rough estimate of the expected final bins number.
     # This value is only used to give an idea of the expected
     # remaining computation time when binning very big dataset.
     #
@@ -365,7 +403,7 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
             # (2) Estimate the `roundness' of the POSSIBLE new bin
             #
             nextBin = np.append(currentBin, unBinned[k])
-            roundness = _roundness(x[nextBin], y[nextBin], pixelSize)
+            roundness = _roundness(x[nextBin], y[nextBin], pixelsize)
 
             # (3) Compute the S/N one would obtain by adding
             # the CANDIDATE pixel to the current bin
@@ -377,7 +415,7 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
             # current bin, (2) whether the POSSIBLE new bin is round enough
             # and (3) whether the resulting S/N would get closer to targetSN
             #
-            if (np.sqrt(minDist) > 1.2*pixelSize or roundness > 0.3
+            if (np.sqrt(minDist) > 1.2*pixelsize or roundness > 0.3
                 or abs(SN - targetSN) > abs(SNOld - targetSN) or SNOld > SN):
                 if SNOld > 0.8*targetSN:
                     good[currentBin] = 1
@@ -406,11 +444,11 @@ def _accretion(x, y, signal, noise, targetSN, pixelSize, quiet, sn_func):
         unBinned = np.flatnonzero(classe == 0)
         k = np.argmin((x[unBinned] - xBar)**2 + (y[unBinned] - yBar)**2)
         currentBin = unBinned[k]    # The bin is initially made of one pixel
-        SN = signal[currentBin]/noise[currentBin]
+        SN = sn_func(currentBin, signal, noise)
 
     classe *= good  # Set to zero all bins that did not reach the target S/N
 
-    return classe, pixelSize
+    return classe, pixelsize
 
 #----------------------------------------------------------------------------
 
@@ -430,7 +468,7 @@ def _reassign_bad_bins(classe, x, y):
     # to the closest centroid of a good bin
     #
     bad = classe == 0
-    index = np.argmin((x[bad, None] - xnode)**2 + (y[bad, None] - ynode)**2, axis=1)
+    index = voronoi_tessellation(x[bad], y[bad], xnode, ynode, [1])
     classe[bad] = good[index]
 
     # Recompute all centroids of the reassigned bins.
@@ -444,7 +482,7 @@ def _reassign_bad_bins(classe, x, y):
 
 #----------------------------------------------------------------------------
 
-def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, sn_func):
+def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, pixelsize, quiet, sn_func, wvt):
     """
     Implements the modified Lloyd algorithm
     in section 4.1 of Cappellari & Copin (2003).
@@ -453,54 +491,43 @@ def _cvt_equal_mass(x, y, signal, noise, xnode, ynode, quiet, wvt, sn_func):
     the modification proposed by Diehl & Statler (2006).
 
     """
-    if wvt:
-        dens = np.ones_like(signal)
-    else:
-        dens = (signal/noise)**2  # See beginning of section 4.1 of CC03
+    dens2 = (signal/noise)**4     # See beginning of section 4.1 of CC03
     scale = np.ones_like(xnode)   # Start with the same scale length for all bins
 
     for it in range(1, xnode.size):  # Do at most xnode.size iterations
 
-        xnodeOld, ynodeOld = xnode.copy(), ynode.copy()
-
-        # Computes (Weighted) Voronoi Tessellation of the pixels grid
-        #
-        if x.size < 10000:
-            classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
-        else:  # use for loop to reduce memory usage
-            classe = np.zeros(x.size, dtype=int)
-            for j, (xj, yj) in enumerate(zip(x, y)):
-                classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
+        xnode_old, ynode_old = xnode.copy(), ynode.copy()
+        classe = voronoi_tessellation(x, y, xnode, ynode, scale)
 
         # Computes centroids of the bins, weighted by dens**2.
         # Exponent 2 on the density produces equal-mass Voronoi bins.
         # The geometric centroids are computed if WVT keyword is set.
         #
         good = np.unique(classe)
-        for k in good:
-            index = np.flatnonzero(classe == k)   # Find subscripts of pixels in bin k.
-            xnode[k], ynode[k] = _weighted_centroid(x[index], y[index], dens[index]**2)
-            if wvt:
+        if wvt:
+            for k in good:
+                index = np.flatnonzero(classe == k)   # Find subscripts of pixels in bin k.
+                xnode[k], ynode[k] = np.mean(x[index]), np.mean(y[index])
                 sn = sn_func(index, signal, noise)
                 scale[k] = np.sqrt(index.size/sn)  # Eq. (4) of Diehl & Statler (2006)
+        else:
+            mass = ndimage.sum(dens2, labels=classe, index=good)
+            xnode = ndimage.sum(x*dens2, labels=classe, index=good)/mass
+            ynode = ndimage.sum(y*dens2, labels=classe, index=good)/mass
 
-        diff = np.sum((xnode - xnodeOld)**2 + (ynode - ynodeOld)**2)
+        diff2 = np.sum((xnode - xnode_old)**2 + (ynode - ynode_old)**2)
+        diff = np.sqrt(diff2)/pixelsize
 
         if not quiet:
             print('Iter: %4i  Diff: %.4g' % (it, diff))
 
-        if diff == 0:
+        if diff < 0.1:
             break
 
     # If coordinates have changed, re-compute (Weighted) Voronoi Tessellation of the pixels grid
     #
     if diff > 0:
-        if x.size < 10000:
-            classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
-        else:  # use for loop to reduce memory usage
-            classe = np.zeros(x.size, dtype=int)
-            for j, (xj, yj) in enumerate(zip(x, y)):
-                classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
+        classe = voronoi_tessellation(x, y, xnode, ynode, scale)
         good = np.unique(classe)  # Check for zero-size Voronoi bins
 
     # Only return the generators and scales of the nonzero Voronoi bins
@@ -518,13 +545,7 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, sn_
 
     """
     # classe will contain the bin number of each given pixel
-    #
-    if x.size < 10000:
-        classe = np.argmin(((x[:, None] - xnode)**2 + (y[:, None] - ynode)**2)/scale**2, axis=1)
-    else:  # use for loop to reduce memory usage
-        classe = np.zeros(x.size, dtype=int)
-        for j, (xj, yj) in enumerate(zip(x, y)):
-            classe[j] = np.argmin(((xj - xnode)**2 + (yj - ynode)**2)/scale**2)
+    classe = voronoi_tessellation(x, y, xnode, ynode, scale)
 
     # At the end of the computation evaluate the bin luminosity-weighted
     # centroids (xbar, ybar) and the corresponding final S/N of each bin.
@@ -536,7 +557,7 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, sn_
     good = np.unique(classe)
     for k in good:
         index = np.flatnonzero(classe == k)   # index of pixels in bin k.
-        xbar[k], ybar[k] = _weighted_centroid(x[index], y[index], signal[index])
+        xbar[k], ybar[k] = _centroid(x[index], y[index], signal[index])
         sn[k] = sn_func(index, signal, noise)
         area[k] = index.size
 
@@ -544,7 +565,7 @@ def _compute_useful_bin_quantities(x, y, signal, noise, xnode, ynode, scale, sn_
 
 #-----------------------------------------------------------------------
 
-def _display_pixels(x, y, counts, pixelSize):
+def _display_pixels(x, y, counts, pixelsize):
     """
     Display pixels at coordinates (x, y) coloured with "counts".
     This routine is fast but not fully general as it assumes the spaxels
@@ -553,18 +574,16 @@ def _display_pixels(x, y, counts, pixelSize):
     """
     xmin, xmax = np.min(x), np.max(x)
     ymin, ymax = np.min(y), np.max(y)
-    nx = round((xmax - xmin)/pixelSize) + 1
-    ny = round((ymax - ymin)/pixelSize) + 1
+    nx = int(round((xmax - xmin)/pixelsize) + 1)
+    ny = int(round((ymax - ymin)/pixelsize) + 1)
     img = np.full((nx, ny), np.nan)  # use nan for missing data
-    j = np.round((x - xmin)/pixelSize).astype(int)
-    k = np.round((y - ymin)/pixelSize).astype(int)
+    j = np.round((x - xmin)/pixelsize).astype(int)
+    k = np.round((y - ymin)/pixelsize).astype(int)
     img[j, k] = counts
 
-    # KBW edit: for backend compatibility
-#    plt.imshow(np.rot90(img), interpolation='none', cmap='prism',
     plt.imshow(np.rot90(img), interpolation='nearest', cmap='prism',
-               extent=[xmin - pixelSize/2, xmax + pixelSize/2,
-                       ymin - pixelSize/2, ymax + pixelSize/2])
+               extent=[xmin - pixelsize/2, xmax + pixelsize/2,
+                       ymin - pixelsize/2, ymax + pixelsize/2])
 
 #----------------------------------------------------------------------
 
@@ -597,17 +616,17 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
     # It simply calls in sequence the different steps of the algorithms
     # and optionally plots the results at the end of the calculation.
 
-    if not (x.size == y.size == signal.size == noise.size):
-        raise ValueError('Input vectors (x, y, signal, noise) must have the same size')
-    if not np.all((noise > 0) & np.isfinite(noise)):
-        raise ValueError('NOISE must be a positive vector')
+    assert x.size == y.size == signal.size == noise.size, \
+        'Input vectors (x, y, signal, noise) must have the same size'
+    assert np.all((noise > 0) & np.isfinite(noise)), \
+        'NOISE must be positive and finite'
 
     if sn_func is None:
         sn_func = _sn_func
 
     # Perform basic tests to catch common input errors
     #
-    if np.sum(signal)/np.sqrt(np.sum(noise**2)) < targetSN:
+    if sn_func(noise > 0, signal, noise) < targetSN:
         raise ValueError("""Not enough S/N in the whole set of pixels.
             Many pixels may have noise but virtually no signal.
             They should not be included in the set to bin,
@@ -616,40 +635,40 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
     if np.min(signal/noise) > targetSN:
         raise ValueError('All pixels have enough S/N and binning is not needed')
 
-    # Prevent division by zero for pixels with signal=0 and
-    # noise=sqrt(signal)=0 as can happen with X-ray data
-    #
-    noise = noise.clip(np.min(noise[noise > 0])*1e-9)
-
+    t = clock()
     if not quiet:
         print('Bin-accretion...')
-    classe, pixelsize = _accretion(x, y, signal, noise, targetSN, pixelsize, quiet, sn_func)
+    classe, pixelsize = _accretion(
+        x, y, signal, noise, targetSN, pixelsize, quiet, sn_func)
     if not quiet:
         print(np.max(classe), ' initial bins.')
         print('Reassign bad bins...')
-    xNode, yNode = _reassign_bad_bins(classe, x, y)
+    xnode, ynode = _reassign_bad_bins(classe, x, y)
     if not quiet:
-        print(xNode.size, ' good bins.')
+        print(xnode.size, ' good bins.')
     if cvt:
         if not quiet:
             print('Modified Lloyd algorithm...')
-        xNode, yNode, scale, it = _cvt_equal_mass(x, y, signal, noise, xNode, yNode, quiet, wvt, sn_func)
+        xnode, ynode, scale, it = _cvt_equal_mass(
+            x, y, signal, noise, xnode, ynode, pixelsize, quiet, sn_func, wvt)
         if not quiet:
             print(it - 1, ' iterations.')
     else:
-        scale = 1.
-    classe, xBar, yBar, sn, area = _compute_useful_bin_quantities(x, y, signal, noise, xNode, yNode, scale, sn_func)
+        scale = np.ones_like(xnode)
+    classe, xBar, yBar, sn, area = _compute_useful_bin_quantities(
+        x, y, signal, noise, xnode, ynode, scale, sn_func)
     w = area == 1
     if not quiet:
         print('Unbinned pixels: ', np.sum(w), ' / ', x.size)
         print('Fractional S/N scatter (%):', np.std(sn[~w] - targetSN, ddof=1)/targetSN*100)
+        print('Elapsed time: %.2f seconds' % (clock() - t))
 
     if plot:
         plt.clf()
         plt.subplot(211)
-        rnd = np.argsort(np.random.random(xNode.size))  # Randomize bin colors
+        rnd = np.argsort(np.random.random(xnode.size))  # Randomize bin colors
         _display_pixels(x, y, rnd[classe], pixelsize)
-        plt.plot(xNode, yNode, '+w', scalex=False, scaley=False) # do not rescale after imshow()
+        plt.plot(xnode, ynode, '+w', scalex=False, scaley=False) # do not rescale after imshow()
         plt.xlabel('R (arcsec)')
         plt.ylabel('R (arcsec)')
         plt.title('Map of Voronoi bins')
@@ -664,8 +683,8 @@ def voronoi_2d_binning(x, y, signal, noise, targetSN, cvt=True,
             plt.plot(rad[w], sn[w], 'xb', label='single spaxels')
         plt.axhline(targetSN)
         plt.legend()
-        plt.pause(0.01)  # allow plot to appear in certain cases
+        plt.pause(1)  # allow plot to appear in certain cases
 
-    return classe, xNode, yNode, xBar, yBar, sn, area, scale
+    return classe, xnode, ynode, xBar, yBar, sn, area, scale
 
 #----------------------------------------------------------------------------

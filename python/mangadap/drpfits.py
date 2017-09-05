@@ -1350,6 +1350,10 @@ class DRPFits:
                 for i in range(self.nspec):
                     _sres[i,:] = interpolate_masked_vector(_sres[i,:])
                 sres = _sres.reshape(sres.shape)
+#                pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest')
+#                pyplot.colorbar()
+#                pyplot.show()
+#                exit()
             return sres
         if 'SPECRES' in _ext:
 #            print('using SPECRES')
