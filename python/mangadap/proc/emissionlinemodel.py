@@ -305,7 +305,7 @@ class EmissionLineModel:
         self._define_method(method_key, method_list=method_list, artifact_list=artifact_list,
                             emission_line_db_list=emission_line_db_list, dapsrc=dapsrc)
 
-        self.neml = self.emldb.neml
+        self.neml = None if self.emldb is None else self.emldb.neml
 
         self.binned_spectra = None
         self.redshift = None
@@ -465,7 +465,11 @@ class EmissionLineModel:
         Compile the database with the specifications of each index.
         """
         if self.emldb is None:
+            # TODO: Try to use member functions of the fitting class to
+            # set at least the NAME and RESTWAVE of the line for use in
+            # dapfits.py
             return None
+
         name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
         mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
         prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
@@ -701,6 +705,13 @@ class EmissionLineModel:
 
         # Compile the information on the suite of measured indices
         line_database = self._compile_database()
+        if line_database is None:
+            try:
+                line_database = self.method['fitclass'].line_database()
+            except AttributeError:
+                warnings.warn('Emission-line fit did not use an EmissionLineDB object, and does '
+                              'not have a line_database() method.  Will not be able to use '
+                              'output to identify which lines were fit.')
 
         # Save the data to the hdu attribute
         par_hdu = fits.BinTableHDU(data=None, name='PAR') if line_database is None else \
@@ -842,6 +853,9 @@ class EmissionLineModel:
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
 
+        if self.neml is None:
+            self.neml = model_eml_par['FLUX'].shape[1]
+
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
        
@@ -851,8 +865,9 @@ class EmissionLineModel:
         # TODO: Include failed fits in "missing" models?
 
         # DEBUG
-        if model_flux.shape[0] != numpy.sum(good_snr):
-            raise ValueError('Unexpected returned shape of fitted emission-line models.')
+        warnings.warn('DEBUG')
+#        if model_flux.shape[0] != numpy.sum(good_snr):
+#            raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------
         # Set the number of models and the missing models
@@ -908,6 +923,11 @@ class EmissionLineModel:
         cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.drpf,
                                                  'K Westfall <westfall@ucolick.org>')
 
+        par_hdu = self.hdu['PAR'].copy() if 'data' in self.hdu['PAR'].__dict__ \
+                        else fits.BinTableHDU(data=None, name='PAR')
+        fit_hdu = self.hdu['FIT'].copy() if 'data' in self.hdu['FIT'].__dict__ \
+                        else fits.BinTableHDU(data=None, name='FIT')
+
         # Return the converted hdu without altering the internal hdu
         return fits.HDUList([ fits.PrimaryHDU(header=hdr),
                               fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
@@ -915,8 +935,8 @@ class EmissionLineModel:
                               fits.ImageHDU(data=mask, header=cube_hdr, name='MASK'),
                               self.hdu['WAVE'].copy(),
                               self.hdu['BINID'].copy(),
-                              self.hdu['PAR'].copy(),
-                              self.hdu['FIT'].copy(),
+                              par_hdu,
+                              fit_hdu,
                               self.hdu['EMLDATA'].copy()
                             ])
 
@@ -967,6 +987,13 @@ class EmissionLineModel:
 #        self.hdu = fits.open(ifile, checksum=checksum)
         self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
+        # Make sure that the number of emission-lines is set
+        _neml = self.hdu['EMLDATA'].data['FLUX'].shape[1]
+        if self.neml is not None and _neml != self.neml:
+            raise ValueError('Num. of emission lines read does not match emission-line database.')
+        if self.neml is None:
+            self.neml = _neml
+
         # Confirm that the internal method is the same as the method
         # that was used in writing the file
         if self.hdu['PRIMARY'].header['ELFKEY'] != self.method['key']:
@@ -984,11 +1011,16 @@ class EmissionLineModel:
 #        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read the modeling parameters
-        if self.method['fitpar'] is not None and callable(self.method['fitpar'].fromheader):
-            self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
+        if self.method['fitpar'] is not None:
+            try:
+                self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
+            except:
+                if not self.quiet:
+                    warnings.warn('Fit parameter object does not have a fromheader ' \
+                                  'attribute.  No parameters head from header.')
 
         self.nmodels = self.hdu['FLUX'].shape[0]
-        unique_bins = numpy.unique(hdu['BINID'].data.ravel()) \
+        unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
                             if self.hdu['PRIMARY'].header['ELREBIN'] else None
         self.missing_models = self._get_missing_models(unique_bins=unique_bins)
 

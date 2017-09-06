@@ -46,8 +46,10 @@ run the DAP for a specific MaNGA observation.
 
 *Revision history*:
     | **15 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: Switch to using `pydl.pydlutils.yanny`_ instead
-        of internal yanny reader
+    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
+        instead of internal yanny reader.
+    | **24 Aug 2017**: (KBW) Provide new 'valid' attributes to signify
+        if the input data was changed to the default value.
 
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -96,6 +98,12 @@ class ObsInputPar(ParSet):
         pa (float) : Position angle (degrees) of the isophotal major
             axis; default is 0.
         reff (float) : Effective radius (arcsec); default is 1.0.
+
+    Attributes:
+        valid_vdisp (bool): Input velocity dispersion was >0.
+        valid_ell (bool): Input ellipticiticy was within [0,1].
+        valid_pa (bool): Input position angle was within [0,360).
+        valid_reff (bool): Input effective radius was >0.
     """
     def __init__(self, plate, ifudesign, mode=None, vel=None, vdisp=None, ell=None, pa=None,
                  reff=None):
@@ -111,6 +119,12 @@ class ObsInputPar(ParSet):
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
+
+        self.valid_vdisp = True
+        self.valid_ell = True
+        self.valid_pa = True
+        self.valid_reff = True
+
         self._check()
 
 
@@ -134,21 +148,22 @@ class ObsInputPar(ParSet):
         if self.data['vdisp'] < 0:
             warnings.warn('Velocity dispersion less than 0; using default of 100 km/s.')
             self.data['vdisp'] = 100.0
-        if self.data['ell'] < 0:
-            warnings.warn('Ellipticity less than 0; setting to 0.')
+            self.valid_vdisp = False
+        if self.data['ell'] < 0 or self.data['ell'] > 1:
+            warnings.warn('Ellipticity must be 0 <= ell <= 1; setting to 0.')
             self.data['ell'] = 0.
-        if not self.data['ell'] < 1:
-            warnings.warn('Ellipticity greater or equal to 1; setting to 0.')
-            self.data['ell'] = 0.
+            self.valid_ell = False
         if self.data['pa'] < 0 or self.data['pa'] >= 360:
             warnings.warn('Imposing 0-360 range on position angle.')
             while self.data['pa'] < 0:
                 self.data['pa'] += 360
             while self.data['pa'] >= 360:
                 self.data['pa'] -= 360
+            self.valid_pa = False
         if not self.data['reff'] > 0:
             warnings.warn('Effective radius must be larger than 0; setting to unity.')
             self.data['reff'] = 1.0
+            self.valid_reff = False
 
     @classmethod
     def from_par_file(cls, f):

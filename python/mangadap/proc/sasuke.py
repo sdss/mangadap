@@ -34,13 +34,12 @@ Implements an emission-line fitting class that largely wraps pPXF.
         from ..par.parset import ParSet
         from ..par.emissionlinedb import EmissionLineDB
         from ..util.fileio import init_record_array
-        from ..util.instrument import spectrum_velocity_scale, resample_vector
         from ..util.log import log_output
         from ..util.pixelmask import SpectralPixelMask
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .stellarcontinuummodel import StellarContinuumModel
         from .spectralfitting import EmissionLineFit
-        from .util import residual_growth
+        from .util import sample_growth
 
 *Class usage examples*:
         Add examples
@@ -76,9 +75,10 @@ from scipy import interpolate, fftpack
 
 import astropy.constants
 
+from captools.ppxf import ppxf
+
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
-from ..contrib.ppxf import ppxf
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.instrument import SpectralResolution
@@ -90,7 +90,8 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
 from .bandpassfilter import emission_line_equivalent_width
-from .util import residual_growth
+from .util import sample_growth
+#from .util import residual_growth
 from .ppxffit import PPXFFit, PPXFFitResult
 
 # For debugging
@@ -1032,10 +1033,15 @@ class Sasuke(EmissionLineFit):
             model_fit_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
             # Get growth statistics for the residuals
-            model_fit_par['ABSRESID'][i,:] = residual_growth((residual[i,:]).compressed(),
-                                                       [0.68, 0.95, 0.99])
-            model_fit_par['FABSRESID'][i,:] = residual_growth(fractional_residual[i,:].compressed(),
-                                                        [0.68, 0.95, 0.99])
+#            model_fit_par['ABSRESID'][i,:] = residual_growth((residual[i,:]).compressed(),
+#                                                       [0.68, 0.95, 0.99])
+#            model_fit_par['FABSRESID'][i,:] = residual_growth(fractional_residual[i,:].compressed(),
+#                                                        [0.68, 0.95, 0.99])
+            model_fit_par['ABSRESID'][i,:] = sample_growth(numpy.ma.absolute(residual[i,:]),
+                                                           [0.0, 0.68, 0.95, 0.99, 1.0])
+            model_fit_par['FABSRESID'][i,:] \
+                        = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
+                                        [0.0, 0.68, 0.95, 0.99, 1.0])
 
             #-----------------------------------------------------------
             # Test if the kinematics are near the imposed boundaries.
@@ -1825,8 +1831,8 @@ class EmissionLineTemplates:
     :class:`mangadap.par.emissionlinedb.EmissionLinePar` for the
     structure of each row in the database and an explanation for each of
     its columns.  The selected profile type for each line **must** have
-    a `parameters_from_moments` method the returns the parameters of the
-    line provided the first three moments (moments 0, 1, and 2).
+    a `parameters_from_moments` method that returns the parameters of
+    the line provided the first three moments (moments 0, 1, and 2).
 
     Only lines with `action=f` are included in any template.  The array
     :attr:`tpli` provides the index of the template that contains each

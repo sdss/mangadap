@@ -271,7 +271,7 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
 
 
 def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
-                       continuum_method=None):
+                       binning_method=None, continuum_method=None):
     """
     Return the method for a provided plan.  The name currently uses the
     keyword identifiers for the binned spectra and the stellar continuum
@@ -282,17 +282,23 @@ def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
             raise ValueError('Must only provide a single plan.')
         if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
             raise ValueError('Must only provide a single plan.')
-        binning_method = str(plan['bin_key'])
+        _binning_method = str(plan['bin_key'])
         _continuum_method = str(plan['continuum_key'])
     else:
-        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
+#        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
+        if binned_spectra is not None:
+            _binning_method = binned_spectra.method['key']
+        elif binning_method is not None:
+            _binning_method = binning_method
+        else:
+            _binning_method = 'None'
         if stellar_continuum is not None:
             _continuum_method = stellar_continuum.method['key']
         elif continuum_method is not None:
             _continuum_method = continuum_method
         else:
             _continuum_method = 'None'
-    return '{0}-{1}'.format(binning_method, _continuum_method)
+    return '{0}-{1}'.format(_binning_method, _continuum_method)
 
 
 def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False,

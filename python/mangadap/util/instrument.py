@@ -56,6 +56,8 @@ resolution effects.
         to be a mean over the full spectrum to avoid numerical precision
         errors.
     | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.
+    | **30 Aug 2017**: (KBW) Add :func:`resample1d`;
+        :func:`resample_vector` should be deprecated.
 """
 
 from __future__ import division
@@ -129,15 +131,37 @@ def spectrum_velocity_scale(wave):
                                                                          base=numpy.exp(1.))
 
 
-def angstroms_per_pixel(wave, log=False, base=10.0):
+def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
     """
-    Return a vector with the angstroms per pixel at each channel
-    assuming the wavelength array is binned either linearly or
-    log-linearly.
+    Return a vector with the angstroms per pixel at each channel.
+
+    When `regular=True`, the function assumes that the wavelengths are
+    either sampled linearly or geometrically.  Otherwise, it calculates
+    the size of each pixel as the difference between the wavelength
+    coordinates.  The first and last pixels are assumed to have a width
+    as determined by assuming the coordinate is at it's center.
+
+    Args:
+        wave (numpy.ndarray): (Geometric) centers of the spectrum pixels
+            in angstroms.
+        log (numpy.ndarray): (**Optional**) The vector is geometrically
+            sampled.
+        base (float): (**Optional**) Base of the logarithm used in the
+            geometric sampling.
+        regular (bool): (**Optional**) The vector is regularly sampled.
+            
+
+    Returns:
+        numpy.ndarray: The angstroms per pixel.
     """
-    ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
-    if log:
-        ang_per_pix *= wave*numpy.log(base)
+    if regular:
+        ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
+        if log:
+            ang_per_pix *= wave*numpy.log(base)
+    else:
+        ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
+                                    + ((wave[1:] + wave[:-1])/2).tolist()
+                                    + [(3*wave[-1]-wave[-2])/2])
     return ang_per_pix
 
 
@@ -1427,6 +1451,36 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 #    return dLam, m, logscale, velscale
 
 
+def _pixel_centers(xlim, npix, log=False, base=10.0):
+    """
+    Determine the centers of pixels in a linearly or geometrically
+    sampled vector.
+
+    Args:
+        xlim (numpy.ndarray) : (Geometric) Centers of the first and last
+            pixel in the vector.
+        npix (int) : Number of pixels in the vector.
+        log (bool) : (**Optional**) The input range is (to be)
+            logarithmically sampled.
+        base (float) : (**Optional**) The base of the logarithmic
+            sampling.  The default is 10.0; use numpy.exp(1.) for the
+            natural logarithm.
+
+    Returns:
+        numpy.ndarray, float: A vector with the (npix+1) borders of the
+        pixels and the sampling rate.  If logarithmically binned, the
+        sampling is the step in :math`\log x`.
+    """
+    if log:
+        logRange = numpy.log(xlim)/numpy.log(base)
+        dlogx = numpy.diff(logRange)/(npix-1.)
+        centers = numpy.power(base, numpy.linspace(*(logRange/dlogx), num=npix)*dlogx)
+        return centers, dlogx
+    dx = numpy.diff(xlim)/(npix-1.)
+    centers = numpy.linspace(*(xlim/dx), num=npix)*dx
+    return centers, dx
+
+
 def _pixel_borders(xlim, npix, log=False, base=10.0):
     """
     Determine the borders of the pixels in a vector.
@@ -1558,6 +1612,7 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
         - Need to check if this works rebinning from log to log!
 
     """
+    warnings.warn('resample_vector should be deprecated.  Use resample1d instead.')
 
     # Check operation can be performed
     if not isinstance(y, numpy.ndarray):
@@ -1646,6 +1701,168 @@ def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, new
     # Set values for extrapolated regions
     if outRange is not None and (outRange[0] < inRange[0] or outRange[1] > inRange[1]):
             outY[ (outX < inRange[0]) | (outX > inRange[1]) ] = ext_value
+
+    # Return new coordinates and rebinned values
+    return outX, outY
+
+
+def resample1d(y, x=None, xRange=None, inLog=False, newRange=None, newpix=None, newLog=True,
+               newdx=None, base=10.0, ext_value=0.0, conserve=False):
+    """
+    Resample regularly or irregularly sampled, 1-dimensional data to a
+    new grid using integration.
+    
+    This is basically a generalization of the routine :func:`log_rebin`
+    provided by Michele Cappellari in the pPXF package.
+
+    The abscissa coordinates (`x`) for the data (`y`) should be provided
+    for irregularly sampled data.  If the input data is linearly or
+    geometrically sampled (`inLog=True`), the abscissa coordinates can
+    can be generated using the input range for the (geometric) center of
+    each grid point.  If neither `x` nor `xRange` are provided, the
+    function assumes grid coordinates of `x=numpy.arange(y.size)`.
+
+    The function resamples the data by constructing the borders of the
+    output grid using the `new*` keywords and integrating the input
+    function between those borders.  The output data will be set to
+    `ext_value` for any data beyond the abscissa limits of the input
+    data.
+
+    The `conserve` keyword sets how the units of the input data should
+    be treated.  If `conserve=False`, the input data are expected to be
+    in units such that the integral over :math:`dx` is independent of
+    the units of :math:`x` (i.e., flux per unit angstrom, or flux
+    density).  If `conserve=True`, the value of the data is assumed to
+    have been integrated over the size of each pixel (i.e., units of
+    flux).  If `conserve=True`, :math:`y` is converted to units of per
+    step in :math:`x` such that the integral before and after the
+    resample is the same.  For example, if :math:`y` is a spectrum in
+    units of flux, the function first converts the units to flux density
+    and then computes the integral over each new pixel to produce the
+    new spectra with units of flux.
+
+    Args:
+        y (numpy.ndarray): Data values to resample.  Must be 1-D.
+        x (numpy.ndarray): (**Optional**) Abcissa coordinates for the
+            data, which do not need to be regularly sampled.  If not
+            provided, the `xRange`, which is `[0,y.size-1]` by default.
+        xRange (array): (**Optional**) A two-element array with the
+            starting and ending value for the coordinates of the centers
+            of the first and last pixels in y.  Default is
+            `[0,y.size-1]`.
+        inLog (bool): (**Optional**) Flag that the input vector is
+            logarithmically spaced within xRange.  Cannot be used if
+            xRange is not provided!
+        newRange (array): (**Optional**) Coordinates for the (geometric)
+            centers of the first and last pixel in the output vector.
+            If not provided, assumed to be the same as the input range.
+        newpix (int): (**Optional**) Number of pixels for the output
+            vector.  If not provided, assumed to be the same as the
+            input vector.
+        newLog (bool): (**Optional**) The output vector should be
+            logarithmically binned.
+        newdx (float): (**Optional**) The sampling step for the output
+            vector.  If `newLog=True`, this has to be the change in
+            the logarithm of x for the output vector!  If not provided,
+            the sampling is set by the output range (see *newRange*
+            above) and number of pixels (see *newpix* above).
+        base (float): (**Optional**) When logarithmically binning the
+            output vector, use this as the base.  The default is 10;
+            use `numpy.exp(1)` for natural logarithm.
+        ext_value (float): (**Optional**) Set extrapolated values to the
+            provided float.  By default, extrapolated values are set to
+            0.  If set to None, values are just set to the linear
+            exatrapolation of the data beyond the provided limits; use
+            `ext_value=None` with caution!
+        conserve (bool): (**Optional**) Conserve the integral of the
+            input vector.  For example, if the input vector is a
+            spectrum in flux units, you should conserve the flux in the
+            resampling; if the spectrum is in units of flux density, you
+            do not want to conserve the integral.
+
+    Returns:
+        numpy.ndarray: Two numpy arrays with the new x and y values for
+        the resampled data.
+    
+    Raises:
+        ValueError: Raised if *y* is not of type numpy.ndarray, if *y*
+            is not one-dimensional, or if *xRange* is not provided and
+            the input vector is logarithmically binned (see *inLog*
+            above).
+    """
+    # Check operation can be performed
+    if not isinstance(y, numpy.ndarray):
+        raise ValueError('Input vector must be a numpy.ndarray!')
+    if len(y.shape) != 1:
+        raise ValueError('Input must be a 1-D vector!')
+
+    if x is None and xRange is None and inLog:
+        raise ValueError('To specify the input vector as logarithmically binned, you must ' \
+                         'provide the range.')
+    
+    if x is not None and xRange is not None:
+        warnings.warn('Provided both x and the xRange.  Preference given to x.')
+    _xRange = xRange if x is None else None
+
+    n = y.size
+    if x is None and xRange is None:
+        inX = numpy.arange(n).astype(float)
+    elif x is not None:
+        inX = x.copy()
+    else:
+        inX, _ = _pixel_centers(xRange, n, log=inLog, base=base)
+    if len(inX) != n:
+        raise ValueError('Input centers does not have the same length as the y vector.')
+    inBorders = numpy.array([(3*inX[0]-inX[1])/2] + ((inX[1:] + inX[:-1])/2).tolist()
+                                + [(3*inX[-1]-inX[-2])/2])
+    _y = y / numpy.diff(inBorders) if conserve else y
+    inBorderRange = numpy.array([inBorders[0], inBorders[-1]])
+
+    # Set the output range, number of pixels, pixel borders, and output
+    # coordinate vector
+    outRange = numpy.array([inX[0], inX[-1]]) if newRange is None else numpy.array(newRange)
+    m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=newdx,
+                                        default=(n if newpix is None else newpix))
+    outRange = outRange if _outRange is None else _outRange
+    outBorders, _ = _pixel_borders(outRange, m, log=newLog, base=base)
+    outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \
+            else (outBorders[1:]+outBorders[:-1])/2.0
+
+    # Combine the input coordinates and the output borders into a single
+    # vector
+    combinedX = numpy.append( outBorders, inX )
+    srt = numpy.argsort(combinedX)
+    combinedX = combinedX[srt]
+    border = numpy.ones(combinedX.size, dtype=bool)
+    border[m+1:] = False
+
+    # Linearly interpolate the input function at the output border positions
+    interp = interpolate.interp1d(inX, _y, assume_sorted=True, fill_value='extrapolate')
+    combinedY = numpy.append( interp(outBorders), _y)[srt]
+
+    # Use reduceat to calculate the integral
+    integrand = (combinedY[1:]+combinedY[:-1])*numpy.diff(combinedX)/2.0
+    k = numpy.arange(combinedX.size)[border[srt]]
+    outY = numpy.add.reduceat(integrand, k[:-1]) if k[-1] == combinedY.size-1 \
+                    else numpy.add.reduceat(integrand, k)[:-1]
+
+    # Do not conserve the integral over the size of the pixel
+    if not conserve:
+        outY /= numpy.diff(outBorders)
+
+    # Set values for extrapolated regions
+    if ext_value is not None:
+        indx = (outBorders[:-1] < inBorderRange[0]) | (outBorders[1:] > inBorderRange[-1]) 
+        if numpy.sum(indx) > 0:
+            outY[indx] = ext_value
+
+#    pyplot.plot(inX, y)
+#    pyplot.scatter(inX, y, color='C0', marker='.', lw=0, s=100)
+#    pyplot.plot(outX, interp(outX), color='C2') #, marker='.', lw=0, s=100)
+#    pyplot.plot(outX, outY)
+#    pyplot.scatter(outX, outY, color='C1', marker='.', lw=0, s=100)
+#    pyplot.scatter(outBorders, numpy.array([outY[0]]+outY.tolist()), color='C3', marker='x')
+#    pyplot.show()
 
     # Return new coordinates and rebinned values
     return outX, outY

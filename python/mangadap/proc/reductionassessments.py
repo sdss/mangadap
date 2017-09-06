@@ -320,6 +320,8 @@ class ReductionAssessment:
         clobber (bool): (**Optional**) If the output file already
             exists, this will force the assessments to be redone and the
             output file to be overwritten.  Default is False.
+        checksum (bool): (**Optional**) Compare the checksum when
+            reading the data.
         loggers (list): (**Optional**) List of `logging.Logger`_ objects
             to log progress; ignored if quiet=True.  Logging is done
             using :func:`mangadap.util.log.log_output`.  Default is no
@@ -454,17 +456,14 @@ class ReductionAssessment:
             output_file (str): The name of the file with the reduction
                 assessments.  See :func:`compute`.
         """
-        # Set the output directory path
-        self.directory_path = default_dap_common_path(plate=self.drpf.plate,
-                                                      ifudesign=self.drpf.ifudesign,
-                                                      drpver=self.drpf.drpver, dapver=dapver,
-                                                      analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
+        self.directory_path, self.output_file \
+                = ReductionAssessment.default_paths(self.drpf.plate, self.drpf.ifudesign,
+                                                    self.method['key'],
+                                                    directory_path=directory_path,
+                                                    drpver=self.drpf.drpver, dapver=dapver,
+                                                    analysis_path=analysis_path,
+                                                    output_file=output_file)
 
-        # Set the output file
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.method['key']) \
-                                        if output_file is None else str(output_file)
 
     def _per_spectrum_dtype(self):
         r"""
@@ -482,22 +481,6 @@ class ReductionAssessment:
                ]
 
     
-    def file_name(self):
-        """Return the name of the output file."""
-        return self.output_file
-
-
-    def file_path(self):
-        """Return the full path to the output file."""
-        if self.directory_path is None or self.output_file is None:
-            return None
-        return os.path.join(self.directory_path, self.output_file)
-
-
-    def info(self):
-        return self.hdu.info()
-
-
     def _initialize_primary_header(self, hdr=None):
         # Copy the from the DRP and clean it
         if hdr is None:
@@ -512,6 +495,61 @@ class ReductionAssessment:
             hdr['BBWAVE'] = (self.covar_wave, 'Covariance channel wavelength')
             hdr['BBINDEX'] = (self.covar_channel, 'Covariance channel index')
         return hdr
+
+
+    @staticmethod
+    def default_paths(plate, ifudesign, method_key, directory_path=None, drpver=None, dapver=None,
+                      analysis_path=None, output_file=None):
+        """
+        Set the default directory and file name for the output file.
+
+        Args:
+            plate (int): Plate number of the observation.
+            ifudesign (int): IFU design number of the observation.
+            method_key (str): Keyword designating the method used for
+                the reduction assessments.
+            directory_path (str): (**Optional**) The exact path to the
+                DAP reduction assessments file.  Default set by
+                :func:`mangadap.config.defaults.default_dap_common_path`.
+            drpver (str): (**Optional**) DRP version.  Default set by
+                :func:`mangadap.config.defaults.default_drp_version`.
+            dapver (str): (**Optional**) DAP version.  Default set by
+                :func:`mangadap.config.defaults.default_dap_version`.
+            analysis_path (str): (**Optional**) The path to the
+                top-level directory containing the DAP output files for
+                a given DRP and DAP version. Default set by
+                :func:`mangadap.config.defaults.default_analysis_path`.
+            output_file (str): (**Optional**) The name of the file with
+                the reduction assessments.  Default set by
+                :func:`mangadap.config.defaults.default_dap_file_name`.
+
+        Returns:
+            str: Two strings with the path for the output file and the
+            name of the output file.
+        """
+        _directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
+                                                  drpver=drpver, dapver=dapver,
+                                                  analysis_path=analysis_path) \
+                                        if directory_path is None else str(directory_path)
+        _output_file = default_dap_file_name(plate, ifudesign, method_key) \
+                                        if output_file is None else str(output_file)
+        return _directory_path, _output_file
+
+
+    def file_name(self):
+        """Return the name of the output file."""
+        return self.output_file
+
+
+    def file_path(self):
+        """Return the full path to the output file."""
+        if self.directory_path is None or self.output_file is None:
+            return None
+        return os.path.join(self.directory_path, self.output_file)
+
+
+    def info(self):
+        return self.hdu.info()
 
 
     def compute(self, drpf, pa=None, ell=None, dapver=None, analysis_path=None, directory_path=None,

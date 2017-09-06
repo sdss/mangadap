@@ -76,6 +76,15 @@ KBW (??         ): tag 2.1
       reference file for stellar continuum model.
     - HARDCODED: Use first moment of H-alpha as the initial velocity
       guess for the emission lines.
+    - Include pre-pixelized Gaussian extension from DRP.
+    - Use 'z' column in plateTargets files to construct input parameter
+      files instead of the 'nsa_z' column; this should catch the
+      ancillaries not in the NSA but with redshifts in the targeting
+      catalog.
+    - In rundap, wait for cluster processes to finish then also submit a
+      script to construct the DAPall file
+    - Updated versions of ppxf and voronoi_2d_binning and moved these
+      files out of the mangadap package and into a new captools directory
 
 TO FIX:
     - emission-line moment masks

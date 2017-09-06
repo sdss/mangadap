@@ -11,18 +11,19 @@ import numpy
 
 from argparse import ArgumentParser
 
-from matplotlib import pyplot, patches, colors, rc
-from matplotlib.ticker import NullFormatter, MultipleLocator, LogLocator
+from matplotlib import pyplot, colors, rc
+from matplotlib.ticker import NullFormatter, LogLocator
 
 from astropy.io import fits
 
-from mangadap.util.fitsutil import DAPFitsUtil
+from mangadap.drpfits import DRPFits
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.proc.reductionassessments import ReductionAssessment
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.util import growth_lim
+from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
-from mangadap.config.defaults import default_redux_path, default_drp_directory_path
-from mangadap.config.defaults import default_dap_method, default_dap_method_path
-from mangadap.config.defaults import default_dap_plan_file
-
+from mangadap.config import defaults
 
 #-----------------------------------------------------------------------------
 def init_image_ax(fig, pos):
@@ -35,11 +36,7 @@ def init_image_ax(fig, pos):
     return ax
 
 
-def map_beam_patch(extent, ax, pos=(0.1,0.1), **kwargs):
-    width = extent[0]-extent[1]
-    return patches.Circle(pos, 2.5/width/2, transform=ax.transAxes, **kwargs)
-
-
+# THIS IS A TEST FUNCTION!
 def stellar_continuum_scatter(plt, ifu, daptype, binid, snr, r68, r99, rchi2,
                               signal, a, da, an, dan, gmr, t, dt, tn, dtn,
                               svel, ssigo, ssigcor, ssigc, extent=None, ofile=None):
@@ -115,275 +112,6 @@ def stellar_continuum_scatter(plt, ifu, daptype, binid, snr, r68, r99, rchi2,
 
     
 
-    font = { 'size' : 6 }
-    rc('font', **font)
-
-    w,h = pyplot.figaspect(1)
-    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
-
-#    Dx = (extent[0]-extent[1])*1.1
-#    x_lim = (extent[0]+extent[1])/2 + Dx*numpy.array([1,-1])/2
-#    Dy = (extent[2]-extent[3])*1.1
-#    y_lim = (extent[2]+extent[3])/2 + Dy*numpy.array([-1,1])/2
-#    ax.set_xlim(x_lim)
-#    ax.set_ylim(y_lim)
-
-#    so_lim = [10,400]
-#    ss_lim = [10,400]
-
-    # ------------------------------------------------------------------
-    # Layout
-    left = 0.035
-    bott = 0.08
-    imwd = 0.18
-    hbuf = 0.06
-    cbuf = 0.005
-    cbwd = 0.01
-    vbuf = 0.03
-    # ------------------------------------------------------------------
-
-    # ------------------------------------------------------------------
-    # S/N
-    i,j=0,3
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(snr, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'S/N', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # 68th percentile of fractional residuals
-    i,j=1,3
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(r68, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=r68_lim[0], vmax=r68_lim[1]), cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'68% Frac. Resid', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-#    ax.text(0.5, 1.2, '{0}-{1}'.format(plt, ifu), horizontalalignment='center',
-#            verticalalignment='center', transform=ax.transAxes, fontsize=12)
-#    ax.text(0.5, 1.08, daptype, horizontalalignment='center',
-#            verticalalignment='center', transform=ax.transAxes, fontsize=12)
-
-    # ------------------------------------------------------------------
-    # 99th percentile of fractional residuals
-    i,j=2,3
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(r99, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=r99_lim[0], vmax=r99_lim[1]), cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'99% Frac. Resid', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Reduced chi-square
-    i,j=3,3
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(rchi2, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=chi_lim[0], vmax=chi_lim[1], cmap='viridis_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\chi^2_\nu$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-
-    # ------------------------------------------------------------------
-    # Signal
-    i,j=0,2
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(signal, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=s_lim[0], vmax=s_lim[1]), cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$I_g$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # A
-    i,j=1,2
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(a), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=a_lim[0], vmax=a_lim[1], cmap='viridis_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log A$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Delta A
-    i,j=2,2
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(an), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=an_lim[0], vmax=an_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log A_n$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Delta A/Ig
-    i,j=3,2
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(dan), origin='lower', interpolation='nearest',
-                    extent=extent, vmin=dan_lim[0], vmax=dan_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log(\delta A_n)$', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # g-r Color
-#    i,j=0,1
-#    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-#    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-#    img = ax.imshow(gmr, origin='lower', interpolation='nearest', extent=extent,
-#                    vmin=gmr_lim[0], vmax=gmr_lim[1], cmap='viridis_r',
-#                    zorder=3)
-#    cb = fig.colorbar(img, cax=cax, format='%.1f')
-#    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-#    ax.text(0.1, 0.95, r'$g-r$', horizontalalignment='left', verticalalignment='center',
-#            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # T
-    i,j=1,1
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(t), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=t_lim[0], vmax=t_lim[1], cmap='viridis_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log T$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Delta T
-    i,j=2,1
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(tn), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=tn_lim[0], vmax=tn_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log T_n$', horizontalalignment='left', verticalalignment='center',
-            transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Delta T/Ig
-    i,j=3,1
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(dtn), origin='lower', interpolation='nearest',
-                    extent=extent, vmin=dtn_lim[0], vmax=dtn_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\log \delta T_n$', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Stellar velocity
-    i,j=0,0
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(svel, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=sv_lim[0], vmax=sv_lim[1], cmap='RdBu_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$V_\ast$ (km/s)', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Stellar sigma
-    i,j=1,0
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigo, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=so_lim[0], vmax=so_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\sigma_{\rm obs}$ (km/s)', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Sigma correction
-    i,j=2,0
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigcor, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=sc_lim[0], vmax=sc_lim[1], cmap='viridis', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\sigma_{\rm corr}$ (km/s)', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    # ------------------------------------------------------------------
-    # Corrected stellar sigma 
-    i,j=3,0
-    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigc, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=ss_lim[0], vmax=ss_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.1, 0.95, r'$\sigma_\ast$ (km/s)', horizontalalignment='left',
-            verticalalignment='center', transform=ax.transAxes)
-
-    if ofile is None:
-        pyplot.show()
-    else:
-        print('Writing: {0}'.format(ofile))
-        fig.canvas.print_figure(ofile, bbox_inches='tight')
-    fig.clear()
-    pyplot.close(fig)
-
-
 def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, da, an, dan,
                            gmr, t, dt, tn, dtn, svel, ssigo, ssigcor, ssigc, extent=None,
                            ofile=None):
@@ -392,7 +120,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     rc('font', **font)
 
     w,h = pyplot.figaspect(1)
-    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+    fig = pyplot.figure(figsize=(2*w,2*h))
 
 #    Dx = (extent[0]-extent[1])*1.1
 #    x_lim = (extent[0]+extent[1])/2 + Dx*numpy.array([1,-1])/2
@@ -682,14 +410,54 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     fig.clear()
     pyplot.close(fig)
 
+
+def gmr_data(plt, ifu, drpver, redux_path):
+    # Get the g-r map from the data cube
+    drp_cube_file = os.path.join(*DRPFits.default_paths(plt, ifu, 'CUBE', drpver=drpver,
+                                                        redux_path=redux_path))
+    if not os.path.isfile(drp_cube_file):
+        raise FileNotFoundError('{0} does not exist!'.format(drp_cube_file))
+
+    hdu = fits.open(drp_cube_file)
+    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
+                                                       mask=numpy.invert(hdu['GIMG'].data>0))
+                                    / numpy.ma.MaskedArray(hdu['RIMG'].data,
+                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
+    hdu.close()
+    del hdu
+    return gmr_map
+
+
+def rdxqa_data(plt, ifu, plan, drpver, dapver, analysis_path):
+    # Get the surface brightness and S/N maps from the
+    # ReductionAssessments object
+    rdxqa_file = os.path.join(*ReductionAssessment.default_paths(plt, ifu, plan['drpqa_key'],
+                                                                 drpver=drpver, dapver=dapver,
+                                                                 analysis_path=analysis_path))
+    if not os.path.isfile(rdxqa_file):
+        raise FileNotFoundError('{0} does not exist!'.format(rdxqa_file))
+
+    hdu = fits.open(rdxqa_file)
+    spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
+    fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
+    signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
+                                      mask=numpy.invert(fgood_map > 0))
+    snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
+                                   mask=numpy.invert(fgood_map > 0))
+    hdu.close()
+    del hdu
+    return signal_map, snr_map
+
     
-
-def component_stats(plt, ifu, daptype, signal_map=None):
-
-    ifile = os.path.join('fit_method_variations', 'dap_output', daptype, str(plt), str(ifu),
-                         'ref', 'manga-{0}-{1}-SNRR-{2}.fits.gz'.format(plt, ifu, daptype))
-    hdu = fits.open(ifile)
-
+def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, signal_map=None,
+                             tpl_flux_renorm=None):
+    # Get the coefficient data from the StellarContinuumModel object
+    sc_file = os.path.join(*StellarContinuumModel.default_paths(plt, ifu, plan['drpqa_key'],
+                                                                plan['bin_key'],
+                                                                plan['continuum_key'],
+                                                                drpver=drpver, dapver=dapver,
+                                                                analysis_path=analysis_path))
+    hdu = fits.open(sc_file)
     binid_map = hdu['BINID'].data.copy()
 
     if signal_map is None:
@@ -699,7 +467,9 @@ def component_stats(plt, ifu, daptype, signal_map=None):
         unique_indx = unique_indx[1:]
         signal = signal_map.ravel()[unique_indx][ hdu['PAR'].data['BINID_INDEX'] ]
 
-    w = hdu['PAR'].data['TPLWGT'].copy()/tpl_flux_renorm[None,:]
+    w = hdu['PAR'].data['TPLWGT'].copy()
+    if tpl_flux_renorm is not None:
+        w /= tpl_flux_renorm[None,:]
     wn = w/signal[:,None]
 #    t = numpy.sqrt(numpy.sum(numpy.square(w), axis=1))
     t = numpy.sum(numpy.absolute(w), axis=1)
@@ -734,8 +504,110 @@ def component_stats(plt, ifu, daptype, signal_map=None):
 
     return binid_map, t, dt, tn, dtn, a, da, an, dan
 
-
     
+def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
+    method = defaults.default_dap_method(plan=plan)
+    directory_path = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu,
+                                                      drpver=drpver, dapver=dapver,
+                                                      analysis_path=analysis_path)
+    maps_file = defaults.default_dap_file_name(plt, ifu, method, mode='MAPS')
+    
+    hdu = fits.open(os.path.join(directory_path, maps_file))
+
+    mask = hdu['BINID'].data[1,:,:] < 0
+    
+    r68_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[0,:,:], mask=mask)
+    r99_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[1,:,:], mask=mask)
+    rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_RCHI2'].data, mask=mask)
+    svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
+    ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
+    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
+    ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
+
+    extent = map_extent(hdu, 'SPX_MFLUX')
+
+    return r68_map, r99_map, rchi2_map, svel_map, ssigo_map, ssigcor_map, ssigc_map, extent
+
+
+def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, analysis_path=None,
+                    tpl_flux_renorm=None):
+
+    # Set the redux and DRP directory paths
+    _drpver = defaults.default_drp_version() if drpver is None else drpver
+    _redux_path = defaults.default_redux_path(drpver=_drpver) if redux_path is None else redux_path
+    if not os.path.isdir(_redux_path):
+        raise NotADirectoryError('{0} is not a directory.'.format(_redux_path))
+
+    # Set the analysis path
+    _dapver = defaults.default_dap_version() if dapver is None else dapver
+    _analysis_path = defaults.default_analysis_path(drpver=_drpver, dapver=_dapver) \
+                            if analysis_path is None else analysis_path
+    if not os.path.isdir(_analysis_path):
+        raise NotADirectoryError('{0} is not a directory.'.format(_analysis_path))
+
+    # Get the method, it's root directory, and the qa directories
+    method = defaults.default_dap_method(plan=plan)
+    method_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
+                                                  dapver=_dapver, analysis_path=_analysis_path)
+    method_qa_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,
+                                                     drpver=_drpver, dapver=_dapver,
+                                                     analysis_path=_analysis_path)
+
+    # Check that the paths exists
+    if not os.path.isdir(method_dir):
+        raise NotADirectoryError('{0} is not a directory; run the DAP first!'.format(method_dir))
+    if not os.path.isdir(method_qa_dir):
+        os.makedirs(method_qa_dir)
+
+    # Get the name of the output file
+    ofile = os.path.join(method_qa_dir,
+                         'manga-{0}-{1}-MAPS-{2}-ppxffit.png'.format(plt, ifu, method))
+
+    # Get the g-r map
+    gmr_map = gmr_data(plt, ifu, _drpver, _redux_path)
+
+    # Get the reduction assessment data
+    signal_map, snr_map = rdxqa_data(plt, ifu, plan, _drpver, _dapver, _analysis_path)
+
+    # Get the template weights and additive-polynomial coefficients
+    binid_map, t, dt, tn, dtn, a, da, an, dan \
+            = continuum_component_data(plt, ifu, plan, _drpver, _dapver, _analysis_path,
+                                       signal_map=signal_map, tpl_flux_renorm=tpl_flux_renorm)
+
+    # Map the continuum component data
+    t_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), t, quiet=True)
+    t_map = numpy.ma.MaskedArray(t_map, mask=numpy.invert(t_map > 0))
+
+    dt_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dt, quiet=True)
+    dt_map = numpy.ma.MaskedArray(dt_map, mask=numpy.invert(dt_map > 0)) #/t_map
+
+    tn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), tn, quiet=True)
+    tn_map = numpy.ma.MaskedArray(tn_map, mask=numpy.invert(tn_map > 0))
+
+    dtn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dtn, quiet=True)
+    dtn_map = numpy.ma.MaskedArray(dtn_map, mask=numpy.invert(dtn_map > 0)) #/tn_map
+
+    a_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), a, quiet=True)
+    a_map = numpy.ma.MaskedArray(a_map, mask=numpy.invert(a_map > 0))
+
+    da_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), da, quiet=True)
+    da_map = numpy.ma.MaskedArray(da_map, mask=numpy.invert(da_map > 0)) #/a_map
+
+    an_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), an, quiet=True)
+    an_map = numpy.ma.MaskedArray(an_map, mask=numpy.invert(an_map > 0))
+
+    dan_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dan, quiet=True)
+    dan_map = numpy.ma.MaskedArray(dan_map, mask=numpy.invert(dan_map > 0)) #/an_map
+
+    # Get the remaining output maps from the MAPS file
+    r68_map, r99_map, rchi2_map, svel_map, ssigo_map, ssigcor_map, ssigc_map, extent \
+            = maps_data(plt, ifu, plan, _drpver, _dapver, _analysis_path)
+
+#    if not os.path.isfile(ofile):
+    stellar_continuum_maps(plt, ifu, method, snr_map, r68_map, r99_map, rchi2_map, signal_map,
+                           a_map, da_map, an_map, dan_map, gmr_map, t_map, dt_map, tn_map, dtn_map,
+                           svel_map, ssigo_map, ssigcor_map, ssigc_map, extent=extent, ofile=ofile)
+
 
 #-----------------------------------------------------------------------------
 
@@ -748,6 +620,7 @@ if __name__ == '__main__':
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
 
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+    parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
     parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
                         ' defaults to $MANGADAP_DIR', default=None)
@@ -756,9 +629,7 @@ if __name__ == '__main__':
     parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
                         'execution plan to use instead of the default' , default=None)
 
-    parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
-
 
     default_tpl_flux_file = os.path.join(os.environ['MANGADAP_DIR'], 'data', 'spectral_templates',
                                          'miles_cluster', 'mileshc_templates_fluxes.db')
@@ -773,195 +644,28 @@ if __name__ == '__main__':
     if arg.bgagg:
         pyplot.switch_backend('agg')
 
-    # Set the redux and analysis paths and make sure they exist
-    redux_path = default_redux_path(drpver=arg.drpver) \
-                              if arg.redux_path is None else arg.redux_path
-    if not os.path.isdir(redux_path):
-        raise NotADirectoryError('{0} is not a directory.'.format(redux_path))
-    drp_directory_path = default_drp_directory_path(arg.plate, drpver=arg.drpver,
-                                                    redux_path=redux_path)
-    if not os.path.isdir(drp_directory_path):
-        raise NotADirectoryError('{0} is not a directory.'.format(drp_directory_path))
-    analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
-                            if arg.analysis_path is None else arg.analysis_path
-    if not os.path.isdir(analysis_path):
-        raise NotADirectoryError('{0} is not a directory.'.format(analysis_path))
-
-    daptypes = []
-    if arg.daptype is None:
-        plan_file = default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                          analysis_path=arg.analysis_path) \
+    # Get the DAP method types to plot
+    plan_file = defaults.default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+                                               analysis_path=arg.analysis_path) \
                                             if arg.plan_file is None else arg.plan_file
-        analysisplan = AnalysisPlanSet.from_par_file(plan_file)
-        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
-    else:
-        daptypes = [arg.daptype]
+    analysisplan = AnalysisPlanSet.from_par_file(plan_file)
 
+    # Set the template weight renormalization if a file is provided
     tpl_renorm_file = None if arg.template_flux_file == 'None' else arg.template_flux_file
-    tpl_flux_db = numpy.genfromtxt(tpl_renorm_file, dtype=float)
-    tpl_flux_renorm = tpl_flux_db[:,2].copy()
-    del tpl_flux_db
+    if tpl_renorm_file is not None:
+        tpl_flux_db = numpy.genfromtxt(tpl_renorm_file, dtype=float)
+        tpl_flux_renorm = tpl_flux_db[:,2].copy()
+        del tpl_flux_db
+    else:
+        tpl_flux_renorm = None
 
-    for daptype in daptypes:
-        plan_qa_dir = default_dap_method_path(daptype, plate=arg.plate, ifudesign=arg.ifudesign,
-                                              qa=True, drpver=arg.drpver, dapver=arg.dapver,
-                                              analysis_path=analysis_path)
-        ofile = os.path.join(plan_qa_dir,
-                             'manga-{0}-{1}-MAPS-{2}-ppxffit.png'.format(arg.plate, arg.ifudesign,
-                                                                         daptype))
-        if not os.path.isdir(plan_qa_dir):
-            os.makedirs(plan_qa_dir)
+    # Construct the plot for each analysis plan
+    for plan in analysisplan:
 
-        # Get the g-r map from the DRP cube file
-        # TODO: Use DRPFits
-        drpcube = os.path.join(drp_directory_path,
-                               'manga-{0}-{1}-LOGCUBE.fits.gz'.format(arg.plate, arg.ifudesign))
-        hdu = fits.open(ifile)
-        gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                           mask=numpy.invert(hdu['GIMG'].data>0))
-                            / numpy.ma.MaskedArray(hdu['RIMG'].data,
-                                                   mask=numpy.invert(hdu['RIMG'].data>0)))
-        hdu.close()
-        del hdu
-
-        # Get the surface brightness and S/N maps
-        # TODO: Use ReductionAssessments
-        plan_ref_dir = default_dap_method_path(daptype, plate=arg.plate, ifudesign=arg.ifudesign,
-                                               ref=True, drpver=arg.drpver, dapver=arg.dapver,
-                                               analysis_path=analysis_path)
-        rdxqa_file = os.path.join(plan_ref_dir, 'manga-{0}-{1}-SNRR.fits.gz'.format(plt, ifu))
-        hdu = fits.open(ifile)
-
-        spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
-        fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
-        signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
-                                          mask=numpy.invert(fgood_map > 0))
-        snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
-                                       mask=numpy.invert(fgood_map > 0))
-        hdu.close()
-        del hdu
-
-        # Get the template weights and additive-polynomial coefficients
-        binid_map, t, dt, tn, dtn, a, da, an, dan \
-                    = component_stats(plt, ifu, daptype, signal_map=signal_map)
-
-        # Map the component stats
-        t_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), t, quiet=True)
-        t_map = numpy.ma.MaskedArray(t_map, mask=numpy.invert(t_map > 0))
-
-        dt_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dt, quiet=True)
-        dt_map = numpy.ma.MaskedArray(dt_map, mask=numpy.invert(dt_map > 0)) #/t_map
-
-        tn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), tn, quiet=True)
-        tn_map = numpy.ma.MaskedArray(tn_map, mask=numpy.invert(tn_map > 0))
-
-        dtn_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dtn, quiet=True)
-        dtn_map = numpy.ma.MaskedArray(dtn_map, mask=numpy.invert(dtn_map > 0)) #/tn_map
-
-        a_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), a, quiet=True)
-        a_map = numpy.ma.MaskedArray(a_map, mask=numpy.invert(a_map > 0))
-
-        da_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), da, quiet=True)
-        da_map = numpy.ma.MaskedArray(da_map, mask=numpy.invert(da_map > 0)) #/a_map
-
-        an_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), an, quiet=True)
-        an_map = numpy.ma.MaskedArray(an_map, mask=numpy.invert(an_map > 0))
-
-        dan_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), dan, quiet=True)
-        dan_map = numpy.ma.MaskedArray(dan_map, mask=numpy.invert(dan_map > 0)) #/an_map
-
-#        das = da_map/signal_map
-#        rlim = numpy.ma.power(10, growth_lim(numpy.ma.log10(das), 0.95, fac=1.05))
-#        pyplot.imshow(das, origin='lower', interpolation='nearest',
-#                      norm=colors.LogNorm(vmin=rlim[0], vmax=rlim[1]))
-#        pyplot.colorbar()
-#        pyplot.show()
-
-        # Get the remaining output maps from the MAPS file
-        ifile = os.path.join('fit_method_variations', 'dap_output', daptype, str(plt), str(ifu),
-                             'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt, ifu, daptype))
-        hdu = fits.open(ifile)
-        mask = hdu['BINID'].data[1,:,:] < 0
-
-        r68_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[0,:,:], mask=mask)
-        r99_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[1,:,:], mask=mask)
-        rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_RCHI2'].data, mask=mask)
-        svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
-        ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
-        ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
-        ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
-
-        extent = map_extent(hdu, 'SPX_MFLUX')   # Map extent
-
-#        daof = da_map / signal_map
-#
-##        pyplot.imshow(numpy.ma.log10(daof), origin='lower', interpolation='nearest', cmap='viridis')
-##        pyplot.colorbar()
-##        pyplot.show()
-##        exit()
-#
-#        print(numpy.ma.amin(daof), numpy.ma.amax(daof))
-#        print(numpy.ma.amin(signal_map), numpy.ma.amax(signal_map))
-##        pyplot.scatter(snr_map, daof, marker='.', lw=0, s=10)
-#        pyplot.scatter(ssigo_map, daof, marker='.', lw=0, s=10)
-#        pyplot.xlim([0.4, 1000.0])
-#        pyplot.ylim([0.001, 10.0])
-##        pyplot.ylim([0.00001, 1.0])
-#        pyplot.xscale('log')
-#        pyplot.yscale('log')
-#        pyplot.show()
-#        exit()
-
-#        ofile = os.path.join(output_path, 'ppxffit-scat-{0}-{1}-{2}.pdf'.format(plt, ifu, daptype))
-#        ofile = None
-#        if ofile is None or not os.path.isfile(ofile):
-#            stellar_continuum_scatter(plt, ifu, daptype, binid_map.ravel(), snr_map.ravel(),
-#                                      r68_map.ravel(),
-#                                      r99_map.ravel(), rchi2_map.ravel(), signal_map.ravel(),
-#                                      a_map.ravel(), da_map.ravel(), an_map.ravel(),
-#                                      dan_map.ravel(), None, #gmr_map.ravel(),
-#                                      t_map.ravel(),
-#                                      dt_map.ravel(), tn_map.ravel(), dtn_map.ravel(),
-#                                      svel_map.ravel(), ssigo_map.ravel(), ssigcor_map.ravel(),
-#                                      ssigc_map.ravel(), extent=extent, ofile=ofile)
-#        exit()
-
-        ofile = os.path.join(output_path, 'ppxffit-maps-{0}-{1}-{2}.pdf'.format(plt, ifu, daptype))
-        ofile = None
-        if ofile is None or not os.path.isfile(ofile):
-            stellar_continuum_maps(plt, ifu, daptype, snr_map, r68_map, r99_map, rchi2_map,
-                                   signal_map, a_map, da_map, an_map, dan_map,
-                                   gmr_map, t_map, dt_map, tn_map, dtn_map,
-                                   svel_map, ssigo_map, ssigcor_map, ssigc_map,
-                                   extent=extent, ofile=ofile)
-#            stellar_continuum_maps(plt, ifu, daptype, signal_map, snr_map, r68_map, rchi2_map,
-#                                   dt_map, da_map, ssigcor_map, svel_map, ssigo_map, ssigc_map,
-#                                   extent=extent, ofile=ofile)
-        exit()
-
-    exit()
-
-    pyplot.scatter(t, dt, marker='.', s=10, color='k')
-    pyplot.xlim([1e-2, 50])
-    pyplot.ylim([1e-4, 50])
-    pyplot.yscale('log')
-    pyplot.xscale('log')
-    pyplot.show()
-    
-    pyplot.scatter(a, da, marker='.', s=10, color='k')
-    pyplot.xlim([1e-4, 5])
-    pyplot.ylim([1e-9, 5])
-    pyplot.yscale('log')
-    pyplot.xscale('log')
-    pyplot.show()
-    exit()
-    
-    pyplot.scatter(dt, da, marker='.', s=10, color='k')
-    pyplot.xlim([1e-4, 5])
-    pyplot.ylim([1e-4, 5])
-    pyplot.yscale('log')
-    pyplot.xscale('log')
-    pyplot.show()
+        # Construct the plot
+        ppxffit_qa_plot(arg.plate, arg.ifudesign, plan, drpver=arg.drpver,
+                        redux_path=arg.redux_path, dapver=arg.dapver,
+                        analysis_path=arg.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 

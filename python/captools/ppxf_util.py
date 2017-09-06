@@ -245,6 +245,9 @@ def emline(logLam_temp, line_wave, FWHM_gal, pixel=True):
     :return: LSF computed for every logLam_temp
 
     """
+    # (XJ) Change the wavelength of lines to be in vacuum
+    line_wave = air_to_vac(line_wave)
+    
     if callable(FWHM_gal):
         FWHM_gal = FWHM_gal(line_wave)
 
@@ -285,20 +288,25 @@ def emline(logLam_temp, line_wave, FWHM_gal, pixel=True):
 #       using the new function emline(). Thanks to Eric Emsellem for the suggestion.
 #       MC, Oxford, 10 August 2016
 #   V1.2.1: Allow FWHM_gal to be a function of wavelength. MC, Oxford, 16 August 2016
+#   V1.2.2: Introduced `pixel` keyword for optional pixel convolution.
+#       MC, Oxford, 3 August 2017
 
-def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
+def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, pixel=True):
     """
     Generates an array of Gaussian emission lines to be used as gas templates in PPXF.
-    These templates represent the instrumental line spread function (LSF) at the
-    set of wavelengths of each emission line.
+
+    Generally, these templates represent the instrumental line spread function
+    (LSF) at the set of wavelengths of each emission line. In this case, pPXF
+    will return the intrinsic (i.e. true) dispersion of the gas lines.
+
+    Alternatively, one can input FWHM_gal=0, in which case pPXF will return a
+    dispersion which includes both the intrumental and the intrinsic disperson.
 
     Additional lines can be easily added by editing the code of this procedure,
     which is meant as a template to be modified by the users where needed.
 
     For accuracy the Gaussians are integrated over the pixels boundaries.
-    This integration is only useful for quite unresolved Gaussians but one should
-    keep in mind that, if the LSF is not well resolved, the input spectrum is not
-    properly sampled and one is wasting useful information from the spectrograph!
+    This can be changed by setting `pixel`=False in the calls to emline().
 
     The [OI], [OIII] and [NII] doublets are fixed at theoretical flux ratio~3.
 
@@ -311,6 +319,7 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     :param FWHM_gal: is the instrumantal FWHM of the galaxy spectrum under study
         in Angstrom. One can pass either a scalar or the name "func" of a function
         func(wave) which returns the FWHM for a given vector of input wavelengths.
+    :param pixel: Set this to False to ignore pixels integration (default True).
     :return: emission_lines, line_names, line_wave
 
     """
@@ -318,12 +327,12 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha
     line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])  # air wavelengths
     line_names = np.array(['Hdelta', 'Hgamma', 'Hbeta', 'Halpha'])
-    emission_lines = emline(logLam_temp, line_wave, FWHM_gal)
+    emission_lines = emline(logLam_temp, line_wave, FWHM_gal, pixel=pixel)
 
     #                 -----[OII]-----    -----[SII]-----
     lines = np.array([3726.03, 3728.82, 6716.47, 6730.85])  # air wavelengths
     names = np.array(['[OII]3726', '[OII]3729', '[SII]6716', '[SII]6731'])
-    gauss = emline(logLam_temp, lines, FWHM_gal)
+    gauss = emline(logLam_temp, lines, FWHM_gal, pixel=pixel)
     emission_lines = np.append(emission_lines, gauss, 1)
     line_names = np.append(line_names, names)
     line_wave = np.append(line_wave, lines)
@@ -331,7 +340,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[OIII]-----
     lines = np.array([4958.92, 5006.84])    # air wavelengths
-    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
+    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal, pixel=True) \
+              + emline(logLam_temp, lines[1], FWHM_gal, pixel=pixel)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OIII]5007d') # single template for this doublet
     line_wave = np.append(line_wave, lines[1])
@@ -339,7 +349,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                  -----[OI]-----
     lines = np.array([6300.30, 6363.67])    # air wavelengths
-    doublet = emline(logLam_temp, lines[0], FWHM_gal) + 0.33*emline(logLam_temp, lines[1], FWHM_gal)
+    doublet = emline(logLam_temp, lines[0], FWHM_gal, pixel=pixel) \
+              + 0.33*emline(logLam_temp, lines[1], FWHM_gal, pixel=pixel)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OI]6300d') # single template for this doublet
     line_wave = np.append(line_wave, lines[0])
@@ -347,7 +358,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[NII]-----
     lines = np.array([6548.03, 6583.41])    # air wavelengths
-    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
+    doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal, pixel=pixel) \
+              + emline(logLam_temp, lines[1], FWHM_gal, pixel=pixel)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[NII]6583d') # single template for this doublet
     line_wave = np.append(line_wave, lines[1])

@@ -60,9 +60,10 @@ import numpy
 from scipy import sparse
 from astropy.io import fits
 
+from captools.voronoi_2d_binning import voronoi_2d_binning
+
 from ..par.parset import ParSet
 from ..util.geometry import SemiMajorAxisCoo
-from ..contrib.voronoi_2d_binning import voronoi_2d_binning
 from ..util.covariance import Covariance
 
 from matplotlib import pyplot

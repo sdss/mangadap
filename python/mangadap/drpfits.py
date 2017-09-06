@@ -1017,6 +1017,46 @@ class DRPFits:
         return [ 'LIN', 'LOG' ]
 
 
+    @staticmethod
+    def default_paths(plate, ifudesign, mode, drpver=None, redux_path=None, directory_path=None,
+                      output_file=None):
+        """
+        Return the primary directory and file name with the DRP fits
+        LOG-binned file.
+            plate (int): Plate number of the observation.
+            ifudesign (int): IFU design number of the observation.
+            mode (str): 3D mode of the DRP file; must be either 'RSS' or
+                'CUBE'
+            drpver (str): (**Optional**) DRP version.  Default set by
+                :func:`mangadap.config.defaults.default_drp_version`.
+            redux_path (str): (**Optional**) The path to the top level
+                directory containing the DRP output files for a given
+                DRP version.  Default is defined by
+                :func:`mangadap.config.defaults.default_redux_path`.
+            directory_path (str): (**Optional**) The exact path to the
+                DAP reduction assessments file.  Default set by
+                :func:`mangadap.config.defaults.default_dap_common_path`.
+            output_file (str): (**Optional**) The name of the file with
+                the DRP data.  Default set by
+                :func:`mangadap.config.defaults.default_manga_fits_root`.
+
+        Returns:
+            str: Two strings with the path to and name of the DRP data
+            file.
+        """    
+        _directory_path = default_drp_directory_path(plate, drpver=drpver, redux_path=redux_path) \
+                            if directory_path is None else directory_path
+        _output_file = '{0}.fits.gz'.format(default_manga_fits_root(plate, ifudesign,
+                                                                    'LOG{0}'.format(mode))) \
+                            if output_file is None else output_file
+        return _directory_path, _output_file
+
+
+    def file_path(self):
+        """Return the full path to the DRP file"""
+        return os.path.join(self.directory_path, self.file_name())
+
+
     def file_name(self):
         """Return the name of the DRP file"""
         root = default_manga_fits_root(self.plate, self.ifudesign, 'LOG{0}'.format(self.mode))
@@ -1310,6 +1350,10 @@ class DRPFits:
                 for i in range(self.nspec):
                     _sres[i,:] = interpolate_masked_vector(_sres[i,:])
                 sres = _sres.reshape(sres.shape)
+#                pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest')
+#                pyplot.colorbar()
+#                pyplot.show()
+#                exit()
             return sres
         if 'SPECRES' in _ext:
 #            print('using SPECRES')
@@ -2154,13 +2198,42 @@ class DRPFits:
         return interp(self['WAVE'].data)
 
 
-    def _covariance_wavelength(self, waverange=None, response_func=None, flag=None):
+    def _covariance_wavelength(self, waverange=None, response_func=None, per_pixel=True, flag=None):
+        """
+        Determine the wavelength at which to calculate the covariance
+        matrix.
+
+        Args:
+            waverange (array-like): (**Optional**) Starting and ending
+                wavelength over which to calculate the statistics.
+                Default is to use the full wavelength range.
+            response_func (array-like): (**Optional**) A two-column
+                array with the wavelength and transmission of a
+                broad-band response function to use for the calculation.
+            per_pixel (bool): (**Optional**) When providing a response
+                function, continue to calculate the statistics per
+                pixel, as opposed to per angstrom.  Default is to
+                compute the statistics on a per pixel basis.
+            flag (str or list): (**Optional**) (List of) Flag names that
+                are considered when deciding if a pixel should be
+                masked.  The names *must* be a valid bit name as defined
+                by :attr:`bitmask` (see :class:`DRPFitsBitMask`).
+
+        Returns:
+            float: The response-weighted center of the wavelength region
+            used to calculate the S/N, which will be where the
+            covariance matrix is calculated.
+
+        """
         if waverange is None and response_func is None:
             return (self['WAVE'].data[0]+self['WAVE'].data[-1])/2.
 
+        wave = self['WAVE'].data
         flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
 
-        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        dw = numpy.ones(self.nwave, dtype=float) if per_pixel else \
+                    spectral_coordinate_step(wave, log=True)*numpy.log(10.)*wave
+
         _response_func = self._interpolated_response_function(response_func)
         response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux))
                                         *_response_func[None,:]*dw[None,:], axis=1)
@@ -2569,8 +2642,8 @@ class DRPFits:
                ((self.hdu[0].header['IFUDEC'] - self.hdu[0].header['OBJDEC']) * 3600.)
 
 
-    def mean_sky_coordinates(self, waverange=None, response_func=None, offset=True, flag=None,
-                             fluxwgt=False):
+    def mean_sky_coordinates(self, waverange=None, response_func=None, per_pixel=True, offset=True,
+                             flag=None, fluxwgt=False):
         r"""
         Compute the mean sky coordinates for each spectrum.
         
@@ -2607,6 +2680,9 @@ class DRPFits:
             response_func (array-like): (**Optional**) A two-column
                 array with the wavelength and transmission of a
                 broad-band response function to use for the calculation.
+            per_pixel (bool): (**Optional**) When providing a response
+                function, continue to calculate the statistics per
+                pixel, as opposed to per angstrom.  Default is to
             offset (bool) : Offset the coordinates to the object
                 coordinates.
             flag (str or list): (**Optional**) (List of) Flag names that
@@ -2639,7 +2715,9 @@ class DRPFits:
             flux = self.copy_to_masked_array(ext='FLUX', waverange=waverange, flag=flag)
 
         # Set the response function
-        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        wave = self['WAVE'].data
+        dw = numpy.ones(self.nwave, dtype=float) if per_pixel else \
+                    spectral_coordinate_step(wave, log=True)*numpy.log(10.)*wave
         _response_func = self._interpolated_response_function(response_func)
 
         # Get the normalization and return the flux- or un-weighted coordinates
@@ -2654,8 +2732,8 @@ class DRPFits:
                     numpy.ma.sum(ypos*_response_func[None,:]*dw[None,:],axis=1)/norm
 
 
-    def flux_stats(self, waverange=None, response_func=None, flag=None, covar=False,
-                   correlation=False, covar_wave=None):
+    def flux_stats(self, waverange=None, response_func=None, per_pixel=True, flag=None,
+                   covar=False, correlation=False, covar_wave=None):
         r"""
         Compute the mean flux, propagated error in the mean flux, and
         mean S/N over the specified wavelength range; if the wavelength
@@ -2677,6 +2755,10 @@ class DRPFits:
             response_func (array-like): (**Optional**) A two-column
                 array with the wavelength and transmission of a
                 broad-band response function to use for the calculation.
+            per_pixel (bool): (**Optional**) When providing a response
+                function, continue to calculate the statistics per
+                pixel, as opposed to per angstrom.  Default is to
+                compute the statistics on a per pixel basis.
             flag (str or list): (**Optional**) (List of) Flag names that
                 are considered when deciding if a pixel should be
                 masked.  The names *must* be a valid bit name as defined
@@ -2709,12 +2791,14 @@ class DRPFits:
                 raise ValueError('Response function object must only have two columns.')
 
         # Grab the masked arrays
+        wave = self['WAVE'].data
         flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
         ivar = self.copy_to_masked_array(ext='IVAR', waverange=waverange, flag=flag)
         snr = flux*numpy.ma.sqrt(ivar)
 
         # Set the response function
-        dw = spectral_coordinate_step(self['WAVE'].data, log=True)*numpy.log(10.)*self['WAVE'].data
+        dw = numpy.ones(self.nwave, dtype=float) if per_pixel else \
+                    spectral_coordinate_step(wave, log=True)*numpy.log(10.)*wave
         _response_func = self._interpolated_response_function(response_func)
 
 #        print(flux.shape)
@@ -2762,9 +2846,9 @@ class DRPFits:
         _covar_wave = covar_wave if covar_wave is not None \
                         else self._covariance_wavelength(waverange=waverange,
                                                          response_func=response_func,
-                                                         flag=flag)
+                                                         per_pixel=per_pixel, flag=flag)
 
-        channel = numpy.argsort( numpy.absolute(self.hdu['WAVE'].data - _covar_wave) )[0]
+        channel = numpy.argsort( numpy.absolute(wave - _covar_wave) )[0]
 
 #        t = self.bitmask.flagged(self.hdu['MASK'].data[:,:,channel],
 #                                 flag=['NOCOV', 'LOWCOV', 'DEADFIBER'])

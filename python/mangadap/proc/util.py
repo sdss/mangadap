@@ -226,19 +226,39 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])
 
 
-def residual_growth(resid, growth_samples):
-    """
-    Sample a set of residuals at specific the growth intervals.  No
-    interpolation is performed.
-    """
-    np = resid.size
-    resid_sort = numpy.sort(numpy.absolute(resid))
-    i = numpy.zeros(len(growth_samples)+2, dtype=float)
-    i[1:-1] = np*numpy.asarray(growth_samples)
-    i[-1] = np-1
-    i[i < 0] = 0
-    i[i >= np] = np-1
-    return resid_sort[i.astype(int)]
+#def residual_growth(resid, growth_samples):
+#    """
+#    Sample a set of residuals at specific the growth intervals.  No
+#    interpolation is performed.
+#    """
+#    np = resid.size
+#    resid_sort = numpy.sort(numpy.absolute(resid))
+#    i = numpy.zeros(len(growth_samples)+2, dtype=float)
+#    i[1:-1] = np*numpy.asarray(growth_samples)
+#    i[-1] = np-1
+#    i[i < 0] = 0
+#    i[i >= np] = np-1
+#    return resid_sort[i.astype(int)]
+
+
+def sample_growth(a, samples, default=-9999., use_interpolate=True):
+    _samples = numpy.asarray(samples)
+    if numpy.any((_samples < 0) | (_samples > 1)):
+        raise ValueError('Growth samples must be between 0 and 1.')
+    _a = a.compressed() if isinstance(a, numpy.ma.MaskedArray) else numpy.atleast_1d(a).ravel()
+    ns = _samples.size
+    if len(_a) < 2:
+        return [default]*ns if ns > 1 else default
+    srt = numpy.argsort(_a)
+    n = _a.size
+    grw = (numpy.arange(n,dtype=float)+1)/n
+    if use_interpolate:
+        interpolator = interpolate.interp1d(grw, _a[srt], fill_value='extrapolate')
+        g = interpolator(_samples)
+        return tuple(g) if ns > 1 else g
+    i = (n*_samples).astype(int)
+    i[i > n-1] = n-1
+    return _a[srt][i]
 
 
 def growth_lim(a, lim, fac=1.0, midpoint=None, default=[0., 1.]):

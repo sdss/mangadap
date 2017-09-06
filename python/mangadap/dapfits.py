@@ -63,6 +63,11 @@ the MaNGA Data Analysis Pipeline (DAP).
     | ** 3 May 2017**: (KBW) Allow output maps and cube types to be
         single-precision (float32) floats, and changed BINID from int
         (defaults to 64-bit) to int32.
+    | **24 Aug 2017**: (KBW) Added BADGEOM DAPQUAL bit; signifies 
+        invalid photometric geometry parameters used when instantiating
+        the :class:`mangadap.par.obsinput.ObsInputPar` object.
+    | **29 Aug 2017**: (KBW) Add S/N metrics to the MAPS primary header
+    | **30 Aug 2017**: (KBW) Convert some changes from Xihan Ji.
 
 .. todo::
     - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
@@ -70,6 +75,8 @@ the MaNGA Data Analysis Pipeline (DAP).
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
+.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html
+
 """
 
 from __future__ import print_function
@@ -118,8 +125,8 @@ class DAPQualityBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_quality_bits.ini'))
 
 
@@ -129,8 +136,8 @@ class DAPMapsBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_maps_bits.ini'))
 
 
@@ -140,8 +147,8 @@ class DAPCubeBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
+        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_cube_bits.ini'))
 
 
@@ -723,7 +730,10 @@ class construct_maps_file:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel(),
+                                           dapsrc=dapsrc)
+        
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
@@ -746,7 +756,11 @@ class construct_maps_file:
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
         # is not within the factor below
-        if emission_line_moments is not None and emission_line_model is not None:
+        if emission_line_moments is not None and emission_line_model is not None \
+                    and self.hdu['EMLINE_GFLUX'].data.shape != self.hdu['EMLINE_SFLUX'].data.shape:
+            warnings.warn('Cannot compare emission-line moment and model fluxes!')
+        elif emission_line_moments is not None and emission_line_model is not None \
+                    and self.hdu['EMLINE_GFLUX'].data.shape == self.hdu['EMLINE_SFLUX'].data.shape:
             factor = 5.0
             indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
                     & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
@@ -1479,13 +1493,18 @@ class construct_maps_file:
 
         # Need multichannel map header if more than one moment
         multichannel = emission_line_model.neml > 1
-        # Build the channel names
-        names= [ '{0}-{1}'.format(n,int(w)) \
+
+        # Create the basic header for all extensions
+        if 'data' in emission_line_model['PAR'].__dict__:
+            names= [ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(emission_line_model['PAR'].data['NAME'],
                                        emission_line_model['PAR'].data['RESTWAVE']) ]
-        # Create the basic header for all extensions
-        base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
-                                                 else self.singlechannel_maphdr, names)
+            base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
+                                                     else self.singlechannel_maphdr, names)
+        else:
+            # TODO: This should throw a ValueError, not just a warning
+            warnings.warn('Emission-line model does not include channel names!')
+            base_hdr = self.multichannel_maphdr if multichannel else self.singlechannel_maphdr
        
         hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GFLUX', err=True, qual=True,
                                                 bunit='1E-17 erg/s/cm^2/spaxel',
@@ -1670,9 +1689,10 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, drpf, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False, single_precision=False):
+    def __init__(self, drpf, obs=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
+                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False,
+                 single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -1763,7 +1783,7 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, binned_spectra, dapsrc=dapsrc,
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
 
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -2153,7 +2173,7 @@ def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emiss
 
 
 
-def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, loggers=None,
+def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, loggers=None,
                                 quiet=False):
 
     # Initialize the DAP quality flag
@@ -2166,11 +2186,15 @@ def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, logge
         dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
         dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
 
-    #Signify that the Voronoi binning resulted in a single bin
+    # Signify that the Voronoi binning resulted in a single bin
     if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
             and binned_spectra.method['binclass'].bintype == 'voronoi' \
             and binned_spectra.nbins == 1:
         dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
+
+    # Input photometric geometry and scale were invalid
+    if obs is not None and not (obs.valid_ell and obs.valid_pa and obs.valid_reff):
+        dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
     # Determine if there's a foreground star
     if numpy.sum(drpf.bitmask.flagged(drpf['MASK'].data, flag='FORESTAR')) > 0:
@@ -2183,6 +2207,89 @@ def finalize_dap_primary_header(prihdr, drpf, binned_spectra, dapsrc=None, logge
     prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
 
     return prihdr
+
+
+def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
+    """
+    For all valid spaxels within 1 Re < R < 1.5 Re calculate the median
+    S/N and combined S/N (including covariance) in the griz bands.
+
+    Adds the following keywords (8) to the header:
+        - SNR?MED: Median S/N within 1-1.5 Re in each of the griz bands.
+        - SNR?RING: The combined S/N of all spaxels within 1-1.5 Re in
+          the griz bands, incuding covariance
+
+    The inclusion of covariance is based on the exact calculation of the
+    correlation matrix at the flux-weighted center of each band, and
+    assuming no change in the correlation between the response-weighted
+    correlation within the broad band.
+
+    Args:
+        hdr (`astropy.io.fits.Header`_): Header object to edit
+        drpf (:class:`mangadap.drpfits.DRPFits`): DRP fits cube
+        r_re (numpy.ndarray): *Flattened* array with the semi-major axis
+            radius in units of the effective radius for all spaxels in
+            the datacube.  Shape should be (Nx*Ny,), where the shape of
+            the datacube is (Nx,Ny,Nwave).
+
+    Returns:
+        `astropy.io.fits.Header`_: The edited header object.
+
+    Raises:
+        FileNotFoundError: Raised if any of the response function files
+            cannot be found.
+    """
+    _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    filter_response_file = [ os.path.join(_dapsrc, 'data', 'filter_response',
+                                           f) for f in [ 'gunn_2001_g_response.db',
+                                                         'gunn_2001_r_response.db',
+                                                         'gunn_2001_i_response.db',
+                                                         'gunn_2001_z_response.db'] ]
+    for f in filter_response_file:
+        if not os.path.isfile(f):
+            raise FileNotFoundError('{0} does not exist!'.format(f))
+
+    # Set the header keywords
+    key_med = ['SNRGMED', 'SNRRMED', 'SNRIMED', 'SNRZMED' ]
+    com_med = [ 'Median g-band SNR from 1-1.5 Re', 'Median r-band SNR from 1-1.5 Re',
+                'Median i-band SNR from 1-1.5 Re', 'Median z-band SNR from 1-1.5 Re' ]
+                    
+    key_ring = ['SNRGRING', 'SNRRRING', 'SNRIRING', 'SNRZRING' ]
+    com_ring = [ 'g-band SNR in 1-1.5 Re bin', 'r-band SNR in 1-1.5 Re bin',
+                 'i-band SNR in 1-1.5 Re bin', 'z-band SNR in 1-1.5 Re bin' ]
+
+    # Run the S/N calculation; this is the same calculation as done in
+    # mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_covariance_matrix
+    nfilter = len(filter_response_file)
+    for i in range(nfilter):
+        response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
+        signal, variance, snr, covar = drpf.flux_stats(response_func=response_func,
+                                                       flag=['DONOTUSE', 'FORESTAR'],
+                                                       covar=True) #, correlation=True)
+        # Get the spaxels within the radius limits
+        indx = numpy.arange(r_re.size)[(r_re > 1) & (r_re < 1.5) & numpy.invert(signal.mask)]
+        if len(indx) == 0:
+            hdr[key_med[i]] = (0., com_med[i])
+            hdr[key_ring[i]] = (0., com_ring[i])
+            continue
+            
+        # Get the appropriate covariance pixels to select
+        ci, cj = map( lambda x: x.ravel(), numpy.meshgrid(indx, indx) )
+
+        # Use the covariance matrix from the single wavelength channel
+        # calculation, but renormalize it to the mean variance over the
+        # response function
+        covar = covar.apply_new_variance(variance).toarray()
+        # Set the median S/N ...
+        hdr[key_med[i]] = (numpy.ma.median(snr[indx]), com_med[i])
+        # ... and the combined S/N
+        hdr[key_ring[i]] = (numpy.ma.sum(signal[indx])/numpy.sqrt(numpy.sum(covar[ci,cj])),
+                            com_ring[i])
+
+    return hdr
+
+
+
 
 
 

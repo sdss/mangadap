@@ -422,6 +422,12 @@ class DRPComplete:
         pa = numpy.full(n_drp, -9999.0, dtype=numpy.float64)
         Reff = numpy.full(n_drp, -9999.0, dtype=numpy.float64)
 
+        # platetargets now include the redshift from the targetting
+        # catalog which is the combination of the NSA data and the
+        # ancillary targets; the NSA only redshift column is 'nsa_z'
+#        redshift_key = 'nsa_z'
+        redshift_key = 'z'
+
         print('Searching platetargets file for observed galaxies...', end='\r')
         for i in range(n_drp):
             plttrg_j = 0
@@ -488,10 +494,13 @@ class DRPComplete:
                 manga_trg3[i] = -9999
 
             try:
-                vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0] \
+                vel[i] = plttrg_data[plttrg_j]['PLTTRGT'][redshift_key][indx][0] \
                             * astropy.constants.c.to('km/s').value
             except:
                 vel[i] = -9999.0
+
+            # TODO: Include a check that replaces an invalid vel with
+            # one if the nsa_z columns is available...
 
             try:
                 if plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_ba'][indx][0] < 0:
@@ -572,13 +581,13 @@ class DRPComplete:
         print('Read data: {0} rows'.format(self.nobs))
 
 
-    def _confirm_access(self, reread):
+    def _confirm_access(self, reread=False):
         """
         Check the drpcomplete fits file at :func:`file_path` is
         accessible, and read the data if not yet read.
 
         Args:
-            reread (bool): Force the file to be re-read
+            reread (bool): (**Optional**) Force the file to be re-read
 
         Raises:
             FileNotFoundError: Raised if the drpcomplete fits file does
@@ -1045,7 +1054,7 @@ class DRPComplete:
         if index is None:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
-            self._confirm_access(reread)
+            self._confirm_access(reread=reread)
             if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
@@ -1105,7 +1114,7 @@ class DRPComplete:
         if index is None:
             index = self.entry_index(plate, ifudesign, reread=reread)
         else:
-            self._confirm_access(reread)
+            self._confirm_access(reread=reread)
             if index >= self.nobs:
                 raise ValueError('Selected row index does not exist')
 
@@ -1143,7 +1152,7 @@ class DRPComplete:
             Exception: Raised if the given *plate* and *ifudesign* were
                 not found.
         """
-        self._confirm_access(reread)
+        self._confirm_access(reread=reread)
 
         for i in range(self.nobs):
             if self.hdu['DRPC'].data['PLATE'][i] == plate \

@@ -331,7 +331,7 @@ def available_spatial_binning_methods(dapsrc=None):
             binclass = None
             binfunc = None
 
-        stack_spec_res = cnfg['spec_res'] == 'spaxel'
+        stack_spec_res = cnfg.get('spec_res') == 'spaxel'
 
         stackpar = SpectralStackPar(cnfg.get('operation', default='mean'),
                                     cnfg.getbool('velocity_register', default=False), None,
@@ -339,7 +339,7 @@ def available_spatial_binning_methods(dapsrc=None):
                                     SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
                                             cnfg['stack_covariance_par']),
-                                    stack_spec_res)
+                                    stack_spec_res, cnfg.getbool('prepixel_sres', default=True))
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
@@ -1830,4 +1830,45 @@ class SpatiallyBinnedSpectra:
                         if indices else self.hdu['BINS'].data['BINID'][reference_bin][nearest_bin]
 
         return output_bins[0] if single_value else output_bins
+
+
+    def replace_with_data_from_nearest_bin(self, data, bad_bins):
+        """
+        Replace data in the list provided bad bins with the data from
+        the nearest good bin.
+
+        Args:
+            data (array-like): Data for each bin.  The length must be
+                the same as :attr:`nbins`.
+            bad_bins (array-like): The list of indices (must not be a
+                boolean array) with bad values to be replaced.
+        
+        Returns:
+            numpy.ndarray: A new array with the bad data filled with the
+            data from the nearest bin.
+
+        Raises:
+            ValueError: Raised if the input array doesn't have the
+                correct shape or if the list of bad bins has numbers
+                outside the viable range (0,self.nbins-1).
+        """
+        if len(data) != self.nbins:
+            raise ValueError('Input data must have {0} elements.'.format(self.nbins))
+            
+        # No bad bins so just return the input
+        if len(bad_bins) == 0:
+            return data
+        
+        if numpy.amin(bad_bins) < 0 or numpy.amax(bad_bins) > self.nbins-1:
+            raise ValueError('Bad bins must be between 0 and {0}.'.format(self.nbins-1))
+
+        # Find the nearest bins
+        nearest_good_bin_index = self.find_nearest_bin(bad_bins, indices=True)
+        # Get the indices of the bad bins
+        bad_bin_index = self.get_bin_indices(bad_bins)
+        # Replace the data
+        data[bad_bin_index] = data[nearest_good_bin_index]
+
+        return data
+        
 

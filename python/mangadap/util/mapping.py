@@ -491,6 +491,11 @@ def _match_map_arrays_integer_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=F
     return (_arr, arr1, ext1) if swap else (arr1, _arr, ext1) 
 
 
+def map_beam_patch(extent, ax, pos=(0.1,0.1), **kwargs):
+    width = extent[0]-extent[1]
+    return patches.Circle(pos, 2.5/width/2, transform=ax.transAxes, **kwargs)
+
+
 
 
 

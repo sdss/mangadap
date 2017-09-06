@@ -51,6 +51,10 @@ Stack some spectra!
         bins were included.  They're now excluded, forcing classes like
         :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
         to keep track of missing bins.
+    | **30 Aug 2017**: (KBW) Switch from
+        :func:`mangadap.util.instrument.resample_vector` to
+        :func:`mangadap.util.instrument.resample1d` in untested function
+        :func:`SpectralStack.register`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
@@ -74,6 +78,8 @@ import astropy.constants
 
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
+
+from ..util.instrument import resample1d, resample_vector_npix, spectral_coordinate_step
 
 from matplotlib import pyplot, rc
 
@@ -105,24 +111,29 @@ class SpectralStackPar(ParSet):
             needed to perform a given method of handling the covariance.
             See :func:`SpectralStack.covariance_mode_options` for the
             available options.
-
+        stack_sres (bool): Stack the spectral resolution as well as the
+            flux data.
+        prepixel_sres (bool): Use the pre-pixelized spectral resolution.
+            If true and the prepixelized versions are not available, an
+            error will be raised!
     """
-    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres):
+    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres,
+                 prepixel_sres):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
         covar_options = SpectralStack.covariance_mode_options()
         
         pars =     [ 'operation', 'vel_register', 'vel_offsets',  'covar_mode',   'covar_par',
-                        'stack_sres' ]
+                        'stack_sres', 'prepixel_sres' ]
         values =   [   operation,   vel_register,   vel_offsets,    covar_mode,     covar_par,
-                          stack_sres ]
+                          stack_sres,   prepixel_sres ]
         defaults = [      'mean',          False,          None,        'none',          None,
-                                True ]
+                                True,            True ]
         options =  [  op_options,           None,          None, covar_options,          None,
-                                None ]
+                                None,            None ]
         dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like,
-                                bool ]
+                                bool,            bool ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -142,6 +153,7 @@ class SpectralStackPar(ParSet):
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
         hdr['STCKRES'] = (str(self['stack_sres']), 'Spectral resolution stacked')
+        hdr['STCKPRE'] = (str(self['prepixel_sres']), 'Use prepixelized spectral resolution')
         return hdr
 
 
@@ -156,6 +168,7 @@ class SpectralStackPar(ParSet):
         self['covar_mode'] = hdr['STCKCRMD']
         self['covar_par'] = eval(hdr['STCKCRPR'])
         self['stack_sres'] = eval(hdr['STCKRES'])
+        self['prepixel_sres'] = eval(hdr['STCKPRE'])
 
 
 class SpectralStack():
@@ -493,6 +506,14 @@ class SpectralStack():
         return Covariance(covar, input_indx=self.covar.input_indx)
             
 
+    def _get_stack_mean(self):
+        """
+        Return the mean of the stacked spectra using the internal data.
+        """
+        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
+                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
+
+
     @staticmethod
     def operation_options():
         """
@@ -701,11 +722,12 @@ class SpectralStack():
         inp_sres = SpectralStack._get_input_sres(sres, flux.shape[0])
 
         # Input and output spectral range
-        inRange = [wave[0], wave[-1]]
-        outRange = inRange if keep_range else list(min_max_wave(wave, voff))
+#        inRange = [wave[0], wave[-1]]
+        outRange = [wave[0], wave[-1]] if keep_range else list(min_max_wave(wave, voff))
         # Sampling (logarithmic or linear)
-        dw = (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
-                    if log else (wave[1] - wave[0])
+        dw = spectral_coordinate_step(wave, log=log, base=base)
+#        (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
+#                    if log else (wave[1] - wave[0])
         # Output number of pixels
         if keep_range:
             nwave = wave.size
@@ -717,23 +739,34 @@ class SpectralStack():
         _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
         _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-#        var = None if ivar is None else inverse_with_zeros(ivar, absolute=False)
         var = None if ivar is None else numpy.ma.power(ivar, -1).filled(0.0)
 
         # Resample each spectrum
         for i in range(nspec):
-            _wave, _flux[i,:] = resample_vector(flux[i,:].ravel(), xRange=inRange, inLog=log,
-                                                newRange=outRange, newpix=nwave, base=base)
-            _wave, _mask[i,:] = resample_vector(inp_mask[i,:].ravel(), xRange=inRange, inLog=log,
-                                                newRange=outRange, newpix=nwave, base=base,
-                                                ext_value=1)
+            _wave, _flux[i,:] = resample1d(flux[i,:].ravel(), x=wave, inLog=log, newRange=outRange,
+                                           newpix=nwave, base=base)
+            _wave, _mask[i,:] = resample1d(inp_mask[i,:].ravel(), x=wave, inLog=log,
+                                           newRange=outRange, newpix=nwave, base=base, ext_value=1)
             if var is not None:
-                _wave, _ivar[i,:] = resample_vector(var[i,:].ravel(), xRange=inRange, inLog=log,
-                                                    newRange=outRange, newpix=nwave, base=base)
+                _wave, _ivar[i,:] = resample1d(var[i,:].ravel(), x=wave, inLog=log,
+                                               newRange=outRange, newpix=nwave, base=base)
             if inp_sres is not None:
-                _wave, _sres[i,:] = resample_vector(inp_sres[i,:].ravel(), xRange=inRange,
-                                                    inLog=log, newRange=outRange, newpix=nwave,
-                                                    base=base)
+                _wave, _sres[i,:] = resample1d(inp_sres[i,:].ravel(), x=wave, inLog=log,
+                                               newRange=outRange, newpix=nwave, base=base)
+#            _wave, _flux[i,:] = resample_vector(flux[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                newRange=outRange, newpix=nwave, base=base,
+#                                                flat=False)
+#            _wave, _mask[i,:] = resample_vector(inp_mask[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                newRange=outRange, newpix=nwave, base=base,
+#                                                ext_value=1, flat=False)
+#            if var is not None:
+#                _wave, _ivar[i,:] = resample_vector(var[i,:].ravel(), xRange=inRange, inLog=log,
+#                                                    newRange=outRange, newpix=nwave, base=base,
+#                                                    flag=False)
+#            if inp_sres is not None:
+#                _wave, _sres[i,:] = resample_vector(inp_sres[i,:].ravel(), xRange=inRange,
+#                                                    inLog=log, newRange=outRange, newpix=nwave,
+#                                                    base=base, flag=False)
         indx = _mask > 0.5
         _mask[indx] = 1.0
         _mask[numpy.invert(indx)] = 0.0
@@ -818,7 +851,7 @@ class SpectralStack():
         flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
         ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
         sres = None if par is None or not par['stack_sres'] \
-                else drpf.spectral_resolution(toarray=True, pre=True)
+                else drpf.spectral_resolution(toarray=True, pre=par['prepixel_sres'])
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 
@@ -977,14 +1010,6 @@ class SpectralStack():
         if operation == 'sum':
             return self.wave, self.flux, self.fluxsdev, self.npix, self.ivar, self.sres, self.covar
         return self._get_stack_mean()
-
-
-    def _get_stack_mean(self):
-        """
-        Return the mean of the stacked spectra using the internal data.
-        """
-        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
-                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
 
 
         

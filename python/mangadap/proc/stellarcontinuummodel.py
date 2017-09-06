@@ -579,22 +579,15 @@ class StellarContinuumModel:
                 See :func:`compute`.
 
         """
-        # Set the output directory path
-        method = default_dap_method(binned_spectra=self.binned_spectra, stellar_continuum=self)
-        #method = '{0}-{1}'.format(self.binned_spectra.method['key'], self.method['key'])
-        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      ref=True,
-                                                      drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver, analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
-
-        # Set the output file
-        ref_method = '{0}-{1}-{2}'.format(self.binned_spectra.rdxqa.method['key'],
-                                      self.binned_spectra.method['key'], self.method['key'])
-        self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
-                                        if output_file is None else str(output_file)
+        self.directory_path, self.output_file \
+                = StellarContinuumModel.default_paths(self.binned_spectra.drpf.plate,
+                                                      self.binned_spectra.drpf.ifudesign,
+                                                      self.binned_spectra.rdxqa.method['key'],
+                                                      self.binned_spectra.method['key'],
+                                                      self.method['key'],
+                                                      directory_path=directory_path, dapver=dapver,
+                                                      analysis_path=analysis_path,
+                                                      output_file=output_file)
 
 
     def _initialize_primary_header(self, hdr=None):
@@ -778,6 +771,54 @@ class StellarContinuumModel:
                                             array=model_par[n]) for n in model_par.dtype.names ],
                                                                name='PAR')
                                 ])
+
+    @staticmethod
+    def default_paths(plate, ifudesign, rdxqa_method, binning_method, method_key,
+                      directory_path=None, drpver=None, dapver=None, analysis_path=None,
+                      output_file=None):
+        """
+        Set the default directory and file name for the output file.
+
+        Args:
+            plate (int): Plate number of the observation.
+            ifudesign (int): IFU design number of the observation.
+            rdxqa_method (str): Keyword designating the method used to
+                construct the reductions assessments.
+            bin_method (str): Keyword designating the method use for the
+                spatial binning.
+            method_key (str): Keyword designating the method used for
+                the stellar-continuum fitting.
+            directory_path (str): (**Optional**) The exact path to the
+                DAP stellar-continuum file.  Default set by
+                :func:`mangadap.config.defaults.default_dap_method_path`.
+            drpver (str): (**Optional**) DRP version.  Default set by
+                :func:`mangadap.config.defaults.default_drp_version`.
+            dapver (str): (**Optional**) DAP version.  Default set by
+                :func:`mangadap.config.defaults.default_dap_version`.
+            analysis_path (str): (**Optional**) The path to the
+                top-level directory containing the DAP output files for
+                a given DRP and DAP version. Default set by
+                :func:`mangadap.config.defaults.default_analysis_path`.
+            output_file (str): (**Optional**) The name of the file with
+                the reduction assessments.  Default set by
+                :func:`mangadap.config.defaults.default_dap_file_name`.
+
+        Returns:
+            str: Two strings with the path for the output file and the
+            name of the output file.
+        """
+        # Set the output directory path
+        method = default_dap_method(binning_method=binning_method, continuum_method=method_key)
+        directory_path = default_dap_method_path(method, plate=plate, ifudesign=ifudesign,
+                                                 ref=True, drpver=drpver, dapver=dapver,
+                                                 analysis_path=analysis_path) \
+                                        if directory_path is None else str(directory_path)
+
+        # Set the output file
+        ref_method = '{0}-{1}-{2}'.format(rdxqa_method, binning_method, method_key)
+        output_file = default_dap_file_name(plate, ifudesign, ref_method) \
+                                        if output_file is None else str(output_file)
+        return directory_path, output_file
 
 
     def file_name(self):
@@ -1244,7 +1285,7 @@ class StellarContinuumModel:
         continuum = self.construct_models(replacement_templates=replacement_templates,
                                           redshift_only=redshift_only) if reconstruct \
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
-        return self.reset_continuum_mask_window(continuum, quiet=self.quiet)
+        return StellarContinuumModel.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
 
     def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
@@ -1270,25 +1311,74 @@ class StellarContinuumModel:
 
 
     def matched_guess_kinematics(self, binned_spectra, redshift=None, dispersion=100.0,
-                                 constant=False, cz=False):
+                                 constant=False, cz=False, corrected=False, min_dispersion=None,
+                                 nearest=False):
         """
         Return the guess redshift and velocity dispersion for all the
         spectra based on the stellar kinematics.
 
         For spectra the were not fit, use the median (unmasked)
-        kinematic measurement if not provided as an argument.
+        kinematic measurement if no default value is provided as an
+        argument.
 
-        redshift and dispersion should be single numbers or None
+        Args:
+            binned_spectra
+                (`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+                Binned spectra object to match to.  Currently this
+                **must** be the same as the internal binned_spectra
+                object used during the stellar-continuum fit.
+            redshift (float): (**Optional**) The default redshift to use
+                for spectra without a stellar-continuum fit.  Default is
+                to use the median of the unmasked measurements
+            dispersion (float): (**Optional**) The default velocity
+                dispersion to use for spectra without a
+                stellar-continuum fit.  Default is 100 km/s.
+            constant (bool): (**Optional**) Force the function to return
+                a constant redshift and dispersion for each spectrum,
+                regardless of any fitted kinematics.
+            cz (bool): (**Optional**) Return the redshift as cz in km/s,
+                as opposed to unitless z.
+            corrected (bool): (**Optional**) By default, the returned
+                velocity dispersions are the measured values, which will
+                include any resolution difference between the templates
+                and the galaxy data.  Setting corrected to True will
+                return the corrected dispersions.
+            min_dispersion (float): (**Optional**) Impose a minimum
+                dispersion.
+            nearest (bool): (**Optional**) Instead of the median of the
+                results for the spectra that were not fit, use the value
+                from the nearest bin.
 
+        Returns:
+            numpy.ndarray: Returns arrays with a redshift (or cz) and
+            dispersion for each binned spectrum.
+
+        Raises:
+            TypeError: Raised if the input redshift or dispersion values
+                are not single numbers.
+            NotImplementedError: Raised if the provided binned_spectra
+                object is not the same as the internal object used
+                during the stellar-continuum fit.
         """
+        if redshift is not None and not isinstance(redshift, (float,int)):
+            raise TypeError('Redshift must be a single number or None.')
+        if dispersion is not None and not isinstance(dispersion, (float,int)):
+            raise TypeError('Dispersion must be a single number or None.')
+
         mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
                                     ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
         str_z = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,0].copy(), mask=mask) \
                     / astropy.constants.c.to('km/s').value
         str_d = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,1].copy(), mask=mask)
 
+        if corrected:
+            sigma_corr = numpy.ma.MaskedArray(self.hdu['PAR'].data['SIGMACORR_EMP'], mask=mask)
+            str_d = numpy.ma.sqrt( numpy.square(str_d) - numpy.square(sigma_corr) )
+
         _redshift = numpy.ma.median(str_z) if redshift is None else redshift
         _dispersion = numpy.ma.median(str_d) if dispersion is None else dispersion
+        if min_dispersion is not None and _dispersion < min_dispersion:
+            _dispersion = min_dispersion
 
         # Just return the single value
         if constant:
@@ -1297,23 +1387,44 @@ class StellarContinuumModel:
                 str_z *= astropy.constants.c.to('km/s').value
             return str_z, numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
 
-        str_z = str_z.filled(_redshift)
-        if cz:
-            str_z *= astropy.constants.c.to('km/s').value
-        str_d = str_d.filled(_dispersion)
-
+        # Match the kinematics to the input binned_spectra object
         if binned_spectra is self.binned_spectra:
-            # Number of models matches the numbers of bins
-            if binned_spectra.nbins == self.nmodels:
-                return str_z, str_d
-    
-            # Fill in bins with no models with masked zeros
-            _str_z = numpy.full(binned_spectra.nbins, _redshift, dtype=float)
-            _str_d = numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
-            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
-                _str_z[j] = str_z[i]
-                _str_d[j] = str_d[i]
-            return _str_z, _str_d
+            # Fill in bins with no models
+            if binned_spectra.nbins != self.nmodels:
+                # Output will be masked both where the input is masked
+                # and where there is not input
+                _str_z = str_z.copy()
+                str_z = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+                str_z[self.hdu['PAR'].data['BINID_INDEX']] = _str_z
+
+                _str_d = str_d.copy()
+                str_d = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+                str_d[self.hdu['PAR'].data['BINID_INDEX']] = _str_d
+
+            # Fill the masked values
+            if nearest:
+                # Fill with the nearest bin.  Treat the velocity and
+                # velocity dispersion bins separately, allowing for the
+                # velocity of a poor sigma measurement to be valid.
+                bad_bins = numpy.append(self.missing_models,
+                                        self.hdu['PAR'].data['BINID'][str_z.mask]).astype(int)
+                str_z = binned_spectra.replace_with_data_from_nearest_bin(str_z.data, bad_bins)
+                bad_bins = numpy.append(self.missing_models,
+                                        self.hdu['PAR'].data['BINID'][str_d.mask]).astype(int)
+                str_d = binned_spectra.replace_with_data_from_nearest_bin(str_d.data, bad_bins)
+            else:
+                # Fill any masked values with the single estimate
+                str_z = str_z.filled(_redshift)
+                str_d = str_d.filled(_dispersion)
+
+            # Convert redshift to km/s
+            if cz:
+                str_z *= astropy.constants.c.to('km/s').value
+            # Impose the minimum dispersion if provided
+            if min_dispersion is not None:
+                str_d = numpy.clip(str_d, min_dispersion, None)
+
+            return str_z, str_d
 
         raise NotImplementedError('Can only match to internal binned_spectra.')
 

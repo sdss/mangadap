@@ -791,8 +791,8 @@ class SpectralIndices:
             flux[indx] = numpy.ma.masked
             ivar[indx] = numpy.ma.masked
 
-        # TODO: Need to understand if baseline effects should be taken
-        # out as well...
+        # Remove the emission lines if provided        
+        warnings.warn('DEBUG')
         if emission_line_model is not None:
             eml_model = emission_line_model.fill_to_match(binned_spectra)
             no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
