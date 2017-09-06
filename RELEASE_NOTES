@@ -83,7 +83,8 @@ KBW (??         ): tag 2.1
       catalog.
     - In rundap, wait for cluster processes to finish then also submit a
       script to construct the DAPall file
-    - Updated versions of ppxf and voronoi_2d_binning
+    - Updated versions of ppxf and voronoi_2d_binning and moved these
+      files out of the mangadap package and into a new captools directory
 
 TO FIX:
     - emission-line moment masks
