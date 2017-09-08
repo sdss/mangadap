@@ -670,8 +670,10 @@ class PPXFFit(StellarKinematicsFit):
         obj_ferr[model_mask > 0] = numpy.ma.masked
 
         # Determine the starting and ending pixels and return
+        # TODO: does this work if all the pixels are masked in a given
+        # spectrum?
         pix = numpy.ma.MaskedArray(numpy.array([numpy.arange(obj_flux.shape[1])]*nobj),
-                                   mask = numpy.invert(fit_indx))
+                                   mask=numpy.invert(fit_indx))
         return model_mask, err, numpy.ma.amin(pix, axis=1), numpy.ma.amax(pix, axis=1)+1
 
 
@@ -1755,8 +1757,21 @@ class PPXFFit(StellarKinematicsFit):
                                                                 'BAD_SIGMACORR_SRES')
 
         #---------------------------------------------------------------
+        # Calculate the dispersion corrections, if necessary
+        # TODO: Get the velocity dispersion corrections here and above
+        # regardless of the resolution matching?
+        if not self.matched_resolution:
+            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
+                                                            result, baseline_dispersion=100)
+            if numpy.sum(err) > 0:
+                model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
+                                                              'BAD_SIGMACORR_EMP')
+
+        #---------------------------------------------------------------
         # Test if kinematics are reliable
-        self._validate_kinematics(model_mask, model_par)
+        # TODO: Skipped for now because unreliable flag not defined for
+        # MPL-6
+#        self._validate_kinematics(model_mask, model_par)
 
         #---------------------------------------------------------------
         # Convert the velocities from pixel units to redshift
@@ -1764,15 +1779,6 @@ class PPXFFit(StellarKinematicsFit):
                                                                numpy.zeros(self.nobj))
         model_par['KIN'][:,0], model_par['KINERR'][:,0] \
                 = PPXFFit.convert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
-
-        #---------------------------------------------------------------
-        # Calculate the dispersion corrections, if necessary
-        if not self.matched_resolution:
-            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
-                                                            result, baseline_dispersion=100)
-            if numpy.sum(err) > 0:
-                model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
-                                                              'BAD_SIGMACORR_EMP')
 
 #        indx = numpy.invert(self.bitmask.flagged(model_par['MASK'],
 #                            flag=['NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
@@ -2097,6 +2103,7 @@ class PPXFFit(StellarKinematicsFit):
         self.matched_resolution = PPXFFit.check_resolution_match(self.tpl_sres, self.obj_sres,
                                                                  matched_resolution)
         # - Selected wavelength range: always has shape (self.nobj,2)
+        # TODO: When is this used?
         self.waverange = PPXFFit.set_wavelength_range(self.nobj, self.obj_wave, waverange=waverange)
 
         #---------------------------------------------------------------
@@ -2129,13 +2136,13 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Set the basic pPXF parameters
 
-        # - Polynomials: If filtering, use the size of the filter and
-        #   the fitted spectral range to set an effective polynomial
-        #   order used during the initial fit in _fit_all_spectra();
-        #   otherwise, use the values provided
+        # - Polynomials
         self.degree = degree
         self.mdegree = mdegree
         if self.filter_iterations > 0:
+            # If filtering, use the size of the filter and the fitted
+            # spectral range to set an effective polynomial order used
+            # during the initial fit in _fit_all_spectra()
             filter_order = int(numpy.round(numpy.mean(self.spectrum_end-self.spectrum_start)
                                                 / self.filter_boxcar))-1
             if self.filter_operation == 'divide':
@@ -2218,7 +2225,6 @@ class PPXFFit(StellarKinematicsFit):
                 log_output(self.loggers, 2, logging.INFO,
                            'Multiplicative polynomial order: {0}'.format(self.mdegree 
                                                                 if self.mdegree > 0 else 'None'))
-                
 
         #---------------------------------------------------------------
         # Initialize the output data
