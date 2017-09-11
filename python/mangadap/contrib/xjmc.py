@@ -108,11 +108,11 @@ def calculate_noise(residuals):
 #     shape is (Nspaxel,)
 #   - weights: weights of the templates (the best fit template 
 #     can be obtained by setting: bestemp = templates @ weights);
-#     shape is (Ntpl,)
+#     shape is (Nmod, Ntpl)
 #   - weights_err: 1 sigma formal error of weights; shape is
-#     (Ntpl,)
+#     (Nmod, Ntpl)
 #   - mweights: coefficients of multiplicative Legendre polynomials
-#     of order > 0; shape is (mdegree,)
+#     of order > 0; shape is (Nmod, mdegree)
 #   - eml_kin: Kinematics (velocity and velocity dispersion) of
 #     each emission line; shape is (Nmod,Neml,Nkin)
 #   - eml_kinerr: Error in the kinematics of each emission line
@@ -173,6 +173,8 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
     gas_vel = np.zeros(n_binnum)
     gas_sig = np.zeros(n_binnum)
     gas_flux_binned = np.zeros([n_binnum,n_eml])
+    star_weights = np.zeros([n_binnum, n_temps])
+    star_weights_err = np.zeros([n_binnum, n_temps])
     bestfit_template = np.zeros([n_binnum, templates.shape[0]])
 
     beg = n_binnum if os.path.isfile(npz_file) else 0
@@ -231,7 +233,11 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         # than integration! If one uses ppxf_util to construct input templates, the ouput fluxes
         # should be corrected using pixel step near the lines
         gas_flux_binned[i] = pp.gas_flux*np.median(flux_binned[i,:])
-        bestfit_template[i,:] = templates[:,~gas_tpl] @ pp.weights[0:n_temps]        
+        star_weights[i] = pp.weights[0:n_temps]
+        bestfit_template[i,:] = templates[:,~gas_tpl] @ star_weights[i]
+        
+        design_matrix = pp.matrix/pp.noise[:, None]
+        star_weights_err[i] = capfit.cov_err(design_matrix)[1]
         
         #plt.clf()
         #pp.plot()
@@ -425,12 +431,12 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         eml_sigmacorr[i] = FWHM_diff2/((2.355*step)**2)*(velscale**2)
         
         # Weights and weight errors of gas tempaltes
-        weights = pp.weights
+        weights[i] = np.append(star_weights[k], pp.weights[1:])
         design_matrix = pp.matrix/pp.noise[:, None]
-        weights_err = capfit.cov_err(design_matrix)[1]
+        weights_err[i] = np.append(star_weights_err[k], capfit.cov_err(design_matrix)[1][1:])
         
-        # The multiplicative Legendre polynomials of order > 0
-        mweights = pp.mpolyweights
+        # Coefficients of multiplicative Legendre polynomials of order > 0
+        mweights[i] = pp.mpolyweights
         
         #plt.clf()
         #pp.plot()
