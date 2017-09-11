@@ -277,6 +277,9 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
     eml_fluxerr = np.zeros([n_spaxels,n_eml])
     eml_kin = np.zeros([n_spaxels,n_eml,2])
     eml_kinerr = np.zeros([n_spaxels,n_eml,2])
+    weights = np.zeros([n_spaxels,templates.shape[1]])
+    weights_err = np.zeros([n_spaxels,templates.shape[1]])
+    mweights = np.zeros([n_spaxels,mdegree])
     
     eml_sigmacorr = np.zeros([n_spaxels,n_eml])
     
