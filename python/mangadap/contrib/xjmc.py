@@ -7,7 +7,11 @@ import matplotlib.pyplot as plt
 import astropy.constants
 
 from captools.ppxf import ppxf
+from captools import capfit
 
+# Function used to calculate 1 sigma errors of the residuals
+# Currently the pixels in the same window are assigned with
+# the same error
 def calculate_noise(residuals):
 
     # Number of pixels in each window
@@ -35,7 +39,7 @@ def calculate_noise(residuals):
 
 # Function: emline_fitter_with_ppxf
 # Input is:
-#   - wave: wavelength vector; shape is (Nwave,)
+#   - wave0: wavelength vector (in vacuum); shape is (Nwave,)
 #   - flux: observed, unbinned flux; masked array with shape
 #     (Nspaxel,Nwave)
 #   - noise: error in observed, unbinned flux; masked array with
@@ -60,15 +64,22 @@ def calculate_noise(residuals):
 #     (Nbins,)
 #   - stars_sig: Velocity dispersion of the stellar component;
 #     shape is (Nbins,)
-#   - stars_templates: Stellar templates; shape is (Nstartpl,
-#     Ntplwave)
+#   - templates: Template flux; shape is (Ntpl,Ntplwave)
+#   - gas_tpl: Boolean array for extracting gas templates; shape
+#     is (Ntpl,)
 #   - guess_vel: Initial guess velocity for the gas components;
 #     shape is (Nbins,)
 #   - guess_sig: Initial guess velocity dispersion for the gas
 #     components; shape is (Nbins,)
-#   - gas_templates: Gas template flux; shape is (Ngastpl,
-#     Ntplwave)
 #   - gas_names: Name of the gas templats; shape is (Ngastpl,)
+#   - eml_wave: Rest wavelength of gas templates (in vacuum);
+#     shape is (Ngastpl,)
+#   - eml_component: Component vector for ppxf (each kinimatic
+#     group has a unique index, and an index below zero will
+#     automatically fix the moments); shape is (Nkin_group,)
+#   - eml_tied: Tied vector for ppxf (to decide the tying 
+#     relations among gas components); shape is (Nkin_group,
+#     Nmoment)
 #   - template_sres: spectral resolution (R=lambda/delta
 #     lambda) as a function of wavelength for all the templates
 #     templates; shape is (Ntplwave,)
@@ -78,16 +89,51 @@ def calculate_noise(residuals):
 #   - y: On-sky spaxel y coordinates; shape is (Nspaxel,)
 #   - x_binned: On-sky bin x coordinate; shape is (Nbin,)
 #   - y_binned: On-sky bin y coordinate; shape is (Nbin,)
+#   - mask_binned: Masks for binned spectra; shape is (Nbin,
+#     Nwave)
+#   - mask_drp: Masks for unbinned spectra; shape is (Nbin,
+#     Nwave)
+#   - nsa_z: NSA (or guess) redshift of the galaxy
+#
+# Output is:
+#   - model_flux: stellar-continuum + emission-line model; shape
+#     is (Nmod, Nwave); first axis is ordered by model ID number
+#   - model_eml_flux: model emission-line flux only; shape is
+#     (Nmod, Nwave); first axis is ordered by model ID number
+#   - model_mask: boolean or bit mask for fitted models; shape
+#     is (Nmod, Nwave); first axis is ordered by model ID number
+#   - model_binid: ID numbers assigned to each spaxel with a
+#     fitted model; any spaxel without a model should have
+#     model_binid = -1; the number of >-1 IDs must be Nmod;
+#     shape is (Nspaxel,)
+#   - weights: weights of the templates (the best fit template 
+#     can be obtained by setting: bestemp = templates @ weights);
+#     shape is (Ntpl,)
+#   - weights_err: 1 sigma formal error of weights; shape is
+#     (Ntpl,)
+#   - mweights: coefficients of multiplicative Legendre polynomials
+#     of order > 0; shape is (mdegree,)
+#   - eml_kin: Kinematics (velocity and velocity dispersion) of
+#     each emission line; shape is (Nmod,Neml,Nkin)
+#   - eml_kinerr: Error in the kinematics of each emission line
+#   - eml_sigmacorr: Quadrature corrections required to obtain
+#     the astrophysical velocity dispersion; shape is
+#     (Nmod,Neml); corrections are expected to be applied as
+#     follows:
+#       sigma = numpy.ma.sqrt( numpy.square(eml_kin[:,:,1])
+#                               - numpy.square(eml_sigmacorr))
+# --------------------------------------------------------------
 
 def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
-                            velscale, velscale_ratio, dv, vel, sig, stars_templates,
-                            vel_gas, sig_gas, gas_templates, gas_templates_binned, gas_names, 
-                            templates_sres, degree, mdegree, x, y, xbin, ybin, 
-                            mask_binned, mask_drp, nsa_z, debug=False):
+                            velscale, velscale_ratio, dv, vel, sig, templates, gas_tpl, 
+                            vel_gas, sig_gas, gas_names, eml_wave, eml_component, 
+                            eml_tied, templates_sres, degree, mdegree, x, y, xbin, 
+                            ybin, mask_binned, mask_drp, nsa_z, debug=False):
 
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
         n_spaxels, nwave = flux.shape
+        n_eml = np.sum(gas_tpl)
         masked_fraction = np.sum(mask_drp, axis=1)/nwave
         indx = masked_fraction > 1/3
         model_binid = np.full(n_spaxels, -1, dtype=int)
@@ -97,12 +143,12 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         model_eml_flux = np.zeros(flux.shape, dtype=float)
         model_mask = np.zeros(flux.shape, dtype=float)
         
-        eml_flux = np.zeros([n_spaxels,11], dtype=float)
-        eml_fluxerr = np.zeros([n_spaxels,11], dtype=float)
-        eml_kin = np.zeros([n_spaxels,11,2], dtype=float)
-        eml_kinerr = np.zeros([n_spaxels,11,2], dtype=float)
+        eml_flux = np.zeros([n_spaxels,n_eml], dtype=float)
+        eml_fluxerr = np.zeros([n_spaxels,n_eml], dtype=float)
+        eml_kin = np.zeros([n_spaxels,n_eml,2], dtype=float)
+        eml_kinerr = np.zeros([n_spaxels,n_eml,2], dtype=float)
     
-        eml_sigmacorr = np.zeros([n_spaxels,11], dtype=float)
+        eml_sigmacorr = np.zeros([n_spaxels,n_eml], dtype=float)
         return model_flux, model_eml_flux, model_mask, model_binid, eml_flux, eml_fluxerr, \
                     eml_kin, eml_kinerr, eml_sigmacorr
     
@@ -112,16 +158,22 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
 #    npz_file = '/Users/mac/Documents/New_test_results/first_'+plate+'_'+ifu+'.npz'
     npz_file = 'test.npz'
     
-    # stellar templates should have the shape (Nwave, Ntpl) for ppxf
-    stars_templates = stars_templates.T    
+    # templates should have the shape (Nwave, Ntpl) for ppxf
+    templates = templates.T
     
     # Total number of bins
     n_binnum = flux_binned.shape[0]
     
+    # Total number of emission lines
+    n_eml = np.sum(gas_tpl)
+    
+    # Total number of stellar templates
+    n_temps = np.sum(~gas_tpl)
+    
     gas_vel = np.zeros(n_binnum)
     gas_sig = np.zeros(n_binnum)
-    gas_flux_binned = np.zeros([n_binnum,11])
-    bestfit_template = np.zeros([n_binnum, stars_templates.shape[0]])
+    gas_flux_binned = np.zeros([n_binnum,n_eml])
+    bestfit_template = np.zeros([n_binnum, templates.shape[0]])
 
     beg = n_binnum if os.path.isfile(npz_file) else 0
     
@@ -133,39 +185,26 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         
         noise_binned = noise_bin[i,:]/np.median(flux_binned[i,:])
         
-        # Combines the stellar and gaseous templates into a single array
-        # during the PPXF fit they will be assigned a different kinematic
-        # COMPONENT value
-        #
-        templates = np.column_stack([stars_templates, gas_templates_binned])
-
-        n_temps = stars_templates.shape[1]
-        
-        # This are the moments of Halpha [V, sigma] which will be used as
-        # the initial guess for emission-line fitting
+        # Use the first moment of Halpha line as the initial velocity
+        # guess, and use the stellar velocity dispersion as initial
+        # sigma guess for gas components
         #kin = [vel_gas[i], 100.]
         kin = [vel_gas[i], sig[i]]
         
-        # Single stellar kinematic component=0 for all templates
-        component = [0]*n_temps
-
-        # 'Hdelta' 'Hgamma' 'Hbeta' 'Halpha'
-        # The Balmer lines all share the same LOSVD, so they
-        # are assigned the same kinematic component=1
-        component += [1, 1, 1, 1]
-
-        # ''[OII]3726' '[OII]3729' '[SII]6716' '[SII]6731' '[OIII]5007d' '[OI]6300d' '[NII]6583d'
-        # Seven lines, all on the same kinematic component on the first iteration
-        component += [1, 1, 1, 1, 1, 1, 1]
-        component = np.asarray(component)
+        # Assign all emission lines with single component to tie their
+        # kinematics (and the same for stellar templates)
+        component = np.asarray([0]*(np.sum(~gas_tpl)) + [1]*n_eml)
         
         # The negative moments automatically fix the stellar kinematics
         moments = [-2, 2]
         
+        # Initial guess for components (for stellar components, these
+        # are fixed values)
         start = [[vel[i], sig[i]]]
         start += [kin for j in range(len(moments)-1)]
         
-        # Using constant noise to make the first fit
+        # Tie kinematics of all emission lines while fixing the stellar kinematics in the first
+        # fit
         pp = ppxf(templates, galaxy, noise_binned, velscale, start, velscale_ratio=velscale_ratio,
                   plot=False, moments=moments, degree=degree, mdegree=mdegree,
                   mask=mask_binned[i,:], vsyst=dv, lam=wave0, component=component, quiet=True,
@@ -180,7 +219,7 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         # Mask out pixels with residuals > 3 sigmas
         mask = (abs(resid) < (3*NOISE)) & mask_binned[i,:]
         
-        # Do the second fit with new noise parameter and masked pixels
+        # Add a three-sigma cut in the second fit while tying the kinematics as the first one
         pp = ppxf(templates, galaxy, noise_binned, velscale, start, velscale_ratio=velscale_ratio,
                   mask=mask, plot=False, moments=moments, degree=degree, mdegree=mdegree,
                   vsyst=dv, lam=wave0, component=component, quiet=True,
@@ -188,13 +227,15 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         
         gas_vel[i] = pp.sol[1][0]
         gas_sig[i] = pp.sol[1][1]
+        # Scale back the fluxes; note that the fluxes here are caculated by direct summing rather
+        # than integration! If one uses ppxf_util to construct input templates, the ouput fluxes
+        # should be corrected using pixel step near the lines
         gas_flux_binned[i] = pp.gas_flux*np.median(flux_binned[i,:])
-        bestfit_template[i,:] = stars_templates @ pp.weights[0:n_temps]        
+        bestfit_template[i,:] = templates[:,~gas_tpl] @ pp.weights[0:n_temps]        
         
-#        plt.clf()
-#        pp.plot()
-#        plt.show()
-        #plt.savefig('/Users/mac/Downloads/ppxf_work/fits_first_iter_7815-6101/fits_iter_one_'+str(i).zfill(4))    
+        #plt.clf()
+        #pp.plot()
+        #plt.show()
     
 #    # Save the results (only for testing)
 #    np.savez_compressed('/Users/mac/Documents/New_test_results/first_'+plate+'_'+ifu+'.npz', 
@@ -226,12 +267,12 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
     # Total number of spaxels
     n_spaxels = nearest_bin.shape[0]
     
-    eml_flux = np.zeros([n_spaxels,11])
-    eml_fluxerr = np.zeros([n_spaxels,11])
-    eml_kin = np.zeros([n_spaxels,11,2])
-    eml_kinerr = np.zeros([n_spaxels,11,2])
+    eml_flux = np.zeros([n_spaxels,n_eml])
+    eml_fluxerr = np.zeros([n_spaxels,n_eml])
+    eml_kin = np.zeros([n_spaxels,n_eml,2])
+    eml_kinerr = np.zeros([n_spaxels,n_eml,2])
     
-    eml_sigmacorr = np.zeros([n_spaxels,11])
+    eml_sigmacorr = np.zeros([n_spaxels,n_eml])
     
     model_flux = np.zeros(flux.shape)
     model_eml_flux = np.zeros(flux.shape)
@@ -239,7 +280,6 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
     model_binid = np.zeros(n_spaxels)
     id_num = 0
     
-    # Need to fix here    
 #    for i in range(1084,n_spaxels):
     for i in range(n_spaxels):
         print('Fitting spaxel: {0}/{1}'.format(i+1,n_spaxels))
@@ -248,7 +288,9 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         
         mask_DRP = mask_drp[i,:]
         
-        # Continue the loop if the current spaxel has no spectra
+        # Continue the loop if the current spaxel has no spectrum
+        # TODO: decide if 1/3 is appropriate to indicate insufficient
+        # pixels?
         if sum(~mask_DRP) > flux[i,:].shape[0]/3:
             model_binid[i] = -1
             continue
@@ -256,7 +298,8 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
             model_binid[i] = id_num
             id_num += 1
         
-        galaxy = flux[i,:]/np.median(flux[i,:])   # Normalize spectrum to avoid numerical issues
+        # Normalize spectrum to avoid numerical issues
+        galaxy = flux[i,:]/np.median(flux[i,:])
                 
         noise_spaxel = noise[i,:]/np.median(flux[i,:])
         noise_spaxel[(noise_spaxel<=0.)|(~np.isfinite(noise_spaxel))] = 1.
@@ -264,34 +307,29 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         # This is the index of the nearest bin to the spaxel being used
         k = nearest_bin[i]
         
-        templates = np.column_stack([bestfit_template[k], gas_templates])
-
+        gas_templates = templates[gas_tpl]
+        templates_sec = np.column_stack([bestfit_template[k], gas_templates])
+        
+        # Only one stellar template is used in the second iteration
         n_temps = 1
         
         # This is the gas kinematics [V, sigma] of the nearest bin which
         # will be used as the initial guess for emission-line fitting
         kin = [gas_vel[k], gas_sig[k]]
         
-        component = [0]*n_temps  # Single stellar kinematic component=0 for all templates
-
-        # 'Hdelta' 'Hgamma' 'Hbeta' 'Halpha'
-        # The Balmer lines all share the same LOSVD, so they
-        # are assigned the same kinematic component=1
-        component += [1, 1, 1, 1]
-
-        # ''[OII]3726' '[OII]3729' '[SII]6716' '[SII]6731' '[OIII]5007d' '[OI]6300d' '[NII]6583d'
-        # Seven lines, all on the same component to tie the kinematics 
-        component += [1, 1, 1, 1, 1, 1, 1]
-        component = np.asarray(component)
+        # Combine the input gas components and stellar ones
+        component = np.asarray([0]*n_temps + [1]*n_eml)
         
         moments = [-2, 2]
         
-        # adopt the same value in the first iteration for star component
+        # Adopt the same value in the first iteration for star component
         start = [[vel[k], sig[k]]]
-        # adopt the same starting value for all gas component
+        # Adopt the same starting value for all gas component
         start += [kin for j in range(len(moments)-1)]
         
-        pp = ppxf(templates, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
+        # In the third fit, the tying of kinematics is the same as the first two while the initial
+        # guess for gas components, input noise and mask are different
+        pp = ppxf(templates_sec, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
                   mask=mask_DRP, plot=False, moments=moments, degree=degree, mdegree=mdegree,
                   vsyst=dv, lam=wave0, component=component, quiet=True,
                   gas_component=component>0, gas_names=gas_names)
@@ -306,14 +344,11 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         mask = (abs(resid) < (3*NOISE))&mask_DRP
         #print('Outliers: '+str(3109 - sum(mask)))
         
-        pp = ppxf(templates, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
+        # The forth fit adds a three-sigma cut after the third one
+        pp = ppxf(templates_sec, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
                   mask=mask, plot=False, moments=moments, degree=degree, mdegree=mdegree,
                   vsyst=dv, lam=wave0, component=component, quiet=True,
                   gas_component=component>0, gas_names=gas_names)
-        
-        #plt.clf()
-        #pp.plot()
-        #plt.show()
         
         # Here start the second half of the second iteration
         
@@ -321,38 +356,21 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         # call of ppxf which will be used as the initial guess for emission-line fitting
         kin = [pp.sol[1][0], pp.sol[1][1]]
         
-        # These templates are used only when the stellar weights are set to be free
-        #templates = np.column_stack([stars_templates, gas_templates])
-        #n_temps = stars_templates.shape[1]
+        # Combine the input gas components and stellar ones
+        # Now each kinematic group has a unique component index (>0)
+        component = np.append(np.zeros(n_temps,dtype=int), eml_component+1)
         
-        component = [0]*n_temps  # Single stellar kinematic component=0 for all templates
-
-        # 'Hdelta' 'Hgamma' 'Hbeta' 'Halpha'
-        # The Balmer lines all share the same LOSVD, so they
-        # are assigned the same kinematic component=1
-        component += [1, 1, 1, 1]
-
-        # ''[OII]3726' '[OII]3729' '[SII]6716' '[SII]6731' '[OIII]5007d' '[OI]6300d' '[NII]6583d'
-        # Seven lines, all on different kinematic components
-        # to allow for different sigmas
-        component += [2, 2, 3, 3, 4, 5, 6]
-        component = np.asarray(component)
+        moments = [-2] + [2]*np.max(component+1)
         
-        moments = [-2, 2, 2, 2, 2, 2, 2]
-        
-        # adopt the same value in the first iteration for star component
+        # Adopt the same value in the first iteration for star component
         start = [[vel[k], sig[k]]]
-        # adopt the same starting value for all gas component
+        # Adopt the same starting value for all gas component
         start += [kin for j in range(len(moments)-1)]
         
-        # Tie the velocity of all gas components while leaving the sigma free
-        tied = [['', ''] for j in range(len(moments))]
-        for j in range(2, len(moments)):
-            tied[j][0] = 'p[2]'
-        
-        pp = ppxf(templates, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
+        # In the fifth fit, the velocities and sigmas of emission lines are tied as desired
+        pp = ppxf(templates_sec, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
                   mask=mask_DRP, quiet=True, plot=False, moments=moments, degree=degree,
-                  mdegree=mdegree, vsyst=dv, lam=wave0, component=component, tied=tied,
+                  mdegree=mdegree, vsyst=dv, lam=wave0, component=component, tied=eml_tied,
                   gas_component=component>0, gas_names=gas_names)
         
         # Calculate the residuals
@@ -365,49 +383,58 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         mask = (abs(resid) < (3*NOISE))&mask_DRP
         #print('Outliers: '+str(3109 - sum(mask)))
         
-        pp = ppxf(templates, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
+        # Add a three-sigma cut in the sixth fit
+        pp = ppxf(templates_sec, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
                   mask=mask, quiet=True, plot=False, moments=moments, degree=degree,
                   mdegree=mdegree, vsyst=dv, lam=wave0, component=component, tied=tied,
                   gas_component=component>0, gas_names=gas_names)
-                        
+        
+        # The ouput of the fitting are parsed in the following lines
+        
         eml_kin[i][:,0] = np.full(eml_kin.shape[1], pp.sol[1][0])
-        eml_component_num = [4,2,2,1,1,1]
-        emlsig = np.array([j[1] for j in pp.sol[1:7]])
-        eml_kin[i][:,1] = np.repeat(emlsig, eml_component_num)
+        eml_kin[i][:,1] = pp.sol[:,1][eml_component+1]
         
+        # The errors are calculated according to docstring in ppxf.py
         eml_kinerr[i][:,0] = np.full(eml_kin.shape[1], pp.error[1][0])*np.sqrt(pp.chi2)
-        emlsigerr = np.array([j[1] for j in pp.error[1:7]])*np.sqrt(pp.chi2)
-        eml_kinerr[i][:,1] = np.repeat(emlsigerr, eml_component_num)
+        eml_kinerr[i][:,1] = pp.error[:,1][eml_component+1]*np.sqrt(pp.chi2)
         
-        # Reset pixel-step for each emline in pPXF...
-        eml_wave = np.array([4102.,4341.,4861.,6563.,3726.,3729.,6716.,6731.,5007.,6300.,6583.])
+        # Integral fluxes and their errors of all emission lines (not in the final output)
+        # Reset pixel-step for each emline (since ppxf returns flux caculated by direct summing)
         eml_wave0 = eml_wave*(1+nsa_z)
         index = np.argmin(abs(wave0-eml_wave0[:,None]),axis=1)
         step = wave0[index+1] - wave0[index]
-        
         # Remain to be examined if /(1+nsa_z) correction is needed...
         eml_flux[i] = pp.gas_flux*np.median(flux[i,:])*step
         eml_fluxerr[i] = pp.gas_flux_error*np.sqrt(pp.chi2)*np.median(flux[i,:])*step
         
+        # Full models of flux and models of emission lines
         model_flux[i,:] = pp.bestfit*np.median(flux[i,:])
         
         spectra = pp.matrix[:,degree+1:]
         gas_spectrum = spectra[:,pp.gas_component].dot(pp.weights[pp.gas_component])
         model_eml_flux[i,:] = gas_spectrum*np.median(flux[i,:])
         
+        # Masks for models
         model_mask[i,:] = mask
         
         # Calculate the sigma corrections
-        FWHM = wave0/sres[0,:]
+        FWHM = wave0/np.max(sres, axis=0)
         eml_wave_new = eml_wave*np.exp(pp.sol[1][0]/astropy.constants.c.to('km/s').value)
         index_new = np.argmin(abs(wave0-eml_wave_new[:,None]),axis=1)
         FWHM_diff2 = FWHM[index_new]**2 - FWHM[index]**2
         eml_sigmacorr[i] = FWHM_diff2/((2.355*step)**2)*(velscale**2)
         
+        # Weights and weight errors of gas tempaltes
+        weights = pp.weights
+        design_matrix = pp.matrix/pp.noise[:, None]
+        weights_err = capfit.cov_err(design_matrix)[1]
+        
+        # The multiplicative Legendre polynomials of order > 0
+        mweights = pp.mpolyweights
+        
         #plt.clf()
         #pp.plot()
         #plt.show()
-        #plt.savefig('/Users/mac/Downloads/ppxf_work/fits_second_iter_7815-6101/fits_iter_two_'+str(i).zfill(4))
     
 #    # Save the results (only for testing)
 #    np.savez_compressed('/Users/mac/Documents/New_test_results/second_new'+plate+'_'+ifu+'.npz', 
@@ -426,7 +453,7 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
 #    eml_kinerr = second_iter['eml_kinerr']
 #    eml_sigmacorr = second_iter['eml_sigmacorr']
     
-    return model_flux, model_eml_flux, model_mask, model_binid, eml_flux, eml_fluxerr, eml_kin, \
-                    eml_kinerr, eml_sigmacorr
+    return model_flux, model_eml_flux, model_mask, model_binid, weights, weights_err, mweights,\
+           eml_kin, eml_kinerr, eml_sigmacorr
 
 
