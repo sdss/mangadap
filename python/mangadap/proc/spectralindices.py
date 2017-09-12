@@ -1427,6 +1427,8 @@ class SpectralIndices:
                 raise TypeError('Provided emission line models must be of type EmissionLineModel.')
             if emission_line_model.hdu is None:
                 raise ValueError('Provided EmissionLineModel is undefined!')
+            if emission_line_model.method['deconstruct_bins']:
+                raise NotImplementedError('Cannot use EmissionLineModel with bins deconstructed.')
             self.emission_line_model = emission_line_model
 
         self.spatial_shape =self.binned_spectra.spatial_shape

@@ -1402,9 +1402,10 @@ class construct_maps_file:
         # Need multichannel map header if more than one moment
         multichannel = emission_line_moments.nmom > 1
         # Build the channel names
-        names = [ '{0}-{1}'.format(n,int(w)) \
-                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
-                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+#        names = [ '{0}-{1}'.format(n,int(w)) \
+#                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
+#                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+        names = emission_line_moments.channel_names()
         # Create the basic header for all extensions
         base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
                                                  else self.singlechannel_maphdr, names)

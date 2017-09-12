@@ -57,7 +57,8 @@ A class hierarchy that fits the emission lines.
     | **31 May 2017**: (KBW) Revert to using
         :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
         on input
-
+    | **08 Sep 2017**: (KBW) Add `deconstruct_bins` flag to parameters.
+    
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
@@ -82,6 +83,7 @@ import logging
 
 import numpy
 from astropy.io import fits
+import astropy.constants
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
@@ -97,6 +99,7 @@ from ..util.log import log_output
 from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
+from .emissionlinemoments import EmissionLineMoments
 from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar
 from .sasuke import Sasuke, SasukePar
@@ -125,18 +128,18 @@ class EmissionLineModelDef(ParSet):
         emission_lines (str): String identifying the emission-line
             database to use
     """
-    def __init__(self, key, minimum_snr, artifacts, emission_lines, fitpar, fitclass, fitfunc):
+    def __init__(self, key, minimum_snr, deconstruct_bins, mom_guess_vel, mom_guess_disp,
+                 artifacts, emission_lines, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
-        pars =     [ 'key', 'minimum_snr', 'artifacts', 'emission_lines', 'fitpar', 'fitclass',
-                     'fitfunc' ]
-        values =   [   key,   minimum_snr,   artifacts,   emission_lines,   fitpar,   fitclass,
-                       fitfunc ]
-        dtypes =   [   str,         in_fl,         str,              str,  par_opt,       None,
-                          None ]
+        pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
+                     'artifacts', 'emission_lines', 'fitpar', 'fitclass', 'fitfunc' ]
+        values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
+                     emission_lines, fitpar, fitclass, fitfunc ]
+        dtypes =   [ str, in_fl, bool, str, str, str, str, par_opt, None, None ]
 
-        can_call = [ False,         False,      False,    False,      False,      True ]
+        can_call = [ False, False, False, False, False, False, False, False, False, True ]
 
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
@@ -186,12 +189,15 @@ def available_emission_line_modeling_methods(dapsrc=None):
             files could be found.
         KeyError: Raised if the emission-line modeling method keywords
             are not all unique.
+        NotImplementedError: Raised if the method requests the
+            deconstruction of the bins into spaxls for using the Elric
+            fitter.
 
     .. todo::
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
+        Possible to add a python call that reads the databases and
+        constructs the table for presentation in sphinx so that the text
+        above doesn't have to be edited with changes in the available
+        databases?
 
     """
     # Check the source directory exists
@@ -213,30 +219,37 @@ def available_emission_line_modeling_methods(dapsrc=None):
         # Ensure it has the necessary elements to define the template
         # library
         validate_emission_line_modeling_method_config(cnfg)
+        deconstruct_bins = cnfg.getbool('deconstruct_bins', default=False)
+        minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
 
         if cnfg['fit_method'] == 'elric':
             # Chose to use Elric: Parameter set has defaults to handle
             # missing or None values for baseline_order, window_buffer,
             # and minimum_snr
+            if deconstruct_bins:
+                raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
+
             fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
-                              None, None, minimum_snr=cnfg.getfloat('minimum_snr'))
+                              None, None, minimum_snr=minimum_snr)
             fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
+
         elif cnfg['fit_method'] == 'sasuke':
             # Chose to use Sasuke: Parameter set has defaults to handle
             # missing or None values for reject_boxcar, bias, moments,
             # degree, mdegree
             fitpar = SasukePar(None, None, guess_redshift=None, guess_dispersion=None,
-                               minimum_snr=cnfg.getfloat('minimum_snr'), pixelmask=None,
-                               reject_boxcar=cnfg.getint('reject_boxcar'),
+                               minimum_snr=minimum_snr, deconstruct_bins=deconstruct_bins,
+                               pixelmask=None, reject_boxcar=cnfg.getint('reject_boxcar'),
                                bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
                                degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'))
             fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
-        method_list += [ EmissionLineModelDef(cnfg['key'], cnfg.getfloat('minimum_snr',default=0.0),
-                                              cnfg['artifact_mask'], cnfg['emission_lines'], fitpar,
-                                              fitclass, fitfunc) ]
+        method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
+                                              cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
+                                              cnfg['artifact_mask'], cnfg['emission_lines'],
+                                              fitpar, fitclass, fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -288,11 +301,11 @@ class EmissionLineModel:
 
     """
 #    @profile
-    def __init__(self, method_key, binned_spectra, stellar_continuum=None, redshift=None,
-                 dispersion=None, method_list=None, artifact_list=None, emission_line_db_list=None,
-                 dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, method_key, binned_spectra, stellar_continuum=None,
+                 emission_line_moments=None, redshift=None, dispersion=None, method_list=None,
+                 artifact_list=None, emission_line_db_list=None, dapsrc=None, dapver=None,
+                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+                 clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -337,7 +350,8 @@ class EmissionLineModel:
         self.missing_models = None
 
         # Fit the binned spectra
-        self.fit(binned_spectra, stellar_continuum=stellar_continuum, redshift=redshift,
+        self.fit(binned_spectra, stellar_continuum=stellar_continuum,
+                 emission_line_moments=emission_line_moments, redshift=redshift,
                  dispersion=dispersion, dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
                  directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
                  clobber=clobber, loggers=loggers, quiet=quiet)
@@ -487,20 +501,21 @@ class EmissionLineModel:
         return line_database
 
 
-    def _assign_input_kinematics(self, redshift, dispersion, default_dispersion=100.0):
+    def _assign_input_kinematics(self, emission_line_moments, redshift, dispersion,
+                                 default_dispersion=100.0):
         """
         Set the initial redshift and velocity dispersion for each
         spectrum.
         
-        In terms of precedence, directly provided redshifts override
-        those in the StellarContinuumModel object, if both are provided.
-        The default_dispersion does *not* take precedence over *any*
+        In terms of precedence, directly provided redshifts and
+        dispersions override those in the EmissionLineMoments model,
+        which overrides those in the StellarContinuumModel object.  The
+        default_dispersion does *not* take precedence over *any*
         provided disperison.
 
-        If both redshift and :attr:`stellar_continuum` are None, the
-        redshift is set to 0.0.  If both dispersion and
-        :attr:`stellar_continuum` are None, the dispersion is set to
-        default_dispersion.
+        If emission_line_moments, redshift, :attr:`stellar_continuum`
+        are all None, the redshift is set to 0.0.  If dispersion is also
+        None, the dispersion is set to default_dispersion.
 
         To get the stellar kinematics, the function calls
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_guess_kinematics`.
@@ -510,18 +525,74 @@ class EmissionLineModel:
         instead of the full vector.
 
         """
-        # Get the redshift and dispersion measured for the stars if the
-        # stellar continuum is present
-        sc_redshift, sc_dispersion = (None, None) if self.stellar_continuum is None else \
-                self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
+
+        #---------------------------------------------------------------
+        # Get the redshift and dispersion measured for the stars or
+        # based on the moments if the relevant objects are provided
+        obj_redshift, obj_dispersion = (None, None)
+        if emission_line_moments is not None:
+            names = emission_line_moments.channel_names()
+            vel_channel = -1 if self.method['mom_vel_name'] is None \
+                                else numpy.where(self.method['mom_vel_name'] == names)[0]
+            if vel_channel > -1:
+                obj_redshift = numpy.full(self.binned_spectra.nbins, 0.0, dtype=float)
+            
+                mom1_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,vel_channel] > 0
+                # - Use the 1st moment of the named line
+                obj_redshift[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
+                        = emission_line_moments['ELMMNTS'].data['MOM1'][:,vel_channel] \
+                                / astropy.constants.c.to('km/s').value
+
+                # - For missing bins in the moment measurements and bad
+                # line moment measurements, use the value for the
+                # nearest good bin
+                bad_bins = numpy.append(emission_line_moments.missing_bins,
+                                        emission_line_moments['ELMMNTS'].data['BINID']\
+                                            [mom1_masked]).astype(int)
+                if len(bad_bins) > 0:
+                    nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+                    bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+                    obj_redshift[bad_bin_index] = obj_redshift[nearest_good_bin_index]
+
+            disp_channel = -1 if self.method['mom_disp_name'] is None \
+                                else numpy.where(self.method['mom_disp_name'] == names)[0]
+            if disp_channel > -1:
+                obj_dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion,
+                                            dtype=float)
+            
+                mom2_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,disp_channel] > 0
+                # - Use the 2nd moment of the named line
+                obj_dispersion[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
+                                = emission_line_moments['ELMMNTS'].data['MOM2'][:,disp_channel]
+
+                # - For missing bins in the moment measurements and bad
+                # line moment measurements, use the value for the
+                # nearest good bin
+                bad_bins = numpy.append(emission_line_moments.missing_bins,
+                                        emission_line_moments['ELMMNTS'].data['BINID']\
+                                            [mom2_masked]).astype(int)
+                if len(bad_bins) > 0:
+                    nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+                    bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+                    obj_dispersion[bad_bin_index] = obj_dispersion[nearest_good_bin_index]
+
+        if self.stellar_continuum is not None and (obj_redshift is None or obj_dispersion is None):
+            sc_redshift, sc_dispersion = \
+                    self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
                                 redshift=None if redshift is None else numpy.ma.mean(redshift),
                                 dispersion=default_dispersion if dispersion is None 
-                                                                else numpy.ma.mean(dispersion))
+                                                                else numpy.ma.mean(dispersion),
+                                corrected=True, nearest=True)
+            if obj_redshift is None:
+                obj_redshift = sc_redshift
+            if obj_dispersion is None:
+                obj_dispersion = sc_dispersion
+        #---------------------------------------------------------------
 
         # Redshift: use the stellar continuum values if present,
         # otherwise set the default to 0.
         self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=float) \
-                            if redshift is None else sc_redshift
+                            if redshift is None else obj_redshift
         if redshift is not None:
             _redshift = numpy.atleast_1d(redshift)
             if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
@@ -534,7 +605,7 @@ class EmissionLineModel:
         # Redshift: use the stellar continuum values if present,
         # otherwise set the default to 0.
         self.dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion, dtype=float) \
-                            if dispersion is None else sc_dispersion
+                            if dispersion is None else obj_dispersion
         if dispersion is not None:
             _dispersion = numpy.atleast_1d(dispersion)
 
@@ -758,9 +829,10 @@ class EmissionLineModel:
         return os.path.join(self.directory_path, self.output_file)
 
 
-    def fit(self, binned_spectra, stellar_continuum=None, redshift=None, dispersion=None,
-            dapsrc=None, dapver=None, analysis_path=None, directory_path=None, output_file=None,
-            hardcopy=True, clobber=False, loggers=None, quiet=False):
+    def fit(self, binned_spectra, stellar_continuum=None, emission_line_moments=None,
+            redshift=None, dispersion=None, dapsrc=None, dapver=None, analysis_path=None,
+            directory_path=None, output_file=None, hardcopy=True, clobber=False, loggers=None,
+            quiet=False):
         """
         Fit the emission lines.
         """
@@ -784,6 +856,21 @@ class EmissionLineModel:
             raise TypeError('Must provide a valid StellarContinuumModel object.')
         self.stellar_continuum = stellar_continuum
 
+        # Emission-line moments can be used to set the initial guess
+        # kinematics
+        if emission_line_moments is not None:
+            if not isinstance(emission_line_moments, EmissionLineMoments):
+                raise TypeError('Must provide a valid EmissionLineMoments object.')
+            names = emission_line_moments.channel_names()
+            if self.method['mom_vel_name'] is not None \
+                        and self.method['mom_vel_name'] not in names:
+                raise ValueError('{0}'.format(self.method['mom_vel_name']) +
+                                 ' is not a valid name in the EmissionLineMoments object.')
+            if self.method['mom_disp_name'] is not None \
+                        and self.method['mom_disp_name'] not in names:
+                raise ValueError('{0}'.format(self.method['mom_disp_name']) +
+                                 ' is not a valid name in the EmissionLineMoments object.')
+
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.nspec
@@ -792,7 +879,7 @@ class EmissionLineModel:
         self.nwave = self.binned_spectra.nwave
         
         # Get the guess kinematics
-        self._assign_input_kinematics(redshift, dispersion)
+        self._assign_input_kinematics(emission_line_moments, redshift, dispersion)
 
         #---------------------------------------------------------------
         # Get the good spectra
@@ -810,6 +897,8 @@ class EmissionLineModel:
                                                             len(self.binned_spectra.missing_bins)))
             log_output(self.loggers, 1, logging.INFO, 'With good S/N and to fit: {0}'.format(
                                                             numpy.sum(good_snr)))
+            log_output(self.loggers, 1, logging.INFO, 'Bins deconstructed in fitting: {0}'.format(
+                                                      str(self.method['deconstruct_bins'])))
             
         if numpy.sum(good_snr) == 0:
             raise ValueError('No good spectra to fit!')
@@ -829,11 +918,11 @@ class EmissionLineModel:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
-        
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output path: {0}'.format(self.directory_path))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output file: {0}'.format(self.output_file))
+
         #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
         # file
@@ -853,21 +942,21 @@ class EmissionLineModel:
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
 
+        # TODO: Test if, when deconstruct_bins is true, the model_binid
+        # spaxels (with fits) all have unique bin IDs.
+
+        # The emission-line fitting can proceed without knowing which
+        # lines are fit; this sets the number of lines
         if self.neml is None:
             self.neml = model_eml_par['FLUX'].shape[1]
 
 #        pyplot.step(model_wave, model_flux[0,:], where='mid')
 #        pyplot.show()
        
-        # The number of models returned should match the number of
-        # "good" spectra
-
-        # TODO: Include failed fits in "missing" models?
-
-        # DEBUG
-        warnings.warn('DEBUG')
-#        if model_flux.shape[0] != numpy.sum(good_snr):
-#            raise ValueError('Unexpected returned shape of fitted emission-line models.')
+        # The number of models returned should be the number of "good" binned
+        # spectra if the fitter does *not* deconstruct the bins.
+        if not self.method['deconstruct_bins'] and model_flux.shape[0] != numpy.sum(good_snr):
+            raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------
         # Set the number of models and the missing models

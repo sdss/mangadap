@@ -2694,6 +2694,7 @@ python/mangadap/proc/bandpassfilter.py -text
 python/mangadap/proc/elric.py -text
 python/mangadap/proc/emissionlinemodel.py -text
 python/mangadap/proc/emissionlinemoments.py -text
+python/mangadap/proc/emissionlinetemplates.py -text
 python/mangadap/proc/ppxffit.py -text
 python/mangadap/proc/reductionassessments.py -text
 python/mangadap/proc/sasuke.py -text

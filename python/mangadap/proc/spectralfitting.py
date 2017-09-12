@@ -164,26 +164,47 @@ class EmissionLineFit(SpectralFitting):
 
 
     @staticmethod
-    def get_spectra_to_fit(binned_spectra, pixelmask=None, select=None, error=False):
+    def get_spectra_to_fit(spectra, pixelmask=None, select=None, error=False):
         """
         Get the spectra to fit during the emission-line fitting.
+
+        Args:
+            spectra (:class:`mangadap.drpfits.DRPFits`,
+                :class:`mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra`):
+                Object with the spectra to fit.  Can be one of the
+                provided objects.  This works because both have
+                `copy_to_masked_array` and `do_not_fit_flags` methods.
+            pixelmask
+                (:class:`mangadap.util.pixelmask.SpectralPixelMask`):
+                (**Optional**) Pixel mask to apply.
+            select (numpy.ndarray): (**Optional**) Select specific
+                spectra to return.
+            error (bool): (**Optional**) Return 1-sigma errors instead
+                of inverse variance.
+
+        Returns:
+            numpy.ma.MaskedArray: Two masked arrays: the flux data and
+            the uncertainties, either as 1-sigma error or the inverse
+            variance.
+
         """
         # Grab the spectra
-        flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-        ivar = binned_spectra.copy_to_masked_array(ext='IVAR',
-                                                   flag=binned_spectra.do_not_fit_flags())
+        flux = spectra.copy_to_masked_array(flag=spectra.do_not_fit_flags())
+        ivar = spectra.copy_to_masked_array(ext='IVAR', flag=spectra.do_not_fit_flags())
+        nspec = flux.shape[0]
+
         # Convert inverse variance to error
         if error:
             ivar = numpy.ma.power(ivar, -0.5)
             flux[numpy.ma.getmaskarray(ivar)] = numpy.ma.masked
-            
+
         # Mask any pixels in the pixel mask
         if pixelmask is not None:
-            indx = pixelmask.boolean(binned_spectra['WAVE'].data, nspec=binned_spectra.nbins)
+            indx = pixelmask.boolean(spectra['WAVE'].data, nspec=nspec)
             flux[indx] = numpy.ma.masked
             ivar[indx] = numpy.ma.masked
         
-        _select = numpy.ones(binned_spectra.nbins, dtype=bool) if select is None else select
+        _select = numpy.ones(nspec, dtype=bool) if select is None else select
         return flux[_select,:], ivar[_select,:]
 
 

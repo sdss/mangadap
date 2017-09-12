@@ -1257,3 +1257,9 @@ class EmissionLineMoments:
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         self.missing_bins = self._get_missing_bins()
 
+
+    def channel_names(self):
+        return [ '{0}-{1}'.format(n,int(w)) \
+                        for n,w in zip(self['ELMBAND'].data['NAME'],
+                                       self['ELMBAND'].data['RESTWAVE']) ]
+

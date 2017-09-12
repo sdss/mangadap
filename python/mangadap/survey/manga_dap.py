@@ -270,7 +270,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           tpl_symlink_dir=method_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
-
         #---------------------------------------------------------------
         # For both the emission-line measurements (moments and model):
         # To use the NSA redshift for all moments:
@@ -288,31 +287,32 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 
         #---------------------------------------------------------------
         # Get an estimate of the redshift of each bin:
-        el_init_redshift = numpy.full(binned_spectra.nbins, nsa_redshift, dtype=float)
-        if emission_line_moments is not None:
-            # HARDCODED FOR A SPECIFIC EMISSION-LINE MOMENT DATABASE
-            #
-            # TODO: Should
-            #   - pass the EmissionLineMoments object to
-            #     EmissionLineModel
-            #   - include the channel used for this in
-            #     EmissionLineModelDef
-            halpha_channel = 7
-            halpha_mom1_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,halpha_channel] > 0
-            # - Use the 1st moment of the H-alpha line
-            el_init_redshift[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
-                        = emission_line_moments['ELMMNTS'].data['MOM1'][:,halpha_channel] \
-                                / astropy.constants.c.to('km/s').value
-
-            # - For missing bins in the moment measurements and bad
-            #   H-alpha moment measurements, use the value for the
-            #   nearest good bin
-            bad_bins = numpy.append(emission_line_moments.missing_bins,
-                    emission_line_moments['ELMMNTS'].data['BINID'][halpha_mom1_masked]).astype(int)
-            if len(bad_bins) > 0:
-                nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
-                bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
-                el_init_redshift[bad_bin_index] = el_init_redshift[nearest_good_bin_index]
+        # This is now done within the EmissionLineModel class
+#        el_init_redshift = numpy.full(binned_spectra.nbins, nsa_redshift, dtype=float)
+#        if emission_line_moments is not None:
+#            # HARDCODED FOR A SPECIFIC EMISSION-LINE MOMENT DATABASE
+#            #
+#            # TODO: Should
+#            #   - pass the EmissionLineMoments object to
+#            #     EmissionLineModel
+#            #   - include the channel used for this in
+#            #     EmissionLineModelDef
+#            halpha_channel = 7
+#            halpha_mom1_masked = emission_line_moments['ELMMNTS'].data['MASK'][:,halpha_channel] > 0
+#            # - Use the 1st moment of the H-alpha line
+#            el_init_redshift[ emission_line_moments['ELMMNTS'].data['BINID_INDEX'] ] \
+#                        = emission_line_moments['ELMMNTS'].data['MOM1'][:,halpha_channel] \
+#                                / astropy.constants.c.to('km/s').value
+#
+#            # - For missing bins in the moment measurements and bad
+#            #   H-alpha moment measurements, use the value for the
+#            #   nearest good bin
+#            bad_bins = numpy.append(emission_line_moments.missing_bins,
+#                    emission_line_moments['ELMMNTS'].data['BINID'][halpha_mom1_masked]).astype(int)
+#            if len(bad_bins) > 0:
+#                nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
+#                bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+#                el_init_redshift[bad_bin_index] = el_init_redshift[nearest_good_bin_index]
         #---------------------------------------------------------------
 
         #---------------------------------------------------------------
@@ -328,13 +328,32 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         emission_line_model = None if plan['elfit_key'][i] is None else \
                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
                                      stellar_continuum=stellar_continuum,
-                                     redshift=el_init_redshift, dispersion=100.0,
+                                     emission_line_moments=emission_line_moments,
+#                                     redshift=el_init_redshift,
+                                     dispersion=100.0,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
         
         #---------------------------------------------------------------
-        # Spectral-Index Measurements
+        # TODO: If the emission-line fitting method deconstructs the
+        # bins into individual spaxels, remeasure the emission-line
+        # moments using the fitted emission-line velocities and the any
+        # adjustments to the continuum...
         #---------------------------------------------------------------
+#        emission_line_moments = None if plan['elmom_key'][i] is None else \
+#                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+#                                        stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+#                                        dapsrc=dapsrc, analysis_path=_analysis_path,
+#                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
+
+        #---------------------------------------------------------------
+        # Spectral-Index Measurements
+        # TODO: This can only be done if the emission-line model was
+        # performed on the binned spectra
+        #---------------------------------------------------------------
+        if emission_line_model.method['deconstruct_bins'] and plan['spindex_key'][i] is None:
+            raise NotImplementedError('Cannot perform spectral index measurements when '
+                                      'emission-line model is fit to deconstructed bins')
         spectral_indices = None if plan['spindex_key'][i] is None else \
                     SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,

@@ -99,6 +99,7 @@ from scipy import interpolate, fftpack
 import astropy.constants
 
 from captools.ppxf import ppxf, _losvd_rfft
+from captools import capfit
 
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask
@@ -303,8 +304,10 @@ class PPXFFitResult(object):
         if ppxf_fit is not None and weight_errors:
             design_matrix = ppxf_fit.matrix[ppxf_fit.goodpixels,:] \
                                 / ppxf_fit.noise[ppxf_fit.goodpixels, None]
-            covariance_matrix = numpy.linalg.inv(numpy.matmul(design_matrix.T, design_matrix))
-            self.tplwgterr = numpy.sqrt(numpy.diag(covariance_matrix))[degree+1:]
+            cov, _tplwgterr = capfit.cov_err(design_matrix)
+            self.tplwgterr = _tplwgterr[degree+1:]
+#            covariance_matrix = numpy.linalg.inv(numpy.matmul(design_matrix.T, design_matrix))
+#            self.tplwgterr = numpy.sqrt(numpy.diag(covariance_matrix))[degree+1:]
         self.addcoef = None if ppxf_fit is None or degree < 0 else ppxf_fit.polyweights.copy()
         self.multcoef = None if ppxf_fit is None or mdegree <= 0 else ppxf_fit.mpolyweights.copy()
         self.kin = None if ppxf_fit is None else ppxf_fit.sol.copy()
@@ -320,6 +323,12 @@ class PPXFFitResult(object):
                                                 numpy.array(ppxf_fit.component == i).astype(int)
                                                         for i in range(ppxf_fit.ncomp)])
         self.bestfit_comp = numpy.dot(component_weights, ppxf_fit.matrix.T[degree+1:,:])
+
+        # Include the multiplicative polynomial
+        if self.multcoef is not None:
+            mpoly = numpy.polynomial.legendre.legval(numpy.linspace(-1, 1, end-start),
+                                                     numpy.append(1.0,self.multcoef))
+            self.bestfit_comp[:,start:end] *= mpoly[None,:]
 
 #        pyplot.plot(ppxf_fit.bestfit, color='k')
 #        for i in range(ppxf_fit.ncomp):
