@@ -567,20 +567,20 @@ class SpectralResolution:
                sig2_pd * numpy.square(self.c*self.dw/self.wave())
 
 
-    def wave(self):
+    def wave(self, copy=False):
         """
         Return the wavelength vector; held by :attr:`interpolator`.
         """
 #        return self.interpolator._data[0]
-        return self.interpolator.x
+        return self.interpolator.x.copy() if copy else self.interpolator.x
 
 
-    def sres(self):
+    def sres(self, copy=False):
         """
         Return the resolution vector; held by :attr:`interpolator`.
         """
 #        return self.interpolator._data[1]
-        return self.interpolator.y
+        return self.interpolator.y.copy() if copy else self.interpolator.y
 
 
     def instrumental_dispersion(self, w=None):

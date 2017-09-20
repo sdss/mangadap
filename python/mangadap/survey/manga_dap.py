@@ -351,7 +351,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # TODO: This can only be done if the emission-line model was
         # performed on the binned spectra
         #---------------------------------------------------------------
-        if emission_line_model.method['deconstruct_bins'] and plan['spindex_key'][i] is None:
+        if plan['spindex_key'][i] is not None and emission_line_model.method['deconstruct_bins']:
             raise NotImplementedError('Cannot perform spectral index measurements when '
                                       'emission-line model is fit to deconstructed bins')
         spectral_indices = None if plan['spindex_key'][i] is None else \

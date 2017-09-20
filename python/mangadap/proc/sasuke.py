@@ -71,14 +71,15 @@ import time
 import logging
 
 import numpy
-from scipy import fftpack
+from scipy import interpolate, fftpack
 
 import astropy.constants
 
-from captools.ppxf import ppxf
+# from captools.ppxf import ppxf
 
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
+from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
 from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.instrument import SpectralResolution
@@ -93,6 +94,7 @@ from .bandpassfilter import emission_line_equivalent_width
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFFit, PPXFFitResult
+from ..contrib.xjmc_edit import emline_fitter_with_ppxf_edit
 
 # For debugging
 from matplotlib import pyplot
@@ -125,6 +127,14 @@ class SasukePar(ParSet):
             (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Emission-line database with the details of the lines to be
             fit.
+        etpl_line_sigma_mode (str): (**Optional**) Mode used to set the
+            instrumental dispersion of the emission-line templates.
+            Mode options are explated by
+            :func:`Sasuke.etpl_line_sigma_options`.  Default is
+            'default'.
+        etpl_line_sigma_min (int,float): (**Optional**) Impose a minimum
+            emission-line sigma by offsetting the nominal trend, in
+            quadrature, to have this minimum value.  Default is 0.
         guess_redshift (array-like): Single or per-spectrum redshift to
             use as the initial velocity guess.
         guess_dispersion (array-like): Single or per-spectrum velocity
@@ -143,25 +153,32 @@ class SasukePar(ParSet):
         mdegree (int): pPXF mdegree parameter setting the degree of the
             multiplicative polynomials to use.
     """
-    def __init__(self, stellar_continuum, emission_lines, guess_redshift=None,
-                 guess_dispersion=None, minimum_snr=None, deconstruct_bins=None, pixelmask=None,
-                 reject_boxcar=None, bias=None, moments=None, degree=None, mdegree=None):
+    def __init__(self, stellar_continuum, emission_lines, etpl_line_sigma_mode=None,
+                 etpl_line_sigma_min=None,guess_redshift=None, guess_dispersion=None,
+                 minimum_snr=None, deconstruct_bins=None, pixelmask=None, reject_boxcar=None,
+                 bias=None, moments=None, degree=None, mdegree=None):
 
         arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
+        etpl_mode_options = Sasuke.etpl_line_sigma_options()
 
-        pars =     [ 'stellar_continuum', 'emission_lines', 'guess_redshift', 'guess_dispersion',
-                     'minimum_snr', 'deconstruct_bins', 'pixelmask', 'reject_boxcar', 'bias',
-                     'moments', 'degree', 'mdegree' ]
-        values =   [ stellar_continuum, emission_lines, guess_redshift, guess_dispersion,
-                     minimum_snr, deconstruct_bins, pixelmask, reject_boxcar, bias, moments,
-                     degree, mdegree ]
-        defaults = [ None, None, None, None, 0.0, False, None, None, None, 2, -1, 8 ]
-        dtypes =   [ StellarContinuumModel, EmissionLineDB, arr_in_fl, arr_in_fl, in_fl,
-                     bool, SpectralPixelMask, int, in_fl, int, int, int ]
+        pars =     [ 'stellar_continuum', 'emission_lines', 'etpl_line_sigma_mode',
+                     'etpl_line_sigma_min', 'guess_redshift', 'guess_dispersion', 'minimum_snr',
+                     'deconstruct_bins', 'pixelmask', 'reject_boxcar', 'bias', 'moments', 'degree',
+                     'mdegree' ]
+        values =   [ stellar_continuum, emission_lines, etpl_line_sigma_mode, etpl_line_sigma_min,
+                     guess_redshift, guess_dispersion, minimum_snr, deconstruct_bins, pixelmask,
+                     reject_boxcar, bias, moments, degree, mdegree ]
+        defaults = [ None, None, 'default', 0.0, None, None, 0.0, False, None, None, None, 2, -1,
+                     8 ]
+        options = [ None, None, etpl_mode_options, None, None, None, None, None, None, None, None,
+                    None, None, None ]
+        dtypes =   [ StellarContinuumModel, EmissionLineDB, str, in_fl, arr_in_fl, arr_in_fl,
+                     in_fl, bool, SpectralPixelMask, int, in_fl, int, int, int ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
+        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
+                        dtypes=dtypes)
 
 
 class Sasuke(EmissionLineFit):
@@ -244,9 +261,6 @@ class Sasuke(EmissionLineFit):
             Shape is (:math:`N_{\rm pix,t}`,).
         tpl_flux (numpy.ndarray): Template spectra to use in fit.
             Shape is (:math:`N_{\rm tpl},N_{\rm pix,t}`).
-        tpl_sres (:class:`mangadap.util.instrument.SpectralResolution`):
-            Spectral resolution of the template spectra.  All templates
-            are assumed to have the same spectral resolution.
         tpl_to_use (numpy.ndarray): Set of flags used to select the
             templates used to fit each spectrum.  Shape is
             (:math:`N_{\rm spec},N_{\rm tpl}`).
@@ -278,8 +292,8 @@ class Sasuke(EmissionLineFit):
             component that includes each emission line.  Shape is
             (:math:`N_{\rm eml`,).
         ncomp (int): Total number of kinematic components to fit.
-        gas_comp (numpy.ndarray): Boolean array set to True for
-            emission-line components.  Shape is (:math:`N_{\rm comp}`).
+#        gas_comp (numpy.ndarray): Boolean array set to True for
+#            emission-line components.  Shape is (:math:`N_{\rm comp}`).
         tpl_comp (numpy.ndarray): The integer kinematic component
             associated with each template.  Shape is (:math:`N_{\rm
             tpl},). 
@@ -340,6 +354,11 @@ class Sasuke(EmissionLineFit):
     """
     def __init__(self, bitmask, loggers=None, quiet=False):
 
+# REMOVED
+#        tpl_sres (:class:`mangadap.util.instrument.SpectralResolution`):
+#            Spectral resolution of the template spectra.  All templates
+#            are assumed to have the same spectral resolution.
+
         EmissionLineFit.__init__(self, 'sasuke', bitmask)
         # Attributes kept by SpectralFitting:
         #   fit_type='emission_line', bitmask=bitmask, par=None
@@ -370,19 +389,20 @@ class Sasuke(EmissionLineFit):
         self.remap_ferr = None
         self.remap_sres = None
         self.nremap = 0
-        self.remap_skyx
-        self.remap_skyy
+        self.remap_skyx = None
+        self.remap_skyy = None
 
         # Template data
         self.tpl_wave = None
         self.tpl_flux = None
-        self.tpl_sres = None
+#        self.tpl_sres = None
         self.tpl_to_use = None
         self.nstpl = None
         self.ntpl = None
         self.npix_tpl = None
         self.tpl_npad = None
         self.tpl_rfft = None
+        self.gas_tpl = None
 
         self.matched_resolution = None
         self.velscale_ratio = None
@@ -395,7 +415,7 @@ class Sasuke(EmissionLineFit):
 
         # Kinematic components and tied parameters
         self.ncomp = None
-        self.gas_comp = None
+#        self.gas_comp = None
         self.tpl_comp = None
         self.tpl_vgrp = None
         self.tpl_sgrp = None
@@ -503,8 +523,9 @@ class Sasuke(EmissionLineFit):
                  ('KINCMP',numpy.int,(ntpl,)),
                  ('VELCMP',numpy.int,(ntpl,)),
                  ('SIGCMP',numpy.int,(ntpl,)),
-                 ('USETPL',numpy.bool,(ntpl,)),
+#                 ('USETPL',numpy.bool,(ntpl,)),
                  ('TPLWGT',numpy.float,(ntpl,)),
+                 ('TPLWGTERR',numpy.float,(ntpl,)),
                  ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
                  ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
                  ('KININP',numpy.float,(nkin,)),
@@ -513,7 +534,7 @@ class Sasuke(EmissionLineFit):
                  ('TIEDKIN',numpy.int,(nkin,)),
                  ('CHI2',numpy.float),
                  ('RCHI2',numpy.float),
-                 ('ROBUST_RCHI2',numpy.float),
+#                 ('ROBUST_RCHI2',numpy.float),
                  ('RMS',numpy.float),
                  ('ABSRESID',numpy.float,(5,)),
                  ('FRMS',numpy.float),
@@ -521,16 +542,53 @@ class Sasuke(EmissionLineFit):
                ] 
 
 
+    @staticmethod
+    def etpl_line_sigma_options():
+        r"""
+
+        Keyword options for the mode used to set the standard deviation
+        of the emission lines the the emission-line templates.  Possible
+        modes are:
+
+            ``default``: In order of precedence: Use the spectral
+                resolution of the stellar templates, or use the spectral
+                resolution of the observed spectra, or adopt a FWHM of 2
+                pixels and calculate the resolution assuming a Gaussian
+                line profile.
+
+            ``zero``:  The width of all lines is set to 0.  The function
+                from :mod:`mangadap.util.lineprofiles` used to construct
+                the line *must* be able to produce the line if the
+                standard deviation is 0!
+
+            ``offset``: Apply a quadrature offset of the
+                wavelength-dependent trend of the instrumental
+                dispersion resulting from the ``default`` mode such that
+                the minimum instrumental dispersion is 0.  Note that the
+                minimum dispersion can be set to something other than 0
+                using either the `etpl_line_sigma_min` parameter in
+                :class:`SasukePar` or the keyword argument in
+                :func:`Sasuke.fit`.  If the minimum dispersion is 0, the
+                function from :mod:`mangadap.util.lineprofiles` used to
+                construct the line *must* be able to produce the line if
+                the standard deviation is 0!
+
+        Returns:
+            list: List of allowed options.
+        """
+        return ['default', 'zero', 'offset' ]
+
+
     def _check_remapping_coordinates(self, obj_skyx, obj_skyy, remap_skyx, remap_skyy):
-        if None in [obj_skyx, obj_skyy, remap_skyx, remap_skyy]:
+        if any(x is None for x in [obj_skyx, obj_skyy, remap_skyx, remap_skyy]):
             raise ValueError('If remapping, must provide all on-sky positions.')
-        if len(obj_skyx) != 1:
+        if len(obj_skyx.shape) != 1:
             raise ValueError('Object spectra coordinates must be a vector.')
         if obj_skyx.size != self.nobj:
             raise ValueError('Object sky coordinates to not match the number of spectra.')
         if obj_skyx.shape != obj_skyy.shape:
             raise ValueError('Mismatch of object x and y coordinate shapes.')
-        if len(remap_skyx) != 1:
+        if len(remap_skyx.shape) != 1:
             raise ValueError('Remapping coordinates must be a vector.')
         if remap_skyx.size != self.nremap:
             raise ValueError('Remapping sky coordinates to not match the number of spectra.')
@@ -539,144 +597,126 @@ class Sasuke(EmissionLineFit):
         return obj_skyx, obj_skyy, remap_skyx, remap_skyy
 
 
-    def _run_fit_iteration(self, obj_flux, obj_ferr, obj_to_fit, weight_errors=False,
-                           component_fits=False, plot=False):
-        r"""
-        Execute a specific fit iteration.  This is used by
-        :func:`_fit_all_spectra` to run through as set of fit
-        iterations.  All spectra in *obj_flux* are fit with a specific
-        set of ppxf parameters.  Additional iteration modes can be added
-        by including new arguments to the function.
-        
-        (FB)  This function fits all the spectra in the cube and returns
-        a  PPXFFitResult object with the resulting fit paramters
-
-        Args:
-            obj_flux (`numpy.ma.MaskedArray`_): Object spectra to fit
-                **for this iteration**.  Different from
-                :attr:`obj_flux`.
-            obj_ferr (`numpy.ma.MaskedArray`_): Error in spectra to fit
-                **for this iteration**.  Different from
-                :attr:`obj_flux`.
-            obj_to_fit (numpy.ndarray): Boolean array to fit each
-                spectrum.
-            weight_errors (bool): (**Optional**) Flag to calculate and
-                assign errors in the weights; see
-                :class:`mangadap.proc.ppxffit.PPXFFitResult`.
-            component_fits (bool): (**Optional**) Flag to construct the
-                optimal fit for each kinematic component.  This is used
-                to construct the best-fitting emission-line model in
-                :func:`_emission_line_only_model`; see
-                :class:`mangadap.proc.ppxffit.PPXFFitResult`.
-            plot (bool): (**Optional**) Passed to
-                :class:`mangadap.contrib.ppxf.ppxf` to construct a plot
-                showing the result **of each fit**.  Should only used
-                when debugging.
-
-        Returns:
-            numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
-            :class:`mangadap.proc.ppxffit.PPXFFitResult`.
-
-        """
-#        linear = fix_kinematics and mdegree < 1
-        linear = False
-
-        # Create the object to hold all the fits
-        result = numpy.empty(self.nobj, dtype=object)
-
-        # Fit each spectrum
-#$$$$$$$$ (FB) this is where the code looks over all the spectra in the cube 
-        for i in range(self.nobj):
-            print('Running pPXF fit on spectrum: {0}/{1}'.format(i+1,self.nobj), end='\r')
-            # Meant to ignore this spectrum
-#$$$$$$$$ (FB) NO idea what this is doing, but probalby not important            
-            if not obj_to_fit[i]:
-                result[i] = None
-                continue
-
-            # Get the pixels to fit for this spectrum
-            gpm = numpy.where( ~ (obj_flux.mask[i, self.spectrum_start[i]:self.spectrum_end[i]]) )[0]
-
-            # Check if there is sufficient data for the fit
-            ntpl_to_use = numpy.sum(self.tpl_to_use[i,:])
-            if len(gpm) < self.dof+ntpl_to_use:
-#$$$$$$$$ (FB) If insufficient data, then throw a warning 
-                if not self.quiet:                                        
-                    warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
-                                  '(dof={2}).'.format(len(gpm), i+1, self.dof+ntpl_to_use))
-#$$$$$$$$ (FB) If insufficient data, generate the PPXFFitResult object with None and go to next spectrum (continue)
-                result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
-                                          self.spectrum_end[i], self.tpl_to_use[i,:],
-                                          None, self.ntpl)
-                continue
-
-            # Run ppxf
-            if plot:
-                pyplot.clf()
-
-#$$$$$$$$ (FB) fit spectrum with ppxf and get ppxf output
-            _ppxf=ppxf(self.tpl_flux[self.tpl_to_use[i,:],:].T,
-                                 obj_flux.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
-                                 obj_ferr.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
-                                 self.velscale, self.comp_start_kin[i].tolist(), bias=self.bias, 
-                                 component=self.tpl_comp[self.tpl_to_use[i,:]], degree=self.degree,
-                                 goodpixels=gpm, linear=linear, mdegree=self.mdegree,
-                                 moments=self.comp_moments, plot=plot, quiet=(not plot),
-                                 templates_rfft=self.tpl_rfft[self.tpl_to_use[i,:],:].T,
-                                 tied=self.tied, velscale_ratio=self.velscale_ratio,
-                                 vsyst=-self.base_velocity[i])
-
-#$$$$$$$$ (FB) package PPXF output in DAP-specific results object                                 
-            result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
-                                      self.spectrum_end[i], self.tpl_to_use[i,:],
-                                      _ppxf, self.ntpl,
-                                      weight_errors=weight_errors, component_fits=component_fits)
-
-            # TODO: check output
-#            if result[i].kin[1] < 0:
-#                result[i].kin[1] = numpy.absolute(result[i].kin[1]) #self.sigma_limits[0]
-#                warnings.warn('pPXF gives negative dispersion! Change -{0:.4f} to {0:.4f}'.format(
-#                                    result[i].kin[1]))
-                
-            if result[i].reached_maxiter() and not self.quiet:
-                warnings.warn('pPXF optimizer reached maximum number of iterations for spectrum '
-                              '{0}.'.format(i+1))
-            if plot:
-                pyplot.show()
-
-        print('Running pPXF fit on spectrum: {0}/{0}'.format(self.nobj))
-#$$$$$$$$ (FB) this function returns a  PPXFFitResult object         
-        return result
+#    def _run_fit_iteration(self, obj_flux, obj_ferr, obj_to_fit, weight_errors=False,
+#                           component_fits=False, plot=False):
+#        r"""
+#        Execute a specific fit iteration.  This is used by
+#        :func:`_fit_all_spectra` to run through as set of fit
+#        iterations.  All spectra in *obj_flux* are fit with a specific
+#        set of ppxf parameters.  Additional iteration modes can be added
+#        by including new arguments to the function.
+#        
+#        Args:
+#            obj_flux (`numpy.ma.MaskedArray`_): Object spectra to fit
+#                **for this iteration**.  Different from
+#                :attr:`obj_flux`.
+#            obj_ferr (`numpy.ma.MaskedArray`_): Error in spectra to fit
+#                **for this iteration**.  Different from
+#                :attr:`obj_flux`.
+#            obj_to_fit (numpy.ndarray): Boolean array to fit each
+#                spectrum.
+#            weight_errors (bool): (**Optional**) Flag to calculate and
+#                assign errors in the weights; see
+#                :class:`mangadap.proc.ppxffit.PPXFFitResult`.
+#            component_fits (bool): (**Optional**) Flag to construct the
+#                optimal fit for each kinematic component.  This is used
+#                to construct the best-fitting emission-line model in
+#                :func:`_emission_line_only_model`; see
+#                :class:`mangadap.proc.ppxffit.PPXFFitResult`.
+#            plot (bool): (**Optional**) Passed to
+#                :class:`mangadap.contrib.ppxf.ppxf` to construct a plot
+#                showing the result **of each fit**.  Should only used
+#                when debugging.
+#
+#        Returns:
+#            numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
+#            :class:`mangadap.proc.ppxffit.PPXFFitResult`.
+#
+#        """
+##        linear = fix_kinematics and mdegree < 1
+#        linear = False
+#
+#        # Create the object to hold all the fits
+#        result = numpy.empty(self.nobj, dtype=object)
+#
+#        # Fit each spectrum
+#        for i in range(self.nobj):
+#            print('Running pPXF fit on spectrum: {0}/{1}'.format(i+1,self.nobj), end='\r')
+#            # Meant to ignore this spectrum
+#            if not obj_to_fit[i]:
+#                result[i] = None
+#                continue
+#
+#            # Get the pixels to fit for this spectrum
+#            gpm = numpy.where( ~ (obj_flux.mask[i, self.spectrum_start[i]:self.spectrum_end[i]]) )[0]
+#
+#            # Check if there is sufficient data for the fit
+#            ntpl_to_use = numpy.sum(self.tpl_to_use[i,:])
+#            if len(gpm) < self.dof+ntpl_to_use:
+#                if not self.quiet:                                        
+#                    warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
+#                                  '(dof={2}).'.format(len(gpm), i+1, self.dof+ntpl_to_use))
+#                # Declare an empty PPXFFitResult
+#                result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
+#                                          self.spectrum_end[i], self.tpl_to_use[i,:],
+#                                          None, self.ntpl)
+#                continue
+#
+#            # Clear any existing plot data
+#            if plot:
+#                pyplot.clf()
+#
+#            # Run ppxf
+#            ppxf_fit = ppxf(self.tpl_flux[self.tpl_to_use[i,:],:].T,
+#                            obj_flux.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
+#                            obj_ferr.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
+#                            self.velscale, self.comp_start_kin[i].tolist(), bias=self.bias, 
+#                            component=self.tpl_comp[self.tpl_to_use[i,:]], degree=self.degree,
+#                            goodpixels=gpm, linear=linear, mdegree=self.mdegree,
+#                            moments=self.comp_moments, plot=plot, quiet=(not plot),
+#                            templates_rfft=self.tpl_rfft[self.tpl_to_use[i,:],:].T,
+#                            tied=self.tied, velscale_ratio=self.velscale_ratio,
+#                            vsyst=-self.base_velocity[i])
+#            # Save result
+#            result[i] = PPXFFitResult(self.degree, self.mdegree, self.spectrum_start[i],
+#                                      self.spectrum_end[i], self.tpl_to_use[i,:],
+#                                      ppxf_fit, self.ntpl, weight_errors=weight_errors,
+#                                      component_fits=component_fits)
+#
+#            # TODO: check output
+##            if result[i].kin[1] < 0:
+##                result[i].kin[1] = numpy.absolute(result[i].kin[1]) #self.sigma_limits[0]
+##                warnings.warn('pPXF gives negative dispersion! Change -{0:.4f} to {0:.4f}'.format(
+##                                    result[i].kin[1]))
+#                
+#            if result[i].reached_maxiter() and not self.quiet:
+#                warnings.warn('pPXF optimizer reached maximum number of iterations for spectrum '
+#                              '{0}.'.format(i+1))
+#            if plot:
+#                pyplot.show()
+#
+#        print('Running pPXF fit on spectrum: {0}/{0}'.format(self.nobj))
+#        return result
 
 
-    def _fit_all_spectra(self, plot=False): #, plot_file_root=None):
-        """
-        Fit all spectra contained by the class instance
-        (:attr:`obj_flux`) using an optimized set of iterations.  For
-        example, see
-        :func:`mangadap.proc.ppxffit.PPXFFit._fit_all_spectra()`.
-        
-        $$$$$$$$ (FB) this is a wrapper to   _run_fit_iteration which allows the 
-        user to run a second fit with outlier rejection (DO WE NEED THIS?)
-        For testing and simplicity I killed this functionality
-        INSTEAD REUSE THIS FUCTION
-        TO DO:
-            1. run first fit iteration with single stellar template (fixed kin) 
-            and all lines tied
-            2. depixelise (break bins)
-            3. run second iteration with preferred parameters
-
-        Args:
-            plot (bool): (**Optional**) Passed to
-                :class:`mangadap.contrib.ppxf.ppxf` to construct a plot
-                showing the result of **each fit** during **each fit
-                iteration**.  Should only used when debugging.
-        
-        Returns:
-            numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
-            :class:`mangadap.proc.ppxffit.PPXFFitResult`.
-        
-        """
+#    def _fit_all_spectra(self, plot=False): #, plot_file_root=None):
+#        """
+#        Fit all spectra contained by the class instance
+#        (:attr:`obj_flux`) using an optimized set of iterations.  For
+#        example, see
+#        :func:`mangadap.proc.ppxffit.PPXFFit._fit_all_spectra()`.
+#        
+#        Args:
+#            plot (bool): (**Optional**) Passed to
+#                :class:`mangadap.contrib.ppxf.ppxf` to construct a plot
+#                showing the result of **each fit** during **each fit
+#                iteration**.  Should only used when debugging.
+#        
+#        Returns:
+#            numpy.ndarray : Array with :math:`N_{\rm spec}` instances of
+#            :class:`mangadap.proc.ppxffit.PPXFFitResult`.
+#        
+#        """
 #        run_rejection = self.reject_boxcar is not None
 #        #---------------------------------------------------------------
 #        # Fit the spectra
@@ -712,58 +752,59 @@ class Sasuke(EmissionLineFit):
 #                                                 loggers=self.loggers, quiet=self.quiet)
 #        obj_ferr[numpy.ma.getmaskarray(obj_flux)] = numpy.ma.masked
 #
-#        # Return results of refit (only ever do one rejection iteration
+#        # Return results of refit (only ever do one rejection iteration)
 #        return self._run_fit_iteration(obj_flux, obj_ferr, obj_to_fit, weight_errors=True,
 #                                       component_fits=True, plot=plot)
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of object spectra to fit: {0}/{1}'.format(
-                            numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
-        result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.obj_to_fit,
-                                         weight_errors=True,
-                                         component_fits=True, plot=plot)
-        return result
+#
+##        if not self.quiet:
+##            log_output(self.loggers, 1, logging.INFO,
+##                       'Number of object spectra to fit: {0}/{1}'.format(
+##                            numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
+##        result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.obj_to_fit,
+##                                         weight_errors=True,
+##                                         component_fits=True, plot=plot)
+##        return result
 
 
-    def _emission_line_only_model(self, result):
+#    def _emission_line_only_model(self, result):
+#        r"""
+#        Given the set of :class:`mangadap.proc.ppxf.PPXFFitResult`
+#        instances resulting from the fit to all object spectra,
+#        construct the best-fitting models that only include the model
+#        emission lines.  The :class:`mangadap.proc.ppxf.PPXFFitResult`
+#        instances must have had the best-fitting components constructed
+#        when instantiated (declared with `component_fits=True`); the
+#        'best-fitting components' are the templates weighted and
+#        modified by any fitted multiplicative polynomial.  See
+#        :func:`_run_fit_iteration` and :func:`_save_results`.
+#
+#        Args:
+#            result (numpy.ndarray): An array of
+#                :class:`mangadap.proc.ppxffit.PPXFFitResult` instances
+#                with the result of the fits to each object spectrum.
+#
+#        Returns:
+#            `numpy.ma.MaskedArray`_: A masked array with shape
+#            :math:`(N_{\rm spec},N_{\rm pix})` with the best-fitting
+#            emission-line-only model.  All pixels between
+#            :attr:`spectrum_start` and :attr:`spectrum_end` are not
+#            masked.
+#        """
+#        # Models originally fully masked
+#        model_eml_flux = numpy.ma.MaskedArray(numpy.zeros(self.obj_flux.shape, dtype=float),
+#                                              mask=numpy.ones(self.obj_flux.shape, dtype=bool))
+#        for i in range(self.nobj):
+#            if result[i] is None or result[i].fit_failed():
+#                continue
+#            s = result[i].start
+#            e = result[i].end
+#            # Sum all the emission-line components
+#            model_eml_flux[i,s:e] = numpy.sum(result[i].bestfit_comp[self.gas_comp,:], axis=0)
+#        return model_eml_flux
+
+
+    def _is_near_bounds(self, kin, kin_inp, vel_indx, sig_indx, lbound, ubound, tol_frac=1e-2):
         r"""
-        Given the set of :class:`mangadap.proc.ppxf.PPXFFitResult`
-        instances resulting from the fit to all object spectra,
-        construct the best-fitting models that only include the model
-        emission lines.  The :class:`mangadap.proc.ppxf.PPXFFitResult`
-        instances must have had the best-fitting components constructed
-        when instantiated (declared with `component_fits=True`); the
-        'best-fitting components' are the templates weighted and
-        modified by any fitted multiplicative polynomial.  See
-        :func:`_run_fit_iteration` and :func:`_save_results`.
-
-        Args:
-            result (numpy.ndarray): An array of
-                :class:`mangadap.proc.ppxffit.PPXFFitResult` instances
-                with the result of the fits to each object spectrum.
-
-        Returns:
-            `numpy.ma.MaskedArray`_: A masked array with shape
-            :math:`(N_{\rm spec},N_{\rm pix})` with the best-fitting
-            emission-line-only model.  All pixels between
-            :attr:`spectrum_start` and :attr:`spectrum_end` are not
-            masked.
-        """
-        # Models originally fully masked
-        model_eml_flux = numpy.ma.MaskedArray(numpy.zeros(self.obj_flux.shape, dtype=float),
-                                              mask=numpy.ones(self.obj_flux.shape, dtype=bool))
-        for i in range(self.nobj):
-            if result[i] is None or result[i].fit_failed():
-                continue
-            s = result[i].start
-            e = result[i].end
-            # Sum all the emission-line components
-            model_eml_flux[i,s:e] = numpy.sum(result[i].bestfit_comp[self.gas_comp,:], axis=0)
-        return model_eml_flux
-
-
-    def _is_near_bounds(self, kin, kininp, vel_indx, sig_indx, lbound, ubound, tol_frac=1e-2):
-        """
         Check if the fitted kinematics are near the imposed limits.
         
         The definition of "near" is that the velocity and higher moments
@@ -777,9 +818,11 @@ class Sasuke(EmissionLineFit):
 
         Args:
             kin (numpy.ndarray): Best-fitting kinematic parameters.
-            kininp (numpy.ndarray): The initial guesses for the
+                Shape should be :math:`(N_{\rm spec},N_{\rm kin})`.
+            kin_inp (numpy.ndarray): The initial guesses for the
                 best-fitting kinematics.  This is needed because the
                 velocity limits are set relative to the input guess.
+                Shape should be :math:`(N_{\rm spec},N_{\rm kin})`.
             vel_index (numpy.ndarray): Boolean array setting if the
                 parameter is a velocity.  This is needed because the
                 velocity limits are set relative to the input guess.
@@ -801,16 +844,17 @@ class Sasuke(EmissionLineFit):
             lower boundary because it has hit the pixel sampling limit.
 
         """
+        nspec = kin.shape[0]        # Number of spectra fit
 
         # Offset velocity: bounded by *deviations* from input value
-        _lbound = lbound
-        _lbound[vel_indx] += kininp[vel_indx]
-        _ubound = ubound
-        _ubound[vel_indx] += kininp[vel_indx]
+        _lbound = numpy.array([lbound]*nspec)
+        _ubound = numpy.array([ubound]*nspec)
+        _lbound[:,vel_indx] += kin_inp[:,vel_indx]
+        _ubound[:,vel_indx] += kin_inp[:,vel_indx]
 
         # Set the tolerance
-        Db = ubound-lbound
-        Db[sig_indx] = numpy.log10(ubound[sig_indx])-numpy.log10(lbound[sig_indx])
+        Db = _ubound-_lbound
+        Db[:,sig_indx] = numpy.log10(_ubound[:,sig_indx])-numpy.log10(_lbound[:,sig_indx])
         tol = Db*tol_frac
 
         # Determine if the parameter is near the lower boundary (only
@@ -862,7 +906,10 @@ class Sasuke(EmissionLineFit):
         return model_eml_par
 
 
-    def _save_results(self, etpl, result, model_mask, model_fit_par, model_eml_par):
+#    def _save_results(self, etpl, result, model_mask, model_fit_par, model_eml_par):
+    def _save_results(self, etpl, start, end, flux, ferr, model_flux, model_eml_flux, model_mask,
+                      model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_kin_inp,
+                      model_kin, model_kin_err, model_fit_par, model_eml_par):
         r"""
         Save and assess the results of the ppxf fits.
         
@@ -899,51 +946,16 @@ class Sasuke(EmissionLineFit):
             with shape :math:`(N_{\rm spec},)`.
 
         """
-        #---------------------------------------------------------------
-        # Get the model spectra
-        model_flux = PPXFFit.compile_model_flux(self.obj_flux, result)
-        model_eml_flux = self._emission_line_only_model(result)
-#        pyplot.step(self.obj_wave, self.obj_flux[0,:], where='mid', color='k')
-#        pyplot.plot(self.obj_wave, model_flux[0,:])
-#        pyplot.plot(self.obj_wave, model_eml_flux[0,:])
-#        pyplot.show()
-#        print(result[0].tplwgt.shape)
-#        print(result[0].tplwgt[self.nstpl:])
-#        print(result[0].tplwgterr[self.nstpl:])
-
-        # Save the pixel statistics
-        model_fit_par['BEGPIX'] = self.spectrum_start
-        model_fit_par['ENDPIX'] = self.spectrum_end
-        model_fit_par['NPIXTOT'] = self.spectrum_end - self.spectrum_start
-
-        # Calculate the model residuals, which are masked where the data
-        # were not fit
-        residual = self.obj_flux - model_flux
-        fractional_residual = numpy.ma.divide(self.obj_flux - model_flux, model_flux)
-        # Get the chi-square for each spectrum
-        model_fit_par['CHI2'] = numpy.sum(numpy.square(residual/self.obj_ferr), axis=1)
-        # Get the (fractional) residual RMS for each spectrum
-        model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
-        model_fit_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
-
-        # Flag the pixels that were not used
-        model_mask[numpy.ma.getmaskarray(self.obj_flux)] \
-                        = self.bitmask.turn_on(model_mask[numpy.ma.getmaskarray(self.obj_flux)],
-                                               flag='DIDNOTUSE')
-
-        # Mask any lines that were not fit
-        model_eml_par['MASK'][:,numpy.invert(self.fit_eml)] \
-                    = self.bitmask.turn_on(model_eml_par['MASK'][:,numpy.invert(self.fit_eml)],
-                                           flag='NO_FIT')
 
         # Generate some convenience data:
+        #  - Generate vectors with the lower and upper bounds for the
+        #    kinematic parameters (lbound, ubound)
         #  - Get the list of indices in the flatted kinematics vectors
         #    with the *unfixed*, *defining* parameters used for each
         #    kinematic measurement.  These are used to set the
-        #    kinematics and errors for each emission line.
-        #  - Generate vectors with the lower and upper bounds for the
-        #    kinematic parameters
-        #  - Flag parameters that are velocity and sigma components
+        #    kinematics and errors for each emission line. (par_indx)
+        #  - Flag parameters that are velocity (vel_indx) and sigma
+        #    components (sig_indx)
         lboundi = [ self.velocity_limits[0], self.sigma_limits[0], self.gh_limits[0],
                     self.gh_limits[0], self.gh_limits[0], self.gh_limits[0] ]
         uboundi = [ self.velocity_limits[1], self.sigma_limits[1], self.gh_limits[1],
@@ -959,7 +971,7 @@ class Sasuke(EmissionLineFit):
             par_indx += [ [0]*nmom ]
             for k in range(nmom):
                 par_indx[j][k] = start+k if len(self.tied[j][k]) == 0 \
-                                        else int(self.tied[j][k].split('[')[1].split(']')[0])
+                                            else int(self.tied[j][k].split('[')[1].split(']')[0])
 #            vel_indx[par_indx[j][0]] = True
 #            sig_indx[par_indx[j][1]] = True
             vel_indx[start+0] = True
@@ -976,171 +988,182 @@ class Sasuke(EmissionLineFit):
 #        print(ubound)
 #        print(numpy.concatenate(tuple(par_indx)))
 
+        # Set the model data to masked arrays
+        model_flux = numpy.ma.MaskedArray(model_flux.data, mask=model_mask > 0)
+        model_eml_flux = numpy.ma.MaskedArray(model_eml_flux.data, mask=model_mask > 0)
+
+#        pyplot.imshow(numpy.log10(model_flux), origin='lower', interpolation='nearest', aspect='auto')
+#        pyplot.colorbar()
+#        pyplot.show()
+
+        # Save the pixel statistics
+        model_fit_par['BEGPIX'] = start
+        model_fit_par['ENDPIX'] = end
+        model_fit_par['NPIXTOT'] = end - start
+        model_fit_par['NPIXFIT'] = numpy.sum(numpy.invert(model_flux.mask[:,start:end]), axis=1)
+
+        # Calculate the model residuals, which are masked where the data
+        # were not fit
+        residual = flux - model_flux
+        fractional_residual = numpy.ma.divide(flux - model_flux, model_flux)
+        # Get the (reduced) chi-square for each spectrum
+        model_fit_par['CHI2'] = numpy.ma.sum(numpy.square(residual/ferr), axis=1)
+        # Get the (fractional) residual RMS for each spectrum
+        model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
+        model_fit_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
+
+#        print(model_fit_par['CHI2'])
+
+        # Reduced chi-square
+        model_fit_par['RCHI2'] = model_fit_par['CHI2'] / (model_fit_par['NPIXFIT'] 
+                                    - self.dof - numpy.sum(model_fit_par['TPLWGT'] > 0, axis=1))
+#        print(model_fit_par['RCHI2'])
+
+        # Save the weights and errors
+        model_fit_par['TPLWGT'] = model_wgts
+        model_fit_par['TPLWGTERR'] = model_wgts_err
+
         # The set of gas templates, and the kinematic component,
         # velocity group, and sigma group associated with each
         # template are the same for all fits
-        model_fit_par['KINCMP'] = numpy.array([self.tpl_comp]*self.nobj)
-        model_fit_par['VELCMP'] = numpy.array([self.tpl_vgrp]*self.nobj)
-        model_fit_par['SIGCMP'] = numpy.array([self.tpl_sgrp]*self.nobj)
-        model_fit_par['TIEDKIN'] = numpy.array([numpy.concatenate(tuple(par_indx))]*self.nobj)
+        nspec = self.nobj if self.nremap == 0 else self.nremap
+        model_fit_par['KINCMP'] = numpy.array([self.tpl_comp]*nspec)
+        model_fit_par['VELCMP'] = numpy.array([self.tpl_vgrp]*nspec)
+        model_fit_par['SIGCMP'] = numpy.array([self.tpl_sgrp]*nspec)
+        model_fit_par['TIEDKIN'] = numpy.array([numpy.concatenate(tuple(par_indx))]*nspec)
+
+        # Save the polynomial coefficients
+        if self.degree > -1 and model_addcoef is not None:
+            model_fit_par['ADDCOEF'] = model_addcoef
+
+        if self.mdegree > 0 and model_multcoef is not None:
+            model_fit_par['MULTCOEF'] = model_multcoef
+
+        # Flattened input and output kinematics
+        model_fit_par['KININP'] = model_kin_inp
+        model_fit_par['KIN'] = model_kin
+        model_fit_par['KINERR'] = model_kin_err
+
+        # Test if the kinematics are near the imposed boundaries.
+        near_bound, near_lower_bound = self._is_near_bounds(model_fit_par['KIN'],
+                                                            model_fit_par['KININP'],
+                                                            vel_indx, sig_indx, lbound, ubound)
+
+        # Flag the fit *globally*
+        # TODO: These are probably too general; should only flag
+        # on a per line/template basis? particularly for the
+        # dispersion...
+        # - If the velocity dispersion has hit the lower limit, ONLY
+        #   flag the value as having a MIN_SIGMA.
+        indx = numpy.any(near_lower_bound & sig_indx[None,:], axis=1)
+        if numpy.sum(indx) > 0:
+            model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
+                                                               'MIN_SIGMA')
+        # - Otherwise, flag the full fit as NEAR_BOUND, both the
+        #   parameters and the model
+        indx = numpy.any( (near_lower_bound & numpy.invert(sig_indx)[None,:])
+                            | (near_bound & numpy.invert(near_lower_bound)), axis=1)
+        if numpy.sum(indx) > 0:
+            model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
+                                                               'NEAR_BOUND')
+            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NEAR_BOUND')
+
+        # Convert the velocities from pixel units to cz
+        model_fit_par['KININP'][:,vel_indx], _ \
+                    = PPXFFit.convert_velocity(model_fit_par['KININP'][:,vel_indx],
+                                               numpy.zeros(numpy.sum(vel_indx)))
+        model_fit_par['KIN'][:,vel_indx], model_fit_par['KINERR'][:,vel_indx] \
+                    = PPXFFit.convert_velocity(model_fit_par['KIN'][:,vel_indx],
+                                               model_fit_par['KINERR'][:,vel_indx])
+
+        # Divvy up the fitted parameters into the result for each
+        # emission line
+        for j in range(self.neml):
+            if not self.fit_eml[j]:
+                continue
+#            print(self.emldb['name'][j], self.emldb['restwave'][j], self.emldb['flux'][j],
+#                  self.eml_tpli[j], result[i].tplwgt[self.eml_tpli[j]])
+#            pyplot.plot(self.tpl_wave, self.tpl_flux[self.eml_tpli[j],:])
+#            pyplot.show()
+#            exit()
+
+            # The "fit index" is the component of the line
+            model_eml_par['FIT_INDEX'][:,j] = self.eml_compi[j]
+
+            # Use the fitted weights to set the gas flux; the
+            # EmissionLineTemplates class constructs each line to have
+            # the flux provided by the emission-line database, so these
+            # can be renormalized by the ppxf-fitted weights.  The
+            # fluxes are adjusted for any fitted multiplicative
+            # polynomial below.
+            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
+                                            * self.emldb['flux'][j]
+            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
+                                                * self.emldb['flux'][j]
+
+            # Use the flattened vectors to set the kinematics
+            indx = par_indx[self.eml_compi[j]]
+            model_eml_par['KIN'][:,j,:] = model_fit_par['KIN'][:,indx]
+            model_eml_par['KINERR'][:,j,:] = model_fit_par['KINERR'][:,indx]
+
+            # Get the bound masks specific to this emission-line (set)
+            flg = numpy.any(near_lower_bound[:,indx] & sig_indx[None,indx], axis=1)
+            if numpy.sum(flg) > 0:
+                model_eml_par['MASK'][flg,j] = self.bitmask.turn_on(model_eml_par['MASK'][flg,j],
+                                                                    'MIN_SIGMA')
+            flg = numpy.any((near_lower_bound[:,indx] & numpy.invert(sig_indx)[None,indx])
+                                | (near_bound[:,indx] & numpy.invert(near_lower_bound[:,indx])),
+                            axis=1)
+            if numpy.sum(flg) > 0:
+                model_eml_par['MASK'][flg,j] = self.bitmask.turn_on(model_eml_par['MASK'][flg,j],
+                                                                    'NEAR_BOUND')
+
+        # Flag the pixels that were not used
+        model_mask[flux.mask] = self.bitmask.turn_on(model_mask[flux.mask], flag='DIDNOTUSE')
+
+        # Mask any lines that were not fit
+        model_eml_par['MASK'][:,numpy.invert(self.fit_eml)] \
+                    = self.bitmask.turn_on(model_eml_par['MASK'][:,numpy.invert(self.fit_eml)],
+                                           flag='NO_FIT')
 
         #---------------------------------------------------------------
-        # Need to iterate over each spectrum
-        for i in range(self.nobj):
-
-            #-----------------------------------------------------------
-            # Set output flags
-            # - No fit was performed
-            if result[i] is None:
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
-                continue
-
-            # - No fit attempted because of insufficient data
-            if result[i].empty_fit():
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
-                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-                                                                'INSUFFICIENT_DATA')
-                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
-                                                                'INSUFFICIENT_DATA')
-                continue
-
-            # - Fit attempted but failed
-            if result[i].fit_failed():
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
-                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-                                                                'FIT_FAILED')
-                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
-                                                                'FIT_FAILED')
-
-            # - Fit successful but hit maximum iterations.
-            if result[i].reached_maxiter():
-                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i], 'MAXITER')
-                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i], 'MAXITER')
-
-            # - Mask rejected pixels
-            original_gpm = numpy.where(numpy.invert(
-                               numpy.ma.getmaskarray(self.obj_flux)[i,self.spectrum_start[i]
-                                                                      :self.spectrum_end[i]]))[0]
-            rejected_pixels = list(set(original_gpm) - set(result[i].gpm))
-            if len(rejected_pixels) > 0:
-                model_mask[i,self.spectrum_start[i]:self.spectrum_end[i]][rejected_pixels] \
-                        = self.bitmask.turn_on(model_mask[i,self.spectrum_start[i]:
-                                                            self.spectrum_end[i]][rejected_pixels],
-                                               flag=PPXFFit.rej_flag)
-
-            #-----------------------------------------------------------
-            # Save the model parameters and figures of merit
-            # - Number of fitted pixels
-            model_fit_par['NPIXFIT'][i] = len(result[i].gpm)
-            # - Templates used
-            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
-            # - Template weights
-            model_fit_par['TPLWGT'][i,result[i].tpl_to_use] = result[i].tplwgt
-            tplwgterr = numpy.zeros(self.ntpl, dtype=float)
-            tplwgterr[result[i].tpl_to_use] = result[i].tplwgterr
-            # Additive polynomial coefficients
-            if self.degree >= 0 and result[i].addcoef is not None:
-                model_fit_par['ADDCOEF'][i,:] = result[i].addcoef
-            if self.mdegree > 0 and result[i].multcoef is not None:
-                model_fit_par['MULTCOEF'][i,:] = result[i].multcoef
-            # Flattened input kinematics vector
-            model_fit_par['KININP'][i,:] = numpy.concatenate(tuple(self.comp_start_kin[i]))
-            # Flattened best-fit kinematics vector
-            model_fit_par['KIN'][i,:] = numpy.concatenate(tuple(result[i].kin))
-            # Flattened kinematic error vector
-            model_fit_par['KINERR'][i,:] = numpy.concatenate(tuple(result[i].kinerr))
-            # Chi-square
-            model_fit_par['RCHI2'][i] = model_fit_par['CHI2'][i] \
-                                        / (model_fit_par['NPIXFIT'][i] 
-                                            - self.dof - numpy.sum(model_fit_par['TPLWGT'][i] > 0))
-            model_fit_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
+        # Iterate over each spectrum
+        mpoly_x = numpy.linspace(-1, 1, end-start)
+        sres = self.obj_sres if self.nremap == 0 else self.remap_sres
+        for i in range(nspec):
 
             # Get growth statistics for the residuals
+            # TODO: Specifically around the emission lines?
             model_fit_par['ABSRESID'][i,:] = sample_growth(numpy.ma.absolute(residual[i,:]),
                                                            [0.0, 0.68, 0.95, 0.99, 1.0])
             model_fit_par['FABSRESID'][i,:] \
                         = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
                                         [0.0, 0.68, 0.95, 0.99, 1.0])
 
-            #-----------------------------------------------------------
-            # Test if the kinematics are near the imposed boundaries.
-            near_bound, near_lower_bound = self._is_near_bounds(model_fit_par['KIN'][i,:],
-                                                                model_fit_par['KININP'][i,:],
-                                                                vel_indx, sig_indx, lbound, ubound)
-
-#            print(model_fit_par['KININP'][i,:])
-#            print(numpy.concatenate(tuple(result[i].kin)))
-#            print(near_bound)
-#            print(near_lower_bound)
-
-            # Add the *global* flag for the fit.
-            # TODO: These are probably too general.
-            # - If the velocity dispersion has hit the lower limit, ONLY
-            #   flag the value as having a MIN_SIGMA.
-            if numpy.any(near_lower_bound & sig_indx):
-                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-                                                                'MIN_SIGMA')
-            # - Otherwise, flag the full fit as NEAR_BOUND, both the
-            #   parameters and the model
-            if numpy.any((near_lower_bound & numpy.invert(sig_indx)) 
-                                | (near_bound & numpy.invert(near_lower_bound))):
-                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-                                                                'NEAR_BOUND')
-                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NEAR_BOUND')
-
-            # Convert the velocities from pixel units to cz
-            model_fit_par['KININP'][i,vel_indx], _ \
-                        = PPXFFit.convert_velocity(model_fit_par['KININP'][i,vel_indx],
-                                                   numpy.zeros(numpy.sum(vel_indx)))
-            model_fit_par['KIN'][i,vel_indx], model_fit_par['KINERR'][i,vel_indx] \
-                        = PPXFFit.convert_velocity(model_fit_par['KIN'][i,vel_indx],
-                                                   model_fit_par['KINERR'][i,vel_indx])
-
-#            print(len(self.eml_compi))
-#            print(self.eml_compi)
-
-            # Divvy up the fitted parameters into the result for each
-            # emission line
-            for j in range(self.neml):
-                if not self.fit_eml[j]:
-                    continue
-#                print(self.emldb['name'][j], self.emldb['restwave'][j], self.emldb['flux'][j],
-#                      self.eml_tpli[j], result[i].tplwgt[self.eml_tpli[j]])
-#                pyplot.plot(self.tpl_wave, self.tpl_flux[self.eml_tpli[j],:])
-#                pyplot.show()
-#                exit()
-
-                # The "fit index" is the component of the line
-                model_eml_par['FIT_INDEX'][i,j] = self.eml_compi[j]
-
-                # EmissionLineTemplates constructs each line to have the
-                # flux provided by the emission-line database
-                model_eml_par['FLUX'][i,j] = model_fit_par['TPLWGT'][i,self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j]
-                model_eml_par['FLUXERR'][i,j] = tplwgterr[self.eml_tpli[j]] * self.emldb['flux'][j]
-
-                # Use the flattened vectors to set the kinematics
-                indx = par_indx[self.eml_compi[j]]
-                model_eml_par['KIN'][i,j,:] = model_fit_par['KIN'][i,indx]
-                model_eml_par['KINERR'][i,j,:] = model_fit_par['KINERR'][i,indx]
-
-                # Get the bound masks specific to this emission-line (set)
-                if numpy.any(near_lower_bound[indx] & sig_indx[indx]):
-                    model_eml_par['MASK'][i,j] = self.bitmask.turn_on(model_eml_par['MASK'][i,j],
-                                                                      'MIN_SIGMA')
-                if numpy.any((near_lower_bound[indx] & numpy.invert(sig_indx[indx])) 
-                                | (near_bound[indx] & numpy.invert(near_lower_bound[indx]))):
-                    model_eml_par['MASK'][i,j] = self.bitmask.turn_on(model_eml_par['MASK'][i,j],
-                                                                      'NEAR_BOUND')
+            # Get the multiplicative polynomial corrections to the flux
+            if self.mdegree > 0 and model_multcoef is not None:
+                # Sample the multiplicative polynomial the fitted
+                # wavelength of each line to modify the flux
+                #
+                # TODO: THIS IS APPROXIMATE; assumes the change in the
+                # multiplicative polynomial over the wavelength range
+                # relevant to the emission line is small!
+                obswave = self.emldb['restwave'][self.fit_eml] \
+                                    * (1 + model_eml_par['KIN'][i,self.fit_eml,0]
+                                                / astropy.constants.c.to('km/s').value)
+                mpoly = numpy.polynomial.legendre.legval(mpoly_x,
+                                                         numpy.append(1, model_multcoef[i,:]))
+                factor = interpolate.interp1d(self.obj_wave[start:end], mpoly, bounds_error=False,
+                                              fill_value=1.0, assume_sorted=True)(obswave)
+                model_eml_par['FLUX'][i,self.fit_eml] *= factor
+                model_eml_par['FLUXERR'][i,self.fit_eml] *= factor
 
             # Get the instrumental dispersion in the galaxy data at the
             # location of the fitted lines
-            sigma_inst = EmissionLineFit.instrumental_dispersion(self.obj_wave, self.obj_sres[i,:],
+            # TODO: sres has to be provided!
+            sigma_inst = EmissionLineFit.instrumental_dispersion(self.obj_wave, sres[i,:],
                                                         self.emldb['restwave'][self.fit_eml],
                                                         model_eml_par['KIN'][i,self.fit_eml,0])
-#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], sigma_inst, marker='.', s=50)
-#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], etpl.eml_sigma_inst[self.fit_eml], marker='.', s=50)
-#            pyplot.show()
 
             # The dispersion correction is the quadrature difference
             # between the instrumental dispersion in the galaxy data to
@@ -1148,11 +1171,54 @@ class Sasuke(EmissionLineFit):
             # templates
             sigma2corr = numpy.square(sigma_inst) - numpy.square(etpl.eml_sigma_inst[self.fit_eml])
             if numpy.any(sigma2corr < 0):
+                # TODO: Raise an error instead?
                 print(sigma2corr)
                 warnings.warn('Encountered negative sigma corrections!')
-            model_eml_par['SIGMACORR'][i,self.fit_eml] = numpy.ma.sqrt(numpy.square(sigma_inst)
-                                    - numpy.square(etpl.eml_sigma_inst[self.fit_eml])).filled(0.0)
-#            print(model_eml_par['SIGMACORR'][i])
+            model_eml_par['SIGMACORR'][i,self.fit_eml] \
+                            = sigma2corr / numpy.sqrt(numpy.absolute(sigma2corr))
+
+#            print(model_eml_par['SIGMACORR'][i,self.fit_eml])
+#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], sigma_inst,
+#                           marker='.', lw=0, s=100)
+#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], etpl.eml_sigma_inst[self.fit_eml],
+#                           marker='.', lw=0, s=100)
+#            pyplot.show()
+
+            #-----------------------------------------------------------
+            # Set output flags
+            # - No fit was performed
+#            if result[i] is None:
+#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
+#                continue
+
+            # - No fit attempted because of insufficient data
+#            if result[i].empty_fit():
+#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
+#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
+#                                                                'INSUFFICIENT_DATA')
+#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
+#                                                                'INSUFFICIENT_DATA')
+#                continue
+
+            # - Fit attempted but failed
+#            if result[i].fit_failed():
+#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
+#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
+#                                                                'FIT_FAILED')
+#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
+#                                                                'FIT_FAILED')
+
+            # - Fit successful but hit maximum iterations.
+#            if result[i].reached_maxiter():
+#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i], 'MAXITER')
+#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i], 'MAXITER')
+
+            #-----------------------------------------------------------
+            # Save the model parameters and figures of merit
+
+            # TODO: FIX THIS
+#            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
+
 
         #---------------------------------------------------------------
         # Test if kinematics are reliable
@@ -1257,6 +1323,7 @@ class Sasuke(EmissionLineFit):
         nobj = flux.shape[0]
 
         # Get the stellar templates
+        # TODO: Allow to provide a replacement template library
 #        stellar_templates = None if par['stellar_continuum'] is None else \
 #                                par['stellar_continuum'].get_template_library(
 #                                                velocity_offset=numpy.median(stars_vel),
@@ -1280,33 +1347,49 @@ class Sasuke(EmissionLineFit):
                                                                             cz=True, nearest=True)
         stellar_kinematics = None if stellar_velocity is None or stellar_dispersion is None \
                                 else numpy.array([ stellar_velocity, stellar_dispersion ]).T
-#        print(stellar_redshift)
+#        print(stellar_velocity)
 #        print(stellar_dispersion)
-#        print(stellar_redshift.shape)
+#        print(stellar_velocity.shape)
 
         # Set which stellar templates to use for each spectrum
-        # TODO: Here I'm flagging to only use the stellar templates used
-        # in the stellar kinematics fit.  You could select to use all
-        # templates by setting stpl_to_use=None below, or we could construct
-        # the optimal template for each spectrum and just have a single
-        # stellar template used in the emission-line fits.
+
+        # TODO: Template modes:
+        #   - provide all
+        #   - provide non-zero
+        #   - optimal template from each bin
+
 #        stpl_to_use = None if par['stellar_continuum'] is None \
 #                        else par['stellar_continuum'].matched_template_flags(binned_spectra)
+        # Use all templates to start
         stpl_to_use = None
 
         # Get the binned spectra that meet the S/N criterion
         # TODO: This could be based on the moment assessment of the
         # emission-line S/N instead; for now just based on continuum
         # S/N.
-        if par['stellar_continuum'] is None:
-            bins_to_fit = binned_spectra.above_snr_limit(par['minimum_snr'])
-        else:
+        # TODO: Make this and what's done in EmissionLineModel the same
+        # function!
+        bins_to_fit = binned_spectra.above_snr_limit(par['minimum_snr'])
+#        print(len(bins_to_fit))
+#        print(numpy.sum(bins_to_fit))
+        if par['stellar_continuum'] is not None:
             # Determine which spectra have a valid stellar continuum fit
-            good_stellar_continuum_fit = numpy.invert(
-                                    par['stellar_continuum'].bitmask.flagged(
+            indx = numpy.invert(par['stellar_continuum'].bitmask.flagged(
                                             par['stellar_continuum']['PAR'].data['MASK'],
                                             flag=[ 'NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
-            bins_to_fit = good_snr & good_stellar_continuum_fit
+#            print(len(indx))
+#            print(numpy.sum(indx))
+            with_good_continuum = numpy.zeros(binned_spectra.nbins, dtype=bool)
+            with_good_continuum[par['stellar_continuum']['PAR'].data['BINID_INDEX'][indx]] = True
+#            print(len(with_good_continuum))
+#            print(numpy.sum(with_good_continuum))
+            bins_to_fit &= with_good_continuum
+#            print(len(bins_to_fit))
+#            print(numpy.sum(bins_to_fit))
+
+#        warnings.warn('DEBUG!!')
+#        k = numpy.argmin(numpy.arange(len(bins_to_fit))[bins_to_fit])
+#        bins_to_fit[k+1:] = False
 
         # TODO: For now can only fit two moments
         if par['moments'] != 2:
@@ -1314,9 +1397,20 @@ class Sasuke(EmissionLineFit):
             raise NotImplementedError('Number of gas moments can only be two.')
 
         if par['deconstruct_bins']:
+            # TODO: Only need to refit "bins" that are made up of more
+            # than one spaxel...
+
             # Get the individual spaxel data
             spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
-                                                            pixelmask=par['pixelmask'], error=True)
+                                                                        pixelmask=par['pixelmask'],
+                                                                          error=True)
+            # Apply the Galactic extinction
+            spaxel_flux, spaxel_ferr = binned_spectra.galext.apply(spaxel_flux, err=spaxel_ferr,
+                                                                   deredden=True)
+
+            # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
+            # default
+            spaxel_to_fit = binned_spectra._check_fgoodpix()
 
             # Get the spectral resolution:
             # - stack_sres sets whether or not the spectral resolution
@@ -1327,11 +1421,10 @@ class Sasuke(EmissionLineFit):
             #   LSF measurements were used
             prepixel_sres = binned_spectra.method['prepixel_sres']
             # This pulls out the appropiate spectral resolution
-            spaxel_sres = binned_spectra.drpf.spectral_resolution(toarray=True, fill=True,
-                                                            pre=prepixel_sres) if stack_sres else \
-                                binned_spectra.drpf.spectral_resolution(ext='SPECRES',
-                                                                        toarray=True, fill=True,
-                                                                        pre=prepixel_sres)
+            spaxel_sres = binned_spectra.drpf.spectral_resolution(ext=None if stack_sres
+                                                                           else 'SPECRES',
+                                                                  toarray=True, fill=True,
+                                                                  pre=prepixel_sres)
             # Spaxel coordinates; shape is (Nspaxel,)
             spaxel_x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
             spaxel_y = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
@@ -1341,68 +1434,81 @@ class Sasuke(EmissionLineFit):
             bin_y = binned_spectra['BINS'].data['SKY_COO'][:,1]
 
             # Return the fits to the individual spaxel data
-            model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par, \
-                    model_binid = self.fit(par['emission_lines'], wave, flux[spec_to_fit,:],
-                                           obj_ferr=ferr[spec_to_fit,:], 
-                                           obj_sres=sres[spec_to_fit,:],
-                                           guess_redshift=par['guess_redshift'][spec_to_fit],
-                                           guess_dispersion=par['guess_dispersion'][spec_to_fit],
-                                           reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
-                                           stpl_flux=stpl_flux, stpl_sres=stpl_sres,
-                                           stpl_to_use=None if stpl_to_use is None \
-                                                            else stpl_to_use[spec_to_fit,:],
-                                           stellar_kinematics=None if stellar_kinematics is None \
-                                                            else stellar_kinematics[spec_to_fit,:],
-                                           spaxel_flux=spaxel_flux, spaxel_ferr=spaxel_ferr,
-                                           spaxel_sres=spaxel_sres, spaxel_x=spaxel_x,
-                                           spaxel_y=spaxel_y, bin_x=bin_x[spec_to_fit],
-                                           bin_y=bin_y[spec_to_fit], velscale_ratio=velscale_ratio,
-                                           matched_resolution=matched_resolution, bias=par['bias'],
-                                           degree=par['degree'], mdegree=par['mdegree'],
-                                           #moments=par['moments'],
-                                           loggers=loggers, quiet=quiet)
+            model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
+                    = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
+                               obj_ferr=ferr[bins_to_fit,:], obj_sres=sres[bins_to_fit,:],
+                               guess_redshift=par['guess_redshift'][bins_to_fit],
+                               guess_dispersion=par['guess_dispersion'][bins_to_fit],
+                               reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
+                               stpl_flux=stpl_flux, stpl_sres=stpl_sres,
+                               stpl_to_use=None if stpl_to_use is None \
+                                                else stpl_to_use[bins_to_fit,:],
+                               stellar_kinematics=None if stellar_kinematics is None \
+                                                       else stellar_kinematics[bins_to_fit,:],
+                               etpl_sinst_mode=par['etpl_line_sigma_mode'],
+                               etpl_sinst_min=par['etpl_line_sigma_min'],
+                               remap_flux=spaxel_flux[spaxel_to_fit,:],
+                               remap_ferr=spaxel_ferr[spaxel_to_fit,:],
+                               remap_sres=spaxel_sres[spaxel_to_fit,:],
+                               remap_skyx=spaxel_x[spaxel_to_fit],
+                               remap_skyy=spaxel_y[spaxel_to_fit], obj_skyx=bin_x[bins_to_fit],
+                               obj_skyy=bin_y[bins_to_fit], velscale_ratio=velscale_ratio,
+                               matched_resolution=matched_resolution, bias=par['bias'],
+#                               degree=-1, mdegree=0,
+                               degree=par['degree'], mdegree=par['mdegree'],
+                               #moments=par['moments'],
+                               loggers=loggers, quiet=quiet)
+            model_binid = numpy.full(binned_spectra.spatial_shape, -1, dtype=int)
+            model_binid.ravel()[spaxel_to_fit] = numpy.arange(numpy.sum(spaxel_to_fit))
 
             # Add the equivalent width data
-            # TODO: Check that this is the redshift that should be used!
-            # This is HARDCODED assuming all velocities are the same!
-            spaxel_with_fit = model_binid.ravel() > -1
-            redshift = model_eml_par['KIN'][:,0]/astropy.constants.c.to('km/s').value
-            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux[spaxel_with_fit,:],
+#            redshift = model_eml_par['KIN'][:,0]/astropy.constants.c.to('km/s').value
+            # TODO: Redshift is set to fitted redshift.  Should it use
+            # this or the input guess?
+            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux[spaxel_to_fit,:],
                                                      par['emission_lines'], model_eml_par,
-                                                     redshift=redshift, bitmask=self.bitmask,
-                                                     checkdb=False)
+                                                     #redshift=redshift,
+                                                     bitmask=self.bitmask, checkdb=False)
         else:
             # Return the fits to the binned data
-            model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par, \
-                    model_binid = self.fit(par['emission_lines'], wave, flux[spec_to_fit,:],
-                                           obj_ferr=ferr[spec_to_fit,:], 
-                                           obj_sres=sres[spec_to_fit,:],
-                                           guess_redshift=par['guess_redshift'][spec_to_fit],
-                                           guess_dispersion=par['guess_dispersion'][spec_to_fit],
-                                           reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
-                                           stpl_flux=stpl_flux, stpl_sres=stpl_sres,
-                                           stpl_to_use=None if stpl_to_use is None \
-                                                            else stpl_to_use[spec_to_fit,:],
-                                           stellar_kinematics=None if stellar_kinematics is None \
-                                                            else stellar_kinematics[spec_to_fit,:],
-                                           velscale_ratio=velscale_ratio,
-                                           matched_resolution=matched_resolution, bias=par['bias'],
-                                           degree=par['degree'], mdegree=par['mdegree'],
-                                           #moments=par['moments'],
-                                           loggers=loggers, quiet=quiet)
+            model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
+                    = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
+                               obj_ferr=ferr[bins_to_fit,:], obj_sres=sres[bins_to_fit,:],
+                               guess_redshift=par['guess_redshift'][bins_to_fit],
+                               guess_dispersion=par['guess_dispersion'][bins_to_fit],
+                               reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
+                               stpl_flux=stpl_flux, stpl_sres=stpl_sres,
+                               stpl_to_use=None if stpl_to_use is None \
+                                                else stpl_to_use[bins_to_fit,:],
+                               stellar_kinematics=None if stellar_kinematics is None \
+                                                       else stellar_kinematics[bins_to_fit,:],
+                               etpl_sinst_mode=par['etpl_line_sigma_mode'],
+                               etpl_sinst_min=par['etpl_line_sigma_min'],
+                               velscale_ratio=velscale_ratio,
+                               matched_resolution=matched_resolution, bias=par['bias'],
+#                               degree=-1, mdegree=0,
+                               degree=par['degree'], mdegree=par['mdegree'],
+                               #moments=par['moments'],
+                               loggers=loggers, quiet=quiet)
 
             # Save the the bin ID numbers indices based on the spectra
             # selected to be fit
-            model_fit_par['BINID'] = binned_spectra['BINS'].data['BINID'][spec_to_fit]
-            model_fit_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[spec_to_fit]
+            model_fit_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
+            model_fit_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
 
-            model_eml_par['BINID'] = binned_spectra['BINS'].data['BINID'][spec_to_fit]
-            model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[spec_to_fit]
+            model_eml_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
+            model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
+
+            # Bin IDs are the same as on input
+            model_binid = None
 
             # Add the equivalent width data
-            EmissionLineFit.measure_equivalent_width(wave, flux[spec_to_fit,:],
+#            redshift=par['guess_redshift'][bins_to_fit],
+            # TODO: Redshift is set to fitted redshift.  Should it use
+            # this or the input guess?
+            EmissionLineFit.measure_equivalent_width(wave, flux[bins_to_fit,:],
                                                      par['emission_lines'], model_eml_par,
-                                                     redshift=par['guess_redshift'][spec_to_fit],
+                                                     #redshift=redshift,
                                                      bitmask=self.bitmask, checkdb=False)
 
 #        # Use the previous fit to the stellar continuum to set the
@@ -1424,27 +1530,38 @@ class Sasuke(EmissionLineFit):
         # between the stellar continuum model determined for the
         # kinematics and the one determined by the optimized
         # stellar-continuum + emission-line fit:
-        if self.par['stellar_continuum'] is not None:
-            # Construct the full 3D cube for the stellar continuum
-            # models
-            sc_model_flux, sc_model_mask \
-                    = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
-                                            self.par['stellar_continuum']['BINID'].data.ravel(),
-                                            [ self.par['stellar_continuum']['FLUX'].data,
-                                              self.par['stellar_continuum']['MASK'].data ])
-            # Set any masked pixels to 0
-            sc_model_flux[sc_model_mask>0] = 0.0
+        if par['stellar_continuum'] is not None:
 
-            # Construct the full 3D cube of the new stellar continuum
-            # from the combined stellar-continuum + emission-line fit
-            el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
-                                                        model_binid.ravel(),
-                                                        model_flux - model_eml_flux)
-            # Get the difference, restructure it to match the shape
-            # of the emission-line models, and zero any masked pixels
-            model_eml_base = (el_continuum - sc_model_flux).reshape(-1,wave0.size)[model_srt,:]
-            if model_mask is not None:
-                model_eml_base[model_mask==0] = 0.0
+            if par['deconstruct_bins']:
+
+                # Construct the full 3D cube for the stellar continuum
+                # models
+                sc_model_flux, sc_model_mask \
+                        = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                                                    par['stellar_continuum']['BINID'].data.ravel(),
+                                                       [ par['stellar_continuum']['FLUX'].data,
+                                                         par['stellar_continuum']['MASK'].data ])
+                # Set any masked pixels to 0
+                sc_model_flux[sc_model_mask>0] = 0.0
+
+                # Construct the full 3D cube of the new stellar
+                # continuum from the combined stellar-continuum +
+                # emission-line fit
+                el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                                                            model_binid.ravel(),
+                                                            model_flux - model_eml_flux)
+
+                # Get the difference, restructure it to match the shape
+                # of the emission-line models, and zero any masked
+                # pixels
+                model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
+                                                                self.npix_obj)[spaxel_to_fit,:]
+                if model_mask is not None:
+                    model_eml_base[model_mask==0] = 0.0
+            else:
+                el_continuum = model_flux - model_eml_flux
+                sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra)
+                model_eml_base = (el_continuum - sc_continuum[bins_to_fit,:]).filled(0.0)
         else:
             model_eml_base = numpy.zeros(model_flux.shape, dtype=float)
 
@@ -1455,6 +1572,10 @@ class Sasuke(EmissionLineFit):
 #        pyplot.plot(model_wave, model_eml_base[0,:], color='C2', lw=1.0, zorder=4)
 #        pyplot.plot(model_wave, eml_continuum[0,:], color='C3', lw=1.0, zorder=4)
 #        pyplot.show()
+
+#        print(par['emission_lines']['name'])
+#        print(model_eml_par['FLUX'][0,:])
+#        print(model_eml_par['FLUXERR'][0,:])
         
         # Only return model and model parameters for the *fitted*
         # spectra
@@ -1465,11 +1586,11 @@ class Sasuke(EmissionLineFit):
     def fit(self, emission_lines, obj_wave, obj_flux, obj_ferr=None, obj_mask=None, obj_sres=None,
             guess_redshift=None, guess_dispersion=None, reject_boxcar=None, stpl_wave=None,
             stpl_flux=None, stpl_sres=None, stpl_to_use=None, stellar_kinematics=None,
-            remap_flux=None, remap_ferr=None, remap_mask=None, remap_sres=None, remap_skyx=None,
-            remap_skyy=None, obj_skyx=None, obj_skyy=None, velscale_ratio=None,
-            matched_resolution=True, waverange=None, bias=None, degree=4, mdegree=0,
-            max_velocity_range=400., alias_window=None, dvtol=1e-10, loggers=None, quiet=False,
-            plot=False):
+            etpl_sinst_mode='default', etpl_sinst_min=0, remap_flux=None, remap_ferr=None,
+            remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None, obj_skyx=None,
+            obj_skyy=None, velscale_ratio=None, matched_resolution=True, waverange=None, bias=None,
+            degree=4, mdegree=0, max_velocity_range=400., alias_window=None, dvtol=1e-10,
+            loggers=None, quiet=False, plot=False):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -1503,9 +1624,10 @@ class Sasuke(EmissionLineFit):
             - Allow for fixed components to be set from emission-line
               database
             - Allow for bounds to be set from emission-line database
-
             - Allow to ignore emission-line database tying and just tie
               all kinematics
+            - Should probably put the emission-line construction in a
+              separate function.
 
         Args:
             emission_lines
@@ -1566,6 +1688,16 @@ class Sasuke(EmissionLineFit):
                 is (:math:`N_{\rm spec},N_{{\rm kin},\ast}`).  The shape
                 of this array determines the number of moments assigned
                 to the stellar component.
+            etpl_sinst_mode (str): (**Optional**) Mode used to set the
+                instrumental dispersion of the emission-line templates;
+                see :func:`etpl_line_sigma_options` for the options.
+                Default mode is `default`, imagine that.
+            etpl_sinst_min (str): (**Optional**) Minimum allowed
+                instrumental dispersion value.  If the mode of
+                constructing the instrumental dispersion of the
+                templates results in values that are below this value,
+                the whole function is offset in quadrature such that no
+                value goes below the minimum.  Default is 0 km/s.
             remap_flux (numpy.ndarray): (**Optional**) Ultimately the
                 spectra to be modeled, if provided.  The nominal usage
                 is, e.g., if the object spectra (`obj_flux`) are binned
@@ -1667,11 +1799,20 @@ class Sasuke(EmissionLineFit):
                 redshifts or dispersions is not a single value or the
                 same as the number of input spectra.
         """
+
         #---------------------------------------------------------------
         # Initialize the reporting
         if loggers is not None:
             self.loggers = loggers
         self.quiet = quiet
+
+        # The minimum instrumental dispersion of the emission-line
+        # templates cannot be below 0.
+        _etpl_sinst_min = etpl_sinst_min
+        if _etpl_sinst_min < 0:
+            warnings.warn('Emission-line template instrumental dispersion must be 0 km/s or '
+                          'higher.  Setting etpl_sinst_min=0.')
+            _etpl_sinst_min = 0
 
         #---------------------------------------------------------------
         # Check the input data
@@ -1685,8 +1826,10 @@ class Sasuke(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO,
                        'Number of object spectra to fit: {0}/{1}'.format(
                             numpy.sum(self.obj_to_fit), self.nobj))
+        # guess_kin are in "ppxf" velocities
         self.input_cz, guess_kin = PPXFFit.check_input_kinematics(self.nobj, guess_redshift,
                                                                   guess_dispersion)
+#        print(self.input_cz[0], guess_kin[0,:])
 
         # Check the remapping data, if provided
         if remap_flux is not None:
@@ -1698,7 +1841,7 @@ class Sasuke(EmissionLineFit):
                         = self._check_remapping_coordinates(obj_skyx, obj_skyy,
                                                             remap_skyx, remap_skyy)
         else:
-            self.nramap = 0
+            self.nremap = 0
             self.remap_flux = None
             self.remap_ferr = None
             self.remap_sres = None
@@ -1722,20 +1865,23 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Check any input stellar template spectra
-        # self.tpl_sres has type
-        # mangadap.util.instrument.SpectralResolution!
+        R_to_sinst = astropy.constants.c.to('km/s').value / DAPConstants.sig2fwhm
         if stpl_flux is not None:
             if stpl_wave is None:
                 raise ValueError('Must provide wavelengths if providing stellar template fluxes.')
-            self.tpl_wave, self.tpl_flux, self.tpl_sres \
+            self.tpl_wave, self.tpl_flux, tpl_sres \
                     = PPXFFit.check_templates(stpl_wave, stpl_flux, tpl_sres=stpl_sres,
                                               velscale_ratio=self.velscale_ratio)
             self.nstpl = self.tpl_flux.shape[0]
             # Check or instantiate the fit flags
             self.tpl_to_use = PPXFFit.check_template_usage_flags(self.nobj, self.nstpl, stpl_to_use)
+
+            # etpl_sinst defaults to the instrumental dispersion of the
+            # stellar templates
+            etpl_sinst = R_to_sinst/tpl_sres.sres(copy=True)
         else:
             self.tpl_flux = None
-            self.tpl_sres = None
+            etpl_sinst = None
             self.nstpl = 0
             self.tpl_to_use = None
 
@@ -1743,21 +1889,34 @@ class Sasuke(EmissionLineFit):
         # the stellar template resolution?
 
         #---------------------------------------------------------------
-        # Set the template spectral resolution.  This is needed to
-        # construct the emission-line templates:
+        # Set the emission-line spectral resolution.
         # - Set to the stellar template resolution, if available (i.e.,
         #   use what is set above)
-        # - If the object resolution is not available, set such that the
-        #   template lines will be initialized with sigma = 1 pixel.
-        # - If the object resolution is available, set to the minimum
+        # - If the object resolution is not available, use the 2-pixel
+        #   resolution
+        # - If the object resolution is available, set it to the minimum
         #   object resolution at each wavelength channel.
-        convertR = astropy.constants.c.to('km/s').value / DAPConstants.sig2fwhm
+        # - Force the instrumental dispersion to 0 if requested by the
+        #   input mode.
+        # - Apply a quardrature offset if the dispersion dips below the
+        #   imposed minimum or if the user requested to offset to the
+        #   minimum.
         self.matched_resolution = matched_resolution
-        if self.tpl_sres is None:
+        if etpl_sinst is None:
             self.matched_resolution = False
-            self.tpl_sres = numpy.full(self.npix_obj, convertR/self.velscale, dtype=float) \
-                                if self.obj_sres is None else numpy.amin(self.obj_sres, axis=1)
-            self.tpl_sres = SpectralResolution(self.tpl_wave, self.tpl_sres, log10=True)
+            etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
+                                    dtype=float) if self.obj_sres is None \
+                                                 else R_to_sinst/numpy.amin(self.obj_sres, axis=0)
+        if etpl_sinst_mode == 'zero':
+            etpl_sinst[:] = 0.
+        min_sinst = numpy.amin(etpl_sinst)
+        if (etpl_sinst_mode == 'offset' and min_sinst > _etpl_sinst_min) \
+                or min_sinst < _etpl_sinst_min:
+            dsigma_inst = numpy.square(min_sinst)-numpy.square(_etpl_sinst_min)
+            etpl_sinst = numpy.sqrt(numpy.square(etpl_sinst) - dsigma_inst)
+            min_sinst = numpy.amin(etpl_sinst)
+#        pyplot.plot(self.tpl_wave, etpl_sinst)
+#        pyplot.show()
 
         #---------------------------------------------------------------
         # If provided, check the shapes of the stellar kinematics
@@ -1777,8 +1936,20 @@ class Sasuke(EmissionLineFit):
         # object will check the database
         self.emldb = emission_lines
         self.neml = self.emldb.neml
-        etpl = EmissionLineTemplates(self.tpl_wave, convertR/self.tpl_sres.sres(), emldb=self.emldb,
+        etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
+#        pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
+#        for i in range(etpl.ntpl):
+#            pyplot.plot(self.tpl_wave, etpl.flux[i,:])
+#        pyplot.show()
+
+        # Report the resolution mode
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Emission-line resolution mode: {0}'.format(etpl_sinst_mode))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Imposed minimum instrumental dispersion: {0}'.format(etpl_sinst_min))
+
         # Set the component associated with each emission line emission line
         self.fit_eml = self.emldb['action'] == 'f'
         self.eml_tpli = etpl.tpli.copy()
@@ -1793,8 +1964,8 @@ class Sasuke(EmissionLineFit):
         self.velocity_limits, self.sigma_limits, self.gh_limits \
                     = PPXFFit.losvd_limits(self.velscale)
         self.bias = bias
-        self.degree = degree
-        self.mdegree = mdegree
+        self.degree = max(degree,-1)
+        self.mdegree = max(mdegree,0)
         moments = 2                #numpy.absolute(moments)
         self.reject_boxcar = reject_boxcar
 #        self.fix_kinematics = False     #moments < 0
@@ -1803,6 +1974,7 @@ class Sasuke(EmissionLineFit):
         # Compile the template fluxes, components, and velocity and
         # sigma groups
         if self.nstpl == 0:
+            self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
             self.tpl_to_use = numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool)
             self.tpl_comp = etpl.comp
@@ -1812,6 +1984,8 @@ class Sasuke(EmissionLineFit):
             self.comp_moments = numpy.array([moments]*self.ncomp)
             self.comp_start_kin = numpy.array([[gk.tolist()]*self.ncomp for gk in guess_kin ])
         else:
+            self.gas_tpl = numpy.append(numpy.zeros(self.tpl_flux.shape[0]),
+                                        numpy.ones(etpl.ntpl)).astype(bool)
             self.tpl_flux = numpy.append(self.tpl_flux, etpl.flux, axis=0)
             self.tpl_to_use = numpy.append(self.tpl_to_use,
                                            numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool),
@@ -1829,10 +2003,10 @@ class Sasuke(EmissionLineFit):
         self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
-        # Set which components are gas components
-        self.gas_comp = numpy.ones(self.ncomp, dtype=bool)
-        if self.nstpl > 0:
-            self.gas_comp[0] = False
+#        # Set which components are gas components
+#        self.gas_comp = numpy.ones(self.ncomp, dtype=bool)
+#        if self.nstpl > 0:
+#            self.gas_comp[0] = False
 
         #---------------------------------------------------------------
         # Parse the velocity and sigma groups into tied parameters
@@ -1901,9 +2075,11 @@ class Sasuke(EmissionLineFit):
         # fails and the code returns without running the pPXF fitting.
         #  - Set the output shape and initial mask
         output_shape = self.obj_flux.shape if self.nremap == 0 else self.remap_flux.shape
-        #  - Model flux
-        model_flux = numpy.zeros(output_shape, dtype=numpy.float)
-        model_eml_flux = numpy.zeros(output_shape, dtype=numpy.float)
+        #  - Model flux and error (begins fully masked)
+        model_flux = numpy.ma.masked_all(output_shape, dtype=float)
+        model_flux.data[:,:] = 0.0
+        model_eml_flux = numpy.ma.masked_all(output_shape, dtype=float)
+        model_eml_flux.data[:,:] = 0.0
         #  - Model parameters and fit quality
         model_fit_par = init_record_array(output_shape[0],
                                           self._per_fit_dtype(self.ntpl, self.degree+1,
@@ -1987,6 +2163,7 @@ class Sasuke(EmissionLineFit):
         # the object spectra and the remapping spectra if provided
         start = numpy.amin(obj_start if self.nremap == 0 else numpy.append(obj_start, remap_start))
         end = numpy.amax(obj_end if self.nremap == 0 else numpy.append(obj_end, remap_end))
+        model_mask = obj_model_mask if self.nremap == 0 else remap_model_mask
         self.base_velocity = -PPXFFit.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
                                                         self.velscale,
                                                         velscale_ratio=self.velscale_ratio)
@@ -2003,31 +2180,39 @@ class Sasuke(EmissionLineFit):
         if self.nremap == 0:
             flux = self.obj_flux.data[:,start:end]
             ferr = self.obj_ferr.data[:,start:end]
-            mask = self.obj_flux.mask[:,start:end]
+            mask = numpy.invert(self.obj_flux.mask[:,start:end])
             flux_binned = None
             ferr_binned = None
             mask_binned = None
         else:
             flux = self.remap_flux.data[:,start:end]
             ferr = self.remap_ferr.data[:,start:end]
-            mask = self.remap_flux.mask[:,start:end]
+            mask = numpy.invert(self.remap_flux.mask[:,start:end])
             flux_binned = self.obj_flux.data[:,start:end]
             ferr_binned = self.obj_ferr.data[:,start:end]
-            mask_binned = self.obj_flux.mask[:,start:end]
+            mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
 
         # Run the fitter
-        model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_binid, model_kin,
-                model_kin_err, model_wgts, model_wgts_err \
-                        = emline_fitter_with_ppxf(wave, flux, noise, mask, sres, self.velscale,
-                                                  self.velscale_ratio, self.base_velocity,
-                                                  self.comp_moments, self.comp_start_kin,
-                                                  self.tpl_flux, self.gas_comp, self.degree,
-                                                  self.mdegree, remap=self.nremap != 0,
-                                                  flux_binned=flux_binned,
-                                                  noise_binned=ferr_binned,
-                                                  mask_binned=mask_binned,
-                                                  x_binned=self.obj_skyx, y_binned=self.obj_skyy,
-                                                  x=self.remap_skyx, y=self.remap_skyy)
+        model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
+                model_wgts_err, model_addcoef, model_multcoef, model_kin_inp, model_kin, \
+                model_kin_err = emline_fitter_with_ppxf_edit(self.tpl_flux, flux, ferr, mask,
+                                                             self.velscale, self.velscale_ratio,
+                                                             self.tpl_comp, self.gas_tpl,
+                                                             self.comp_moments,
+                                                             self.comp_start_kin, tied=self.tied,
+                                                             degree=self.degree,
+                                                             mdegree=self.mdegree,
+                                                             reject_boxcar=self.reject_boxcar,
+                                                             vsyst=self.base_velocity,
+                                                             tpl_to_use=self.tpl_to_use,
+                                                             flux_binned=flux_binned,
+                                                             noise_binned=ferr_binned,
+                                                             mask_binned=mask_binned,
+                                                             x_binned=self.obj_skyx,
+                                                             y_binned=self.obj_skyy,
+                                                             x=self.remap_skyx, y=self.remap_skyy,
+                                                             plot=False, quiet=True) #self.quiet)
+        # _model_mask is True where the pixels were fit
 
 #        result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)
         if not self.quiet:
@@ -2035,16 +2220,30 @@ class Sasuke(EmissionLineFit):
                        (time.clock() - t)/60))
 
         # Flag pixels as rejected during fitting
-        indx = numpy.invert(mask[:,s:e]) & _model_mask
-        model_mask[:,s:e][indx] = self.bitmask.turn_on(model_mask[:,s:e][indx], PPXFFit.rej_flag)
+#        print(flux.shape)
+#        print(_model_mask.shape)
+#        print(mask.shape)
+#        print(model_mask[:,start:end].shape)
+        indx = mask & numpy.invert(_model_mask)
+        model_mask[:,start:end][indx] = self.bitmask.turn_on(model_mask[:,start:end][indx],
+                                                             PPXFFit.rej_flag)
 
         #---------------------------------------------------------------
         # Save the results
 #        model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
 #                = self._save_results(etpl, result, model_mask, model_fit_par, model_eml_par)
-        model_mask, model_fit_par, model_eml_par \
-                = self._save_results(etpl, model_binid, model_wgts, model_wgts_err, model_kin,
-                                     model_kin_err, model_mask, model_fit_par, model_eml_par)
+
+        if self.nremap == 0:
+            flux = self.obj_flux
+            ferr = self.obj_ferr
+        else:
+            flux = self.remap_flux
+            ferr = self.remap_ferr
+        model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
+                = self._save_results(etpl, start, end, flux, ferr, model_flux, model_eml_flux,
+                                     model_mask, model_wgts, model_wgts_err, model_addcoef,
+                                     model_multcoef, model_kin_inp, model_kin, model_kin_err,
+                                     model_fit_par, model_eml_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

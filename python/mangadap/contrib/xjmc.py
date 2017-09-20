@@ -12,10 +12,7 @@ from captools import capfit
 # Function used to calculate 1 sigma errors of the residuals
 # Currently the pixels in the same window are assigned with
 # the same error
-def calculate_noise(residuals):
-
-    # Number of pixels in each window
-    width = 140
+def calculate_noise(residuals, width=140):
 
     # Number of windows
     n_win = (residuals.shape[0]//width)
@@ -36,6 +33,384 @@ def calculate_noise(residuals):
     noise = np.append(noise, uncover)
     
     return noise
+
+
+# Stellar components must all have numbers less than any gas component;
+# generalized to n stellar components (for what it's worth)
+def _ppxf_component_setup(component, gas_template, start, single_gas_component=False,
+                          gas_start=None):
+
+    nobj = len(start)
+#    print('nobj: ', nobj)
+
+    if gas_start is not None and np.asarray(gas_start).shape != (nobj,2):
+        raise ValueError('Provided gas starting kinematics has incorrect shape.')
+
+#    print('input component: ', component)
+
+    # Get the gas component numbers
+    gas_components = np.unique(component[gas_template])
+
+#    print('gas components (from components): ', gas_components)
+
+    # Component assignments for each template
+    _component = component.copy()
+    n_gas_components = 1 if single_gas_component else len(gas_components)
+    if n_gas_components == 1:
+        _component[gas_template] = np.amax(component[~gas_template])+1
+
+#    print('n gas components for output', n_gas_components)
+#    print('output component: ', _component)
+
+    # start shape is (nspec,); each element of start has shape (ncomp,);
+    # each component has shape (nmom,), which can be different for each
+    # component
+    stellar_components = np.arange(np.amin(gas_components))
+#    print('stellar components: ', stellar_components)
+    _moments = np.array([ len(s) for s in start[0] ])
+    _moments[stellar_components] *= -1
+    if n_gas_components == 1:
+        # Force a single gas component
+        _moments = np.append( _moments[_moments < 0], [ 2 ])
+#    print('output moments: ', _moments)
+
+#    print('type gas_start: ', type(gas_start))
+
+    _start = np.empty(len(start), dtype=object)
+    for i,s in enumerate(start):
+#        print(s)
+        _start[i] = s[stellar_components].tolist() if len(stellar_components) > 0 else []
+        if gas_start is None:
+            _gas_start = [np.mean(np.asarray(s[gas_components]), axis=0).tolist()] \
+                                if n_gas_components == 1 else [s[gas_components]]
+        else:
+            _gas_start = [gas_start[i].tolist()]*n_gas_components
+        _start[i] += _gas_start
+#        print(_start[i])
+#    print(start[0:5])
+#    print(_start[0:5])
+        
+    return _component, _moments, _start
+
+
+# Run a single fit+rejection iteration
+def _fit_iteration(templates, flux, noise, velscale, start, moments, component, gas_template,
+                   tpl_to_use=None, reject_boxcar=140, velscale_ratio=None, degree=4, mdegree=0,
+                   tied=None, mask=None, vsyst=0, plot=False, quiet=True):
+    """
+    mask should be True for the pixels to fit
+    """
+
+#    med_flux = np.median(flux, axis=1)
+#    _flux = flux / med_flux[:,None]
+#    _noise = noise / med_flux[:,None]
+
+    nspec = flux.shape[0]
+    ntpl = templates.shape[0]
+    nkin = np.sum(np.absolute(moments))
+
+    _tpl_to_use = np.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use
+
+    model = np.zeros(flux.shape, dtype=float)
+    eml_model = np.zeros(flux.shape, dtype=float)
+    model_mask = np.ones(flux.shape, dtype=bool) if mask is None else mask.copy()
+    tpl_wgts = np.zeros((nspec,ntpl), dtype=float)
+    tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
+    addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
+    multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
+    kininp = np.zeros((nspec,nkin), dtype=float)
+    kin = np.zeros((nspec,nkin), dtype=float)
+    kin_err = np.zeros((nspec,nkin), dtype=float)
+
+    linear=False #True
+#    reject_boxcar=None
+
+    for i in range(nspec):
+
+        print('Fitting spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
+
+        # TODO: component[_tpl_to_use[i,:]] isn't going to work if
+        # _tpl_to_use does result in an ordered list of components.
+
+        # Run the first fit
+        if plot:
+            plt.clf()
+        pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, start[i],
+                  velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
+                  mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
+                  component=component[_tpl_to_use[i,:]], quiet=quiet, linear=linear)
+        if plot:
+            plt.show()
+       
+        if reject_boxcar is not None:
+            # Reject 3-sigma outliers
+            # - Residuals
+            resid = flux[i,:] - pp.bestfit
+            # - RMS of residuals
+#            NOISE = calculate_noise(resid, width=reject_boxcar)
+            NOISE = np.zeros(resid.size, dtype=float)
+            NOISE[pp.goodpixels] = calculate_noise(resid[pp.goodpixels], width=reject_boxcar)
+            # - Add to mask
+            model_mask[i,:] &= (abs(resid) < (3*NOISE))
+        
+            # Refit after rejection
+            if plot:
+                plt.clf()
+            pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, start[i],
+                      velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
+                      mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
+                      component=component, quiet=quiet, linear=linear)
+            if plot:
+                plt.show()
+
+        # Save the results
+        model[i,:] = pp.bestfit
+        eml_model[i,:] = np.dot(pp.matrix[:,degree+1:][:,gas_template[_tpl_to_use[i,:]]],
+                                pp.weights[gas_template[_tpl_to_use[i,:]]])
+
+#        plt.plot(flux[i,:], color='k')
+#        plt.plot(model[i,:], color='C3')
+#        plt.plot(model[i,:]-eml_model[i,:], color='C2')
+#        plt.show()
+
+        tpl_wgts[i,_tpl_to_use[i,:]] = pp.weights.copy()
+        design_matrix = pp.matrix/pp.noise[:, None]
+        _, tpl_wgts_err[i,_tpl_to_use[i,:]] = capfit.cov_err(design_matrix)
+
+        if degree > -1:
+            addcoef[i,:] = pp.polyweights.copy()
+        if mdegree > 0:
+            multcoef[i,:] = pp.mpolyweights.copy()
+
+        kininp[i,:] = np.concatenate(tuple(start[i]))
+        kin[i,:] = np.concatenate(tuple(pp.sol))
+        kin_err[i,:] = np.concatenate(tuple(pp.error))
+
+#        print(tpl_wgts[i,gas_template])
+#        print(tpl_wgts_err[i,gas_template])
+#        print(kin[i,:])
+#        print(kin_err[i,:])
+
+    print('Fitting spectrum: {0}/{0}'.format(nspec))
+
+    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
+                    kininp, kin, kin_err
+
+
+def _combine_stellar_templates(templates, gas_template, wgts, component):
+
+    # Get the best-fit templates for each bin
+    stellar_wgts = wgts.copy()
+    stellar_wgts[:,gas_template] = 0.0
+    optimal_template = np.dot(stellar_wgts, templates)
+
+    # Update the list of templates
+    _templates = np.append(np.atleast_2d(optimal_template), templates[gas_template,:], axis=0)
+    _gas_template = np.ones(_templates.shape[0], dtype=bool)
+    _gas_template[:optimal_template.shape[0]] = False
+   
+    # Set which templates to use with each spectrum
+    nspec = wgts.shape[0]
+    _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
+    _tpl_to_use[:,nspec:] = True
+    _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
+
+    # Update the components
+    _component = np.append(np.zeros(nspec).astype(int), component[gas_template])
+
+    # Check that the components make sense
+    if np.any(np.unique(_component) != np.arange(np.amax(_component)+1)):
+        raise ValueError('Problem constructing new component vector.')
+
+    # Return new template list
+    return stellar_wgts, _templates, _gas_template, _tpl_to_use, _component
+
+
+# Requirements:
+#   - All spectra are expected to have been fit with the same number of
+#     stellar moments
+#   - Only one component for the non-gas templates
+#   - If tpl_to_use is provided, the shape must be (Nbin,Ntpl) when
+#     providing the binned data and (Nspec,Ntpl) when no binned data are
+#     provided.
+def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscale_ratio,
+                                 inp_component, gas_template, inp_moments, inp_start,
+                                 tied=None, degree=4, mdegree=0, reject_boxcar=140,
+                                 vsyst=0, tpl_to_use=None, flux_binned=None, noise_binned=None,
+                                 mask_binned=None, x_binned=None, y_binned=None, x=None, y=None,
+                                 plot=False, quiet=False, debug=False):
+
+    # Check that there is either one or zero stellar components
+    if np.sum(gas_template) != templates.shape[0] and np.amax(inp_component[~gas_template]) != 0:
+        raise NotImplementedError('Can only fit one stellar component!')
+
+    # Confirm which binned datasets were provided (mask_binned can be
+    # None)
+    binned_data_provided = np.array([ x is not None for x in [flux_binned, noise_binned,
+                                                              x_binned, y_binned, x, y] ])
+    if np.any(binned_data_provided) and not np.all(binned_data_provided):
+        raise ValueError('To use bin-remapping mode, must provide all of the following: '
+                         'flux_binned, noise_binned, x_binned, y_binned, x, y')
+
+    # Set the fitting mode
+    mode = 'fitBins' if np.all(binned_data_provided) else 'noBins'
+
+    # Check the shape of provided template flags
+    if tpl_to_use is not None:
+        if mode == 'fitBins' and tpl_to_use.shape[0] != flux_binned.shape[0]:
+            raise ValueError('Template flag rows does not match number of binned spectra.')
+        if mode == 'noBins' and tpl_to_use.shape[0] != flux.shape[0]:
+            raise ValueError('Template flag rows does not match number of spectra.')
+        if tpl_to_use.shape[1] != templates.shape[0]:
+            raise ValueError('Template flags do not match the number of templates.')
+
+    # Instantiate the output
+    nspec, nwave = flux.shape
+#    masked_fraction = np.sum(mask, axis=1)/nwave
+#    indx = masked_fraction > 1/3
+#    model_binid = np.full(nspec, -1, dtype=int)
+#    model_binid[indx] = np.arange(np.sum(indx))
+
+    model_flux = np.zeros(flux.shape, dtype=float)
+    model_eml_flux = np.zeros(flux.shape, dtype=float)
+    model_mask = np.zeros(flux.shape, dtype=bool)
+
+    ntpl = templates.shape[0]
+    nkin = np.sum(np.absolute(inp_moments))
+
+    tpl_wgt = np.zeros((nspec,ntpl), dtype=float)
+    tpl_wgt_err = np.zeros((nspec,ntpl), dtype=float)
+
+    addcoef = None if degree < 0 else np.zeros(degree+1, dtype=float)
+    multcoef = None if mdegree < 1 else np.zeros(mdegree, dtype=float)
+
+    kin = np.zeros((nspec,nkin), dtype=float)
+    kin_err = np.zeros((nspec,nkin), dtype=float)
+
+    if debug:
+        warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
+        return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
+                    kin, kin_err
+
+
+#    print(type(inp_component))
+#    print(inp_component.shape)
+#    print(inp_component)
+#    print(inp_moments)
+#    print(type(inp_start))
+#    print(inp_start.shape)
+#    print(inp_start[0])
+
+    # First fit the binned data
+    if mode == 'fitBins':
+
+        # If provided the binned data, the input starting kinematics
+        # arrays must be sized appropriately for the binned data 
+        nbin = flux_binned.shape[0]
+        if len(inp_start) != nbin:
+            raise ValueError('Input starting kinematic arrays do not match the binned spectra.')
+
+        # First fit the binned data:
+        # - Stellar components with fixed kinematics
+        # - All gas templates in a single component
+        component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
+                                                          single_gas_component=True)
+#        print(component)
+#        print(moments)
+#        print(start)
+        _, _, _, binned_tpl_wgts, _, _, _, _, binned_kin, _ \
+                    = _fit_iteration(templates, flux_binned, noise_binned, velscale, start,
+                                     moments, component, gas_template, tpl_to_use=tpl_to_use,
+                                     reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
+                                     degree=degree, mdegree=mdegree, mask=mask_binned,
+                                     vsyst=vsyst, plot=plot, quiet=quiet)
+
+        # - Create new template set with the optimal stellar template
+        #   for each spectrum
+        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component \
+                    = _combine_stellar_templates(templates, gas_template, binned_tpl_wgts,
+                                                 inp_component)
+
+        # - Get the index of the nearest bin for every spaxel
+        nearest_bin = np.argmin((x[:, None] - x_binned)**2 + (y[:, None] - y_binned)**2, axis=1)
+
+        # - Use the binned data as the starting guess for the nearest
+        #   spaxel
+        stellar_wgts = stellar_wgts[nearest_bin,:]
+        _templates = np.append(_templates[:nbin,:][nearest_bin,:], _templates[nbin:,:], axis=0)
+        _gas_template = np.zeros(_templates.shape[0], dtype=bool)
+        _gas_template[nspec:] = True
+
+        _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
+        _tpl_to_use[:,_gas_template] = True
+        _tpl_to_use[np.arange(nspec),nearest_bin] = True
+
+        _component = np.append(np.zeros(nspec, dtype=int), _component[nbin:])
+
+        # - Use the starting positions from the fit to the bins for the
+        #   fit to the individual spaxels
+        n_gas_comp = len(np.unique(_component[_gas_template]))
+        _start = inp_start[nearest_bin]
+        gas_start = binned_kin[:,np.absolute(moments[0]):][nearest_bin,:]
+        for i in range(nspec):
+            _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
+    else:
+        stellar_wgts = None
+        _templates = templates
+        _gas_template = gas_template
+        _tpl_to_use = tpl_to_use
+        _component = inp_component
+        _start = inp_start
+
+    # Fit the data iteratively:
+    #  - Fit with all the gas templates as part of one component
+    component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
+                                                      single_gas_component=True)
+    _, _, _, tpl_wgts, _, _, _, _, kin, _ \
+            = _fit_iteration(_templates, flux, noise, velscale, start, moments, component,
+                             _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,
+                             velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
+                             mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
+
+    if mode == 'noBins':
+        # - If no previous fit to binned spectra, create new template
+        #   set with the optimal stellar template for each spectrum
+        # TODO: Template modes:
+        #   - use all
+        #   - use anything that was non-zero in the first fit
+        #   - use single, optimal template
+        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component \
+                    = _combine_stellar_templates(_templates, _gas_template, tpl_wgts, _component)
+
+    # - Use this result to reset the starting estimates for the gas kinematics
+    all_stellar_moments = np.sum(np.absolute(moments[:-1]))
+    gas_start = kin[:,all_stellar_moments:]
+    component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
+                                                      gas_start=gas_start)
+
+    # - Refit without rejection bit with the tying in place
+    model_flux, model_eml_flux, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
+            kininp, kin, kin_err = _fit_iteration(_templates, flux, noise, velscale, start,
+                                                  moments, component, _gas_template,
+                                                  tpl_to_use=_tpl_to_use, reject_boxcar=None,
+                                                  velscale_ratio=velscale_ratio, degree=degree,
+                                                  mdegree=mdegree, tied=tied, mask=mask,
+                                                  vsyst=vsyst, plot=plot, quiet=quiet)
+
+    # - Use the single output weight to renormalize the individual
+    #   stellar template weights (only one of the weights for the
+    #   non-gas templates should be non-zero); stellar-weight errors are
+    #   always returned as 0.
+    _tpl_wgts = stellar_wgts * np.sum(tpl_wgts[:,np.invert(_gas_template)], axis=1)[:,None]
+    _tpl_wgts[:,gas_template] = tpl_wgts[:,_gas_template]
+    _tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
+    _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
+
+    return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
+                    kininp, kin, kin_err
+
+    
+
 
 # Function: emline_fitter_with_ppxf
 # Input is:
@@ -155,11 +530,6 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         return model_flux, model_eml_flux, model_mask, model_binid, eml_flux, eml_fluxerr, \
                     eml_kin, eml_kinerr, eml_sigmacorr
 
-#    plate = '8258'
-#    ifu = '6102'
-#    npz_file = '/Users/mac/Documents/New_test_results/first_'+plate+'_'+ifu+'.npz'
-#    npz_file = 'test.npz'
-    
     # templates should have the shape (Nwave, Ntpl) for ppxf
     templates = templates.T
     
@@ -262,7 +632,7 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         resid = galaxy - pp.bestfit
         
         # Calculate the noises
-        NOISE = calculate_noise(resid)
+        NOISE = calculate_noise(resid, width=reject_boxcar)
         
         # Mask out pixels with residuals > 3 sigmas
         mask = (abs(resid) < (3*NOISE)) & mask_binned[i,:]
@@ -407,7 +777,7 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         resid = galaxy - pp.bestfit
         
         # Calculate the noises
-        NOISE = calculate_noise(resid)
+        NOISE = calculate_noise(resid, width=reject_boxcar)
         
         # Mask out pixels with residuals > 3 sigmas
         mask = (abs(resid) < (3*NOISE))&mask_DRP
@@ -446,7 +816,7 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
         resid = galaxy - pp.bestfit
         
         # Calculate the noises
-        NOISE = calculate_noise(resid)
+        NOISE = calculate_noise(resid, width=reject_boxcar)
         
         # Mask out pixels with residuals > 3 sigmas
         mask = (abs(resid) < (3*NOISE))&mask_DRP

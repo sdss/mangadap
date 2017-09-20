@@ -128,7 +128,7 @@ class EmissionLineModelDef(ParSet):
         emission_lines (str): String identifying the emission-line
             database to use
     """
-    def __init__(self, key, minimum_snr, deconstruct_bins, mom_guess_vel, mom_guess_disp,
+    def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
                  artifacts, emission_lines, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
@@ -238,9 +238,11 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # Chose to use Sasuke: Parameter set has defaults to handle
             # missing or None values for reject_boxcar, bias, moments,
             # degree, mdegree
-            fitpar = SasukePar(None, None, guess_redshift=None, guess_dispersion=None,
-                               minimum_snr=minimum_snr, deconstruct_bins=deconstruct_bins,
-                               pixelmask=None, reject_boxcar=cnfg.getint('reject_boxcar'),
+            fitpar = SasukePar(None, None, etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
+                               etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
+                               guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
+                               deconstruct_bins=deconstruct_bins, pixelmask=None,
+                               reject_boxcar=cnfg.getint('reject_boxcar'),
                                bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
                                degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'))
             fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
@@ -479,9 +481,6 @@ class EmissionLineModel:
         Compile the database with the specifications of each index.
         """
         if self.emldb is None:
-            # TODO: Try to use member functions of the fitting class to
-            # set at least the NAME and RESTWAVE of the line for use in
-            # dapfits.py
             return None
 
         name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
@@ -533,7 +532,8 @@ class EmissionLineModel:
         if emission_line_moments is not None:
             names = emission_line_moments.channel_names()
             vel_channel = -1 if self.method['mom_vel_name'] is None \
-                                else numpy.where(self.method['mom_vel_name'] == names)[0]
+                                else numpy.arange(len(names))[self.method['mom_vel_name']
+                                                                == names][0]
             if vel_channel > -1:
                 obj_redshift = numpy.full(self.binned_spectra.nbins, 0.0, dtype=float)
             
@@ -591,8 +591,8 @@ class EmissionLineModel:
 
         # Redshift: use the stellar continuum values if present,
         # otherwise set the default to 0.
-        self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=float) \
-                            if redshift is None else obj_redshift
+        self.redshift = obj_redshift if redshift is None else \
+                            numpy.zeros(self.binned_spectra.nbins, dtype=float)
         if redshift is not None:
             _redshift = numpy.atleast_1d(redshift)
             if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
@@ -604,8 +604,8 @@ class EmissionLineModel:
         # Same for dispersion
         # Redshift: use the stellar continuum values if present,
         # otherwise set the default to 0.
-        self.dispersion = numpy.full(self.binned_spectra.nbins, default_dispersion, dtype=float) \
-                            if dispersion is None else obj_dispersion
+        self.dispersion = obj_dispersion if dispersion is None else \
+                            numpy.full(self.binned_spectra.nbins, default_dispersion, dtype=float)
         if dispersion is not None:
             _dispersion = numpy.atleast_1d(dispersion)
 
@@ -778,6 +778,9 @@ class EmissionLineModel:
         line_database = self._compile_database()
         if line_database is None:
             try:
+                # Try to use member functions of the fitting class to
+                # set at least the NAME and RESTWAVE of the line for use
+                # in dapfits.py
                 line_database = self.method['fitclass'].line_database()
             except AttributeError:
                 warnings.warn('Emission-line fit did not use an EmissionLineDB object, and does '
@@ -883,7 +886,20 @@ class EmissionLineModel:
 
         #---------------------------------------------------------------
         # Get the good spectra
+        # TODO: Put this in a function that can be used by Sasuke...
         good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+        if self.stellar_continuum is not None:
+            # Determine which spectra have a valid stellar continuum fit
+            indx = numpy.invert(self.stellar_continuum.bitmask.flagged(
+                                            self.stellar_continuum['PAR'].data['MASK'],
+                                            flag=[ 'NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
+            with_good_continuum = numpy.zeros(self.binned_spectra.nbins, dtype=bool)
+            with_good_continuum[self.stellar_continuum['PAR'].data['BINID_INDEX'][indx]] = True
+            good_snr &= with_good_continuum
+
+#        warnings.warn('DEBUG!!')
+#        k = numpy.argmin(numpy.arange(len(good_snr))[good_snr])
+#        good_snr[k+1:] = False
 
         # Report
         if not self.quiet:
@@ -1075,6 +1091,20 @@ class EmissionLineModel:
 
 #        self.hdu = fits.open(ifile, checksum=checksum)
         self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
+
+        # Force load the PAR and FIT extensions because it may be
+        # checked by self.construct_3d_hdu() or construct_maps_file in
+        # dapfits.py
+        try:
+            if self.hdu['PAR'].data is None:
+                pass
+        except:
+            warnings.warn('Could not load emission-line parameter data.')
+        try:
+            if self.hdu['FIT'].data is None:
+                pass
+        except:
+            warnings.warn('Could not load emission-line fit data.')
 
         # Make sure that the number of emission-lines is set
         _neml = self.hdu['EMLDATA'].data['FLUX'].shape[1]

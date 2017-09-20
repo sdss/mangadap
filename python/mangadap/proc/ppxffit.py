@@ -606,6 +606,9 @@ class PPXFFit(StellarKinematicsFit):
                                  velocity_offset=None, max_velocity_range=400., alias_window=None,
                                  ensemble=True, loggers=None, quiet=False):
 
+        # TODO: This function can alter obj_flux and obj_ferr !!  Return
+        # them?
+
         nobj = obj_flux.shape[0]
         err = numpy.empty(nobj, dtype=object)  # Empty error messages
         _waverange = PPXFFit.set_wavelength_range(nobj, obj_wave, waverange=waverange)
@@ -641,13 +644,18 @@ class PPXFFit(StellarKinematicsFit):
             waverange_mask = numpy.zeros(obj_flux.shape, dtype=bool)
             npix_mask = numpy.zeros(obj_flux.shape, dtype=bool)
             alias_mask = numpy.zeros(obj_flux.shape, dtype=bool)
+            _velocity_offset = numpy.asarray(velocity_offset) \
+                                        if isinstance(velocity_offset,(list,numpy.ndarray)) \
+                                        else numpy.array([velocity_offset]*nobj)
+            if len(_velocity_offset) != nobj:
+                raise ValueError('Incorrect number of velocity offsets provided.')
             for i in range(nobj):
                 try:
                     fit_indx[i,:], waverange_mask[i,:], npix_mask[i,:], alias_mask[i,:] \
                             = PPXFFit.fitting_mask(tpl_wave, obj_wave, velscale,
                                                    velscale_ratio=velscale_ratio,
                                                    waverange=_waverange[i,:],
-                                                   velocity_offset=velocity_offset[i],
+                                                   velocity_offset=_velocity_offset[i],
                                                    max_velocity_range=max_velocity_range,
                                                    alias_window=alias_window, loggers=loggers,
                                                    quiet=True)#quiet)
@@ -1647,7 +1655,7 @@ class PPXFFit(StellarKinematicsFit):
         residual = self.obj_flux - model_flux
         fractional_residual = numpy.ma.divide(self.obj_flux - model_flux, model_flux)
         # Get the chi-square for each spectrum
-        model_par['CHI2'] = numpy.sum(numpy.square(residual/self.obj_ferr), axis=1)
+        model_par['CHI2'] = numpy.ma.sum(numpy.square(residual/self.obj_ferr), axis=1)
         # Get the (fractional) residual RMS for each spectrum
         model_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
         model_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
@@ -2146,8 +2154,8 @@ class PPXFFit(StellarKinematicsFit):
         # Set the basic pPXF parameters
 
         # - Polynomials
-        self.degree = degree
-        self.mdegree = mdegree
+        self.degree = max(degree,-1)
+        self.mdegree = max(mdegree,0)
         if self.filter_iterations > 0:
             # If filtering, use the size of the filter and the fitted
             # spectral range to set an effective polynomial order used
@@ -2160,8 +2168,8 @@ class PPXFFit(StellarKinematicsFit):
             else:
                 self.degree = max(0, filter_order)
                 self.mdegree = 0
-        self.filt_degree = filt_degree
-        self.filt_mdegree = filt_mdegree
+        self.filt_degree = max(filt_degree,-1)
+        self.filt_mdegree = max(filt_mdegree,0)
 
         # - Kinematics
         self.velocity_limits, self.sigma_limits, self.gh_limits \
@@ -2634,15 +2642,15 @@ class PPXFFit(StellarKinematicsFit):
         if obj_flux.shape[1] != len(obj_wave):
             raise ValueError('The object spectra fluxes must have the same length as the '
                              'wavelength array.')
-        _obj_flux = obj_flux if isinstance(obj_flux, numpy.ma.MaskedArray) \
-                                else numpy.ma.MaskedArray(obj_flux)
+        _obj_flux = obj_flux.copy() if isinstance(obj_flux, numpy.ma.MaskedArray) \
+                                else numpy.ma.MaskedArray(obj_flux, copy=True)
         if obj_ferr is not None and obj_ferr.shape != _obj_flux.shape:
             raise ValueError('The shape of any provided error array must match the flux array.')
         _obj_ferr = numpy.ma.MaskedArray(numpy.ones(_obj_flux.shape, dtype=float),
                                          mask=numpy.ma.getmaskarray(_obj_flux).copy()) \
                         if obj_ferr is None else \
-                            (obj_ferr if isinstance(obj_ferr, numpy.ma.MaskedArray) \
-                                else numpy.ma.MaskedArray(obj_ferr))
+                            (obj_ferr.copy() if isinstance(obj_ferr, numpy.ma.MaskedArray) \
+                                else numpy.ma.MaskedArray(obj_ferr.copy()))
         if obj_sres is not None and obj_sres.shape != obj_wave.shape \
                 and obj_sres.shape != _obj_flux.shape:
             raise ValueError('Provided object resolution vector does not have the correct shape.')

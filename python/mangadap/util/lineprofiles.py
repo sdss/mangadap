@@ -177,7 +177,8 @@ class GaussianLSF:
         \mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
         \exp\left(\frac{-\Delta^2}{2\sigma^2}\right)
 
-    where :math:`\Delta = x-\mu`.
+    where :math:`\Delta = x-\mu`.  The coordinate vector :math:`x` does
+    not need to be uniformly sampled.
 
     Args:
         p (array-like): (**Optional**) Input parameters ordered as the
@@ -263,7 +264,8 @@ class IntegratedGaussianLSF(GaussianLSF):
         {\rm erf}\left(\frac{\Delta-\delta_x/2}{\sqrt{2}\sigma}\right)\right]
 
     where :math:`{\rm erf}(x)` is the error function, :math:`\Delta =
-    x-\mu`, and :math:`\delta_x` is the sampling step.
+    x-\mu`, and :math:`\delta_x` is the sampling step.  The sampling
+    *must* be uniform in :math:`x`.
 
     Args:
         p (array-like): (**Optional**) Input parameters ordered as the
@@ -307,7 +309,8 @@ class FFTGaussianLSF(GaussianLSF):
 
     Define a Gaussian line profile by first constructing the analytic
     FFT of the profile and then returning the inverse real FFT.  See
-    :func:`mangadap.contrib.ppxf_util.emline` by M. Cappellari.
+    :func:`mangadap.contrib.ppxf_util.emline` by M. Cappellari.  The
+    sampling *must* be uniform in :math:`x`.
     
     Args:
         p (array-like): (**Optional**) Input parameters ordered as the
@@ -328,7 +331,7 @@ class FFTGaussianLSF(GaussianLSF):
         ValueError: Raised if the provided parameter vector is not 3
             elements long.
     """
-    def __init__(self, p=None, dx=None, pixel=False):
+    def __init__(self, p=None, dx=None, pixel=True):
         self.set_par(p)
         self.dx = 1.0 if dx is None else dx
         self.pixel = pixel

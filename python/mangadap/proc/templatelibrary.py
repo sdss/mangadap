@@ -756,6 +756,10 @@ class TemplateLibrary:
                                                     self.library['key']) \
                                         if processed_file is None else str(processed_file)
 
+    
+    def _get_file_list(self):
+        return numpy.sort(glob.glob(self.library['file_search']))
+
 
     def _read_raw(self):
         """
@@ -765,7 +769,7 @@ class TemplateLibrary:
 
         The file list read by the search key is sorted for consistency.
         """
-        self.file_list = numpy.sort(glob.glob(self.library['file_search']))
+        self.file_list = self._get_file_list()
         self.ntpl = len(self.file_list)
         npix = self._get_nchannels()
         if not self.quiet:
@@ -1499,7 +1503,8 @@ class TemplateLibrary:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
 #            self.hdu = fits.open(ofile, checksum=self.checksum)
             self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
-            self.file_list = glob.glob(self.library['file_search'])
+            self.file_list = self._get_file_list()
+#            self.file_list = glob.glob(self.library['file_search'])
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
             # Make sure the symlink exists

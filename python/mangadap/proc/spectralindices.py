@@ -792,7 +792,7 @@ class SpectralIndices:
             ivar[indx] = numpy.ma.masked
 
         # Remove the emission lines if provided        
-        warnings.warn('DEBUG')
+#        warnings.warn('DEBUG')
         if emission_line_model is not None:
             eml_model = emission_line_model.fill_to_match(binned_spectra)
             no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)

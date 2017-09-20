@@ -127,19 +127,23 @@ class EmissionLineTemplates:
 
     Args:
         wave (array-like): A single wavelength vector with the
-            wavelengths for the template spectra.
+            wavelengths for the template spectra.  The wavelengths are
+            expected to be sample either linearly or geometrically (see
+            :attr:`log`).
         sigma_inst (float,array-like): The single value or value as a
-            function of wavelength for the instrumental dispersion to
-            use for the template construction.
+            function of wavelength for the instrumental dispersion
+            (km/s) to use for the template construction.
         log (bool): (**Optional**) Flag that the wavelengths have been
             sampled geometrically.
-        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'): (**Optional**)
-            Emission-line database that is parsed to setup which lines
-            to include in the same template because they are modeled as
-            having the same velocity, velocity dispersion and flux
-            ratio.  If not provided, no templates are constructed in
-            instantiation; to build the templates using an existing
-            instantiation, use :func:`build_templates`.
+        base (float): (**Optional**) Base for the geometric sampling.
+        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+            (**Optional**) Emission-line database that is parsed to
+            setup which lines to include in the same template because
+            they are modeled as having the same velocity, velocity
+            dispersion and flux ratio.  If not provided, no templates
+            are constructed in instantiation; to build the templates
+            using an existing instantiation, use
+            :func:`build_templates`.
         loggers (list): (**Optional**) List of `logging.Logger`_ objects
             to log progress; ignored if quiet=True.  Logging is done
             using :func:`mangadap.util.log.log_output`.  Default is no
@@ -148,13 +152,14 @@ class EmissionLineTemplates:
             output.  Default is False.
 
     Attributes:
-        wave (numpy.ndarray): Array with the wavelength of each pixel
-            for all the constructed templates.  Shape is :math:`N_{\rm
-            pix}`.
+        wave (numpy.ndarray): Array with the wavelength (angstroms) of
+            each pixel for all the constructed templates.  Shape is
+            :math:`N_{\rm pix}`.
         sigma_inst (`scipy.interpolate.interp1d`_): The object used to
-            interpolate the instrumental dispersion at the rest
+            interpolate the instrumental dispersion (km/s) at the rest
             wavelength of each spectral line.
-        dv (numpy.ndarray): The width of each spectral pixel in km/s.
+        log (bool): Flag that the spectrum is sampled geometrically.
+        base (float): Base for the geometric sampling.
         emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Database with the emission-line parameters.  Shape is
             (:math:`N_{\rm pix}`,).
@@ -180,17 +185,19 @@ class EmissionLineTemplates:
             group have their velocity dispersion parameters tied in
             pPXF, but the velocity parameters are independent.  Shape is
             (:math:`N_{\rm tpl}`,).
-        eml_sigma_inst (numpy.ndarray): The instrumental dispersion at
-            the rest wavelength of each emission line.  This is mostly
-            used to aid the velocity dispersion corrections determined
-            by :class:`Sasuke`.  Shape is (:math:`N_{\rm eml}`,).
+        eml_sigma_inst (numpy.ndarray): The instrumental dispersion
+            (km/s) at the rest wavelength of each emission line.  This
+            is mostly used to aid the velocity dispersion corrections
+            determined by :class:`Sasuke`.  Shape is (:math:`N_{\rm
+            eml}`,).
         loggers (list): List of `logging.Logger`_ objects to log
             progress; ignored if quiet=True.  Logging is done using
             :func:`mangadap.util.log.log_output`.
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, wave, sigma_inst, log=True, emldb=None, loggers=None, quiet=False):
+    def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, loggers=None,
+                 quiet=False):
 
         self.loggers=None
         self.quiet=None
@@ -205,9 +212,11 @@ class EmissionLineTemplates:
             raise ValueError('Provided sigma_inst must be a single number or a vector with the'
                              'same length as the wavelength vector.')
         self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True)
+        self.log = log
+        self.base = base
 
-        self.dv = numpy.full(self.wave.size, spectrum_velocity_scale(wave), dtype=float) if log \
-                    else astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave)/wave
+#        self.dv = numpy.full(self.wave.size, spectrum_velocity_scale(wave), dtype=float) if log \
+#                    else astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave)/wave
 
         self.emldb = None           # Original database
         self.ntpl = None            # Number of templates
@@ -324,6 +333,7 @@ class EmissionLineTemplates:
         finished = primary_line | ignore_line
         while numpy.sum(finished) != self.emldb.neml:
             # Find the indices of lines that are tied to finished lines
+            start_sum = numpy.sum(finished)
             for i in range(self.emldb.neml):
                 if finished[i]:
                     continue
@@ -360,9 +370,15 @@ class EmissionLineTemplates:
                     self.vgrp[self.tpli[i]] = numpy.amax(self.vgrp)+1
                     self.sgrp[self.tpli[i]] = self.sgrp[self.tpli[indx]]
 
+            # If the loop ends up with the same number of parsed lines
+            # that it started with, there must be an error in the
+            # construction of the input database.
+            if start_sum == numpy.sum(finished):
+                raise ValueError('Unable to parse the input database.  Check tying parameters.')
+
         # Debug:
         if numpy.any(self.comp < 0) or numpy.any(self.vgrp < 0) or numpy.any(self.sgrp < 0):
-            raise ValueError('DEBUG: Incorrect parsing of emission-line database.')
+            raise ValueError('Templates without an assigned component.  Check the input database.')
 
 
     def check_database(self, emldb):
@@ -474,8 +490,30 @@ class EmissionLineTemplates:
 
         # Get the instrumental dispersion at the center of each line
         self.eml_sigma_inst = self.sigma_inst(self.emldb['restwave'])
+#        pyplot.plot(self.sigma_inst.x, self.sigma_inst.y, lw=2)
+#        pyplot.plot(self.sigma_inst.x, 2.5*astropy.constants.c.to('km/s').value/self.sigma_inst.x/2.355)
+#        pyplot.scatter(self.emldb['restwave'], self.eml_sigma_inst, marker='.', s=100, lw=0,
+#                       color='C2')
+#        pyplot.show()
+
+        # Convert from wavelengths to pixel coordinates
+        _wave = numpy.log(self.wave)/numpy.log(self.base) if self.log else self.wave
+        _dw = spectral_coordinate_step(self.wave, log=self.log, base=self.base)
+        _restwave = numpy.log(self.emldb['restwave'])/numpy.log(self.base) if self.log \
+                            else self.emldb['restwave']
+
+        # Rest wavelength in pixel units
+        _restwave = (_restwave - _wave[0])/_dw
+        # Flux to pixel units
+        dl = self.emldb['restwave']*(numpy.power(self.base,_dw/2)-numpy.power(self.base,-_dw/2)) \
+                        if self.log else _dw
+        _flux = self.emldb['flux'] / dl
+        # Dispersion in pixel units
+        _sigma = self.eml_sigma_inst * self.emldb['restwave'] \
+                        / astropy.constants.c.to('km/s').value / dl
 
         # Constuct the templates
+        pix = numpy.arange(self.wave.size)
         self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
         for i in range(self.ntpl):
             # Find all the lines associated with this template:
@@ -484,21 +522,25 @@ class EmissionLineTemplates:
             for j in index:
                 # Declare an instance of the desired profile
                 profile = eval('lineprofiles.'+self.emldb['profile'][j])()
-                # Calculate the template flux required to get a unity
-                # integral over velocity that is unity
-                line_flux = self.emldb['flux'][j] * astropy.constants.c.to('km/s').value \
-                                            / self.emldb['restwave'][j]
                 # Use the first three moments of the line to set the
                 # parameters
-                p = profile.parameters_from_moments(line_flux, 0.0, self.eml_sigma_inst[j])
-                # Convert the spectrum coordinates to velocity
-                v = astropy.constants.c.to('km/s').value*(self.wave/self.emldb['restwave'][j]-1)
-                # Warn the user if the line is undersampled.
-                srt = numpy.argsort(numpy.absolute(v))
-                if self.eml_sigma_inst[j]/self.dv[srt[0]] < 0.9:
-                    warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
+                p = profile.parameters_from_moments(_flux[j], _restwave[j], _sigma[j])
+#                print(p)
+#                f = profile(pix, p)
+#                d = numpy.power(self.base, _wave + _dw/2) - numpy.power(self.base, _wave - _dw/2)
+#                print(numpy.sum(d*f))
+#                print(numpy.sum(f))
+#                print(self.eml_sigma_inst[j])
+#                print(numpy.amax(f))
+#                print(numpy.amax(f)/2)
+#                pyplot.plot(self.wave, f)
+#                pyplot.show()
+#                # Warn the user if the line is undersampled.
+#                srt = numpy.argsort(numpy.absolute(v))
+#                if self.eml_sigma_inst[j]/self.dv[srt[0]] < 0.9:
+#                    warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
                 # Add the line to the flux in this template
-                self.flux[i,:] += profile(v, p)
+                self.flux[i,:] += profile(pix, p)
 
         return self.flux, self.comp, self.vgrp, self.sgrp
 

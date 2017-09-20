@@ -61,10 +61,8 @@ from ..util import lineprofiles
 from ..par.emissionlinedb import EmissionLineDB
 from .bandpassfilter import emission_line_equivalent_width
 
-# Add strict versioning
-# from distutils.version import StrictVersion
-
-
+# For debugging
+from matplotlib import pyplot
 
 # BASE CLASS -----------------------------------------------------------
 class SpectralFitting():
@@ -344,6 +342,15 @@ class EmissionLineFit(SpectralFitting):
 
         interpolator = interp1d(wave, sres, fill_value='extrapolate', assume_sorted=True)
         c = astropy.constants.c.to('km/s').value
+
+        sinst = c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
+
+#        pyplot.plot(wave, c/sres/DAPConstants.sig2fwhm, lw=2)
+#        pyplot.plot(wave, 2.5*astropy.constants.c.to('km/s').value/wave/DAPConstants.sig2fwhm,
+#                    color='k', lw=1)
+#        pyplot.scatter((cz/c + 1.0) * restwave, sinst, color='C1', marker='.', lw=0, s=100)
+#        pyplot.show()
+
         return c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
 
 
