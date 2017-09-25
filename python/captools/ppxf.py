@@ -1352,7 +1352,8 @@ class ppxf(object):
 
         if self.mdegree > 0:
             for j in range(ngh, npars):
-                bounds[j] = [-1., 1.]  # Force <100% corrections
+#                bounds[j] = [-1., 1.]  # Force <100% corrections
+                bounds[j] = [-0.5, 0.5] # Force <50% corrections
         elif self.reddening is not None:
             start[ngh] = self.reddening
             bounds[ngh] = [0., 10.]  # Force positive E(B-V) < 10 mag

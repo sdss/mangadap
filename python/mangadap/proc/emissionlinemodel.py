@@ -550,8 +550,9 @@ class EmissionLineModel:
                                         emission_line_moments['ELMMNTS'].data['BINID']\
                                             [mom1_masked]).astype(int)
                 if len(bad_bins) > 0:
-                    nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
-                    bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+                    nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
+                                                                                  indices=True)
+                    bad_bin_index = self.binned_spectra.get_bin_indices(bad_bins)
                     obj_redshift[bad_bin_index] = obj_redshift[nearest_good_bin_index]
 
             disp_channel = -1 if self.method['mom_disp_name'] is None \
@@ -572,8 +573,9 @@ class EmissionLineModel:
                                         emission_line_moments['ELMMNTS'].data['BINID']\
                                             [mom2_masked]).astype(int)
                 if len(bad_bins) > 0:
-                    nearest_good_bin_index = binned_spectra.find_nearest_bin(bad_bins, indices=True)
-                    bad_bin_index = binned_spectra.get_bin_indices(bad_bins)
+                    nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
+                                                                                  indices=True)
+                    bad_bin_index = self.binned_spectra.get_bin_indices(bad_bins)
                     obj_dispersion[bad_bin_index] = obj_dispersion[nearest_good_bin_index]
 
         if self.stellar_continuum is not None and (obj_redshift is None or obj_dispersion is None):

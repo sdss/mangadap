@@ -137,6 +137,8 @@ class AnalysisPlanSet(ParDatabase):
         nplan = len(par['DAPPLAN']['drpqa_key'])
         planlist = []
         for i in range(nplan):
+#            print(type(par['DAPPLAN']['spindex_key'][i]))
+#            print(par['DAPPLAN']['spindex_key'][i])
             planlist += [ AnalysisPlan(par['DAPPLAN']['drpqa_key'][i],
                                        bool(par['DAPPLAN']['drpqa_clobber'][i]),
                                        par['DAPPLAN']['bin_key'][i],

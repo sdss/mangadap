@@ -94,7 +94,7 @@ from .bandpassfilter import emission_line_equivalent_width
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFFit, PPXFFitResult
-from ..contrib.xjmc_edit import emline_fitter_with_ppxf_edit
+from ..contrib.xjmc import emline_fitter_with_ppxf_edit
 
 # For debugging
 from matplotlib import pyplot

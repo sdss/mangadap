@@ -2627,6 +2627,7 @@ python/mangadap/config/emission_bandpass_filters/elbmiles.ini -text
 python/mangadap/config/emission_bandpass_filters/elbstrong.ini -text
 python/mangadap/config/emission_line_modeling/efitf.ini -text
 python/mangadap/config/emission_line_modeling/efitm.ini -text
+python/mangadap/config/emission_line_modeling/efitmdb.ini -text
 python/mangadap/config/emission_line_modeling/efits.ini -text
 python/mangadap/config/emission_line_moments/emomf.ini -text
 python/mangadap/config/emission_line_moments/emomm.ini -text
@@ -2649,6 +2650,7 @@ python/mangadap/config/example_par/obsinput.par -text
 python/mangadap/config/reduction_assessments/snrg.ini -text
 python/mangadap/config/reduction_assessments/snrr.ini -text
 python/mangadap/config/spatial_binning/all.ini -text
+python/mangadap/config/spatial_binning/hybrid10.ini -text
 python/mangadap/config/spatial_binning/nre.ini -text
 python/mangadap/config/spatial_binning/rad.ini -text
 python/mangadap/config/spatial_binning/re1025.ini -text

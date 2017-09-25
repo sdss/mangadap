@@ -1348,7 +1348,7 @@ class rundap:
                 if self.drpc['MANGAID'][j] != 'NULL' \
                         and (self.drpc['MANGA_TARGET1'][j] > 0 \
                              or self.drpc['MANGA_TARGET3'][j] > 0) \
-                        and self.drpc['VEL'][j] > 0.0:
+                        and self.drpc['VEL'][j] > -500.0:
                     drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE',
                                  drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
@@ -1573,18 +1573,19 @@ class rundap:
         
         # Write the compute script (write_compute_script also checks the
         # path exists!)
-#        sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode, dapproc=self.dapproc, plots=self.plots,
-#                                               clobber=clobber)
-        try:
-            sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
-                                                   dapproc=self.dapproc, plots=self.plots,
-                                                   clobber=clobber)
-        except:
-            e = sys.exc_info()
-            print_frame(e[0])
-            warnings.warn('Problem writing compute script:: {0}: {1}.  Continuing...'.format(
-                                                                                        e[1], e[2]))
-            return None, None, None
+        sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
+                                               dapproc=self.dapproc, plots=self.plots,
+                                               clobber=clobber)
+#        try:
+#            sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
+#                                                   dapproc=self.dapproc, plots=self.plots,
+#                                                   clobber=clobber)
+#        except:
+#            e = sys.exc_info()
+#            print_frame(e[0])
+#            warnings.warn('Problem writing compute script:: {0}: {1}.  Continuing...'.format(
+#                                                                                        e[1], e[2]))
+#            return None, None, None
 
         # Set the status to ready
         self.set_pltifu_status(drpf.plate, drpf.ifudesign, status='ready') #, mode=drpf.mode

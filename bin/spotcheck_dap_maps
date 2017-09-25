@@ -151,16 +151,34 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
           mask=~bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[emline['Hb-4862'],:,:], 'UNRELIABLE'))
     uhbgflx[~numpy.ma.getmaskarray(uhbgflx)] = 0.0
 
-    d4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['D4000'],:,:],
-         mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['D4000'],:,:], 'DONOTUSE'))
-    ud4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['D4000'],:,:],
-         mask=~bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['D4000'],:,:], 'UNRELIABLE'))
-    ud4000[~numpy.ma.getmaskarray(ud4000)] = 0.0
-    dn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
-          mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:], 'DONOTUSE'))
-    udn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
-          mask=~bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:], 'UNRELIABLE'))
-    udn4000[~numpy.ma.getmaskarray(udn4000)] = 0.0
+    specindex_available = True
+    try:
+        if hdu['SPECINDEX'].data is None:
+            pass
+    except:
+        warnings.warn('No spectral indices in maps file.')
+        specindex_available = False
+    if specindex_available:
+        d4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['D4000'],:,:],
+                                mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['D4000'],:,:],
+                                                'DONOTUSE'))
+        ud4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['D4000'],:,:],
+                                mask=~bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['D4000'],:,:],
+                                                 'UNRELIABLE'))
+        ud4000[~numpy.ma.getmaskarray(ud4000)] = 0.0
+        dn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
+                                mask=bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:],
+                                                'DONOTUSE'))
+        udn4000 = numpy.ma.MaskedArray(hdu['SPECINDEX'].data.copy()[specindex['Dn4000'],:,:],
+                            mask=~bm.flagged(hdu['SPECINDEX_MASK'].data[specindex['Dn4000'],:,:],
+                                             'UNRELIABLE'))
+        udn4000[~numpy.ma.getmaskarray(udn4000)] = 0.0
+    else:
+        output_shape = spxflx.shape
+        d4000 = numpy.ma.masked_all(output_shape)
+        ud4000 = numpy.ma.masked_all(output_shape)
+        dn4000 = numpy.ma.masked_all(output_shape)
+        udn4000 = numpy.ma.masked_all(output_shape)
 
     # Get the limits to apply
     flux_lim = growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05)
