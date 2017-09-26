@@ -9,29 +9,50 @@ import astropy.constants
 from captools.ppxf import ppxf
 from captools import capfit
 
-# Function used to calculate 1 sigma errors of the residuals
-# Currently the pixels in the same window are assigned with
-# the same error
-def calculate_noise(residuals, width=140):
+## Function used to calculate 1 sigma errors of the residuals
+## Currently the pixels in the same window are assigned with
+## the same error
+#def calculate_noise(residuals, width=140):
+#
+#    # Number of windows
+#    n_win = (residuals.shape[0]//width)
+#
+#    # Assign each window with equal number of pixels
+#    cut = n_win*width
+#    resid_temp = residuals[:cut].reshape(n_win, -1)
+#
+#    # Calculate noise (standard deviation) for each window
+#    stdd = np.std(resid_temp, axis=1, ddof=1)
+#    stdd = stdd.reshape(n_win, -1)
+#
+#    # Create the noise array with the same size as galaxy array
+#    # There are some pixels uncovered by any window, which are 
+#    # assigned with the same sigma as the nearest window
+#    noise = np.repeat(stdd, width, axis=1).ravel()
+#    uncover = np.repeat(stdd[-1], residuals.shape[0]-cut)
+#    noise = np.append(noise, uncover)
+#    
+#    return noise
 
-    # Number of windows
-    n_win = (residuals.shape[0]//width)
+# Created by Michele Cappellari (23 September 2017)
+def calculate_noise(residuals, width=101):
 
-    # Assign each window with equal number of pixels
-    cut = n_win*width
-    resid_temp = residuals[:cut].reshape(n_win, -1)
+    """
+    Robust determination of the error spectrum as 1/2 of the
+    interval enclosing 68% of the values in a given running window
 
-    # Calculate noise (standard deviation) for each window
-    stdd = np.std(resid_temp, axis=1, ddof=1)
-    stdd = stdd.reshape(n_win, -1)
-
-    # Create the noise array with the same size as galaxy array
-    # There are some pixels uncovered by any window, which are 
-    # assigned with the same sigma as the nearest window
-    noise = np.repeat(stdd, width, axis=1).ravel()
-    uncover = np.repeat(stdd[-1], residuals.shape[0]-cut)
-    noise = np.append(noise, uncover)
+    """
     
+    assert width%2 == 1, "width must be odd"
+    assert width > 10, "width %d too small"%width
+
+    p = (1 - 0.6827)/2  # 1sigma
+    lo, up = round(width*p), round(width*(1 - p))
+
+    upper = rank_filter(residuals, rank=up, size=width)
+    lower = rank_filter(residuals, rank=lo, size=width)
+    noise = (upper - lower)/2
+
     return noise
 
 
@@ -122,6 +143,8 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
 
+    _start = start.copy()
+
     linear=False #True
 #    reject_boxcar=None
 
@@ -135,7 +158,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
         # Run the first fit
         if plot:
             plt.clf()
-        pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, start[i],
+        pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
                   velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
                   mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
                   component=component[_tpl_to_use[i,:]], quiet=quiet, linear=linear)
@@ -152,11 +175,13 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
             NOISE[pp.goodpixels] = calculate_noise(resid[pp.goodpixels], width=reject_boxcar)
             # - Add to mask
             model_mask[i,:] &= (abs(resid) < (3*NOISE))
+            # - Restart the fit where the last one left off
+            _start[i] = pp.sol
         
             # Refit after rejection
             if plot:
                 plt.clf()
-            pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, start[i],
+            pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
                       velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
                       mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
                       component=component, quiet=quiet, linear=linear)
@@ -182,7 +207,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
         if mdegree > 0:
             multcoef[i,:] = pp.mpolyweights.copy()
 
-        kininp[i,:] = np.concatenate(tuple(start[i]))
+        kininp[i,:] = np.concatenate(tuple(_start[i]))
         kin[i,:] = np.concatenate(tuple(pp.sol))
         kin_err[i,:] = np.concatenate(tuple(pp.error))
 
