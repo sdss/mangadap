@@ -367,7 +367,7 @@ class rundap:
                  log=False, dapproc=True, plots=True, verbose=0,
                  # Include the postprocessing script to create the
                  # DAPall file
-                 build_dapall=False,
+                 build_dapall=False, report_progress=False,
                  # Cluster options
                  label='mangadap', nodes=9, cpus=None, qos=None, umask='0027',walltime='240:00:00',
                  hard=True, create=False, submit=False, queue=None):
@@ -422,6 +422,10 @@ class rundap:
 
         # Build the DAPall file (and any QA plots)
         self.build_dapall = build_dapall
+
+        # Report the progess of the cluster, otherwise just finish
+        # script
+        self.report_progress = report_progress
 
         # Cluster queue keywords
         self.label = label
@@ -619,18 +623,22 @@ class rundap:
                         = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
 
         # If nothing has been submitted, nothing left to do
-        if not self.submit:
+        if not self.report_progress:
             return
 
         # Wait until the queue is finished
         running = True
         while running:
-            time.sleep(1) 
+            time.sleep(60) 
             percent_complete = self.queue.get_percent_complete()
             print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
             if percent_complete == 100:
                 running = False
         print('Percent complete ... {0:.1f}%'.format(percent_complete))
+
+        # No DAPall script, so finish
+        if not self.build_dapall:
+            return
 
         # Set the ready status file for the DAPall script
         self.set_status(dapall_scr, status='ready')
@@ -756,6 +764,11 @@ class rundap:
                             help='use the pbs package to create the cluster scripts')
         parser.add_argument('--submit', action='store_true', default=False,
                             help='submit the scripts to the cluster')
+        parser.add_argument('--progress', action='store_true', default=False,
+                            help='instead of closing the script, report the progress of the '
+                                 'analysis on the cluster; this is required if you want to submit '
+                                 'the DAPall script immediately after completing the individual '
+                                 'cube analysis')
 
         parser.add_argument("--queue", dest='queue', type=str, help='set the destination queue',
                             default=None)
@@ -844,6 +857,10 @@ class rundap:
 
         # Set to construct the dapall file
         self.build_dapall = arg.dapall
+
+        # Set to report the progress of the cluster.  This is needed if
+        # waiting to submit the DAPall construction script
+        self.report_progress = arg.progress
 
         # Set queue keywords
         if arg.umask is not None:

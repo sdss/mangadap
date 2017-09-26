@@ -2652,6 +2652,8 @@ python/mangadap/config/reduction_assessments/snrr.ini -text
 python/mangadap/config/spatial_binning/all.ini -text
 python/mangadap/config/spatial_binning/hybrid10.ini -text
 python/mangadap/config/spatial_binning/nre.ini -text
+python/mangadap/config/spatial_binning/prehybrid10.ini -text
+python/mangadap/config/spatial_binning/prevor10.ini -text
 python/mangadap/config/spatial_binning/rad.ini -text
 python/mangadap/config/spatial_binning/re1025.ini -text
 python/mangadap/config/spatial_binning/spx.ini -text
