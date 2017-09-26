@@ -837,22 +837,6 @@ def emline_fitter_with_ppxf(wave0, flux, noise, sres, flux_binned, noise_bin,
                   mdegree=mdegree, vsyst=dv, lam=wave0, component=component, tied=eml_tied,
                   gas_component=component>0, gas_names=gas_names)
         
-        # Calculate the residuals
-        resid = galaxy - pp.bestfit
-        
-        # Calculate the noises
-        NOISE = calculate_noise(resid, width=reject_boxcar)
-        
-        # Mask out pixels with residuals > 3 sigmas
-        mask = (abs(resid) < (3*NOISE))&mask_DRP
-        #print('Outliers: '+str(3109 - sum(mask)))
-        
-        # Add a three-sigma cut in the sixth fit
-        pp = ppxf(templates_sec, galaxy, noise_spaxel, velscale, start, velscale_ratio=velscale_ratio,
-                  mask=mask, quiet=True, plot=False, moments=moments, degree=degree,
-                  mdegree=mdegree, vsyst=dv, lam=wave0, component=component, tied=eml_tied,
-                  gas_component=component>0, gas_names=gas_names)
-        
         # The ouput of the fitting are parsed in the following lines
         
         eml_kin[i][:,0] = np.full(eml_kin.shape[1], pp.sol[1][0])
