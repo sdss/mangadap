@@ -1171,4 +1171,12 @@ class DRPComplete:
                                 plate, ifudesign))
 
 
+    def can_analyze(self, row=None):
+        if row is None:
+            return (self['MANGAID'] != 'NULL') \
+                    & ((self['MANGA_TARGET1'] > 0) | (self['MANGA_TARGET3'] > 0)) \
+                    & (self['VEL'] > -500.0)
+        return self['MANGAID'][row] != 'NULL' \
+                and (self['MANGA_TARGET1'][row] > 0 or self['MANGA_TARGET3'][row] > 0) \
+                and self['VEL'][row] > -500.0
 

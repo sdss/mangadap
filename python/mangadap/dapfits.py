@@ -726,6 +726,11 @@ class construct_maps_file:
         emlmomlist = self.emission_line_moment_maps(prihdr, emission_line_moments)
         # Emission-line models:
         elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
+
+#        print(elmodlist[10].name)
+#        print(elmodlist[10].data.shape)
+#        print(numpy.sum(numpy.invert(numpy.isfinite(elmodlist[10].data))))
+
         # Spectral indices:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
@@ -975,7 +980,7 @@ class construct_maps_file:
 
         DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
 
-        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
+        NO_MEASURMENT, MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
         MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED
 
@@ -1001,8 +1006,9 @@ class construct_maps_file:
         mask = numpy.array([mask]*emission_line_moments.nmom).transpose(1,2,0)
 
         # Consolidate to NOVALUE
-        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
-                                                                'RED_EMPTY', 'UNDEFINED_BANDS' ])
+        flgd = emission_line_moments.bitmask.flagged(elm_mask,
+                                                     flag=['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
+                                                           'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
         # Consolidate to FITFAILED
@@ -1573,6 +1579,17 @@ class construct_maps_file:
         dtypes = [self.float_dtype]*(len(arr)-emission_line_model.neml) \
                         + [a.dtype.name for a in arr[-emission_line_model.neml:]]
 
+##        t = [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
+##                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
+#        t = [ emission_line_model['EMLDATA'].data['KINERR'][:,m,1]
+#                                 for m in range(emission_line_model.neml) ]
+#        for k,_t in enumerate(t):
+##            print(k, numpy.sum(_t > 1e20))
+#            print(k, numpy.amin(_t))
+#
+##        print('len(arr): ', len(arr))
+##        print('not finite arr: ', [numpy.sum(numpy.invert(numpy.isfinite(a))) for a in arr])
+
         # Bin index
         bin_indx = emission_line_model['BINID'].data.copy().ravel()
 
@@ -1582,6 +1599,10 @@ class construct_maps_file:
         data = [ numpy.array(arr[emission_line_model.neml*i:
                                  emission_line_model.neml*(i+1)]).transpose(1,2,0) \
                         for i in range(narr) ]
+
+#        print(len(data))
+#        print(data[7].shape)
+#        print([numpy.sum(numpy.invert(numpy.isfinite(d))) for d in data])
 
         # Get the masks
         base_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy())

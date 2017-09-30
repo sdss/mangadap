@@ -2608,9 +2608,11 @@ python/captools/voronoi_2d_binning.py -text
 python/mangadap/__init__.py -text
 python/mangadap/config/__init__.py -text
 python/mangadap/config/absorption_indices/extindx.ini -text
+python/mangadap/config/absorption_indices/extindxd.ini -text
 python/mangadap/config/absorption_indices/lickindx.ini -text
 python/mangadap/config/artifacts/badsky.ini -text
 python/mangadap/config/bandhead_indices/bhbasic.ini -text
+python/mangadap/config/bandhead_indices/bhbasicd.ini -text
 python/mangadap/config/bandhead_indices/bhd4000.ini -text
 python/mangadap/config/bitmasks/dap_cube_bits.ini -text
 python/mangadap/config/bitmasks/dap_maps_bits.ini -text
@@ -2665,6 +2667,7 @@ python/mangadap/config/spatial_binning/vor30.ini -text
 python/mangadap/config/spectral_indices/bhindxn.ini -text
 python/mangadap/config/spectral_indices/indxe.ini -text
 python/mangadap/config/spectral_indices/indxen.ini -text
+python/mangadap/config/spectral_indices/indxend.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
 python/mangadap/config/spectral_templates/m11_marcs.ini -text
 python/mangadap/config/spectral_templates/m11_miles.ini -text

@@ -1267,6 +1267,18 @@ class SpectralIndices:
         # Initialize the output data
         measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))
 
+        # Mask any dummy indices
+        dummy = numpy.zeros(nindx, dtype=numpy.bool)
+        dummy[:nabs] = absdb.dummy
+        dummy[nabs:] = bhddb.dummy
+        if numpy.any(dummy):
+            measurements['MASK'][:,dummy] = True if bitmask is None else \
+                    bitmask.turn_on(measurements['MASK'][:,dummy], 'UNDEFINED_BANDS')
+
+        # No valid indices
+        if numpy.all(dummy):
+            return measurements
+
         # Perform the measurements on each spectrum
         for i in range(nspec):
 

@@ -39,8 +39,11 @@ import sys
 if sys.version > '3':
     long = int
 
+import warnings
 import numpy
 from scipy import interpolate, sparse
+
+# Debug
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 
@@ -452,7 +455,8 @@ def interpolate_masked_vector(y):
     """
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)
-    if numpy.sum(numpy.invert(indx)) == 0:
+    if numpy.sum(numpy.invert(indx)) < 2:
+        warnings.warn('Input vector has fewer than 2 unmasked values!  Returning zero vector.')
         return numpy.zeros(y.size, dtype=y.dtype.name)
     interpolator = interpolate.interp1d(x[numpy.invert(indx)], y[numpy.invert(indx)],
                                         fill_value='extrapolate')

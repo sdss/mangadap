@@ -304,10 +304,10 @@ class EmissionLineModel:
     """
 #    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
-                 emission_line_moments=None, redshift=None, dispersion=None, method_list=None,
-                 artifact_list=None, emission_line_db_list=None, dapsrc=None, dapver=None,
-                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-                 clobber=False, checksum=False, loggers=None, quiet=False):
+                 emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
+                 method_list=None, artifact_list=None, emission_line_db_list=None, dapsrc=None,
+                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
+                 hardcopy=True, clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -354,9 +354,10 @@ class EmissionLineModel:
         # Fit the binned spectra
         self.fit(binned_spectra, stellar_continuum=stellar_continuum,
                  emission_line_moments=emission_line_moments, redshift=redshift,
-                 dispersion=dispersion, dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
-                 directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                 clobber=clobber, loggers=loggers, quiet=quiet)
+                 dispersion=dispersion, minimum_error=minimum_error, dapsrc=dapsrc, dapver=dapver,
+                 analysis_path=analysis_path, directory_path=directory_path,
+                 output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
+                 quiet=quiet)
 
 
 #    def __del__(self):
@@ -835,9 +836,9 @@ class EmissionLineModel:
 
 
     def fit(self, binned_spectra, stellar_continuum=None, emission_line_moments=None,
-            redshift=None, dispersion=None, dapsrc=None, dapver=None, analysis_path=None,
-            directory_path=None, output_file=None, hardcopy=True, clobber=False, loggers=None,
-            quiet=False):
+            redshift=None, dispersion=None, minimum_error=None, dapsrc=None, dapver=None,
+            analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+            clobber=False, loggers=None, quiet=False):
         """
         Fit the emission lines.
         """
@@ -959,6 +960,21 @@ class EmissionLineModel:
         model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
+
+        # Impose a minimum error because of the conversion to inverse
+        # variance when constructing a MAPS file; applied to the error
+        # quantities from spectralfitting.EmissionLineFit dtype
+        # parameters: FLUXERR, KINERR, EWERR
+        # TODO: Add a maskbit as well?
+        indx = model_eml_par['FLUXERR'] < (numpy.finfo(model_eml_par['FLUX'].dtype).eps \
+                                            if minimum_error is None else minimum_error)
+        model_eml_par['FLUXERR'][indx] = 0.0
+        indx = model_eml_par['KINERR'] < (numpy.finfo(model_eml_par['KIN'].dtype).eps \
+                                            if minimum_error is None else minimum_error)
+        model_eml_par['KINERR'][indx] = 0.0
+        indx = model_eml_par['EWERR'] < (numpy.finfo(model_eml_par['EW'].dtype).eps \
+                                            if minimum_error is None else minimum_error)
+        model_eml_par['EWERR'][indx] = 0.0
 
         # TODO: Test if, when deconstruct_bins is true, the model_binid
         # spaxels (with fits) all have unique bin IDs.

@@ -57,6 +57,9 @@ file is created.
 
 *Revision history*:
     | **19 Aug 2016**: Original Implementation by K. Westfall (KBW)
+    | **29 Sep 2017**: (KBW) Force the number of emission-line
+        passbands, emission-lines to fit, and spectral indices to be the
+        same for all analysis methods.
 
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -162,12 +165,6 @@ class DAPall:
         dapver (str): DAP version
         analysis_path (str): Path to top-level analysis directory
         drpall_file (str): Path to the DRPall file
-        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`): The
-            plan object used by the DAP.
-        plan_methods (numpy.ndarray): Array of all methods read from the
-            provided :class:`AnalysisPlanSet`
-        methods (numpy.ndarray): Array of the methods included in the
-            DAPall file.
         h (float): The Hubble parameter (currently always set to unity)
         H0 (float): Hubbles constant (km/s/Mpc)
         cosmo (`astropy.cosmology.FlatLambdaCDM`_): Object used for
@@ -184,6 +181,8 @@ class DAPall:
             number of processed MAPS files.
         plate (numpy.ndarray): Array of the plate numbers
         ifudesign (numpy.ndarray): Array of the ifudesigns
+        methods (numpy.ndarray): Array of the methods included in the
+            DAPall file.
         readonly (bool): Object is prohibited from updating the
             database.
         loggers (list): List of `logging.Logger`_ objects
@@ -200,13 +199,6 @@ class DAPall:
         # Initialize the reporting
         self.loggers = loggers
         self.quiet = quiet
-
-        # Check the input type
-        # TODO: Plan isn't really needed.  Could just troll the
-        # analysis_path for the directory names...
-        if not isinstance(plan, AnalysisPlanSet):
-            raise TypeError('Input plan must have type AnalysisPlanSet.')
-        self.plan = plan
 
         # Path definitions
         self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
@@ -227,25 +219,16 @@ class DAPall:
         if not os.path.isfile(self.drpall_file):
             raise FileNotFoundError('{0} does not exist!'.format(self.drpall_file))
 
-        # Get the full list of available plan methods
-        self.plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in self.plan ])
-
-        # Check that the plan methods are unique.  This should never be
-        # raised, unless it also causes problems in the DAP itself.
-        unique_methods = numpy.unique(self.plan_methods)
-        if len(unique_methods) != len(self.plan_methods):
-            raise ValueError('All of the plan methods must be unique!')
-
-        # Initialize the cosmology object
-        self.h = 1.0
-        self.H0 = 100 * self.h * astropy.units.km / astropy.units.s / astropy.units.Mpc
-        self.cosmo = FlatLambdaCDM(H0=self.H0, Om0=0.3)
-
         # Initialize the bitmask
         self.maps_bm = DAPMapsBitMask()
 
         # Set the length for the string elements of the table
         self.str_len = self._init_string_lengths()
+
+        # Initialize the cosmology object
+        self.h = 1.0
+        self.H0 = 100 * self.h * astropy.units.km / astropy.units.s / astropy.units.Mpc
+        self.cosmo = FlatLambdaCDM(H0=self.H0, Om0=0.3)
 
         # Declare the other attributes for use later on
         self.nmom = None
@@ -253,9 +236,9 @@ class DAPall:
         self.nindx = None
         self.hdu = None
         self.ndap = None
-        self.methods = None
         self.plate = None
         self.ifudesign = None
+        self.methods = None
 
         # Give an initial report
         self.readonly = readonly
@@ -264,7 +247,6 @@ class DAPall:
             log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('DAPALL DATABASE'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'DRPall file: {0}'.format(self.drpall_file))
-            log_output(self.loggers, 1, logging.INFO, 'Plan methods: {0}'.format(self.plan_methods))
             log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(self.analysis_path))
             log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(self.file_name()))
             if self.readonly:
@@ -274,13 +256,17 @@ class DAPall:
         if os.path.isfile(self.file_path()):
             self._read()
 
+        # Check the combination of read-only and the read data makes
+        # sense
         if self.readonly and self.hdu is None:
             raise ValueError('Selected read-only, but no database can be read.')
+        if not self.readonly and self.hdu is not None:
+            warnings.warn('DAPall file already exists!  Update will overwrite existing data.')
 
         # Automatically attempt to update the database if no database
         # exists or if the database is not meant to be read-only
         if self.hdu is None or not self.readonly:
-            self.update(methods=methods)
+            self.update(plan, methods=methods)
 
 
     def __getitem__(self, key):
@@ -288,36 +274,38 @@ class DAPall:
 
 
     @staticmethod
-    def _number_of_emission_line_moments(key, dapsrc=None):
+    def _number_of_emission_line_moments(key, dapsrc=None, dbkey=True):
         if key == 'None':
-            return 0
+            return (0, 'None') if dbkey else 0
         db = select_proc_method(key, EmissionLineMomentsDef,
                                 available_func=available_emission_line_moment_databases,
                                 dapsrc=dapsrc)
-        return EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).nsets
+        return (EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).nsets, db['passbands']) \
+                    if dbkey else EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).nsets
 
 
     @staticmethod
-    def _number_of_emission_lines(key, dapsrc=None):
+    def _number_of_emission_lines(key, dapsrc=None, dbkey=True):
         if key == 'None':
-            return 0
+            return (0, 'None') if dbkey else 0
         db = select_proc_method(key, EmissionLineModelDef,
                                 available_func=available_emission_line_modeling_methods,
                                 dapsrc=dapsrc)
-        return EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets
+        return (EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets, db['emission_lines']) \
+                    if dbkey else EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets
 
 
     @staticmethod
-    def _number_of_spectral_indices(key, dapsrc=None):
+    def _number_of_spectral_indices(key, dapsrc=None, dbkey=True):
         if key == 'None':
-            return 0
+            return (0, 'None') if dbkey else 0
         db = select_proc_method(key, SpectralIndicesDef,
                                 available_func=available_spectral_index_databases, dapsrc=dapsrc)
         nabs = 0 if db['absindex'] is None \
                     else AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc).nsets
         nbhd = 0 if db['bandhead'] is None \
                     else BandheadIndexDB(db['bandhead'], dapsrc=dapsrc).nsets
-        return nabs+nbhd
+        return (nabs+nbhd, db['absindex'], db['bandhead']) if dbkey else nabs+nbhd
 
 
     def _read(self):
@@ -346,19 +334,23 @@ class DAPall:
                                                         for p,f in pltifu.split('-')]).T.tolist())
 
         # Set the number of emission lines and spectral indices
+        # TODO: Get this from the number of header keywords?
+        self.nmom = self.hdu['DAPALL'].data['EMLINE_SFLUX_1RE'].shape[1]
         self.neml = self.hdu['DAPALL'].data['EMLINE_GFLUX_1RE'].shape[1]
         self.nindx = self.hdu['DAPALL'].data['SPECINDEX_1RE'].shape[1]
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Rows: {0}'.format(self.ndap))
-            log_output(self.loggers, 1, logging.INFO, 'Available methods: {0}'.format(self.methods))
+            log_output(self.loggers, 1, logging.INFO, 'Methods: {0}'.format(self.methods))
             log_output(self.loggers, 1, logging.INFO,
                        'Number of observations: {0}'.format(len(self.plate)))
             log_output(self.loggers, 1, logging.INFO,
-                       'Maximum number of emission lines: {0}'.format(self.neml))
+                       'Number of emission-line moments: {0}'.format(self.nmom))
             log_output(self.loggers, 1, logging.INFO,
-                       'Maximum number of spectral indices: {0}'.format(self.nindx))
+                       'Number of emission lines: {0}'.format(self.neml))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of spectral indices: {0}'.format(self.nindx))
 
 
     def _init_string_lengths(self):
@@ -457,7 +449,7 @@ class DAPall:
                  ('HA_GSIGMA_1RE', numpy.float),
                  ('HA_GSIGMA_HI', numpy.float),
                  ('HA_GSIGMA_HI_CLIP', numpy.float),
-                 ('EMLMOM_NAME', '<U{0:d}'.format(self.str_len['EMLMOM_NAME']*nmom)),
+#                 ('EMLMOM_NAME', '<U{0:d}'.format(self.str_len['EMLMOM_NAME']*nmom)),
                  ('EMLINE_SFLUX_CEN', numpy.float, (nmom,)),
                  ('EMLINE_SFLUX_1RE', numpy.float, (nmom,)),
                  ('EMLINE_SFLUX_TOT', numpy.float, (nmom,)),
@@ -465,7 +457,7 @@ class DAPall:
                  ('EMLINE_SSB_PEAK', numpy.float, (nmom,)),
                  ('EMLINE_SEW_1RE', numpy.float, (nmom,)),
                  ('EMLINE_SEW_PEAK', numpy.float, (nmom,)),
-                 ('EMLINE_NAME', '<U{0:d}'.format(self.str_len['EMLINE_NAME']*neml)),
+#                 ('EMLINE_NAME', '<U{0:d}'.format(self.str_len['EMLINE_NAME']*neml)),
                  ('EMLINE_GFLUX_CEN', numpy.float, (neml,)),
                  ('EMLINE_GFLUX_1RE', numpy.float, (neml,)),
                  ('EMLINE_GFLUX_TOT', numpy.float, (neml,)),
@@ -473,8 +465,8 @@ class DAPall:
                  ('EMLINE_GSB_PEAK', numpy.float, (neml,)),
                  ('EMLINE_GEW_1RE', numpy.float, (neml,)),
                  ('EMLINE_GEW_PEAK', numpy.float, (neml,)),
-                 ('SPECINDEX_NAME', '<U{0:d}'.format(self.str_len['SPECINDEX_NAME']*nindx)),
-                 ('SPECINDEX_UNIT', '<U{0:d}'.format(self.str_len['SPECINDEX_UNIT']*nindx)),
+#                 ('SPECINDEX_NAME', '<U{0:d}'.format(self.str_len['SPECINDEX_NAME']*nindx)),
+#                 ('SPECINDEX_UNIT', '<U{0:d}'.format(self.str_len['SPECINDEX_UNIT']*nindx)),
                  ('SPECINDEX_LO', numpy.float, (nindx,)),
                  ('SPECINDEX_HI', numpy.float, (nindx,)),
                  ('SPECINDEX_LO_CLIP', numpy.float, (nindx,)),
@@ -510,10 +502,7 @@ class DAPall:
                                                                                 drpc.file_path()))
     
         # Find the list of file that should have been analyzed
-        indx = (drpc['MANGAID'] != 'NULL') \
-                & ((drpc['MANGA_TARGET1'] > 0) | (drpc['MANGA_TARGET3'] > 0)) \
-                & (drpc['VEL'] > 0)
-
+        indx = drpc.can_analyze()
         return drpc['PLATE'][indx], drpc['IFUDESIGN'][indx]
 
 
@@ -531,72 +520,56 @@ class DAPall:
         return methods, plates, ifudesigns
 
 
-    def _construct_maps_file_list(self, plt, ifu):
+    def _construct_maps_file_list(self, methodlist, platelist, ifulist): # plt, ifu):
         """
         Construct the list of MAPS files that should be in/added to the
         DAPall file.
         """
         # Construct the file names
-        methods, plates, ifudesigns = self._combine_plateifu_methods(plt, ifu)
+#        methods, plates, ifudesigns = self._combine_plateifu_methods(plt, ifu)
         return numpy.array( ['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
                                 self.analysis_path, m, p, i) 
-                                    for p,i,m in zip(plates, ifudesigns, methods) ])
+                                    for m,p,i in zip(methodlist, platelist, ifulist) ])
 
 
-# Moved to dapfits.py and metrics added to MAPS files so that they can
-# be pulled directly from there
-#    def _srd_snr_metric(self, plt, ifu, r_re_map):
-#        """
-#        Calculate the SRD S/N metric for a given plate-ifu in each of the griz bands.
-#
-#        .. todo::
-#            Is the DRP LOGCUBE file needed for other quantities?
-#        """
-#        filter_response_file = [ os.path.join(self.dapsrc, 'data', 'filter_response',
-#                                               f) for f in [ 'gunn_2001_g_response.db',
-#                                                             'gunn_2001_r_response.db',
-#                                                             'gunn_2001_i_response.db',
-#                                                             'gunn_2001_z_response.db'] ]
-#        for f in filter_response_file:
-#            if not os.path.isfile(f):
-#                raise FileNotFoundError('{0} does not exist!'.format(f))
-#
-#        # Read the DRPFits file
-#        drpf = DRPFits(plt, ifu, 'CUBE', drpver=self.drpver, redux_path=self.redux_path, read=True)
-##        if not self.quiet:
-##            log_output(self.loggers, 1, logging.INFO,
-##                       'Opened DRP file: {0}\n'.format(drpf.file_path()))
-#
-#        # Put the map in the correct order for use with DRPFits and
-#        # unravel it
-#        r = r_re_map.T.ravel()
-#
-#        # Run the S/N calculation; this is the same calculation as done
-#        # in
-#        # mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_covariance_matrix
-#        nfilter = len(filter_response_file)
-#        snr_med = numpy.zeros(nfilter, dtype=float)
-#        snr_ring = numpy.zeros(nfilter, dtype=float)
-#        for i in range(nfilter):
-#            response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
-#            signal, variance, snr, covar = drpf.flux_stats(response_func=response_func,
-#                                                           flag=['DONOTUSE', 'FORESTAR'],
-#                                                           covar=True) #, correlation=True)
-#            # Get the spaxels within the radius limits
-#            indx = numpy.arange(r.size)[(r > 1) & (r < 1.5) & numpy.invert(signal.mask)]
-#            # Get the appropriate covariance pixels to select
-#            ci, cj = map( lambda x: x.ravel(), numpy.meshgrid(indx, indx) )
-#
-#            covar = covar.apply_new_variance(variance).toarray()
-#            snr_med[i] = numpy.ma.median(snr[indx])
-#            snr_ring[i] = numpy.ma.sum(signal[indx])/numpy.sqrt(numpy.sum(covar[ci,cj]))
-#
-#        return snr_med, snr_ring
-#
-##        t = ((r > 1) & (r < 1.5)).astype(float)
-##        sum_signal = numpy.dot(t, signal)
-##        sum_variance = t.dot(covar._with_lower_triangle().cov.dot(t))
+    def _add_emission_line_moment_channels(self, key, hdr):
+        elmomdb = EmissionMomentsDB(key, dapsrc=self.dapsrc)
+        ndig = int(numpy.log10(elmomdb.neml))+1
+        for i in range(elmomdb.neml):
+            hdr['ELS{0}'.format(i+1).zfill(ndig)] = ('{0}-{1}'.format(elmomdb['name'][i],
+                                                                      elmomdb['restwave'][i]),
+                                                     'Summed emission-line element')
+        return hdr
+
+
+    def _add_emission_line_fit_channels(self, key, hdr):
+        elfitdb = EmissionLineDB(key, dapsrc=self.dapsrc)
+        ndig = int(numpy.log10(elfitdb.neml))+1
+        for i in range(elfitdb.neml):
+            hdr['ELG{0}'.format(i+1).zfill(ndig)] = ('{0}-{1}'.format(elfitdb['name'][i],
+                                                                      elfitdb['restwave'][i]),
+                                                     'Gaussian fit emission-line element')
+        return hdr
+
+
+    def _add_spectral_index_channels(self, abskey, bhdkey, hdr):
+        absdb = AbsorptionIndexDB(abskey, dapsrc=self.dapsrc)
+        bhddb = BandheadIndexDB(bhdkey, dapsrc=self.dapsrc)
+        nindx = absdb.nsets + bhddb.nsets
+        ndig = int(numpy.log10(nindx))+1
+        for i in range(absdb.nsets):
+            hdr['SPI{0}'.format(i+1).zfill(ndig)] = (absdb['name'][i], 'Spectral-index element')
+            hdr['SPIU{0}'.format(i+1).zfill(ndig)] = (absdb['units'][i],
+                                                      'Spectral-index element unit')
+        for i in range(absdb.nsets,nindx):
+            hdr['SPI{0}'.format(i+1).zfill(ndig)] = (bhddb['name'][i-absdb.nsets],
+                                                     'Spectral-index element')
+            hdr['SPI{0}'.format(i+1).zfill(ndig)] = ('', 'Spectral-index element unit')
+        return hdr
+
+
     def _srd_snr_metric(self, dapmaps):
+        """Grab the SNR metrics from the MAPS headers."""
         filters = [ 'G', 'R', 'I', 'Z' ]
         return numpy.array([dapmaps['PRIMARY'].header['SNR{0}MED'.format(f)] for f in filters]), \
                 numpy.array([dapmaps['PRIMARY'].header['SNR{0}RING'.format(f)] for f in filters])
@@ -915,7 +888,7 @@ class DAPall:
         return os.path.join(self.analysis_path, self.file_name())
 
 
-    def update(self, methods=None):
+    def update(self, plan, methods=None):
         """
         Update the DAPall file
         
@@ -924,69 +897,115 @@ class DAPall:
         of the file.
 
         Args:
+            plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
+                The plan object used by the DAP.
             methods (str,list): (**Optional**) Specify a set of methods
                 in the DAP plan file to include in the DAPall file.  If
                 not provided, all methods in the plan file are included.
 
         Raises:
             ValueError: Raised if a provided method is not in the provided
-                set of analysis plans.
+                set of analysis plans, or if the methods do not all have
+                the same number of emission-line bandpasses,
+                emission-lines to fit, and number of spectral indices.
         """
         if self.readonly:
             raise ValueError('Object is read-only.')
 
-        # TODO: Counting the number of emission lines may need to allow
-        # for a function that does not use an EmissionLineDB object.
-        # Set the number of emission lines and spectral indices using a
-        # dummy maps file for each plan?
+        # Check the input type
+        # TODO: Plan isn't really needed.  Could just troll the
+        # analysis_path for the directory names...
+        if not isinstance(plan, AnalysisPlanSet):
+            raise TypeError('Input plan must have type AnalysisPlanSet.')
 
-        # Use the plans to set the number of emission line moments for
-        # each method
-        self.nmom = numpy.array([ self._number_of_emission_line_moments(p['elmom_key'],
-                                                                        dapsrc=self.dapsrc)
-                                    for p in self.plan ])
+        # Get the full list of available plan methods
+        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
 
-        # Use the plans to set the number of emission lines for each
-        # method
-        self.neml = numpy.array([ self._number_of_emission_lines(p['elfit_key'],
-                                                                 dapsrc=self.dapsrc)
-                                    for p in self.plan ])
-
-        # Use the plans to set the number of spectral indices
-        self.nindx = numpy.array([ self._number_of_spectral_indices(p['spindex_key'],
-                                                                    dapsrc=self.dapsrc)
-                                    for p in self.plan ])
-#        print(self.neml)
-#        print(self.nindx)
+        # Check that the plan methods are unique.  This should never be
+        # raised, unless it also causes problems in the DAP itself.
+        if len(numpy.unique(plan_methods)) != len(plan_methods):
+            raise ValueError('All of the plan methods must be unique!')
 
         # Get the list of methods to look for
         if methods is None:
-            self.methods = self.plan_methods
+            self.methods = plan_methods
+            use_plans = numpy.ones(len(plan_methods), dtype=bool)
         else:
             self.methods = numpy.atleast_1d(methods)
-            if not numpy.all( [m in self.plan_methods for m in self.methods ]):
+            # Make sure the provided list is unique
+            if len(numpy.unique(self.methods)) != len(self.methods):
+                raise ValueError('Must provide unique list of methods.')
+            # All the methods to use must be in the provided plan
+            if not numpy.all( [m in plan_methods for m in self.methods ]):
                 raise ValueError('All provided methods must be in provided plan file.')
-#        print(self.methods)
+            # Find the index of the plans to use
+            use_plans = numpy.zeros(len(plan_methods), dtype=bool)
+            for i,p in enumerate(plan_methods):
+                if p in self.methods:
+                    use_plans[i] = True
+
+        # TODO: Counting the number of emission lines and indices may
+        # need to allow for a function that does not use, e.g., an
+        # EmissionLineDB object.  Set these numbers/names using a dummy
+        # maps file for each plan?
+
+        # Check that all the plans to use have the same emission-line
+        # bandpass database, ...
+        self.nmom, elmom_keys = numpy.array([
+                                    DAPall._number_of_emission_line_moments(p['elmom_key'],
+                                                                            dapsrc=self.dapsrc,
+                                                                            dbkey=True)
+                                                for p in plan[use_plans] ], dtype=object).T
+        # TODO: If one passes, both should pass
+        if numpy.any([ k != elmom_keys[0] for k in elmom_keys]):
+            raise ValueError('All plans must use the same emission-line bandpass database.')
+        if numpy.any(numpy.diff(self.nmom) != 0):
+            raise ValueError('All plans must have the same number of emission-line bandpasses.')
+        self.nmom = self.nmom[0]
+
+        # ..., emission-line fit database, and ...
+        self.neml, elfit_keys = numpy.array([ DAPall._number_of_emission_lines(p['elfit_key'],
+                                                                               dapsrc=self.dapsrc,
+                                                                               dbkey=True)
+                                                for p in plan[use_plans] ], dtype=object).T
+        if numpy.any([ k != elfit_keys[0] for k in elfit_keys]):
+            raise ValueError('All plans must use the same emission-line fitting database.')
+        if numpy.any(numpy.diff(self.neml) != 0):
+            raise ValueError('All plans must have the same number of fitted emission lines.')
+        self.neml = self.neml[0]
+        # ..., and spectral-index databases.
+        self.nindx, abs_keys, bhd_keys = numpy.array([ 
+                                            DAPall._number_of_spectral_indices(p['spindex_key'],
+                                                                               dapsrc=self.dapsrc,
+                                                                               dbkey=True)
+                                                    for p in plan[use_plans] ], dtype=object).T
+        if numpy.any([ k != abs_keys[0] for k in abs_keys]):
+            raise ValueError('All plans must use the same absorption-line index database.')
+        if numpy.any([ k != bhd_keys[0] for k in bhd_keys]):
+            raise ValueError('All plans must use the same bandhead index database.')
+        if numpy.any(numpy.diff(self.nindx) != 0):
+            raise ValueError('All plans must have the same number of spectral indices.')
+        self.nindx = self.nindx[0]
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'RUNNING DAPALL UPDATE')
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Plan methods: {0}'.format(self.plan_methods))
+            log_output(self.loggers, 1, logging.INFO, 'Available methods: {0}'.format(plan_methods))
             log_output(self.loggers, 1, logging.INFO,
-                       'Emission line moments in each plan: {0}'.format(self.nmom))
+                       'Methods for output: {0}'.format(methods))
             log_output(self.loggers, 1, logging.INFO,
-                       'Emission lines in each plan: {0}'.format(self.neml))
+                       'Emission line moments: {0}'.format(self.nmom))
             log_output(self.loggers, 1, logging.INFO,
-                       'Spectral indices in each plan: {0}'.format(self.nindx))
+                       'Emission lines fit: {0}'.format(self.neml))
             log_output(self.loggers, 1, logging.INFO,
-                       'Methods for output: {0}'.format(self.methods))
+                       'Spectral indices: {0}'.format(self.nindx))
 
         # Construct the list of files to look for
         self.plate, self.ifudesign = self._get_completed_observations()
         methodlist, platelist, ifulist = self._combine_plateifu_methods(self.plate, self.ifudesign)
-        dapfiles = self._construct_maps_file_list(self.plate, self.ifudesign)
+        dapfiles = self._construct_maps_file_list(methodlist, platelist, ifulist)
 
         # Report
         if not self.quiet:
@@ -1025,10 +1044,10 @@ class DAPall:
 
         # Initialize the output database
         self.ndap = len(dapfiles)
-        max_nmom = numpy.amax(self.nmom)
-        max_neml = numpy.amax(self.neml)
-        max_nindx = numpy.amax(self.nindx)
-        db = init_record_array(self.ndap, self._table_dtype(max_nmom, max_neml, max_nindx))
+#        max_nmom = numpy.amax(self.nmom)
+#        max_neml = numpy.amax(self.neml)
+#        max_nindx = numpy.amax(self.nindx)
+        db = init_record_array(self.ndap, self._table_dtype(self.nmom, self.neml, self.nindx))
 #        print(max_neml, max_nindx)
 
         # Add the basic information
@@ -1112,32 +1131,32 @@ class DAPall:
             db['LDIST_Z'][i] = self.cosmo.luminosity_distance(db['Z'][i]).value
             db['ADIST_Z'][i] = self.cosmo.angular_diameter_distance(db['Z'][i]).value
 
-            # Get the dictionary with the channel names
-            emlmom = channel_dictionary(dapmaps, 'EMLINE_SFLUX')
-            nmom = len(emlmom)
-            emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
-            neml = len(emline)
-            specindex_names = channel_dictionary(dapmaps, 'SPECINDEX')
-            specindex_units = channel_units(dapmaps, 'SPECINDEX')
-            nindx = len(specindex_names)
+#            # Get the dictionary with the channel names
+#            emlmom = channel_dictionary(dapmaps, 'EMLINE_SFLUX')
+#            nmom = len(emlmom)
+#            emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
+#            neml = len(emline)
+#            specindex_names = channel_dictionary(dapmaps, 'SPECINDEX')
+#            specindex_units = channel_units(dapmaps, 'SPECINDEX')
+#            nindx = len(specindex_names)
 
             # Set the channel names and units to the table; the sorting is
             # required to make sure the names are put in the correct
             # order.
 #            print('names')
-            srt = numpy.argsort(list(emlmom.values()))
-            db['EMLMOM_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLMOM_NAME'])
-                                                for n in numpy.array(list(emlmom.keys()))[srt] ])
-            srt = numpy.argsort(list(emline.values()))
-            db['EMLINE_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLINE_NAME'])
-                                                for n in numpy.array(list(emline.keys()))[srt] ])
-            srt = numpy.argsort(list(specindex_names.values()))
-            db['SPECINDEX_NAME'][i] \
-                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_NAME'])
-                                        for n in numpy.array(list(specindex_names.keys()))[srt] ])
-            db['SPECINDEX_UNIT'][i] \
-                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_UNIT'])
-                                            for n in specindex_units ])
+#            srt = numpy.argsort(list(emlmom.values()))
+#            db['EMLMOM_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLMOM_NAME'])
+#                                                for n in numpy.array(list(emlmom.keys()))[srt] ])
+#            srt = numpy.argsort(list(emline.values()))
+#            db['EMLINE_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLINE_NAME'])
+#                                                for n in numpy.array(list(emline.keys()))[srt] ])
+#            srt = numpy.argsort(list(specindex_names.values()))
+#            db['SPECINDEX_NAME'][i] \
+#                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_NAME'])
+#                                        for n in numpy.array(list(specindex_names.keys()))[srt] ])
+#            db['SPECINDEX_UNIT'][i] \
+#                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_UNIT'])
+#                                            for n in specindex_units ])
 
             # Determine the coverage of the datacube (independent of the
             # DAP method)
@@ -1227,6 +1246,11 @@ class DAPall:
         hdr['DATE'] = (time.strftime('%Y-%m-%d',time.gmtime()), 'UTC date created')
         hdr['VERSDRP3'] = (self.drpver, 'DRP version')
         hdr['VERSDAP'] = (self.dapver, 'DAP version')
+
+        # Add the emission-line moment channel header
+        hdr = self._add_emission_line_moment_channels(elmom_keys[0], hdr)
+        hdr = self._add_emission_line_fit_channels(elfit_keys[0], hdr)
+        hdr = self._add_spectral_index_channels(abs_keys[0], bhd_keys[0], hdr)
 
         # Set the fits HDU list
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),

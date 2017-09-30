@@ -1317,21 +1317,12 @@ class rundap:
         # Create the list of CUBE DRP files
         drplist = [ DRPFits(self.drpc['PLATE'][i], self.drpc['IFUDESIGN'][i], 'CUBE',
                             drpver=self.mpl.drpver, redux_path=self.redux_path) \
-                            for i in range(n_plates) \
-                                if self.drpc['MANGAID'][i] != 'NULL' \
-                                   and (self.drpc['MANGA_TARGET1'][i] > 0 \
-                                        or self.drpc['MANGA_TARGET3'][i] > 0) \
-                                   and self.drpc['VEL'][i] > 0.0 ]
+                            for i in range(n_plates) if self.drpc.can_analyze(row=i) ]
 
         # Add the list of RSS DRP files
         drplist = drplist + [ DRPFits(self.drpc['PLATE'][i], self.drpc['IFUDESIGN'][i],
                                       'RSS', drpver=self.mpl.drpver, redux_path=self.redux_path)
-                  for i in range(n_plates)
-                  if self.drpc['MANGAID'][i] != 'NULL' \
-                     and (self.drpc['MANGA_TARGET1'][i] > 0 \
-                          or self.drpc['MANGA_TARGET3'][i] > 0) \
-                     and self.drpc['VEL'][i] > 0.0 \
-                     and self.drpc['MODES'][i] == 2 ]
+                  for i in range(n_plates) if self.drpc.can_analyze(row=i) and self.drpc['MODES'][i] == 2 ]
         return drplist
 
 
@@ -1362,10 +1353,7 @@ class rundap:
         if getcube:
             for i in range(0,n_plates):
                 j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
-                if self.drpc['MANGAID'][j] != 'NULL' \
-                        and (self.drpc['MANGA_TARGET1'][j] > 0 \
-                             or self.drpc['MANGA_TARGET3'][j] > 0) \
-                        and self.drpc['VEL'][j] > -500.0:
+                if self.drpc.can_analyze(row=j):
                     drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE',
                                  drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
@@ -1379,10 +1367,7 @@ class rundap:
 
         for i in range(0,n_plates):
             j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
-            if self.drpc['MANGAID'][j] != 'NULL' \
-                    and (self.drpc['MANGA_TARGET1'][j] > 0 \
-                         or self.drpc['MANGA_TARGET3'][j] > 0) \
-                    and self.drpc['VEL'][j] > 0.0 and self.drpc['MODES'][j] == 2:
+            if self.drpc.can_analyze(row=j) and self.drpc['MODES'][j] == 2:
                 drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
                              drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
