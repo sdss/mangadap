@@ -22,11 +22,13 @@ bin/spotcheck_dap_maps -text
 bin/write_dap_par -text
 data/absorption_indices/README -text
 data/absorption_indices/extindx.par -text
+data/absorption_indices/extindxd.par -text
 data/absorption_indices/lickindx.par -text
 data/artifacts/README -text
 data/artifacts/badsky.par -text
 data/bandhead_indices/README -text
 data/bandhead_indices/bhbasic.par -text
+data/bandhead_indices/bhbasicd.par -text
 data/bandhead_indices/bhd4000.par -text
 data/emission_bandpass_filters/README -text
 data/emission_bandpass_filters/elb_mpl5.par -text

@@ -372,7 +372,7 @@ class MaNGAMPL:
     def show(self):
         """Print the available MPL versions to stdout."""
 
-        print('{0}: IDLUTILS:{2}; COREVER:{3}; DRPVER:{4}; DAPVER:{5}'.format(
+        print('{0}: IDLUTILS:{1}; COREVER:{2}; DRPVER:{3}; DAPVER:{4}'.format(
               self.mplver, self.idlver, self.corever, self.drpver, self.dapver))
 
 

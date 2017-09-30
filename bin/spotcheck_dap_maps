@@ -55,7 +55,7 @@ from mangadap.proc.util import growth_lim
 
 
 def init_ax(fig, pos):
-    ax = fig.add_axes(pos, axisbg='0.9')
+    ax = fig.add_axes(pos, facecolor='0.9')
     ax.minorticks_on()
     ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-')
 #    ax.grid(True, which='minor', color='0.7', zorder=0, linestyle=':')
