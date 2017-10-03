@@ -1534,15 +1534,15 @@ class Sasuke(EmissionLineFit):
 
             if par['deconstruct_bins']:
 
+                # Get the stellar continuum.  The model extends over
+                # over regions masked during the fit, but 0 outside the
+                # spectral range of the fit.
+                sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra)
+
                 # Construct the full 3D cube for the stellar continuum
-                # models
-                sc_model_flux, sc_model_mask \
-                        = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
-                                                    par['stellar_continuum']['BINID'].data.ravel(),
-                                                       [ par['stellar_continuum']['FLUX'].data,
-                                                         par['stellar_continuum']['MASK'].data ])
-                # Set any masked pixels to 0
-                sc_model_flux[sc_model_mask>0] = 0.0
+                sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                                                             binned_spectra['BINID'].data.ravel(),
+                                                             sc_continuum)
 
                 # Construct the full 3D cube of the new stellar
                 # continuum from the combined stellar-continuum +
@@ -1552,12 +1552,11 @@ class Sasuke(EmissionLineFit):
                                                             model_flux - model_eml_flux)
 
                 # Get the difference, restructure it to match the shape
-                # of the emission-line models, and zero any masked
-                # pixels
+                # of the emission-line models
                 model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
                                                                 self.npix_obj)[spaxel_to_fit,:]
-                if model_mask is not None:
-                    model_eml_base[model_mask==0] = 0.0
+#                if model_mask is not None:
+#                    model_eml_base[model_mask==0] = 0.0
             else:
                 el_continuum = model_flux - model_eml_flux
                 sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra)

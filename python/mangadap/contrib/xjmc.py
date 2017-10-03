@@ -145,8 +145,11 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
 
     _start = start.copy()
 
-    linear=False #True
+    # For debugging
+    linear=False
+#    linear=True
 #    reject_boxcar=None
+#    mdegree=0
 
     for i in range(nspec):
 
