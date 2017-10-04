@@ -1,0 +1,66 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date:  4 Oct 2017
+#
+# THIS IS A DUMMY SET OF INDICES USED TO SET THE STRUCTURE OF THE
+# SPECINDEX EXTENSION IN THE MAPS FILE TO THE SAME AS THE extindx.par.0
+# INDEX SET.
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[9];
+    double primary[2];
+    double blueside[2];
+    double redside[2];
+    char waveref[3];
+    char units[3];
+    int component;
+} DAPABI;
+
+DAPABI  1  CN1        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI  2  CN2        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI  3  Ca4227     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  4  G4300      {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  5  Fe4383     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  6  Ca4455     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  7  Fe4531     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  8  C24668     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI  9  Hb         {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 10  Fe5015     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 11  Mg1        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 12  Mg2        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 13  Mgb        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 14  Fe5270     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 15  Fe5335     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 16  Fe5406     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 17  Fe5709     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 18  Fe5782     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 19  NaD        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 20  TiO1       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 21  TiO2       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 22  HDeltaA    {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 23  HGammaA    {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 24  HDeltaF    {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 25  HGammaF    {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 26  CaHK       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 27  CaII1      {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 28  CaII2      {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 29  CaII3      {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 30  Pa17       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 31  Pa14       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 32  Pa12       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  1
+DAPABI 33  MgICvD     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  vac  ang  0
+DAPABI 34  NaICvD     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  vac  ang  0
+DAPABI 35  MgIIR      {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  vac  ang  0
+DAPABI 36  FeHCvD     {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  vac  ang  0
+DAPABI 37  NaI        {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 38  bTiO       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 39  aTiO       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 40  CaH1       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 41  CaH2       {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+DAPABI 42  NaISDSS    {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  ang  0
+DAPABI 43  TiO2SDSS   {       -1        -1 }  {       -1        -1 }  {       -1        -1 }  air  mag  0
+

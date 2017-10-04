@@ -1,0 +1,101 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 18 Mar 2016
+#
+# Indices 1-21 are the Lick indices as defined by:
+#       Trager et al. (1998, ApJS, 116 1)
+# Indices 22-25 are from:
+#       Worthey & Ottaviani (1997, ApJS, 111, 377)
+# Index 26 is from:
+#       Serven et al. (2005, ApJ, 627, 754)
+# Indices 27-32 are from:
+#       Cenarro et al. (2001, MNRAS, 326, 959)
+#   NOTE: Each index is considered seperately, which is *not* the
+#   definition provided in Table 4 of their paper.
+
+# Indices 33-36 are from:
+#       Diaz et al. (1989, MNRAS, 239, 325)
+#       Conroy & van Dokkum (2012, ApJ, 747, 69)
+#
+#   NOTE:  In a private communication with C. Conroy, he says: "You
+#   might want to spot check the locations of the wavelength boundaries
+#   against a spectrum at high dispersion.  I defined these boundaries
+#   at low sigma (~100 km/s) and realized only later that some of them
+#   (e.g., NaI) are not optimally defined for sigma~300 galaxies. If
+#   you’re also using NaI then you might want to consider re-defining
+#   things."  We need someone in the team to do this assessment!
+#
+# Index 37 is from:
+#       Spiniello et al. (2012, ApJL, 753, 32)
+# Indices 38-41 are from:
+#       Spiniello et al. (2014, MNRAS, 438, 1483)
+# Indices 42-43 are from:
+#       La Barbera et al. (2013, MNRAS, 433, 3017)
+#
+# The columns are described in README.
+#
+# Revisions:
+#   11 Oct 2016: Added index 39
+#   26 Sep 2017: index 39 was the same as index 26! Change names to
+#       remove decimals.
+#   03 Oct 2017: Rearranged indices; added La Barbera indices; reverted
+#       some indices in the Conroy & van Dokkum (2012) compilation to
+#       their original references.  TODO: Need to check air/vacuum
+#       definitions for indices from that compilation!
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[9];
+    double primary[2];
+    double blueside[2];
+    double redside[2];
+    char waveref[3];
+    char units[3];
+    int component;
+} DAPABI;
+
+DAPABI  1  CN1        { 4142.125  4177.125 }  { 4080.125  4117.625 }  { 4244.125  4284.125 }  air  mag  0
+DAPABI  2  CN2        { 4142.125  4177.125 }  { 4083.875  4096.375 }  { 4244.125  4284.125 }  air  mag  0
+DAPABI  3  Ca4227     { 4222.250  4234.750 }  { 4211.000  4219.750 }  { 4241.000  4251.000 }  air  ang  0
+DAPABI  4  G4300      { 4281.375  4316.375 }  { 4266.375  4282.625 }  { 4318.875  4335.125 }  air  ang  0
+DAPABI  5  Fe4383     { 4369.125  4420.375 }  { 4359.125  4370.375 }  { 4442.875  4455.375 }  air  ang  0
+DAPABI  6  Ca4455     { 4452.125  4474.625 }  { 4445.875  4454.625 }  { 4477.125  4492.125 }  air  ang  0
+DAPABI  7  Fe4531     { 4514.250  4559.250 }  { 4504.250  4514.250 }  { 4560.500  4579.250 }  air  ang  0
+DAPABI  8  C24668     { 4634.000  4720.250 }  { 4611.500  4630.250 }  { 4742.750  4756.500 }  air  ang  0
+DAPABI  9  Hb         { 4847.875  4876.625 }  { 4827.875  4847.875 }  { 4876.625  4891.625 }  air  ang  0
+DAPABI 10  Fe5015     { 4977.750  5054.000 }  { 4946.500  4977.750 }  { 5054.000  5065.250 }  air  ang  0
+DAPABI 11  Mg1        { 5069.125  5134.125 }  { 4895.125  4957.625 }  { 5301.125  5366.125 }  air  mag  0
+DAPABI 12  Mg2        { 5154.125  5196.625 }  { 4895.125  4957.625 }  { 5301.125  5366.125 }  air  mag  0
+DAPABI 13  Mgb        { 5160.125  5192.625 }  { 5142.625  5161.375 }  { 5191.375  5206.375 }  air  ang  0
+DAPABI 14  Fe5270     { 5245.650  5285.650 }  { 5233.150  5248.150 }  { 5285.650  5318.150 }  air  ang  0
+DAPABI 15  Fe5335     { 5312.125  5352.125 }  { 5304.625  5315.875 }  { 5353.375  5363.375 }  air  ang  0
+DAPABI 16  Fe5406     { 5387.500  5415.000 }  { 5376.250  5387.500 }  { 5415.000  5425.000 }  air  ang  0
+DAPABI 17  Fe5709     { 5696.625  5720.375 }  { 5672.875  5696.625 }  { 5722.875  5736.625 }  air  ang  0
+DAPABI 18  Fe5782     { 5776.625  5796.625 }  { 5765.375  5775.375 }  { 5797.875  5811.625 }  air  ang  0
+DAPABI 19  NaD        { 5876.875  5909.375 }  { 5860.625  5875.625 }  { 5922.125  5948.125 }  air  ang  0
+DAPABI 20  TiO1       { 5936.625  5994.125 }  { 5816.625  5849.125 }  { 6038.625  6103.625 }  air  mag  0
+DAPABI 21  TiO2       { 6189.625  6272.125 }  { 6066.625  6141.625 }  { 6372.625  6415.125 }  air  mag  0
+DAPABI 22  HDeltaA    { 4083.500  4122.250 }  { 4041.600  4079.750 }  { 4128.500  4161.000 }  air  ang  0
+DAPABI 23  HGammaA    { 4319.750  4363.500 }  { 4283.500  4319.750 }  { 4367.250  4419.750 }  air  ang  0
+DAPABI 24  HDeltaF    { 4091.000  4112.250 }  { 4057.250  4088.500 }  { 4114.750  4137.250 }  air  ang  0
+DAPABI 25  HGammaF    { 4331.250  4352.250 }  { 4283.500  4319.750 }  { 4354.750  4384.750 }  air  ang  0
+DAPABI 26  CaHK       { 3899.5    4003.5   }  { 3806.5    3833.8   }  { 4020.7    4052.4   }  air  ang  0
+DAPABI 27  CaII1      { 8484.0    8513.0   }  { 8474.0    8484.0   }  { 8563.0    8577.0   }  air  ang  1
+DAPABI 28  CaII2      { 8522.0    8562.0   }  { 8474.0    8484.0   }  { 8563.0    8577.0   }  air  ang  1
+DAPABI 29  CaII3      { 8642.0    8682.0   }  { 8619.0    8642.0   }  { 8700.0    8725.0   }  air  ang  1
+DAPABI 30  Pa17       { 8461.0    8474.0   }  { 8474.0    8484.0   }  { 8563.0    8577.0   }  air  ang  1
+DAPABI 31  Pa14       { 8577.0    8619.0   }  { 8563.0    8577.0   }  { 8619.0    8642.0   }  air  ang  1
+DAPABI 32  Pa12       { 8730.0    8772.0   }  { 8700.0    8725.0   }  { 8776.0    8792.0   }  air  ang  1
+DAPABI 33  MgICvD     { 5165.0    5220.0   }  { 5125.0    5165.0   }  { 5220.0    5260.0   }  vac  ang  0
+DAPABI 34  NaICvD     { 8177.0    8205.0   }  { 8170.0    8177.0   }  { 8205.0    8215.0   }  vac  ang  0
+DAPABI 35  MgIIR      { 8801.9    8816.9   }  { 8777.4    8789.4   }  { 8847.4    8857.4   }  vac  ang  0
+DAPABI 36  FeHCvD     { 9905.0    9935.0   }  { 9855.0    9880.0   }  { 9940.0    9970.0   }  vac  ang  0
+DAPABI 37  NaI        { 8168.500  8234.125 }  { 8150.000  8168.400 }  { 8235.250  8250.000 }  air  ang  0
+DAPABI 38  bTiO       { 4758.500  4800.000 }  { 4742.750  4756.500 }  { 4827.875  4847.875 }  air  mag  0
+DAPABI 39  aTiO       { 5445.000  5600.000 }  { 5420.000  5442.000 }  { 5630.000  5655.000 }  air  mag  0
+DAPABI 40  CaH1       { 6357.500  6401.750 }  { 6342.125  6356.500 }  { 6408.500  6429.750 }  air  mag  0
+DAPABI 41  CaH2       { 6775.000  6900.000 }  { 6510.000  6539.250 }  { 7017.000  7064.000 }  air  mag  0
+DAPABI 42  NaISDSS    { 8180.0    8200.0   }  { 8143.0    8153.0   }  { 8233.0    8244.0   }  air  ang  0
+DAPABI 43  TiO2SDSS   { 6189.625  6272.125 }  { 6066.625  6141.625 }  { 6422.0    6455.0   }  air  mag  0
+
