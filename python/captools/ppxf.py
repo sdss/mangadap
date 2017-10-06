@@ -139,8 +139,8 @@
 #     - VELSCALE is *defined* in pPXF by VELSCALE = c*Delta[np.log(lambda)],
 #       which is approximately VELSCALE ~ c*Delta(lambda)/lambda.
 #       See Section 2.3 of Cappellari (2017) for details.
-#   START: Vector, or list of vectors, with the initial estimate for the LOSVD
-#       parameters.
+#   START: Vector, or list/array of vectors, with the initial estimate for the
+#       LOSVD parameters.
 #     - When LOSVD parameters are not held fixed, each vector only needs to
 #       contain START = [velStart, sigmaStart] the initial guess for the
 #       velocity and the velocity dispersion in km/s. The starting values for
@@ -823,6 +823,18 @@
 #           `gas_component` and `gas_names` keywords. MC, Oxford, 27 June 2017
 #   V6.6.1: Included note on .gas_flux output units. Thanks to Xihan Ji
 #           (Tsinghua University) for the feedback. MC, Oxford, 4 August 2017
+#   V6.6.2: Fixed program stop with a 2-dim templates array and regularization.
+#           Thanks to Adriano Poci (Macquarie University) for the clear report
+#           and the fix. MC, Oxford, 15 September 2017
+#   V6.6.3: Reduced bounds on multiplicative polynomials and clipped to positive
+#           values. Thanks to Xihan Ji (Tsinghua University) for providing an
+#           example of slightly negative gas emission lines, when the spectrum
+#           contains essentially just noise.
+#         - Improved visualization of masked pixels.
+#           MC, Oxford, 25 September 2017
+#   V6.6.4: Check for NaN in `galaxy` and check all `bounds` have two elements.
+#           Allow `start` to be either a list or an array or vectors.
+#           MC, Oxford, 5 October 2017
 #
 ################################################################################
 
@@ -833,6 +845,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
+# import capfit
 from . import capfit
 
 ################################################################################
@@ -845,7 +858,7 @@ def trigvander(x, deg):
     `deg` must be an even integer
 
     """
-    u = np.pi*x[:, None]   # [-pi, pi] inter val
+    u = np.pi*x[:, None]   # [-pi, pi] interval
     j = np.arange(1, deg//2 + 1)
     mat = np.ones((x.size, deg + 1))
     mat[:, 1:] = np.hstack([np.cos(j*u), np.sin(j*u)])
@@ -999,7 +1012,7 @@ def _regularization(a, npoly, npix, nspec, reg_dim, reg_ord, regul):
     if reg_ord == 1:   # Minimize integral of (Grad[w] @ Grad[w])
         diff = np.array([1, -1])*regul
         if reg_dim.size == 1:
-            for j in range(reg_dim - 1):
+            for j in range(reg_dim[0] - 1):
                 b[p, j : j + 2] = diff
                 p += 1
         elif reg_dim.size == 2:
@@ -1027,7 +1040,7 @@ def _regularization(a, npoly, npix, nspec, reg_dim, reg_ord, regul):
     elif reg_ord == 2:   # Minimize integral of Laplacian[w]**2
         diff = np.array([1, -2, 1])*regul
         if reg_dim.size == 1:
-            for j in range(1, reg_dim - 1):
+            for j in range(1, reg_dim[0] - 1):
                 b[p, j - 1 : j + 2] = diff
                 p += 1
         elif reg_dim.size == 2:
@@ -1198,6 +1211,8 @@ class ppxf(object):
                 self.noise = self.noise.T.reshape(-1)
                 self.galaxy = self.galaxy.T.reshape(-1)
 
+        assert np.all(np.isfinite(galaxy)), 'GALAXY must be finite'
+
         assert self.npix_temp >= galaxy.shape[0], \
             "TEMPLATES length cannot be smaller than GALAXY"
 
@@ -1235,8 +1250,8 @@ class ppxf(object):
         if self.ncomp == 1:
             start1 = [start]
         else:
-            assert isinstance(start, list), \
-                "START must be a list of vectors [start1, start2,...]"
+            assert hasattr(start, "__len__"), \
+                "START must be a list/array of vectors [start1, start2,...]"
             assert len(start) == self.ncomp, \
                 "There must be one START per COMPONENT"
             start1 = list(start)  # Make a copy in both Python 2 and 3
@@ -1251,6 +1266,9 @@ class ppxf(object):
                 bounds = [bounds]
             assert list(map(len, bounds)) == list(map(len, start1)), \
                 "BOUNDS and START must have the same shape"
+            assert np.all([hasattr(c, "__len__") and len(c) == 2
+                           for a in bounds for c in a]), \
+                "All BOUNDS must have two elements [lb, ub]"
 
         if fixed is not None:
             if self.ncomp == 1:
@@ -1352,8 +1370,7 @@ class ppxf(object):
 
         if self.mdegree > 0:
             for j in range(ngh, npars):
-#                bounds[j] = [-1., 1.]  # Force <100% corrections
-                bounds[j] = [-0.5, 0.5] # Force <50% corrections
+                bounds[j] = [-0.5, 0.5]  # Force <50% corrections
         elif self.reddening is not None:
             start[ngh] = self.reddening
             bounds[ngh] = [0., 10.]  # Force positive E(B-V) < 10 mag
@@ -1429,9 +1446,9 @@ class ppxf(object):
             if nspec == 2:  # Different multiplicative poly for left/right spectra
                 mpoly1 = self.polyval(x, np.append(1.0, pars[ngh :: 2]))
                 mpoly2 = self.polyval(x, np.append(1.0, pars[ngh + 1 :: 2]))
-                mpoly = np.append(mpoly1, mpoly2)
+                mpoly = np.append(mpoly1, mpoly2).clip(0.1)
             else:
-                mpoly = self.polyval(x, np.append(1.0, pars[ngh:]))
+                mpoly = self.polyval(x, np.append(1.0, pars[ngh:])).clip(0.1)
         else:
             mpoly = 1.0
 
@@ -1589,16 +1606,14 @@ class ppxf(object):
         plt.plot(x, self.galaxy, 'k')
         plt.plot(x[self.goodpixels], resid[self.goodpixels], 'd',
                  color='LimeGreen', mec='LimeGreen', ms=4)
+
         w = np.flatnonzero(np.diff(self.goodpixels) > 1)
-        if w.size > 0:
-            for wj in w:
-                j = slice(self.goodpixels[wj], self.goodpixels[wj+1] + 1)
-                plt.plot(x[j], resid[j], 'b')
-            w = np.hstack([0, w, w + 1, -1])  # Add first and last point
-        else:
-            w = [0, -1]
-        for gj in self.goodpixels[w]:
+        ww = np.hstack([0, w, w + 1, -1]) if w.size > 0 else [0, -1]
+        for gj in self.goodpixels[ww]:
             plt.plot(x[[gj, gj]], [mn, self.bestfit[gj]], 'LimeGreen')
+        for wj in w:
+            j = slice(self.goodpixels[wj], self.goodpixels[wj+1] + 1)
+            plt.plot(x[j], resid[j], 'b')
 
         if self.gas_component is None:
             plt.plot(x, self.bestfit, 'r', linewidth=2)
