@@ -78,6 +78,7 @@ moments.
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
+    | **06 Oct 2017**: (KBW) Add function to return channel names.
 
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
@@ -220,4 +221,13 @@ class EmissionMomentsDB(ParDatabase):
         if len(numpy.unique(self.data['index'])) != self.neml:
             raise ValueError('Indices in {0} database are not all unique!'.format(
                                                                             self.database['key']))
+
+
+    def channel_names(self):
+        channels = {}
+        for i in range(self.neml):
+            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i]))] = i
+        return channels
+
+
 

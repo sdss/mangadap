@@ -7,7 +7,7 @@ This is a post processing script that **must** be run after the DRPall
 file is created.
 
 *License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
+    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
 *Source location*:
@@ -213,9 +213,6 @@ class DAPall:
         self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
         self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
-#        self.dap_common_path = defaults.default_dap_common_path(drpver=self.drpver,
-#                                            dapver=self.dapver, analysis_path=self.analysis_path) \
-#                             if dap_common_path is None else str(dap_common_path)
 
         # Set the name of the DRPall file
         self.drpall_file = os.path.join(self.redux_path, 'drpall-{0}.fits'.format(self.drpver))
@@ -235,8 +232,12 @@ class DAPall:
 
         # Declare the other attributes for use later on
         self.nmom = None
+        self.elmom_channels = None
         self.neml = None
+        self.elfit_channels = None
         self.nindx = None
+        self.spindx_channels = None
+        self.spindx_units = None
         self.hdu = None
         self.ndap = None
         self.plate = None
@@ -277,38 +278,41 @@ class DAPall:
 
 
     @staticmethod
-    def _number_of_emission_line_moments(key, dapsrc=None, dbkey=True):
+    def _emission_line_moment_db_info(key, dapsrc=None):
         if key == 'None':
-            return (0, 'None') if dbkey else 0
+            return 'None', None
         db = select_proc_method(key, EmissionLineMomentsDef,
                                 available_func=available_emission_line_moment_databases,
                                 dapsrc=dapsrc)
-        return (EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).nsets, db['passbands']) \
-                    if dbkey else EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).nsets
+        return db['passbands'], EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).channel_names()
 
 
     @staticmethod
-    def _number_of_emission_lines(key, dapsrc=None, dbkey=True):
+    def _emission_line_db_info(key, dapsrc=None):
         if key == 'None':
-            return (0, 'None') if dbkey else 0
+            return 'None', None
         db = select_proc_method(key, EmissionLineModelDef,
                                 available_func=available_emission_line_modeling_methods,
                                 dapsrc=dapsrc)
-        return (EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets, db['emission_lines']) \
-                    if dbkey else EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).nsets
+        return db['emission_lines'], \
+                    EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).channel_names()
 
 
     @staticmethod
-    def _number_of_spectral_indices(key, dapsrc=None, dbkey=True):
+    def _spectral_index_db_info(key, dapsrc=None):
         if key == 'None':
-            return (0, 'None') if dbkey else 0
+            return 0, 'None', 'None', None
         db = select_proc_method(key, SpectralIndicesDef,
                                 available_func=available_spectral_index_databases, dapsrc=dapsrc)
-        nabs = 0 if db['absindex'] is None \
-                    else AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc).nsets
-        nbhd = 0 if db['bandhead'] is None \
-                    else BandheadIndexDB(db['bandhead'], dapsrc=dapsrc).nsets
-        return (nabs+nbhd, db['absindex'], db['bandhead']) if dbkey else nabs+nbhd
+        absdb = AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc)
+        bhddb = BandheadIndexDB(db['bandhead'], dapsrc=dapsrc)
+        nindx = absdb.nindx + bhddb.nindx
+        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.nindx)
+        channels = absdb.channel_names()
+        channels.update(bhddb.channel_names())
+        if len(channels) != nindx:
+            raise ValueError('Spectral index channel names not unique!')
+        return db['absindex'], db['bandhead'], channels, units
 
 
     def _read(self):
@@ -529,45 +533,24 @@ class DAPall:
         DAPall file.
         """
         # Construct the file names
-#        methods, plates, ifudesigns = self._combine_plateifu_methods(plt, ifu)
         return numpy.array( ['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
                                 self.analysis_path, m, p, i) 
                                     for m,p,i in zip(methodlist, platelist, ifulist) ])
 
-
-    def _add_emission_line_moment_channels(self, key, hdr):
-        elmomdb = EmissionMomentsDB(key, dapsrc=self.dapsrc)
-        ndig = int(numpy.log10(elmomdb.neml))+1
-        for i in range(elmomdb.neml):
-            hdr['ELS{0}'.format(i+1).zfill(ndig)] = ('{0}-{1}'.format(elmomdb['name'][i],
-                                                                      elmomdb['restwave'][i]),
-                                                     'Summed emission-line element')
-        return hdr
-
-
-    def _add_emission_line_fit_channels(self, key, hdr):
-        elfitdb = EmissionLineDB(key, dapsrc=self.dapsrc)
-        ndig = int(numpy.log10(elfitdb.neml))+1
-        for i in range(elfitdb.neml):
-            hdr['ELG{0}'.format(i+1).zfill(ndig)] = ('{0}-{1}'.format(elfitdb['name'][i],
-                                                                      elfitdb['restwave'][i]),
-                                                     'Gaussian fit emission-line element')
-        return hdr
-
-
-    def _add_spectral_index_channels(self, abskey, bhdkey, hdr):
-        absdb = AbsorptionIndexDB(abskey, dapsrc=self.dapsrc)
-        bhddb = BandheadIndexDB(bhdkey, dapsrc=self.dapsrc)
-        nindx = absdb.nsets + bhddb.nsets
-        ndig = int(numpy.log10(nindx))+1
-        for i in range(absdb.nsets):
-            hdr['SPI{0}'.format(i+1).zfill(ndig)] = (absdb['name'][i], 'Spectral-index element')
-            hdr['SPIU{0}'.format(i+1).zfill(ndig)] = (absdb['units'][i],
-                                                      'Spectral-index element unit')
-        for i in range(absdb.nsets,nindx):
-            hdr['SPI{0}'.format(i+1).zfill(ndig)] = (bhddb['name'][i-absdb.nsets],
-                                                     'Spectral-index element')
-            hdr['SPI{0}'.format(i+1).zfill(ndig)] = ('', 'Spectral-index element unit')
+    
+    def _add_channels_to_header(self, hdr, channels, prefix, comment, units=None):
+        """
+        units is supposed to be a list or numpy array
+        """
+        ch = numpy.array(list(channels.values())).astype(int)
+        srt = numpy.argsort(ch)
+        ch = ch[srt]
+        keys = numpy.array(list(channels.keys()))[srt]
+        ndig = int(numpy.log10(ch[-1]))+1
+        for c,k in zip(ch,keys):
+            hdr[prefix+'{0}'.format(c+1).zfill(ndig)] = (k, comment)
+            if units is not None:
+                hdr[prefix+'U{0}'.format(c+1).zfill(ndig)] = (units[c], comment+' unit')
         return hdr
 
 
@@ -600,12 +583,7 @@ class DAPall:
         if len(indx) == 0:
             warnings.warn('No ring had larger than 90% coverage!')
             return 0.
-#        print(binr)
-#        print(coverage)
-#        print(indx)
-#        print(coverage[indx[-1]:])
         interp = interpolate.interp1d(coverage[indx[-1]:], binr[indx[-1]:])
-#        print(interp(coverage_limit))
         return interp(coverage_limit)
 
 
@@ -684,7 +662,7 @@ class DAPall:
 
         # Get the flux-weighted mean velocity at the center
         wsum = numpy.ma.sum(bin_flux[center])
-        stellar_z = -999.0 if numpy.isclose(wsum, 0.) \
+        stellar_z = -999. if numpy.all(bin_flux.mask[center]) or numpy.isclose(wsum, 0.) \
                                 else numpy.ma.sum(bin_flux[center]*z[center])/wsum
 
         # Get the growth ranges of the stellar velocity
@@ -695,12 +673,14 @@ class DAPall:
         # Get the flux-weighted, corrected sigma within 1 Re
         within_1re = r_re < 1.
         wsum = numpy.ma.sum(bin_flux[within_1re])
-        stellar_sigma2_1re = -999. if numpy.isclose(wsum, 0.) \
+        stellar_sigma2_1re = -999. if numpy.all(bin_flux.mask[within_1re]) \
+                                            or numpy.isclose(wsum, 0.) \
                                 else numpy.ma.sum(bin_flux[within_1re]*ssig2corr[within_1re])/wsum
         stellar_sigma_1re = numpy.sqrt(stellar_sigma2_1re) if stellar_sigma2_1re > 0 else -999.
 
         # Get the median reduced chi-square
-        stellar_cont_rchi2_1re = numpy.ma.median(scchi[within_1re])
+        stellar_cont_rchi2_1re = -999. if numpy.sum(within_1re) == 0 \
+                                        else numpy.median(scchi[within_1re])
 
         return stellar_z, stellar_vel_lo, stellar_vel_hi, \
                         stellar_vel_lo_clip, stellar_vel_hi_clip, stellar_sigma_1re, \
@@ -757,8 +737,8 @@ class DAPall:
 
         # Get the flux-weighted mean velocity at the center
         wsum = numpy.ma.sum(flux[center])
-        halpha_z = -999.0 if numpy.isclose(wsum, 0.) \
-                                else numpy.ma.sum(flux[center]*z[center])/wsum
+        halpha_z = -999. if numpy.all(flux.mask[center]) or numpy.isclose(wsum, 0.) \
+                            else numpy.ma.sum(flux[center]*z[center])/wsum
 
         # Get the growth ranges of the H-alpha velocity
         halpha_gvel_lo, halpha_gvel_hi = sample_growth(vel.compressed(), [0.025,0.975])
@@ -768,7 +748,7 @@ class DAPall:
         # Get the flux-weighted, corrected sigma within 1 Re
         within_1re = r_re < 1.
         wsum = numpy.ma.sum(flux[within_1re])
-        halpha_gsigma2_1re = -999. if numpy.isclose(wsum, 0.) \
+        halpha_gsigma2_1re = -999. if numpy.all(flux.mask[within_1re]) or numpy.isclose(wsum, 0.) \
                                 else numpy.ma.sum(flux[within_1re]*sig2corr[within_1re])/wsum
         halpha_gsigma_1re = numpy.sqrt(halpha_gsigma2_1re) if halpha_gsigma2_1re > 0 else -999.
 
@@ -806,28 +786,36 @@ class DAPall:
                                   mask=self.maps_bm.flagged(dapmaps[ew_ext+'_MASK'].data,
                                                     'DONOTUSE')).reshape(neml,-1)[:,unique_indx]
 
-        # Get the bins within an on-sky circular aperture of 2.5 arcsec
+        # Get the total flux at the center
         cooext = 'SPX_SKYCOO' if spx_coo else 'BIN_LWSKYCOO'
         d2 = numpy.sum(numpy.square(dapmaps[cooext].data), axis=0).ravel()[unique_indx]
         center = d2 < 1.25*1.25
         if numpy.sum(center) == 0:
-            raise ValueError('No data near center')
+            warnings.warn('No data near center!')
+            emline_flux_cen = numpy.full(neml, -999., dtype=numpy.float)
+        else:
+            emline_flux_cen = numpy.ma.sum(flux[:,center], axis=1).filled(-999.)
+            
+        # Get the total flux, mean surface-brightness, and mean
+        # equivalent width within 1 Re
         within_1re = r_re < 1.
         if numpy.sum(within_1re) == 0:
-            raise ValueError('No data within 1 Re')
+            warnings.warn('No data within 1 Re!')
+            emline_flux_1re = numpy.full(neml, -999., dtype=numpy.float)
+            emline_sb_1re = numpy.full(neml, -999., dtype=numpy.float)
+            emline_ew_1re = numpy.full(neml, -999., dtype=numpy.float)
+        else:
+            emline_flux_1re = numpy.ma.sum(flux[:,within_1re], axis=1).filled(-999.)
+            emline_sb_1re = numpy.ma.mean(flux[:,within_1re], axis=1).filled(-999.)
+            emline_ew_1re = numpy.ma.mean(ew[:,within_1re], axis=1).filled(-999.)
 
-        # Get the total flux within a set of apertures
-        emline_flux_cen = numpy.ma.sum(flux[:,center], axis=1)
-        emline_flux_1re = numpy.ma.sum(flux[:,within_1re], axis=1)
-        emline_flux_tot = numpy.ma.sum(flux, axis=1)
+        # Get the total flux within the full field-of-fiew
+        emline_flux_tot = numpy.ma.sum(flux, axis=1).filled(-999.)
 
-        # Get the mean surface-brightness within 1 Re and the peak SB
-        emline_sb_1re = numpy.ma.mean(flux[:,within_1re], axis=1)
-        emline_sb_peak = numpy.ma.amax(flux, axis=1)
-
-        # Get the mean equivalent width within 1 Re and the peak EW
-        emline_ew_1re = numpy.ma.mean(ew[:,within_1re], axis=1)
-        emline_ew_peak = numpy.ma.amax(ew, axis=1)
+        # Get the peak surface-brightness and equivalent width within
+        # the full field-of-fiew
+        emline_sb_peak = numpy.ma.amax(flux, axis=1).filled(-999.)
+        emline_ew_peak = numpy.ma.amax(ew, axis=1).filled(-999.)
 
         return emline_flux_cen, emline_flux_1re, emline_flux_tot, emline_sb_1re, \
                         emline_sb_peak, emline_ew_1re, emline_ew_peak
@@ -876,7 +864,7 @@ class DAPall:
                         = sample_growth(sigma_clip(specindex_corr[i,:]).compressed(), [0.025,0.975])
 
         # Get the median within 1 Re
-        specindex_1re = numpy.ma.median(specindex[:,r_re < 1.], axis=1)
+        specindex_1re = numpy.ma.median(specindex[:,r_re < 1.], axis=1).filled(-999.)
 
         return specindex_lo, specindex_hi, specindex_lo_clip, specindex_hi_clip, specindex_1re
 
@@ -947,53 +935,48 @@ class DAPall:
                 if p in self.methods:
                     use_plans[i] = True
 
-        # TODO: Counting the number of emission lines and indices may
-        # need to allow for a function that does not use, e.g., an
-        # EmissionLineDB object.  Set these numbers/names using a dummy
-        # maps file for each plan?
-
         # Check that all the plans to use have the same emission-line
-        # bandpass database, ...
-        self.nmom, elmom_keys = numpy.array([
-                                    DAPall._number_of_emission_line_moments(p['elmom_key'],
-                                                                            dapsrc=self.dapsrc,
-                                                                            dbkey=True)
-                                                for p in plan[use_plans] ], dtype=object).T
-        # TODO: If one passes, both should pass
-        if numpy.any([ k != elmom_keys[0] for k in elmom_keys]):
-            raise ValueError('All plans must use the same emission-line bandpass database.')
-        if numpy.any(numpy.diff(self.nmom) != 0):
-            raise ValueError('All plans must have the same number of emission-line bandpasses.')
-        self.nmom = self.nmom[0]
+        # bandpass channels, ...
+        elmom_keys, elmom_channels \
+                    = numpy.array([ DAPall._emission_line_moment_db_info(p['elmom_key'],
+                                                                         dapsrc=self.dapsrc)
+                                        for p in plan[use_plans] ], dtype=object).T
+        if numpy.any([ len(k) != len(elmom_channels[0]) or len(set(k)-set(elmom_channels[0])) > 0
+                        for k in elmom_channels]):
+            raise ValueError('All plans must provide the same emission-line bandpass channels.')
+        self.elmom_channels = elmom_channels[0].copy()
+        del elmom_channels
+        self.nmom = len(self.elmom_channels)
 
-        # ..., emission-line fit database, and ...
-        self.neml, elfit_keys = numpy.array([ DAPall._number_of_emission_lines(p['elfit_key'],
-                                                                               dapsrc=self.dapsrc,
-                                                                               dbkey=True)
-                                                for p in plan[use_plans] ], dtype=object).T
-        if numpy.any([ k != elfit_keys[0] for k in elfit_keys]):
-            raise ValueError('All plans must use the same emission-line fitting database.')
-        if numpy.any(numpy.diff(self.neml) != 0):
-            raise ValueError('All plans must have the same number of fitted emission lines.')
-        self.neml = self.neml[0]
-        # ..., and spectral-index databases.
-        self.nindx, abs_keys, bhd_keys = numpy.array([ 
-                                            DAPall._number_of_spectral_indices(p['spindex_key'],
-                                                                               dapsrc=self.dapsrc,
-                                                                               dbkey=True)
-                                                    for p in plan[use_plans] ], dtype=object).T
-        if numpy.any([ k != abs_keys[0] for k in abs_keys]):
-            raise ValueError('All plans must use the same absorption-line index database.')
-        if numpy.any([ k != bhd_keys[0] for k in bhd_keys]):
-            raise ValueError('All plans must use the same bandhead index database.')
-        if numpy.any(numpy.diff(self.nindx) != 0):
-            raise ValueError('All plans must have the same number of spectral indices.')
-        self.nindx = self.nindx[0]
+        # ..., emission-line fit channels, and...
+        elfit_keys, elfit_channels \
+                    = numpy.array([ DAPall._emission_line_db_info(p['elfit_key'],
+                                                                  dapsrc=self.dapsrc)
+                                        for p in plan[use_plans] ], dtype=object).T
+        if numpy.any([ len(k) != len(elfit_channels[0]) or len(set(k)-set(elfit_channels[0])) > 0
+                        for k in elfit_channels]):
+            raise ValueError('All plans must provide the same emission-line fit channels.')
+        self.elfit_channels = elfit_channels[0].copy()
+        del elfit_channels
+        self.neml = len(self.elfit_channels)
+
+        # ..., and spectral-index channels
+        abs_keys, bhd_keys, spindx_channels, spindx_units \
+                    = numpy.array([ DAPall._spectral_index_db_info(p['spindex_key'],
+                                                                   dapsrc=self.dapsrc)
+                                        for p in plan[use_plans] ], dtype=object).T
+        if numpy.any([ len(k) != len(spindx_channels[0]) or len(set(k)-set(spindx_channels[0])) > 0
+                        for k in spindx_channels]):
+            raise ValueError('All plans must provide the same emission-line fit channels.')
+        self.spindx_channels = spindx_channels[0].copy()
+        self.spindx_units = spindx_units[0].copy()
+        del spindx_channels, spindx_units
+        self.nindx = len(self.spindx_channels)
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'RUNNING DAPALL UPDATE')
+            log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('RUNNING DAPALL UPDATE'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Available methods: {0}'.format(plan_methods))
             log_output(self.loggers, 1, logging.INFO,
@@ -1009,13 +992,14 @@ class DAPall:
         self.plate, self.ifudesign = self._get_completed_observations()
         methodlist, platelist, ifulist = self._combine_plateifu_methods(self.plate, self.ifudesign)
         dapfiles = self._construct_maps_file_list(methodlist, platelist, ifulist)
+        self.ndap = len(dapfiles)
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Completed observations: {0}'.format(len(self.plate)))
             log_output(self.loggers, 1, logging.INFO,
-                       'Total number of expected DAP MAPS files: {0}'.format(len(dapfiles)))
+                       'Total number of expected DAP MAPS files: {0}'.format(self.ndap))
 
 #        # If the table already exists and not clobbering, remove any
 #        # successfully completed files from the list
@@ -1036,22 +1020,16 @@ class DAPall:
         if self.hdu is not None:
             self.hdu.close()
             self.hdu = None
-            self.ndap = None
 
         # Open the DRPall file
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
-                       'Reading DRPall: {0}'.format(len(self.drpall_file)))
+                       'Reading DRPall: {0}'.format(self.drpall_file))
         hdu_drpall = fits.open(self.drpall_file)
         drpall = hdu_drpall[1].data
 
         # Initialize the output database
-        self.ndap = len(dapfiles)
-#        max_nmom = numpy.amax(self.nmom)
-#        max_neml = numpy.amax(self.neml)
-#        max_nindx = numpy.amax(self.nindx)
         db = init_record_array(self.ndap, self._table_dtype(self.nmom, self.neml, self.nindx))
-#        print(max_neml, max_nindx)
 
         # Add the basic information
         db['PLATE'] = platelist
@@ -1072,9 +1050,10 @@ class DAPall:
         columns_from_maps_hdr = [ 'VERSDAP', 'DAPQUAL', 'RDXQAKEY', 'BINKEY', 'SCKEY', 'ELMKEY',
                                   'ELFKEY', 'SIKEY', 'BINTYPE' ]
 
-        # Go through each file
-        for i, f in enumerate(dapfiles):
-            print('Processing {0}/{1}'.format(i+1,self.ndap))#, end='\r')
+        # Itereate through each maps file
+        for i in range(self.ndap):
+            print('Processing {0}/{1}'.format(i+1,self.ndap), end='\r')
+
             # Find the index in the drpall file
             indx = numpy.where(drpall['PLATEIFU'] == db['PLATEIFU'][i])[0]
             if len(indx) > 1:
@@ -1089,20 +1068,18 @@ class DAPall:
                 for c in columns_from_drpall:
                     db[c][i] = drpall[c][db['DRPALLINDX'][i]]
 
-#            print('nsa distances')
             # Set the cosmological distances based on the NSA redshift
             db['LDIST_NSA_Z'][i] = self.cosmo.luminosity_distance(db['NSA_Z'][i]).value
             db['ADIST_NSA_Z'][i] = self.cosmo.angular_diameter_distance(db['NSA_Z'][i]).value
 
             # Open the maps file
-            if not os.path.isfile(f):
+            if not os.path.isfile(dapfiles[i]):
                 db['DAPDONE'][i] = 0    # A fault occurred such that the MAPS file was not produced
                 continue
             db['DAPDONE'][i] = 1        # DAP successfully produced the file
-            dapmaps = fits.open(f)
+            dapmaps = fits.open(dapfiles[i])
 
             # Add information from the DAP MAPS file header
-#            print('copy from header')
             for c in columns_from_maps_hdr:
                 db[c][i] = dapmaps['PRIMARY'].header[c]
 
@@ -1118,7 +1095,8 @@ class DAPall:
             try:
                 db['DATEDAP'][i] = dapmaps['PRIMARY'].header['DATEDAP']
             except:
-                db['DATEDAP'][i] = time.strftime('%Y-%m-%d',time.localtime(os.path.getmtime(f)))
+                db['DATEDAP'][i] = time.strftime('%Y-%m-%d',
+                                                 time.localtime(os.path.getmtime(dapfiles[i])))
 
             # TODO: Add any checks that the DRPall data matches the
             # header data in the MAPS files?
@@ -1129,41 +1107,12 @@ class DAPall:
 
             # Set input redshift and cosmological distances based on
             # this redshift
-#            print('input distances')
             db['Z'][i] = dapmaps['PRIMARY'].header['SCINPVEL']/astropy.constants.c.to('km/s').value
             db['LDIST_Z'][i] = self.cosmo.luminosity_distance(db['Z'][i]).value
             db['ADIST_Z'][i] = self.cosmo.angular_diameter_distance(db['Z'][i]).value
 
-#            # Get the dictionary with the channel names
-#            emlmom = channel_dictionary(dapmaps, 'EMLINE_SFLUX')
-#            nmom = len(emlmom)
-#            emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
-#            neml = len(emline)
-#            specindex_names = channel_dictionary(dapmaps, 'SPECINDEX')
-#            specindex_units = channel_units(dapmaps, 'SPECINDEX')
-#            nindx = len(specindex_names)
-
-            # Set the channel names and units to the table; the sorting is
-            # required to make sure the names are put in the correct
-            # order.
-#            print('names')
-#            srt = numpy.argsort(list(emlmom.values()))
-#            db['EMLMOM_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLMOM_NAME'])
-#                                                for n in numpy.array(list(emlmom.keys()))[srt] ])
-#            srt = numpy.argsort(list(emline.values()))
-#            db['EMLINE_NAME'][i] = ''.join([ '{0}'.format(n).rjust(self.str_len['EMLINE_NAME'])
-#                                                for n in numpy.array(list(emline.keys()))[srt] ])
-#            srt = numpy.argsort(list(specindex_names.values()))
-#            db['SPECINDEX_NAME'][i] \
-#                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_NAME'])
-#                                        for n in numpy.array(list(specindex_names.keys()))[srt] ])
-#            db['SPECINDEX_UNIT'][i] \
-#                                = ''.join([ '{0}'.format(n).rjust(self.str_len['SPECINDEX_UNIT'])
-#                                            for n in specindex_units ])
-
             # Determine the coverage of the datacube (independent of the
             # DAP method)
-#            print('rcov90')
             r = numpy.ma.MaskedArray(dapmaps['SPX_ELLCOO'].data.copy()[0,:,:], mask=basic_map_mask)
             db['RCOV90'][i] = self._radial_coverage_metric(r.compressed(),
                                                            1-db['NSA_ELPETRO_BA'][i])
@@ -1178,19 +1127,18 @@ class DAPall:
             # stellar-continuum fitting (independent of the DAP method)
             mflux = numpy.ma.MaskedArray(dapmaps['SPX_MFLUX'].data.copy(),
                                          mask=numpy.invert(dapmaps['SPX_SNR'].data > 0))
-#            print('sb_1re')
             within_1re = r_re < 1
             if numpy.sum(within_1re) == 0:
-                raise ValueError('No data within 1 Re')
-            db['SB_1RE'][i] = numpy.ma.mean(mflux[within_1re])
+                warnings.warn('No data within 1 Re!')
+                db['SB_1RE'][i] = -999.
+            else:
+                db['SB_1RE'][i] = numpy.ma.mean(mflux[within_1re])
 
             # Get the spatial binning metrics
-#            print('binning')
             db['BIN_RMAX'][i], db['BIN_R_N'][i], db['BIN_R_SNR'][i] \
                             = self._binning_metrics(dapmaps)
 
             # Get the metrics for the stellar kinematics
-#            print('stellar')
             db['STELLAR_Z'][i], db['STELLAR_VEL_LO'][i], db['STELLAR_VEL_HI'][i], \
                     db['STELLAR_VEL_LO_CLIP'][i], db['STELLAR_VEL_HI_CLIP'][i], \
                     db['STELLAR_SIGMA_1RE'][i], db['STELLAR_CONT_RCHI2_1RE'][i] \
@@ -1200,7 +1148,6 @@ class DAPall:
             # TODO: Check for hybrid binning method, then use
             # spx_coo=True if emission lines measured on individual
             # spaxels
-#            print('halpha')
             db['HA_Z'][i], db['HA_GVEL_LO'][i], db['HA_GVEL_HI'][i], db['HA_GVEL_LO_CLIP'][i], \
                     db['HA_GVEL_HI_CLIP'][i], db['HA_GSIGMA_1RE'][i], db['HA_GSIGMA_HI'][i], \
                     db['HA_GSIGMA_HI_CLIP'][i] = self._halpha_kinematics_metrics(dapmaps,
@@ -1210,7 +1157,6 @@ class DAPall:
             # TODO: Check for hybrid binning method, then use
             # spx_coo=True if emission lines measured on individual
             # spaxels
-#            print('emline')
             db['EMLINE_SFLUX_CEN'][i], db['EMLINE_SFLUX_1RE'][i], db['EMLINE_SFLUX_TOT'][i], \
                     db['EMLINE_SSB_1RE'][i], db['EMLINE_SSB_PEAK'][i], db['EMLINE_SEW_1RE'][i], \
                     db['EMLINE_SEW_PEAK'][i] = self._emission_line_metrics(dapmaps, moment0=True)
@@ -1219,27 +1165,24 @@ class DAPall:
             # TODO: Check for hybrid binning method, then use
             # spx_coo=True if emission lines measured on individual
             # spaxels
-#            print('emline')
             db['EMLINE_GFLUX_CEN'][i], db['EMLINE_GFLUX_1RE'][i], db['EMLINE_GFLUX_TOT'][i], \
                     db['EMLINE_GSB_1RE'][i], db['EMLINE_GSB_PEAK'][i], db['EMLINE_GEW_1RE'][i], \
                     db['EMLINE_GEW_PEAK'][i] = self._emission_line_metrics(dapmaps)
 
             # Get the spectral-index metrics
-#            print('specindex')
             db['SPECINDEX_LO'][i], db['SPECINDEX_HI'][i], db['SPECINDEX_LO_CLIP'][i], \
                     db['SPECINDEX_HI_CLIP'][i], db['SPECINDEX_1RE'][i] \
-                            = self._spectral_index_metrics(dapmaps, specindex_units)
+                            = self._spectral_index_metrics(dapmaps, self.spindx_units)
 
             # Estimate the star-formation rate
-#            print('sfr')
             log_Mpc_in_cm = numpy.log10(astropy.constants.pc.to('cm').value) + 6
             log_halpha_luminosity_1re = numpy.log10(4*numpy.pi) \
-                                + numpy.log10(db['EMLINE_GFLUX_1RE'][i,emline['Ha-6564']]) - 17 \
-                                        + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
+                        + numpy.log10(db['EMLINE_GFLUX_1RE'][i,self.elfit_channels['Ha-6564']]) \
+                        - 17 + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
             db['SFR_1RE'][i] = numpy.power(10, log_halpha_luminosity_1re - 41.27)
             log_halpha_luminosity_tot = numpy.log10(4*numpy.pi) \
-                                + numpy.log10(db['EMLINE_GFLUX_TOT'][i,emline['Ha-6564']]) - 17 \
-                                        + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
+                        + numpy.log10(db['EMLINE_GFLUX_TOT'][i,self.elfit_channels['Ha-6564']]) \
+                        - 17 + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
             db['SFR_TOT'][i] = numpy.power(10, log_halpha_luminosity_tot - 41.27)
 
         print('Processing {0}/{0}'.format(self.ndap))
@@ -1251,9 +1194,12 @@ class DAPall:
         hdr['VERSDAP'] = (self.dapver, 'DAP version')
 
         # Add the emission-line moment channel header
-        hdr = self._add_emission_line_moment_channels(elmom_keys[0], hdr)
-        hdr = self._add_emission_line_fit_channels(elfit_keys[0], hdr)
-        hdr = self._add_spectral_index_channels(abs_keys[0], bhd_keys[0], hdr)
+        hdr = self._add_channels_to_header(hdr, self.elmom_channels, 'ELS',
+                                           'Summed emission-line element')
+        hdr = self._add_channels_to_header(hdr, self.elfit_channels, 'ELG',
+                                           'Gaussian fit emission-line element')
+        hdr = self._add_channels_to_header(hdr, self.spindx_channels, 'SPI',
+                                           'Spectral-indx element', units=self.spindx_units)
 
         # Set the fits HDU list
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),

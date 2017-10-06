@@ -1267,6 +1267,7 @@ class EmissionLineMoments:
         self.missing_bins = self._get_missing_bins()
 
 
+    # TODO: Use the EmissionMomentsDB.channel_names function!
     def channel_names(self):
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(self['ELMBAND'].data['NAME'],
