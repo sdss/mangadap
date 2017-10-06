@@ -863,6 +863,9 @@ class Sasuke(EmissionLineFit):
         # and whether it's close to either
         near_bound = near_lower_bound | (_ubound - kin < tol)
 
+        for k,b,l in zip(kin[0], near_bound[0], near_lower_bound[0]):
+            print(k,b,l)
+
         # Return the two boundary flags
         return near_bound, near_lower_bound
 
@@ -1050,18 +1053,17 @@ class Sasuke(EmissionLineFit):
                                                             vel_indx, sig_indx, lbound, ubound)
 
         # Flag the fit *globally*
-        # TODO: These are probably too general; should only flag
-        # on a per line/template basis? particularly for the
-        # dispersion...
-        # - If the velocity dispersion has hit the lower limit, ONLY
-        #   flag the value as having a MIN_SIGMA.
-        indx = numpy.any(near_lower_bound & sig_indx[None,:], axis=1)
+        # - If the velocity dispersion has hit the lower limit for all
+        #   lines, ONLY flag the value as having a MIN_SIGMA.
+        indx = numpy.all(near_lower_bound & sig_indx[None,:], axis=1)
         if numpy.sum(indx) > 0:
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'MIN_SIGMA')
-        # - Otherwise, flag the full fit as NEAR_BOUND, both the
-        #   parameters and the model
-        indx = numpy.any( (near_lower_bound & numpy.invert(sig_indx)[None,:])
+
+        # - Otherwise, flag the full fit (parameters and model) as
+        #   NEAR_BOUND if all the parameters are near the boundary but
+        #   not the lower sigma boundary
+        indx = numpy.all( (near_lower_bound & numpy.invert(sig_indx)[None,:])
                             | (near_bound & numpy.invert(near_lower_bound)), axis=1)
         if numpy.sum(indx) > 0:
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
@@ -1085,7 +1087,6 @@ class Sasuke(EmissionLineFit):
 #                  self.eml_tpli[j], result[i].tplwgt[self.eml_tpli[j]])
 #            pyplot.plot(self.tpl_wave, self.tpl_flux[self.eml_tpli[j],:])
 #            pyplot.show()
-#            exit()
 
             # The "fit index" is the component of the line
             model_eml_par['FIT_INDEX'][:,j] = self.eml_compi[j]
@@ -1107,10 +1108,17 @@ class Sasuke(EmissionLineFit):
             model_eml_par['KINERR'][:,j,:] = model_fit_par['KINERR'][:,indx]
 
             # Get the bound masks specific to this emission-line (set)
+            # - Determine if the velocity dispersion parameter of this
+            #   line has hit the lower limit; if so, ONLY flag the value
+            #   as having a MIN_SIGMA.
             flg = numpy.any(near_lower_bound[:,indx] & sig_indx[None,indx], axis=1)
             if numpy.sum(flg) > 0:
                 model_eml_par['MASK'][flg,j] = self.bitmask.turn_on(model_eml_par['MASK'][flg,j],
                                                                     'MIN_SIGMA')
+
+            # - Determine if any of the kinematic parameters are near
+            #   the bound (excluding the lower velocity dispersion
+            #   limit)
             flg = numpy.any((near_lower_bound[:,indx] & numpy.invert(sig_indx)[None,indx])
                                 | (near_bound[:,indx] & numpy.invert(near_lower_bound[:,indx])),
                             axis=1)
@@ -1387,9 +1395,13 @@ class Sasuke(EmissionLineFit):
 #            print(len(bins_to_fit))
 #            print(numpy.sum(bins_to_fit))
 
+#        print(bins_to_fit.shape)
+#        print(numpy.sum(bins_to_fit))
 #        warnings.warn('DEBUG!!')
 #        k = numpy.argmin(numpy.arange(len(bins_to_fit))[bins_to_fit])
 #        bins_to_fit[k+1:] = False
+#        bins_to_fit[:] = False
+#        bins_to_fit[120] = True
 
         # TODO: For now can only fit two moments
         if par['moments'] != 2:
