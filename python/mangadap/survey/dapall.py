@@ -741,9 +741,15 @@ class DAPall:
                             else numpy.ma.sum(flux[center]*z[center])/wsum
 
         # Get the growth ranges of the H-alpha velocity
-        halpha_gvel_lo, halpha_gvel_hi = sample_growth(vel.compressed(), [0.025,0.975])
-        halpha_gvel_lo_clip, halpha_gvel_hi_clip = sample_growth(sigma_clip(vel).compressed(),
-                                                                 [0.025,0.975])
+        if numpy.all(vel.mask):
+            halpha_gvel_lo = -999.
+            halpha_gvel_hi = -999.
+            halpha_gvel_lo_clip = -999.
+            halpha_gvel_hi_clip = -999.
+        else:
+            halpha_gvel_lo, halpha_gvel_hi = sample_growth(vel.compressed(), [0.025,0.975])
+            halpha_gvel_lo_clip, halpha_gvel_hi_clip = sample_growth(sigma_clip(vel).compressed(),
+                                                                     [0.025,0.975])
 
         # Get the flux-weighted, corrected sigma within 1 Re
         within_1re = r_re < 1.
@@ -753,8 +759,12 @@ class DAPall:
         halpha_gsigma_1re = numpy.sqrt(halpha_gsigma2_1re) if halpha_gsigma2_1re > 0 else -999.
 
         # Get the high-growth of the H-alpha velocity dispersion
-        halpha_gsigma2_hi = sample_growth(sig2corr.compressed(), 0.975)
-        halpha_gsigma2_hi_clip = sample_growth(sigma_clip(sig2corr).compressed(), 0.975)
+        if numpy.all(sig2corr.mask):
+            halpha_gsigma2_hi = -999.
+            halpha_gsigma2_hi_clip = -999.
+        else:
+            halpha_gsigma2_hi = sample_growth(sig2corr.compressed(), 0.975)
+            halpha_gsigma2_hi_clip = sample_growth(sigma_clip(sig2corr).compressed(), 0.975)
 
         halpha_gsigma_hi = numpy.sqrt(halpha_gsigma2_hi) if halpha_gsigma2_hi > 0 else -999.
         halpha_gsigma_hi_clip = numpy.sqrt(halpha_gsigma2_hi_clip) \
@@ -1052,7 +1062,7 @@ class DAPall:
 
         # Itereate through each maps file
         for i in range(self.ndap):
-            print('Processing {0}/{1}'.format(i+1,self.ndap), end='\r')
+            print('Processing {0}/{1}'.format(i+1,self.ndap))#, end='\r')
 
             # Find the index in the drpall file
             indx = numpy.where(drpall['PLATEIFU'] == db['PLATEIFU'][i])[0]
