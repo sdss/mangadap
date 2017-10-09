@@ -2658,6 +2658,11 @@ python/mangadap/config/reduction_assessments/snrr.ini -text
 python/mangadap/config/spatial_binning/all.ini -text
 python/mangadap/config/spatial_binning/hybrid10.ini -text
 python/mangadap/config/spatial_binning/nre.ini -text
+python/mangadap/config/spatial_binning/postall.ini -text
+python/mangadap/config/spatial_binning/posthybrid10.ini -text
+python/mangadap/config/spatial_binning/postnre.ini -text
+python/mangadap/config/spatial_binning/postspx.ini -text
+python/mangadap/config/spatial_binning/postvor10.ini -text
 python/mangadap/config/spatial_binning/spx.ini -text
 python/mangadap/config/spatial_binning/spx_cres.ini -text
 python/mangadap/config/spatial_binning/vor10.ini -text
