@@ -607,7 +607,7 @@ class PPXFFit(StellarKinematicsFit):
                                  ensemble=True, loggers=None, quiet=False):
 
         # TODO: This function can alter obj_flux and obj_ferr !!  Return
-        # them?
+        # them instead?
 
         nobj = obj_flux.shape[0]
         err = numpy.empty(nobj, dtype=object)  # Empty error messages

@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants
 
+from scipy.ndimage import rank_filter
+
 from captools.ppxf import ppxf
 from captools import capfit
 
@@ -116,7 +118,7 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
 
 # Run a single fit+rejection iteration
 def _fit_iteration(templates, flux, noise, velscale, start, moments, component, gas_template,
-                   tpl_to_use=None, reject_boxcar=140, velscale_ratio=None, degree=4, mdegree=0,
+                   tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=4, mdegree=0,
                    tied=None, mask=None, vsyst=0, plot=False, quiet=True):
     """
     mask should be True for the pixels to fit
@@ -153,7 +155,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
 
     for i in range(nspec):
 
-        print('Fitting spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
+        print('Fitting spectrum: {0}/{1}'.format(i+1,nspec)) #, end='\r')
 
         # TODO: component[_tpl_to_use[i,:]] isn't going to work if
         # _tpl_to_use does result in an ordered list of components.
@@ -161,6 +163,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
         # Run the first fit
         if plot:
             plt.clf()
+
         pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
                   velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
                   mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
@@ -187,7 +190,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
             pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
                       velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
                       mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
-                      component=component, quiet=quiet, linear=linear)
+                      component=component[_tpl_to_use[i,:]], quiet=quiet, linear=linear)
             if plot:
                 plt.show()
 
@@ -213,11 +216,6 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
         kininp[i,:] = np.concatenate(tuple(_start[i]))
         kin[i,:] = np.concatenate(tuple(pp.sol))
         kin_err[i,:] = np.concatenate(tuple(pp.error))
-
-#        print(tpl_wgts[i,gas_template])
-#        print(tpl_wgts_err[i,gas_template])
-#        print(kin[i,:])
-#        print(kin_err[i,:])
 
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
@@ -320,15 +318,6 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
                     kin, kin_err
 
-
-#    print(type(inp_component))
-#    print(inp_component.shape)
-#    print(inp_component)
-#    print(inp_moments)
-#    print(type(inp_start))
-#    print(inp_start.shape)
-#    print(inp_start[0])
-
     # First fit the binned data
     if mode == 'fitBins':
 
@@ -343,9 +332,6 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
         # - All gas templates in a single component
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
-#        print(component)
-#        print(moments)
-#        print(start)
         _, _, _, binned_tpl_wgts, _, _, _, _, binned_kin, _ \
                     = _fit_iteration(templates, flux_binned, noise_binned, velscale, start,
                                      moments, component, gas_template, tpl_to_use=tpl_to_use,
@@ -371,7 +357,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
 
         _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
         _tpl_to_use[:,_gas_template] = True
-        _tpl_to_use[np.arange(nspec),nearest_bin] = True
+        _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
 
         _component = np.append(np.zeros(nspec, dtype=int), _component[nbin:])
 
@@ -394,6 +380,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     #  - Fit with all the gas templates as part of one component
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
+
     _, _, _, tpl_wgts, _, _, _, _, kin, _ \
             = _fit_iteration(_templates, flux, noise, velscale, start, moments, component,
                              _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,

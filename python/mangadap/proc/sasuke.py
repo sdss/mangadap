@@ -863,8 +863,8 @@ class Sasuke(EmissionLineFit):
         # and whether it's close to either
         near_bound = near_lower_bound | (_ubound - kin < tol)
 
-        for k,b,l in zip(kin[0], near_bound[0], near_lower_bound[0]):
-            print(k,b,l)
+#        for k,b,l in zip(kin[0], near_bound[0], near_lower_bound[0]):
+#            print(k,b,l)
 
         # Return the two boundary flags
         return near_bound, near_lower_bound
@@ -1551,10 +1551,24 @@ class Sasuke(EmissionLineFit):
                 # spectral range of the fit.
                 sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra)
 
+#                print(type(sc_continuum))
+#                for _i in range(10):
+#                    pyplot.plot(binned_spectra['WAVE'].data, sc_continuum.data[_i,:])
+#                    pyplot.plot(binned_spectra['WAVE'].data, sc_continuum[_i,:])
+#                    pyplot.show()
+
                 # Construct the full 3D cube for the stellar continuum
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                              binned_spectra['BINID'].data.ravel(),
                                                              sc_continuum)
+
+#                print(type(sc_model_flux))
+#                print(sc_model_flux.shape)
+#                nx = sc_model_flux.shape[0]
+#                for _i in range(10):
+##                    pyplot.plot(binned_spectra['WAVE'].data, sc_model_flux.data[_i,_i,:])
+#                    pyplot.plot(binned_spectra['WAVE'].data, sc_model_flux[nx//2+_i-5,nx//2+_i-5,:])
+#                    pyplot.show()
 
                 # Construct the full 3D cube of the new stellar
                 # continuum from the combined stellar-continuum +
@@ -1563,12 +1577,27 @@ class Sasuke(EmissionLineFit):
                                                             model_binid.ravel(),
                                                             model_flux - model_eml_flux)
 
+#                print(type(el_continuum))
+#                print(el_continuum.shape)
+#                nx = el_continuum.shape[0]
+#                for _i in range(10):
+##                    pyplot.plot(binned_spectra['WAVE'].data, el_continuum.data[_i,_i,:])
+#                    pyplot.plot(binned_spectra['WAVE'].data, el_continuum[nx//2+_i-5,nx//2+_i-5,:])
+#                    pyplot.show()
+
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models
                 model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
                                                                 self.npix_obj)[spaxel_to_fit,:]
 #                if model_mask is not None:
 #                    model_eml_base[model_mask==0] = 0.0
+
+#                print(type(model_eml_base))
+#                print(model_eml_base.shape)
+#                for _i in range(10):
+#                    pyplot.plot(binned_spectra['WAVE'].data, model_eml_base[_i,:])
+#                    pyplot.show()
+
             else:
                 el_continuum = model_flux - model_eml_flux
                 sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra)
@@ -1590,6 +1619,14 @@ class Sasuke(EmissionLineFit):
         
         # Only return model and model parameters for the *fitted*
         # spectra
+#        print(type(model_eml_flux))
+#        print(type(model_eml_base))
+#        print(type(model_mask))
+#        for _i in range(10):
+#            pyplot.plot(binned_spectra['WAVE'].data, model_eml_flux[_i,:])
+#            pyplot.plot(binned_spectra['WAVE'].data, model_eml_base[_i,:])
+#            pyplot.plot(binned_spectra['WAVE'].data, model_mask[_i,:])
+#            pyplot.show()
         return model_eml_flux, model_eml_base, model_mask, model_fit_par, model_eml_par,\
                     model_binid
 
@@ -2108,6 +2145,7 @@ class Sasuke(EmissionLineFit):
         #---------------------------------------------------------------
         # Initialize the mask and the spectral range to fit for the
         # input object spectra
+        # TODO: This alters the mask of self.obj_flux!!
         obj_model_mask, err, obj_start, obj_end \
                     = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave, self.obj_flux,
                                                        self.obj_ferr, self.velscale,
@@ -2137,6 +2175,7 @@ class Sasuke(EmissionLineFit):
         #---------------------------------------------------------------
         # Initialize the mask and the spectral range to fit for the
         # remapping spectra
+        # TODO: This alters the mask of self.remap_flux!!
         if self.nremap != 0:
             remap_model_mask, err, remap_start, remap_end \
                         = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave,
@@ -2243,6 +2282,10 @@ class Sasuke(EmissionLineFit):
         # Save the results
 #        model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
 #                = self._save_results(etpl, result, model_mask, model_fit_par, model_eml_par)
+
+#        pyplot.imshow(numpy.log10(model_mask), origin='lower', interpolation='nearest',
+#                      aspect='auto')
+#        pyplot.show()
 
         if self.nremap == 0:
             flux = self.obj_flux

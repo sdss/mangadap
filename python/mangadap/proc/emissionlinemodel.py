@@ -550,7 +550,7 @@ class EmissionLineModel:
                 bad_bins = numpy.append(emission_line_moments.missing_bins,
                                         emission_line_moments['ELMMNTS'].data['BINID']\
                                             [mom1_masked]).astype(int)
-                if len(bad_bins) > 0:
+                if len(bad_bins) > 0 and len(bad_bins) != self.binned_spectra.nbins:
                     nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
                                                                                   indices=True)
                     bad_bin_index = self.binned_spectra.get_bin_indices(bad_bins)
@@ -573,7 +573,7 @@ class EmissionLineModel:
                 bad_bins = numpy.append(emission_line_moments.missing_bins,
                                         emission_line_moments['ELMMNTS'].data['BINID']\
                                             [mom2_masked]).astype(int)
-                if len(bad_bins) > 0:
+                if len(bad_bins) > 0 and len(bad_bins) != self.binned_spectra.nbins:
                     nearest_good_bin_index = self.binned_spectra.find_nearest_bin(bad_bins,
                                                                                   indices=True)
                     bad_bin_index = self.binned_spectra.get_bin_indices(bad_bins)
@@ -687,11 +687,21 @@ class EmissionLineModel:
                                                    flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
-        # Turn on the flag stating that the S/N in the spectrum was
-        # below the requested limit
-        low_snr = numpy.invert(self.binned_spectra['BINID'].data == self.hdu['BINID'].data)
-        indx = numpy.array([low_snr]*self.nwave).transpose(1,2,0)
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+        # Turn on the flag stating that an individual bin/spaxel was not
+        # used, anything without a non-negative binid, in the fit
+        indx = self['BINID'].data < 0
+        mask[indx,:] = self.bitmask.turn_on(mask[indx,:], 'DIDNOTUSE')
+
+        # Turn on the flag stating that an individual bin/spaxel was not
+        # used because the S/N was too low
+        indx = (self['BINID'].data < 0) & (self.binned_spectra['BINID'].data > -1)
+        mask[indx,:] = self.bitmask.turn_on(mask[indx,:], 'LOW_SNR')
+
+#        # Turn on the flag stating that the S/N in the spectrum was
+#        # below the requested limit
+#        low_snr = numpy.invert(self.binned_spectra['BINID'].data == self.hdu['BINID'].data)
+#        indx = numpy.array([low_snr]*self.nwave).transpose(1,2,0)
+#        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
 
         return mask
 
@@ -960,6 +970,10 @@ class EmissionLineModel:
         model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
+
+#        pyplot.imshow(numpy.log10(model_mask), origin='lower', interpolation='nearest',
+#                      aspect='auto')
+#        pyplot.show()
 
         # Impose a minimum error because of the conversion to inverse
         # variance when constructing a MAPS file; applied to the error

@@ -1985,7 +1985,12 @@ class construct_cube_file:
         flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
         el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                       flag=flags)
+
         mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FITIGNORED')
+
+#        pyplot.imshow(numpy.log10(mask[binned_spectra['BINID'].data > -1,:].reshape(-1,4563)),
+#                        interpolation='nearest', aspect='auto')
+#        pyplot.show()
 
         # TODO: What do I do with BAD_SIGMA?
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
@@ -1993,6 +1998,10 @@ class construct_cube_file:
         el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                       flag=['FIT_FAILED', 'NEAR_BOUND'])
         mask[sc_indx | el_indx] = self.bitmask.turn_on(mask[sc_indx | el_indx], 'FITFAILED')
+
+#        pyplot.imshow(numpy.log10(mask[binned_spectra['BINID'].data > -1,:].reshape(-1,4563)),
+#                        interpolation='nearest', aspect='auto')
+#        pyplot.show()
 
         return mask
 
@@ -2056,8 +2065,8 @@ class construct_cube_file:
 
         # Spectral mask
         mask = self._get_model_and_data_mask(binned_spectra, binned_spectra_3d_hdu,
-                                                 stellar_continuum, stellar_continuum_3d_hdu,
-                                                 emission_line_model, emission_line_model_3d_hdu)
+                                             stellar_continuum, stellar_continuum_3d_hdu,
+                                             emission_line_model, emission_line_model_3d_hdu)
 
         data = [ flux, ivar, mask, binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
                  binned_spectra['REDCORR'].data.copy().astype(self.float_dtype), model ]
