@@ -139,8 +139,8 @@
 #     - VELSCALE is *defined* in pPXF by VELSCALE = c*Delta[np.log(lambda)],
 #       which is approximately VELSCALE ~ c*Delta(lambda)/lambda.
 #       See Section 2.3 of Cappellari (2017) for details.
-#   START: Vector, or list/array of vectors, with the initial estimate for the
-#       LOSVD parameters.
+#   START: Vector, or list/array of vectors [start1, start2, ...], with the 
+#       initial estimate for the LOSVD parameters.
 #     - When LOSVD parameters are not held fixed, each vector only needs to
 #       contain START = [velStart, sigmaStart] the initial guess for the
 #       velocity and the velocity dispersion in km/s. The starting values for
@@ -188,10 +188,13 @@
 #     - EXAMPLE: We want to fit two kinematic components, with 4 moments for the
 #       first component and 2 for the second (e.g. stars and gas). In this case
 #           moments = [4, 2]
-#           start = [[V1, sigma1, 0, 0], [V2, sigma2]]
+#           start_stars = [V1, sigma1, 0, 0]
+#           start_gas = [V2, sigma2]
+#           start = [start_stars, start_gas]
 #       then we can specify boundaries for each kinematic parameter as
-#           bounds = [[[V1_lo, V1_up], [sigma1_lo, sigma1_up], [-0.3, 0.3], [-0.3, 0.3]],
-#                     [[V2_lo, V2_up], [sigma2_lo, sigma2_up]]]
+#           bounds_stars = [[V1_lo, V1_up], [sigma1_lo, sigma1_up], [-0.3, 0.3], [-0.3, 0.3]]
+#           bounds_gas = [[V2_lo, V2_up], [sigma2_lo, sigma2_up]]
+#           bounds = [bounds_stars, bounds_gas]
 #   COMPONENT: When fitting more than one kinematic component, this keyword
 #       should contain the component number of each input template. In principle
 #       every template can belong to a different kinematic component.
@@ -239,14 +242,17 @@
 #       output FRACTION is inaccurate.
 #     - The remaining kinematic components (COMPONENT > 1) are left free, and
 #       this allows, for example, to still include gas emission line components.
-#   GAS_COMPONENT: boolean vector of size COMPONENT specifying whether the given
-#       COMPONENT describes a gas emission line. If this is given, pPXF will
-#       provide the pp.gas_flux and pp.gas_flux_error in output.
-#     - This is also used to plot the gas lines with a different color.
+#   GAS_COMPONENT: boolean vector, of the same size as COMPONENT, set to True
+#       where the given COMPONENT describes a gas emission line. If given, pPXF
+#       provides the pp.gas_flux and pp.gas_flux_error in output.
+#     - EXAMPLE: If the first nstar components are stellar templates and the
+#       rest are gas emission lines, one will set
+#           gas_component = component >= nstar
+#     - This keyword is also used to plot the gas lines with a different color.
 #   GAS_NAMES: string array specifying the names of the emission lines (e.g.
 #       gas_names=["Hbeta", "[OIII]",...], one per gas line. The length of
 #       this vector must match the number of nonzero elements in GAS_COMPONENT.
-#       This vector is only used to print the line names on the terminal.
+#       This vector is only used to print the line names on the console.
 #   GOODPIXELS: integer vector containing the indices of the good pixels in the
 #       GALAXY spectrum (in increasing order). Only these pixels are included in
 #       the fit.
@@ -835,6 +841,9 @@
 #   V6.6.4: Check for NaN in `galaxy` and check all `bounds` have two elements.
 #           Allow `start` to be either a list or an array or vectors.
 #           MC, Oxford, 5 October 2017
+#   V6.6.5: Raise an error if any template is identically zero in fitted range.
+#           This can happen if a gas line falls within a masked region.
+#           MC, Oxford, 13 October 2017
 #
 ################################################################################
 
@@ -845,7 +854,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-# import capfit
+#import capfit
 from . import capfit
 
 ################################################################################
@@ -1240,6 +1249,11 @@ class ppxf(object):
             assert goodpixels[0] >= 0 and goodpixels[-1] < galaxy.shape[0], \
                 "GOODPIXELS are outside the data range"
             self.goodpixels = goodpixels
+
+        m1 = np.max(np.abs(templates), 0)
+        m2 = np.max(np.abs(templates[goodpixels, :]), 0)
+        assert np.all(m2 > m1/1e3), \
+            "templates cannot be identically zero in fitted range"
 
         if bias is None:
             # Cappellari & Emsellem (2004) pg.144 left
