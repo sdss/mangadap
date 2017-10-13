@@ -854,8 +854,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-#import capfit
-from . import capfit
+import capfit
 
 ################################################################################
 
@@ -1250,8 +1249,8 @@ class ppxf(object):
                 "GOODPIXELS are outside the data range"
             self.goodpixels = goodpixels
 
-        m1 = np.max(np.abs(templates), 0)
-        m2 = np.max(np.abs(templates[goodpixels, :]), 0)
+        m1 = np.max(np.abs(self.star), 0)
+        m2 = np.max(np.abs(self.star[self.goodpixels, :]), 0)
         assert np.all(m2 > m1/1e3), \
             "templates cannot be identically zero in fitted range"
 
