@@ -842,8 +842,9 @@
 #           Allow `start` to be either a list or an array or vectors.
 #           MC, Oxford, 5 October 2017
 #   V6.6.5: Raise an error if any template is identically zero in fitted range.
-#           This can happen if a gas line falls within a masked region.
-#           MC, Oxford, 13 October 2017
+#           This can happen if a gas line entirely falls within a masked region.
+#         - Corrected `gas_flux_error` normalization, when input not normalized.
+#           MC, Oxford, 16 October 2017
 #
 ################################################################################
 
@@ -854,7 +855,8 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-import capfit
+#import capfit
+from . import capfit
 
 ################################################################################
 
@@ -1252,7 +1254,7 @@ class ppxf(object):
         m1 = np.max(np.abs(self.star), 0)
         m2 = np.max(np.abs(self.star[self.goodpixels, :]), 0)
         assert np.all(m2 > m1/1e3), \
-            "templates cannot be identically zero in fitted range"
+            "TEMPLATES cannot be identically zero in fitted range"
 
         if bias is None:
             # Cappellari & Emsellem (2004) pg.144 left
@@ -1697,9 +1699,10 @@ class ppxf(object):
         if self.gas_component is not None:
             gas = self.gas_component
             spectra = self.matrix[:, self.degree + 1:]    # Remove polynomials
-            self.gas_flux = np.sum(spectra[:, gas], 0)*self.weights[gas]
+            integ = np.sum(spectra[:, gas], 0)
+            self.gas_flux = integ*self.weights[gas]
             design_matrix = spectra[:, gas]/self.noise[:, None]
-            self.gas_flux_error = capfit.cov_err(design_matrix)[1]
+            self.gas_flux_error = integ*capfit.cov_err(design_matrix)[1]
 
             if not self.quiet:
                 print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
