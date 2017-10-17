@@ -468,6 +468,9 @@
 #           BESTFIT = (TEMPLATES @ WEIGHTS)*mpoly + apoly,
 #       where the expressions to evaluate mpoly and apoly are given in the
 #       documentation of MPOLYWEIGHTS and POLYWEIGHTS respectively.
+#   .BESTFIT_GAS: If `gas_component` is not None, this attribute returns the
+#       best-fitting gas spectrum alone after the fit. The stellar spectrum
+#       alone can be computed as stellar_spectrum = pp.bestfit - pp.bestfit_gas
 #   .CHI2: The reduced chi^2 (=chi^2/DOF) of the fit.
 #     - IMPORTANT: if Chi^2/DOF is not ~1 it means that the errors are not
 #       properly estimated, or that the template is bad and it is *not* safe to
@@ -844,6 +847,7 @@
 #   V6.6.5: Raise an error if any template is identically zero in fitted range.
 #           This can happen if a gas line entirely falls within a masked region.
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
+#         - Return .bestfit_gas attribute when gas_component is not None.
 #         - Fixed program stop with `linear` keyword.
 #           MC, Oxford, 16 October 2017
 #
@@ -858,6 +862,7 @@ from scipy import optimize, linalg, misc, fftpack
 
 #import capfit
 from . import capfit
+
 
 ################################################################################
 
@@ -1321,8 +1326,8 @@ class ppxf(object):
             else:
                 params = np.append(start1, reddening)
             perror = np.zeros_like(params)
+            self.method = 'linear'
             self.status = 1   # Status irrelevant for linear fit
-            self.nfev = 1     # The function is called only once
             self.njev = 0     # Jacobian is not evaluated
         else:
             params, perror = self._nonlinear_fit(start1, bounds, fixed, tied, clean)
@@ -1636,12 +1641,8 @@ class ppxf(object):
             plt.plot(x, self.bestfit, 'r', linewidth=2)
             plt.plot(x[self.goodpixels], self.goodpixels*0 + mn, '.k', ms=1)
         else:
-            gas = self.gas_component
-            spectra = self.matrix[:, self.degree + 1 :]
-            gas_spectrum = spectra[:, gas].dot(self.weights[gas])
-            stars_spectrum = self.bestfit - gas_spectrum
-
-            plt.plot(x, gas_spectrum + mn, c='magenta', linewidth=2)
+            stars_spectrum = self.bestfit - self.bestfit_gas
+            plt.plot(x, self.bestfit_gas + mn, c='magenta', linewidth=2)
             plt.plot(x, self.bestfit, c='orange', linewidth=2)
             plt.plot(x, stars_spectrum, 'r', linewidth=2)
 
@@ -1705,6 +1706,7 @@ class ppxf(object):
             self.gas_flux = integ*self.weights[gas]
             design_matrix = spectra[:, gas]/self.noise[:, None]
             self.gas_flux_error = integ*capfit.cov_err(design_matrix)[1]
+            self.bestfit_gas = spectra[:, gas].dot(self.weights[gas])
 
             if not self.quiet:
                 print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
