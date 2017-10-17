@@ -844,6 +844,7 @@
 #   V6.6.5: Raise an error if any template is identically zero in fitted range.
 #           This can happen if a gas line entirely falls within a masked region.
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
+#         - Fixed program stop with `linear` keyword.
 #           MC, Oxford, 16 October 2017
 #
 ################################################################################
@@ -1322,6 +1323,7 @@ class ppxf(object):
             perror = np.zeros_like(params)
             self.status = 1   # Status irrelevant for linear fit
             self.nfev = 1     # The function is called only once
+            self.njev = 0     # Jacobian is not evaluated
         else:
             params, perror = self._nonlinear_fit(start1, bounds, fixed, tied, clean)
 
