@@ -468,13 +468,13 @@
 #           BESTFIT = (TEMPLATES @ WEIGHTS)*mpoly + apoly,
 #       where the expressions to evaluate mpoly and apoly are given in the
 #       documentation of MPOLYWEIGHTS and POLYWEIGHTS respectively.
-#   .GAS_BESTFIT: If `gas_component` is not None, this attribute returns the
-#       best-fitting gas spectrum alone after the fit. The stellar spectrum
-#       alone can be computed as stellar_spectrum = pp.bestfit - pp.gas_bestfit
 #   .CHI2: The reduced chi^2 (=chi^2/DOF) of the fit.
 #     - IMPORTANT: if Chi^2/DOF is not ~1 it means that the errors are not
 #       properly estimated, or that the template is bad and it is *not* safe to
 #       set the /CLEAN keyword.
+#   .GAS_BESTFIT: If `gas_component` is not None, this attribute returns the
+#       best-fitting gas spectrum alone after the fit. The stellar spectrum
+#       alone can be computed as stellar_spectrum = pp.bestfit - pp.gas_bestfit
 #   .GAS_FLUX: Vector with the integrated flux of all lines set as True in the
 #       input GAS_COMPONENT keyword. If a line is composed of a doublet, the
 #       flux is that of both lines.
@@ -844,12 +844,12 @@
 #   V6.6.4: Check for NaN in `galaxy` and check all `bounds` have two elements.
 #           Allow `start` to be either a list or an array or vectors.
 #           MC, Oxford, 5 October 2017
-#   V6.6.5: Raise an error if any template is identically zero in fitted range.
-#           This can happen if a gas line entirely falls within a masked region.
+#   V6.6.5beta: Raise an error if any template is identically zero in fitted
+#           range. This can happen if a gas line falls within a masked region.
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
 #         - Return .gas_bestfit attribute when gas_component is not None.
 #         - Fixed program stop with `linear` keyword.
-#           MC, Oxford, 16 October 2017
+#           MC, Oxford, 20 October 2017
 #
 ################################################################################
 
@@ -1256,11 +1256,6 @@ class ppxf(object):
                 "GOODPIXELS are outside the data range"
             self.goodpixels = goodpixels
 
-        m1 = np.max(np.abs(self.star), 0)
-        m2 = np.max(np.abs(self.star[self.goodpixels, :]), 0)
-        assert np.all(m2 > m1/1e3), \
-            "TEMPLATES cannot be identically zero in fitted range"
-
         if bias is None:
             # Cappellari & Emsellem (2004) pg.144 left
             self.bias = 0.7*np.sqrt(500./self.goodpixels.size)
@@ -1275,6 +1270,15 @@ class ppxf(object):
             assert len(start) == self.ncomp, \
                 "There must be one START per COMPONENT"
             start1 = list(start)  # Make a copy in both Python 2 and 3
+
+        if velscale_ratio == 1:
+            m1 = np.max(np.abs(self.star), 0)
+            vmed = np.median([a[0] for a in start1])
+            dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
+            tmp = np.roll(self.star, dx, axis=0)
+            m2 = np.max(np.abs(tmp[self.goodpixels, :]), 0)
+            assert np.all(m2 > m1/1e3), \
+                "TEMPLATES cannot be identically zero in fitted range"
 
         # Pad with zeros when `start[j]` has fewer elements than `moments[j]`
         for j, (st, mo) in enumerate(zip(start1, self.moments)):
