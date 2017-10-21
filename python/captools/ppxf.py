@@ -849,7 +849,7 @@
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
 #         - Return .gas_bestfit attribute when gas_component is not None.
 #         - Fixed program stop with `linear` keyword.
-#           MC, Oxford, 20 October 2017
+#           MC, Oxford, 16 October 2017
 #
 ################################################################################
 
@@ -860,8 +860,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-#import capfit
-from . import capfit
+import capfit
 
 ################################################################################
 
@@ -1081,7 +1080,7 @@ def _regularization(a, npoly, npix, nspec, reg_dim, reg_ord, regul):
 ################################################################################
 
 class ppxf(object):
-
+    
     def __init__(self, templates, galaxy, noise, velscale, start,
                  bias=None, bounds=None, clean=False, component=0, degree=4,
                  fixed=None, fraction=None, gas_component=None, gas_names=None,
@@ -1271,7 +1270,7 @@ class ppxf(object):
                 "There must be one START per COMPONENT"
             start1 = list(start)  # Make a copy in both Python 2 and 3
 
-        if velscale_ratio == 1:
+        if velscale_ratio is None:
             m1 = np.max(np.abs(self.star), 0)
             vmed = np.median([a[0] for a in start1])
             dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
