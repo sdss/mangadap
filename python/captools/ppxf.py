@@ -861,8 +861,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-# import capfit
-from . import capfit
+import capfit
 
 ################################################################################
 
@@ -1272,14 +1271,17 @@ class ppxf(object):
                 "There must be one START per COMPONENT"
             start1 = list(start)  # Make a copy in both Python 2 and 3
 
+        vmed = np.median([a[0] for a in start1])
+        dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
         if velscale_ratio is None:
-            m1 = np.max(np.abs(self.star), 0)
-            vmed = np.median([a[0] for a in start1])
-            dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
-            tmp = np.roll(self.star, dx, axis=0)
-            m2 = np.max(np.abs(tmp[self.goodpixels, :]), 0)
-            assert np.all(m2 > m1/1e3), \
-                "TEMPLATES cannot be identically zero in fitted range"
+            tmp = self.star
+        else:
+            tmp = np.mean(self.star.reshape((self.npix_temp, velscale_ratio, -1)), 1)
+        m1 = np.max(np.abs(tmp), 0)
+        tmp = np.roll(tmp, dx, axis=0)
+        m2 = np.max(np.abs(tmp[self.goodpixels, :]), 0)
+        assert np.all(m2 > m1/1e3), \
+            "TEMPLATES cannot be identically zero in fitted range"
 
         # Pad with zeros when `start[j]` has fewer elements than `moments[j]`
         for j, (st, mo) in enumerate(zip(start1, self.moments)):
