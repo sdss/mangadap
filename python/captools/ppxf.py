@@ -861,7 +861,8 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
-import capfit
+# import capfit
+from . import capfit
 
 ################################################################################
 
