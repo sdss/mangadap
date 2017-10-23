@@ -844,12 +844,13 @@
 #   V6.6.4: Check for NaN in `galaxy` and check all `bounds` have two elements.
 #           Allow `start` to be either a list or an array or vectors.
 #           MC, Oxford, 5 October 2017
-#   V6.6.5beta: Raise an error if any template is identically zero in fitted
+#   V6.6.5beta2: Raise an error if any template is identically zero in fitted
 #           range. This can happen if a gas line falls within a masked region.
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
 #         - Return .gas_bestfit attribute when gas_component is not None.
 #         - Fixed program stop with `linear` keyword.
-#           MC, Oxford, 16 October 2017
+#         - Do not multiply gas emission lines by polynomials.
+#           MC, Oxford, 23 October 2017
 #
 ################################################################################
 
@@ -1473,8 +1474,6 @@ class ppxf(object):
                 mpoly = np.append(mpoly1, mpoly2).clip(0.1)
             else:
                 mpoly = self.polyval(x, np.append(1.0, pars[ngh:])).clip(0.1)
-        else:
-            mpoly = 1.0
 
         # Multiplicative polynomials do not make sense when fitting reddening.
         # In that case one has to assume the spectrum is well calibrated.
@@ -1522,7 +1521,9 @@ class ppxf(object):
                     tmp[k, :] = tt[:self.npix_temp]
                 else:                 # Template has higher resolution than galaxy
                     tmp[k, :] = rebin(tt[:self.npix_temp*self.factor], self.factor)
-            c[:, npoly + j] = mpoly*tmp[:, :npix].ravel()  # reform into a vector
+            c[:, npoly + j] = tmp[:, :npix].ravel()
+            if self.mdegree > 0 and (self.gas_component is None or not self.gas_component[j]):
+                    c[:, npoly + j] *= mpoly     # Do not multiply gas templates
 
         if nsky > 0:
             k = npoly + self.ntemp
