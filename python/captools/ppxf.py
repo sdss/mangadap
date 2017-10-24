@@ -1525,7 +1525,8 @@ class ppxf(object):
                 else:                 # Template has higher resolution than galaxy
                     tmp[k, :] = rebin(tt[:self.npix_temp*self.factor], self.factor)
             c[:, npoly + j] = tmp[:, :npix].ravel()
-            if self.mdegree > 0 and (self.gas_component is None or not self.gas_component[j]):
+            if self.mdegree > 0 or self.reddening is not None and \
+                (self.gas_component is None or not self.gas_component[j]):
                     c[:, npoly + j] *= mpoly     # Do not multiply gas templates
 
         if nsky > 0:
