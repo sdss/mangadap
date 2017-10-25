@@ -156,6 +156,7 @@ class EmissionLineFit(SpectralFitting):
                  ('SIGMACORR', numpy.float, (neml,)),
                  ('CONTAPLY', numpy.float, (neml,)),
                  ('CONTMPLY', numpy.float, (neml,)),
+                 ('CONTRFIT', numpy.float, (neml,)),
                  ('BMED', numpy.float, (neml,)),
                  ('RMED', numpy.float, (neml,)),
                  ('EWCONT', numpy.float, (neml,)),

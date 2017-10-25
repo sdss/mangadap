@@ -281,9 +281,9 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
 
 
 # Run a single fit+rejection iteration
-def _fit_iteration(templates, flux, noise, velscale, start, moments, component, gas_template,
-                   tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=4, mdegree=0,
-                   tied=None, mask=None, vsyst=0, plot=False, quiet=True):
+def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, component, gas_template,
+                   tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
+                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True):
     """
     mask should be True for the pixels to fit
     """
@@ -312,6 +312,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
     tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
+    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
@@ -339,8 +340,9 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
                                                        velscale_ratio=velscale_ratio, vsyst=vsyst)
         pp = ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
                   velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
-                  mdegree=mdegree, tied=_tied, mask=model_mask[i,:], vsyst=vsyst,
-                  component=_component, gas_component=_gas_template, quiet=quiet, linear=linear)
+                  mdegree=mdegree, lam=wave, reddening=reddening, tied=_tied, mask=model_mask[i,:],
+                  vsyst=vsyst, component=_component, gas_component=_gas_template, quiet=quiet,
+                  linear=linear)
         if plot:
             plt.show()
 
@@ -374,8 +376,9 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
                                                                    vsyst=vsyst)
             pp = ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
                       velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
-                      mdegree=mdegree, tied=_tied, mask=model_mask[i,:], vsyst=vsyst,
-                      component=_component, gas_component=_gas_template, quiet=quiet, linear=linear)
+                      mdegree=mdegree, lam=wave, reddening=reddening, tied=_tied,
+                      mask=model_mask[i,:], vsyst=vsyst, component=_component,
+                      gas_component=_gas_template, quiet=quiet, linear=linear)
             if plot:
                 plt.show()
 
@@ -401,6 +404,8 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
             addcoef[i,:] = pp.polyweights.copy()
         if mdegree > 0:
             multcoef[i,:] = pp.mpolyweights.copy()
+        if reddening is not None:
+            ebv[i] = pp.reddening
 
         kininp[i,:] = np.concatenate(tuple(start[i]))
         kin[i,:] = np.concatenate(tuple(sol))
@@ -408,7 +413,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
         
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
-    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
+    return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
                     kininp, kin, kin_err
 
 
@@ -451,12 +456,12 @@ def _combine_stellar_templates(templates, gas_template, wgts, component):
 #   - The templates are expected to be an integer number of
 #     velscale_ratio in length; see PPXFFit.check_templates()
 
-def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscale_ratio,
+def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, velscale_ratio,
                                  inp_component, gas_template, inp_moments, inp_start,
-                                 tied=None, degree=4, mdegree=0, reject_boxcar=101,
-                                 vsyst=0, tpl_to_use=None, flux_binned=None, noise_binned=None,
-                                 mask_binned=None, x_binned=None, y_binned=None, x=None, y=None,
-                                 plot=False, quiet=False, debug=False):
+                                 tied=None, degree=-1, mdegree=0, reddening=None,
+                                 reject_boxcar=101, vsyst=0, tpl_to_use=None, flux_binned=None,
+                                 noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
+                                 x=None, y=None, plot=False, quiet=False, debug=False):
 
     # Check that there is either one or zero stellar components
     if np.sum(gas_template) != templates.shape[0] and np.amax(inp_component[~gas_template]) != 0:
@@ -484,6 +489,8 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
 
     # Instantiate the output
     nspec, nwave = flux.shape
+    if len(wave) != nwave:
+        raise ValueError('Mismatch of wavelength vector with provided spectra.')
 #    masked_fraction = np.sum(mask, axis=1)/nwave
 #    indx = masked_fraction > 1/3
 #    model_binid = np.full(nspec, -1, dtype=int)
@@ -499,8 +506,9 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     tpl_wgt = np.zeros((nspec,ntpl), dtype=float)
     tpl_wgt_err = np.zeros((nspec,ntpl), dtype=float)
 
-    addcoef = None if degree < 0 else np.zeros(degree+1, dtype=float)
-    multcoef = None if mdegree < 1 else np.zeros(mdegree, dtype=float)
+    addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
+    multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
+    ebv = None if reddening is None else np.zeros(nspec, dtype=float)
 
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
@@ -508,7 +516,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    kin, kin_err
+                    ebv, kin, kin_err
 
     # First fit the binned data
     if mode == 'fitBins':
@@ -518,6 +526,8 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
         nbin = flux_binned.shape[0]
         if len(inp_start) != nbin:
             raise ValueError('Input starting kinematic arrays do not match the binned spectra.')
+        if len(wave) != flux_binned.shape[1]:
+            raise ValueError('Mismatch of wavelength vector with provided binned spectra.')
 
 
         # First fit the binned data:
@@ -537,12 +547,12 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
 #        # END DEBUG #
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
-        _, _, _, binned_tpl_wgts, _, _, _, _, binned_kin, _ \
-                    = _fit_iteration(templates, flux_binned, noise_binned, velscale, start,
+        _, _, _, binned_tpl_wgts, _, _, _, _, _, binned_kin, _ \
+                    = _fit_iteration(templates, wave, flux_binned, noise_binned, velscale, start,
                                      moments, component, gas_template, tpl_to_use=tpl_to_use,
                                      reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
-                                     degree=degree, mdegree=mdegree, mask=mask_binned,
-                                     vsyst=vsyst, plot=plot, quiet=quiet)
+                                     degree=degree, mdegree=mdegree, reddening=reddening,
+                                     mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet)
 
         # - Create new template set with the optimal stellar template
         #   for each spectrum
@@ -586,11 +596,11 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
 
-    _, _, _, tpl_wgts, _, _, _, _, kin, _ \
-            = _fit_iteration(_templates, flux, noise, velscale, start, moments, component,
+    _, _, _, tpl_wgts, _, _, _, _, _, kin, _ \
+            = _fit_iteration(_templates, wave, flux, noise, velscale, start, moments, component,
                              _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,
                              velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
-                             mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
+                             reddening=reddening, mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
 
     if mode == 'noBins':
         # - If no previous fit to binned spectra, create new template
@@ -609,13 +619,13 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
                                                       gas_start=gas_start)
 
     # - Refit without rejection but with the tying in place
-    model_flux, model_eml_flux, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
-            kininp, kin, kin_err = _fit_iteration(_templates, flux, noise, velscale, start,
+    model_flux, model_eml_flux, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
+            kininp, kin, kin_err = _fit_iteration(_templates, wave, flux, noise, velscale, start,
                                                   moments, component, _gas_template,
                                                   tpl_to_use=_tpl_to_use, reject_boxcar=None,
                                                   velscale_ratio=velscale_ratio, degree=degree,
-                                                  mdegree=mdegree, tied=tied, mask=mask,
-                                                  vsyst=vsyst, plot=plot, quiet=quiet)
+                                                  mdegree=mdegree, reddening=reddening, tied=tied,
+                                                  mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
@@ -627,7 +637,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    kininp, kin, kin_err
+                    ebv, kininp, kin, kin_err
 
     
 

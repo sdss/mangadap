@@ -51,6 +51,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **08 Sep 2017**: (KBW) Move emission-line template construction to
         :mod:`mangadap.proc.emissionlinetemplates`. Add
         `deconstruct_bins` flag to parameters.
+    | **25 Oct 2017**: (KBW) Allow to use reddening fit from pPXF
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -96,6 +97,7 @@ from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFFit, PPXFFitResult
 from ..contrib.xjmc import emline_fitter_with_ppxf_edit
+from captools import ppxf
 
 # For debugging
 from matplotlib import pyplot
@@ -153,11 +155,13 @@ class SasukePar(ParSet):
             additive polynomials to use.
         mdegree (int): pPXF mdegree parameter setting the degree of the
             multiplicative polynomials to use.
+        reddening (float): pPXF reddening parameter setting the initial
+            :math:`E(B-V)` to fit, based on a Calzetti law.
     """
     def __init__(self, stellar_continuum, emission_lines, etpl_line_sigma_mode=None,
                  etpl_line_sigma_min=None,guess_redshift=None, guess_dispersion=None,
                  minimum_snr=None, deconstruct_bins=None, pixelmask=None, reject_boxcar=None,
-                 bias=None, moments=None, degree=None, mdegree=None):
+                 bias=None, moments=None, degree=None, mdegree=None, reddening=None):
 
         arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
@@ -167,19 +171,26 @@ class SasukePar(ParSet):
         pars =     [ 'stellar_continuum', 'emission_lines', 'etpl_line_sigma_mode',
                      'etpl_line_sigma_min', 'guess_redshift', 'guess_dispersion', 'minimum_snr',
                      'deconstruct_bins', 'pixelmask', 'reject_boxcar', 'bias', 'moments', 'degree',
-                     'mdegree' ]
+                     'mdegree', 'reddening' ]
         values =   [ stellar_continuum, emission_lines, etpl_line_sigma_mode, etpl_line_sigma_min,
                      guess_redshift, guess_dispersion, minimum_snr, deconstruct_bins, pixelmask,
-                     reject_boxcar, bias, moments, degree, mdegree ]
+                     reject_boxcar, bias, moments, degree, mdegree, reddening ]
         defaults = [ None, None, 'default', 0.0, None, None, 0.0, False, None, None, None, 2, -1,
-                     8 ]
+                     0, None ]
         options = [ None, None, etpl_mode_options, None, None, None, None, None, None, None, None,
-                    None, None, None ]
+                    None, None, None, None ]
         dtypes =   [ StellarContinuumModel, EmissionLineDB, str, in_fl, arr_in_fl, arr_in_fl,
-                     in_fl, bool, SpectralPixelMask, int, in_fl, int, int, int ]
+                     in_fl, bool, SpectralPixelMask, int, in_fl, int, int, int, in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
+
+        self._check()
+
+
+    def _check(self):
+        if self['mdegree'] > 0 and self['reddening'] is not None:
+            raise ValueError('Cannot fit both multiplicative polynomials and an extinction curve.')
 
 
 class Sasuke(EmissionLineFit):
@@ -331,6 +342,8 @@ class Sasuke(EmissionLineFit):
             additive polynomials to use, :math:`o_{\rm add}`.
         mdegree (int): pPXF mdegree parameter setting the degree of the
             multiplicative polynomials to use, :math:`o_{\rm mult}`.
+        reddening (float): pPXF reddening parameter setting the initial
+            :math:`E(B-V)` to fit, based on a Calzetti law.
         reject_boxcar (int): Size of the boxcar to use when rejecting
             fit outliers.
         spectrum_start (numpy.ndarray): Array with the starting index of
@@ -434,6 +447,7 @@ class Sasuke(EmissionLineFit):
         self.bias = None
         self.degree = None
         self.mdegree = None
+        self.reddening = None
         self.reject_boxcar = None
 #        self.fix_kinematics = False
 
@@ -472,8 +486,13 @@ class Sasuke(EmissionLineFit):
               Shape is (:math:`N_{\rm tpl}`,)
             - ``ADDCOEF``: Additive polynomal coefficients.  Shape is
               (:math:`o_{\rm add}+1`,)
-            - ``MULTCOEF``: Additive polynomal coefficients.  Shape is
-              (:math:`o_{\rm mult}`,)
+            - ``APLYMINMAX``: Minimum and maximum of additive
+              polynomial.  Shape is (2,).
+            - ``MULTCOEF``: Multiplicative polynomal coefficients.
+              Shape is (:math:`o_{\rm mult}`,)
+            - ``MPLYMINMAX``: Minimum and maximum of multiplicative
+              polynomial.  Shape is (2,).
+            - ``EBV``: Fitted E(B-V) from pPXF, if applied.
             - ``KININP``: Initial guess kinematics.  Shape is
               (:math:`N_{\rm kin}`,)
             - ``KIN``: Best-fitting kinematics.  Shape is (:math:`N_{\rm
@@ -531,6 +550,7 @@ class Sasuke(EmissionLineFit):
                  ('APLYMINMAX',numpy.float,(2,)) if nadd > 1 else ('APLYMINMAX',numpy.float),
                  ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
                  ('MPLYMINMAX',numpy.float,(2,)) if nmult > 1 else ('MPLYMINMAX',numpy.float),
+                 ('EBV',numpy.float),
                  ('KININP',numpy.float,(nkin,)),
                  ('KIN',numpy.float,(nkin,)),
                  ('KINERR',numpy.float,(nkin,)),
@@ -943,12 +963,15 @@ class Sasuke(EmissionLineFit):
             model_eml_par['CONTAPLY'][indx] = fill_value
         if self.mdegree > 0:
             model_eml_par['CONTMPLY'][indx] = fill_value
+        if self.reddening is not None:
+            model_eml_par['CONTRFIT'][indx] = fill_value
         return model_eml_par
 
 
     def _save_results(self, etpl, start, end, flux, ferr, model_flux, model_eml_flux, model_mask,
-                      model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_kin_inp,
-                      model_kin, model_kin_err, model_fit_par, model_eml_par, fill_value=-999.):
+                      model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening,
+                      model_kin_inp, model_kin, model_kin_err, model_fit_par, model_eml_par,
+                      fill_value=-999.):
         r"""
         Save and assess the results of the ppxf fits.
         
@@ -985,7 +1008,6 @@ class Sasuke(EmissionLineFit):
             with shape :math:`(N_{\rm spec},)`.
 
         """
-
         # Generate some convenience data:
         #  - Generate vectors with the lower and upper bounds for the
         #    kinematic parameters (lbound, ubound)
@@ -1081,6 +1103,11 @@ class Sasuke(EmissionLineFit):
         if self.mdegree > 0 and model_multcoef is not None:
             model_fit_par['MULTCOEF'] = model_multcoef
             used_mpoly = True
+
+        used_ebv = False
+        if self.reddening is not None and model_reddening is not None:
+            model_fit_par['EBV'] = model_reddening
+            used_ebv = True
 
         # Flattened input and output kinematics
         model_fit_par['KININP'] = model_kin_inp
@@ -1199,7 +1226,7 @@ class Sasuke(EmissionLineFit):
                         = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
                                         [0.0, 0.68, 0.95, 0.99, 1.0])
 
-            if used_apoly or used_mpoly:
+            if used_apoly or used_mpoly or used_ebv:
                 # Sample the polynomials at the fitted wavelength of
                 # each line
                 obswave = self.emldb['restwave'][self.fit_eml] \
@@ -1213,7 +1240,7 @@ class Sasuke(EmissionLineFit):
                     model_fit_par['APLYMINMAX'][i,:] = [numpy.amin(apoly), numpy.amax(apoly)]
                     model_eml_par['CONTAPLY'][i,:] \
                             = interpolate.interp1d(self.obj_wave[start:end], apoly,
-                                                   bounds_error=False, fill_value=1.0,
+                                                   bounds_error=False, fill_value=0.0,
                                                    assume_sorted=True)(obswave)
 
                 # - Multiplicative polynomial:
@@ -1233,6 +1260,14 @@ class Sasuke(EmissionLineFit):
                 # model_eml_par['FLUX'][i,self.fit_eml] *= factor
                 # model_eml_par['FLUXERR'][i,self.fit_eml] *= factor
                 #-------------------------------------------------------
+
+                # - Reddening:
+                if used_ebv:
+                    extcurve = ppxf.reddening_curve(self.obj_wave, model_reddening[i])
+                    model_eml_par['CONTRFIT'][i,:] \
+                            = interpolate.interp1d(self.obj_wave, extcurve,
+                                                   bounds_error=False, fill_value=1.0,
+                                                   assume_sorted=True)(obswave)
 
             # Get the instrumental dispersion in the galaxy data at the
             # location of the fitted lines
@@ -1543,6 +1578,7 @@ class Sasuke(EmissionLineFit):
                                matched_resolution=matched_resolution, bias=par['bias'],
 #                               degree=-1, mdegree=0,
                                degree=par['degree'], mdegree=par['mdegree'],
+                               reddening=par['reddening'],
                                #moments=par['moments'],
                                loggers=loggers, quiet=quiet)
             model_binid = numpy.full(binned_spectra.spatial_shape, -1, dtype=int)
@@ -1575,6 +1611,7 @@ class Sasuke(EmissionLineFit):
                                matched_resolution=matched_resolution, bias=par['bias'],
 #                               degree=-1, mdegree=0,
                                degree=par['degree'], mdegree=par['mdegree'],
+                               reddening=par['reddening'],
                                #moments=par['moments'],
                                loggers=loggers, quiet=quiet)
 
@@ -1706,8 +1743,8 @@ class Sasuke(EmissionLineFit):
             etpl_sinst_mode='default', etpl_sinst_min=0, remap_flux=None, remap_ferr=None,
             remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None, obj_skyx=None,
             obj_skyy=None, velscale_ratio=None, matched_resolution=True, waverange=None, bias=None,
-            degree=4, mdegree=0, max_velocity_range=400., alias_window=None, dvtol=1e-10,
-            loggers=None, quiet=False, plot=False):
+            degree=-1, mdegree=0, reddening=None, max_velocity_range=400., alias_window=None,
+            dvtol=1e-10, loggers=None, quiet=False, plot=False):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -1879,10 +1916,16 @@ class Sasuke(EmissionLineFit):
                 fit with moments=2.)
             degree (int): (**Optional**) pPXF degree parameter setting
                 the degree of the additive polynomials to use,
-                :math:`o_{\rm add}`.
+                :math:`o_{\rm add}`.  Default is no polynomial included.
             mdegree (int): (**Optional**) pPXF mdegree parameter setting
                 the degree of the multiplicative polynomials to use,
-                :math:`o_{\rm mult}`.
+                :math:`o_{\rm mult}`.  Default is no polynomial
+                included.
+            reddening (float): (**Optional**) pPXF reddening parameter
+                used to fit :math:`E(B-V)` assuming a Calzetti law.
+                Cannot be fit simultaneously with multiplicative
+                polynomial.  Must be larger than 0 to start.  Default is
+                not fit.
             max_velocity_range (float): (**Optional**) Maximum range
                 (+/-) expected for the fitted velocities in km/s.
                 Default is 400 km/s.
@@ -2029,16 +2072,12 @@ class Sasuke(EmissionLineFit):
             etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
                                     dtype=float)
         if self.obj_sres is not None:
-            print('setting interpolate')
             interp = interpolate.interp1d(self.obj_wave,
                                           R_to_sinst/numpy.amin(self.obj_sres, axis=0),
                                           assume_sorted=True, bounds_error=False,
                                           fill_value='extrapolate')
-            print('interpolating')
             etpl_sinst = interp(self.tpl_wave * (1 + numpy.mean(self.input_cz) 
                                                         / astropy.constants.c.to('km/s').value))
-            print('done')
-            print(numpy.sum(numpy.invert(numpy.isfinite(etpl_sinst))))
 
         if etpl_sinst_mode == 'zero':
             etpl_sinst[:] = 0.
@@ -2099,6 +2138,7 @@ class Sasuke(EmissionLineFit):
         self.bias = bias
         self.degree = max(degree,-1)
         self.mdegree = max(mdegree,0)
+        self.reddening = reddening
         moments = 2                #numpy.absolute(moments)
         self.reject_boxcar = reject_boxcar
 #        self.fix_kinematics = False     #moments < 0
@@ -2317,8 +2357,6 @@ class Sasuke(EmissionLineFit):
             flux = self.obj_flux.data[:,start:end]
             ferr = self.obj_ferr.data[:,start:end]
             mask = numpy.invert(self.obj_flux.mask[:,start:end])
-            # Debugging: mask blue edge to remove some emission lines
-            mask[0,:400] = False
             flux_binned = None
             ferr_binned = None
             mask_binned = None
@@ -2329,30 +2367,29 @@ class Sasuke(EmissionLineFit):
             flux_binned = self.obj_flux.data[:,start:end]
             ferr_binned = self.obj_ferr.data[:,start:end]
             mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
-            # Debugging: mask blue edge to remove some emission lines
-            mask_binned[0,:400] = False
 
         # Run the fitter
         model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
-                model_wgts_err, model_addcoef, model_multcoef, model_kin_inp, model_kin, \
-                model_kin_err = emline_fitter_with_ppxf_edit(self.tpl_flux, flux, ferr, mask,
-                                                             self.velscale, self.velscale_ratio,
-                                                             self.tpl_comp, self.gas_tpl,
-                                                             self.comp_moments,
-                                                             self.comp_start_kin, tied=self.tied,
-                                                             degree=self.degree,
-                                                             mdegree=self.mdegree,
-                                                             reject_boxcar=self.reject_boxcar,
-                                                             vsyst=self.base_velocity,
-                                                             tpl_to_use=self.tpl_to_use,
-                                                             flux_binned=flux_binned,
-                                                             noise_binned=ferr_binned,
-                                                             mask_binned=mask_binned,
-                                                             x_binned=self.obj_skyx,
-                                                             y_binned=self.obj_skyy,
-                                                             x=self.remap_skyx, y=self.remap_skyy,
-                                                             plot=False, quiet=True)
-#                                                             plot=True, quiet=False)
+                model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
+                model_kin, model_kin_err \
+                            = emline_fitter_with_ppxf_edit(self.tpl_flux, wave, flux, ferr, mask,
+                                                           self.velscale, self.velscale_ratio,
+                                                           self.tpl_comp, self.gas_tpl,
+                                                           self.comp_moments, self.comp_start_kin,
+                                                           tied=self.tied, degree=self.degree,
+                                                           mdegree=self.mdegree,
+                                                           reddening=self.reddening,
+                                                           reject_boxcar=self.reject_boxcar,
+                                                           vsyst=self.base_velocity,
+                                                           tpl_to_use=self.tpl_to_use,
+                                                           flux_binned=flux_binned,
+                                                           noise_binned=ferr_binned,
+                                                           mask_binned=mask_binned,
+                                                           x_binned=self.obj_skyx,
+                                                           y_binned=self.obj_skyy,
+                                                           x=self.remap_skyx, y=self.remap_skyy,
+                                                           plot=False, quiet=True)
+#                                                           plot=True, quiet=False)
         # _model_mask is True where the pixels were fit
 
 #        result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)
@@ -2387,8 +2424,8 @@ class Sasuke(EmissionLineFit):
         model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
                 = self._save_results(etpl, start, end, flux, ferr, model_flux, model_eml_flux,
                                      model_mask, model_wgts, model_wgts_err, model_addcoef,
-                                     model_multcoef, model_kin_inp, model_kin, model_kin_err,
-                                     model_fit_par, model_eml_par)
+                                     model_multcoef, model_reddening, model_kin_inp, model_kin,
+                                     model_kin_err, model_fit_par, model_eml_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

@@ -244,7 +244,8 @@ def available_emission_line_modeling_methods(dapsrc=None):
                                deconstruct_bins=deconstruct_bins, pixelmask=None,
                                reject_boxcar=cnfg.getint('reject_boxcar'),
                                bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
-                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'))
+                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
+                               reddening=cnfg.getfloat('internal_reddening'))
             fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 

@@ -448,7 +448,7 @@ def smooth_masked_vector(x, nsmooth):
     return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=numpy.invert(nn>0) | x.mask)/nn
 
 
-def interpolate_masked_vector(y):
+def interpolate_masked_vector(y, quiet=True):
     """
     Interpolate over the masked pixels in an input vector using linear
     interpolation.
@@ -456,7 +456,8 @@ def interpolate_masked_vector(y):
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)
     if numpy.sum(numpy.invert(indx)) < 2:
-        warnings.warn('Input vector has fewer than 2 unmasked values!  Returning zero vector.')
+        if not quiet:
+            warnings.warn('Input vector has fewer than 2 unmasked values!  Returning zero vector.')
         return numpy.zeros(y.size, dtype=y.dtype.name)
     interpolator = interpolate.interp1d(x[numpy.invert(indx)], y[numpy.invert(indx)],
                                         fill_value='extrapolate')
