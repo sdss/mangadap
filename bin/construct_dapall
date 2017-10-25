@@ -43,6 +43,9 @@ if __name__ == '__main__':
                         help='Set verbosity level; can be omitted and set up to -vv', default=0)
     parser.add_argument('--quiet', action='store_true', default=False,
                         help='suppress all terminal output')
+    parser.add_argument('--double', dest='single_precision', action='store_false', default=True,
+                        help='Output the floating-point data in double precision '
+                             '(default is single precision)')
 
     arg = parser.parse_args()
     analysisplan = AnalysisPlanSet.from_par_file(arg.plan)
@@ -53,7 +56,7 @@ if __name__ == '__main__':
 
     DAPall(analysisplan, methods=arg.methods, drpver=arg.drpver, redux_path=arg.redux_path,
            dapver=arg.dapver, dapsrc=arg.dap_src, analysis_path=arg.analysis_path,
-           loggers=loggers, quiet=arg.quiet)
+           loggers=loggers, quiet=arg.quiet, single_precision=arg.single_precision)
 
     print('Elapsed time: {0} seconds'.format(clock() - t))
 

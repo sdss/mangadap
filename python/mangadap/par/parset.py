@@ -351,7 +351,10 @@ class ParDatabase:
                 _inp = numpy.asarray(inp[i][k])
                 dtypes += [(k,_inp.dtype,_inp.shape)]
             elif isinstance(inp[i][k], str):
-                dtypes += [(k,'<U{0:d}'.format(max([ len(_inp[k]) for _inp in inp ])))]
+                if any([ _inp[k] is None for _inp in inp]):
+                    dtypes += [(k, object)]
+                else:
+                    dtypes += [(k,'<U{0:d}'.format(max([ len(_inp[k]) for _inp in inp])))]
             else:
                 dtypes += [(k,type(inp[i][k]))]
         return dtypes

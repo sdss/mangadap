@@ -5,11 +5,12 @@
 # These bandhead indices are defined by:
 #       D4000   - Bruzual (1983, ApJ, 273, 105)
 #       Dn4000  - Balogh et al. (1999, ApJ, 527, 54)
-#       TiO0p89 - Conroy & van Dokkum (2012, ApJ, 747, 69)
+#       TiOCvD  - Conroy & van Dokkum (2012, ApJ, 747, 69)
 #
 # The columns are described in README.
 #
 # Revisions:
+#   26 Sep 2017: Change TiO name to remove period
 #------------------------------------------------------------------------
 
 typedef struct {
@@ -24,5 +25,5 @@ typedef struct {
 
 DAPBHI  1  D4000      { 3750.000  3950.000 }  { 4050.000  4250.000 }  air      fnu  r_b
 DAPBHI  2  Dn4000     { 3850.000  3950.000 }  { 4000.000  4100.000 }  air      fnu  r_b
-DAPBHI  3  TiO0.89    { 8835.000  8855.000 }  { 8870.000  8890.000 }  vac  flambda  b_r
+DAPBHI  3  TiOCvD     { 8835.000  8855.000 }  { 8870.000  8890.000 }  vac  flambda  b_r
 

@@ -367,7 +367,7 @@ class rundap:
                  log=False, dapproc=True, plots=True, verbose=0,
                  # Include the postprocessing script to create the
                  # DAPall file
-                 build_dapall=False,
+                 build_dapall=False, report_progress=False,
                  # Cluster options
                  label='mangadap', nodes=9, cpus=None, qos=None, umask='0027',walltime='240:00:00',
                  hard=True, create=False, submit=False, queue=None):
@@ -422,6 +422,10 @@ class rundap:
 
         # Build the DAPall file (and any QA plots)
         self.build_dapall = build_dapall
+
+        # Report the progess of the cluster, otherwise just finish
+        # script
+        self.report_progress = report_progress
 
         # Cluster queue keywords
         self.label = label
@@ -619,18 +623,22 @@ class rundap:
                         = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
 
         # If nothing has been submitted, nothing left to do
-        if not self.submit:
+        if not self.report_progress:
             return
 
         # Wait until the queue is finished
         running = True
         while running:
-            time.sleep(1) 
+            time.sleep(60) 
             percent_complete = self.queue.get_percent_complete()
             print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
             if percent_complete == 100:
                 running = False
         print('Percent complete ... {0:.1f}%'.format(percent_complete))
+
+        # No DAPall script, so finish
+        if not self.build_dapall:
+            return
 
         # Set the ready status file for the DAPall script
         self.set_status(dapall_scr, status='ready')
@@ -756,6 +764,11 @@ class rundap:
                             help='use the pbs package to create the cluster scripts')
         parser.add_argument('--submit', action='store_true', default=False,
                             help='submit the scripts to the cluster')
+        parser.add_argument('--progress', action='store_true', default=False,
+                            help='instead of closing the script, report the progress of the '
+                                 'analysis on the cluster; this is required if you want to submit '
+                                 'the DAPall script immediately after completing the individual '
+                                 'cube analysis')
 
         parser.add_argument("--queue", dest='queue', type=str, help='set the destination queue',
                             default=None)
@@ -844,6 +857,10 @@ class rundap:
 
         # Set to construct the dapall file
         self.build_dapall = arg.dapall
+
+        # Set to report the progress of the cluster.  This is needed if
+        # waiting to submit the DAPall construction script
+        self.report_progress = arg.progress
 
         # Set queue keywords
         if arg.umask is not None:
@@ -1300,21 +1317,12 @@ class rundap:
         # Create the list of CUBE DRP files
         drplist = [ DRPFits(self.drpc['PLATE'][i], self.drpc['IFUDESIGN'][i], 'CUBE',
                             drpver=self.mpl.drpver, redux_path=self.redux_path) \
-                            for i in range(n_plates) \
-                                if self.drpc['MANGAID'][i] != 'NULL' \
-                                   and (self.drpc['MANGA_TARGET1'][i] > 0 \
-                                        or self.drpc['MANGA_TARGET3'][i] > 0) \
-                                   and self.drpc['VEL'][i] > 0.0 ]
+                            for i in range(n_plates) if self.drpc.can_analyze(row=i) ]
 
         # Add the list of RSS DRP files
         drplist = drplist + [ DRPFits(self.drpc['PLATE'][i], self.drpc['IFUDESIGN'][i],
                                       'RSS', drpver=self.mpl.drpver, redux_path=self.redux_path)
-                  for i in range(n_plates)
-                  if self.drpc['MANGAID'][i] != 'NULL' \
-                     and (self.drpc['MANGA_TARGET1'][i] > 0 \
-                          or self.drpc['MANGA_TARGET3'][i] > 0) \
-                     and self.drpc['VEL'][i] > 0.0 \
-                     and self.drpc['MODES'][i] == 2 ]
+                  for i in range(n_plates) if self.drpc.can_analyze(row=i) and self.drpc['MODES'][i] == 2 ]
         return drplist
 
 
@@ -1345,10 +1353,7 @@ class rundap:
         if getcube:
             for i in range(0,n_plates):
                 j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
-                if self.drpc['MANGAID'][j] != 'NULL' \
-                        and (self.drpc['MANGA_TARGET1'][j] > 0 \
-                             or self.drpc['MANGA_TARGET3'][j] > 0) \
-                        and self.drpc['VEL'][j] > 0.0:
+                if self.drpc.can_analyze(row=j):
                     drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'CUBE',
                                  drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
@@ -1362,10 +1367,7 @@ class rundap:
 
         for i in range(0,n_plates):
             j = self.drpc.entry_index(self.drpc.platelist[i], self.drpc.ifudesignlist[i])
-            if self.drpc['MANGAID'][j] != 'NULL' \
-                    and (self.drpc['MANGA_TARGET1'][j] > 0 \
-                         or self.drpc['MANGA_TARGET3'][j] > 0) \
-                    and self.drpc['VEL'][j] > 0.0 and self.drpc['MODES'][j] == 2:
+            if self.drpc.can_analyze(row=j) and self.drpc['MODES'][j] == 2:
                 drplist += [ DRPFits(self.drpc.platelist[i], self.drpc.ifudesignlist[i], 'RSS',
                              drpver=self.mpl.drpver, redux_path=self.redux_path) ]
 
@@ -1573,18 +1575,19 @@ class rundap:
         
         # Write the compute script (write_compute_script also checks the
         # path exists!)
-#        sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode, dapproc=self.dapproc, plots=self.plots,
-#                                               clobber=clobber)
-        try:
-            sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
-                                                   dapproc=self.dapproc, plots=self.plots,
-                                                   clobber=clobber)
-        except:
-            e = sys.exc_info()
-            print_frame(e[0])
-            warnings.warn('Problem writing compute script:: {0}: {1}.  Continuing...'.format(
-                                                                                        e[1], e[2]))
-            return None, None, None
+        sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
+                                               dapproc=self.dapproc, plots=self.plots,
+                                               clobber=clobber)
+#        try:
+#            sf, of, ef = self.write_compute_script(drpf.plate, drpf.ifudesign, drpf.mode,
+#                                                   dapproc=self.dapproc, plots=self.plots,
+#                                                   clobber=clobber)
+#        except:
+#            e = sys.exc_info()
+#            print_frame(e[0])
+#            warnings.warn('Problem writing compute script:: {0}: {1}.  Continuing...'.format(
+#                                                                                        e[1], e[2]))
+#            return None, None, None
 
         # Set the status to ready
         self.set_pltifu_status(drpf.plate, drpf.ifudesign, status='ready') #, mode=drpf.mode

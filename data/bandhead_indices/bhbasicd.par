@@ -1,0 +1,25 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 29 Sep 2017
+#
+# THIS IS A DUMMY SET OF INCDICES USED TO SET THE STRUCTURE OF THE
+# SPECINDEX EXTENSION IN THE MAPS FILE TO THE SAME AS THE bhbasic.par
+# INDEX SET.
+#
+# Revisions:
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[9];
+    double blueside[2];
+    double redside[2];
+    char waveref[3];
+    char integrand[7];
+    char order[3];
+} DAPBHI;
+
+DAPBHI  1  D4000      {       -1        -1 }  {       -1        -1 }  air      fnu  r_b
+DAPBHI  2  Dn4000     {       -1        -1 }  {       -1        -1 }  air      fnu  r_b
+DAPBHI  3  TiOCvD     {       -1        -1 }  {       -1        -1 }  vac  flambda  b_r
+

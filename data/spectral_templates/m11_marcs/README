@@ -130,8 +130,8 @@ DAP NOTES:
 
 This library comes directly from the PDAP and contains only the 'ss'
 (Salpeter) IMF data.  The spectra used by the PDAP were highly
-oversampled, with a spectral resolution of 2.73 FWHM and a sampleing 0f
-0.2 angstroms.  I rebinned the spectra such that the sampling is not 1
+oversampled, with a spectral resolution of 2.73 FWHM and a sampling of
+0.2 angstroms.  I rebinned the spectra such that the sampling is now 1
 angstroms/pixel.
 
 IMPORTANT:

@@ -792,7 +792,7 @@ class SpectralIndices:
             ivar[indx] = numpy.ma.masked
 
         # Remove the emission lines if provided        
-        warnings.warn('DEBUG')
+#        warnings.warn('DEBUG')
         if emission_line_model is not None:
             eml_model = emission_line_model.fill_to_match(binned_spectra)
             no_eml = numpy.invert(numpy.ma.getmaskarray(flux)) & numpy.ma.getmaskarray(eml_model)
@@ -1267,6 +1267,18 @@ class SpectralIndices:
         # Initialize the output data
         measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))
 
+        # Mask any dummy indices
+        dummy = numpy.zeros(nindx, dtype=numpy.bool)
+        dummy[:nabs] = absdb.dummy
+        dummy[nabs:] = bhddb.dummy
+        if numpy.any(dummy):
+            measurements['MASK'][:,dummy] = True if bitmask is None else \
+                    bitmask.turn_on(measurements['MASK'][:,dummy], 'UNDEFINED_BANDS')
+
+        # No valid indices
+        if numpy.all(dummy):
+            return measurements
+
         # Perform the measurements on each spectrum
         for i in range(nspec):
 
@@ -1427,6 +1439,8 @@ class SpectralIndices:
                 raise TypeError('Provided emission line models must be of type EmissionLineModel.')
             if emission_line_model.hdu is None:
                 raise ValueError('Provided EmissionLineModel is undefined!')
+            if emission_line_model.method['deconstruct_bins']:
+                raise NotImplementedError('Cannot use EmissionLineModel with bins deconstructed.')
             self.emission_line_model = emission_line_model
 
         self.spatial_shape =self.binned_spectra.spatial_shape
@@ -1648,14 +1662,6 @@ class SpectralIndices:
         """
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           loggers=self.loggers, quiet=self.quiet)
-        
-#        # Restructure the map
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-#        # Writeh the HDU
-#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-#                  quiet=self.quiet)
-#        # Restructure the map
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):

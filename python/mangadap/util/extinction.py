@@ -35,6 +35,8 @@ Provides a set of utility functions to deal with dust extinction.
         dereddening functions in IDLUTILS.
     | **14 Jul 2016**: (KBW) Added :func:`apply_reddening`
     | **02 Dec 2016**: (KBW) Added :class:`GalacticExtinction`
+    | **15 Sep 2017**: (KBW) Allow to pass error instead of inverse
+        variance to :func:`GalacticExtinction.apply`.
 
 """
 
@@ -479,7 +481,7 @@ class GalacticExtinction:
         return self.redcorr
 
 
-    def apply(self, flux, ivar=None, deredden=True):
+    def apply(self, flux, ivar=None, err=None, deredden=True):
         r"""
         Redden or deredden the provided flux array using the existing
         reddening correction vector.
@@ -492,9 +494,14 @@ class GalacticExtinction:
 
         Args:
             flux (numpy.ndarray): The flux array to correct.
-            ivar (numpy.ndarray): The flux inverse variance to use for
-                the error propagation.  Default will not return an
-                inverse variance array.
+            ivar (numpy.ndarray): (**Optional**) The flux inverse
+                variance to use for the error propagation.  If provided,
+                inverse variance in the flux array will be returned.  If
+                provided, cannot provide 1-sigma errors.
+            err (numpy.ndarray): (**Optional**) The 1-siga errors in the
+                flux to use for the error propagation.  If provided,
+                errors in the flux array will be returned.  If provided,
+                cannot provide inverse variance.
             deredden (bool): (**Optional**) Flag to **deredden** the
                 spectrum; if set to false, the function will instead
                 redden the provided fluxes.
@@ -515,6 +522,10 @@ class GalacticExtinction:
             raise ValueError('Must first calculate reddening correction vector.')
         if ivar is not None and flux.shape != ivar.shape:
             raise ValueError('Flux and inverse variance arrays must have the same shape.')
+        if ivar is not None and err is not None:
+            raise ValueError('Cannot provide both errors and inverse variance.')
+        if err is not None and flux.shape != err.shape:
+            raise ValueError('Flux and error arrays must have the same shape.')
 
         r = self._deredden_vec() if deredden else self._redden_vec()
 
@@ -522,17 +533,17 @@ class GalacticExtinction:
         if len(flux.shape) == 1:
             if flux.size != self.redcorr.size:
                 raise ValueError('Flux and reddening correction vector must have same size.')
-            if ivar is None:
+            if ivar is None and err is None:
                 return flux * r
-            return flux * r, ivar / numpy.square(r)
+            elif err is None:
+                return flux * r, ivar / numpy.square(r)
+            return flux * r, err * r
 
-        # Flux is ND
-        if ivar is None:
+        if ivar is None and err is None:
             return flux * r[None,:]
-        return flux * r[None,:], ivar / numpy.square(r)[None,:]
-
-
-
+        elif err is None:
+            return flux * r[None,:], ivar / numpy.square(r)[None,:]
+        return flux * r[None,:], err * r[None,:]
 
 
 #

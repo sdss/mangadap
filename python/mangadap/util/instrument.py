@@ -58,6 +58,9 @@ resolution effects.
     | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.
     | **30 Aug 2017**: (KBW) Add :func:`resample1d`;
         :func:`resample_vector` should be deprecated.
+    | **27 Sep 2017**: (KBW) Added `integral` keyword to
+        :func:`match_spectral_resolution` so that it can be passed to
+        :func:`convolution_variable_sigma`.
 """
 
 from __future__ import division
@@ -567,20 +570,20 @@ class SpectralResolution:
                sig2_pd * numpy.square(self.c*self.dw/self.wave())
 
 
-    def wave(self):
+    def wave(self, copy=False):
         """
         Return the wavelength vector; held by :attr:`interpolator`.
         """
 #        return self.interpolator._data[0]
-        return self.interpolator.x
+        return self.interpolator.x.copy() if copy else self.interpolator.x
 
 
-    def sres(self):
+    def sres(self, copy=False):
         """
         Return the resolution vector; held by :attr:`interpolator`.
         """
 #        return self.interpolator._data[1]
-        return self.interpolator.y
+        return self.interpolator.y.copy() if copy else self.interpolator.y
 
 
     def instrumental_dispersion(self, w=None):
@@ -886,7 +889,7 @@ class SpectralResolution:
 
 def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=None, mask=None, 
                               min_sig_pix=0.0, no_offset=True, variable_offset=False, log10=False,
-                              new_log10=False, quiet=False):
+                              new_log10=False, integral=True, quiet=False):
     r"""
     Adjust the existing spectral resolution of a spectrum to a **lower**
     resolution as best as possible.  The primary functionality is in
@@ -1073,7 +1076,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 #            pyplot.plot(_wave, res[i].sig_pd)
 #            pyplot.plot(_wave, numpy.sqrt(res[i]._convert_pd2vd(numpy.square(res[i].sig_pd))))
 #            pyplot.show()
-#    exit()
 
     # Force all the offsets to be the same, if requested
     if not no_offset and not variable_offset:
@@ -1094,11 +1096,13 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         indx = numpy.where(res[0].sig_pd > min_sig_pix)
         try:
             if ivar is None:
-                out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx])
+                out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
+                                                            integral=integral)
             else:
                 out_flux[indx], out_ivar[indx] \
                         = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
-                                                     ye=None if ivar is None else noise[indx])
+                                                     ye=None if ivar is None else noise[indx],
+                                                     integral=integral)
             out_sres[indx] = res[0].adjusted_resolution(indx=indx)
             out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
         except ValueError as e:
@@ -1113,12 +1117,14 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                 indx = numpy.where(res[i].sig_pd > min_sig_pix)
                 if ivar is None:
                     out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
-                                                                  res[i].sig_pd[indx])
+                                                                  res[i].sig_pd[indx],
+                                                                  integral=integral)
                 else:
                     out_flux[i,indx], out_ivar[i,indx] \
                             = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx],
                                                          ye=None if ivar is None else
-                                                            noise[i,indx].ravel())
+                                                            noise[i,indx].ravel(),
+                                                         integral=integral)
                 out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (_mask[i,:] == 1)).astype(numpy.uint)
                 if len(out_sres.shape) == 1 and i == 0:

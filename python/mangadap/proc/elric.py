@@ -1431,6 +1431,7 @@ class Elric(EmissionLineFit):
         model_eml_par = init_record_array(self.nspec,
                                           self._per_emission_line_dtype(self.neml, 2,
                                                                 self.bitmask.minimum_dtype()))
+        model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
         model_eml_par['BINID'] = numpy.arange(self.nspec)
         model_eml_par['BINID_INDEX'] = numpy.arange(self.nspec)
 

@@ -458,14 +458,17 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
                                                                 drpver=drpver, dapver=dapver,
                                                                 analysis_path=analysis_path))
     hdu = fits.open(sc_file)
+    # This only has the bins with stellar continuum measurements
     binid_map = hdu['BINID'].data.copy()
 
     if signal_map is None:
         signal = numpy.ones(hdu['PAR'].data['BINID_INDEX'].size, dtype=float)
     else:
+        # Find the unique indices in the map with valid bins
         unique, unique_indx = numpy.unique(binid_map.ravel(), return_index=True)
         unique_indx = unique_indx[1:]
-        signal = signal_map.ravel()[unique_indx][ hdu['PAR'].data['BINID_INDEX'] ]
+        # .. and pull these out of the signal map
+        signal = signal_map.ravel()[unique_indx]
 
     w = hdu['PAR'].data['TPLWGT'].copy()
     if tpl_flux_renorm is not None:

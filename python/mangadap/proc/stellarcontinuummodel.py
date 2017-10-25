@@ -1066,24 +1066,10 @@ class StellarContinuumModel:
             hdu = self.construct_3d_hdu()
             DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
                               loggers=self.loggers, quiet=self.quiet)
-#            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.binned_spectra.drpf.mode,
-#                                     self.spectral_arrays, self.image_arrays, clobber=clobber,
-#                                     checksum=True, loggers=self.loggers, quiet=self.quiet)
             return
-
+        # Just write the unique (2D) data
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           loggers=self.loggers, quiet=self.quiet) 
-
-#        # Restructure the spectral arrays as if they're RSS data, and
-#        # restructure any maps
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-#        # Write the HDU
-#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-#                  quiet=self.quiet)
-#        # Revert back to the python native storage for internal use
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1406,11 +1392,11 @@ class StellarContinuumModel:
                 # Fill with the nearest bin.  Treat the velocity and
                 # velocity dispersion bins separately, allowing for the
                 # velocity of a poor sigma measurement to be valid.
-                bad_bins = numpy.append(self.missing_models,
-                                        self.hdu['PAR'].data['BINID'][str_z.mask]).astype(int)
+                bad_bins = numpy.unique(numpy.append(self.missing_models,
+                                    binned_spectra['BINS'].data['BINID'][str_z.mask]).astype(int))
                 str_z = binned_spectra.replace_with_data_from_nearest_bin(str_z.data, bad_bins)
-                bad_bins = numpy.append(self.missing_models,
-                                        self.hdu['PAR'].data['BINID'][str_d.mask]).astype(int)
+                bad_bins = numpy.unique(numpy.append(self.missing_models,
+                                    binned_spectra['BINS'].data['BINID'][str_d.mask]).astype(int))
                 str_d = binned_spectra.replace_with_data_from_nearest_bin(str_d.data, bad_bins)
             else:
                 # Fill any masked values with the single estimate

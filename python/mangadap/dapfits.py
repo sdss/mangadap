@@ -726,6 +726,11 @@ class construct_maps_file:
         emlmomlist = self.emission_line_moment_maps(prihdr, emission_line_moments)
         # Emission-line models:
         elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
+
+#        print(elmodlist[10].name)
+#        print(elmodlist[10].data.shape)
+#        print(numpy.sum(numpy.invert(numpy.isfinite(elmodlist[10].data))))
+
         # Spectral indices:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
@@ -756,26 +761,26 @@ class construct_maps_file:
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
         # is not within the factor below
-        if emission_line_moments is not None and emission_line_model is not None \
-                    and self.hdu['EMLINE_GFLUX'].data.shape != self.hdu['EMLINE_SFLUX'].data.shape:
-            warnings.warn('Cannot compare emission-line moment and model fluxes!')
-        elif emission_line_moments is not None and emission_line_model is not None \
-                    and self.hdu['EMLINE_GFLUX'].data.shape == self.hdu['EMLINE_SFLUX'].data.shape:
-            factor = 5.0
-            indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
-                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
-                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
-                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) ) \
-                    & ( (emission_line_moments['BINID'].data > -1)
-                        & (emission_line_model['BINID'].data > -1) )[:,:,None]
-            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
-            if numpy.sum(indx) > 0:
-                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
-                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
-                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
+#        if emission_line_moments is not None and emission_line_model is not None \
+#                    and self.hdu['EMLINE_GFLUX'].data.shape != self.hdu['EMLINE_SFLUX'].data.shape:
+#            warnings.warn('Cannot compare emission-line moment and model fluxes!')
+#        elif emission_line_moments is not None and emission_line_model is not None \
+#                    and self.hdu['EMLINE_GFLUX'].data.shape == self.hdu['EMLINE_SFLUX'].data.shape:
+#            factor = 5.0
+#            indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+#                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
+#                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
+#                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) ) \
+#                    & ( (emission_line_moments['BINID'].data > -1)
+#                        & (emission_line_model['BINID'].data > -1) )[:,:,None]
+#            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
+#            if numpy.sum(indx) > 0:
+#                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
+#                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
+#                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
 
             # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
 
@@ -799,14 +804,6 @@ class construct_maps_file:
         # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-
-#        # Restructure the multi-channel extensions
-#        DAPFitsUtil.restructure_cube(self.hdu, ext=self.multichannel_arrays, inverse=True)
-#        # Restructure the single-channel extensions
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.singlechannel_arrays, inverse=True)
-#        # Write the HDU
-#        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-#                  quiet=self.quiet)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
@@ -975,7 +972,7 @@ class construct_maps_file:
 
         DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
 
-        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
+        NO_MEASURMENT, MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
         MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED
 
@@ -1001,8 +998,9 @@ class construct_maps_file:
         mask = numpy.array([mask]*emission_line_moments.nmom).transpose(1,2,0)
 
         # Consolidate to NOVALUE
-        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
-                                                                'RED_EMPTY', 'UNDEFINED_BANDS' ])
+        flgd = emission_line_moments.bitmask.flagged(elm_mask,
+                                                     flag=['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
+                                                           'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
         # Consolidate to FITFAILED
@@ -1060,9 +1058,13 @@ class construct_maps_file:
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag='NEAR_BOUND')
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
 
-        # Consolidate to UNRELIABLE; currently only done for the dispersion
+        # Consolidate dispersion flags to NEARBOUND and UNRELIABLE
         if for_dispersion:
-            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA'])
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag='MIN_SIGMA')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA',
+                                                                       'BAD_SIGMA'])
             mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
         return self._consolidate_donotuse(mask)
@@ -1402,9 +1404,10 @@ class construct_maps_file:
         # Need multichannel map header if more than one moment
         multichannel = emission_line_moments.nmom > 1
         # Build the channel names
-        names = [ '{0}-{1}'.format(n,int(w)) \
-                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
-                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+#        names = [ '{0}-{1}'.format(n,int(w)) \
+#                        for n,w in zip(emission_line_moments['ELMBAND'].data['NAME'],
+#                                       emission_line_moments['ELMBAND'].data['RESTWAVE']) ]
+        names = emission_line_moments.channel_names()
         # Create the basic header for all extensions
         base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
                                                  else self.singlechannel_maphdr, names)
@@ -1572,6 +1575,17 @@ class construct_maps_file:
         dtypes = [self.float_dtype]*(len(arr)-emission_line_model.neml) \
                         + [a.dtype.name for a in arr[-emission_line_model.neml:]]
 
+##        t = [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
+##                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
+#        t = [ emission_line_model['EMLDATA'].data['KINERR'][:,m,1]
+#                                 for m in range(emission_line_model.neml) ]
+#        for k,_t in enumerate(t):
+##            print(k, numpy.sum(_t > 1e20))
+#            print(k, numpy.amin(_t))
+#
+##        print('len(arr): ', len(arr))
+##        print('not finite arr: ', [numpy.sum(numpy.invert(numpy.isfinite(a))) for a in arr])
+
         # Bin index
         bin_indx = emission_line_model['BINID'].data.copy().ravel()
 
@@ -1581,6 +1595,10 @@ class construct_maps_file:
         data = [ numpy.array(arr[emission_line_model.neml*i:
                                  emission_line_model.neml*(i+1)]).transpose(1,2,0) \
                         for i in range(narr) ]
+
+#        print(len(data))
+#        print(data[7].shape)
+#        print([numpy.sum(numpy.invert(numpy.isfinite(d))) for d in data])
 
         # Get the masks
         base_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy())
@@ -1960,10 +1978,16 @@ class construct_cube_file:
                   'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
                                                     flag=flags)
-        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
+        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'TPL_PIXELS',
+                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                       flag=flags)
+
         mask[sc_indx & el_indx] = self.bitmask.turn_on(mask[sc_indx & el_indx], 'FITIGNORED')
+
+#        pyplot.imshow(numpy.log10(mask[binned_spectra['BINID'].data > -1,:].reshape(-1,4563)),
+#                        interpolation='nearest', aspect='auto')
+#        pyplot.show()
 
         # TODO: What do I do with BAD_SIGMA?
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
@@ -1971,6 +1995,10 @@ class construct_cube_file:
         el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                       flag=['FIT_FAILED', 'NEAR_BOUND'])
         mask[sc_indx | el_indx] = self.bitmask.turn_on(mask[sc_indx | el_indx], 'FITFAILED')
+
+#        pyplot.imshow(numpy.log10(mask[binned_spectra['BINID'].data > -1,:].reshape(-1,4563)),
+#                        interpolation='nearest', aspect='auto')
+#        pyplot.show()
 
         return mask
 
@@ -2034,8 +2062,8 @@ class construct_cube_file:
 
         # Spectral mask
         mask = self._get_model_and_data_mask(binned_spectra, binned_spectra_3d_hdu,
-                                                 stellar_continuum, stellar_continuum_3d_hdu,
-                                                 emission_line_model, emission_line_model_3d_hdu)
+                                             stellar_continuum, stellar_continuum_3d_hdu,
+                                             emission_line_model, emission_line_model_3d_hdu)
 
         data = [ flux, ivar, mask, binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
                  binned_spectra['REDCORR'].data.copy().astype(self.float_dtype), model ]
@@ -2060,7 +2088,9 @@ class construct_cube_file:
         mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
 
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
-                                                   flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE'])
+                                                   flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE',
+                                                         'TPL_PIXELS', 'TRUNCATED', 'PPXF_REJECT',
+                                                         'INVALID_ERROR'])
         mask[indx] = self.bitmask.turn_on(mask[indx], 'ELIGNORED')
 
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,

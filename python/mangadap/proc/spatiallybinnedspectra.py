@@ -185,9 +185,11 @@ class SpatiallyBinnedSpectraDef(ParSet):
             resolution.  See
             :func:`SpatiallyBinnedSpectra.spectral_resolution_options`
             for a list of the options.
+        prepixel_sres (bool): Use the prepixelized version of the LSF
+            measurements.
     """
     def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
-                 binfunc, stackpar, stackclass, stackfunc, spec_res):
+                 binfunc, stackpar, stackclass, stackfunc, spec_res, prepixel_sres):
         in_fl = [ int, float ]
         res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
@@ -195,15 +197,14 @@ class SpatiallyBinnedSpectraDef(ParSet):
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
-                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc', 'spec_res' ]
-        values =   [   key,   galactic_reddening,   galactic_rv,   minimum_snr,   binpar,
-                       binclass,   binfunc,   stackpar,   stackclass,   stackfunc,   spec_res ]
-        options =  [  None,                 None,          None,          None,     None,
-                           None,      None,       None,         None,        None,    res_opt ]
-        dtypes =   [   str,                  str,         in_fl,         in_fl,  par_opt,
-                           None,      None,    par_opt,         None,        None,        str ]
-        can_call = [ False,                False,         False,         False,    False,
-                          False,      True,      False,        False,        True,      False ]
+                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc', 'spec_res',
+                     'prepixel_sres' ]
+        values =   [ key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass, binfunc,
+                     stackpar, stackclass, stackfunc, spec_res, prepixel_sres ]
+        options =  [ None, None, None, None, None, None, None, None, None, None, res_opt, None ]
+        dtypes =   [ str, str, in_fl, in_fl, par_opt, None, None, par_opt, None, None, str, bool ]
+        can_call = [ False, False, False, False, False, False, True, False, False, True, False,
+                     False ]
 
         ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes,
                         can_call=can_call)
@@ -332,6 +333,7 @@ def available_spatial_binning_methods(dapsrc=None):
             binfunc = None
 
         stack_spec_res = cnfg.get('spec_res') == 'spaxel'
+        prepixel_sres = cnfg.getbool('prepixel_sres', default=True)
 
         stackpar = SpectralStackPar(cnfg.get('operation', default='mean'),
                                     cnfg.getbool('velocity_register', default=False), None,
@@ -339,7 +341,7 @@ def available_spatial_binning_methods(dapsrc=None):
                                     SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
                                             cnfg['stack_covariance_par']),
-                                    stack_spec_res, cnfg.getbool('prepixel_sres', default=True))
+                                    stack_spec_res, prepixel_sres)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
@@ -347,7 +349,8 @@ def available_spatial_binning_methods(dapsrc=None):
                                                        cnfg.getfloat('galactic_rv', default=3.1),
                                                        cnfg.getfloat('minimum_snr', default=0.),
                                                        binpar, binclass, binfunc, stackpar,
-                                                       stackclass, stackfunc, cnfg['spec_res']) ]
+                                                       stackclass, stackfunc, cnfg['spec_res'],
+                                                       prepixel_sres) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \
@@ -1293,7 +1296,7 @@ class SpatiallyBinnedSpectra:
             # !! Use the new pre-pixelized LSF measurements !!
             specres_ext='SPECRES' if self.method['spec_res'] == 'cube' else None
             sres = self.drpf.spectral_resolution(ext=specres_ext, toarray=True,
-                                                 pre=True)[good_spec,:]
+                                                 pre=self.method['prepixel_sres'])[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack
@@ -1552,25 +1555,10 @@ class SpatiallyBinnedSpectra:
             hdu = self.construct_3d_hdu()
             DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-#            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.drpf.mode, self.spectral_arrays,
-#                                     self.image_arrays, clobber=clobber, checksum=True,
-#                                     symlink_dir=self.symlink_dir, loggers=self.loggers,
-#                                     quiet=self.quiet)
             return
-
+        # Just write the unique (2D) data
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
-
-#        # Restructure the spectral arrays as if they're RSS data, and
-#        # restructure any maps
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-#        # Write the HDU
-#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-#                  symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-#        # Revert back to the python native storage for internal use
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):

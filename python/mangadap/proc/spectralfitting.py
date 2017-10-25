@@ -34,6 +34,7 @@ Implements a few base classes used during spectral fitting procedures.
     | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
     | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
         output table.
+    | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -61,10 +62,8 @@ from ..util import lineprofiles
 from ..par.emissionlinedb import EmissionLineDB
 from .bandpassfilter import emission_line_equivalent_width
 
-# Add strict versioning
-# from distutils.version import StrictVersion
-
-
+# For debugging
+from matplotlib import pyplot
 
 # BASE CLASS -----------------------------------------------------------
 class SpectralFitting():
@@ -155,6 +154,9 @@ class EmissionLineFit(SpectralFitting):
                  ('KIN', numpy.float, (neml,nkin)),
                  ('KINERR', numpy.float, (neml,nkin)),
                  ('SIGMACORR', numpy.float, (neml,)),
+                 ('CONTAPLY', numpy.float, (neml,)),
+                 ('CONTMPLY', numpy.float, (neml,)),
+                 ('CONTRFIT', numpy.float, (neml,)),
                  ('BMED', numpy.float, (neml,)),
                  ('RMED', numpy.float, (neml,)),
                  ('EWCONT', numpy.float, (neml,)),
@@ -164,26 +166,47 @@ class EmissionLineFit(SpectralFitting):
 
 
     @staticmethod
-    def get_spectra_to_fit(binned_spectra, pixelmask=None, select=None, error=False):
+    def get_spectra_to_fit(spectra, pixelmask=None, select=None, error=False):
         """
         Get the spectra to fit during the emission-line fitting.
+
+        Args:
+            spectra (:class:`mangadap.drpfits.DRPFits`,
+                :class:`mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra`):
+                Object with the spectra to fit.  Can be one of the
+                provided objects.  This works because both have
+                `copy_to_masked_array` and `do_not_fit_flags` methods.
+            pixelmask
+                (:class:`mangadap.util.pixelmask.SpectralPixelMask`):
+                (**Optional**) Pixel mask to apply.
+            select (numpy.ndarray): (**Optional**) Select specific
+                spectra to return.
+            error (bool): (**Optional**) Return 1-sigma errors instead
+                of inverse variance.
+
+        Returns:
+            numpy.ma.MaskedArray: Two masked arrays: the flux data and
+            the uncertainties, either as 1-sigma error or the inverse
+            variance.
+
         """
         # Grab the spectra
-        flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
-        ivar = binned_spectra.copy_to_masked_array(ext='IVAR',
-                                                   flag=binned_spectra.do_not_fit_flags())
+        flux = spectra.copy_to_masked_array(flag=spectra.do_not_fit_flags())
+        ivar = spectra.copy_to_masked_array(ext='IVAR', flag=spectra.do_not_fit_flags())
+        nspec = flux.shape[0]
+
         # Convert inverse variance to error
         if error:
             ivar = numpy.ma.power(ivar, -0.5)
             flux[numpy.ma.getmaskarray(ivar)] = numpy.ma.masked
-            
+
         # Mask any pixels in the pixel mask
         if pixelmask is not None:
-            indx = pixelmask.boolean(binned_spectra['WAVE'].data, nspec=binned_spectra.nbins)
+            indx = pixelmask.boolean(spectra['WAVE'].data, nspec=nspec)
             flux[indx] = numpy.ma.masked
             ivar[indx] = numpy.ma.masked
         
-        _select = numpy.ones(binned_spectra.nbins, dtype=bool) if select is None else select
+        _select = numpy.ones(nspec, dtype=bool) if select is None else select
         return flux[_select,:], ivar[_select,:]
 
 
@@ -323,6 +346,15 @@ class EmissionLineFit(SpectralFitting):
 
         interpolator = interp1d(wave, sres, fill_value='extrapolate', assume_sorted=True)
         c = astropy.constants.c.to('km/s').value
+
+        sinst = c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
+
+#        pyplot.plot(wave, c/sres/DAPConstants.sig2fwhm, lw=2)
+#        pyplot.plot(wave, 2.5*astropy.constants.c.to('km/s').value/wave/DAPConstants.sig2fwhm,
+#                    color='k', lw=1)
+#        pyplot.scatter((cz/c + 1.0) * restwave, sinst, color='C1', marker='.', lw=0, s=100)
+#        pyplot.show()
+
         return c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
 
 

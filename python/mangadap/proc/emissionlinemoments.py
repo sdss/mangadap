@@ -827,6 +827,15 @@ class EmissionLineMoments:
         measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
                                                                                  bitmask=bitmask))
 
+        # Mask dummy lines
+        if numpy.any(momdb.dummy):
+            measurements['MASK'][:,momdb.dummy] = True if bitmask is None else \
+                    bitmask.turn_on(measurements['MASK'][:,momdb.dummy], 'UNDEFINED_BANDS')
+        
+        # No valid lines
+        if numpy.all(momdb.dummy):
+            return measurements
+
         # Common arrays used for each spectrum
         blue_fraction = numpy.zeros(nmom, dtype=numpy.float)
         red_fraction = numpy.zeros(nmom, dtype=numpy.float)
@@ -1146,10 +1155,10 @@ class EmissionLineMoments:
         measurements['BINID_INDEX'] = numpy.arange(self.binned_spectra.nbins)[good_snr]
         # Save the redshift
         measurements['REDSHIFT'] = _redshift
-        # Set the undefined bands
-        measurements['MASK'][:,self.momdb.dummy] \
-                    = self.bitmask.turn_on(measurements['MASK'][:,self.momdb.dummy],
-                                           'UNDEFINED_BANDS')
+#        # Set the undefined bands
+#        measurements['MASK'][:,self.momdb.dummy] \
+#                    = self.bitmask.turn_on(measurements['MASK'][:,self.momdb.dummy],
+#                                           'UNDEFINED_BANDS')
 
         #---------------------------------------------------------------
         # Initialize the header
@@ -1213,13 +1222,6 @@ class EmissionLineMoments:
         """
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           loggers=self.loggers, quiet=self.quiet)
-#        # Restructure the map
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-#        # Writeh the HDU
-#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True, loggers=self.loggers,
-#                  quiet=self.quiet)
-#        # Restructure the map
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1256,4 +1258,11 @@ class EmissionLineMoments:
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         self.missing_bins = self._get_missing_bins()
+
+
+    # TODO: Use the EmissionMomentsDB.channel_names function!
+    def channel_names(self):
+        return numpy.array([ '{0}-{1}'.format(n,int(w)) \
+                        for n,w in zip(self['ELMBAND'].data['NAME'],
+                                       self['ELMBAND'].data['RESTWAVE']) ])
 

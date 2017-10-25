@@ -85,6 +85,8 @@ KBW (??         ): tag 2.1
       script to construct the DAPall file
     - Updated versions of ppxf and voronoi_2d_binning and moved these
       files out of the mangadap package and into a new captools directory
+    - Edited Sasuke to use iterations tested by Xihan Ji and Michele
+      Cappellari.
 
 TO FIX:
     - emission-line moment masks

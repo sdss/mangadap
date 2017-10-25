@@ -1134,7 +1134,15 @@ class DRPFits:
         return self.hdu.info()
 
 
-    def do_not_stack_flags(self):
+    @staticmethod
+    def do_not_fit_flags():
+        """Return the maskbit names that should not be fit."""
+        return ['DONOTUSE', 'FORESTAR']
+
+
+    @staticmethod
+    def do_not_stack_flags():
+        """Return the maskbit names that should not be stacked."""
         return ['DONOTUSE', 'FORESTAR']
 
 

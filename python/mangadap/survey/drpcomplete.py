@@ -493,14 +493,22 @@ class DRPComplete:
             except:
                 manga_trg3[i] = -9999
 
+            # As of MPL-6, platetargets files now include the redshift
+            # from the targeting catalog which is the combination of
+            # the NSA data and the ancillary targets; the NSA only
+            # redshift column is 'nsa_z'.  To be compatible with
+            # previous versions, first try to grab the redshift using
+            # the keyword 'z', then try with 'nsa_z', then just set it
+            # to -9999.
             try:
-                vel[i] = plttrg_data[plttrg_j]['PLTTRGT'][redshift_key][indx][0] \
+                vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['z'][indx][0] \
                             * astropy.constants.c.to('km/s').value
             except:
-                vel[i] = -9999.0
-
-            # TODO: Include a check that replaces an invalid vel with
-            # one if the nsa_z columns is available...
+                try:
+                    vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0] \
+                                * astropy.constants.c.to('km/s').value
+                except:
+                    vel[i] = -9999.0
 
             try:
                 if plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_ba'][indx][0] < 0:
@@ -1020,7 +1028,7 @@ class DRPComplete:
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.BinTableHDU.from_columns(cols, name='DRPC') ])
         print('Writing to disk: {0}'.format(out))
-        self.hdu.writeto(out, clobber=clobber)
+        self.hdu.writeto(out, overwrite=clobber) #clobber=clobber)
         self.nobs = self.hdu['DRPC'].header['NAXIS2']
 
 
@@ -1163,4 +1171,12 @@ class DRPComplete:
                                 plate, ifudesign))
 
 
+    def can_analyze(self, row=None):
+        if row is None:
+            return (self['MANGAID'] != 'NULL') \
+                    & ((self['MANGA_TARGET1'] > 0) | (self['MANGA_TARGET3'] > 0)) \
+                    & (self['VEL'] > -500.0)
+        return self['MANGAID'][row] != 'NULL' \
+                and (self['MANGA_TARGET1'][row] > 0 or self['MANGA_TARGET3'][row] > 0) \
+                and self['VEL'][row] > -500.0
 

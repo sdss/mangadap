@@ -108,7 +108,7 @@ class MaNGAMPL:
     +--------+-------------+------------+--------+--------+--------+
     | MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.2 |
     +--------+-------------+------------+--------+--------+--------+
-    | MPL-6  |       0.2.1 |    v5_5_29 | v1_5_0 | v2_2_0 |  trunk |
+    | MPL-6  |        None |    v5_5_29 | v1_5_0 | v2_2_0 |  trunk |
     +--------+-------------+------------+--------+--------+--------+
 
     **Python versions**
@@ -117,26 +117,25 @@ class MaNGAMPL:
     +========+========+========+========+============+=========+=======+================+
     | MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |       None |   1.1.2 | 0.5.0 |            yes |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
-    | trunk  |  3.5.3 | 1.12.0 | 0.19.0 |      2.0.0 |   1.3.0 | 0.5.3 |            N/A |
+    | MPL-6  |  3.6.2 | 1.13.1 | 0.19.1 |      2.0.2 |   2.0.2 | 0.6.0 |            N/A |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
 
     .. note::
         - "Fwd compatible" means that you can run this version of the
           DAP with the most recent version without needed to revert the
           python packages to their previous versions.
-        - Only the survey-level routines are dependent on SDSS_ACCESS
-          and MANGACORE; the core DAP processing software only depends
-          on the listed python packages.
+        - Only the survey-level routines are dependent on and MANGACORE;
+          the core DAP processing software only depends on the listed
+          python packages.
 
     .. todo::
         - Change python dependencies to "minimum" versions?
 
     .. warning::
-
-        - There were no dependency of the survey-level DAP code on SDSS_ACCESS
-          until MPL-4.
-        - For MPL-1, the MANGACORE version was set to trunk.  Here it defaults
-          to v1_0_0.
+        - SDSS_ACCESS dependencies are only because of the plotting
+          package that has since moved into Marvin.
+        - For MPL-1, the MANGACORE version was set to trunk.  Here it
+          defaults to v1_0_0.
         - Explicit dependence on matplotlib was introduced in MPL-6.
 
     Args:
@@ -272,7 +271,6 @@ class MaNGAMPL:
 
     def get_environment_versions(self):
         # These will throw KeyErrors if the appropriate environmental variables do not exist
-        # TODO: Use the python3 compatible versions of sdss4tools and sdss_access
         try:
             accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
         except KeyError:
@@ -295,7 +293,7 @@ class MaNGAMPL:
 
         if not quiet:
             print('Current environment: ')
-            print('    SDSS_ACCESS: {0}'.format(env[0]))
+#            print('    SDSS_ACCESS: {0}'.format(env[0]))
             print('       IDLUTILS: {0}'.format(env[1]))
             print('      MANGACORE: {0}'.format(env[2]))
             print('       MANGADRP: {0}'.format(env[3]))
@@ -308,8 +306,8 @@ class MaNGAMPL:
             print('           PYDL: {0}'.format(env[10]))
 
         # Check versions
-        if self.accessver != env[0]:
-            self._version_mismatch('SDSS_ACCESS', self.accessver, env[0], quiet=quiet)
+#        if self.accessver != env[0]:
+#            self._version_mismatch('SDSS_ACCESS', self.accessver, env[0], quiet=quiet)
 
         if self.idlver != env[1]:
             self._version_mismatch('IDLUTILS', self.idlver, env[1], quiet=quiet)
@@ -374,7 +372,7 @@ class MaNGAMPL:
     def show(self):
         """Print the available MPL versions to stdout."""
 
-        print('{0}: SDSS_ACCESS:{1}; IDLUTILS:{2}; COREVER:{3}; DRPVER:{4}; DAPVER:{5}'.format(
-              self.mplver, self.accessver, self.idlver, self.corever, self.drpver, self.dapver))
+        print('{0}: IDLUTILS:{1}; COREVER:{2}; DRPVER:{3}; DAPVER:{4}'.format(
+              self.mplver, self.idlver, self.corever, self.drpver, self.dapver))
 
 

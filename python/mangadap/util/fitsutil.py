@@ -415,6 +415,7 @@ class DAPFitsUtil:
         # Get the unique bins and how to reconstruct the bins from the
         # unique set
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
+#        print(unique_bins)
 
         # Need to handle missing bins
         if unique_bins.size != unique_bins[-1]+2 \
@@ -426,13 +427,28 @@ class DAPFitsUtil:
 
         # Get the valid bins
         indx = bin_indx > -1
+#        print(map_shape, bin_indx.shape, numpy.sum(indx), numpy.prod(bin_indx.shape))
 
         # Restructure all the arrays to match the cube shape
         new_arr = numpy.empty(narr, dtype=object)
+#        print('narr:', narr)
         for i in range(narr):
             new_arr[i] = numpy.zeros(map_shape, dtype=_dtype[i])
-            new_arr[i].ravel()[indx] = _arr[i][unique_bins[reconstruct[indx]]]
-
+            new_arr[i].ravel()[indx] = _arr[i][unique_bins[reconstruct[indx]]].copy()
+            s = numpy.sum(numpy.invert(numpy.isfinite(new_arr[i])))
+            if s > 0:
+                print('dtype: ', _dtype[i])
+                a = numpy.sum(numpy.invert(numpy.isfinite(_arr[i][unique_bins[reconstruct[indx]]])))
+                print('not finite input:', a)
+                print('not finite output ravel:',
+                      numpy.sum(numpy.invert(numpy.isfinite(new_arr[i].ravel()[indx]))))
+                print('not finite output:', s)
+                nf = numpy.invert(numpy.isfinite(new_arr[i].ravel()[indx]))
+                print('inp: ', _arr[i][unique_bins[reconstruct[indx]]][nf])
+                print('out: ', new_arr[i].ravel()[indx][nf])
+                new_arr[i].ravel()[indx][nf] = 0.0
+#                raise ValueError('fubar')
+                
         return tuple([ a for a in new_arr]) if narr > 1 else new_arr[0]
 
 
@@ -546,7 +562,7 @@ class DAPFitsUtil:
         # Write the data
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-        hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
+        hdu.writeto(_ofile, overwrite=clobber, checksum=checksum)
 
         # Transpose it back
         hdu = DAPFitsUtil.transpose_image_data(hdu)

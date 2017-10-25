@@ -271,8 +271,8 @@ class SpectralPixelMask(PixelMask):
 
         Raises:
             ValueError: Raised if `nsigma` is None, or any `nsigma` is
-            not greater than 0; raised if the half-width of any mask is
-            not greater than 0.
+                not greater than 0; raised if the half-width of any mask
+                is not greater than 0.
         """
 
         # Mask everything but the lines to ignore
