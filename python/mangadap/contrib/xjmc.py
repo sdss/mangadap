@@ -175,22 +175,49 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     template.  The tpl_to_use vector is used to set a tempate as
     invalid.
     """
-    # Get the FFT of the templates
-    npix_tpl = templates.shape[1]
-    npad = fftpack.next_fast_len(npix_tpl)
-    templates_rfft = np.fft.rfft(templates, npad, axis=1)
-
-    # Get the design matrix without any polynomial adjustment
-    c = _ppxf_fit_matrix(start, len(mask), templates_rfft, npix_tpl//velscale_ratio, npad,
-                         component, vsyst, moments, velscale, velscale_ratio)
-#    for _c in c:
-#        plt.plot(_c)
+#    # Get the FFT of the templates
+#    npix_tpl = templates.shape[1]
+#    npad = fftpack.next_fast_len(npix_tpl)
+#    templates_rfft = np.fft.rfft(templates, npad, axis=1)
+#
+#    # Get the design matrix without any polynomial adjustment
+#    c = _ppxf_fit_matrix(start, len(mask), templates_rfft, npix_tpl//velscale_ratio, npad,
+#                         component, vsyst, moments, velscale, velscale_ratio)
+#
+#    # Determine which templates have constraining data
+#    valid = np.max(np.absolute(c * mask.astype(float)[None,:]), axis=1) > 1e3*np.finfo(float).eps
+#    valid &= tpl_to_use
+#    ncomp = np.max(component)+1
+#
+#    for i in range(c.shape[0]):
+#        if not gas_template[i]:
+#            continue
+#        plt.plot(c[i,:], zorder=1, linestyle='-' if valid[i] else ':')
+#    plt.fill_between(np.arange(c.shape[1]),0, mask.astype(float)/4,
+#                     color='k', alpha=0.3, zorder=0, lw=0)
 #    plt.show()
 
-    # Determine which templates have constraining data
-    valid = np.max(np.absolute(c * mask.astype(float)[None,:]), axis=1) > 1e3*np.finfo(float).eps
+    # Pulled from the pPXF test for consistency
+    npix_tpl = templates.shape[1]
+    vmed = np.median([a[0] for a in start])
+    dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
+    c = templates if velscale_ratio is None else \
+            np.mean(templates.reshape(-1, npix_tpl//velscale_ratio, velscale_ratio), axis=2)
+    c = c[:,:len(mask)]
+    m1 = np.max(np.abs(c), axis=1)
+    c = np.roll(c, dx, axis=1)
+    m2 = np.max(np.abs(c * mask.astype(float)[None,:]), axis=1)
+    valid = m2 > m1/1e3
     valid &= tpl_to_use
     ncomp = np.max(component)+1
+
+#    for i in range(c.shape[0]):
+#        if not gas_template[i]:
+#            continue
+#        plt.plot(c[i,:], zorder=1, linestyle='-' if valid[i] else ':')
+#    plt.fill_between(np.arange(c.shape[1]),0, mask.astype(float)/4,
+#                     color='k', alpha=0.3, zorder=0, lw=0)
+#    plt.show()
 
     # All templates are valid, just return the input
     if np.all(valid):
