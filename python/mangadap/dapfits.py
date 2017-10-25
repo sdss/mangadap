@@ -761,26 +761,26 @@ class construct_maps_file:
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
         # is not within the factor below
-        if emission_line_moments is not None and emission_line_model is not None \
-                    and self.hdu['EMLINE_GFLUX'].data.shape != self.hdu['EMLINE_SFLUX'].data.shape:
-            warnings.warn('Cannot compare emission-line moment and model fluxes!')
-        elif emission_line_moments is not None and emission_line_model is not None \
-                    and self.hdu['EMLINE_GFLUX'].data.shape == self.hdu['EMLINE_SFLUX'].data.shape:
-            factor = 5.0
-            indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
-                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
-                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
-                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) ) \
-                    & ( (emission_line_moments['BINID'].data > -1)
-                        & (emission_line_model['BINID'].data > -1) )[:,:,None]
-            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
-            if numpy.sum(indx) > 0:
-                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
-                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
-                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
+#        if emission_line_moments is not None and emission_line_model is not None \
+#                    and self.hdu['EMLINE_GFLUX'].data.shape != self.hdu['EMLINE_SFLUX'].data.shape:
+#            warnings.warn('Cannot compare emission-line moment and model fluxes!')
+#        elif emission_line_moments is not None and emission_line_model is not None \
+#                    and self.hdu['EMLINE_GFLUX'].data.shape == self.hdu['EMLINE_SFLUX'].data.shape:
+#            factor = 5.0
+#            indx = (self.hdu['EMLINE_GFLUX_MASK'].data == 0) \
+#                    & (self.hdu['EMLINE_SFLUX_MASK'].data == 0) \
+#                    & ( (self.hdu['EMLINE_GFLUX'].data < self.hdu['EMLINE_SFLUX'].data/factor)
+#                        | (self.hdu['EMLINE_GFLUX'].data > self.hdu['EMLINE_SFLUX'].data*factor) ) \
+#                    & ( (emission_line_moments['BINID'].data > -1)
+#                        & (emission_line_model['BINID'].data > -1) )[:,:,None]
+#            print('unreliable Gaussian flux compared to summed flux: ', numpy.sum(indx))
+#            if numpy.sum(indx) > 0:
+#                self.hdu['EMLINE_GFLUX_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GFLUX_MASK'].data[indx], 'UNRELIABLE')
+#                self.hdu['EMLINE_GVEL_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GVEL_MASK'].data[indx], 'UNRELIABLE')
+#                self.hdu['EMLINE_GSIGMA_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['EMLINE_GSIGMA_MASK'].data[indx], 'UNRELIABLE')
 
             # TODO: Add if EMLINE_GSIGMA < EMLINE_INSTSIGMA !!
 
