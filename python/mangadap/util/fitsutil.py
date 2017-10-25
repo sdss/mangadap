@@ -562,7 +562,7 @@ class DAPFitsUtil:
         # Write the data
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-        hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
+        hdu.writeto(_ofile, overwrite=clobber, checksum=checksum)
 
         # Transpose it back
         hdu = DAPFitsUtil.transpose_image_data(hdu)

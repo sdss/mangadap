@@ -304,7 +304,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      minimum_error=numpy.finfo(numpy.float32).eps,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
-        
+
         #---------------------------------------------------------------
         # TODO: If the emission-line fitting method deconstructs the
         # bins into individual spaxels, remeasure the emission-line

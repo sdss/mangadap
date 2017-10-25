@@ -81,6 +81,7 @@ from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
+from ..util.filter import interpolate_masked_vector
 from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.instrument import SpectralResolution
 from ..util.log import log_output
@@ -527,7 +528,9 @@ class Sasuke(EmissionLineFit):
                  ('TPLWGT',numpy.float,(ntpl,)),
                  ('TPLWGTERR',numpy.float,(ntpl,)),
                  ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
+                 ('APLYMINMAX',numpy.float,(2,)) if nadd > 1 else ('APLYMINMAX',numpy.float),
                  ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
+                 ('MPLYMINMAX',numpy.float,(2,)) if nmult > 1 else ('MPLYMINMAX',numpy.float),
                  ('KININP',numpy.float,(nkin,)),
                  ('KIN',numpy.float,(nkin,)),
                  ('KINERR',numpy.float,(nkin,)),
@@ -550,11 +553,11 @@ class Sasuke(EmissionLineFit):
         of the emission lines the the emission-line templates.  Possible
         modes are:
 
-            ``default``: In order of precedence: Use the spectral
-                resolution of the stellar templates, or use the spectral
-                resolution of the observed spectra, or adopt a FWHM of 2
-                pixels and calculate the resolution assuming a Gaussian
-                line profile.
+            ``default``: In order of precedence: 
+                - Use the spectral resolution of the observed spectra, or
+                - use the spectral resolution of the stellar templates, or
+                - adopt a FWHM of 2 pixels and calculate the resolution
+                  assuming a Gaussian line profile.
 
             ``zero``:  The width of all lines is set to 0.  The function
                 from :mod:`mangadap.util.lineprofiles` used to construct
@@ -570,8 +573,8 @@ class Sasuke(EmissionLineFit):
                 :class:`SasukePar` or the keyword argument in
                 :func:`Sasuke.fit`.  If the minimum dispersion is 0, the
                 function from :mod:`mangadap.util.lineprofiles` used to
-                construct the line *must* be able to produce the line if
-                the standard deviation is 0!
+                construct the line *must* be able to produce a line with
+                a standard deviation of 0!
 
         Returns:
             list: List of allowed options.
@@ -803,18 +806,19 @@ class Sasuke(EmissionLineFit):
 #        return model_eml_flux
 
 
-    def _is_near_bounds(self, kin, kin_inp, vel_indx, sig_indx, lbound, ubound, tol_frac=1e-2):
+    def _is_near_bounds(self, kin, kin_inp, vel_indx, sig_indx, lbound, ubound, tol_frac=1e-2,
+                        fill_value=-999.):
         r"""
-        Check if the fitted kinematics are near the imposed limits.
+        Check if the kinematics were fit and near the imposed limits.
+
+        Any value that is close to ``fill_value`` is flagged as not
+        having been fit, presumably because too much/all of the data
+        near the emission line is masked.
         
         The definition of "near" is that the velocity and higher moments
         cannot be closer than the provided fraction of the total width
         to the boundary.  For the velocity dispersion, the fraction is
         done in log space.
-
-        (FB) This function sets flags on the kinematics based on vicinty
-        to bounds. DOES THIS APPLY TO EMISSION LINES AS WELL? (KBW) Yes.
-        Is there any reason it shouldn't?
 
         Args:
             kin (numpy.ndarray): Best-fitting kinematic parameters.
@@ -837,11 +841,13 @@ class Sasuke(EmissionLineFit):
                 boundary.
         
         Returns:
-            numpy.ndarray: Two boolean arrays flagging if the parameter
-            is near either boundary and if the parameter is near the
-            lower boundary.  The latter is important in case the fitted
-            parameter is a velocity dispersion and that it's near the
-            lower boundary because it has hit the pixel sampling limit.
+            numpy.ndarray: Three boolean arrays that flag if (1) the
+            parameter is near either boundary, (2) the parameter is near
+            the lower boundary, and (3) the parameter is near the
+            fill_value.  The second array is important in case the
+            fitted parameter is a velocity dispersion and that it's near
+            the lower boundary because it has hit the pixel sampling
+            limit.
 
         """
         nspec = kin.shape[0]        # Number of spectra fit
@@ -863,11 +869,20 @@ class Sasuke(EmissionLineFit):
         # and whether it's close to either
         near_bound = near_lower_bound | (_ubound - kin < tol)
 
-#        for k,b,l in zip(kin[0], near_bound[0], near_lower_bound[0]):
-#            print(k,b,l)
+        # Determine if the parameter is near the fill value indicating
+        # that it was not included in the fit
+        tol = 1e-5                      # !! HARDCODED !!
+        no_data = kin - fill_value < tol
+
+        # If the parameter was not fit, parameter not near any boundary
+        near_bound[no_data] = False
+        near_lower_bound[no_data] = False
+
+#        for k,b,l,f in zip(kin[0], near_bound[0], near_lower_bound[0], no_data[0]):
+#            print(k,b,l,f)
 
         # Return the two boundary flags
-        return near_bound, near_lower_bound
+        return near_bound, near_lower_bound, no_data
 
 
     def _validate_dispersions(self, model_eml_par, rng=[0,400]):
@@ -909,10 +924,31 @@ class Sasuke(EmissionLineFit):
         return model_eml_par
 
 
-#    def _save_results(self, etpl, result, model_mask, model_fit_par, model_eml_par):
+    def _reset_to_fill_value(self, model_eml_par, fill_value=-999.):
+        """
+        Reset all the emission lines masked as having insufficient data
+        to fit to the provided fill value.
+
+        .. note::
+            The error values are currently reset to 0. by
+            :class:`mangadap.proc.emissionlinemodel.EmissionLineModel.`
+        """
+        indx = self.bitmask.flagged(model_eml_par['MASK'], flag='INSUFFICIENT_DATA')
+        model_eml_par['FLUX'][indx] = fill_value
+        model_eml_par['FLUXERR'][indx] = fill_value
+        model_eml_par['KIN'][indx,:] = fill_value
+        model_eml_par['KINERR'][indx,:] = fill_value
+        model_eml_par['SIGMACORR'][indx] = fill_value
+        if self.degree > -1:
+            model_eml_par['CONTAPLY'][indx] = fill_value
+        if self.mdegree > 0:
+            model_eml_par['CONTMPLY'][indx] = fill_value
+        return model_eml_par
+
+
     def _save_results(self, etpl, start, end, flux, ferr, model_flux, model_eml_flux, model_mask,
                       model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_kin_inp,
-                      model_kin, model_kin_err, model_fit_par, model_eml_par):
+                      model_kin, model_kin_err, model_fit_par, model_eml_par, fill_value=-999.):
         r"""
         Save and assess the results of the ppxf fits.
         
@@ -1036,11 +1072,15 @@ class Sasuke(EmissionLineFit):
         model_fit_par['TIEDKIN'] = numpy.array([numpy.concatenate(tuple(par_indx))]*nspec)
 
         # Save the polynomial coefficients
+        used_apoly = False
         if self.degree > -1 and model_addcoef is not None:
             model_fit_par['ADDCOEF'] = model_addcoef
+            used_apoly = True
 
+        used_mpoly = False
         if self.mdegree > 0 and model_multcoef is not None:
             model_fit_par['MULTCOEF'] = model_multcoef
+            used_mpoly = True
 
         # Flattened input and output kinematics
         model_fit_par['KININP'] = model_kin_inp
@@ -1048,9 +1088,10 @@ class Sasuke(EmissionLineFit):
         model_fit_par['KINERR'] = model_kin_err
 
         # Test if the kinematics are near the imposed boundaries.
-        near_bound, near_lower_bound = self._is_near_bounds(model_fit_par['KIN'],
-                                                            model_fit_par['KININP'],
-                                                            vel_indx, sig_indx, lbound, ubound)
+        near_bound, near_lower_bound, no_data = self._is_near_bounds(model_fit_par['KIN'],
+                                                                     model_fit_par['KININP'],
+                                                                     vel_indx, sig_indx, lbound,
+                                                                     ubound, fill_value=fill_value)
 
         # Flag the fit *globally*
         # - If the velocity dispersion has hit the lower limit for all
@@ -1069,6 +1110,9 @@ class Sasuke(EmissionLineFit):
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'NEAR_BOUND')
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NEAR_BOUND')
+
+        # - If no_data is all true for any one spectrum, the ppxf fitter
+        # should have raised an error.
 
         # Convert the velocities from pixel units to cz
         model_fit_par['KININP'][:,vel_indx], _ \
@@ -1108,6 +1152,13 @@ class Sasuke(EmissionLineFit):
             model_eml_par['KINERR'][:,j,:] = model_fit_par['KINERR'][:,indx]
 
             # Get the bound masks specific to this emission-line (set)
+            # - Determine if the emission-line was part of a rejected
+            # template
+            flg = numpy.any(no_data[:,indx], axis=1)
+            if numpy.sum(flg) > 0:
+                model_eml_par['MASK'][flg,j] = self.bitmask.turn_on(model_eml_par['MASK'][flg,j],
+                                                                    'INSUFFICIENT_DATA')
+
             # - Determine if the velocity dispersion parameter of this
             #   line has hit the lower limit; if so, ONLY flag the value
             #   as having a MIN_SIGMA.
@@ -1136,7 +1187,7 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Iterate over each spectrum
-        mpoly_x = numpy.linspace(-1, 1, end-start)
+        poly_x = numpy.linspace(-1, 1, end-start)
         sres = self.obj_sres if self.nremap == 0 else self.remap_sres
         for i in range(nspec):
 
@@ -1148,23 +1199,40 @@ class Sasuke(EmissionLineFit):
                         = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
                                         [0.0, 0.68, 0.95, 0.99, 1.0])
 
-            # Get the multiplicative polynomial corrections to the flux
-            if self.mdegree > 0 and model_multcoef is not None:
-                # Sample the multiplicative polynomial the fitted
-                # wavelength of each line to modify the flux
-                #
-                # TODO: THIS IS APPROXIMATE; assumes the change in the
-                # multiplicative polynomial over the wavelength range
-                # relevant to the emission line is small!
+            if used_apoly or used_mpoly:
+                # Sample the polynomials at the fitted wavelength of
+                # each line
                 obswave = self.emldb['restwave'][self.fit_eml] \
                                     * (1 + model_eml_par['KIN'][i,self.fit_eml,0]
                                                 / astropy.constants.c.to('km/s').value)
-                mpoly = numpy.polynomial.legendre.legval(mpoly_x,
-                                                         numpy.append(1, model_multcoef[i,:]))
-                factor = interpolate.interp1d(self.obj_wave[start:end], mpoly, bounds_error=False,
-                                              fill_value=1.0, assume_sorted=True)(obswave)
-                model_eml_par['FLUX'][i,self.fit_eml] *= factor
-                model_eml_par['FLUXERR'][i,self.fit_eml] *= factor
+
+                # - Additive polynomial:
+                if used_apoly:
+                    apoly = numpy.polynomial.legendre.legval(poly_x,
+                                                             numpy.append(1, model_addcoef[i,:]))
+                    model_fit_par['APLYMINMAX'][i,:] = [numpy.amin(apoly), numpy.amax(apoly)]
+                    model_eml_par['CONTAPLY'][i,:] \
+                            = interpolate.interp1d(self.obj_wave[start:end], apoly,
+                                                   bounds_error=False, fill_value=1.0,
+                                                   assume_sorted=True)(obswave)
+
+                # - Multiplicative polynomial:
+                if used_mpoly:
+                    mpoly = numpy.polynomial.legendre.legval(poly_x,
+                                                             numpy.append(1, model_multcoef[i,:]))
+                    model_fit_par['MPLYMINMAX'][i,:] = [numpy.amin(mpoly), numpy.amax(mpoly)]
+                    model_eml_par['CONTMPLY'][i,:] \
+                            = interpolate.interp1d(self.obj_wave[start:end], mpoly,
+                                                   bounds_error=False, fill_value=1.0,
+                                                   assume_sorted=True)(obswave)
+                #-------------------------------------------------------
+                # As of version 6.6.5, pPXF no longer applies the
+                # multiplicative polynomial to the gas templates
+                # factor = interpolate.interp1d(self.obj_wave[start:end], mpoly, bounds_error=False,
+                #                              fill_value=1.0, assume_sorted=True)(obswave)
+                # model_eml_par['FLUX'][i,self.fit_eml] *= factor
+                # model_eml_par['FLUXERR'][i,self.fit_eml] *= factor
+                #-------------------------------------------------------
 
             # Get the instrumental dispersion in the galaxy data at the
             # location of the fitted lines
@@ -1227,6 +1295,10 @@ class Sasuke(EmissionLineFit):
             # TODO: FIX THIS
 #            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
 
+
+        #---------------------------------------------------------------
+        # Reset any parameters based on insufficient data to the fill_value
+        model_eml_par = self._reset_to_fill_value(model_eml_par, fill_value=fill_value)
 
         #---------------------------------------------------------------
         # Test if kinematics are reliable
@@ -1325,6 +1397,9 @@ class Sasuke(EmissionLineFit):
         flux, ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra, pixelmask=par['pixelmask'],
                                                         error=True)
         sres = binned_spectra.copy_to_array(ext='SPECRES')
+        _sres = numpy.ma.MaskedArray(sres.copy(), mask=numpy.invert(sres > 0))
+        for i in range(sres.shape[0]):
+            sres[i,:] = interpolate_masked_vector(_sres[i,:])
 
         # TODO: Also may want to include pixels rejected during stellar
         # kinematics fit
@@ -1523,20 +1598,14 @@ class Sasuke(EmissionLineFit):
                                                      #redshift=redshift,
                                                      bitmask=self.bitmask, checkdb=False)
 
-#        # Use the previous fit to the stellar continuum to set the
-#        # emission-line model "baseline"
-#        eml_continuum = model_flux-model_eml_flux
-#
-#        # TODO: This is done as a place holder.  We need a better way of
-#        # propagating the difference between the stellar-kinematics fit
-#        # and the combined stellar-continuum + emission-line model to
-#        # the output datamodel.
-#        stellar_continuum = numpy.zeros(flux.shape, dtype=float) \
-#                            if par['stellar_continuum'] is None \
-#                            else par['stellar_continuum'].fill_to_match(binned_spectra).filled(0.0)
-#
-#        model_eml_base = model_flux-model_eml_flux-stellar_continuum[spec_to_fit,:]
-#        model_eml_flux += model_eml_base
+        # Reset the equivalent widths to the fill value.  The error
+        # values are currently reset to 0. by EmissionLineModel.
+        indx = self.bitmask.flagged(model_eml_par['MASK'], flag='INSUFFICIENT_DATA')
+        model_eml_par['BMED'][indx] = -999.
+        model_eml_par['RMED'][indx] = -999.
+        model_eml_par['EWCONT'][indx] = -999.
+        model_eml_par['EW'][indx] = -999.
+        model_eml_par['EWERR'][indx] = -999.
 
         # Calculate the "emission-line baseline" as the difference
         # between the stellar continuum model determined for the
@@ -1731,11 +1800,16 @@ class Sasuke(EmissionLineFit):
                 spectrum.  Shape is (:math:`N_{\rm spec},N_{{\rm
                 tpl},\ast}`).
             stellar_kinematics (numpy.ndarray): (**Optional**) The
-                kinematics to use for the stellar component.  These
-                kinematics are **fixed** for all calls to ppxf.  Shape
-                is (:math:`N_{\rm spec},N_{{\rm kin},\ast}`).  The shape
-                of this array determines the number of moments assigned
-                to the stellar component.
+                kinematics to use for the stellar component.  If the
+                spectral resolution of the templates is different from
+                the galaxy data, the provided stellar velocity
+                dispersions *must* include the the (assumed
+                wavelength-independent) quadrature difference in the
+                template and galaxy instrumental resolutions.  The
+                stellar kinematics are **fixed** for all calls made to
+                ppxf.  Shape is (:math:`N_{\rm spec},N_{{\rm
+                kin},\ast}`).  The shape of this array determines the
+                number of moments assigned to the stellar component.
             etpl_sinst_mode (str): (**Optional**) Mode used to set the
                 instrumental dispersion of the emission-line templates;
                 see :func:`etpl_line_sigma_options` for the options.
@@ -1793,8 +1867,7 @@ class Sasuke(EmissionLineFit):
                 unity.
             matched_resolution (bool): (**Optional**) The spectral
                 resolution of the templates is matched to that of the
-                galaxy data.  WARNING: This functionality needs to be
-                checked in relation to the gas templates!
+                galaxy data.  WARNING: This functionality is never used!
             waverange (array-like): (**Optional**) Lower and upper
                 wavelength limits to *include* in the fit.  This can be
                 a two-element vector to apply the same limits to all
@@ -1878,6 +1951,7 @@ class Sasuke(EmissionLineFit):
         self.input_cz, guess_kin = PPXFFit.check_input_kinematics(self.nobj, guess_redshift,
                                                                   guess_dispersion)
 #        print(self.input_cz[0], guess_kin[0,:])
+#        print(numpy.mean(self.input_cz))
 
         # Check the remapping data, if provided
         if remap_flux is not None:
@@ -1938,10 +2012,10 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Set the emission-line spectral resolution.
-        # - Set to the stellar template resolution, if available (i.e.,
-        #   use what is set above)
-        # - If the object resolution is not available, use the 2-pixel
-        #   resolution
+        # - If the object resolution and template resolution are not
+        #   available, use the 2-pixel resolution
+        # - If the object resolution is not available, set to the
+        #   stellar template resolution (i.e., use what is set above)
         # - If the object resolution is available, set it to the minimum
         #   object resolution at each wavelength channel.
         # - Force the instrumental dispersion to 0 if requested by the
@@ -1950,11 +2024,22 @@ class Sasuke(EmissionLineFit):
         #   imposed minimum or if the user requested to offset to the
         #   minimum.
         self.matched_resolution = matched_resolution
-        if etpl_sinst is None:
+        if etpl_sinst is None and self.obj_sres is None:
             self.matched_resolution = False
             etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
-                                    dtype=float) if self.obj_sres is None \
-                                                 else R_to_sinst/numpy.amin(self.obj_sres, axis=0)
+                                    dtype=float)
+        if self.obj_sres is not None:
+            print('setting interpolate')
+            interp = interpolate.interp1d(self.obj_wave,
+                                          R_to_sinst/numpy.amin(self.obj_sres, axis=0),
+                                          assume_sorted=True, bounds_error=False,
+                                          fill_value='extrapolate')
+            print('interpolating')
+            etpl_sinst = interp(self.tpl_wave * (1 + numpy.mean(self.input_cz) 
+                                                        / astropy.constants.c.to('km/s').value))
+            print('done')
+            print(numpy.sum(numpy.invert(numpy.isfinite(etpl_sinst))))
+
         if etpl_sinst_mode == 'zero':
             etpl_sinst[:] = 0.
         min_sinst = numpy.amin(etpl_sinst)
@@ -2139,6 +2224,7 @@ class Sasuke(EmissionLineFit):
         model_eml_par = init_record_array(output_shape[0],
                                           self._per_emission_line_dtype(self.neml, 2,
                                                                 self.bitmask.minimum_dtype()))
+        model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
         model_eml_par['BINID'] = numpy.arange(output_shape[0])
         model_eml_par['BINID_INDEX'] = numpy.arange(output_shape[0])
 
@@ -2231,6 +2317,8 @@ class Sasuke(EmissionLineFit):
             flux = self.obj_flux.data[:,start:end]
             ferr = self.obj_ferr.data[:,start:end]
             mask = numpy.invert(self.obj_flux.mask[:,start:end])
+            # Debugging: mask blue edge to remove some emission lines
+            mask[0,:400] = False
             flux_binned = None
             ferr_binned = None
             mask_binned = None
@@ -2241,6 +2329,8 @@ class Sasuke(EmissionLineFit):
             flux_binned = self.obj_flux.data[:,start:end]
             ferr_binned = self.obj_ferr.data[:,start:end]
             mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
+            # Debugging: mask blue edge to remove some emission lines
+            mask_binned[0,:400] = False
 
         # Run the fitter
         model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
@@ -2261,7 +2351,8 @@ class Sasuke(EmissionLineFit):
                                                              x_binned=self.obj_skyx,
                                                              y_binned=self.obj_skyy,
                                                              x=self.remap_skyx, y=self.remap_skyy,
-                                                             plot=False, quiet=True) #self.quiet)
+                                                             plot=False, quiet=True)
+#                                                             plot=True, quiet=False)
         # _model_mask is True where the pixels were fit
 
 #        result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)

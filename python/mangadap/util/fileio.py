@@ -136,7 +136,8 @@ def writefits_1dspec(ofile, crval1, cdelt1, flux, hdr=None, clobber=False):
     _hdr['CRVAL1'] = crval1
     _hdr['CDELT1'] = cdelt1
     _hdr['CD1_1'] = _hdr['CDELT1']
-    fits.HDUList([ fits.PrimaryHDU(flux, header=_hdr) ]).writeto(ofile, clobber=clobber)
+    fits.HDUList([ fits.PrimaryHDU(flux, header=_hdr) ]).writeto(ofile, overwrite=clobber)
+                 #clobber=clobber)
 
 
 def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None, log10=False):
@@ -319,36 +320,6 @@ def compress_file(ifile, clobber=False):
     with open(ifile, 'rb') as f_in:
         with gzip.open(ofile, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
-
-
-#def write_hdu(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
-#              loggers=None, quiet=False):
-#    """
-#    Write an HDUList to an output file.
-#    """
-#    # Get the output file and determine if it should be compressed
-#    compress = False
-#    if ofile.split('.')[-1] == 'gz':
-#        _ofile = ofile[:ofile.rfind('.')] 
-#        compress = True
-#    else:
-#        _ofile = ofile
-#
-#    # Write the data
-#    if not quiet:
-#        log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-#    hdu.writeto(_ofile, clobber=clobber, checksum=checksum)
-#    if compress:
-#        if not quiet:
-#            log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
-#        # And compress it
-#        compress_file(_ofile, clobber=clobber)
-#        os.remove(_ofile)
-#
-#    # Create the symlink if requested
-#    if symlink_dir is not None:
-#        create_symlink(ofile, symlink_dir, relative_symlink=relative_symlink, loggers=loggers,
-#                       quiet=quiet)
 
 
 def create_symlink(ofile, symlink_dir, relative_symlink=True, clobber=False, loggers=None,

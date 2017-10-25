@@ -1555,25 +1555,10 @@ class SpatiallyBinnedSpectra:
             hdu = self.construct_3d_hdu()
             DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-#            DAPFitsUtil.write_3d_hdu(hdu, self.file_path(), self.drpf.mode, self.spectral_arrays,
-#                                     self.image_arrays, clobber=clobber, checksum=True,
-#                                     symlink_dir=self.symlink_dir, loggers=self.loggers,
-#                                     quiet=self.quiet)
             return
-
+        # Just write the unique (2D) data
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
-
-#        # Restructure the spectral arrays as if they're RSS data, and
-#        # restructure any maps
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays, inverse=True)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays, inverse=True)
-#        # Write the HDU
-#        write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-#                  symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-#        # Revert back to the python native storage for internal use
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
 
     def read(self, ifile=None, strict=True, checksum=False):

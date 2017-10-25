@@ -34,6 +34,7 @@ Implements a few base classes used during spectral fitting procedures.
     | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
     | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
         output table.
+    | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -153,6 +154,8 @@ class EmissionLineFit(SpectralFitting):
                  ('KIN', numpy.float, (neml,nkin)),
                  ('KINERR', numpy.float, (neml,nkin)),
                  ('SIGMACORR', numpy.float, (neml,)),
+                 ('CONTAPLY', numpy.float, (neml,)),
+                 ('CONTMPLY', numpy.float, (neml,)),
                  ('BMED', numpy.float, (neml,)),
                  ('RMED', numpy.float, (neml,)),
                  ('EWCONT', numpy.float, (neml,)),

@@ -137,8 +137,6 @@ class AnalysisPlanSet(ParDatabase):
         nplan = len(par['DAPPLAN']['drpqa_key'])
         planlist = []
         for i in range(nplan):
-#            print(type(par['DAPPLAN']['spindex_key'][i]))
-#            print(par['DAPPLAN']['spindex_key'][i])
             planlist += [ AnalysisPlan(par['DAPPLAN']['drpqa_key'][i],
                                        bool(par['DAPPLAN']['drpqa_clobber'][i]),
                                        par['DAPPLAN']['bin_key'][i],
@@ -154,64 +152,3 @@ class AnalysisPlanSet(ParDatabase):
         return cls(planlist)
 
 
-#    SignalToNoisePlan
-#        - wavelength range(s)
-#        - covariance
-#        - clobber
-#    BinningPlan
-#        - type: All
-#        - type: None
-#        - type: Voronoi
-#            - S/N target
-#            - S/N calculation
-#        - type: Radial
-#            - geometry: cx, cy, pa, boa
-#            - rscale
-#            - sampling: rs (in scale units), re (in scale units), nr, rlog
-#        - velocity register
-#        - weighting
-#        - S/N Threshold
-#        - rejection
-#        - covariance
-#        - clobber
-#    StellarContinuumPlan: can be NULL
-#        - (binned) spectra
-#        - S/N Threshold
-#        - template library
-#        - pPXFPlan
-#            - moments
-#            - degree
-#            - mdegree
-#            - reddening
-#            - oversample
-#            ...
-#        - clobber
-#    EmissionLinePlan: can be NULL
-#        - (binned) spectra
-#        - S/N Threshold
-#        - emission-line moment database
-#        - emission-line database
-#        - integrated flux limit
-#        - allow negative amplitude?
-#        - clobber
-#    SpectralIndexPlan: can be NULL
-#        - (binned) spectra
-#        - S/N Threshold
-#        - absorption-line index database
-#        - bandhead index database
-#        - pseudo-continuum limit?
-#        - clobber
-#
-#    - index
-#    - LIN vs LOG
-#    - CUBE vs. RSS
-#    - prior
-#    - execute
-#
-#
-#    open empty, open from file
-#    add new plan, and iteratively do so
-#    delete (all) plan(s)
-#    print plans to screen or log file
-#    write plans
-#

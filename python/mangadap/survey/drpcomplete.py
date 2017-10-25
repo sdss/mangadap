@@ -1028,7 +1028,7 @@ class DRPComplete:
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
                                   fits.BinTableHDU.from_columns(cols, name='DRPC') ])
         print('Writing to disk: {0}'.format(out))
-        self.hdu.writeto(out, clobber=clobber)
+        self.hdu.writeto(out, overwrite=clobber) #clobber=clobber)
         self.nobs = self.hdu['DRPC'].header['NAXIS2']
 
 

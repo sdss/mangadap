@@ -1528,8 +1528,6 @@ class TemplateLibrary:
         if self.hardcopy:
             DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
-#            write_hdu(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-#                      symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 

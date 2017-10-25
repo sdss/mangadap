@@ -5,10 +5,12 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.constants
+import copy
 
+from scipy import fftpack
 from scipy.ndimage import rank_filter
 
-from captools.ppxf import ppxf
+from captools.ppxf import ppxf, _losvd_rfft, rebin
 from captools import capfit
 
 ## Function used to calculate 1 sigma errors of the residuals
@@ -44,9 +46,13 @@ def calculate_noise(residuals, width=101):
     interval enclosing 68% of the values in a given running window
 
     """
+    if width%2 != 1:
+        raise ValueError('Must provided odd number width.')
+    if width < 10:
+        raise ValueError('Width must be 11 or higher.')
     
-    assert width%2 == 1, "width must be odd"
-    assert width > 10, "width %d too small"%width
+#    assert width%2 == 1, "width must be odd"
+#    assert width > 10, "width %d too small"%width
 
     p = (1 - 0.6827)/2  # 1sigma
     lo, up = round(width*p), round(width*(1 - p))
@@ -116,6 +122,137 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
     return _component, _moments, _start
 
 
+def _ppxf_fit_matrix(start, npix_obj, templates_rfft, npix_tpl, npad, component, vsyst, moments,
+                     velscale, velscale_ratio):
+    """
+    Mimic the first bit of ppxf._linear_fit()
+
+    Limited as follows:
+        - no additive or multiplicative polynomial
+        - no reddening
+        - only single galaxy spectrum (ppxf.nspec = 1)
+        - no sigma_diff
+    """
+    # Template and component shape
+    ntpl, nl = templates_rfft.shape
+    if len(component) != ntpl:
+        raise ValueError('Component length must match the number of templates.')
+    ncomp = np.max(component)+1
+
+    # Convert from km/s to pixel coordinates
+    _start = np.array(start) #, dtype=object)
+    for j in range(ncomp):
+        _start[j][:2] /= velscale
+    _vsyst = vsyst/velscale
+
+    # Parameter vector:
+    # pars = [vel_1, sigma_1, h3_1, h4_1, ... # Velocities are in pixels.
+    #         ...                             # For all kinematic components
+    #         vel_n, sigma_n, h3_n, h4_n, ...
+    pars = _start.ravel()
+
+    # FFT of the LOSVD
+    losvd_rfft = _losvd_rfft(pars, 1, np.abs(moments), nl, ncomp, _vsyst, velscale_ratio, 0.)
+
+    # Construct and return the convolved templates
+    c = np.zeros((ntpl, npix_obj), dtype=float)
+    for i, tpl_rfft in enumerate(templates_rfft):
+        pr = tpl_rfft * losvd_rfft[:, component[i], 0]
+        tt = np.fft.irfft(pr, npad)
+        c[i,:] = tt[:npix_obj] if velscale_ratio == 1 else \
+                    rebin(tt[:npix_tpl*velscale_ratio], velscale_ratio)[:npix_obj]
+    return c
+
+
+def _validate_templates_components(templates, gas_template, component, moments, mask, start, tied,
+                                   tpl_to_use, velscale, velscale_ratio=None, vsyst=0):
+    """
+    Return the validated templates and reordered components.
+    
+    Check that templates are valid in the sense that they have non-zero
+    components in valid pixel regions.  The start vector is used to set
+    the guess offset (including vsyst) between the provided mask and the
+    template.  The tpl_to_use vector is used to set a tempate as
+    invalid.
+    """
+    # Get the FFT of the templates
+    npix_tpl = templates.shape[1]
+    npad = fftpack.next_fast_len(npix_tpl)
+    templates_rfft = np.fft.rfft(templates, npad, axis=1)
+
+    # Get the design matrix without any polynomial adjustment
+    c = _ppxf_fit_matrix(start, len(mask), templates_rfft, npix_tpl//velscale_ratio, npad,
+                         component, vsyst, moments, velscale, velscale_ratio)
+#    for _c in c:
+#        plt.plot(_c)
+#    plt.show()
+
+    # Determine which templates have constraining data
+    valid = np.max(np.absolute(c * mask.astype(float)[None,:]), axis=1) > 1e3*np.finfo(float).eps
+    valid &= tpl_to_use
+    ncomp = np.max(component)+1
+
+    # All templates are valid, just return the input
+    if np.all(valid):
+        return valid, templates, gas_template, np.arange(ncomp), component, moments, start, tied
+
+    # None (!) of the templates are valid
+    if np.sum(valid) == 0:
+        raise ValueError('No valid templates in fit!')
+#        return valid, None, None, None, None, None, None, None
+
+    # Templates to fit
+    _templates = templates[valid,:]
+    # Set which are gas templates
+    _gas_template = gas_template[valid]
+    # Sequential template numbers
+    _component = component[valid]
+    # Map between old and new component numbers
+    component_map = np.unique(_component)
+
+    if not np.array_equal(component_map, np.arange(ncomp)):
+        # Subset of components are not in sequence so they need to be remapped
+        remapped_component = _component.copy()
+        # Starting kinematics for each component
+        _start = []
+        _tied = None if tied is None else []
+        for i, cm in enumerate(component_map):
+            indx = _component == cm
+            remapped_component[indx] = i
+            _start += [start[cm]]
+            if tied is not None:
+                _tied += [tied[cm]]
+        _component = remapped_component
+        _moments = moments[component_map]
+    else:
+        _start = start
+        _tied = tied
+        _moments = moments
+
+    return valid, _templates, _gas_template, component_map, _component, _moments, _start, _tied
+
+
+def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_value=-999.):
+    ncomp = len(moments)
+    if np.array_equal(component_map, np.arange(ncomp)):
+        return ppsol, pperr
+
+    _ncomp = len(component_map)
+
+    new_start = []
+    new_error = []
+    for i in range(ncomp):
+        indx = [component_map == i]
+        if np.sum(indx) == 0:
+            new_start += ([[fill_value]*abs(moments[i])] if start is None else [start[i]])
+            new_error += [[fill_value]*abs(moments[i])]
+            continue
+        indx = np.arange(_ncomp)[indx][0]
+        new_start += [ppsol[indx]]
+        new_error += [pperr[indx]]
+    return new_start, new_error
+
+
 # Run a single fit+rejection iteration
 def _fit_iteration(templates, flux, noise, velscale, start, moments, component, gas_template,
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=4, mdegree=0,
@@ -123,6 +260,13 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
     """
     mask should be True for the pixels to fit
     """
+
+#        if templates_rfft is None:
+#            # Pre-compute FFT of real input of all templates
+#            self.templates_rfft = np.fft.rfft(self.star, self.npad, axis=0)
+#        else:
+#            self.templates_rfft = templates_rfft
+#
 
 #    med_flux = np.median(flux, axis=1)
 #    _flux = flux / med_flux[:,None]
@@ -145,7 +289,7 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
 
-    _start = start.copy()
+#    _start = start.copy()
 
     # For debugging
     linear=False
@@ -155,68 +299,86 @@ def _fit_iteration(templates, flux, noise, velscale, start, moments, component, 
 
     for i in range(nspec):
 
-        print('Fitting spectrum: {0}/{1}'.format(i+1,nspec)) #, end='\r')
-
-        # TODO: component[_tpl_to_use[i,:]] isn't going to work if
-        # _tpl_to_use does result in an ordered list of components.
+        # Report progress
+        print('Fitting spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
 
         # Run the first fit
         if plot:
             plt.clf()
-
-        pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
-                  velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
-                  mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
-                  component=component[_tpl_to_use[i,:]], quiet=quiet, linear=linear)
+        valid_templates, _templates, _gas_template, component_map, _component, _moments, _start, \
+                _tied = _validate_templates_components(templates, gas_template, component, moments,
+                                                       model_mask[i,:], start[i], tied,
+                                                       _tpl_to_use[i,:], velscale,
+                                                       velscale_ratio=velscale_ratio, vsyst=vsyst)
+        pp = ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
+                  velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
+                  mdegree=mdegree, tied=_tied, mask=model_mask[i,:], vsyst=vsyst,
+                  component=_component, gas_component=_gas_template, quiet=quiet, linear=linear)
         if plot:
             plt.show()
-       
+
+        # Reject 3-sigma outliers and refit, if requested by a provided
+        # boxcar width
         if reject_boxcar is not None:
-            # Reject 3-sigma outliers
-            # - Residuals
+            # - Calculate residuals
             resid = flux[i,:] - pp.bestfit
-            # - RMS of residuals
-#            NOISE = calculate_noise(resid, width=reject_boxcar)
-            NOISE = np.zeros(resid.size, dtype=float)
-            NOISE[pp.goodpixels] = calculate_noise(resid[pp.goodpixels], width=reject_boxcar)
-            # - Add to mask
-            model_mask[i,:] &= (abs(resid) < (3*NOISE))
-            # - Restart the fit where the last one left off
-            _start[i] = pp.sol
+            # - Select pixels includes in the fit and not fit by
+            # emission lines
+            reject_pixels = list(set(pp.goodpixels)
+                                    & set(np.arange(len(resid))[pp.gas_bestfit < 1e-6]))
+            # - Calculate the 1-sigma confidence interval
+            NOISE = calculate_noise(resid[reject_pixels], width=reject_boxcar)
+            # - Reject pixels with > 3-sigma residuals
+            model_mask[i,reject_pixels] &= (abs(resid[reject_pixels]) < (3*NOISE))
         
-            # Refit after rejection
+            # Reorder the output; sets any omitted components to have
+            # the starting values from the original input
+            sol, err = _reorder_solution(pp.sol, pp.error, component_map, moments, start=start[i])
+
+            # Refit using best-fit kinematics from previous fit
             if plot:
                 plt.clf()
-            pp = ppxf(templates[_tpl_to_use[i,:],:].T, flux[i,:], noise[i,:], velscale, _start[i],
-                      velscale_ratio=velscale_ratio, plot=plot, moments=moments, degree=degree,
-                      mdegree=mdegree, tied=tied, mask=model_mask[i,:], vsyst=vsyst,
-                      component=component[_tpl_to_use[i,:]], quiet=quiet, linear=linear)
+            valid_templates, _templates, _gas_template, component_map, _component, _moments, \
+                    _start, _tied = _validate_templates_components(templates, gas_template,
+                                                                   component, moments,
+                                                                   model_mask[i,:], sol, tied,
+                                                                   _tpl_to_use[i,:], velscale,
+                                                                   velscale_ratio=velscale_ratio,
+                                                                   vsyst=vsyst)
+            pp = ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
+                      velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
+                      mdegree=mdegree, tied=_tied, mask=model_mask[i,:], vsyst=vsyst,
+                      component=_component, gas_component=_gas_template, quiet=quiet, linear=linear)
             if plot:
                 plt.show()
 
+        # Reorder the output; sets any omitted components to a default
+        # value of -999.
+        sol, err = _reorder_solution(pp.sol, pp.error, component_map, moments)
+
         # Save the results
         model[i,:] = pp.bestfit
-        eml_model[i,:] = np.dot(pp.matrix[:,degree+1:][:,gas_template[_tpl_to_use[i,:]]],
-                                pp.weights[gas_template[_tpl_to_use[i,:]]])
+        eml_model[i,:] = np.dot(pp.matrix[:,degree+1:][:,_gas_template], pp.weights[_gas_template])
 
-#        plt.plot(flux[i,:], color='k')
-#        plt.plot(model[i,:], color='C3')
-#        plt.plot(model[i,:]-eml_model[i,:], color='C2')
+#        plt.plot(flux[i,:], color='b', lw=2)
+#        plt.plot(np.ma.MaskedArray(flux[i,:], mask=np.invert(model_mask[i,:])), color='k', lw=2)
+#        plt.plot(model[i,:], color='C3', lw=1)
+#        plt.plot(model[i,:]-eml_model[i,:], color='C2', lw=1)
 #        plt.show()
 
-        tpl_wgts[i,_tpl_to_use[i,:]] = pp.weights.copy()
+        tpl_wgts[i,valid_templates] = pp.weights.copy()
         design_matrix = pp.matrix/pp.noise[:, None]
-        _, tpl_wgts_err[i,_tpl_to_use[i,:]] = capfit.cov_err(design_matrix)
+        _, tpl_wgts_err[i,valid_templates] = capfit.cov_err(design_matrix)
 
         if degree > -1:
             addcoef[i,:] = pp.polyweights.copy()
         if mdegree > 0:
             multcoef[i,:] = pp.mpolyweights.copy()
 
-        kininp[i,:] = np.concatenate(tuple(_start[i]))
-        kin[i,:] = np.concatenate(tuple(pp.sol))
-        kin_err[i,:] = np.concatenate(tuple(pp.error))
-
+        kininp[i,:] = np.concatenate(tuple(start[i]))
+        kin[i,:] = np.concatenate(tuple(sol))
+        kin_err[i,:] = np.concatenate(tuple(err))
+        
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
     return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
@@ -259,9 +421,12 @@ def _combine_stellar_templates(templates, gas_template, wgts, component):
 #   - If tpl_to_use is provided, the shape must be (Nbin,Ntpl) when
 #     providing the binned data and (Nspec,Ntpl) when no binned data are
 #     provided.
+#   - The templates are expected to be an integer number of
+#     velscale_ratio in length; see PPXFFit.check_templates()
+
 def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscale_ratio,
                                  inp_component, gas_template, inp_moments, inp_start,
-                                 tied=None, degree=4, mdegree=0, reject_boxcar=140,
+                                 tied=None, degree=4, mdegree=0, reject_boxcar=101,
                                  vsyst=0, tpl_to_use=None, flux_binned=None, noise_binned=None,
                                  mask_binned=None, x_binned=None, y_binned=None, x=None, y=None,
                                  plot=False, quiet=False, debug=False):
@@ -301,7 +466,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     model_eml_flux = np.zeros(flux.shape, dtype=float)
     model_mask = np.zeros(flux.shape, dtype=bool)
 
-    ntpl = templates.shape[0]
+    ntpl, npix_tpl = templates.shape
     nkin = np.sum(np.absolute(inp_moments))
 
     tpl_wgt = np.zeros((nspec,ntpl), dtype=float)
@@ -327,9 +492,22 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
         if len(inp_start) != nbin:
             raise ValueError('Input starting kinematic arrays do not match the binned spectra.')
 
+
         # First fit the binned data:
         # - Stellar components with fixed kinematics
         # - All gas templates in a single component
+#        # DEBUG #####
+#        binkin = np.zeros((nbin,nkin), dtype=float)
+#        for i in range(nbin):
+#            binkin[i,:] = np.concatenate(tuple(inp_start[i]))
+#        print(binkin[0,:])
+#        all_stellar_moments = np.sum(np.absolute(inp_moments[:-1]))
+#        gas_start = binkin[:,all_stellar_moments:]
+#        component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
+#                                                          gas_start=gas_start)
+#        print(component)
+#        print(moments)
+#        # END DEBUG #
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
         _, _, _, binned_tpl_wgts, _, _, _, _, binned_kin, _ \
@@ -403,7 +581,7 @@ def emline_fitter_with_ppxf_edit(templates, flux, noise, mask, velscale, velscal
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       gas_start=gas_start)
 
-    # - Refit without rejection bit with the tying in place
+    # - Refit without rejection but with the tying in place
     model_flux, model_eml_flux, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, \
             kininp, kin, kin_err = _fit_iteration(_templates, flux, noise, velscale, start,
                                                   moments, component, _gas_template,

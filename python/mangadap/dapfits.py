@@ -805,14 +805,6 @@ class construct_maps_file:
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-#        # Restructure the multi-channel extensions
-#        DAPFitsUtil.restructure_cube(self.hdu, ext=self.multichannel_arrays, inverse=True)
-#        # Restructure the single-channel extensions
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.singlechannel_arrays, inverse=True)
-#        # Write the HDU
-#        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
-#                  quiet=self.quiet)
-
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
                    stellar_continuum):
@@ -1066,9 +1058,13 @@ class construct_maps_file:
         flgd = emission_line_model.bitmask.flagged(elf_mask, flag='NEAR_BOUND')
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
 
-        # Consolidate to UNRELIABLE; currently only done for the dispersion
+        # Consolidate dispersion flags to NEARBOUND and UNRELIABLE
         if for_dispersion:
-            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA'])
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag='MIN_SIGMA')
+            mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NEARBOUND')
+
+            flgd = emission_line_model.bitmask.flagged(elf_mask, flag=['UNDEFINED_SIGMA',
+                                                                       'BAD_SIGMA'])
             mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
         return self._consolidate_donotuse(mask)
@@ -1982,7 +1978,8 @@ class construct_cube_file:
                   'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         sc_indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
                                                     flag=flags)
-        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE' ]
+        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'TPL_PIXELS',
+                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         el_indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                       flag=flags)
 
@@ -2091,7 +2088,9 @@ class construct_cube_file:
         mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
 
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
-                                                   flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE'])
+                                                   flag=['DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE',
+                                                         'TPL_PIXELS', 'TRUNCATED', 'PPXF_REJECT',
+                                                         'INVALID_ERROR'])
         mask[indx] = self.bitmask.turn_on(mask[indx], 'ELIGNORED')
 
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
