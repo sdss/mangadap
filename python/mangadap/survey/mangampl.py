@@ -108,7 +108,7 @@ class MaNGAMPL:
     +--------+-------------+------------+--------+--------+--------+
     | MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.2 |
     +--------+-------------+------------+--------+--------+--------+
-    | MPL-6  |        None |    v5_5_29 | v1_5_0 | v2_2_0 |  trunk |
+    | MPL-6  |        None |    v5_5_30 | v1_6_0 | v2_3_1 |  2.1.0 |
     +--------+-------------+------------+--------+--------+--------+
 
     **Python versions**
@@ -117,16 +117,16 @@ class MaNGAMPL:
     +========+========+========+========+============+=========+=======+================+
     | MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |       None |   1.1.2 | 0.5.0 |            yes |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
-    | MPL-6  |  3.6.2 | 1.13.1 | 0.19.1 |      2.0.2 |   2.0.2 | 0.6.0 |            N/A |
+    | MPL-6  |  3.6.3 | 1.13.1 |  1.0.0 |       None |   2.0.2 | 0.6.0 |            N/A |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
 
     .. note::
         - "Fwd compatible" means that you can run this version of the
           DAP with the most recent version without needed to revert the
           python packages to their previous versions.
-        - Only the survey-level routines are dependent on and MANGACORE;
-          the core DAP processing software only depends on the listed
-          python packages.
+        - Only the survey-level routines are dependent on MANGACORE; the
+          core DAP processing software only depends on the listed python
+          packages.
 
     .. todo::
         - Change python dependencies to "minimum" versions?
@@ -239,6 +239,8 @@ class MaNGAMPL:
                                        None,     None,     None,       None,    None,     None ],
                                 [ 'MPL-5',   '0.2.0', 'v5_5_26', 'v1_3_1', 'v2_0_1',  '2.0.2',
                                     '3.5.1', '1.11.0', '0.17.1',       None,  '1.1.2', '0.5.0' ],
+                                [ 'MPL-6',      None, 'v5_5_30', 'v1_6_0', 'v2_3_1',  '2.1.0',
+                                    '3.6.3', '1.13.3',    '1.0',       None,  '2.0.2', '0.6.0' ],
                                 ['env'] + self.get_environment_versions()
                                 ])
         nmpl = mpl_def.shape[1]

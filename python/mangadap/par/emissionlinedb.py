@@ -413,11 +413,8 @@ class EmissionLineDB(ParDatabase):
                                                                             self.database['key']))
 
 
-    def channel_names(self):
-        channels = {}
-        for i in range(self.neml):
-            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i]))] = i
-        return channels
-    
-
+    def channel_names(self, dicttype=True):
+        channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
+                            for i in range(self.neml) ]
+        return { n:i for i,n in enumerate(channels) } if dicttype else channels
 

@@ -1,5 +1,13 @@
-KBW (??         ): tag 2.1
+--------------------------------------------------------------------------------
+KBW (??         ): tag 2.1.1
 
+TODO:
+    - problem with spot-check map output; numpy bug?
+    - emission-line moment masks
+    - Documentation of config examples are out of date!
+
+--------------------------------------------------------------------------------
+KBW (27 Oct 2017): tag 2.1
     - Included code for DAPall file
     - Fixed error in bin area calculation in unbinned data.
     - Added convenience functions to DAPFits for use with the MAPS
@@ -88,11 +96,6 @@ KBW (??         ): tag 2.1
     - Edited Sasuke to use iterations tested by Xihan Ji and Michele
       Cappellari.
 
-TO FIX:
-    - emission-line moment masks
-    - Documentation of config examples are out of date!
-
---------------------------------------------------------------------------------
 KBW (04 Aug 2016): tag 2.0.2
 
     - Bug in setup for emission-line and spectral-index measurements
@@ -245,7 +248,6 @@ Copied from v0_8 by L. Coccato
 Basic formatting of map_read_datacube.pro and manga_drp.pro
 Adjustments to deal with DRP v1_0_0 headers (different from prototype headers)
 
---------------------------------------------------------------------------------
 v0_9 (01 Sep 2014)
 KBW Development version 
 
