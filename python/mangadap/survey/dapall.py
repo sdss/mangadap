@@ -309,7 +309,7 @@ class DAPall:
         nindx = absdb.nindx + bhddb.nindx
         units = numpy.array(absdb['units'].tolist() + ['']*bhddb.nindx)
         channels = absdb.channel_names()
-        channels.update(bhddb.channel_names())
+        channels.update(bhddb.channel_names(offset=absdb.nindx))
         if len(channels) != nindx:
             raise ValueError('Spectral index channel names not unique!')
         return db['absindex'], db['bandhead'], channels, units

@@ -228,10 +228,12 @@ class AbsorptionIndexDB(ParDatabase):
                                                                             self.database['key']))
 
 
-    def channel_names(self):
+    def channel_names(self, offset=0):
         channels = {}
         for i in range(self.nindx):
-            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['index'][i]))] = i
+#            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['index'][i]))] \
+#                        = i + offset
+            channels[self.data['name'][i]] = i + offset
         return channels
 
 
