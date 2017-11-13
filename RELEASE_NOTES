@@ -3,6 +3,7 @@ KBW (??         ): tag 2.1.1
 
 propagate fit_failed when status = -2
 set critical flag when stellar-continuum fits are all bad
+are indices all flagged in HYB case?
 
     - Debug 2.1 tag:
         - Added check that pPXF returns some non-zero weights.  If all

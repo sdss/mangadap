@@ -12,8 +12,7 @@ import numpy
 
 from argparse import ArgumentParser
 
-from matplotlib import pyplot, rc
-from matplotlib.ticker import NullFormatter
+from matplotlib import pyplot, rc, colors, colorbar, ticker
 
 from astropy.io import fits
 
@@ -23,6 +22,7 @@ from mangadap.config.defaults import default_dap_plan_file
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 from mangadap.proc.util import growth_lim
+from mangadap.util.mapping import map_extent, map_beam_patch
 
 #-----------------------------------------------------------------------------
 
@@ -57,9 +57,43 @@ from mangadap.proc.util import growth_lim
 def init_ax(fig, pos):
     ax = fig.add_axes(pos, facecolor='0.9')
     ax.minorticks_on()
+    ax.tick_params(which='major', length=6, direction='in')
+    ax.tick_params(which='minor', length=3, direction='in')
     ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-')
 #    ax.grid(True, which='minor', color='0.7', zorder=0, linestyle=':')
     return ax
+
+
+def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=None, cmap='viridis',
+                  zorder=0, cbformat=None, subs=None, orientation='vertical', contour_data=None,
+                  levels=None, cblocator=None, cbticks=None):
+    if numpy.sum(data.mask) != numpy.prod(data.shape):
+        if norm is None:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            vmin=vmin, vmax=vmax, cmap=cmap, zorder=zorder)
+        else:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            norm=norm, cmap=cmap, zorder=zorder)
+
+        cb = fig.colorbar(img, cax=cax, orientation=orientation) if cbformat is None else \
+                    fig.colorbar(img, cax=cax, format=cbformat, orientation=orientation)
+        if subs is not None:
+            cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
+            cb.update_ticks()
+        elif cblocator is not None:
+            cb.locator = cblocator
+            cb.update_ticks()
+        elif cbticks is not None:
+            cb.set_ticks(cbticks)
+            cb.update_ticks()
+    else:
+        _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
+        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+
+    if contour_data is not None and levels is not None \
+            and numpy.sum(contour_data.mask) != numpy.prod(contour_data.shape):
+        cnt = ax.contour(contour_data, origin='lower', extent=extent, colors='0.5',
+                         levels=levels, linewidths=1.5, zorder=5)
 
 
 # Test images:
@@ -94,9 +128,10 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     emline = channel_dictionary(hdu, 'EMLINE_GFLUX')
     specindex = channel_dictionary(hdu, 'SPECINDEX')
 
+    extent = map_extent(hdu, 'SPX_MFLUX')
+
     # Get the data to plot
     spxflx = numpy.ma.MaskedArray(hdu['SPX_MFLUX'].data.copy())
-    extent = [0.5, spxflx.shape[0]+0.5, 0.5, spxflx.shape[1]+0.5 ]
     spxsnr = numpy.ma.MaskedArray(hdu['SPX_SNR'].data.copy())
     binid = numpy.ma.MaskedArray(hdu['BINID'].data.copy(), mask=hdu['BINID'].data<0)
     binsnr = numpy.ma.MaskedArray(hdu['BIN_SNR'].data.copy(), mask=hdu['BIN_MFLUX_MASK'].data>0)
@@ -181,12 +216,12 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
         udn4000 = numpy.ma.masked_all(output_shape)
 
     # Get the limits to apply
-    flux_lim = growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05)
+    flux_lim = numpy.power(10,growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05))
     t = numpy.ma.append(numpy.ma.log10(spxsnr), numpy.ma.log10(binsnr))
-    snr_lim = growth_lim(t, 0.90, fac=1.05)
+    snr_lim = numpy.power(10, growth_lim(t, 0.90, fac=1.05))
     bin_lim = [ numpy.ma.amin(binid), numpy.ma.amax(binid) ]
 
-    res_lim = growth_lim(numpy.ma.log10(scfres), 0.90, fac=1.05)
+    res_lim = numpy.power(10, growth_lim(numpy.ma.log10(scfres), 0.90, fac=1.05))
     chi_lim = growth_lim(scrchi, 0.90, fac=1.05)
     t = numpy.ma.append(strvel, hagvel)
     vel_lim = growth_lim(t, 0.85, fac=1.10, midpoint=0.0)
@@ -195,12 +230,12 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     if vel_lim[1] > 350:
         vel_lim[1] = 350
     t = numpy.ma.append(numpy.ma.log10(strsig), numpy.ma.log10(hagsig))
-    sig_lim = growth_lim(t, 0.90, fac=1.05)
+    sig_lim = numpy.power(10, growth_lim(t, 0.90, fac=1.05))
 
-    t = numpy.ma.append( numpy.ma.append(hasflx, hagflx),
-                         numpy.ma.append(hbsflx, hbgflx) )
+    t = numpy.ma.append( numpy.ma.append(numpy.ma.log10(hasflx), numpy.ma.log10(hagflx)),
+                         numpy.ma.append(numpy.ma.log10(hbsflx), numpy.ma.log10(hbgflx)) )
 #    t = numpy.ma.log10(t)
-    hflx_lim = growth_lim(t, 0.95, fac=1.10)
+    hflx_lim = numpy.power(10, growth_lim(t, 0.95, fac=1.10))
 #    hflx_lim = [ -0.3, 2.2 ]
     t = numpy.ma.append(d4000, dn4000)
 #    d4000_lim = growth_lim(t, 0.90, 1.05)
@@ -216,9 +251,11 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    print(hflx_lim)
 #    print(d4000_lim)
 
+    font = { 'size' : 6 }
+    rc('font', **font)
 
     w,h = pyplot.figaspect(1)
-    fig = pyplot.figure(figsize=(2*w,2*h))
+    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
 
     dx = 0.22
     left = 0.05
@@ -228,261 +265,294 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     snr_levels = [0.5, 1.0, 1.5, 2.0 ]
 
     ax = init_ax(fig, [left, top-dx, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(spxflx), origin='lower', interpolation='nearest',
-                   cmap='YlGnBu_r', zorder=4, extent=extent, vmin=flux_lim[0], vmax=flux_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='0.5')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(flux_lim[0]+0.1, decimals=1),
-                           numpy.round(flux_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'r-band S (spx)', horizontalalignment='left',
+    cbticks = [flux_lim[0]*1.1, flux_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, spxflx, extent=extent,
+                  norm=colors.LogNorm(vmin=flux_lim[0], vmax=flux_lim[1]), cmap='YlGnBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter())
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'g-band S (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw, top-dx, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(spxsnr), origin='lower', interpolation='nearest',
-                   cmap='YlGnBu_r', zorder=4, extent=extent, vmin=snr_lim[0], vmax=snr_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels,  linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(snr_lim[0]+0.1, decimals=1),
-                           numpy.round(snr_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'r-band S/N (spx)', horizontalalignment='left',
+    cbticks = [snr_lim[0]*1.1, snr_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, spxsnr, extent=extent,
+                  norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='YlGnBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'g-band S/N (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
    
     ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
             horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
             fontsize=20)
-  
-    ax = init_ax(fig, [left+2*dx+2*dw, top-dx, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
-    cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
 
-    im = ax.imshow(binid[0,:,:], origin='lower', interpolation='nearest', cmap='CMRmap', zorder=4,
-                   extent=extent, vmin=bin_lim[0], vmax=bin_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=bin_lim, format='%.0f')
-    ax.text(0.05, 0.05, r'bin ID', horizontalalignment='left',
+    ax = init_ax(fig, [left+2*dx+2*dw, top-dx, dx, dx])
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
+    masked_imshow(fig, ax, cax, binid[0,:,:], extent=extent,
+                  vmin=bin_lim[0], vmax=bin_lim[1], cmap='CMRmap',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbformat=ticker.ScalarFormatter(),
+                  cbticks=bin_lim) 
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'bin ID', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
  
     ax = init_ax(fig, [left+3*dx+3*dw, top-dx, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(binsnr), origin='lower', interpolation='nearest',
-                   cmap='YlGnBu_r', zorder=4, extent=extent, vmin=snr_lim[0], vmax=snr_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(snr_lim[0]+0.1, decimals=1),
-                           numpy.round(snr_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'r-band S/N (bin)', horizontalalignment='left',
+    cbticks = [snr_lim[0]*1.1, snr_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, binsnr, extent=extent,
+                  norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='YlGnBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'g-band S/N (bin)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-
-
 
 
     ax = init_ax(fig, [left, top-2*dx-dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(scfres), origin='lower', interpolation='nearest',
-                   cmap='inferno', zorder=4, extent=extent, vmin=res_lim[0], vmax=res_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(res_lim[0]+0.1, decimals=1),
-                           numpy.round(res_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'log(pPXF Frac. Resid.)', horizontalalignment='left',
+    cbticks = [res_lim[0]*1.1, res_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, scfres, extent=extent,
+                  norm=colors.LogNorm(vmin=res_lim[0], vmax=res_lim[1]), cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'pPXF Frac. Resid.', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-2*dx-dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(scrchi, origin='lower', interpolation='nearest', cmap='inferno', zorder=4,
-                   extent=extent, vmin=chi_lim[0], vmax=chi_lim[1])
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=5)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=6, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(chi_lim[0]+0.01, decimals=2),
-                           numpy.round(chi_lim[1]-0.01, decimals=2)], format='%.2f')
-    ax.text(0.05, 0.05, r'${\rm pPXF}\ \chi^2_\nu$', horizontalalignment='left',
+    cbticks=[numpy.round(chi_lim[0]+0.01, decimals=2), numpy.round(chi_lim[1]-0.01, decimals=2)]
+    masked_imshow(fig, ax, cax, scrchi, extent=extent,
+                  vmin=chi_lim[0], vmax=chi_lim[1], cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'${\rm pPXF}\ \chi^2_\nu$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+2*dx+2*dw,  top-2*dx-dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(strvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
-                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
-    im2 = ax.imshow(ustrvel, origin='lower', interpolation='nearest', cmap='Greens_r',
-                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
-    ax.text(0.05, 0.05, r'$V_\ast$', horizontalalignment='left',
+    cbticks = [vel_lim[0]/1.1, 0.0, vel_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, strvel, extent=extent,
+                  vmin=vel_lim[0], vmax=vel_lim[1], cmap='RdBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(strvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
+#                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
+#    im2 = ax.imshow(ustrvel, origin='lower', interpolation='nearest', cmap='Greens_r',
+#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'$V_\ast$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-2*dx-dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(strsig), origin='lower', interpolation='nearest',
-                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
-    im2 = ax.imshow(ustrsig, origin='lower', interpolation='nearest', cmap='Reds_r',
-                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
-                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'$\log\ \sigma_\ast$', horizontalalignment='left',
+    cbticks = [sig_lim[0]*1.1, numpy.power(10, numpy.mean(numpy.log10(sig_lim))), sig_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, strsig, extent=extent,
+                  norm=colors.LogNorm(vmin=sig_lim[0], vmax=sig_lim[1]), cmap='viridis',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(numpy.ma.log10(strsig), origin='lower', interpolation='nearest',
+#                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
+#    im2 = ax.imshow(ustrsig, origin='lower', interpolation='nearest', cmap='Reds_r',
+#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
+#                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'$\sigma_\ast$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-
 
 
 
     ax = init_ax(fig, [left, top-3*dx-2*dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(hasflx, origin='lower', interpolation='nearest', cmap='inferno',
-                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-    im2 = ax.imshow(uhasflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (sum)', horizontalalignment='left',
+    cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hasflx, extent=extent,
+                  norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(hasflx, origin='lower', interpolation='nearest', cmap='inferno',
+#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
+#    im2 = ax.imshow(uhasflx, origin='lower', interpolation='nearest', cmap='Greens_r',
+#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
+#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (sum)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-3*dx-2*dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(hagflx, origin='lower', interpolation='nearest', cmap='inferno',
-                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-    im2 = ax.imshow(uhagflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (Gauss)', horizontalalignment='left',
+    cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hagflx, extent=extent,
+                  norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(hagflx, origin='lower', interpolation='nearest', cmap='inferno',
+#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
+#    im2 = ax.imshow(uhagflx, origin='lower', interpolation='nearest', cmap='Greens_r',
+#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
+#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (Gauss)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+2*dx+2*dw,  top-3*dx-2*dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(hagvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
-                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
-    im2 = ax.imshow(uhagvel, origin='lower', interpolation='nearest', cmap='Greens_r',
-              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
-    ax.text(0.05, 0.05, r'$V_{{\rm H}\alpha}$', horizontalalignment='left',
+    cbticks = [vel_lim[0]/1.1, 0.0, vel_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hagvel, extent=extent,
+                  vmin=vel_lim[0], vmax=vel_lim[1], cmap='RdBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(hagvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
+#                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
+#    im2 = ax.imshow(uhagvel, origin='lower', interpolation='nearest', cmap='Greens_r',
+#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'$V_{{\rm H}\alpha}$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-3*dx-2*dw, dx, dx])
-    ax.xaxis.set_major_formatter(NullFormatter())
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(numpy.ma.log10(hagsig), origin='lower', interpolation='nearest',
-                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
-    im2 = ax.imshow(uhagsig, origin='lower', interpolation='nearest', cmap='Reds_r',
-                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
-                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'$\log\ \sigma_{{\rm H}\alpha}$', horizontalalignment='left',
+    cbticks = [sig_lim[0]*1.1, numpy.power(10, numpy.mean(numpy.log10(sig_lim))), sig_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hagsig, extent=extent,
+                  norm=colors.LogNorm(vmin=sig_lim[0], vmax=sig_lim[1]), cmap='viridis',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(numpy.ma.log10(hagsig), origin='lower', interpolation='nearest',
+#                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
+#    im2 = ax.imshow(uhagsig, origin='lower', interpolation='nearest', cmap='Reds_r',
+#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
+#                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'$\log\ \sigma_{{\rm H}\alpha}$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-
 
 
 
     ax = init_ax(fig, [left, top-4*dx-3*dw, dx, dx])
     cax = fig.add_axes([left+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(hbsflx, origin='lower', interpolation='nearest', cmap='inferno',
-                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-    im2 = ax.imshow(uhbsflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'${\rm H}\beta\ {\rm flux}$ (sum)', horizontalalignment='left',
+    cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hbsflx, extent=extent,
+                  norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(hbsflx, origin='lower', interpolation='nearest', cmap='inferno',
+#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
+#    im2 = ax.imshow(uhbsflx, origin='lower', interpolation='nearest', cmap='Greens_r',
+#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
+#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (sum)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-4*dx-3*dw, dx, dx])
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(hbgflx, origin='lower', interpolation='nearest', cmap='inferno',
-                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-    im2 = ax.imshow(uhbgflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.text(0.05, 0.05, r'${\rm H}\beta\ {\rm flux}$ (Gauss)', horizontalalignment='left',
+    cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
+    masked_imshow(fig, ax, cax, hbgflx, extent=extent,
+                  norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
+#    im = ax.imshow(hbgflx, origin='lower', interpolation='nearest', cmap='inferno',
+#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
+#    im2 = ax.imshow(uhbgflx, origin='lower', interpolation='nearest', cmap='Greens_r',
+#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
+#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
+#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (Gauss)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-   
+
     ax = init_ax(fig, [left+2*dx+2*dw,  top-4*dx-3*dw, dx, dx])
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(d4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
-                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
-    im2 = ax.imshow(ud4000, origin='lower', interpolation='nearest', cmap='Greens_r',
-                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
-    ax.text(0.05, 0.05, r'D4000', horizontalalignment='left',
+    masked_imshow(fig, ax, cax, d4000, extent=extent,
+                  vmin=d4000_lim[0], vmax=d4000_lim[1], cmap='RdBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=d4000_lim, cbformat=ticker.ScalarFormatter())
+#    im = ax.imshow(d4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
+#                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
+#    im2 = ax.imshow(ud4000, origin='lower', interpolation='nearest', cmap='Greens_r',
+#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'D4000', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-4*dx-3*dw, dx, dx])
-    ax.yaxis.set_major_formatter(NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
-    im = ax.imshow(dn4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
-                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
-    im2 = ax.imshow(udn4000, origin='lower', interpolation='nearest', cmap='Greens_r',
-                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.clabel(cnt, inline=1, fontsize=8, fmt='%.1f', zorder=7, color='k')
-    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
-    ax.text(0.05, 0.05, r'Dn4000', horizontalalignment='left',
+    masked_imshow(fig, ax, cax, dn4000, extent=extent,
+                  vmin=d4000_lim[0], vmax=d4000_lim[1], cmap='RdBu_r',
+                  zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
+                  levels=snr_levels, cbticks=d4000_lim, cbformat=ticker.ScalarFormatter())
+#    im = ax.imshow(dn4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
+#                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
+#    im2 = ax.imshow(udn4000, origin='lower', interpolation='nearest', cmap='Greens_r',
+#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
+#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
+#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
+#    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.99, 0.05, r'Dn4000', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     if ofile is not None:
@@ -493,7 +563,6 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 
     fig.clear()
     pyplot.close(fig)
-
     
 
 #-----------------------------------------------------------------------------

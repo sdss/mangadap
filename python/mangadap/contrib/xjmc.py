@@ -315,7 +315,10 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
     ntpl = templates.shape[0]
     nkin = np.sum(np.absolute(moments))
 
-    _tpl_to_use = np.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use
+    _tpl_to_use = np.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use.copy()
+    print(_tpl_to_use.shape)
+    print(np.sum(_tpl_to_use, axis=1))
+    print(_tpl_to_use[0,:])
 
     model = np.zeros(flux.shape, dtype=float)
     eml_model = np.zeros(flux.shape, dtype=float)
@@ -588,8 +591,12 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
 
         print('Templates to use for each spectrum')
         print(np.sum(_tpl_to_use, axis=1))
+        print(_tpl_to_use.shape)
+        print(_tpl_to_use[0,:])
 
         _component = np.append(np.zeros(nspec, dtype=int), _component[nbin:])
+        print(_component)
+        print(len(_component))
 
         # - Use the starting positions from the fit to the bins for the
         #   fit to the individual spaxels

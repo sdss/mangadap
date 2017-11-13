@@ -11,8 +11,7 @@ import numpy
 
 from argparse import ArgumentParser
 
-from matplotlib import pyplot, colors, rc
-from matplotlib.ticker import NullFormatter, LogLocator
+from matplotlib import pyplot, colors, rc, colorbar, ticker
 
 from astropy.io import fits
 
@@ -110,6 +109,26 @@ def stellar_continuum_scatter(plt, ifu, daptype, binid, snr, r68, r99, rchi2,
     exit()
     
 
+def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=None, cmap='viridis',
+                  zorder=0, cbformat=None, subs=None):
+    if numpy.sum(data.mask) != numpy.prod(data.shape):
+        if norm is None:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            vmin=vmin, vmax=vmax, cmap=cmap, zorder=zorder)
+        else:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            norm=norm, cmap=cmap, zorder=zorder)
+
+        cb = fig.colorbar(img, cax=cax) if cbformat is None else \
+                    fig.colorbar(img, cax=cax, format=cbformat)
+        if subs is not None:
+            cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
+            cb.update_ticks()
+    else:
+        _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
+        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+
+    
     
 
 def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, da, an, dan,
@@ -174,12 +193,12 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=0,3
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(snr, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    print(numpy.sum(snr.mask), numpy.prod(snr.shape), numpy.sum(snr.mask)/numpy.prod(snr.shape))
+    masked_imshow(fig, ax, cax, snr, extent=extent,
+                  norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
+                  zorder=3, cbformat='%.1f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'S/N', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -189,13 +208,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=1,3
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(r68, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=r68_lim[0], vmax=r68_lim[1]), cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(r68.mask), numpy.prod(r68.shape), numpy.sum(r68.mask)/numpy.prod(r68.shape))
+    masked_imshow(fig, ax, cax, r68, extent=extent,
+                  norm=colors.LogNorm(vmin=r68_lim[0], vmax=r68_lim[1]), cmap='viridis_r',
+                  zorder=3, cbformat='%.2f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'68% Frac. Resid', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -210,13 +229,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=2,3
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(r99, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=r99_lim[0], vmax=r99_lim[1]), cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(r99.mask), numpy.prod(r99.shape), numpy.sum(r99.mask)/numpy.prod(r99.shape))
+    masked_imshow(fig, ax, cax, r99, extent=extent,
+                  norm=colors.LogNorm(vmin=r99_lim[0], vmax=r99_lim[1]), cmap='viridis_r',
+                  zorder=3, cbformat='%.2f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'99% Frac. Resid', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -226,10 +245,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=3,3
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(rchi2, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=chi_lim[0], vmax=chi_lim[1], cmap='viridis_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.2f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(rchi2.mask), numpy.prod(rchi2.shape),
+          numpy.sum(rchi2.mask)/numpy.prod(rchi2.shape))
+    masked_imshow(fig, ax, cax, rchi2, extent=extent, vmin=chi_lim[0], vmax=chi_lim[1],
+                  cmap='viridis_r', zorder=3, cbformat='%.2f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\chi^2_\nu$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -240,12 +262,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=0,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(signal, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=s_lim[0], vmax=s_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    print(numpy.sum(signal.mask), numpy.prod(signal.shape),
+          numpy.sum(signal.mask)/numpy.prod(signal.shape))
+    masked_imshow(fig, ax, cax, signal, extent=extent,
+                  norm=colors.LogNorm(vmin=s_lim[0], vmax=s_lim[1]), cmap='viridis',
+                  zorder=3, cbformat='%.1f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$I_g$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -255,10 +278,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=1,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(a), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=a_lim[0], vmax=a_lim[1], cmap='viridis', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lga = numpy.ma.log10(a)
+    print(numpy.sum(lga.mask), numpy.prod(lga.shape), numpy.sum(lga.mask)/numpy.prod(lga.shape))
+    masked_imshow(fig, ax, cax, lga, extent=extent, vmin=a_lim[0], vmax=a_lim[1], cmap='viridis',
+                  zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log A$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -268,11 +294,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=2,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(an), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=an_lim[0], vmax=an_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lgan = numpy.ma.log10(an)
+    print(numpy.sum(lgan.mask), numpy.prod(lgan.shape), numpy.sum(lgan.mask)/numpy.prod(lgan.shape))
+    masked_imshow(fig, ax, cax, lgan, extent=extent, vmin=an_lim[0], vmax=an_lim[1],
+                  cmap='viridis_r', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log A_n$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -282,11 +310,14 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=3,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(dan), origin='lower', interpolation='nearest',
-                    extent=extent, vmin=dan_lim[0], vmax=dan_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lgdan = numpy.ma.log10(dan)
+    print(numpy.sum(lgdan.mask), numpy.prod(lgdan.shape),
+          numpy.sum(lgdan.mask)/numpy.prod(lgdan.shape))
+    masked_imshow(fig, ax, cax, lgdan, extent=extent, vmin=dan_lim[0], vmax=dan_lim[1],
+                  cmap='viridis_r', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log(\delta A_n)$', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -296,10 +327,11 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=0,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(gmr, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=gmr_lim[0], vmax=gmr_lim[1], cmap='RdBu_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
+    print(numpy.sum(gmr.mask), numpy.prod(gmr.shape), numpy.sum(gmr.mask)/numpy.prod(gmr.shape))
+    masked_imshow(fig, ax, cax, gmr, extent=extent, vmin=gmr_lim[0], vmax=gmr_lim[1],
+                  cmap='RdBu_r', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$g-r$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -309,10 +341,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=1,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(t), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=t_lim[0], vmax=t_lim[1], cmap='viridis', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lgt = numpy.ma.log10(t)
+    print(numpy.sum(lgt.mask), numpy.prod(lgt.shape), numpy.sum(lgt.mask)/numpy.prod(lgt.shape))
+    masked_imshow(fig, ax, cax, lgt, extent=extent, vmin=t_lim[0], vmax=t_lim[1],
+                  cmap='viridis', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log T$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -322,11 +357,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=2,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(tn), origin='lower', interpolation='nearest', extent=extent,
-                    vmin=tn_lim[0], vmax=tn_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lgtn = numpy.ma.log10(tn)
+    print(numpy.sum(lgtn.mask), numpy.prod(lgtn.shape), numpy.sum(lgtn.mask)/numpy.prod(lgtn.shape))
+    masked_imshow(fig, ax, cax, lgtn, extent=extent, vmin=tn_lim[0], vmax=tn_lim[1],
+                  cmap='viridis_r', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log T_n$', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes)
@@ -336,11 +373,14 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=3,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(numpy.ma.log10(dtn), origin='lower', interpolation='nearest',
-                    extent=extent, vmin=dtn_lim[0], vmax=dtn_lim[1], cmap='viridis_r',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.1f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    lgdtn = numpy.ma.log10(dtn)
+    print(numpy.sum(lgdtn.mask), numpy.prod(lgdtn.shape),
+            numpy.sum(lgdtn.mask)/numpy.prod(lgdtn.shape))
+    masked_imshow(fig, ax, cax, lgdtn, extent=extent, vmin=dtn_lim[0], vmax=dtn_lim[1],
+                  cmap='viridis_r', zorder=3, cbformat='%.1f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log \delta T_n$', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -350,9 +390,11 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=0,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    img = ax.imshow(svel, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=sv_lim[0], vmax=sv_lim[1], cmap='RdBu_r', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
+    print(numpy.sum(svel.mask), numpy.prod(svel.shape), numpy.sum(svel.mask)/numpy.prod(svel.shape))
+    masked_imshow(fig, ax, cax, svel, extent=extent, vmin=sv_lim[0], vmax=sv_lim[1],
+                  cmap='RdBu_r', zorder=3, cbformat='%.0f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$V_\ast$ (km/s)', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -362,13 +404,14 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=1,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigo, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=so_lim[0], vmax=so_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(ssigo.mask), numpy.prod(ssigo.shape),
+            numpy.sum(ssigo.mask)/numpy.prod(ssigo.shape))
+    masked_imshow(fig, ax, cax, ssigo, extent=extent,
+                  norm=colors.LogNorm(vmin=so_lim[0], vmax=so_lim[1]),
+                  cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_{\rm obs}$ (km/s)', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -378,10 +421,13 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=2,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigcor, origin='lower', interpolation='nearest', extent=extent,
-                    vmin=sc_lim[0], vmax=sc_lim[1], cmap='viridis', zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(ssigcor.mask), numpy.prod(ssigcor.shape),
+            numpy.sum(ssigcor.mask)/numpy.prod(ssigcor.shape))
+    masked_imshow(fig, ax, cax, ssigcor, extent=extent, vmin=sc_lim[0], vmax=sc_lim[1],
+                  cmap='viridis', zorder=3, cbformat='%.0f')
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_{\rm corr}$ (km/s)', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -391,13 +437,14 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     i,j=3,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    ax.yaxis.set_major_formatter(NullFormatter())
-    img = ax.imshow(ssigc, origin='lower', interpolation='nearest', extent=extent,
-                    norm=colors.LogNorm(vmin=ss_lim[0], vmax=ss_lim[1]), cmap='viridis',
-                    zorder=3)
-    cb = fig.colorbar(img, cax=cax, format='%.0f')#, orientation='horizontal')
-    cb.locator = LogLocator(base=10, subs=(1.,2.,4.,))
-    cb.update_ticks()
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    print(numpy.sum(ssigc.mask), numpy.prod(ssigc.shape),
+            numpy.sum(ssigc.mask)/numpy.prod(ssigc.shape))
+    masked_imshow(fig, ax, cax, ssigo, extent=extent,
+                  norm=colors.LogNorm(vmin=ss_lim[0], vmax=ss_lim[1]),
+                  cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_\ast$ (km/s)', horizontalalignment='left',
             verticalalignment='center', transform=ax.transAxes)
@@ -470,6 +517,7 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
         # .. and pull these out of the signal map
         signal = signal_map.ravel()[unique_indx]
 
+    print(hdu['PAR'].data['TPLWGT'].shape)
     w = hdu['PAR'].data['TPLWGT'].copy()
     if tpl_flux_renorm is not None:
         w /= tpl_flux_renorm[None,:]
@@ -482,9 +530,9 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
 #    dtnw = numpy.median(wn / numpy.sum(wn, axis=1)[:,None], axis=0)
     dtnw = numpy.ones(w.shape[1], dtype=float)
     dt = numpy.ma.sqrt(numpy.sum(dtw[None,:]*numpy.square(w - numpy.ma.median(w, axis=0)[None,:]),
-                            axis=1) / numpy.sum(dtw))
+                            axis=1) / numpy.sum(dtw)).filled(0.0)
     dtn = numpy.ma.sqrt(numpy.sum(dtnw[None,:]*numpy.square(wn - numpy.ma.median(wn, axis=0)[None,:]),   
-                            axis=1) / numpy.sum(dtnw))
+                            axis=1) / numpy.sum(dtnw)).filled(0.0)
 
     w = hdu['PAR'].data['ADDCOEF'].copy()
     wn = w/signal[:,None]
@@ -498,9 +546,9 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
 #                        / numpy.sum(numpy.absolute(wn), axis=1)[:,None], axis=0)
     danw = numpy.ones(w.shape[1], dtype=float)
     da = numpy.ma.sqrt(numpy.sum(daw[None,:]*numpy.square(w - numpy.ma.median(w, axis=0)[None,:]),
-                            axis=1) / numpy.sum(w))
+                            axis=1) / numpy.sum(daw)).filled(0.0)
     dan = numpy.ma.sqrt(numpy.sum(danw[None,:]*numpy.square(wn - numpy.ma.median(wn, axis=0)[None,:]),
-                            axis=1) / numpy.sum(danw))
+                            axis=1) / numpy.sum(danw)).filled(0.0)
 
     hdu.close()
     del hdu
@@ -576,6 +624,16 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
     binid_map, t, dt, tn, dtn, a, da, an, dan \
             = continuum_component_data(plt, ifu, plan, _drpver, _dapver, _analysis_path,
                                        signal_map=signal_map, tpl_flux_renorm=tpl_flux_renorm)
+
+    print('t:', numpy.sum(t > 0), numpy.prod(t.shape))
+    print('dt:', numpy.sum(dt > 0), numpy.prod(dt.shape))
+    print('tn:', numpy.sum(tn > 0), numpy.prod(tn.shape))
+    print('dtn:', numpy.sum(dtn > 0), numpy.prod(dtn.shape))
+
+    print('a:', numpy.sum(a > 0), numpy.prod(a.shape))
+    print('da:', numpy.sum(da > 0), numpy.prod(da.shape))
+    print('an:', numpy.sum(an > 0), numpy.prod(an.shape))
+    print('dan:', numpy.sum(dan > 0), numpy.prod(dan.shape))
 
     # Map the continuum component data
     t_map = DAPFitsUtil.reconstruct_map(binid_map.shape, binid_map.ravel(), t, quiet=True)
