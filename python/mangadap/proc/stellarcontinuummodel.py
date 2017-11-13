@@ -1352,7 +1352,13 @@ class StellarContinuumModel:
             raise TypeError('Dispersion must be a single number or None.')
 
         mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
-                                    ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
+                                    [ 'NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
+#        print(numpy.sum(mask), len(mask))
+        if numpy.sum(mask) == len(mask):
+            warnings.warn('All stellar continuum fits have been masked!  Returning input guesses.')
+            str_z = self.method['fitpar']['guess_redshift'].copy()
+            return (str_z*astropy.constants.c.to('km/s').value if cz else str_z), \
+                        self.method['fitpar']['guess_dispersion'].copy()
         str_z = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,0].copy(), mask=mask) \
                     / astropy.constants.c.to('km/s').value
         str_d = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,1].copy(), mask=mask)
@@ -1394,9 +1400,11 @@ class StellarContinuumModel:
                 # velocity of a poor sigma measurement to be valid.
                 bad_bins = numpy.unique(numpy.append(self.missing_models,
                                     binned_spectra['BINS'].data['BINID'][str_z.mask]).astype(int))
+#                print('z: ', bad_bins, binned_spectra.nbins, self.missing_models)
                 str_z = binned_spectra.replace_with_data_from_nearest_bin(str_z.data, bad_bins)
                 bad_bins = numpy.unique(numpy.append(self.missing_models,
                                     binned_spectra['BINS'].data['BINID'][str_d.mask]).astype(int))
+#                print('d: ', bad_bins, binned_spectra.nbins, self.missing_models)
                 str_d = binned_spectra.replace_with_data_from_nearest_bin(str_d.data, bad_bins)
             else:
                 # Fill any masked values with the single estimate

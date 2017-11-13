@@ -50,6 +50,8 @@ run the DAP for a specific MaNGA observation.
         instead of internal yanny reader.
     | **24 Aug 2017**: (KBW) Provide new 'valid' attributes to signify
         if the input data was changed to the default value.
+    | **11 Nov 2017**: (KBW) Change velocity minimum to -500 km/s to
+        match :class:`mangadap.survey.drpcomplete.DRPComplete`
 
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 .. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
@@ -134,7 +136,7 @@ class ObsInputPar(ParSet):
         hard-coded limits.
 
             - Velocity (:math:`cz`) and velocity dispersion have to be
-              greater than 0.
+              greater than -500.
             - Ellipticity has to be :math:`0 \leq \varepsilon < 1`
             - Position angle has to be :math:`0 \leq \phi < 360`
             - Effective radius has to be greater than zero.
@@ -143,8 +145,8 @@ class ObsInputPar(ParSet):
             ValueError: Raised if velocity (:math:`cz`) is less than
                 zero.
         """
-        if self.data['vel'] < 0:
-            raise ValueError('Velocity must be > 0!')
+        if not self.data['vel'] > -500:
+            raise ValueError('Velocity must be > -500!')
         if self.data['vdisp'] < 0:
             warnings.warn('Velocity dispersion less than 0; using default of 100 km/s.')
             self.data['vdisp'] = 100.0

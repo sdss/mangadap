@@ -208,7 +208,9 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     c = np.roll(c, dx, axis=1)
     m2 = np.max(np.abs(c * mask.astype(float)[None,:]), axis=1)
     valid = m2 > m1/1e3
+    print(component[valid])
     valid &= tpl_to_use
+    print(component[valid])
     ncomp = np.max(component)+1
 
 #    for i in range(c.shape[0]):
@@ -237,6 +239,10 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     # Map between old and new component numbers
     component_map = np.unique(_component)
 
+    print(component)
+    print(_component)
+    print(component_map)
+
     if not np.array_equal(component_map, np.arange(ncomp)):
         # Subset of components are not in sequence so they need to be remapped
         remapped_component = _component.copy()
@@ -245,12 +251,18 @@ def _validate_templates_components(templates, gas_template, component, moments, 
         _tied = None if tied is None else []
         for i, cm in enumerate(component_map):
             indx = _component == cm
+            print(i)
+            print(np.sum(indx))
+            print(cm)
+            print(start[cm])
             remapped_component[indx] = i
             _start += [start[cm]]
             if tied is not None:
                 _tied += [tied[cm]]
         _component = remapped_component
         _moments = moments[component_map]
+        print(_component)
+        print(_moments)
     else:
         _start = start
         _tied = tied
@@ -573,6 +585,9 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
         _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
         _tpl_to_use[:,_gas_template] = True
         _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
+
+        print('Templates to use for each spectrum')
+        print(np.sum(_tpl_to_use, axis=1))
 
         _component = np.append(np.zeros(nspec, dtype=int), _component[nbin:])
 

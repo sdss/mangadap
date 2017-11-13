@@ -296,11 +296,28 @@ class PPXFFitResult(object):
         self.end = end
         self.npixtot = end-start
         self.tpl_to_use = tpl_to_use.copy()
-        self.status = None if ppxf_fit is None else ppxf_fit.status
         self.gpm = None if ppxf_fit is None else ppxf_fit.goodpixels.copy()
         self.bestfit = None if ppxf_fit is None else ppxf_fit.bestfit.copy()
         self.tplwgt = None if ppxf_fit is None else ppxf_fit.weights[0:ntpl].copy()
+#        if numpy.sum(self.tplwgt) == 0:
+#            print(ppxf_fit.weights[0:ntpl])
+#            print(self.tplwgt)
+#            print(self.status)
+#            print(ppxf_fit.sol)
+#            print(ppxf_fit.error)
+#            exit()
         self.tplwgterr = None
+
+        # Set status
+        if ppxf_fit is None:
+            self.status = None 
+        elif numpy.sum(self.tplwgt) == 0:
+            warnings.warn('No non-zero templates!  Setting status as failed.')
+            self.status = -2            # All template weights are zero!
+        else:
+            self.status = ppxf_fit.status
+#        self.status = None if ppxf_fit is None else ppxf_fit.status
+
         if ppxf_fit is not None and weight_errors:
             design_matrix = ppxf_fit.matrix[ppxf_fit.goodpixels,:] \
                                 / ppxf_fit.noise[ppxf_fit.goodpixels, None]
@@ -797,6 +814,18 @@ class PPXFFit(StellarKinematicsFit):
                                  plot=plot, linear=linear,
                                  templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
                                  weight_errors=weight_errors)
+
+#            if numpy.sum(result[i].tplwgt) == 0:
+#                print(numpy.sum(numpy.invert(numpy.isfinite(obj_ferr.data[i,start[i]:end[i]]))))
+#                print(numpy.sum(numpy.invert(obj_ferr.data[i,start[i]:end[i]] > 0)))
+#                pyplot.plot(self.obj_wave[start[i]:end[i]], obj_flux.data[i,start[i]:end[i]])
+#                pyplot.plot(self.obj_wave[start[i]:end[i]], obj_ferr.data[i,start[i]:end[i]])
+#                for j in range(numpy.sum(tpl_to_use[i,:])):
+#                    pyplot.plot(self.tpl_wave, tpl_flux[tpl_to_use[i,:],:][j,:])
+#                pyplot.show()
+#                exit()
+
+
 #            print(result[i].tplwgt)
 #            print(result[i].tpl_to_use)
             if result[i].kin[1] < 0:
@@ -1335,21 +1364,27 @@ class PPXFFit(StellarKinematicsFit):
         tpl_ang_per_pix = angstroms_per_pixel(self.tpl_wave, log=True, base=10.)
         unity = numpy.ones(self.tpl_wave.size, dtype=float)
 
+        _obj_to_fit = self.obj_to_fit.copy()
+
         # Get the nominal kinematics
         nominal_redshift = numpy.zeros(self.nobj, dtype=float)
         nominal_dispersion = numpy.zeros(self.nobj, dtype=float)
         for i in range(self.nobj):
-            if not self.obj_to_fit[i] or result[i] is None or result[i].fit_failed():
+            if _obj_to_fit[i] and (result[i] is None or result[i].fit_failed()):
+                _obj_to_fit[i] = False
+                continue
+            if not _obj_to_fit[i] or result[i] is None or result[i].fit_failed():
                 continue
             v, _ = PPXFFit.convert_velocity(result[i].kin[0], numpy.array([0.0]))
             nominal_redshift[i] = v/astropy.constants.c.to('km/s').value
             nominal_dispersion[i] = result[i].kin[1] if baseline_dispersion is None \
                                         else baseline_dispersion
 
+        # Create the spectra to use for the correction
         niter = 1
         for j in range(niter):
             for i in range(self.nobj):
-                if not self.obj_to_fit[i] or result[i] is None or result[i].fit_failed():
+                if not _obj_to_fit[i] or result[i] is None or result[i].fit_failed():
                     continue
 
                 # Get the convolution kernel with 0 velocity shift
@@ -1364,6 +1399,12 @@ class PPXFFit(StellarKinematicsFit):
                                                 self.tpl_flux[result[i].tpl_to_use,:])
                 model_template_rfft[i,:] = numpy.dot(result[i].tplwgt,
                                                      self.tpl_rfft[result[i].tpl_to_use,:])
+#                print(i+1, numpy.sum(result[i].tplwgt))
+#                print(result[i].tplwgt)
+#                if numpy.sum(result[i].tplwgt) == 0:
+#                    pyplot.plot(self.obj_wave, self.obj_flux[i,:])
+#                    pyplot.show()
+#                    raise ValueError('zero template weights')
 #                tmp_mt = numpy.fft.irfft(model_template_rfft[i,:], self.tpl_npad)[:self.npix_tpl]
 #                pyplot.plot(self.tpl_wave, model_template[i,:], lw=1, zorder=2)
 #                pyplot.plot(self.tpl_wave, tmp_mt, lw=3, zorder=1)
@@ -1481,14 +1522,14 @@ class PPXFFit(StellarKinematicsFit):
             result_wlosvd = self._run_fit_iteration(model_wlosvd, model_ferr, start, end,
                                                     self.base_velocity, model_template,
                                                     model_template_rfft, guess_kin,
-                                                    obj_to_fit=self.obj_to_fit,
+                                                    obj_to_fit=_obj_to_fit,
                                                     tpl_to_use=model_tpl_to_use)#,
                                                     #plot=True)
 
             result_wlosvd_msres = self._run_fit_iteration(model_wlosvd_msres, model_ferr, start,
                                                           end, self.base_velocity, model_template,
                                                           model_template_rfft, guess_kin,
-                                                          obj_to_fit=self.obj_to_fit,
+                                                          obj_to_fit=_obj_to_fit,
                                                           tpl_to_use=model_tpl_to_use)#,
                                                           #plot=True)
 
@@ -1497,8 +1538,8 @@ class PPXFFit(StellarKinematicsFit):
                                                     or rcls is None or rcls.fit_failed()
                                                         or rcls.reached_maxiter() 
                                         for rcl, rcls in zip(result_wlosvd, result_wlosvd_msres) ])
-            dispersion_correction_err &= self.obj_to_fit
-            indx = numpy.invert(dispersion_correction_err) & self.obj_to_fit
+            dispersion_correction_err &= _obj_to_fit
+            indx = numpy.invert(dispersion_correction_err) & _obj_to_fit
 
             disp_wlosvd = numpy.zeros(self.nobj, dtype=float)
             disp_wlosvd[indx] = numpy.array([ rc.kin[1] for rc in result_wlosvd[indx] ])

@@ -291,6 +291,8 @@ class Covariance:
             self.dim = 3
             self.nnz = 0
             for cov in self.cov:
+#                print(type(cov))
+#                print(sparse.isspmatrix_csr(cov))
                 if not sparse.isspmatrix_csr(cov):
                     raise TypeError('Input covariance matrix (or elements) must be csr_matrices.')
                 self.nnz += cov.nnz
@@ -490,10 +492,14 @@ class Covariance:
             var = numpy.ones(shape[1:], dtype=float) if ivar_ext is None \
                     else numpy.ma.power(hdu[ivar_ext].data.reshape(-1, shape[-1]), -1).filled(0.0)
             cov = numpy.empty(shape[-1], dtype=sparse.csr.csr_matrix)
+#            print(cov.shape)
+#            xx = 0
             for ii, uk in enumerate(input_indx):
                 indx = k == uk
                 cij = rhoij[indx] * numpy.sqrt( var[i[indx],ii]*var[j[indx],ii] )
                 cov[ii] = sparse.coo_matrix((cij, (i[indx], j[indx])), shape=shape[:-1]).tocsr()
+#                xx += 1
+#            print(xx)
 
         # Report
         # TODO: Convert report to use logging
@@ -507,6 +513,9 @@ class Covariance:
                 print('    pseudo-indices: ', input_indx)
             print('   non-zero values: {0}'.format(nnz))
 
+#        print(type(cov))
+#        if dim == 3:
+#            print(type(cov[0]))
         return cls(cov, input_indx=input_indx, correlation=correlation)
 
 
@@ -684,18 +693,22 @@ class Covariance:
             i, j, c = sparse.find(self.cov)
             new_cov = sparse.coo_matrix( (c*numpy.sqrt(var[i]*var[j]), (i,j)),
                                            shape=self.shape).tocsr()
+#            print(type(new_cov))
         else:
             new_cov = numpy.empty(self.shape[-1], dtype=sparse.csr.csr_matrix)
             for p in range(self.shape[-1]):
                 i, j, c = sparse.find(self.cov[p])
                 new_cov[p] = sparse.coo_matrix((c*numpy.sqrt(var[i,p]*var[j,p]), (i,j)),
                                                shape=self.shape[:-1]).tocsr()
+#            print(type(new_cov))
+#            print(type(new_cov[0]))
 
         # Revert to covariance matrix, if needed
         if not is_correlation:
             self.revert_correlation()
 
         # Return a new covariance matrix
+#        print('applying new variance')
         return Covariance(new_cov, input_indx=self.input_indx, correlation=is_correlation)
 
 

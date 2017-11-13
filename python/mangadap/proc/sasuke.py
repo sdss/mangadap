@@ -2272,15 +2272,17 @@ class Sasuke(EmissionLineFit):
         # Initialize the mask and the spectral range to fit for the
         # input object spectra
         # TODO: This alters the mask of self.obj_flux!!
+        print('initialize')
         obj_model_mask, err, obj_start, obj_end \
                     = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave, self.obj_flux,
                                                        self.obj_ferr, self.velscale,
                                                        velscale_ratio=self.velscale_ratio,
-                                                       waverange=waverange, mask=obj_mask,
+                                                       waverange=waverange, # mask=obj_mask,
                                                        bitmask=self.bitmask,
                                                        velocity_offset=self.input_cz,
                                                        max_velocity_range=max_velocity_range,
-                                                       alias_window=alias_window, ensemble=False,
+                                                       alias_window=alias_window,
+                                                       ensemble=True, #False,
                                                        loggers=self.loggers, quiet=self.quiet)
         ended_in_error = numpy.array([e is not None for e in err])
         if numpy.any(ended_in_error):
@@ -2308,13 +2310,13 @@ class Sasuke(EmissionLineFit):
                                                            self.remap_flux, self.remap_ferr,
                                                            self.velscale,
                                                            velscale_ratio=self.velscale_ratio,
-                                                           waverange=waverange, mask=remap_mask,
+                                                           waverange=waverange, # mask=remap_mask,
                                                            bitmask=self.bitmask,
                                                         velocity_offset=numpy.median(self.input_cz),
                                                            max_velocity_range=max_velocity_range,
                                                            alias_window=alias_window,
-                                                           ensemble=False, loggers=self.loggers,
-                                                           quiet=self.quiet)
+                                                           ensemble=True, #False,
+                                                           loggers=self.loggers, quiet=self.quiet)
             ended_in_error = numpy.array([e is not None for e in err])
             if numpy.any(ended_in_error):
                 if not self.quiet:
@@ -2337,8 +2339,9 @@ class Sasuke(EmissionLineFit):
         # wavelength vectors; interpretted by pPXF as a base velocity
         # shift between the two.  This is a single number, used for both
         # the object spectra and the remapping spectra if provided
-        start = numpy.amin(obj_start if self.nremap == 0 else numpy.append(obj_start, remap_start))
-        end = numpy.amax(obj_end if self.nremap == 0 else numpy.append(obj_end, remap_end))
+        start = numpy.amax(obj_start if self.nremap == 0 else numpy.append(obj_start, remap_start))
+        end = numpy.amin(obj_end if self.nremap == 0 else numpy.append(obj_end, remap_end))
+
         model_mask = obj_model_mask if self.nremap == 0 else remap_model_mask
         self.base_velocity = -PPXFFit.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
                                                         self.velscale,

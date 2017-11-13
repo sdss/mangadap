@@ -1,6 +1,20 @@
 --------------------------------------------------------------------------------
 KBW (??         ): tag 2.1.1
 
+propagate fit_failed when status = -2
+set critical flag when stellar-continuum fits are all bad
+
+    - Debug 2.1 tag:
+        - Added check that pPXF returns some non-zero weights.  If all
+          weights are zero, the pPXF status is set to -2.
+        - Check if all stellar-continuum fits are bad.  If so,
+          emission-line model set fixed stellar kinematics to input
+          redshift and dispersion = 100 km/s, and the DAP quality flag
+          set to CRITICAL.
+        - Fixed fitting window determination in Sasuke
+        - Allow for fit to proceed if input velocity is > -500 km/s
+          (previously > 0 km/s).
+
 TODO:
     - problem with spot-check map output; numpy bug?
     - emission-line moment masks

@@ -1004,7 +1004,10 @@ class EmissionLineModel:
        
         # The number of models returned should be the number of "good" binned
         # spectra if the fitter does *not* deconstruct the bins.
+        # TODO: This may now cause problems with Elric...
         if not self.method['deconstruct_bins'] and model_flux.shape[0] != numpy.sum(good_snr):
+            print(model_flux.shape[0])
+            print(numpy.sum(good_snr))
             raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------

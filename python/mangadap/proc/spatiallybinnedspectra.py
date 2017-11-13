@@ -1613,17 +1613,23 @@ class SpatiallyBinnedSpectra:
 #        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         # Attempt to read and construct the covariance object
+        # TODO: Covariance matrices need to have the input_index
+        # written to the file
+#        self.covariance = Covariance.from_fits(self.hdu, ivar_ext=None, row_major=True,
+#                                               correlation=True)
+#        var = numpy.ma.power(self.hdu['IVAR'].data[:,:,self.covariance.input_index],
+#                             -1).filled(0.0).reshape(-1, self.covariance.shape[-1])
+#        self.covariance = self.covariance.apply_new_variance(var)
+
         try:
             self.covariance = Covariance.from_fits(self.hdu, ivar_ext=None, row_major=True,
                                                    correlation=True)
-            i, j = Covariance.reshape_indices(self.covariance.shape[0],
-                                              self.covariance.input_index)
-
             var = numpy.ma.power(self.hdu['IVAR'].data[:,:,self.covariance.input_index],
                                  -1).filled(0.0).reshape(-1, self.covariance.shape[-1])
             self.covariance = self.covariance.apply_new_variance(var)
-        except:
+        except Exception as e:
             if not self.quiet:
+                print(e)
                 warnings.warn('Unable to find/read covariance data.')
             self.covariance = None
 
