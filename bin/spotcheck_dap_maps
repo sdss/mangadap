@@ -473,7 +473,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
 #                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.99, 0.05, r'$\log\ \sigma_{{\rm H}\alpha}$', horizontalalignment='right',
+    ax.text(0.99, 0.05, r'$\sigma_{{\rm H}\alpha}$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
 
