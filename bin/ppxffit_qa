@@ -247,7 +247,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
 #    print(numpy.sum(rchi2.mask), numpy.prod(rchi2.shape),
-          numpy.sum(rchi2.mask)/numpy.prod(rchi2.shape))
+#          numpy.sum(rchi2.mask)/numpy.prod(rchi2.shape))
     masked_imshow(fig, ax, cax, rchi2, extent=extent, vmin=chi_lim[0], vmax=chi_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.2f')
     ax.set_xlim(extent[:2])
@@ -263,7 +263,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
 #    print(numpy.sum(signal.mask), numpy.prod(signal.shape),
-          numpy.sum(signal.mask)/numpy.prod(signal.shape))
+#          numpy.sum(signal.mask)/numpy.prod(signal.shape))
     masked_imshow(fig, ax, cax, signal, extent=extent,
                   norm=colors.LogNorm(vmin=s_lim[0], vmax=s_lim[1]), cmap='viridis',
                   zorder=3, cbformat='%.1f', subs=(1.,2.,4.))
@@ -313,7 +313,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     lgdan = numpy.ma.log10(dan)
 #    print(numpy.sum(lgdan.mask), numpy.prod(lgdan.shape),
-          numpy.sum(lgdan.mask)/numpy.prod(lgdan.shape))
+#          numpy.sum(lgdan.mask)/numpy.prod(lgdan.shape))
     masked_imshow(fig, ax, cax, lgdan, extent=extent, vmin=dan_lim[0], vmax=dan_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
     ax.set_xlim(extent[:2])
@@ -376,7 +376,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     lgdtn = numpy.ma.log10(dtn)
 #    print(numpy.sum(lgdtn.mask), numpy.prod(lgdtn.shape),
-            numpy.sum(lgdtn.mask)/numpy.prod(lgdtn.shape))
+#            numpy.sum(lgdtn.mask)/numpy.prod(lgdtn.shape))
     masked_imshow(fig, ax, cax, lgdtn, extent=extent, vmin=dtn_lim[0], vmax=dtn_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
     ax.set_xlim(extent[:2])
@@ -406,7 +406,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
 #    print(numpy.sum(ssigo.mask), numpy.prod(ssigo.shape),
-            numpy.sum(ssigo.mask)/numpy.prod(ssigo.shape))
+#            numpy.sum(ssigo.mask)/numpy.prod(ssigo.shape))
     masked_imshow(fig, ax, cax, ssigo, extent=extent,
                   norm=colors.LogNorm(vmin=so_lim[0], vmax=so_lim[1]),
                   cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
@@ -423,7 +423,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
 #    print(numpy.sum(ssigcor.mask), numpy.prod(ssigcor.shape),
-            numpy.sum(ssigcor.mask)/numpy.prod(ssigcor.shape))
+#            numpy.sum(ssigcor.mask)/numpy.prod(ssigcor.shape))
     masked_imshow(fig, ax, cax, ssigcor, extent=extent, vmin=sc_lim[0], vmax=sc_lim[1],
                   cmap='viridis', zorder=3, cbformat='%.0f')
     ax.set_xlim(extent[:2])
@@ -439,7 +439,7 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
 #    print(numpy.sum(ssigc.mask), numpy.prod(ssigc.shape),
-            numpy.sum(ssigc.mask)/numpy.prod(ssigc.shape))
+#            numpy.sum(ssigc.mask)/numpy.prod(ssigc.shape))
     masked_imshow(fig, ax, cax, ssigo, extent=extent,
                   norm=colors.LogNorm(vmin=ss_lim[0], vmax=ss_lim[1]),
                   cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
