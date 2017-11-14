@@ -1354,7 +1354,7 @@ class StellarContinuumModel:
         mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
                                     [ 'NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
 #        print(numpy.sum(mask), len(mask))
-        if numpy.sum(mask) == len(mask):
+        if numpy.all(mask):
             warnings.warn('All stellar continuum fits have been masked!  Returning input guesses.')
             str_z = self.method['fitpar']['guess_redshift'].copy()
             return (str_z*astropy.constants.c.to('km/s').value if cz else str_z), \
@@ -1434,11 +1434,11 @@ class StellarContinuumModel:
 
             # Number of models matches the numbers of bins
             if binned_spectra.nbins == self.nmodels:
-                print('returning usetpl')
+#                print('returning usetpl')
                 return usetpl
     
             # Fill in bins with no models with masked zeros
-            print('Fill in bins with no models with masked zeros')
+#            print('Fill in bins with no models with masked zeros')
             ntpl = self.method['fitpar']['template_library'].ntpl
             _usetpl = numpy.ones((binned_spectra.nbins,ntpl), dtype=bool)
             for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):

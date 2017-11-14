@@ -208,9 +208,9 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     c = np.roll(c, dx, axis=1)
     m2 = np.max(np.abs(c * mask.astype(float)[None,:]), axis=1)
     valid = m2 > m1/1e3
-    print(component[valid])
+#    print(component[valid])
     valid &= tpl_to_use
-    print(component[valid])
+#    print(component[valid])
     ncomp = np.max(component)+1
 
 #    for i in range(c.shape[0]):
@@ -239,9 +239,9 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     # Map between old and new component numbers
     component_map = np.unique(_component)
 
-    print(component)
-    print(_component)
-    print(component_map)
+#    print(component)
+#    print(_component)
+#    print(component_map)
 
     if not np.array_equal(component_map, np.arange(ncomp)):
         # Subset of components are not in sequence so they need to be remapped
@@ -251,18 +251,18 @@ def _validate_templates_components(templates, gas_template, component, moments, 
         _tied = None if tied is None else []
         for i, cm in enumerate(component_map):
             indx = _component == cm
-            print(i)
-            print(np.sum(indx))
-            print(cm)
-            print(start[cm])
+#            print(i)
+#            print(np.sum(indx))
+#            print(cm)
+#            print(start[cm])
             remapped_component[indx] = i
             _start += [start[cm]]
             if tied is not None:
                 _tied += [tied[cm]]
         _component = remapped_component
         _moments = moments[component_map]
-        print(_component)
-        print(_moments)
+#        print(_component)
+#        print(_moments)
     else:
         _start = start
         _tied = tied
@@ -316,9 +316,9 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
     nkin = np.sum(np.absolute(moments))
 
     _tpl_to_use = np.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use.copy()
-    print(_tpl_to_use.shape)
-    print(np.sum(_tpl_to_use, axis=1))
-    print(_tpl_to_use[0,:])
+#    print(_tpl_to_use.shape)
+#    print(np.sum(_tpl_to_use, axis=1))
+#    print(_tpl_to_use[0,:])
 
     model = np.zeros(flux.shape, dtype=float)
     eml_model = np.zeros(flux.shape, dtype=float)
@@ -569,19 +569,31 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                                      degree=degree, mdegree=mdegree, reddening=reddening,
                                      mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet)
 
+        valid_bin_str_fit = np.sum(binned_tpl_wgts[:,np.invert(gas_template)], axis=1) > 0
+        valid_bin_fit = np.sum(binned_tpl_wgts, axis=1) > 0
+        nvalid_bin_str_fit = np.sum(valid_bin_str_fit)
+#        print(nbin, nvalid_bin_str_fit, np.sum(valid_bin_fit))
+
         # - Create new template set with the optimal stellar template
-        #   for each spectrum
+        #   for each spectrum, only using those with valid stellar
+        #   weights
         stellar_wgts, _templates, _gas_template, _tpl_to_use, _component \
-                    = _combine_stellar_templates(templates, gas_template, binned_tpl_wgts,
+                    = _combine_stellar_templates(templates, gas_template,
+                                                 binned_tpl_wgts[valid_bin_str_fit,:],
                                                  inp_component)
+#        print(stellar_wgts.shape)
+#        print(_templates.shape)
 
         # - Get the index of the nearest bin for every spaxel
-        nearest_bin = np.argmin((x[:, None] - x_binned)**2 + (y[:, None] - y_binned)**2, axis=1)
+        nearest_bin = np.argmin(np.square(x[:, None] - x_binned[valid_bin_str_fit]) 
+                                    + np.square(y[:, None] - y_binned[valid_bin_str_fit]), axis=1)
 
         # - Use the binned data as the starting guess for the nearest
         #   spaxel
         stellar_wgts = stellar_wgts[nearest_bin,:]
-        _templates = np.append(_templates[:nbin,:][nearest_bin,:], _templates[nbin:,:], axis=0)
+#        _templates = np.append(_templates[:nbin,:][nearest_bin,:], _templates[nbin:,:], axis=0)
+        _templates = np.append(_templates[:nvalid_bin_str_fit,:][nearest_bin,:],
+                                    _templates[nvalid_bin_str_fit:,:], axis=0)
         _gas_template = np.zeros(_templates.shape[0], dtype=bool)
         _gas_template[nspec:] = True
 
@@ -589,22 +601,26 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
         _tpl_to_use[:,_gas_template] = True
         _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
 
-        print('Templates to use for each spectrum')
-        print(np.sum(_tpl_to_use, axis=1))
-        print(_tpl_to_use.shape)
-        print(_tpl_to_use[0,:])
+#        print('Templates to use for each spectrum')
+#        print(np.sum(_tpl_to_use, axis=1))
+#        print(_tpl_to_use.shape)
+#        print(_tpl_to_use[0,:])
 
-        _component = np.append(np.zeros(nspec, dtype=int), _component[nbin:])
-        print(_component)
-        print(len(_component))
+        _component = np.append(np.zeros(nspec, dtype=int), _component[nvalid_bin_str_fit:])
+#        print(_component)
+#        print(len(_component))
 
         # - Use the starting positions from the fit to the bins for the
         #   fit to the individual spaxels
         n_gas_comp = len(np.unique(_component[_gas_template]))
         _start = inp_start[nearest_bin]
-        gas_start = binned_kin[:,np.absolute(moments[0]):][nearest_bin,:]
+        gas_start = binned_kin[valid_bin_str_fit,np.absolute(moments[0]):][nearest_bin,:]
         for i in range(nspec):
             _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
+
+#        print(len(_start))
+#        print(gas_start)
+
     else:
         stellar_wgts = None
         _templates = templates

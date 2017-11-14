@@ -738,7 +738,8 @@ class construct_maps_file:
         prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel(),
                                            dapsrc=dapsrc)
         
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
+                                             stellar_continuum, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
@@ -786,13 +787,27 @@ class construct_maps_file:
 
         # Flag the stellar velocity dispersions measured in spectra with
         # S/N<10 as unreliable
-        indx = (binned_spectra['BINID'].data > -1) & (self.hdu['BIN_SNR'].data < 10) \
-                    & (stellar_continuum['BINID'].data > -1) \
-                    & (self.hdu['STELLAR_SIGMA_MASK'].data == 0)
-        print('unreliable sigma because of low S/N: ', numpy.sum(indx))
-        if numpy.sum(indx):
-            self.hdu['STELLAR_SIGMA_MASK'].data[indx] \
-                    = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
+#        indx = (binned_spectra['BINID'].data > -1) & (self.hdu['BIN_SNR'].data < 10) \
+#                    & (stellar_continuum['BINID'].data > -1) \
+#                    & (self.hdu['STELLAR_SIGMA_MASK'].data == 0)
+#        print('unreliable sigma because of low S/N: ', numpy.sum(indx))
+#        if numpy.sum(indx):
+#            self.hdu['STELLAR_SIGMA_MASK'].data[indx] \
+#                    = self.bitmask.turn_on(self.hdu['STELLAR_SIGMA_MASK'].data[indx], 'UNRELIABLE')
+
+        # Flag any inverse variances that are not positive as DONOTUSE
+        # and MATHERROR
+        ext = [ 'BIN_MFLUX', 'STELLAR_VEL', 'STELLAR_SIGMA', 'EMLINE_SFLUX', 'EMLINE_SEW',
+                'EMLINE_GFLUX', 'EMLINE_GEW', 'EMLINE_GVEL', 'EMLINE_GSIGMA', 'SPECINDEX' ]
+        for e in ext:
+            indx = numpy.invert(self.bitmask.flagged(self.hdu['{0}_MASK'.format(e)].data)) \
+                            & numpy.invert(self.hdu['{0}_IVAR'.format(e)].data > 0)
+            if numpy.sum(indx) > 0:
+                self.hdu['{0}_MASK'.format(e)].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'MATHERROR')
+                self.hdu['{0}_MASK'.format(e)].data[indx] \
+                    = self.bitmask.turn_on(self.hdu['{0}_MASK'.format(e)].data[indx], 'DONOTUSE')
+
         #---------------------------------------------------------------
 
         # Check that the path exists
@@ -831,49 +846,6 @@ class construct_maps_file:
         self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
                                                  self.method, mode='MAPS') \
                                     if output_file is None else str(output_file)
-
-
-#    def _set_multichannel_arrays(self, emission_line_moments, emission_line_model,
-#                                 spectral_indices):
-#    
-#        self.multichannel_arrays = [ 'SPX_SKYCOO', 'SPX_ELLCOO', 'BINID', 'BIN_LWSKYCOO',
-#                                     'BIN_LWELLCOO', 'STELLAR_CONT_FRESID' ]
-#        if emission_line_moments.nmom > 1:
-#            self.multichannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
-#                                          'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
-#        if emission_line_model.neml > 1:
-#            self.multichannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
-#                                          'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
-#                                          'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
-#                                          'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-#                                          'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
-#        if spectral_indices.nindx > 1:
-#            self.multichannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
-#                                          'SPECINDEX_CORR' ]
-#
-#
-#
-#    def _set_singlechannel_arrays(self, emission_line_moments, emission_line_model,
-#                                  spectral_indices):
-#    
-#        self.singlechannel_arrays = [ 'SPX_MFLUX', 'SPX_MFLUX_IVAR', 'SPX_SNR', 'BIN_AREA',
-#                                      'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
-#                                      'BIN_SNR', 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
-#                                      'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
-#                                      'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
-#                                      'STELLAR_CONT_RCHI2' ]
-#        if emission_line_moments.nmom == 1:
-#            self.singlechannel_arrays += [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK',
-#                                           'EMLINE_SEW', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
-#        if emission_line_model.neml == 1:
-#            self.singlechannel_arrays += [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK',
-#                                           'EMLINE_GEW', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK',
-#                                           'EMLINE_GVEL', 'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK',
-#                                           'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-#                                           'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA' ]
-#        if spectral_indices.nindx == 1:
-#            self.singlechannel_arrays += [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK',
-#                                           'SPECINDEX_CORR' ]
 
 
     def _consolidate_donotuse(self, mask):
@@ -1077,7 +1049,7 @@ class construct_maps_file:
 
         DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
 
-        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY propagated to NOVALUE
+        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
         NO_DISPERSION_CORRECTION propagated to NOCORRECTION
 
@@ -1099,7 +1071,7 @@ class construct_maps_file:
 
         # Consolidate to NOVALUE
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
-                                                               'RED_EMPTY' ])
+                                                               'RED_EMPTY', 'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
 
         # Consolidate to NOCORRECTION
@@ -1326,7 +1298,7 @@ class construct_maps_file:
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
-# FIX THIS !!
+# DOCUMENT THAT THERE ARE TWO CORRECTIONS !!
                 stellar_continuum['PAR'].data['SIGMACORR_SRES'],
                 stellar_continuum['PAR'].data['SIGMACORR_EMP'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
@@ -1801,7 +1773,8 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra, dapsrc=dapsrc,
+        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
+                                             stellar_continuum, dapsrc=dapsrc,
                                              loggers=self.loggers, quiet=self.quiet)
 
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -2203,8 +2176,8 @@ def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emiss
 
 
 
-def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, loggers=None,
-                                quiet=False):
+def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_continuum, dapsrc=None,
+                                loggers=None, quiet=False):
 
     # Initialize the DAP quality flag
     dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
@@ -2212,9 +2185,18 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, 
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
     if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
         if not quiet:
-            log_output(loggers, 1, logging.INFO, 'DRP File is flagged as CRITICAL!')
+            log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
         dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
         dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
+
+    # Flag the file as CRITICAL if the stellar continuum fits are bad
+    # for all spectra
+    if stellar_continuum is not None:
+        mask = stellar_continuum.bitmask.flagged(stellar_continuum['PAR'].data['MASK'],
+                                                 ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA',
+                                                  'NEAR_BOUND'])
+        if numpy.all(mask):
+            dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
 
     # Signify that the Voronoi binning resulted in a single bin
     if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
@@ -2231,6 +2213,8 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, dapsrc=None, 
         dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
 
     # Commit the quality flag to the header
+    if dapqualbm.flagged(dapqual, 'CRITICAL'):
+        warnings.warn('DAP files are flagged CRITICAL.')
     prihdr['DAPQUAL'] = (dapqual, 'DAP quality bitmask')
 
     # Finalize authors

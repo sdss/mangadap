@@ -2272,7 +2272,6 @@ class Sasuke(EmissionLineFit):
         # Initialize the mask and the spectral range to fit for the
         # input object spectra
         # TODO: This alters the mask of self.obj_flux!!
-        print('initialize')
         obj_model_mask, err, obj_start, obj_end \
                     = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave, self.obj_flux,
                                                        self.obj_ferr, self.velscale,

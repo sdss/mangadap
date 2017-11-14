@@ -1,25 +1,24 @@
 --------------------------------------------------------------------------------
-KBW (??         ): tag 2.1.1
-
-propagate fit_failed when status = -2
-set critical flag when stellar-continuum fits are all bad
-are indices all flagged in HYB case?
-
-    - Debug 2.1 tag:
-        - Added check that pPXF returns some non-zero weights.  If all
-          weights are zero, the pPXF status is set to -2.
-        - Check if all stellar-continuum fits are bad.  If so,
-          emission-line model set fixed stellar kinematics to input
-          redshift and dispersion = 100 km/s, and the DAP quality flag
-          set to CRITICAL.
-        - Fixed fitting window determination in Sasuke
-        - Allow for fit to proceed if input velocity is > -500 km/s
-          (previously > 0 km/s).
+KBW (??         ): tag 2.2
 
 TODO:
-    - problem with spot-check map output; numpy bug?
-    - emission-line moment masks
     - Documentation of config examples are out of date!
+
+--------------------------------------------------------------------------------
+KBW (13 Nov 2017): tag 2.1.1
+
+    - Added check that pPXF returns some non-zero weights in
+      stellar-continuum fitting.  If all weights are zero, the pPXF
+      status is set to -2.
+    - Check if all stellar-continuum fits are bad.  If so, emission-line
+      model set fixed stellar kinematics to input redshift and
+      dispersion = 100 km/s, and the DAP quality flag set to CRITICAL.
+    - Fixed fitting window determination in Sasuke
+    - Allow for fit to proceed if input velocity is > -500 km/s
+      (previously > 0 km/s).
+    - Dummy indices are flagged as NOVALUE in output MAPS file
+    - Any IVAR values that are 0 in 
+    - Changed QA plotting scripts to account for bug in numpy/matplotlib
 
 --------------------------------------------------------------------------------
 KBW (27 Oct 2017): tag 2.1

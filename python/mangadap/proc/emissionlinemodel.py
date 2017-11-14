@@ -980,7 +980,7 @@ class EmissionLineModel:
         # variance when constructing a MAPS file; applied to the error
         # quantities from spectralfitting.EmissionLineFit dtype
         # parameters: FLUXERR, KINERR, EWERR
-        # TODO: Add a maskbit as well?
+        # TODO: Add a maskbit as well?  Yes, but in MAPS construction
         indx = model_eml_par['FLUXERR'] < (numpy.finfo(model_eml_par['FLUX'].dtype).eps \
                                             if minimum_error is None else minimum_error)
         model_eml_par['FLUXERR'][indx] = 0.0
