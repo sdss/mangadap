@@ -1,5 +1,5 @@
 ################################################################################
-#
+#  
 # Copyright (C) 2001-2017, Michele Cappellari
 # E-mail: michele.cappellari_at_physics.ox.ac.uk
 #
@@ -54,7 +54,8 @@
 #   8)  One can include sky spectra in the fit, to deal with cases where the sky
 #       dominates the observed spectrum and an accurate sky subtraction is
 #       critical.
-#   9)  One can derive an estimate of the reddening in the spectrum.
+#   9)  One can derive an estimate of the reddening in the spectrum. This can be
+#       done independently for the stellar spectrum or the Balmer emission lines.
 #  10)  The covariance matrix can be input instead of the error spectrum, to
 #       account for correlated errors in the spectral pixels.
 #  11)  One can specify the weights fraction between two kinematics components,
@@ -69,11 +70,11 @@
 #   pp = ppxf(templates, galaxy, noise, velscale, start,
 #             bias=None, bounds=None, clean=False, component=0, degree=4,
 #             fixed=None, fraction=None, gas_component=None, gas_names=None,
-#             goodpixels=None, lam=None, linear=False, mask=None,
-#             method='capfit', mdegree=0, moments=2, plot=False, quiet=False,
-#             reddening=None, reg_ord=2, reg_dim=None, regul=0, sigma_diff=0,
-#             sky=None, templates_rfft=None, tied=None, trig=False,
-#             velscale_ratio=None, vsyst=0)
+#             gas_reddening=None, goodpixels=None, lam=None, linear=False,
+#             mask=None, method='capfit', mdegree=0, moments=2, plot=False,
+#             quiet=False, reddening=None, reddening_func=None, reg_ord=2,
+#             reg_dim=None, regul=0, sigma_diff=0, sky=None, templates_rfft=None,
+#             tied=None, trig=False, velscale_ratio=None, vsyst=0)
 #
 #   print(pp.sol)  # print best-fitting kinematics (V, sigma, h3, h4)
 #   pp.plot()      # Plot best fit and gas lines
@@ -153,10 +154,10 @@
 #       keyword), all values for [Vel, Sigma, h3, h4,...] can be provided.
 #     - Unless a good initial guess is available, it is recommended to set the
 #       starting sigma >= 3*velscale in km/s (i.e. 3 pixels). In fact when the
-#       LOSVD is severely undersampled, and far from the true solution, the
-#       chi^2 of the fit becomes weakly sensitive to small variations in sigma
-#       (see pPXF paper). In some instances the near-constancy of chi^2 may
-#       cause premature convergence of the optimization.
+#       sigma is very low, and far from the true solution, the chi^2 of the fit
+#       becomes weakly sensitive to small variations in sigma (see pPXF paper).
+#       In some instances the near-constancy of chi^2 may cause premature
+#       convergence of the optimization.
 #     - In the case of two-sided fitting a good starting value for the velocity
 #       is velStart=0.0 (in this case VSYST will generally be nonzero).
 #       Alternatively on should keep in mind that velStart refers to the first
@@ -245,28 +246,33 @@
 #   GAS_COMPONENT: boolean vector, of the same size as COMPONENT, set to True
 #       where the given COMPONENT describes a gas emission line. If given, pPXF
 #       provides the pp.gas_flux and pp.gas_flux_error in output.
-#     - EXAMPLE: If the first nstar components are stellar templates and the
-#       rest are gas emission lines, one will set
-#           gas_component = component >= nstar
+#     - EXAMPLE: In the common situation where component = 0 are stellar
+#       templates and the rest are gas emission lines, one will set
+#           gas_component = component > 0
 #     - This keyword is also used to plot the gas lines with a different color.
 #   GAS_NAMES: string array specifying the names of the emission lines (e.g.
 #       gas_names=["Hbeta", "[OIII]",...], one per gas line. The length of
 #       this vector must match the number of nonzero elements in GAS_COMPONENT.
-#       This vector is only used to print the line names on the console.
+#       This vector is only used by pPXF to print the line names on the console.
+#   GAS_REDDENING: Set this keyword to an initial estimate of the gas reddening
+#       E(B-V) >= 0 to fit a positive reddening together with the kinematics and
+#       the templates. The fit assumes by default the extinction curve of
+#       Calzetti et al. (2000, ApJ, 533, 682) but any other prescription can be
+#       passed via the`reddening_func` keyword.
 #   GOODPIXELS: integer vector containing the indices of the good pixels in the
-#       GALAXY spectrum (in increasing order). Only these pixels are included in
-#       the fit.
+#       GALAXY spectrum (in increasing order). Only these spectral pixels are
+#       included in the fit.
 #     - IMPORTANT: in all likely situations this keyword *has* to be specified.
-#   LAM: When the keyword REDDENING is used, the user has to pass in this
-#       keyword a vector with the same dimensions of GALAXY, giving the
-#       restframe wavelength in Angstrom of every pixel in the input galaxy
+#   LAM: When the keyword REDDENING or GAS_REDDENING are used, the user has to
+#       pass in this keyword a vector with the same dimensions of GALAXY, giving
+#       the restframe wavelength in Angstrom of every pixel in the input galaxy
 #       spectrum. If one uses my LOG_REBIN routine to rebin the spectrum before
 #       the PPXF fit:
 #           from ppxf_util import log_rebin
 #           specNew, logLam, velscale = log_rebin(lamRange, galaxy)
 #       the wavelength can be obtained as lam = np.exp(logLam).
-#     - When LAM is given, the wavelength is shown in the plot, instead of the
-#       pixels.
+#     - When LAM is given, the wavelength is shown in the best-fitting plot,
+#       instead of the pixels.
 #   LINEAR: set to True to keep *all* nonlinear parameters fixed and *only*
 #       perform a linear fit for the templates and additive polynomials weights.
 #       The output solution is a copy of the input one and the errors are zero.
@@ -274,7 +280,10 @@
 #       that should be included in the fit. This keyword is just an alternative
 #       way of specifying the GOODPIXELS.
 #   METHOD: {'capfit', 'trf', 'dogbox', 'lm'}, optional.
-#       Algorithm to perform the non-linear minimization step. Default 'capfit'.
+#       Algorithm to perform the non-linear minimization step.
+#       The default 'capfit' is a novel trust-region implementation of the
+#       Levenberg-Marquardt method, generalized to deal with box constraints in
+#       a rigorous manner, while also allowing for tied or fixed variables.
 #       See documentation of scipy.optimize.least_squares for method != 'capfit'.
 #   MDEGREE: degree of the *multiplicative* Legendre polynomial (with mean of 1)
 #       used to correct the continuum shape during the fit (default: 0). The
@@ -283,18 +292,17 @@
 #       Note that the computation time is longer with multiplicative polynomials
 #       than with the same number of additive polynomials.
 #     - IMPORTANT: Multiplicative polynomials cannot be used when the REDDENING
-#       keyword is set.
+#       keyword is set, as they are degenerate with the reddening.
 #   MOMENTS: Order of the Gauss-Hermite moments to fit. Set this keyword to 4 to
 #       fit [h3, h4] and to 6 to fit [h3, h4, h5, h6]. Note that in all cases
 #       the G-H moments are fitted (non-linearly) *together* with [V, sigma].
-#     - If MOMENTS=2 or MOMENTS is not set then only [V, sigma] are fitted and
-#       the other parameters are returned as zero.
+#     - If MOMENTS=2 or MOMENTS is not set then only [V, sigma] are fitted.
 #     - If MOMENTS is negative then the kinematics of the given COMPONENT are
 #       kept fixed to the input values.
 #       NOTE: Setting a negative MOMENTS for a kinematic component is entirely
 #       equivalent to setting `fixed = 1` for all parameters of the given
 #       kinematic component.
-#     - EXAMPLE: We want to keep fixed component 0, which has an LOSVD described
+#     - EXAMPLE: We want to keep fixed COMPONENT=0, which has an LOSVD described
 #       by [V, sigma, h3, h4] and is modeled with 100 spectral templates;
 #       At the same time we fit [V, sigma] for COMPONENT=1, which is described
 #       by 5 templates (this situation may arise when fitting stellar templates
@@ -307,8 +315,7 @@
 #       the GALAXY and the TEMPLATES. When this keyword is used, the templates
 #       are convolved by the LOSVD at their native resolution, and only
 #       subsequently are integrated over the pixels and fitted to GALAXY.
-#       This is useful for accurate recovery of the LOSVD below VELSCALE when
-#       templates with higher resolution than the galaxy spectrum are available.
+#       This keyword is generally unnecessary and mostly useful for testing.
 #     - Note that in realistic situations the uncertainty in the knowledge and
 #       variations of the intrinsic line-spread function become the limiting
 #       factor in recovering the LOSVD well below VELSCALE.
@@ -319,9 +326,9 @@
 #       parameters at the end of the fit.
 #   REDDENING: Set this keyword to an initial estimate of the reddening
 #       E(B-V) >= 0 to fit a positive reddening together with the kinematics and
-#       the templates. The fit assumes the extinction curve of Calzetti et al.
-#       (2000, ApJ, 533, 682) but any other prescriptions could be trivially
-#       implemented by modifying the function REDDENING_CURVE below.
+#       the templates. The fit assumes by default the extinction curve of
+#       Calzetti et al. (2000, ApJ, 533, 682) but any other prescription can be
+#       passed via the`reddening_func` keyword.
 #     - IMPORTANT: The MDEGREE keyword cannot be used when REDDENING is set.
 #   REGUL: If this keyword is nonzero, the program applies first or second order
 #       linear regularization to the WEIGHTS during the PPXF fit.
@@ -331,6 +338,7 @@
 #       Large REGUL values correspond to smoother WEIGHTS output. When this
 #       keyword is nonzero the solution will be a trade-off between smoothness
 #       of WEIGHTS and goodness of fit.
+#     - Section 3.5 of Cappellari (2017) gives a description of regularization.
 #     - When fitting multiple kinematic COMPONENT the regularization is applied
 #       only to the first COMPONENT=0, while additional components are not
 #       regularized. This is useful when fitting stellar population together
@@ -371,9 +379,8 @@
 #       consistent with the observations and the derived star formation history
 #       will be the smoothest (minimum curvature or minimum variation) that is
 #       still consistent with the observations.
-#     - For a detailed explanation see Section 3.5 of Cappellari (2017).
 #   REG_ORD: Order of the derivative that is minimized by the regularization.
-#       The following two rotationally symmetric estimators are supported:
+#       The following two rotationally-symmetric estimators are supported:
 #       REG_ORD=1: minimizes integral of squared gradient: Grad[w] @ Grad[w].
 #       REG_ORD=2: minimizes integral of squared curvature: Laplacian[w]**2.
 #   REG_DIM: When using regularization with more than one kinematic component
@@ -390,7 +397,7 @@
 #       and the gas emission templates are appended as extra columns at the end.
 #       An usage example is given in ppxf_example_population_gas_sdss.py.
 #     - When using regularization with a single component (the COMPONENT keyword
-#       is not used or contains identical values), the number of population
+#       is not used, or contains identical values), the number of population
 #       templates along different dimensions (e.g. nAge, nMetal, nAlpha) is
 #       inferred from the dimensions of the TEMPLATES array and this keyword is
 #       not necessary.
@@ -415,7 +422,7 @@
 #   TEMPLATES_RFFT: When calling pPXF many times with identical set of templates,
 #       one can use this keyword to pass the real FFT of the templates, computed
 #       in a previous pPXF call, stored in the pp.templates_rfft attribute.
-#       This keyword mainly exists to demonstrate that there is no need for it...
+#       This keyword mainly exists to show that there is no need for it...
 #       IMPORTANT: Use this keyword only if you understand what you are doing!
 #   TIED: A list of string expressions. Each expression "ties" the parameter to
 #       other free or fixed parameters.  Any expression involving constants and
@@ -443,13 +450,16 @@
 #   TRIG: Set `trig=True` to use trigonometric series as alternative to Legendre
 #       polynomials, for both the additive and multiplicative polynomials.
 #       When `trig=True` the fitted series below has N=degree/2 or N=mdegree/2
-#           A_0 + \sum_{n=1}^{N} [A_n*cos(n*th) + B_n*sin(n*th)]
+#           poly = A_0 + \sum_{n=1}^{N} [A_n*cos(n*th) + B_n*sin(n*th)]
 #     - IMPORTANT: The trigonometric series has periodic boundary conditions.
 #       This is sometimes a desirable property, but this expansion is not as
 #       flexible as the Legendre polynomials.
-#   VSYST: galaxy systemic velocity (zero by default). The input initial guess
-#       and the output velocities are measured with respect to this velocity.
-#       The value assigned to this keyword is *crucial* for the two-sided
+#   VSYST: Reference velocity in km/s (default 0). The input initial guess and
+#       the output velocities are measured with respect to this velocity.
+#       This keyword is generally used to account for the difference in the
+#       starting wavelength of the templates and the galaxy spectrum as follows
+#           vsyst = c*np.log(wave_temp[0]/wave_gal[0])
+#     - The value assigned to this keyword is *crucial* for the two-sided
 #       fitting. In this case VSYST can be determined from a previous normal
 #       one-sided fit to the galaxy velocity profile. After that initial fit,
 #       VSYST can be defined as the measured velocity at the galaxy center.
@@ -460,30 +470,36 @@
 #       velocity one can get from the literature. Do not try to use that!
 #
 # OUTPUT PARAMETERS (stored as attributes of the PPXF class):
-#   .BESTFIT: a named variable to receive a vector with the best fitting
-#       template: this is a linear combination of the templates, convolved with
-#       the best fitting LOSVD, multiplied by the multiplicative polynomials and
-#       with subsequently added polynomial continuum terms.
-#     - A version of this vector, *without* LOSVD convolution, is given by
-#           BESTFIT = (TEMPLATES @ WEIGHTS)*mpoly + apoly,
-#       where the expressions to evaluate mpoly and apoly are given in the
-#       documentation of MPOLYWEIGHTS and POLYWEIGHTS respectively.
-#   .CHI2: The reduced chi^2 (=chi^2/DOF) of the fit.
+#   .APOLY: vector with the best fitting additive polynomial.
+#   .BESTFIT: vector with the best fitting model for the galaxy spectrum.
+#       This is a linear combination of the templates, convolved with the best
+#       fitting LOSVD, multiplied by the multiplicative polynomials and
+#       with subsequently added polynomial continuum terms or sky components.
+#   .CHI2: The reduced chi^2 (=chi^2/DOF) of the fit (DOF ~ pp.goodpixels.size).
 #     - IMPORTANT: if Chi^2/DOF is not ~1 it means that the errors are not
 #       properly estimated, or that the template is bad and it is *not* safe to
-#       set the /CLEAN keyword.
+#       set the CLEAN keyword.
 #   .GAS_BESTFIT: If `gas_component` is not None, this attribute returns the
-#       best-fitting gas spectrum alone after the fit. The stellar spectrum
-#       alone can be computed as stellar_spectrum = pp.bestfit - pp.gas_bestfit
+#       best-fitting gas spectrum alone. The stellar spectrum alone can be
+#       computed as stellar_spectrum = pp.bestfit - pp.gas_bestfit
 #   .GAS_FLUX: Vector with the integrated flux of all lines set as True in the
 #       input GAS_COMPONENT keyword. If a line is composed of a doublet, the
-#       flux is that of both lines.
+#       flux is that of both lines. If the Balmer series is input as a single
+#       template, this is the flux of the entire series.
+#     - When a gas template is identically zero within the fitted region,
+#       its pp.gas_flux and pp.gas_flux_error are returned as np.nan.
+#       The corresponding components of pp.gas_zero_template are set to True.
+#       These np.nan values are set at the end of the calculation to flag the
+#       undefined values. They do *not* indicate numerical issues with the
+#       actual pPXF calculation, and the rest of the pPXF output is reliable.
 #     - IMPORTANT: pPXF makes no assumptions about the input flux units:
 #       The returned .gas_flux has the same units as the value one would obtain
 #       by just summing the values of the pixels of the gas emission.
 #       This implies that, if the spectrum is in units of erg/(cm**2 s A), the
 #       pPXF value should be multiplied by the pixel size in Anstrom at the line
 #       wavelength to obtain the integrated line flux in units of erg/(cm**2 s).
+#     - NOTE: If there is no gas reddening and each input gas templates was
+#       normalized to sum=1, then pp.gas_flux = pp.weights[pp.gas_component].
 #   .GAS_FLUX_ERROR: *formal* uncertainty (1*sigma) for the quantity pp.gas_flux.
 #     - This error is approximate as it ignores the covariance between the gas
 #       flux and any non-linear parameter. Bootstrapping can be used for more
@@ -492,10 +508,14 @@
 #       *assumes* that the fit is good, a corrected estimate of the errors is:
 #           gas_flux_error_corr = gas_flux_error*sqrt(chi^2/DOF)
 #                               = pp.gas_flux_error*sqrt(pp.chi2).
+#   .GAS_MPOLY: vector with the best-fitting gas reddening curve.
+#   .GAS_REDDENING: Best fitting E(B-V) value if GAS_REDDENING keyword is set.
+#   .GAS_ZERO_TEMPLATE: vector of size gas_component.sum() set to True where
+#       the gas template was identically zero within the fitted region.
+#       For those gas components .gas_flux = np.nan & .gas_flux_error = np.nan.
 #   .GOODPIXELS: integer vector containing the indices of the good pixels in the
-#       fit. This vector is the same as the input GOODPIXELS if the CLEAN
-#       keyword is *not* set, otherwise it will be updated by removing the
-#       detected outliers.
+#       fit. This vector is a copy of the input GOODPIXELS if CLEAN = False
+#       otherwise it will be updated by removing the detected outliers.
 #   .ERROR: this variable contain a vector of *formal* uncertainty (1*sigma) for
 #       the fitted parameters in the output vector SOL. This option can be used
 #       when speed is essential, to obtain an order of magnitude estimate of the
@@ -510,7 +530,8 @@
 #       the penalty (BIAS) should be set to zero, or better to a very small
 #       value. See Section 3.4 of Cappellari & Emsellem (2004) for an
 #       explanation.
-#   .POLYWEIGHTS: When DEGREE >= 0 contains the weights of the additive Legendre
+#   .POLYWEIGHTS: This is largely superseeded by the .apoly attribute above.
+#     - When DEGREE >= 0 contains the weights of the additive Legendre
 #       polynomials of order 0, 1, ... DEGREE. The best fitting additive
 #       polynomial can be explicitly evaluated as
 #           from numpy.polynomial import legendre
@@ -531,18 +552,10 @@
 #     - pp.matrix[nPixels, -nGas:] contains the nGas emission line templates if
 #       given. In the latter case the best fitting gas emission line spectrum is
 #           lines = pp.matrix[:, -nGas:] @ pp.weights[-nGas:]
-#     - The *formal* errors on pp.weights can be obtained as follows
-#           import numpy as np
-#           design_matrix = pp.matrix/pp.noise[:, None]
-#           covariance_matrix = np.linalg.inv(design_matrix.T @ design_matrix)
-#           weights_err = np.sqrt(np.diag(covariance_matrix)[DEGREE+1:])
-#       Note however that the analytic errors computed in this way are only
-#       meaningful when all pp.weights are nonzero in the pPXF solution.
-#       This is generally not the case, but it may happen in special situations
-#       (e.g. when fitting gas emission lines using a single stellar template).
-#       For reliable errors Bootstrapping is generally recommended over this.
-#   .MPOLYWEIGHTS: When MDEGREE > 0 this contains in output the coefficients of
-#       the multiplicative Legendre polynomials of order 1, 2, ... MDEGREE.
+#   .MPOLY: best fitting multiplicative polynomial (or reddening curve).
+#   .MPOLYWEIGHTS: This is largely superseeded by the .mpoly attribute above.
+#     - When MDEGREE > 0 this contains in output the coefficients of the
+#       multiplicative Legendre polynomials of order 1, 2, ... MDEGREE.
 #       The polynomial can be explicitly evaluated as:
 #           from numpy.polynomial import legendre
 #           x = np.linspace(-1, 1, len(galaxy))
@@ -581,7 +594,6 @@
 #       multiplied to best fit the galaxy spectrum. The optimal template can be
 #       computed with an array-vector multiplication:
 #           BESTEMP = TEMPLATES @ WEIGHTS
-#     - See .MATRIX, for a discussion about the formal errors on .WEIGHTS.
 #     - These weights do not include the weights of the additive polynomials
 #       which are separately stored in pp.polyweights.
 #     - When the SKY keyword is used WEIGHTS[:nTemplates] contains the weights
@@ -844,13 +856,18 @@
 #   V6.6.4: Check for NaN in `galaxy` and check all `bounds` have two elements.
 #           Allow `start` to be either a list or an array or vectors.
 #           MC, Oxford, 5 October 2017
-#   V6.6.5beta2: Raise an error if any template is identically zero in fitted
-#           range. This can happen if a gas line falls within a masked region.
+#   V6.7.0: Allow users to input identically-zero gas templates while still
+#           producing a stable NNLS solution. In this case, warn the user and
+#           set the .gas_zero_template attribute. This situation can indicate an
+#           input bug or a gas line which entirely falls within a masked region.
 #         - Corrected `gas_flux_error` normalization, when input not normalized.
-#         - Return .gas_bestfit attribute when gas_component is not None.
+#         - Return .gas_bestfit, .gas_mpoly, .mpoly and .apoly attributes.
+#         - Do not multiply gas emission lines by polynomials, instead allow
+#           for `gas_reddening` (useful with tied Balmer emission lines).
+#         - Use axvspan to visualize masked regions in plot.
 #         - Fixed program stop with `linear` keyword.
-#         - Do not multiply gas emission lines by polynomials.
-#           MC, Oxford, 23 October 2017
+#         - Introduced `reddening_func` keyword.
+#           MC, Oxford, 6 November 2017
 #
 ################################################################################
 
@@ -861,6 +878,7 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, misc, fftpack
 
+#import capfit
 from . import capfit
 
 ################################################################################
@@ -913,11 +931,16 @@ def nnls_flags(A, b, npoly):
 
 def rebin(x, factor):
     """
-    Rebin a one-dimensional vector by averaging
-    in groups of "factor" adjacent values
+    Rebin a vector, or the first dimension of an array,
+    by averaging within groups of "factor" adjacent values.
 
     """
-    return np.mean(x.reshape(-1, factor), axis=1)
+    if factor == 1:
+        xx = x
+    else:
+        xx = x.reshape(len(x)//factor, factor, -1).mean(1).squeeze()
+
+    return xx
 
 ################################################################################
 
@@ -944,7 +967,7 @@ def robust_sigma(y, zero=False):
 
 ################################################################################
 
-def reddening_curve(lam1, ebv):
+def reddening_cal00(lam1, ebv):
     """
     Reddening curve of Calzetti et al. (2000, ApJ, 533, 682; here C+00).
     This is reliable between 0.12 and 2.2 micrometres.
@@ -1085,10 +1108,11 @@ class ppxf(object):
     def __init__(self, templates, galaxy, noise, velscale, start,
                  bias=None, bounds=None, clean=False, component=0, degree=4,
                  fixed=None, fraction=None, gas_component=None, gas_names=None,
-                 goodpixels=None, lam=None, linear=False, mask=None,
-                 method='capfit', mdegree=0, moments=2, plot=False, quiet=False,
-                 reddening=None, reg_ord=2, reg_dim=None, regul=0, sigma_diff=0,
-                 sky=None, templates_rfft=None, tied=None, trig=False,
+                 gas_reddening=None, goodpixels=None, lam=None, linear=False,
+                 mask=None, method='capfit', mdegree=0, moments=2, plot=False,
+                 quiet=False, reddening=None, reddening_func=None, reg_ord=2,
+                 reg_dim=None, regul=0, sigma_diff=0, sky=None,
+                 templates_rfft=None, tied=None, trig=False,
                  velscale_ratio=None, vsyst=0):
 
         # Do extensive checking of possible input errors
@@ -1099,6 +1123,7 @@ class ppxf(object):
         self.noise = noise
         self.clean = clean
         self.fraction = fraction
+        self.gas_reddening = gas_reddening
         self.degree = max(degree, -1)
         self.mdegree = max(mdegree, 0)
         self.method = method
@@ -1111,12 +1136,18 @@ class ppxf(object):
         self.reddening = reddening
         self.reg_dim = np.asarray(reg_dim)
         self.reg_ord = reg_ord
-        self.star = templates.reshape(templates.shape[0], -1)
-        self.npix_temp, self.ntemp = self.star.shape
+        self.templates = templates.reshape(templates.shape[0], -1)
+        self.npix_temp, self.ntemp = self.templates.shape
         self.factor = 1   # default value
         self.sigma_diff = sigma_diff/velscale
         self.status = 0   # Initialize status as failed
         self.velscale = velscale
+
+        if reddening_func is None:
+            self.reddening_func = reddening_cal00
+        else:
+            assert callable(reddening_func), "`reddening_func` must be callable"
+            self.reddening_func = reddening_func
 
         if method != 'capfit':
             assert method in ['trf', 'dogbox', 'lm'], \
@@ -1142,7 +1173,7 @@ class ppxf(object):
                 "VELSCALE_RATIO must be an integer"
             self.npix_temp -= self.npix_temp % velscale_ratio
             # Make size multiple of velscale_ratio
-            self.star = self.star[:self.npix_temp, :]
+            self.templates = self.templates[:self.npix_temp, :]
             # This is the size after rebin()
             self.npix_temp //= velscale_ratio
             self.factor = velscale_ratio
@@ -1159,19 +1190,22 @@ class ppxf(object):
             self.component = component
 
         if gas_component is None:
-            self.gas_component = None
+            self.gas_component = np.zeros(self.component.size, dtype=bool)
+            self.gas_any = False
         else:
             self.gas_component = np.asarray(gas_component)
             assert self.gas_component.dtype == bool, \
                 "`gas_component` must be boolean"
             assert self.gas_component.size == component.size, \
                 "`gas_component` and `component` must have the same size"
+            assert np.any(gas_component), "`gas_component` must be nonzero"
             if gas_names is None:
                 self.gas_names = np.full(np.sum(gas_component), 'Unknown')
             else:
-                assert gas_component.sum() == len(gas_names), \
+                assert self.gas_component.sum() == len(gas_names), \
                     "There must be one name per gas emission line template"
                 self.gas_names = gas_names
+            self.gas_any = True
 
         tmp = np.unique(component)
         self.ncomp = tmp.size
@@ -1205,6 +1239,7 @@ class ppxf(object):
         if sky is not None:
             assert sky.shape[0] == galaxy.shape[0], \
                 "GALAXY and SKY must have the same size"
+            self.sky = sky.reshape(sky.shape[0], -1)
 
         assert galaxy.ndim < 3 and noise.ndim < 3, \
             "Wrong GALAXY or NOISE input dimensions"
@@ -1212,7 +1247,7 @@ class ppxf(object):
         if noise.ndim == 2 and noise.shape[0] == noise.shape[1]:
             # NOISE is a 2-dim covariance matrix
             assert noise.shape[0] == galaxy.shape[0], \
-                "Covariance Matrix must have size xpix*npix"
+                "Covariance Matrix must have size npix*npix"
             # Cholesky factor of symmetric, positive-definite covariance matrix
             noise = linalg.cholesky(noise, lower=1)
             # Invert Cholesky factor
@@ -1234,6 +1269,10 @@ class ppxf(object):
         if reddening is not None:
             assert lam is not None, "LAM must be given with REDDENING keyword"
             assert mdegree < 1, "MDEGREE cannot be used with REDDENING keyword"
+
+        if gas_reddening is not None:
+            assert lam is not None, "LAM must be given with GAS_REDDENING keyword"
+            assert self.gas_any, "GAS_COMPONENT must be nonzero with GAS_REDDENING keyword"
 
         if lam is not None:
             assert lam.shape == galaxy.shape, \
@@ -1262,26 +1301,34 @@ class ppxf(object):
         else:
             self.bias = bias
 
-        if self.ncomp == 1:
-            start1 = [start]
-        else:
-            assert hasattr(start, "__len__"), \
-                "START must be a list/array of vectors [start1, start2,...]"
-            assert len(start) == self.ncomp, \
-                "There must be one START per COMPONENT"
-            start1 = list(start)  # Make a copy in both Python 2 and 3
+        start1 = [start] if self.ncomp == 1 else list(start)
+        assert np.all([hasattr(a, "__len__") and len(a) >= 2 for a in start1]), \
+            "START must be a list/array of vectors [start1, start2,...]"
+        assert len(start1) == self.ncomp, \
+            "There must be one START per COMPONENT"
 
-        vmed = np.median([a[0] for a in start1])
-        dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
-        if velscale_ratio is None:
-            tmp = self.star
-        else:
-            tmp = np.mean(self.star.reshape((self.npix_temp, velscale_ratio, -1)), 1)
-        m1 = np.max(np.abs(tmp), 0)
-        tmp = np.roll(tmp, dx, axis=0)
-        m2 = np.max(np.abs(tmp[self.goodpixels, :]), 0)
-        assert np.all(m2 > m1/1e3), \
-            "TEMPLATES cannot be identically zero in fitted range"
+        # The lines below deal with the possibility for the input
+        # gas templates to be identically zero in the fitted region
+        self.gas_any_zero = False
+        if self.gas_any:
+            vmed = np.median([a[0] for a in start1])
+            dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
+            gas_templates = self.templates[:, self.gas_component]
+            tmp = rebin(gas_templates, self.factor)
+            gas_peak = np.max(np.abs(tmp), 0)
+            tmp = np.roll(tmp, dx, axis=0)
+            good_peak = np.max(np.abs(tmp[self.goodpixels, :]), 0)
+            self.gas_zero_template = good_peak <= gas_peak/1e3
+            if np.any(self.gas_zero_template):
+                self.gas_any_zero = True
+                gas_ind = np.flatnonzero(self.gas_component)
+                self.gas_zero_ind = gas_ind[self.gas_zero_template]
+                flx = np.median(self.galaxy[self.goodpixels])
+                mad = np.median(np.abs(self.galaxy[self.goodpixels] - flx))
+                self.gas_scale = abs(max(flx, mad)/np.mean(gas_peak))
+                if not quiet:
+                    print("Some gas templates are identically zero:")
+                    print(self.gas_zero_template)
 
         # Pad with zeros when `start[j]` has fewer elements than `moments[j]`
         for j, (st, mo) in enumerate(zip(start1, self.moments)):
@@ -1314,23 +1361,24 @@ class ppxf(object):
             assert vsyst != 0, "VSYST must be defined for two-sided fitting"
             self.goodpixels = np.append(self.goodpixels, galaxy.shape[0] + self.goodpixels)
 
-        self.npad = fftpack.next_fast_len(self.star.shape[0])
+        self.npad = fftpack.next_fast_len(self.templates.shape[0])
         if templates_rfft is None:
             # Pre-compute FFT of real input of all templates
-            self.templates_rfft = np.fft.rfft(self.star, self.npad, axis=0)
+            self.templates_rfft = np.fft.rfft(self.templates, self.npad, axis=0)
         else:
             self.templates_rfft = templates_rfft
 
         # Convert velocity from km/s to pixels
-        for j, s in enumerate(start1):
-            start1[j][:2] = s[:2]/velscale
+        for j, flx in enumerate(start1):
+            start1[j][:2] = flx[:2]/velscale
 
         if linear:
             assert mdegree <= 0, "Must be `mdegree` <= 0 with `linear`=True"
-            if reddening is None:
-                params = np.concatenate(start1)   # Flatten list
-            else:
-                params = np.append(start1, reddening)
+            params = np.concatenate(start1)  # Flatten list
+            if reddening is not None:
+                params = np.append(params, reddening)
+            if gas_reddening is not None:
+                params = np.append(params, gas_reddening)
             perror = np.zeros_like(params)
             self.method = 'linear'
             self.status = 1   # Status irrelevant for linear fit
@@ -1355,9 +1403,11 @@ class ppxf(object):
 
         """
         ngh = self.moments.sum()
-        npars = ngh + self.mdegree * self.nspec
+        npars = ngh + self.mdegree*self.nspec
 
         if self.reddening is not None:
+            npars += 1
+        if self.gas_reddening is not None:
             npars += 1
 
         # Explicitly specify the step for the numerical derivatives
@@ -1381,27 +1431,31 @@ class ppxf(object):
                 bn = np.array(bounds0[j][:2], dtype=float)/self.velscale
             for k in range(self.moments[j]):
                 if self.fixall[j]:  # Negative moment --> keep entire LOSVD fixed
-                    fixed[k + p] = True
+                    fixed[p + k] = True
                 elif fixed0 is not None:  # Keep individual LOSVD parameters fixed
-                    fixed[k + p] = fixed0[j][k]
+                    fixed[p + k] = fixed0[j][k]
                 if tied0 is not None:
-                    tied[k + p] = tied0[j][k]
+                    tied[p + k] = tied0[j][k]
                 if k < 2:
-                    start[k + p] = st[k].clip(*bn[k])
-                    bounds[k + p] = bn[k]
-                    step[k + p] = 0.01
+                    start[p + k] = st[k].clip(*bn[k])
+                    bounds[p + k] = bn[k]
+                    step[p + k] = 0.01
                 else:
-                    start[k + p] = st[k]
+                    start[p + k] = st[k]
                     if bounds0 is not None:
-                        bounds[k + p] = bounds0[j][k]
+                        bounds[p + k] = bounds0[j][k]
             p += self.moments[j]
 
         if self.mdegree > 0:
-            for j in range(ngh, npars):
-                bounds[j] = [-0.5, 0.5]  # Force <50% corrections
+            for q in range(self.mdegree*self.nspec):
+                bounds[p + q] = [-0.5, 0.5]  # Force <50% corrections
         elif self.reddening is not None:
-            start[ngh] = self.reddening
-            bounds[ngh] = [0., 10.]  # Force positive E(B-V) < 10 mag
+            start[p] = self.reddening
+            bounds[p] = [0., 10.]  # Force positive E(B-V) < 10 mag
+
+        if self.gas_reddening is not None:
+            start[-1] = self.gas_reddening
+            bounds[-1] = [0., 10.]  # Force positive E(B-V) < 10 mag
 
         if self.method == 'lm':
             step = 0.01  # only a scalar is supported
@@ -1444,7 +1498,7 @@ class ppxf(object):
 
 ################################################################################
 
-    def _linear_fit(self, pars, fjac=None):
+    def _linear_fit(self, pars):
         """
         This function implements the procedure described in
         Sec.3.3 of Cappellari M., 2017, MNRAS, 466, 798
@@ -1458,9 +1512,7 @@ class ppxf(object):
 
         nspec = self.nspec
         npix = self.npix
-        ngh = pars.size - self.mdegree*nspec  # Parameters of the LOSVD only
-        if self.reddening is not None:
-            ngh -= 1  # Fitting reddening
+        ngh = self.moments.sum()  # Parameters of the LOSVD only
 
         nl = self.templates_rfft.shape[0]
         losvd_rfft = _losvd_rfft(pars, nspec, self.moments, nl, self.ncomp,
@@ -1477,36 +1529,26 @@ class ppxf(object):
                 mpoly = np.append(mpoly1, mpoly2).clip(0.1)
             else:
                 mpoly = self.polyval(x, np.append(1.0, pars[ngh:])).clip(0.1)
-
-        # Multiplicative polynomials do not make sense when fitting reddening.
-        # In that case one has to assume the spectrum is well calibrated.
-        #
-        if self.reddening is not None:
-            mpoly = reddening_curve(self.lam, pars[ngh])
-
-        skydim = len(np.shape(self.sky))  # This can be zero
-        if skydim == 0:
-            nsky = 0
-        elif skydim == 1:
-            nsky = 1  # Number of sky spectra
+        elif self.reddening is not None:
+            # Multiplicative polynomials do not make sense when fitting stellar reddening.
+            # In that case one has to assume the spectrum is well calibrated.
+            mpoly = self.reddening_func(self.lam, pars[ngh])
         else:
-            nsky = np.shape(self.sky)[1]
+            mpoly = None
 
-        npoly = (self.degree + 1)*nspec  # Number of additive polynomials in fit
-        ncols = npoly + nsky*nspec + self.ntemp
-        nrows = npix*nspec
-        if self.regul > 0:
-            if self.reg_ord == 1:
-                nr = self.reg_dim.size
-                nreg = nr*np.prod(self.reg_dim)
-            elif self.reg_ord == 2:
-                nreg = np.prod(self.reg_dim)
-            nrows += nreg
+        if self.gas_reddening is not None:
+            gas_mpoly = self.reddening_func(self.lam, pars[-1])
+        else:
+            gas_mpoly = None
 
-        if self.fraction is not None:
-            nrows += 1
+        if self.sky is None:
+            nsky = 0
+        else:
+            nsky = self.sky.shape[1]
 
         # This array is used for estimating predictions
+        npoly = (self.degree + 1)*nspec  # Number of additive polynomials in fit
+        ncols = npoly + nsky*nspec + self.ntemp
         c = np.zeros((npix*nspec, ncols))
 
         if self.degree >= 0:  # Fill first columns of the Design Matrix
@@ -1516,18 +1558,17 @@ class ppxf(object):
                 c[npix :, npoly//nspec : npoly] = vand  # poly for right spectrum
 
         tmp = np.empty((nspec, self.npix_temp))
-        for j, templates_rfft in enumerate(self.templates_rfft.T):  # columns loop
+        for j, template_rfft in enumerate(self.templates_rfft.T):  # columns loop
             for k in range(nspec):
-                pr = templates_rfft * losvd_rfft[:, self.component[j], k]
+                pr = template_rfft*losvd_rfft[:, self.component[j], k]
                 tt = np.fft.irfft(pr, self.npad)
-                if self.factor == 1:  # Template has same resolution as galaxy
-                    tmp[k, :] = tt[:self.npix_temp]
-                else:                 # Template has higher resolution than galaxy
-                    tmp[k, :] = rebin(tt[:self.npix_temp*self.factor], self.factor)
+                tmp[k, :] = rebin(tt[:self.npix_temp*self.factor], self.factor)
             c[:, npoly + j] = tmp[:, :npix].ravel()
-            if self.mdegree > 0 or self.reddening is not None and \
-                (self.gas_component is None or not self.gas_component[j]):
-                    c[:, npoly + j] *= mpoly     # Do not multiply gas templates
+            if self.gas_component[j]:
+                if gas_mpoly is not None:
+                    c[:, npoly + j] *= gas_mpoly
+            elif mpoly is not None:
+                c[:, npoly + j] *= mpoly
 
         if nsky > 0:
             k = npoly + self.ntemp
@@ -1535,7 +1576,21 @@ class ppxf(object):
             if nspec == 2:
                 c[npix :, k + nsky : k + 2*nsky] = self.sky  # Sky for right spectrum
 
+        if self.regul > 0:
+            if self.reg_ord == 1:
+                nr = self.reg_dim.size
+                nreg = nr*np.prod(self.reg_dim)
+            elif self.reg_ord == 2:
+                nreg = np.prod(self.reg_dim)
+        else:
+            nreg = 0
+        if self.fraction is not None:
+            nreg += 1
+        if self.gas_any_zero:
+            nreg += 1
+
         # This array is used for the system solution
+        nrows = npix*nspec + nreg
         a = np.zeros((nrows, ncols))
 
         if self.noise.ndim > 1 and self.noise.shape[0] == self.noise.shape[1]:
@@ -1552,10 +1607,15 @@ class ppxf(object):
 
         # Equation (30) of Cappellari (2017)
         if self.fraction is not None:
-            ff = a[-1, -self.ntemp:]
-            ff[self.component == 0] = self.fraction - 1
-            ff[self.component == 1] = self.fraction
-            ff *= 1e9
+            k = -2 if self.gas_any_zero else -1
+            ff = a[k, npoly : npoly + self.ntemp]
+            ff[self.component == 0] = 1e9*(self.fraction - 1)
+            ff[self.component == 1] = 1e9*self.fraction
+
+        # Prevent identically-zero gas templates from perturbing the solution
+        if self.gas_any_zero:
+            ff = a[-1, npoly : npoly + self.ntemp]
+            ff[self.gas_zero_ind] = 1e3/self.gas_scale
 
         # Select the spectral region to fit and solve the over-conditioned system
         # using SVD/BVLS. Use unweighted array for estimating bestfit predictions.
@@ -1563,9 +1623,7 @@ class ppxf(object):
 
         m = 1
         while m > 0:
-            if self.regul > 0 or self.fraction is not None:
-                if self.regul == 0:
-                    nreg = 1
+            if nreg > 0:
                 aa = a[np.append(self.goodpixels, np.arange(npix*nspec, nrows)), :]
                 bb = np.append(b[self.goodpixels], np.zeros(nreg))
             else:
@@ -1590,6 +1648,8 @@ class ppxf(object):
                 break
 
         self.matrix = c          # Return LOSVD-convolved templates matrix
+        self.mpoly = mpoly
+        self.gas_mpoly = gas_mpoly
 
         # Penalize the solution towards (h3, h4, ...) = 0 if the inclusion of
         # these additional terms does not significantly decrease the error.
@@ -1635,23 +1695,22 @@ class ppxf(object):
         plt.plot(x, self.galaxy, 'k')
         plt.plot(x[self.goodpixels], resid[self.goodpixels], 'd',
                  color='LimeGreen', mec='LimeGreen', ms=4)
-
         w = np.flatnonzero(np.diff(self.goodpixels) > 1)
-        ww = np.hstack([0, w, w + 1, -1]) if w.size > 0 else [0, -1]
-        for gj in self.goodpixels[ww]:
-            plt.plot(x[[gj, gj]], [mn, self.bestfit[gj]], 'LimeGreen')
         for wj in w:
-            j = slice(self.goodpixels[wj], self.goodpixels[wj+1] + 1)
-            plt.plot(x[j], resid[j], 'b')
+            a, b = self.goodpixels[wj : wj + 2]
+            plt.axvspan(x[a], x[b], facecolor='lightgray')
+            plt.plot(x[a : b + 1], resid[a : b + 1], 'b')
+        for k in self.goodpixels[[0, -1]]:
+            plt.plot(x[[k, k]], [mn, self.bestfit[k]], 'lightgray')
 
-        if self.gas_component is None:
-            plt.plot(x, self.bestfit, 'r', linewidth=2)
-            plt.plot(x[self.goodpixels], self.goodpixels*0 + mn, '.k', ms=1)
-        else:
+        if self.gas_any:
             stars_spectrum = self.bestfit - self.gas_bestfit
             plt.plot(x, self.gas_bestfit + mn, c='magenta', linewidth=2)
             plt.plot(x, self.bestfit, c='orange', linewidth=2)
             plt.plot(x, stars_spectrum, 'r', linewidth=2)
+        else:
+            plt.plot(x, self.bestfit, 'r', linewidth=2)
+            plt.plot(x[self.goodpixels], self.goodpixels*0 + mn, '.k', ms=1)
 
 ################################################################################
 
@@ -1671,14 +1730,21 @@ class ppxf(object):
             self.error.append(perror[p : p + mom])
             p += mom
         if self.mdegree > 0:
-            self.mpolyweights = params[p:]
-        if self.reddening is not None:
-            self.reddening = params[-1]  # Replace input with best fit
+            self.mpolyweights = params[p : p + self.mdegree*self.nspec]
+        elif self.reddening is not None:
+            self.reddening = params[p]  # Replace input with best fit
+            self.mpolyweights = None
+        if self.gas_reddening is not None:
+            self.gas_reddening = params[-1]  # Replace input with best fit
+        npoly = (self.degree + 1)*self.galaxy.ndim
         if self.degree >= 0:
             # output weights for the additive polynomials
-            self.polyweights = self.weights[: (self.degree + 1)*self.galaxy.ndim]
+            self.polyweights = self.weights[:npoly]
+            self.apoly = self.matrix[:, :npoly].dot(self.polyweights)
+        else:
+            self.polyweights = self.apoly = None
         # output weights for the templates (or sky) only
-        self.weights = self.weights[(self.degree + 1)*self.galaxy.ndim :]
+        self.weights = self.weights[npoly:]
 
         if not self.quiet:
             nmom = np.max(self.moments)
@@ -1691,7 +1757,9 @@ class ppxf(object):
                   '; Func calls:', self.nfev, '; Status:', self.status)
             nw = self.weights.size
             if self.reddening is not None:
-                print("Reddening E(B-V): {:.3g}".format(self.reddening))
+                print("Stars Reddening E(B-V): {:.3g}".format(self.reddening))
+            if self.gas_reddening is not None:
+                print("Gas Reddening E(B-V): {:.3g}".format(self.gas_reddening))
             print('Nonzero Templates: ', np.sum(self.weights > 0), ' / ', nw)
             if self.weights.size <= 20:
                 print('Templates weights:')
@@ -1706,14 +1774,17 @@ class ppxf(object):
                 print("Warning: FRACTION is inaccurate. TEMPLATES and GALAXY "
                       "should have mean ~ 1 when using the FRACTION keyword")
 
-        if self.gas_component is not None:
+        if self.gas_any:
             gas = self.gas_component
-            spectra = self.matrix[:, self.degree + 1:]    # Remove polynomials
-            integ = np.sum(spectra[:, gas], 0)
+            spectra = self.matrix[:, npoly:]    # Remove polynomials
+            integ = abs(np.sum(spectra[:, gas], 0))
             self.gas_flux = integ*self.weights[gas]
             design_matrix = spectra[:, gas]/self.noise[:, None]
             self.gas_flux_error = integ*capfit.cov_err(design_matrix)[1]
             self.gas_bestfit = spectra[:, gas].dot(self.weights[gas])
+            if self.gas_any_zero:
+                self.gas_flux[self.gas_zero_template] = np.nan
+                self.gas_flux_error[self.gas_zero_template] = np.nan
 
             if not self.quiet:
                 print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
@@ -1724,6 +1795,8 @@ class ppxf(object):
                           (comp, self.gas_names[j], self.gas_flux[j], self.gas_flux_error[j],
                            self.sol[comp][0], self.sol[comp][1]))
                 print('---------------------------------------------------------')
+        else:
+            self.gas_flux = self.gas_flux_error = self.gas_bestfit = None
 
         if self.ncomp ==1:
             self.sol = self.sol[0]
