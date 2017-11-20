@@ -550,7 +550,7 @@ class DAPall:
         for c,k in zip(ch,keys):
             hdr[prefix+'{0}'.format(c+1).zfill(ndig)] = (k, comment)
             if units is not None:
-                hdr[prefix+'U{0}'.format(c+1).zfill(ndig)] = (units[c], comment+' unit')
+                hdr[prefix+'U'+'{0}'.format(c+1).zfill(ndig)] = (units[c], comment+' unit')
         return hdr
 
 

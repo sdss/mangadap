@@ -3,6 +3,8 @@ KBW (??         ): tag 2.2
 
 TODO:
     - Documentation of config examples are out of date!
+    - Get rid of the filter keyword from the output headers...
+    - Add instrumental dispersion back into measured line widths?
 
 --------------------------------------------------------------------------------
 KBW (13 Nov 2017): tag 2.1.1

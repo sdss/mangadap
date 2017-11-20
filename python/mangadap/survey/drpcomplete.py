@@ -422,12 +422,6 @@ class DRPComplete:
         pa = numpy.full(n_drp, -9999.0, dtype=numpy.float64)
         Reff = numpy.full(n_drp, -9999.0, dtype=numpy.float64)
 
-        # platetargets now include the redshift from the targetting
-        # catalog which is the combination of the NSA data and the
-        # ancillary targets; the NSA only redshift column is 'nsa_z'
-#        redshift_key = 'nsa_z'
-        redshift_key = 'z'
-
         print('Searching platetargets file for observed galaxies...', end='\r')
         for i in range(n_drp):
             plttrg_j = 0
