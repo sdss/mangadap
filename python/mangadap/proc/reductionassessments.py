@@ -754,7 +754,8 @@ class ReductionAssessment:
         flux = drpf.copy_to_masked_array(flag=flags)
         spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)),axis=1) \
                                             / flux.shape[1]
-       
+
+        # TODO: Is this superfluous now?
         frange = numpy.ma.max(flux, axis=1)-numpy.ma.min(flux, axis=1)
         spectrum_data['MINEQMAX'] = (numpy.invert(numpy.ma.getmaskarray(frange))) \
                                         & (numpy.ma.absolute(frange) < 1e-10)
