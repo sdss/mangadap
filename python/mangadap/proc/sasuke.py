@@ -1353,7 +1353,7 @@ class Sasuke(EmissionLineFit):
 
         # With the above definitions (starting at line 1274), the
         # instrumental sigma and the sigma correction are identical
-        model_eml_par['SIGMAINST'] = model_eml_par['SIGMACORR'].copy()
+        model_eml_par['SIGMACORR'] = model_eml_par['SIGMAINST'].copy()
 
         #---------------------------------------------------------------
         # Reset any parameters based on insufficient data to the fill_value
