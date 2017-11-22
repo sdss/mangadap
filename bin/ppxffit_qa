@@ -572,7 +572,8 @@ def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
     rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_RCHI2'].data, mask=mask)
     svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
     ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
-    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
+#    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
+    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data, mask=mask)
     ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
 
     extent = map_extent(hdu, 'SPX_MFLUX')

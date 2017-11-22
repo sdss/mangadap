@@ -4,11 +4,29 @@ KBW (??         ): tag 2.2
 TODO:
     - Documentation of config examples are out of date!
     - Get rid of the filter keyword from the output headers...
-    - Add instrumental dispersion back into measured line widths?
+
+--------------------------------------------------------------------------------
+KBW (21 Nov 2017): tag 2.1.2
+    - Calculation of binned flux statistics now uses response function
+      provided to the ReductionAssessments class
+    - Binned flux statistics now determined before applying the
+      reddening correction; now matches individual spaxel measurements.
+    - Fixed some roundoff errors in the SPX_* extensions due to
+      conversion from double to single-precision floats in output MAPS
+    - Removed resolution-vector-based stellar velocity dispersion
+      corrections from output MAPS files.  Only empirical (more robust)
+      correction now provided, but resolution-vector calculation still
+      in reference files.
+    - Propagated this change though to the ppxf and spotcheck qa plots
+    - Added EMLINE_TPLSIGMA to output MAPS files, providing the line
+      width of the templates used during Sasuke.  Also added this into
+      the measurements returned by pPXF such that EMLINE_GSIGMA and
+      EMLINE_INSTSIGMA have the same meaning as in MPL-5: EMLINE_GSIGMA
+      is the effective observed sigma of the line and EMLINE_INSTSIGMA
+      is the instrumental dispersion at the line centroid.
 
 --------------------------------------------------------------------------------
 KBW (13 Nov 2017): tag 2.1.1
-
     - Added check that pPXF returns some non-zero weights in
       stellar-continuum fitting.  If all weights are zero, the pPXF
       status is set to -2.

@@ -1127,25 +1127,31 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # On-sky coordinates
-        spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape,
-                                                                      -1).astype(self.float_dtype)
+        minimum_value = numpy.finfo(self.float_dtype).eps
+        spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape, -1)
+        spx_skycoo[numpy.absolute(spx_skycoo) < minimum_value] = 0.0
         # Elliptical coordinates
         spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
         spx_ellcoo = numpy.repeat(spx_ellcoo, [2,1], axis=2)
         if obs is not None:
             spx_ellcoo[:,:,1] /= obs['reff']
-        spx_ellcoo = spx_ellcoo.astype(self.float_dtype)
+        spx_ellcoo[numpy.absolute(spx_ellcoo) < minimum_value] = 0.0
+
         # Bin signal
-        signal = rdxqa['SPECTRUM'].data['SIGNAL'].copy().reshape(self.spatial_shape
-                                                                    ).astype(self.float_dtype)
+        signal = rdxqa['SPECTRUM'].data['SIGNAL'].copy().reshape(self.spatial_shape)
+        signal[numpy.absolute(signal) < minimum_value] = 0.0
         # Bin inverse variance
         ivar = rdxqa['SPECTRUM'].data['VARIANCE'].copy().reshape(self.spatial_shape)
-        ivar = numpy.ma.power(ivar, -1).filled(0.0).astype(self.float_dtype)
+        ivar = numpy.ma.power(ivar, -1).filled(0.0)
+        ivar[numpy.absolute(ivar) < minimum_value] = 0.0
         # Bin S/N
-        snr = rdxqa['SPECTRUM'].data['SNR'].copy().reshape(self.spatial_shape
-                                                                ).astype(self.float_dtype)
+        snr = rdxqa['SPECTRUM'].data['SNR'].copy().reshape(self.spatial_shape)
+        snr[numpy.absolute(snr) < minimum_value] = 0.0
+
         # Organize the extension data
-        data = [ spx_skycoo, spx_ellcoo, signal, ivar, snr ]
+        data = [ spx_skycoo.astype(self.float_dtype), spx_ellcoo.astype(self.float_dtype),
+                 signal.astype(self.float_dtype), ivar.astype(self.float_dtype),
+                 snr.astype(self.float_dtype) ]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1276,11 +1282,11 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
                                                 hduclas2='QUALITY', err=True,
                                                 bit_type=self.bitmask.minimum_dtype()),
-#                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
-#                                                bunit='km/s'),
-                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_SIGMACORR',
-                                                multichannel=True, bunit='km/s',
-                                                channel_names=['resolution difference', 'fit']),
+                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
+                                                bunit='km/s'),
+#                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_SIGMACORR',
+#                                                multichannel=True, bunit='km/s',
+#                                                channel_names=['resolution difference', 'fit']),
                 DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_CONT_FRESID',
                                                 multichannel=True,
                                                 channel_names=['68th percentile',
@@ -1298,8 +1304,8 @@ class construct_maps_file:
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
-# DOCUMENT THAT THERE ARE TWO CORRECTIONS !!
-                stellar_continuum['PAR'].data['SIGMACORR_SRES'],
+# Only provide the empirical correction
+#                stellar_continuum['PAR'].data['SIGMACORR_SRES'],
                 stellar_continuum['PAR'].data['SIGMACORR_EMP'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
                 stellar_continuum['PAR'].data['FABSRESID'][:,3],
@@ -1331,11 +1337,12 @@ class construct_maps_file:
                                                             for_dispersion=True)
 
         # Organize the extension data
-#        data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-#                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
         data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-                    + [ numpy.array(arr[4:6]).transpose(1,2,0),
-                        numpy.array(arr[6:8]).transpose(1,2,0), arr[8] ]
+                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
+#        data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
+#                    + [ numpy.array(arr[4:6]).transpose(1,2,0),
+#                        numpy.array(arr[6:8]).transpose(1,2,0), arr[8] ]
+
 #        for i,d in enumerate(data):
 #            if len(d.shape) == 2:
 #                print(i+1)
@@ -1446,13 +1453,13 @@ class construct_maps_file:
         'EMLINE_GFLUX_MASK', 'EMLINE_GEW', 'EMLINE_GEW_IVAR',
         'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
         'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-        'EMLINE_GSIGMA_MASK', and 'EMLINE_INSTSIGMA' map extensions.
+        'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA' map extensions.
         """
         #---------------------------------------------------------------
         ext = [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK', 'EMLINE_GEW',
                 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
                 'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR', 'EMLINE_GSIGMA_MASK',
-                'EMLINE_INSTSIGMA' ]
+                'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA' ]
 
         if emission_line_model is None:
             # Construct and return the empty hdus
@@ -1514,12 +1521,14 @@ class construct_maps_file:
                                                 err=True, bit_type=self.bitmask.minimum_dtype(),
                                                 multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_INSTSIGMA', bunit='km/s',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_TPLSIGMA', bunit='km/s',
                                                 multichannel=multichannel)
               ]
 
         #---------------------------------------------------------------
         # Get the data arrays
-        narr = 10
+        narr = 11
         arr = [ emission_line_model['EMLDATA'].data['FLUX'][:,m]
                     for m in range(emission_line_model.neml) ]
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['FLUXERR'][:,m],
@@ -1539,7 +1548,9 @@ class construct_maps_file:
                     for m in range(emission_line_model.neml) ]
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
                                 -2).filled(0.0) for m in range(emission_line_model.neml) ]
-        arr += [ emission_line_model['EMLDATA'].data['SIGMACORR'][:,m]
+        arr += [ emission_line_model['EMLDATA'].data['SIGMAINST'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        arr += [ emission_line_model['EMLDATA'].data['SIGMATPL'][:,m]
                     for m in range(emission_line_model.neml) ]
         arr += [ emission_line_model['EMLDATA'].data['MASK'][:,m]
                     for m in range(emission_line_model.neml) ]
@@ -1579,7 +1590,7 @@ class construct_maps_file:
 
         # Organize the extension data
         data = data[:2] + [ base_mask ] + data[2:4] + [ base_mask ] + data[4:6] + [ base_mask ] \
-                + data[6:8] + [ sig_mask, data[8] ]
+                + data[6:8] + [ sig_mask ] + data[8:10]
 
         #---------------------------------------------------------------
         # Return the map hdus

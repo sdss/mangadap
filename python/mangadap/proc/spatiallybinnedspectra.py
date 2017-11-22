@@ -96,7 +96,7 @@ import time
 import logging
 import numpy
 
-from scipy import sparse, spatial
+from scipy import sparse, spatial, interpolate
 
 from astropy.wcs import WCS
 from astropy.io import fits
@@ -108,6 +108,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
 from ..util.parser import DefaultConfig
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
+from ..util.instrument import spectral_coordinate_step
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.extinction import GalacticExtinction
@@ -847,7 +848,18 @@ class SpatiallyBinnedSpectra:
         return bin_data
 
 
-    def _binned_data_table(self, bin_indx, stack_flux, stack_ivar):
+    def _interpolated_response_function(self):
+        response_func = self.rdxqa.method['response_func']
+        if response_func is None:
+            # Just return a uniform response function
+            return numpy.ones(self.drpf.nwave, dtype=float)
+        
+        interp = interpolate.interp1d(response_func[:,0], response_func[:,1], bounds_error=False,
+                                      fill_value=0.0, assume_sorted=True)
+        return interp(self.drpf['WAVE'].data)
+
+
+    def _binned_data_table(self, bin_indx, stack_flux, stack_ivar, per_pixel=True):
         r"""
         Construct the output data table for the binned spectra.
 
@@ -867,6 +879,7 @@ class SpatiallyBinnedSpectra:
         """
         # Get the unique bins and the number of spectra in each bin
         unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
+        unique_bins, unique_indx, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_index=True, return_counts=True))
 
         # Get the number of returned bins:
         # - The number of returned bins MAY NOT BE THE SAME as the
@@ -900,15 +913,63 @@ class SpatiallyBinnedSpectra:
             _mask |= numpy.ma.getmaskarray(stack_ivar)
 
         _stack_flux = numpy.ma.MaskedArray(stack_flux.data, mask=_mask)
-        stack_nsum = numpy.sum(numpy.invert(_mask), axis=1)
-        bin_data['SIGNAL'] = numpy.ma.sum(_stack_flux,axis=1) / stack_nsum
+
+        # Same as in mangadap.drpfits.DRPFits.flux_stats() ...
+        # Set the response function
+        dw = numpy.ones(self.drpf.nwave, dtype=float) if per_pixel else \
+                    spectral_coordinate_step(self.drpf['WAVE'].data,
+                                             log=True)*numpy.log(10.)*self.drpf['WAVE'].data
+        _response_func = self._interpolated_response_function()
+        # Get the signal
+        response_integral = numpy.sum(numpy.invert(numpy.ma.getmaskarray(_stack_flux))
+                                        * (_response_func*dw)[None,:], axis=1)
+#        print(bin_data['SIGNAL'].shape)
+#        print(_stack_flux.shape)
+        bin_data['SIGNAL'] = numpy.ma.divide(numpy.ma.sum(_stack_flux*(_response_func*dw)[None,:],
+                                                          axis=1), response_integral).filled(0.0)
+        # And the variance and SNR if the inverse variance is available
         if stack_ivar is not None:
             _stack_ivar = numpy.ma.MaskedArray(stack_ivar.data, mask=_mask)
-            bin_data['VARIANCE'] = numpy.ma.sum(numpy.ma.power(_stack_ivar, -1.), axis=1)/stack_nsum
-            bin_data['SNR'] = numpy.ma.sum(_stack_flux * numpy.ma.sqrt(_stack_ivar),
-                                           axis=1)/stack_nsum
+            bin_data['VARIANCE'] = numpy.ma.divide(numpy.ma.sum(numpy.ma.power(_stack_ivar, -1.) \
+                                                        * (_response_func*dw)[None,:], axis=1),
+                                                            response_integral).filled(0.0)
+            bin_data['SNR'] = numpy.ma.divide(numpy.ma.sum(_stack_flux * numpy.ma.sqrt(_stack_ivar)
+                                                            * (_response_func*dw)[None,:], axis=1),
+                                                            response_integral).filled(0.0)
             del _stack_ivar
         del _mask, _stack_flux
+
+#        indx = bin_indx == 0
+#        print(self.rdxqa['SPECTRUM'].data['SIGNAL'][indx])
+#        print(bin_data['SIGNAL'][0])
+#        print(self.rdxqa['SPECTRUM'].data['VARIANCE'][indx])
+#        print(bin_data['VARIANCE'][0])
+#        print(self.rdxqa['SPECTRUM'].data['SNR'][indx])
+#        print(bin_data['SNR'][0])
+#
+#        pyplot.scatter(self.rdxqa['SPECTRUM'].data['SNR'][unique_indx], bin_data['SNR'])
+#        pyplot.plot([0,100],[0,100],color='k')
+#        pyplot.show()
+    
+#        pyplot.imshow(bin_indx.reshape((int(numpy.sqrt(len(bin_indx))),)*2))
+#        pyplot.colorbar()
+#        pyplot.show()
+
+#        pyplot.plot(self.drpf['WAVE'].data, _response_func)
+#        pyplot.show()
+
+        # TODO: This only works with a limiting wavelength range, not a
+        # response function
+#        stack_nsum = numpy.sum(numpy.invert(_mask), axis=1)
+#        bin_data['SIGNAL'] = numpy.ma.sum(_stack_flux,axis=1) / stack_nsum
+#        if stack_ivar is not None:
+#            _stack_ivar = numpy.ma.MaskedArray(stack_ivar.data, mask=_mask)
+#            bin_data['VARIANCE'] = numpy.ma.sum(numpy.ma.power(_stack_ivar, -1.), axis=1)/stack_nsum
+#            bin_data['SNR'] = numpy.ma.sum(_stack_flux * numpy.ma.sqrt(_stack_ivar),
+#                                           axis=1)/stack_nsum
+#            del _stack_ivar
+#        del _mask, _stack_flux
+
 
 #        pyplot.scatter(bin_data['SNR'], bin_data['SIGNAL'], marker='.', color='k', s=40, lw=0)
 #        pyplot.show()
@@ -964,6 +1025,9 @@ class SpatiallyBinnedSpectra:
                               'AttributeError: {0}'.format(e))
             bin_total_area = bin_data['AREA']
         bin_data['AREA_FRAC'] = bin_data['AREA']/bin_total_area
+
+#        pyplot.scatter(bin_data['ELL_COO'][:,0], bin_data['SNR'])
+#        pyplot.show()
 
         return bin_data
 
@@ -1324,11 +1388,11 @@ class SpatiallyBinnedSpectra:
                 if isinstance(covar, Covariance):
                     covar = covar.spaxel_to_bin_covariance(bin_indx.ravel())
 
-            # Deredden the spectra if the method requests it
-            flux, ivar, _, covar = self._apply_reddening(flux, ivar, None, covar)
-
             # Fill the table with the per-spectrum data
             bin_data = self._unbinned_data_table(bin_indx.ravel())
+
+            # Deredden the spectra if the method requests it
+            flux, ivar, _, covar = self._apply_reddening(flux, ivar, None, covar)
 
             # Build the internal HDUList object and covariance attribute
             if (hardcopy or symlink_dir is not None) and not self.quiet:
@@ -1412,6 +1476,11 @@ class SpatiallyBinnedSpectra:
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], 'NO_STDDEV')
 
         #---------------------------------------------------------------
+        # Fill the table with the per-bin data (BEFORE applying the
+        # reddening)
+        bin_data = self._binned_data_table(bin_indx, stack_flux, stack_ivar)
+
+        #---------------------------------------------------------------
         # Deredden the spectra if the method requests it
         stack_flux, stack_ivar, stack_sdev, stack_covar \
                 = self._apply_reddening(stack_flux, stack_ivar, stack_sdev, stack_covar)
@@ -1437,14 +1506,10 @@ class SpatiallyBinnedSpectra:
 #        pyplot.show()
 
         #---------------------------------------------------------------
-        # Fill the table with the per-bin data
-        bin_data = self._binned_data_table(bin_indx, stack_flux, stack_ivar)
-
-        #---------------------------------------------------------------
         # Build the internal HDUList object and covariance attribute
         self.hardcopy = hardcopy
         self._construct_2d_hdu(bin_indx, good_fgoodpix, good_snr, bin_data, stack_flux, stack_sdev,
-                              stack_ivar, stack_npix, stack_mask, stack_sres, stack_covar)
+                               stack_ivar, stack_npix, stack_mask, stack_sres, stack_covar)
 
         #---------------------------------------------------------------
         # Write the data, if requested

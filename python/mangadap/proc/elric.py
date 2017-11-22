@@ -1709,6 +1709,10 @@ class Elric(EmissionLineFit):
                                                               emission_lines['restwave'][indx],
                                                               model_eml_par['KIN'][i,indx,0])
 
+        # With these definitions, the instrumental sigma and the sigma correction are
+        # identical, and the "template" sigma are all zero
+        model_eml_par['SIGMAINST'] = model_eml_par['SIGMACORR'].copy()
+
         print('Fit: {0}/{0}'.format(i+1,self.nspec))
         # Remove the lines from the full model to just provide the
         # baseline model

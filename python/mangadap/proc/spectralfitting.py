@@ -154,6 +154,8 @@ class EmissionLineFit(SpectralFitting):
                  ('KIN', numpy.float, (neml,nkin)),
                  ('KINERR', numpy.float, (neml,nkin)),
                  ('SIGMACORR', numpy.float, (neml,)),
+                 ('SIGMAINST', numpy.float, (neml,)),
+                 ('SIGMATPL', numpy.float, (neml,)),
                  ('CONTAPLY', numpy.float, (neml,)),
                  ('CONTMPLY', numpy.float, (neml,)),
                  ('CONTRFIT', numpy.float, (neml,)),

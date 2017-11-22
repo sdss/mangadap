@@ -649,7 +649,8 @@ class DAPall:
                                                               'DONOTUSE')).ravel()[unique_indx]
 
         ssig2corr = numpy.square(ssig) - numpy.square(
-                                    dapmaps['STELLAR_SIGMACORR'].data[1,:,:].ravel()[unique_indx])
+                                    dapmaps['STELLAR_SIGMACORR'].data.ravel()[unique_indx])
+#                                    dapmaps['STELLAR_SIGMACORR'].data[1,:,:].ravel()[unique_indx])
         scchi = dapmaps['STELLAR_CONT_RCHI2'].data.copy().ravel()[unique_indx]
 
         # Convert velocities to redshift

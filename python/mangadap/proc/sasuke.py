@@ -959,6 +959,8 @@ class Sasuke(EmissionLineFit):
         model_eml_par['KIN'][indx,:] = fill_value
         model_eml_par['KINERR'][indx,:] = fill_value
         model_eml_par['SIGMACORR'][indx] = fill_value
+        model_eml_par['SIGMAINST'][indx] = fill_value
+        model_eml_par['SIGMATPL'][indx] = fill_value
         if self.degree > -1:
             model_eml_par['CONTAPLY'][indx] = fill_value
         if self.mdegree > 0:
@@ -1263,7 +1265,7 @@ class Sasuke(EmissionLineFit):
 
                 # - Reddening:
                 if used_ebv:
-                    extcurve = ppxf.reddening_curve(self.obj_wave, model_reddening[i])
+                    extcurve = ppxf.reddening_cal00(self.obj_wave, model_reddening[i])
                     model_eml_par['CONTRFIT'][i,:] \
                             = interpolate.interp1d(self.obj_wave, extcurve,
                                                    bounds_error=False, fill_value=1.0,
@@ -1272,21 +1274,40 @@ class Sasuke(EmissionLineFit):
             # Get the instrumental dispersion in the galaxy data at the
             # location of the fitted lines
             # TODO: sres has to be provided!
-            sigma_inst = EmissionLineFit.instrumental_dispersion(self.obj_wave, sres[i,:],
+            model_eml_par['SIGMAINST'][i,self.fit_eml] = \
+                        EmissionLineFit.instrumental_dispersion(self.obj_wave, sres[i,:],
                                                         self.emldb['restwave'][self.fit_eml],
                                                         model_eml_par['KIN'][i,self.fit_eml,0])
 
-            # The dispersion correction is the quadrature difference
-            # between the instrumental dispersion in the galaxy data to
-            # the dispersion used when constructing the emission-line
-            # templates
-            sigma2corr = numpy.square(sigma_inst) - numpy.square(etpl.eml_sigma_inst[self.fit_eml])
-            if numpy.any(sigma2corr < 0):
-                # TODO: Raise an error instead?
-                print(sigma2corr)
-                warnings.warn('Encountered negative sigma corrections!')
-            model_eml_par['SIGMACORR'][i,self.fit_eml] \
-                            = sigma2corr / numpy.sqrt(numpy.absolute(sigma2corr))
+            # Set the instrumental dispersion of the emission line
+            # templates to the output database
+            model_eml_par['SIGMATPL'][i,self.fit_eml] = etpl.eml_sigma_inst[self.fit_eml]
+
+            # Add the template dispersion into the fitted dispersion to
+            # get the observed dispersion
+            model_eml_par['KINERR'][i,self.fit_eml,1] \
+                        = model_eml_par['KIN'][i,self.fit_eml,1] \
+                            * model_eml_par['KINERR'][i,self.fit_eml,1]
+            model_eml_par['KIN'][i,self.fit_eml,1] \
+                        = numpy.sqrt( numpy.square(model_eml_par['KIN'][i,self.fit_eml,1])
+                                        + numpy.square(model_eml_par['SIGMATPL'][i,self.fit_eml]))
+            model_eml_par['KINERR'][i,self.fit_eml,1] /= model_eml_par['KIN'][i,self.fit_eml,1]
+
+            # With these definitions, the sigma correction is the same
+            # as the instrumental dispersion; see copy function outside
+            # the loop below
+
+#            # The dispersion correction is the quadrature difference
+#            # between the instrumental dispersion in the galaxy data to
+#            # the dispersion used when constructing the emission-line
+#            # templates
+#            sigma2corr = numpy.square(sigma_inst) - numpy.square(etpl.eml_sigma_inst[self.fit_eml])
+#            if numpy.any(sigma2corr < 0):
+#                # TODO: Raise an error instead?
+#                print(sigma2corr)
+#                warnings.warn('Encountered negative sigma corrections!')
+#            model_eml_par['SIGMACORR'][i,self.fit_eml] \
+#                            = sigma2corr / numpy.sqrt(numpy.absolute(sigma2corr))
 
 #            print(model_eml_par['SIGMACORR'][i,self.fit_eml])
 #            pyplot.scatter(self.emldb['restwave'][self.fit_eml], sigma_inst,
@@ -1330,6 +1351,9 @@ class Sasuke(EmissionLineFit):
             # TODO: FIX THIS
 #            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
 
+        # With the above definitions (starting at line 1274), the
+        # instrumental sigma and the sigma correction are identical
+        model_eml_par['SIGMAINST'] = model_eml_par['SIGMACORR'].copy()
 
         #---------------------------------------------------------------
         # Reset any parameters based on insufficient data to the fill_value
@@ -2076,8 +2100,11 @@ class Sasuke(EmissionLineFit):
                                           R_to_sinst/numpy.amin(self.obj_sres, axis=0),
                                           assume_sorted=True, bounds_error=False,
                                           fill_value='extrapolate')
-            etpl_sinst = interp(self.tpl_wave * (1 + numpy.mean(self.input_cz) 
+            etpl_sinst = interp(self.tpl_wave * (1 + numpy.median(self.input_cz) 
                                                         / astropy.constants.c.to('km/s').value))
+#            pyplot.plot(self.obj_wave, interp.y)
+#            pyplot.plot(self.tpl_wave, etpl_sinst)
+#            _etpl_sinst = etpl_sinst.copy()
 
         if etpl_sinst_mode == 'zero':
             etpl_sinst[:] = 0.
@@ -2087,8 +2114,11 @@ class Sasuke(EmissionLineFit):
             dsigma_inst = numpy.square(min_sinst)-numpy.square(_etpl_sinst_min)
             etpl_sinst = numpy.sqrt(numpy.square(etpl_sinst) - dsigma_inst)
             min_sinst = numpy.amin(etpl_sinst)
+#            print(min_sinst)
 #        pyplot.plot(self.tpl_wave, etpl_sinst)
+#        pyplot.plot(self.tpl_wave, numpy.sqrt(numpy.square(_etpl_sinst) - numpy.square(etpl_sinst)))
 #        pyplot.show()
+#        exit()
 
         #---------------------------------------------------------------
         # If provided, check the shapes of the stellar kinematics
