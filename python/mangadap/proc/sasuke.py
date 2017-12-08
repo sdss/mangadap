@@ -1809,10 +1809,10 @@ class Sasuke(EmissionLineFit):
 
         Args:
             emission_lines
-                (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+                (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database that is parsed to construct the
                 emission-line templates to fit (see
-                :class:`EmissionLineTemplates`).
+                :class:`mangadap.proc.emissionelinetemplates.EmissionLineTemplates`).
             obj_wave (numpy.ndarray): Wavelength vector for object
                 spectra.  Shape is (:math:`N_{\rm pix}`,).
             obj_flux (numpy.ndarray): Object spectra to fit.  Can be

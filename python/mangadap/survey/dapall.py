@@ -663,8 +663,11 @@ class DAPall:
 
         # Get the flux-weighted mean velocity at the center
         wsum = numpy.ma.sum(bin_flux[center])
-        stellar_z = -999. if numpy.all(bin_flux.mask[center]) or numpy.isclose(wsum, 0.) \
-                                else numpy.ma.sum(bin_flux[center]*z[center])/wsum
+        stellar_z = -999. if numpy.all(bin_flux.mask[center] | z.mask[center]) \
+                                or numpy.isclose(wsum, 0.) \
+                            else numpy.ma.sum(bin_flux[center]*z[center])/wsum
+        if not numpy.isfinite(stellar_z):
+            raise ValueError('Stellar_z is not finite: {0}'.format(stellar_z))
 
         # Get the growth ranges of the stellar velocity
         stellar_vel_lo, stellar_vel_hi = sample_growth(svel.compressed(), [0.025,0.975])
@@ -738,8 +741,15 @@ class DAPall:
 
         # Get the flux-weighted mean velocity at the center
         wsum = numpy.ma.sum(flux[center])
-        halpha_z = -999. if numpy.all(flux.mask[center]) or numpy.isclose(wsum, 0.) \
+
+        halpha_z = -999. if numpy.all(flux.mask[center] | z.mask[center]) \
+                                or numpy.isclose(wsum, 0.) \
                             else numpy.ma.sum(flux[center]*z[center])/wsum
+        if not numpy.isfinite(halpha_z):
+            raise ValueError('H-alpha z is not finite: {0}'.format(halpha_z))
+
+#        halpha_z = -999. if numpy.all(flux.mask[center]) or numpy.isclose(wsum, 0.) \
+#                            else numpy.ma.sum(flux[center]*z[center])/wsum
 
         # Get the growth ranges of the H-alpha velocity
         if numpy.all(vel.mask):
@@ -755,8 +765,11 @@ class DAPall:
         # Get the flux-weighted, corrected sigma within 1 Re
         within_1re = r_re < 1.
         wsum = numpy.ma.sum(flux[within_1re])
-        halpha_gsigma2_1re = -999. if numpy.all(flux.mask[within_1re]) or numpy.isclose(wsum, 0.) \
-                                else numpy.ma.sum(flux[within_1re]*sig2corr[within_1re])/wsum
+        halpha_gsigma2_1re = -999. if numpy.all(flux.mask[within_1re] | sig2corr.mask[within_1re]) \
+                                        or numpy.isclose(wsum, 0.) \
+                                    else numpy.ma.sum(flux[within_1re]*sig2corr[within_1re])/wsum
+        if not numpy.isfinite(halpha_gsigma2_1re):
+            raise ValueError('H-alpha gsigma^2 is not finite: {0}'.format(halpha_gsigma2_1re))
         halpha_gsigma_1re = numpy.sqrt(halpha_gsigma2_1re) if halpha_gsigma2_1re > 0 else -999.
 
         # Get the high-growth of the H-alpha velocity dispersion
@@ -1080,8 +1093,10 @@ class DAPall:
                     db[c][i] = drpall[c][db['DRPALLINDX'][i]]
 
             # Set the cosmological distances based on the NSA redshift
-            db['LDIST_NSA_Z'][i] = self.cosmo.luminosity_distance(db['NSA_Z'][i]).value
-            db['ADIST_NSA_Z'][i] = self.cosmo.angular_diameter_distance(db['NSA_Z'][i]).value
+            db['LDIST_NSA_Z'][i] = self.cosmo.luminosity_distance(db['NSA_Z'][i]).value \
+                                        if db['NSA_Z'][i] > 0 else -999.
+            db['ADIST_NSA_Z'][i] = self.cosmo.angular_diameter_distance(db['NSA_Z'][i]).value \
+                                        if db['NSA_Z'][i] > 0 else -999.
 
             # Open the maps file
             if not os.path.isfile(dapfiles[i]):
@@ -1188,15 +1203,20 @@ class DAPall:
             # Estimate the star-formation rate
             log_Mpc_in_cm = numpy.log10(astropy.constants.pc.to('cm').value) + 6
             log_halpha_luminosity_1re = numpy.log10(4*numpy.pi) \
-                        + numpy.log10(db['EMLINE_GFLUX_1RE'][i,self.elfit_channels['Ha-6564']]) \
-                        - 17 + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
-            db['SFR_1RE'][i] = numpy.power(10, log_halpha_luminosity_1re - 41.27)
+                        + numpy.ma.log10(db['EMLINE_GFLUX_1RE'][i,self.elfit_channels['Ha-6564']]) \
+                        - 17 + 2*numpy.ma.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
+            db['SFR_1RE'][i] = numpy.ma.power(10, log_halpha_luminosity_1re - 41.27).filled(-999.)
             log_halpha_luminosity_tot = numpy.log10(4*numpy.pi) \
-                        + numpy.log10(db['EMLINE_GFLUX_TOT'][i,self.elfit_channels['Ha-6564']]) \
-                        - 17 + 2*numpy.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
-            db['SFR_TOT'][i] = numpy.power(10, log_halpha_luminosity_tot - 41.27)
+                        + numpy.ma.log10(db['EMLINE_GFLUX_TOT'][i,self.elfit_channels['Ha-6564']]) \
+                        - 17 + 2*numpy.ma.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
+            db['SFR_TOT'][i] = numpy.ma.power(10, log_halpha_luminosity_tot - 41.27).filled(-999.)
 
         print('Processing {0}/{0}'.format(self.ndap))
+
+        # Check that all the data is finite.
+        for name in db.dtype.names:
+            if not numpy.all(numpy.isfinite(db[name])):
+                raise ValueError('All values not finite in column {0}'.format(name))
 
         # Create the primary header
         hdr = fits.Header()

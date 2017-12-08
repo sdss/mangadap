@@ -66,7 +66,6 @@ procedures.
         extension as requested.
     | **06 Dec 2016**: (KBW) Significantly restructured.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-
     | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
         the LSF.
         

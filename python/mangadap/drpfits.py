@@ -1313,7 +1313,7 @@ class DRPFits:
                 :func:`DRPFits.copy_to_array`.  Default is to return an
                 object with the same shape as the flux array.
             fill (bool): (**Optional**) Fill masked values by
-                interpolation.  Default is to leave leave masked pixels
+                interpolation.  Default is to leave masked pixels
                 in returned array.
             pre (bool): (**Optional**) Read the pre-pixelized version of
                 the spectral resolution, instead of the post-pixelized

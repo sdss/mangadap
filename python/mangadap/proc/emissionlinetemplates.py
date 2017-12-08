@@ -512,7 +512,7 @@ class EmissionLineTemplates:
         _sigma = self.eml_sigma_inst * self.emldb['restwave'] \
                         / astropy.constants.c.to('km/s').value / dl
 
-        # Constuct the templates
+        # Construct the templates
         pix = numpy.arange(self.wave.size)
         self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
         for i in range(self.ntpl):

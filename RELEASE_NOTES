@@ -1,9 +1,11 @@
 --------------------------------------------------------------------------------
 KBW (??         ): tag 2.2
+    - Fixed NaN problems in DAPall file
 
 TODO:
     - Documentation of config examples are out of date!
     - Get rid of the filter keyword from the output headers...
+    - Change default to fix bad pixels in spectral resolution?
 
 --------------------------------------------------------------------------------
 KBW (21 Nov 2017): tag 2.1.3
