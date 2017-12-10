@@ -1214,9 +1214,16 @@ class DAPall:
         print('Processing {0}/{0}'.format(self.ndap))
 
         # Check that all the data is finite.
+        found = False
         for name in db.dtype.names:
+            if not (numpy.issubdtype(db[name].dtype, numpy.integer) \
+                        or numpy.issubdtype(db[name].dtype, numpy.float)):
+                continue
             if not numpy.all(numpy.isfinite(db[name])):
-                raise ValueError('All values not finite in column {0}'.format(name))
+                print('All values not finite in column {0}'.format(name))
+                found = True
+        if found:
+            raise ValueError('All values not finite in DAPall table.')
 
         # Create the primary header
         hdr = fits.Header()

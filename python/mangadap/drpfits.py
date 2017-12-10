@@ -42,11 +42,13 @@ the MaNGA Data Reduction Pipeline (DRP).
         from .util.bitmask import BitMask
 
 *Class usage examples*:
-    Add some usage comments here!
+
+    This class provides a basic interface with DRP LOG* files.  It provides a number of 
+
 
 *Revision history*:
     | **20 Nov 2014**: Original implementation by K. Westfall (KBW)
-    | **12 Feb 2014**: (KBW) Added :func:`DRPFits.directory_path()`
+    | **12 Feb 2014**: (KBW) Added :func:`DRPFits.directory_path`
     | **20 Feb 2015**: (KBW) Add covariance calculation to :class:`DRPFits`
     | **19 Mar 2015**: (KBW) Added redux_path to :class:`DRPFits`.
         Re-arranged arguments in :func:`drpfits_list`, made drpver
@@ -59,7 +61,7 @@ the MaNGA Data Reduction Pipeline (DRP).
         :func:`mangadap.util.parser.parse_drp_file_name`
     | **15 Jun 2015**: (KBW) Moved functions that return default values
         (like :func:`DRPFits._default_pixelscale`) to
-        :file:`mangadap/util/defaults.py`
+        :mod:`mangadap.config.defaults`
     | **05 Aug 2015**: (KBW) Changed mode testing to be more robust.
         Added directory_path keyword to :func:`drpfits_list`.  Changed
         how directory path is set; previously required drpver and
@@ -138,6 +140,7 @@ import time
 import os.path
 import numpy
 import warnings
+import shutil
 
 from scipy import sparse
 from scipy import interpolate
@@ -520,6 +523,24 @@ class DRPFits:
         # Read the file, if requested
         if read:
             self.open_hdu(checksum=self.checksum)
+
+
+    @classmethod
+    def from_file(cls, input_file, plate=0, ifudesign=0, read=False):
+        """
+        Function to read a DRP-like data cube.
+
+        .. warning::
+            Work in progress.  Currently does not work.
+        """
+        if not os.path.isdir('./mimic_manga'):
+            os.makedirs('./mimic_manga')
+        dest = './mimic_manga/manga-{0}-{1}-LOGCUBE.fits.gz'.format(plate, ifudesign)
+        if os.path.islink(dest):
+            print('removing')
+            os.remove(dest)
+        os.symlink(input_file, dest)
+        return cls(plate, ifudesign, 'CUBE', directory_path='./mimic_manga', read=read)
 
 
 #    def __del__(self):
@@ -1050,11 +1071,6 @@ class DRPFits:
                                                                     'LOG{0}'.format(mode))) \
                             if output_file is None else output_file
         return _directory_path, _output_file
-
-
-    def file_path(self):
-        """Return the full path to the DRP file"""
-        return os.path.join(self.directory_path, self.file_name())
 
 
     def file_name(self):
