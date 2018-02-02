@@ -28,6 +28,8 @@ A set of functions used to filter arrays.
     | **26 Jan 2017**: Original implementation by K. Westfall (KBW)
     | **06 Apr 2017**: Interpolate sigma vectors as well as the smoothed
         vectors in :class:`BoxcarFilter`.
+    | **21 Dec 2017**: Add weighting functionality to
+        :class:`BoxcarFilter`.
 """
 
 from __future__ import division
@@ -210,12 +212,14 @@ def build_smoothing_mask(x, pix_buffer, default=None, mask_x=None):
 
 
 class BoxcarFilter():
-    def __init__(self, boxcar, lo=None, hi=None, niter=None, y=None, mask=None, local_sigma=None):
+    def __init__(self, boxcar, lo=None, hi=None, niter=None, y=None, wgt=None, mask=None,
+                 local_sigma=None):
 
         if boxcar <= 1:
             raise ValueError('Boxcar must be greater than 1!')
 
         self.y = None
+        self.wgt = None
         self.input_mask = None
         self.output_mask = None
         self.boxcar = boxcar
@@ -226,13 +230,14 @@ class BoxcarFilter():
         self.npix = None
         self.local_sigma = False if local_sigma is None else local_sigma
 
+        self.smoothed_wgt = None
         self.smoothed_n = None
         self.smoothed_y = None
         self.sigma_y = None
         self.rdx_index = None
 
         if y is not None:
-            self.smooth(y, mask=mask, boxcar=boxcar, lo=lo, hi=hi, niter=niter,
+            self.smooth(y, wgt=wgt, mask=mask, boxcar=boxcar, lo=lo, hi=hi, niter=niter,
                         local_sigma=local_sigma)
 
 
@@ -268,15 +273,17 @@ class BoxcarFilter():
     def _apply(self):
         self.smoothed_n = numpy.add.reduceat(numpy.invert(self.output_mask), self.rdx_index, axis=1,
                                              dtype=int)[:,::2]
-        self.smoothed_y = numpy.add.reduceat(self.y.filled(0.0), self.rdx_index,
-                                                             axis=1, dtype=float)[:,::2]
-        smoothed_y2 = numpy.add.reduceat(numpy.square(self.y.filled(0.0)), self.rdx_index,
-                                                             axis=1, dtype=float)[:,::2]
+        self.smoothed_wgt = numpy.add.reduceat(self.input_wgt, self.rdx_index, axis=1,
+                                             dtype=float)[:,::2]
+        self.smoothed_y = numpy.add.reduceat(self.input_wgt*self.y.filled(0.0), self.rdx_index,
+                                             axis=1, dtype=float)[:,::2]
+        smoothed_y2 = numpy.add.reduceat(self.input_wgt*numpy.square(self.y.filled(0.0)),
+                                         self.rdx_index, axis=1, dtype=float)[:,::2]
 
-        self.smoothed_y = numpy.ma.divide(self.smoothed_y, self.smoothed_n)
-        self.smoothed_y[self.output_mask] = numpy.ma.masked
+        self.smoothed_y = numpy.ma.divide(self.smoothed_y, self.smoothed_wgt)
+        self.smoothed_y[self.output_mask | (self.smoothed_n == 0)] = numpy.ma.masked
 
-        self.sigma_y = numpy.ma.sqrt((numpy.ma.divide(smoothed_y2, self.smoothed_n)
+        self.sigma_y = numpy.ma.sqrt((numpy.ma.divide(smoothed_y2, self.smoothed_wgt)
                                             - numpy.square(self.smoothed_y))
                                         * numpy.ma.divide(self.smoothed_n, self.smoothed_n-1)) \
                         if self.local_sigma else \
@@ -286,8 +293,8 @@ class BoxcarFilter():
         self.output_mask = numpy.ma.getmaskarray(self.smoothed_y) \
                                 | numpy.ma.getmaskarray(self.sigma_y) 
         
-        self.smoothed_y[self.output_mask] = numpy.ma.masked
-        self.sigma_y[self.output_mask] = numpy.ma.masked
+        self.smoothed_y[self.output_mask | (self.smoothed_n == 0)] = numpy.ma.masked
+        self.sigma_y[self.output_mask | (self.smoothed_n == 0)] = numpy.ma.masked
 
         return
 
@@ -322,6 +329,7 @@ class BoxcarFilter():
                   aspect='auto', vmin=mins, vmax=maxs)
 
         pyplot.show()
+        exit()
 
     
     def _interpolate(self):
@@ -372,7 +380,8 @@ class BoxcarFilter():
         self.sigma_y[numpy.invert(goodvec),:] = 0.0
 
 
-    def smooth(self, y, mask=None, boxcar=None, lo=None, hi=None, niter=None, local_sigma=None):
+    def smooth(self, y, wgt=None, mask=None, boxcar=None, lo=None, hi=None, niter=None,
+               local_sigma=None):
         """
         Smooth a vector or array of vectors by a boxcar with specified
         rejection.
@@ -384,6 +393,15 @@ class BoxcarFilter():
         # Check the input vector/array
         if len(y.shape) > 2:
             raise ValueError('Can only deal with vectors or matrices.')
+
+        # Set the weighting
+        self.input_wgt = numpy.ones(y.shape, dtype=bool) if wgt is None else wgt
+        if self.input_wgt.shape != y.shape:
+            raise ValueError('Weights shape does not match data.')
+        if isinstance(y, numpy.ma.MaskedArray):
+            self.input_wgt[numpy.ma.getmaskarray(y)] = 0.0
+
+        # Set the mask
         self.input_mask = numpy.zeros(y.shape, dtype=bool) if mask is None else mask
         if self.input_mask.shape != y.shape:
             raise ValueError('Mask shape does not match data.')
@@ -393,6 +411,7 @@ class BoxcarFilter():
         # Save the input
         provided_vector = len(y.shape) == 1
         self.y = numpy.ma.atleast_2d(numpy.ma.MaskedArray(y.copy(), mask=self.input_mask))
+        self.input_wgt = numpy.atleast_2d(self.input_wgt)
         self.input_mask = numpy.atleast_2d(self.input_mask)
         self.output_mask = self.input_mask.copy()
         self.nvec, self.npix = self.y.shape
@@ -406,7 +425,7 @@ class BoxcarFilter():
         # No rejection iterations requested so return the result
         if self.lo_rej is None and self.hi_rej is None:
             self._interpolate()
-            return self.smoothed_y
+            return self.smoothed_y[0,:] if provided_vector else self.smoothed_y
 
         # Iteratively reject outliers
         nmasked = numpy.sum(numpy.ma.getmaskarray(self.y))
