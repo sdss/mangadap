@@ -28,7 +28,7 @@ import numpy as np
 from scipy import special, fftpack
 import matplotlib.pyplot as plt
 
-from . import ppxf
+from .ppxf import losvd_rfft, rebin
 
 ###############################################################################
 #
@@ -591,10 +591,10 @@ def convolve_gauss_hermite(templates, start, velscale, npix,
     EXAMPLE:
         ...
         pp = ppxf(templates, galaxy, noise, velscale, start,
-                  degree=4, mdegree=4, vsyst=dv, velscale_ratio=velscale_ratio)
+                  degree=4, mdegree=4, velscale_ratio=ratio, vsyst=dv)
 
         spec = convolve_gauss_hermite(templates, pp.sol, velscale, galaxy.size,
-                                      velscale_ratio=velscale_ratio, vsyst=dv)
+                                      velscale_ratio=ratio, vsyst=dv)
 
         # The spectrum below is equal to pp.bestfit to machine precision
         spectrum = (spec @ pp.weights)*pp.mpoly + pp.apoly
@@ -611,19 +611,14 @@ def convolve_gauss_hermite(templates, start, velscale, npix,
     start = np.array(start)  # make copy
     start[:2] /= velscale
     vsyst /= velscale
+
     npad = fftpack.next_fast_len(npix_temp)
-
-    if velscale_ratio != 1:
-        assert isinstance(velscale_ratio, int), "VELSCALE_RATIO must be an integer"
-        npix_temp -= npix_temp % velscale_ratio
-        templates = templates[:npix_temp, :]  # Make size multiple of velscale_ratio
-
     templates_rfft = np.fft.rfft(templates, npad, axis=0)
-    lvd_rfft = ppxf.losvd_rfft(start, 1, start.shape, templates_rfft.shape[0],
-                               1, vsyst, velscale_ratio, sigma_diff)
+    lvd_rfft = losvd_rfft(start, 1, start.shape, templates_rfft.shape[0],
+                          1, vsyst, velscale_ratio, sigma_diff)
 
     conv_temp = np.fft.irfft(templates_rfft*lvd_rfft[:, 0], npad, axis=0)
-    conv_temp = ppxf.rebin(conv_temp[:npix*velscale_ratio, :], velscale_ratio)
+    conv_temp = rebin(conv_temp[:npix*velscale_ratio, :], velscale_ratio)
 
     return conv_temp
 

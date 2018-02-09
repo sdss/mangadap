@@ -75,7 +75,7 @@ CALLING SEQUENCE:
              linear=False, mask=None, method='capfit', mdegree=0, moments=2,
              plot=False, quiet=False, reddening=None, reddening_func=None,
              reg_ord=2, reg_dim=None, regul=0, sigma_diff=0, sky=None,
-             templates_rfft=None, tied=None, trig=False, velscale_ratio=None,
+             templates_rfft=None, tied=None, trig=False, velscale_ratio=1,
              vsyst=0)
 
     print(pp.sol)  # print best-fitting kinematics (V, sigma, h3, h4)
@@ -343,7 +343,7 @@ KEYWORDS:
            moments = [-4, 2]
            start = [[V, sigma, h3, h4], [V, sigma]]
 
-   VELSCALE_RATIO: Integer. Gives the integer ratio > 1 between the VELSCALE of
+   VELSCALE_RATIO: Integer. Gives the integer ratio >= 1 between the VELSCALE of
        the GALAXY and the TEMPLATES. When this keyword is used, the templates
        are convolved by the LOSVD at their native resolution, and only
        subsequently are integrated over the pixels and fitted to GALAXY.
@@ -1452,7 +1452,6 @@ import matplotlib.pyplot as plt
 from numpy.polynomial import legendre, hermite
 from scipy import optimize, linalg, special, fftpack
 
-# import capfit
 from . import capfit
 
 ################################################################################
@@ -1689,7 +1688,7 @@ class ppxf(object):
                  plot=False, quiet=False, reddening=None, reddening_func=None,
                  reg_ord=2, reg_dim=None, regul=0, sigma_diff=0, sky=None,
                  templates_rfft=None, tied=None, trig=False,
-                 velscale_ratio=None, vsyst=0):
+                 velscale_ratio=1, vsyst=0):
 
         # Do extensive checking of possible input errors
         #
@@ -1715,10 +1714,10 @@ class ppxf(object):
         self.reg_ord = reg_ord
         self.templates = templates.reshape(templates.shape[0], -1)
         self.npix_temp, self.ntemp = self.templates.shape
-        self.factor = 1   # default value
         self.sigma_diff = sigma_diff/velscale
         self.status = 0   # Initialize status as failed
         self.velscale = velscale
+        self.velscale_ratio = velscale_ratio
 
         if reddening_func is None:
             self.reddening_func = reddening_cal00
@@ -1745,15 +1744,7 @@ class ppxf(object):
             self.polyval = legendre.legval
             self.polyvander = legendre.legvander
 
-        if velscale_ratio is not None and velscale_ratio != 1:
-            assert isinstance(velscale_ratio, int), \
-                "VELSCALE_RATIO must be an integer"
-            self.npix_temp -= self.npix_temp % velscale_ratio
-            # Make size multiple of velscale_ratio
-            self.templates = self.templates[:self.npix_temp, :]
-            # This is the size after rebin()
-            self.npix_temp //= velscale_ratio
-            self.factor = velscale_ratio
+        assert isinstance(velscale_ratio, int), "VELSCALE_RATIO must be an integer"
 
         component = np.atleast_1d(component)
         assert component.dtype == int, "COMPONENT must be integers"
@@ -1840,7 +1831,7 @@ class ppxf(object):
 
         assert np.all(np.isfinite(galaxy)), 'GALAXY must be finite'
 
-        assert self.npix_temp >= galaxy.shape[0], \
+        assert self.npix_temp >= galaxy.shape[0]*velscale_ratio, \
             "TEMPLATES length cannot be smaller than GALAXY"
 
         if reddening is not None:
@@ -1893,7 +1884,7 @@ class ppxf(object):
             vmed = np.median([a[0] for a in start1])
             dx = int(round((vsyst + vmed)/velscale))  # Approximate velocity shift
             gas_templates = self.templates[:, self.gas_component]
-            tmp = rebin(gas_templates, self.factor)
+            tmp = rebin(gas_templates, velscale_ratio)
             gas_peak = np.max(np.abs(tmp), axis=0)
             tmp = np.roll(tmp, dx, axis=0)
             good_peak = np.max(np.abs(tmp[self.goodpixels, :]), axis=0)
@@ -2094,7 +2085,7 @@ class ppxf(object):
 
         nl = self.templates_rfft.shape[0]
         lvd_rfft = losvd_rfft(pars, nspec, self.moments, nl, self.ncomp,
-                              self.vsyst, self.factor, self.sigma_diff)
+                              self.vsyst, self.velscale_ratio, self.sigma_diff)
 
         # The zeroth order multiplicative term is already included in the
         # linear fit of the templates. The polynomial below has mean of 1.
@@ -2139,9 +2130,8 @@ class ppxf(object):
         tmp = np.empty((nspec, self.npix))
         for j, template_rfft in enumerate(self.templates_rfft.T):  # columns loop
             for k in range(nspec):
-                pr = template_rfft*lvd_rfft[:, self.component[j], k]
-                tt = np.fft.irfft(pr, self.npad)
-                tmp[k, :] = rebin(tt[:self.npix*self.factor], self.factor)
+                tt = np.fft.irfft(template_rfft*lvd_rfft[:, self.component[j], k], self.npad)
+                tmp[k, :] = rebin(tt[:self.npix*self.velscale_ratio], self.velscale_ratio)
             c[:, npoly + j] = tmp.ravel()
             if self.gas_component[j]:
                 if gas_mpoly is not None:
