@@ -28,7 +28,7 @@ import numpy as np
 from scipy import special, fftpack
 import matplotlib.pyplot as plt
 
-from .ppxf import losvd_rfft, rebin
+from ppxf import losvd_rfft, rebin
 
 ###############################################################################
 #
@@ -577,7 +577,7 @@ def plot_weights_2d(xgrid, ygrid, weights, xlabel="log Age (yr)",
 # MODIFICATION HISTORY:
 #   V1.0.0: Written. Michele Cappellari, Oxford, 8 February 2018
 
-def convolve_gauss_hermite(templates, start, velscale, npix,
+def convolve_gauss_hermite(templates, velscale, start, npix,
                            velscale_ratio=1, sigma_diff=0, vsyst=0):
     """
     Convolve a spectrum, or a set of spectra, arranged into columns of an array,
@@ -593,15 +593,15 @@ def convolve_gauss_hermite(templates, start, velscale, npix,
         pp = ppxf(templates, galaxy, noise, velscale, start,
                   degree=4, mdegree=4, velscale_ratio=ratio, vsyst=dv)
 
-        spec = convolve_gauss_hermite(templates, pp.sol, velscale, galaxy.size,
+        spec = convolve_gauss_hermite(templates, velscale, pp.sol, galaxy.size,
                                       velscale_ratio=ratio, vsyst=dv)
 
         # The spectrum below is equal to pp.bestfit to machine precision
         spectrum = (spec @ pp.weights)*pp.mpoly + pp.apoly
 
     :param spectra: log rebinned spectra
-    :param start: parameters of the LOSVD [vel, sig, h3, h4,...]
     :param velscale: velocity scale c*dLogLam in km/s
+    :param start: parameters of the LOSVD [vel, sig, h3, h4,...]
     :param npix: number of output pixels
     :return: vector or array with convolved spectra
 
