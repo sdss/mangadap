@@ -56,6 +56,46 @@ A class hierarchy that performs the spectral-index measurements.
 *Class usage examples*:
     Add examples!
 
+
+*Notes*:
+    
+    If neither stellar-continuum nor emission-line models are provided:
+        - Indices are measure on the binned spectra
+        - No velocity-dispersion corrections are calculated
+
+    If a stellar-continuum model is provided without an emission-line
+    model:
+        - Indices are measured on the binned spectra
+        - Velocity-dispersion corrections are computed for any binned
+          spectrum with a stellar-continuum fit based on the optimal
+          template
+
+    If an emission-line model is provided without a stellar-continuum
+    model:
+        - Indices are measured on the relevant (binned or unbinned)
+          spectra; spectra with emission-line fits have the model
+          emission lines subtracted from them before these measurements.
+        - If the emission-line model includes data regarding the
+          stellar-continuum fit (template spectra and template weights),
+          corrections are calculated for spectra with emission-line
+          models based on the continuum fits; otherwise, no corrections
+          are calculated.
+
+    If both stellar-continuum and emission-line models are provided, and
+    if the stellar-continuum and emission-line fits are performed on the
+    same spectra:
+        - Indices are measured on the relevant (binned or unbinned)
+          spectra; spectra with emission-line fits have the model
+          emission lines subtracted from them before these measurements.
+        - Velocity-dispersion corrections are based on the
+          stellar-continuum templates and weights
+
+    If both stellar-continuum and emission-line models are provided, and
+    if the stellar-continuum and emission-line fits are performed on
+    different spectra:
+        - The behavior is exactly as if the stellar-continuum model was
+          not provided.
+
 *Revision history*:
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **09 May 2016**: (KBW) Add subtraction of emission-line models
@@ -65,6 +105,10 @@ A class hierarchy that performs the spectral-index measurements.
         redshift when stellar continuum is provided.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
     | **27 Feb 2017**: (KBW) Use DefaultConfig
+    | **02 Feb 2018**: (KBW) Allow for stellar-continuum and
+        emission-line models to be performed on different spectra (i.e.,
+        allow for the hybrid binning scheme).  Adjust for change to
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
 
 .. todo::
 
@@ -478,11 +522,122 @@ class BandheadIndices:
 
 class SpectralIndices:
     r"""
+    Class that computes and interfaces with the spectral-index
+    measurements.
 
-    Class that holds the spectral-index measurements.
+    If neither stellar-continuum nor emission-line models are provided:
+        - Indices are measure on the binned spectra
+        - No velocity-dispersion corrections are calculated
+
+    If a stellar-continuum model is provided without an emission-line
+    model:
+        - Indices are measured on the binned spectra
+        - Velocity-dispersion corrections are computed for any binned
+          spectrum with a stellar-continuum fit based on the optimal
+          template
+
+    If an emission-line model is provided without a stellar-continuum
+    model:
+        - Indices are measured on the relevant (binned or unbinned)
+          spectra; spectra with emission-line fits have the model
+          emission lines subtracted from them before these measurements.
+        - If the emission-line model includes data regarding the
+          stellar-continuum fit (template spectra and template weights),
+          corrections are calculated for spectra with emission-line
+          models based on the continuum fits; otherwise, no corrections
+          are calculated.
+
+    If both stellar-continuum and emission-line models are provided, and
+    if the stellar-continuum and emission-line fits are performed on the
+    same spectra:
+        - Indices are measured on the relevant (binned or unbinned)
+          spectra; spectra with emission-line fits have the model
+          emission lines subtracted from them before these measurements.
+        - Velocity-dispersion corrections are based on the
+          stellar-continuum templates and weights
+
+    If both stellar-continuum and emission-line models are provided, and
+    if the stellar-continuum and emission-line fits are performed on
+    different spectra:
+        - The behavior is exactly as if the stellar-continuum model was
+          not provided.
+
+    **Detail what should be provided in terms of the redshift**
+
+    Args:
+        database_key (str): Keyword used to select the specfic list of
+            indices to measure and how they should be measured;  see
+            :class:`SpectralIndicesDef`.
+        binned_spectra
+            (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+            The binned spectra for the measurements.
+        redshift (float, numpy.ndarray): (**Optional**) A single or
+            spectrum-dependent redshift, :math:`z`, to use for shifting
+            the index bands.  Default is to measure the indices at their
+            provided wavelengths (i.e., :math:`z=0`).
+        stellar_continuum
+            (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
+            (**Optional**) The stellar-continuum model as applied to the
+            binned spectra.
+        emission_line_model
+            (:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`):
+            (**Optional**) The emission-line model as applied to either
+            the binned spectra or the unbinned spaxels.
+        database_list (list): (**Optional**) List of
+            :class:`SpectralIndicesDef` objects that define one or more
+            methods to use for the spectral-index measurements.  The
+            default list is provided by the config files in the DAP
+            source directory and compiled into this list using
+            :func:`available_spectral_index_databases`.
+        artifact_list (list): (**Optional**) List of
+            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
+            objects that define the unique key for the artifact database
+            (see :mod:`mangadap.par.artifactdb`).
+        absorption_index_list (list): (**Optional**) List of
+            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
+            objects that define the unique key for the absorption-index
+            database (see :mod:`mangadap.par.absorptionindexdb`).
+        bandhead_index_list (list): (**Optional**) List of
+            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
+            objects that define the unique key for the bandhead-index
+            database (see :mod:`mangadap.par.bandheadindexdb`).
+        dapsrc (str): (**Optional**) Root path to the DAP source
+            directory.  If not provided, the default is defined by
+            :func:`mangadap.config.defaults.default_dap_source`.
+        dapver (str): (**Optional**) The DAP version to use for the
+            analysis, used to override the default defined by
+            :func:`mangadap.config.defaults.default_dap_version`.
+        analysis_path (str): (**Optional**) The top-level path for the
+            DAP output files, used to override the default defined by
+            :func:`mangadap.config.defaults.default_analysis_path`.
+        directory_path (str): The exact path to the directory with DAP
+            output that is common to number DAP "methods".  See
+            :attr:`directory_path`.
+        output_file (str): (**Optional**) Exact name for the output
+            file.  The default is to use
+            :func:`mangadap.config.defaults.default_dap_file_name`.
+        hardcopy (bool): (**Optional**) Flag to write the HDUList
+            attribute to disk.  Default is True; if False, the HDUList
+            is only kept in memory and would have to be reconstructed.
+        tpl_symlink_dir (str): (**Optional**) Create a symbolic link to
+            the created template library file in the supplied directory.
+            Default is to produce no symbolic link.
+        clobber (bool): (**Optional**) Overwrite any existing files.
+            Default is to use any existing file instead of redoing the
+            analysis and overwriting the existing output.
+        checksum (bool): (**Optional**) Use the checksum in the fits
+            header to confirm that the data has not been corrupted.  The
+            checksum is **always** written to the fits header when the
+            file is created; this argument does not toggle that
+            functionality.
+        loggers (list): (**Optional**) List of `logging.Logger`_ objects
+            to log progress; ignored if quiet=True.  Logging is done
+            using :func:`mangadap.util.log.log_output`.  Default is no
+            logging.
+        quiet (bool): (**Optional**) Suppress all terminal and logging
+            output.  Default is False.
 
     """
-#    @profile
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_list=None,
                  absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
@@ -514,7 +669,7 @@ class SpectralIndices:
         self.emission_line_model = None
 
         # Define the output directory and file
-        self.directory_path = None      # Set in _set_paths
+        self.directory_path = None              # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
 
@@ -538,17 +693,6 @@ class SpectralIndices:
                      analysis_path=analysis_path, directory_path=directory_path,
                      output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
                      clobber=clobber, loggers=loggers, quiet=quiet)
-
-
-#    def __del__(self):
-#        """
-#        Deconstruct the data object by ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
 
 
     def __getitem__(self, key):
@@ -753,7 +897,47 @@ class SpectralIndices:
                                 + self.binned_spectra.missing_bins) 
 
 
-    def _assign_redshifts(self, redshift):
+    def _assign_redshifts(self, redshift, default_redshift=0., nspec=None):
+        """
+        Set the redshift to use for each spectrum for the spectral index
+        measurements.
+        
+        In terms of precedence, directly provided redshifts override
+        those in any available StellarContinuumModel.
+
+        If self.stellar_continuum and redshift are None, the default
+        redshift is used (or 0.0 if this is also None).
+
+        To get the stellar kinematics, the function calls
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
+        It is expected that the stellar kinematics were fixed to these
+        values during any emission-line modeling that may have altered
+        the continuum fit itself (e.g., :class:`mangadap.proc.Sasuke`).
+
+
+        In this function, the provided redshift and dispersion must be a
+        single value or None; therefore, the means of any vectors
+        provided as redshift or disperison are passsed to this function
+        instead of the full vector.
+
+        Args:
+            emission_line_moments
+                (:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`):
+                Object with the results of the emission-line-moment
+                measurements
+            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
+                use for each spectrum.
+            dispersion (float, numpy.ndarray): Velocity dispersion
+                (km/s) to use for each spectrum.
+            default_dispersion (float, numpy.ndarray): (**Optional**)
+                Default velocity dispersion to use (km/s), if relevant.
+        """
+
+
+
+
+
+
         """
         Set the redshift to apply to each spectrum.
         """
@@ -762,10 +946,11 @@ class SpectralIndices:
             return
 
         _redshift = numpy.atleast_1d(redshift)
-        if len(_redshift) not in [ 1, self.binned_spectra.nbins ]:
+        _nspec = self.binned_spectra.nbins if nspec is None else nspec
+        if len(_redshift) not in [ 1, _nspec ]:
             raise ValueError('Provided redshift must be either a single value or match the ' \
-                             'number of binned spectra.')
-        self.redshift = numpy.full(self.binned_spectra.nbins, redshift, dtype=float) \
+                             'number of spectra.')
+        self.redshift = numpy.full(_nspec, redshift, dtype=float) \
                             if len(_redshift) == 1 else _redshift.copy()
 
 
@@ -779,6 +964,9 @@ class SpectralIndices:
         the provided FWHM.
 
         """
+
+        _resolution_fwhm = -1 if resolution_fwhm is None else resolution_fwhm
+
         # Get the main data arrays
         wave = binned_spectra['WAVE'].data
         flux = binned_spectra.copy_to_masked_array(flag=binned_spectra.do_not_fit_flags())
@@ -810,10 +998,10 @@ class SpectralIndices:
 #        pyplot.step(wave, _flux[0,:], where='mid', linestyle='-', color='b', lw=1)
 #        pyplot.show()
 
-        return flux[select,:], ivar[select,:] if resolution_fwhm < 0 \
+        return flux[select,:], ivar[select,:] if _resolution_fwhm < 0 \
                 else adjust_spectral_resolution(wave, flux[select,:], ivar[select,:],
                                                 binned_spectra['SPECRES'].data.copy()[select,:],
-                                                resolution_fwhm)
+                                                _resolution_fwhm)
 
     @staticmethod
     def adjust_spectral_resolution(wave, flux, ivar, sres, resolution_fwhm):
@@ -1400,7 +1588,109 @@ class SpectralIndices:
                 directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
                 clobber=False, loggers=None, quiet=False):
         """
-        Measure the spectral indices using the binned spectra.
+        Measure the spectral indices using the binned spectra and the
+        internal spectral index database, and construct the internal
+        data structure.
+
+        If neither stellar-continuum nor emission-line models are
+        provided:
+            - Indices are measure on the binned spectra
+            - No velocity-dispersion corrections are calculated
+
+        If a stellar-continuum model is provided without an
+        emission-line model:
+            - Indices are measured on the binned spectra
+            - Velocity-dispersion corrections are computed for any
+              binned spectrum with a stellar-continuum fit based on the
+              optimal template
+
+        If an emission-line model is provided without a
+        stellar-continuum model:
+            - Indices are measured on the relevant (binned or unbinned)
+              spectra; spectra with emission-line fits have the model
+              emission lines subtracted from them before these
+              measurements.
+            - If the emission-line model includes data regarding the
+              stellar-continuum fit (template spectra and template
+              weights), corrections are calculated for spectra with
+              emission-line models based on the continuum fits;
+              otherwise, no corrections are calculated.
+
+        If both stellar-continuum and emission-line models are provided,
+        and if the stellar-continuum and emission-line fits are
+        performed on the same spectra:
+            - Indices are measured on the relevant (binned or unbinned)
+              spectra; spectra with emission-line fits have the model
+              emission lines subtracted from them before these
+              measurements.
+            - Velocity-dispersion corrections are based on the
+              stellar-continuum templates and weights
+
+        If both stellar-continuum and emission-line models are provided,
+        and if the stellar-continuum and emission-line fits are
+        performed on different spectra:
+            - The behavior is exactly as if the stellar-continuum model
+              was not provided.
+
+        Args:
+            binned_spectra
+                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+                The binned spectra for the measurements.
+            redshift (float, numpy.ndarray): (**Optional**) A single or
+                spectrum-dependent redshift, :math:`z`, to use for
+                shifting the index bands.  Default is to measure the
+                indices at their provided wavelengths (i.e.,
+
+                :math:`z=0`).  If providing spectrum-dependent values,
+                the number of values must be the same as the number of
+                stpectrum bins (i.e., binned_spectra.nbins) if either
+                the emission-line model is not provided or it was not
+                determined by deconstructing the bins; the number of
+                values must be the same as the number of DRP spectra if
+                the opposite is true (an emission-line model is provided
+                that deconstructed the bins for its fit).
+
+
+            stellar_continuum
+                (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
+                (**Optional**) The stellar-continuum model as applied to
+                the binned spectra.
+            emission_line_model
+                (:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`):
+                (**Optional**) The emission-line model as applied to
+                either the binned spectra or the unbinned spaxels.
+            dapsrc (str): (**Optional**) Root path to the DAP source
+                directory.  If not provided, the default is defined by
+                :func:`mangadap.config.defaults.default_dap_source`.
+            dapver (str): (**Optional**) The DAP version to use for the
+                analysis, used to override the default defined by
+                :func:`mangadap.config.defaults.default_dap_version`.
+            analysis_path (str): (**Optional**) The top-level path for
+                the DAP output files, used to override the default
+                defined by
+                :func:`mangadap.config.defaults.default_analysis_path`.
+            directory_path (str): The exact path to the directory with
+                DAP output that is common to number DAP "methods".  See
+                :attr:`directory_path`.
+            output_file (str): (**Optional**) Exact name for the output
+                file.  The default is to use
+                :func:`mangadap.config.defaults.default_dap_file_name`.
+            hardcopy (bool): (**Optional**) Flag to write the HDUList
+                attribute to disk.  Default is True; if False, the
+                HDUList is only kept in memory and would have to be
+                reconstructed.
+            tpl_symlink_dir (str): (**Optional**) Create a symbolic link
+                to the created template library file in the supplied
+                directory.  Default is to produce no symbolic link.
+            clobber (bool): (**Optional**) Overwrite any existing files.
+                Default is to use any existing file instead of redoing
+                the analysis and overwriting the existing output.
+            loggers (list): (**Optional**) List of `logging.Logger`_
+                objects to log progress; ignored if quiet=True.  Logging
+                is done using :func:`mangadap.util.log.log_output`.
+                Default is no logging.
+            quiet (bool): (**Optional**) Suppress all terminal and
+                logging output.  Default is False.
         """
         # Initialize the reporting
         if loggers is not None:
@@ -1416,16 +1706,40 @@ class SpectralIndices:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
         self.binned_spectra = binned_spectra
 
-        # StellarContinuumModel object only used when calculating dispersion corrections.
+        # Check stellar-continuum model object, if provided
+        self.stellar_continuum = None
         if stellar_continuum is not None:
             if not isinstance(stellar_continuum, StellarContinuumModel):
                 raise TypeError('Provided stellar continuum must have StellarContinuumModel type!')
             if stellar_continuum.hdu is None:
                 raise ValueError('Provided StellarContinuumModel is undefined!')
             self.stellar_continuum = stellar_continuum
+
+        # Check emission-line model object, if provided
+        self.emission_line_model = None
+        if emission_line_model is not None:
+            if not isinstance(emission_line_model, EmissionLineModel):
+                raise TypeError('Provided emission line models must be of type EmissionLineModel.')
+            if emission_line_model.hdu is None:
+                raise ValueError('Provided EmissionLineModel is undefined!')
+#            if emission_line_model.method['deconstruct_bins']:
+#                raise NotImplementedError('Cannot use EmissionLineModel with bins deconstructed.')
+            self.emission_line_model = emission_line_model
+
+        # What stellar continuum is available?
+        #  - Assume the stellar continuum can always be extracted if a
+        #    StellarContinuumModel object is provided
+        #  - Check if the EmissionLineModel fitter has the appropriate
+        #    function; True for Sasuke, not currently true for Elric
+        eml_stellar_continuum_available = self.emission_line_model is not None \
+                and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
+
+        # Determine if the velocity-dispersion corrections can be
+        # determined
         self.compute_corrections = self.database['compute_corrections']
-        if self.stellar_continuum is None and self.compute_corrections:
-            warnings.warn('Cannot compute dispersion corrections without StellarContinuumModel.')
+        if self.compute_corrections and self.stellar_continuum is None \
+                and not eml_stellar_continuum_available:
+            warnings.warn('Cannot compute dispersion corrections; no continuum model available.')
             self.compute_corrections = False
 
         # Can only correct the indices if the corrections are provided
@@ -1433,18 +1747,16 @@ class SpectralIndices:
             warnings.warn('Cannot apply corrections because they are not being computed.')
             self.correct_indices = False
 
-        # EmissionLineModel object used to subtract emission lines
-        if emission_line_model is not None:
-            if not isinstance(emission_line_model, EmissionLineModel):
-                raise TypeError('Provided emission line models must be of type EmissionLineModel.')
-            if emission_line_model.hdu is None:
-                raise ValueError('Provided EmissionLineModel is undefined!')
-            if emission_line_model.method['deconstruct_bins']:
-                raise NotImplementedError('Cannot use EmissionLineModel with bins deconstructed.')
-            self.emission_line_model = emission_line_model
+        # What spectra to use?
+        #  - Assume StellarContinuumModel always fits the binned spectra
+        #  - The EmissionLineModel fits the binned spectra or unbinned
+        #    spaxels as specified by its deconstruct_bins flag
+        measure_on_unbinned_spaxels = self.emission_line_model is not None \
+                and self.emission_line_model.method['deconstruct_bins']
 
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.nspec
+        self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
+                            else self.binned_spectra.nspec 
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
         # Get the redshifts to apply
@@ -1537,14 +1849,15 @@ class SpectralIndices:
             # Get the continuum with and without the LOSVD convolution
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models with LOSVD')
-            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra,
-                                                        replacement_templates=replacement_templates)
+            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
+                                                    replacement_templates=replacement_templates)
         
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
-            continuum_dcnvlv = self.stellar_continuum.fill_to_match(self.binned_spectra,
-                                                        replacement_templates=replacement_templates,
-                                                                    redshift_only=True)
+            continuum_dcnvlv = self.stellar_continuum.fill_to_match(
+                                                    self.binned_spectra['BINID'].data,
+                                                    replacement_templates=replacement_templates,
+                                                    redshift_only=True)
         
 
             # Get the corrections by performing the measurements on the

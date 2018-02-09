@@ -63,6 +63,8 @@ A class hierarchy that measures moments of the observed emission lines.
     | **31 May 2017**: (KBW) Revert to using
         :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
         on input
+    | **02 Feb 2018**: (KBW) Adjust for change to
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -500,13 +502,17 @@ class EmissionLineMoments:
             return
 
         if redshift is None:
-            self.redshift, _ = self.stellar_continuum.matched_guess_kinematics(self.binned_spectra)
+            self.redshift, _ = self.stellar_continuum.matched_kinematics(
+                                                self.binned_spectra['BINID'].data,
+                                                missing=self.binned_spectra.missing_bins)
             return
 
         _redshift = numpy.atleast_1d(redshift)
         if len(_redshift) == 1:
-            self.redshift, _ = self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
-                                                                               redshift=redshift)
+            self.redshift, _ = self.stellar_continuum.matched_kinematics(
+                                                self.binned_spectra['BINID'].data,
+                                                redshift=redshift,
+                                                missing=self.binned_spectra.missing_bins)
         elif len(_redshift) == self.binned_spectra.nbins:
             self.redshift = _redshift.copy()
         else:
@@ -1033,7 +1039,8 @@ class EmissionLineMoments:
             raise TypeError('Must provide a valid StellarContinuumModel object.')
         self.stellar_continuum = stellar_continuum
         continuum = None if self.stellar_continuum is None \
-                        else stellar_continuum.fill_to_match(self.binned_spectra)
+                        else stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
+                                                        missing=self.binned_spectra.missing_bins)
         if continuum is not None:
             if continuum.shape != self.binned_spectra['FLUX'].data.shape:
                 raise ValueError('Provided continuum does not match shape of the binned spectra.')
@@ -1046,6 +1053,21 @@ class EmissionLineMoments:
         
         # Get the redshifts to apply
         self._assign_redshifts(redshift)
+
+#        matchedz = DAPFitsUtil.reconstruct_map(self.spatial_shape,
+#                                               self.binned_spectra['BINID'].data.ravel(),
+#                                               self.redshift)
+#        matchedz = numpy.ma.MaskedArray(matchedz, mask=matchedz==0)
+#        inputz = DAPFitsUtil.reconstruct_map(self.spatial_shape,
+#                                             self.stellar_continuum['BINID'].data.ravel(),
+#                                             self.stellar_continuum['PAR'].data['KIN'][:,0]
+#                                                / astropy.constants.c.to('km/s').value)
+#        inputz = numpy.ma.MaskedArray(inputz, mask=inputz==0)
+#
+#        pyplot.imshow(inputz.T, origin='lower', interpolation='nearest')
+#        pyplot.show()
+#        pyplot.imshow(matchedz.T, origin='lower', interpolation='nearest')
+#        pyplot.show()
 
 #        pyplot.scatter(numpy.arange(self.nbins), self.redshift, marker='.', s=50, color='k', lw=0)
 #        pyplot.show()

@@ -68,7 +68,7 @@ A class hierarchy that performs the stellar-continuum fitting.
         :func:`StellarContinuumModel.emission_line_continuum_model`.
     | **11 Jan 2017**: (KBW) Changed
         StellarContinuumModel.emission_line_continuum_model to
-        :func:`StellarContinuumModel.continuous_continuum_model`.
+        :func:`StellarContinuumModel.unmasked_continuum_model`.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -1215,12 +1215,14 @@ class StellarContinuumModel:
         templates = self.method['fitpar']['template_library'] if replacement_templates is None \
                                             else replacement_templates
 
+        # The only reason it needs the flux data is to get the shape, so
+        # it doesn't matter that I'm passing the model flux
+
         return self.method['fitclass'].construct_models(templates['WAVE'].data,
                                                         templates['FLUX'].data,
                                                         self.hdu['WAVE'].data,
-                                                        self.hdu['FLUX'].data, self.hdu['PAR'].data,
-                                                        select=select,
-                                            velscale_ratio=self.method['fitpar']['velscale_ratio'],
+                                                        self.hdu['FLUX'].data.shape,
+                                                        self.hdu['PAR'].data, select=select,
                                                         redshift_only=redshift_only, dvtol=1e-9)
 
 
@@ -1258,7 +1260,7 @@ class StellarContinuumModel:
         return _continuum if dispaxis == 1 else _continuum.T
 
 
-    def continuous_continuum_model(self, replacement_templates=None, redshift_only=False):
+    def unmasked_continuum_model(self, replacement_templates=None, redshift_only=False):
         """
         Return the stellar continuum unmasked over the full continuous
         fitting region.  Models are reconstructed based on the model
@@ -1274,31 +1276,77 @@ class StellarContinuumModel:
         return StellarContinuumModel.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
 
-    def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
+#    def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
+#        """
+#        Get the stellar continuum that matches the shape of the provided binned_spectra.
+#        """
+#        if binned_spectra is self.binned_spectra:
+#            continuum = self.unmasked_continuum_model(replacement_templates=replacement_templates,
+#                                                        redshift_only=redshift_only)
+#
+#            # Number of models matches the numbers of bins
+#            if binned_spectra.nbins == self.nmodels:
+#                return continuum
+#    
+#            # Fill in bins with no models with masked zeros
+#            _continuum = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
+#            _continuum[:,:] = numpy.ma.masked
+#            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
+#                _continuum[j,:] = continuum[i,:]
+#            return _continuum
+#
+#        raise NotImplementedError('Can only match to internal binned_spectra.')
+
+    def fill_to_match(self, binid, replacement_templates=None, redshift_only=False,
+                      missing=None):
         """
-        Get the stellar continuum that matches the shape of the provided binned_spectra.
+        Get the stellar-continuum model from this objects that matches
+        the input bin ID matrix.  The output is a 2D matrix ordered by
+        the bin ID; any skipped index numbers in the maximum of the
+        union of the unique numbers in the `binid` and `missing` input
+        are masked.
+
+        All this does is find the stellar continuum from spaxels in this
+        model and match them to the input spaxels.  Depending on how
+        differently the data data sets have been binned, this says
+        nothing about whether or not the returned models are a good fit
+        to the data!
+
+        replacement_templates only works if the number of templates is
+        the same as those used during the actual fitting process.
+
+        use redshift_only if you want to exclude the best-fitting
+        dispersion from the model.
+
         """
-        if binned_spectra is self.binned_spectra:
-            continuum = self.continuous_continuum_model(replacement_templates=replacement_templates,
-                                                        redshift_only=redshift_only)
+        # The input bin id array must have the same shape as self
+        if binid.shape != self.spatial_shape:
+            raise ValueError('Input bin ID matrix has incorrect shape.')
 
-            # Number of models matches the numbers of bins
-            if binned_spectra.nbins == self.nmodels:
-                return continuum
-    
-            # Fill in bins with no models with masked zeros
-            _continuum = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
-            _continuum[:,:] = numpy.ma.masked
-            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
-                _continuum[j,:] = continuum[i,:]
-            return _continuum
+        # Construct the best-fitting models
+        best_fit_continuum = self.unmasked_continuum_model(
+                                    replacement_templates=replacement_templates,
+                                    redshift_only=redshift_only)
 
-        raise NotImplementedError('Can only match to internal binned_spectra.')
+        # Get the number of output continuua
+        nbins = numpy.amax(binid).astype(int)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
+
+        # Fill in bins with no models with masked zeros
+        continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
+        continuum[:,:] = numpy.ma.masked
+        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+            if i < 0 or j < 0:
+                continue
+            continuum[i,:] = best_fit_continuum[j,:]
+
+        return continuum
 
 
-    def matched_guess_kinematics(self, binned_spectra, redshift=None, dispersion=100.0,
-                                 constant=False, cz=False, corrected=False, min_dispersion=None,
-                                 nearest=False):
+    def matched_kinematics(self, binid, redshift=None, dispersion=100.0, constant=False, cz=False,
+                           corrected=False, min_dispersion=None, nearest=False, missing=None):
         """
         Return the guess redshift and velocity dispersion for all the
         spectra based on the stellar kinematics.
@@ -1308,11 +1356,8 @@ class StellarContinuumModel:
         argument.
 
         Args:
-            binned_spectra
-                (`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
-                Binned spectra object to match to.  Currently this
-                **must** be the same as the internal binned_spectra
-                object used during the stellar-continuum fit.
+            binid (numpy.ndarray): 2D array with the bin ID associate
+                with each spaxel in the datacube.
             redshift (float): (**Optional**) The default redshift to use
                 for spectra without a stellar-continuum fit.  Default is
                 to use the median of the unmasked measurements
@@ -1334,6 +1379,9 @@ class StellarContinuumModel:
             nearest (bool): (**Optional**) Instead of the median of the
                 results for the spectra that were not fit, use the value
                 from the nearest bin.
+            missing (list): (**Optional**) Any bin ID numbers missing
+                from the input `binid` image needed for constructing the
+                output matched data.
 
         Returns:
             numpy.ndarray: Returns arrays with a redshift (or cz) and
@@ -1346,81 +1394,154 @@ class StellarContinuumModel:
                 object is not the same as the internal object used
                 during the stellar-continuum fit.
         """
+        # Check input
         if redshift is not None and not isinstance(redshift, (float,int)):
             raise TypeError('Redshift must be a single number or None.')
         if dispersion is not None and not isinstance(dispersion, (float,int)):
             raise TypeError('Dispersion must be a single number or None.')
 
+        # Mask bad values
         mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
                                     [ 'NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
-#        print(numpy.sum(mask), len(mask))
+        # Everything is masked so return input guesses
         if numpy.all(mask):
             warnings.warn('All stellar continuum fits have been masked!  Returning input guesses.')
             str_z = self.method['fitpar']['guess_redshift'].copy()
             return (str_z*astropy.constants.c.to('km/s').value if cz else str_z), \
                         self.method['fitpar']['guess_dispersion'].copy()
+
+        # Pull out the data
         str_z = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,0].copy(), mask=mask) \
                     / astropy.constants.c.to('km/s').value
         str_d = numpy.ma.MaskedArray(self.hdu['PAR'].data['KIN'][:,1].copy(), mask=mask)
 
+        # Apply the sigma corrections if requested.  Values with the
+        # correction larger than the measured value will be masked!
         if corrected:
             sigma_corr = numpy.ma.MaskedArray(self.hdu['PAR'].data['SIGMACORR_EMP'], mask=mask)
             str_d = numpy.ma.sqrt( numpy.square(str_d) - numpy.square(sigma_corr) )
 
+        # Set the default values to use when necessary
         _redshift = numpy.ma.median(str_z) if redshift is None else redshift
         _dispersion = numpy.ma.median(str_d) if dispersion is None else dispersion
         if min_dispersion is not None and _dispersion < min_dispersion:
             _dispersion = min_dispersion
 
+########################################################################
+# OLD CODE
+#        # Just return the single value
+#        if constant:
+#            str_z = numpy.full(binned_spectra.nbins, _redshift, dtype=float)
+#            if cz:
+#                str_z *= astropy.constants.c.to('km/s').value
+#            return str_z, numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
+#
+#        # Match the kinematics to the input binned_spectra object
+#        if binned_spectra is self.binned_spectra:
+#            # Fill in bins with no models
+#            if binned_spectra.nbins != self.nmodels:
+#                # Output will be masked both where the input is masked
+#                # and where there is not input
+#                _str_z = str_z.copy()
+#                str_z = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+#                str_z[self.hdu['PAR'].data['BINID_INDEX']] = _str_z
+#
+#                _str_d = str_d.copy()
+#                str_d = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+#                str_d[self.hdu['PAR'].data['BINID_INDEX']] = _str_d
+#
+#            # Fill the masked values
+#            if nearest:
+#                # Fill with the nearest bin.  Treat the velocity and
+#                # velocity dispersion bins separately, allowing for the
+#                # velocity of a poor sigma measurement to be valid.
+#                bad_bins = numpy.unique(numpy.append(self.missing_models,
+#                                    binned_spectra['BINS'].data['BINID'][str_z.mask]).astype(int))
+##                print('z: ', bad_bins, binned_spectra.nbins, self.missing_models)
+#                str_z = binned_spectra.replace_with_data_from_nearest_bin(str_z.data, bad_bins)
+#                bad_bins = numpy.unique(numpy.append(self.missing_models,
+#                                    binned_spectra['BINS'].data['BINID'][str_d.mask]).astype(int))
+##                print('d: ', bad_bins, binned_spectra.nbins, self.missing_models)
+#                str_d = binned_spectra.replace_with_data_from_nearest_bin(str_d.data, bad_bins)
+#            else:
+#                # Fill any masked values with the single estimate
+#                str_z = str_z.filled(_redshift)
+#                str_d = str_d.filled(_dispersion)
+#
+#            # Convert redshift to km/s
+#            if cz:
+#                str_z *= astropy.constants.c.to('km/s').value
+#            # Impose the minimum dispersion if provided
+#            if min_dispersion is not None:
+#                str_d = numpy.clip(str_d, min_dispersion, None)
+#
+#            return str_z, str_d
+#
+#        raise NotImplementedError('Can only match to internal binned_spectra.')
+########################################################################
+
+        # Get the number of output kinematics
+        nbins = numpy.amax(binid).astype(int)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
+
+        # Instantiate the output
+        kinematics = numpy.ma.zeros((nbins,2), dtype=float)
+        kinematics[:,:] = numpy.ma.masked
+
         # Just return the single value
         if constant:
-            str_z = numpy.full(binned_spectra.nbins, _redshift, dtype=float)
-            if cz:
-                str_z *= astropy.constants.c.to('km/s').value
-            return str_z, numpy.full(binned_spectra.nbins, _dispersion, dtype=float)
-
-        # Match the kinematics to the input binned_spectra object
-        if binned_spectra is self.binned_spectra:
-            # Fill in bins with no models
-            if binned_spectra.nbins != self.nmodels:
-                # Output will be masked both where the input is masked
-                # and where there is not input
+            kinematics[:,0] = _redshift
+            kinematics[:,1] = _dispersion
+        else:
+            # Fill in bins with no models. Output will be masked both
+            # where the input is masked and where there is no input
+            if self.binned_spectra.nbins != self.nmodels:
                 _str_z = str_z.copy()
-                str_z = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+                str_z = numpy.ma.masked_all(self.binned_spectra.nbins, dtype=float)
                 str_z[self.hdu['PAR'].data['BINID_INDEX']] = _str_z
 
                 _str_d = str_d.copy()
-                str_d = numpy.ma.masked_all(binned_spectra.nbins, dtype=float)
+                str_d = numpy.ma.masked_all(self.binned_spectra.nbins, dtype=float)
                 str_d[self.hdu['PAR'].data['BINID_INDEX']] = _str_d
 
-            # Fill the masked values
+            # Fill the masked values, either with the nearest bin or
+            # with a constant value
             if nearest:
+
                 # Fill with the nearest bin.  Treat the velocity and
                 # velocity dispersion bins separately, allowing for the
                 # velocity of a poor sigma measurement to be valid.
                 bad_bins = numpy.unique(numpy.append(self.missing_models,
-                                    binned_spectra['BINS'].data['BINID'][str_z.mask]).astype(int))
-#                print('z: ', bad_bins, binned_spectra.nbins, self.missing_models)
-                str_z = binned_spectra.replace_with_data_from_nearest_bin(str_z.data, bad_bins)
+                                self.binned_spectra['BINS'].data['BINID'][str_z.mask]).astype(int))
+#                print('z: ', bad_bins, self.binned_spectra.nbins, self.missing_models)
+                str_z = self.binned_spectra.replace_with_data_from_nearest_bin(str_z.data,bad_bins)
                 bad_bins = numpy.unique(numpy.append(self.missing_models,
-                                    binned_spectra['BINS'].data['BINID'][str_d.mask]).astype(int))
-#                print('d: ', bad_bins, binned_spectra.nbins, self.missing_models)
-                str_d = binned_spectra.replace_with_data_from_nearest_bin(str_d.data, bad_bins)
+                                self.binned_spectra['BINS'].data['BINID'][str_d.mask]).astype(int))
+#                print('d: ', bad_bins, self.binned_spectra.nbins, self.missing_models)
+                str_d = self.binned_spectra.replace_with_data_from_nearest_bin(str_d.data,bad_bins)
             else:
                 # Fill any masked values with the single estimate
                 str_z = str_z.filled(_redshift)
                 str_d = str_d.filled(_dispersion)
 
-            # Convert redshift to km/s
-            if cz:
-                str_z *= astropy.constants.c.to('km/s').value
             # Impose the minimum dispersion if provided
             if min_dispersion is not None:
                 str_d = numpy.clip(str_d, min_dispersion, None)
 
-            return str_z, str_d
+            # Match the bin spectra kinematics to the output bin ID map
+            for i,j in zip(binid.ravel(), self.binned_spectra['BINID'].data.ravel()):
+                if i < 0 or j < 0:
+                    continue
+                kinematics[i,0] = str_z[j]
+                kinematics[i,1] = str_d[j]
 
-        raise NotImplementedError('Can only match to internal binned_spectra.')
+        # Convert to cz velocities (km/s)
+        if cz:
+            kinematics[:,0] *= astropy.constants.c.to('km/s').value
+        # Done
+        return kinematics[:,0], kinematics[:,1]
 
 
     def matched_template_flags(self, binned_spectra):

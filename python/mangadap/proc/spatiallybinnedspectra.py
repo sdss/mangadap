@@ -538,7 +538,7 @@ class SpatiallyBinnedSpectra:
 
         Args:
             good_spec (numpy.ndarray):  List of spectra to include in
-                the binning.  See :func:`_check_fgoodpix` and
+                the binning.  See :func:`check_fgoodpix` and
                 :func:`_check_snr`.
         """
         if self.method['binclass'] is None:
@@ -697,7 +697,7 @@ class SpatiallyBinnedSpectra:
         """
 
         # Get the spaxels with good spectral coverage and S/N
-        good_fgoodpix = self._check_fgoodpix()
+        good_fgoodpix = self.check_fgoodpix()
         good_snr = self._check_snr()
 
         # Initialize to all zeros
@@ -723,24 +723,6 @@ class SpatiallyBinnedSpectra:
         mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
 
         return mask
-
-
-    def _check_fgoodpix(self, minimum_fraction=0.8):
-        """
-        Determine which spectra in :attr:`rdxqa` have a fractional
-        spectral coverage of greater than the provided minimum fraction.
-        Only these spectra will be included in the binning.
-    
-        Args:
-            minimum_fraction (float): (**Optional**) The minimum
-                fraction of the spectrum that must be valid for the
-                spectrum to be included in any bin.  Default is 0.8.
-
-        Returns:
-            numpy.ndarray : Boolean array for the spectra that satisfy
-            the criterion.
-        """
-        return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
 
 
     def _check_snr(self):
@@ -1144,6 +1126,24 @@ class SpatiallyBinnedSpectra:
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
 
+    def check_fgoodpix(self, minimum_fraction=0.8):
+        """
+        Determine which spectra in :attr:`rdxqa` have a fractional
+        spectral coverage of greater than the provided minimum fraction.
+        Only these spectra will be included in the binning.
+    
+        Args:
+            minimum_fraction (float): (**Optional**) The minimum
+                fraction of the spectrum that must be valid for the
+                spectrum to be included in any bin.  Default is 0.8.
+
+        Returns:
+            numpy.ndarray : Boolean array for the spectra that satisfy
+            the criterion.
+        """
+        return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
+
+
     def above_snr_limit(self, sn_limit):
         """
         Flag bins above a provided S/N limit.
@@ -1272,7 +1272,7 @@ class SpatiallyBinnedSpectra:
         # Get the good spectra
         #   - Must have valid pixels over more than 80% of the spectral
         #   range 
-        good_fgoodpix = self._check_fgoodpix()
+        good_fgoodpix = self.check_fgoodpix()
         #   - Must have sufficienct S/N, as defined by the input par
         good_snr = self._check_snr()
         # Good spectra have both these criteria
