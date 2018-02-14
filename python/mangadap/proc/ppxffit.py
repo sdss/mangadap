@@ -3243,7 +3243,7 @@ class PPXFFit(StellarKinematicsFit):
 
     @staticmethod
     def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux_shape, model_par, select=None,
-                         redshift_only=False, dvtol=1e-10):
+                         redshift_only=False, corrected_dispersion=False, dvtol=1e-10):
         """
         Construct models using the provided set of model parameters.
         This is a wrapper for :class:`PPXFModel`.
@@ -3266,7 +3266,13 @@ class PPXFFit(StellarKinematicsFit):
             This will not work if the parameters are the result of a
             filtered fit! (iteration_mode = 'fit_reject_filter')
 
+        To convolve the model to the corrected dispersion, instead of
+        the uncorrected dispersion, set corrected_dispersion=True.
+        Correction *always* uses SIGMACORR_EMP data.
         """
+        if redshift_only and corrected_dispersion:
+            raise ValueError('The redshift_only and corrected_dispersion are mutually exclusive.')
+
         # Check the spectral sampling
         velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
                                         / spectrum_velocity_scale(tpl_wave)))
@@ -3311,6 +3317,9 @@ class PPXFFit(StellarKinematicsFit):
         kin[:,0],_ = PPXFFit.revert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
         if redshift_only:
             kin[:,1] = 1e-9
+        elif corrected_dispersion:
+            kin[:,1] = numpy.ma.sqrt(numpy.square(model_par['KIN'][:,1]) 
+                                        - numpy.square(model_par['SIGMACORR_EMP'])).filled(1e-9)
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):

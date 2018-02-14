@@ -38,6 +38,8 @@ Implements an emission-line fitting function using pPXF.
 *Revision history*:
     | **31 Aug 2017**: First commit by Xihan Ji (XJ)
     | **06 Feb 2018**: K. Westfall (KBW) added documentation
+    | **09 Feb 2018**: (KBW) Return the bin matching vector
+
 """
 
 from __future__ import division
@@ -954,12 +956,14 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
             _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
 
     else:
+        nearest_bin = numpy.arange(nspec)
         stellar_wgts = None
         _templates = templates
         _gas_template = gas_template
         _tpl_to_use = tpl_to_use
         _component = inp_component
         _start = inp_start
+
 
     # Fit the data iteratively:
     #  - Fit with all the gas templates as part of one component
@@ -1007,7 +1011,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
     _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err
+                    ebv, kininp, kin, kin_err, nearest_bin
 
     
 

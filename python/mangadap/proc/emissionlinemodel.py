@@ -1279,14 +1279,14 @@ class EmissionLineModel:
 #        raise NotImplementedError('Can only match to internal binned_spectra.')
 
 
-    def fill_to_match(self, binned_spectra, include_base=False, missing=None):
+    def fill_to_match(self, binid, include_base=False, missing=None):
         """
         Get the emission-line model that matches the input bin ID
         matrix.  The output is a 2D matrix ordered by the bin ID; any
         skipped index numbers in the maximum of the union of the unique
         numbers in the `binid` and `missing` input are masked.
 
-        use `include_base` to include the baseline in the output
+        Use `include_base` to include the baseline in the output
         emission-line models.
 
         """
@@ -1300,25 +1300,99 @@ class EmissionLineModel:
             best_fit_model += self.copy_to_array(ext='BASE')
 
         # Get the number of output models
-        nbins = numpy.amax(binid)
+        nbins = numpy.amax(binid).astype(int)
         if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) )
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
 
         # Fill in bins with no models with masked zeros
         emission_lines = numpy.ma.zeros((nbins,best_fit_model.shape[1]), dtype=float)
         emission_lines[:,:] = numpy.ma.masked
-        for i,j in zip(binid.ravel(), self.hdu['BINID'].ravel()):
+        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
             if i < 0 or j < 0:
                 continue
             emission_lines[i,:] = best_fit_model[j,:]
 
         return emission_lines
 
+
     # TODO: Copy matched_kinematics() from StellarContinuumModel,
     # specifying a specific emission line
 
 
-    def construct_continuum_models(self, replacement_templates=None, redshift_only=False):
+    def fill_continuum_to_match(self, binid, replacement_templates=None, redshift_only=False,
+                                corrected_dispersion=False, missing=None):
+        """
+
+        Get the emission-line continuum model, if possible, that matches
+        the input bin ID matrix.  The output is a 2D matrix ordered by
+        the bin ID; any skipped index numbers in the maximum of the
+        union of the unique numbers in the `binid` and `missing` input
+        are masked.
+
+        Use `replacement_templates` only if the number of templates is
+        identical to the number used during the fitting procedure.  Use
+        `redshift_only` to produce the best-fitting model without and
+        velocity dispersion.  Use `corrected_dispersion` to produce the
+        model using the corrected velocity dispersion.
+
+        """
+        if self.stellar_continuum is None:
+            raise ValueError('EmissionLineModel object has no associated StellarContinuumModel.')
+        if self.method['fitclass'] is None:
+            raise ValueError('No class object available for constructing the model!')
+        if not callable(self.method['fitclass'].construct_continuum_models):
+            raise AttributeError('Provided fit class object has no callable ' \
+                                 '\'construct_continuum_models\' attribute!')
+        if corrected_dispersion and 'NEAREST_BIN' not in self.hdu['FIT'].columns.names:
+            raise KeyError('Nearest stellar continuum bin not set in fit parameters.  Cannot '
+                           'apply dispersion corrections.')
+
+        # The input bin id array must have the same shape as self
+        if binid.shape != self.spatial_shape:
+            raise ValueError('Input bin ID matrix has incorrect shape.')
+
+        # Get the number of output models
+        nbins = numpy.amax(binid)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) )
+
+        # Pull out the dispersion corrections, if requested
+        dispersion_corrections = None
+        if corrected_dispersion:
+            nsc = self.stellar_continuum['PAR'].data['BINID'].size
+            indx = [ numpy.arange(nsc)[self.stellar_continuum['PAR'].data['BINID'] == nb][0]
+                        for nb in self.hdu['FIT'].data['NEAREST_BIN'] ]
+            dispersion_corrections = self.stellar_continuum['PAR'].data['SIGMACORR_EMP'][indx]
+
+        # Get the continuum models
+        best_fit_continuum = self.construct_continuum_models(
+                                            replacement_templates=replacement_templates,
+                                            redshift_only=redshift_only,
+                                            dispersion_corrections=dispersion_corrections)
+
+        # Get the number of output models
+        nbins = numpy.amax(binid).astype(int)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
+
+        # Fill in bins with no models with masked zeros
+        continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
+        continuum[:,:] = numpy.ma.masked
+        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+            if i < 0 or j < 0:
+                continue
+            continuum[i,:] = best_fit_continuum[j,:]
+
+        return continuum
+
+
+    def construct_continuum_models(self, replacement_templates=None, redshift_only=False,
+                                   dispersion_corrections=None):
+
+        if self.stellar_continuum is None:
+            raise ValueError('EmissionLineModel object has no associated StellarContinuumModel.')
 
         if self.method['fitclass'] is None:
             raise ValueError('No class object available for constructing the model!')
@@ -1338,7 +1412,8 @@ class EmissionLineModel:
                                         self.emldb, templates['WAVE'].data, templates['FLUX'].data,
                                         self.hdu['WAVE'].data, self.hdu['FLUX'].data.shape,
                                         self.hdu['FIT'].data, select=select,
-                                        redshift_only=redshift_only, dvtol=1e-9)
+                                        redshift_only=redshift_only,
+                                        dispersion_corrections=dispersion_corrections, dvtol=1e-9)
 
 
 

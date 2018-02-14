@@ -471,6 +471,8 @@ class Sasuke(EmissionLineFit):
             - ``BINID``: Spectrum ID number.
             - ``BINID_INDEX``: Index of the spectrum in the list of
               provided spectra.
+            - ``NEAREST_BIN``: ID of the nearest binned spectrum when
+              deconstructing bins.
             - ``MASK``: The bitmask value of the fit.  See
               :func:`_save_results`.
             - ``BEGPIX``: Same as :attr:`spectrum_start`.
@@ -540,6 +542,7 @@ class Sasuke(EmissionLineFit):
         """
         return [ ('BINID',numpy.int),
                  ('BINID_INDEX',numpy.int),
+                 ('NEAREST_BIN',numpy.int),
                  ('MASK', mask_dtype),
                  ('BEGPIX', numpy.int),
                  ('ENDPIX', numpy.int),
@@ -1488,8 +1491,9 @@ class Sasuke(EmissionLineFit):
 
         # Get the stellar kinematics
         stellar_velocity, stellar_dispersion = (None, None) if par['stellar_continuum'] is None \
-                        else par['stellar_continuum'].matched_kinematics(binned_spectra, cz=True,
-                                                                         nearest=True)
+                        else par['stellar_continuum'].matched_kinematics(
+                                                binned_spectra['BINID'].data, cz=True,
+                                                nearest=True, missing=binned_spectra.missing_bins)
         stellar_kinematics = None if stellar_velocity is None or stellar_dispersion is None \
                                 else numpy.array([ stellar_velocity, stellar_dispersion ]).T
 #        print(stellar_velocity)
@@ -1581,6 +1585,12 @@ class Sasuke(EmissionLineFit):
                                reddening=par['reddening'],
                                #moments=par['moments'],
                                loggers=loggers, quiet=quiet)
+
+            # Convert the index number of the nearest bin to the BIN ID
+            # number
+            model_fit_par['NEAREST_BIN'] \
+                = binned_spectra['BINS'].data['BINID'][bins_to_fit][model_fit_par['NEAREST_BIN']]
+
             model_binid = numpy.full(binned_spectra.spatial_shape, -1, dtype=int)
             model_binid.ravel()[spaxel_to_fit] = numpy.arange(numpy.sum(spaxel_to_fit))
 
@@ -1619,6 +1629,7 @@ class Sasuke(EmissionLineFit):
             # selected to be fit
             model_fit_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
             model_fit_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
+            model_fit_par['NEAREST_BIN'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
 
             model_eml_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
             model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
@@ -2267,15 +2278,11 @@ class Sasuke(EmissionLineFit):
                                           self._per_fit_dtype(self.ntpl, self.degree+1,
                                           self.mdegree, self.npar_kin,
                                           self.bitmask.minimum_dtype()))
-        model_fit_par['BINID'] = numpy.arange(output_shape[0])
-        model_fit_par['BINID_INDEX'] = numpy.arange(output_shape[0])
         #  - Model emission-line parameters
         model_eml_par = init_record_array(output_shape[0],
                                           self._per_emission_line_dtype(self.neml, 2,
                                                                 self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
-        model_eml_par['BINID'] = numpy.arange(output_shape[0])
-        model_eml_par['BINID_INDEX'] = numpy.arange(output_shape[0])
 
         #---------------------------------------------------------------
         # Initialize the mask and the spectral range to fit for the
@@ -2382,7 +2389,7 @@ class Sasuke(EmissionLineFit):
         # Run the fitter
         model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
                 model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
-                model_kin, model_kin_err \
+                model_kin, model_kin_err, nearest_bin \
                             = emline_fitter_with_ppxf_edit(self.tpl_flux, wave, flux, ferr, mask,
                                                            self.velscale, self.velscale_ratio,
                                                            self.tpl_comp, self.gas_tpl,
@@ -2401,18 +2408,22 @@ class Sasuke(EmissionLineFit):
                                                            x=self.remap_skyx, y=self.remap_skyy,
                                                            plot=False, quiet=True)
 #                                                           plot=True, quiet=False)
-        # _model_mask is True where the pixels were fit
+
+        # Construct the bin ID numbers
+        model_fit_par['BINID'] = numpy.arange(output_shape[0])
+        model_fit_par['BINID_INDEX'] = numpy.arange(output_shape[0])
+        model_fit_par['NEAREST_BIN'] = nearest_bin
+
+        model_eml_par['BINID'] = numpy.arange(output_shape[0])
+        model_eml_par['BINID_INDEX'] = numpy.arange(output_shape[0])
 
 #        result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
                        (time.clock() - t)/60))
 
-        # Flag pixels as rejected during fitting
-#        print(flux.shape)
-#        print(_model_mask.shape)
-#        print(mask.shape)
-#        print(model_mask[:,start:end].shape)
+        # Flag pixels as rejected during fitting; _model_mask is True
+        # where the pixels were fit
         indx = mask & numpy.invert(_model_mask)
         model_mask[:,start:end][indx] = self.bitmask.turn_on(model_mask[:,start:end][indx],
                                                              PPXFFit.rej_flag)
@@ -2446,7 +2457,8 @@ class Sasuke(EmissionLineFit):
 
     @staticmethod
     def construct_continuum_models(emission_lines, stpl_wave, stpl_flux, obj_wave, obj_flux_shape,
-                                   model_fit_par, select=None, redshift_only=False, dvtol=1e-10):
+                                   model_fit_par, select=None, redshift_only=False,
+                                   dispersion_corrections=None, dvtol=1e-10):
         """
         Construct the continuum models using the provided set of model
         parameters.
@@ -2461,7 +2473,11 @@ class Sasuke(EmissionLineFit):
         km/s, which is numerically identical to 0 (i.e., just shifting
         the spectrum) in the tested applications.  However, beware that
         this is a HARDCODED number.
+
         """
+        if redshift_only and dispersion_corrections is not None:
+            raise ValueError('redshift_only and dispersion_corrections are mutually exclusive.')
+        
         # Check the spectral sampling
         velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
                                 / spectrum_velocity_scale(stpl_wave)))
@@ -2527,6 +2543,9 @@ class Sasuke(EmissionLineFit):
                                              model_fit_par['KINERR'][:,0])
         if redshift_only:
             kin[:,1] = 1e-9
+        elif dispersion_corrections is not None:
+            kin[:,1] = numpy.ma.sqrt(numpy.square(model_fit_par['KIN'][:,1]) 
+                                        - numpy.square(dispersion_corrections)).filled(1e-9)
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):

@@ -1199,8 +1199,11 @@ class StellarContinuumModel:
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
-    def construct_models(self, replacement_templates=None, redshift_only=False):
-
+    def construct_models(self, replacement_templates=None, redshift_only=False,
+                         corrected_dispersion=False):
+        """
+        Reconstruct the best fitting models.
+        """
         if self.method['fitclass'] is None:
             raise ValueError('No class object available for constructing the model!')
         if not callable(self.method['fitclass'].construct_models):
@@ -1210,6 +1213,7 @@ class StellarContinuumModel:
                 and not isinstance(replacement_templates, TemplateLibrary):
             raise TypeError('Provided template replacements must have type TemplateLibrary.')
 
+        # Only the selected models are constructed, others are masked
         select = numpy.invert(self.bitmask.flagged(self.hdu['PAR'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
         templates = self.method['fitpar']['template_library'] if replacement_templates is None \
@@ -1217,13 +1221,14 @@ class StellarContinuumModel:
 
         # The only reason it needs the flux data is to get the shape, so
         # it doesn't matter that I'm passing the model flux
-
         return self.method['fitclass'].construct_models(templates['WAVE'].data,
                                                         templates['FLUX'].data,
                                                         self.hdu['WAVE'].data,
                                                         self.hdu['FLUX'].data.shape,
                                                         self.hdu['PAR'].data, select=select,
-                                                        redshift_only=redshift_only, dvtol=1e-9)
+                                                        redshift_only=redshift_only,
+                                                        corrected_dispersion=corrected_dispersion,
+                                                        dvtol=1e-9)
 
 
     @staticmethod
@@ -1260,7 +1265,8 @@ class StellarContinuumModel:
         return _continuum if dispaxis == 1 else _continuum.T
 
 
-    def unmasked_continuum_model(self, replacement_templates=None, redshift_only=False):
+    def unmasked_continuum_model(self, replacement_templates=None, redshift_only=False,
+                                 corrected_dispersion=False):
         """
         Return the stellar continuum unmasked over the full continuous
         fitting region.  Models are reconstructed based on the model
@@ -1269,9 +1275,11 @@ class StellarContinuumModel:
         (redshift_only=True).
         """
         # Get the models for the binned spectra
-        reconstruct = replacement_templates is not None or redshift_only
+        reconstruct = replacement_templates is not None or redshift_only or corrected_dispersion
         continuum = self.construct_models(replacement_templates=replacement_templates,
-                                          redshift_only=redshift_only) if reconstruct \
+                                          redshift_only=redshift_only,
+                                          corrected_dispersion=corrected_dispersion) \
+                        if reconstruct \
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
         return StellarContinuumModel.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
@@ -1298,7 +1306,7 @@ class StellarContinuumModel:
 #        raise NotImplementedError('Can only match to internal binned_spectra.')
 
     def fill_to_match(self, binid, replacement_templates=None, redshift_only=False,
-                      missing=None):
+                      corrected_dispersion=False, missing=None):
         """
         Get the stellar-continuum model from this objects that matches
         the input bin ID matrix.  The output is a 2D matrix ordered by
@@ -1326,7 +1334,8 @@ class StellarContinuumModel:
         # Construct the best-fitting models
         best_fit_continuum = self.unmasked_continuum_model(
                                     replacement_templates=replacement_templates,
-                                    redshift_only=redshift_only)
+                                    redshift_only=redshift_only,
+                                    corrected_dispersion=corrected_dispersion)
 
         # Get the number of output continuua
         nbins = numpy.amax(binid).astype(int)
@@ -1390,9 +1399,6 @@ class StellarContinuumModel:
         Raises:
             TypeError: Raised if the input redshift or dispersion values
                 are not single numbers.
-            NotImplementedError: Raised if the provided binned_spectra
-                object is not the same as the internal object used
-                during the stellar-continuum fit.
         """
         # Check input
         if redshift is not None and not isinstance(redshift, (float,int)):
@@ -1509,7 +1515,6 @@ class StellarContinuumModel:
             # Fill the masked values, either with the nearest bin or
             # with a constant value
             if nearest:
-
                 # Fill with the nearest bin.  Treat the velocity and
                 # velocity dispersion bins separately, allowing for the
                 # velocity of a poor sigma measurement to be valid.
@@ -1546,6 +1551,8 @@ class StellarContinuumModel:
 
     def matched_template_flags(self, binned_spectra):
         """
+        TODO: Function out of date!
+
         Return the templates used during the fit to each spectrum,
         matched to the spectra in the binned_spectra object.  For
         spectra with no models, the flags are all set to true.
