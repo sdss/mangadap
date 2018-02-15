@@ -58,6 +58,8 @@ A class hierarchy that fits the emission lines.
         :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
         on input
     | **08 Sep 2017**: (KBW) Add `deconstruct_bins` flag to parameters.
+    | **02 Feb 2018**: (KBW) Use
+        :func:`mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit`.
     
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -104,6 +106,7 @@ from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar
 from .sasuke import Sasuke, SasukePar
 from .util import select_proc_method
+from .spectralfitting import EmissionLineFit
 
 from matplotlib import pyplot
 #from memory_profiler import profile
@@ -340,7 +343,9 @@ class EmissionLineModel:
         self.checksum = checksum
         self.shape = None
         self.spatial_shape = None
-        self.nspec = None
+#       nspec is never used and it won't be correct if the bins are
+#       deconstructed.
+#        self.nspec = None
         self.spatial_index = None
         self.spectral_arrays = None
         self._assign_spectral_arrays()
@@ -514,17 +519,29 @@ class EmissionLineModel:
         default_dispersion does *not* take precedence over *any*
         provided disperison.
 
-        If emission_line_moments, redshift, :attr:`stellar_continuum`
-        are all None, the redshift is set to 0.0.  If dispersion is also
-        None, the dispersion is set to default_dispersion.
+        If emission_line_moments, redshift, and
+        :attr:`stellar_continuum` are all None, the redshift is set to
+        0.0.  If dispersion is also None, the dispersion is set to
+        default_dispersion.
 
         To get the stellar kinematics, the function calls
-        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_guess_kinematics`.
-        In this fuction, the provided redshift and dispersion must be a
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
+        In this function, the provided redshift and dispersion must be a
         single value or None; therefore, the means of any vectors
         provided as redshift or disperison are passsed to this function
         instead of the full vector.
 
+        Args:
+            emission_line_moments
+                (:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`):
+                Object with the results of the emission-line-moment
+                measurements
+            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
+                use for each spectrum.
+            dispersion (float, numpy.ndarray): Velocity dispersion
+                (km/s) to use for each spectrum.
+            default_dispersion (float, numpy.ndarray): (**Optional**)
+                Default velocity dispersion to use (km/s), if relevant.
         """
 
         #---------------------------------------------------------------
@@ -582,11 +599,12 @@ class EmissionLineModel:
 
         if self.stellar_continuum is not None and (obj_redshift is None or obj_dispersion is None):
             sc_redshift, sc_dispersion = \
-                    self.stellar_continuum.matched_guess_kinematics(self.binned_spectra,
+                    self.stellar_continuum.matched_kinematics(self.binned_spectra['BINID'].data,
                                 redshift=None if redshift is None else numpy.ma.mean(redshift),
                                 dispersion=default_dispersion if dispersion is None 
                                                                 else numpy.ma.mean(dispersion),
-                                corrected=True, nearest=True)
+                                corrected=True, nearest=True,
+                                missing=self.binned_spectra.missing_bins)
             if obj_redshift is None:
                 obj_redshift = sc_redshift
             if obj_dispersion is None:
@@ -890,7 +908,9 @@ class EmissionLineModel:
 
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.nspec
+#       nspec is never used and it won't be correct if the bins are
+#       deconstructed.
+#        self.nspec = self.binned_spectra.nspec
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         self.dispaxis = self.binned_spectra.dispaxis
         self.nwave = self.binned_spectra.nwave
@@ -901,19 +921,9 @@ class EmissionLineModel:
         #---------------------------------------------------------------
         # Get the good spectra
         # TODO: Put this in a function that can be used by Sasuke...
-        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
-        if self.stellar_continuum is not None:
-            # Determine which spectra have a valid stellar continuum fit
-            indx = numpy.invert(self.stellar_continuum.bitmask.flagged(
-                                            self.stellar_continuum['PAR'].data['MASK'],
-                                            flag=[ 'NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
-            with_good_continuum = numpy.zeros(self.binned_spectra.nbins, dtype=bool)
-            with_good_continuum[self.stellar_continuum['PAR'].data['BINID_INDEX'][indx]] = True
-            good_snr &= with_good_continuum
-
-#        warnings.warn('DEBUG!!')
-#        k = numpy.argmin(numpy.arange(len(good_snr))[good_snr])
-#        good_snr[k+1:] = False
+        good_snr = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        stellar_continuum=self.stellar_continuum)
 
         # Report
         if not self.quiet:
@@ -1244,30 +1254,166 @@ class EmissionLineModel:
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
-    def fill_to_match(self, binned_spectra, include_base=False):
+#    def fill_to_match(self, binned_spectra, include_base=False):
+#        """
+#        Get the emission-line models that match the shape of the
+#        provided binned_spectra.
+#        """
+#        if binned_spectra is self.binned_spectra:
+#            emission_lines = self.copy_to_array()
+#            if include_base:
+#                emission_lines += self.copy_to_array(ext='BASE')
+#            emission_lines = numpy.ma.MaskedArray(emission_lines)
+#
+#            # Number of models matches the numbers of bins
+#            if binned_spectra.nbins == self.nmodels:
+#                return emission_lines
+#    
+#            # Fill in bins with no models with masked zeros
+#            _emission_lines = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
+#            _emission_lines[:,:] = numpy.ma.masked
+#            for i,j in enumerate(self.hdu['EMLDATA'].data['BINID_INDEX']):
+#                _emission_lines[j,:] = emission_lines[i,:]
+#            return _emission_lines
+#
+#        raise NotImplementedError('Can only match to internal binned_spectra.')
+
+
+    def fill_to_match(self, binid, include_base=False, missing=None):
         """
-        Get the emission-line models that match the shape of the
-        provided binned_spectra.
+        Get the emission-line model that matches the input bin ID
+        matrix.  The output is a 2D matrix ordered by the bin ID; any
+        skipped index numbers in the maximum of the union of the unique
+        numbers in the `binid` and `missing` input are masked.
+
+        Use `include_base` to include the baseline in the output
+        emission-line models.
+
         """
-        if binned_spectra is self.binned_spectra:
-            emission_lines = self.copy_to_array()
-            if include_base:
-                emission_lines += self.copy_to_array(ext='BASE')
-            emission_lines = numpy.ma.MaskedArray(emission_lines)
+        # The input bin id array must have the same shape as self
+        if binid.shape != self.spatial_shape:
+            raise ValueError('Input bin ID matrix has incorrect shape.')
 
-            # Number of models matches the numbers of bins
-            if binned_spectra.nbins == self.nmodels:
-                return emission_lines
-    
-            # Fill in bins with no models with masked zeros
-            _emission_lines = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
-            _emission_lines[:,:] = numpy.ma.masked
-            for i,j in enumerate(self.hdu['EMLDATA'].data['BINID_INDEX']):
-                _emission_lines[j,:] = emission_lines[i,:]
-            return _emission_lines
+        # Construct the best-fitting models
+        best_fit_model = self.copy_to_array()
+        if include_base:
+            best_fit_model += self.copy_to_array(ext='BASE')
 
-        raise NotImplementedError('Can only match to internal binned_spectra.')
+        # Get the number of output models
+        nbins = numpy.amax(binid).astype(int)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
 
-    # TODO: Copy matched_guess_kinematics() from StellarContinuumModel,
+        # Fill in bins with no models with masked zeros
+        emission_lines = numpy.ma.zeros((nbins,best_fit_model.shape[1]), dtype=float)
+        emission_lines[:,:] = numpy.ma.masked
+        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+            if i < 0 or j < 0:
+                continue
+            emission_lines[i,:] = best_fit_model[j,:]
+
+        return emission_lines
+
+
+    # TODO: Copy matched_kinematics() from StellarContinuumModel,
     # specifying a specific emission line
+
+
+    def fill_continuum_to_match(self, binid, replacement_templates=None, redshift_only=False,
+                                deredshift=False, corrected_dispersion=False, missing=None):
+        """
+
+        Get the emission-line continuum model, if possible, that matches
+        the input bin ID matrix.  The output is a 2D matrix ordered by
+        the bin ID; any skipped index numbers in the maximum of the
+        union of the unique numbers in the `binid` and `missing` input
+        are masked.
+
+        Use `replacement_templates` only if the number of templates is
+        identical to the number used during the fitting procedure.  Use
+        `redshift_only` to produce the best-fitting model without and
+        velocity dispersion.  Use `corrected_dispersion` to produce the
+        model using the corrected velocity dispersion.
+
+        """
+        if self.stellar_continuum is None:
+            raise ValueError('EmissionLineModel object has no associated StellarContinuumModel.')
+        if self.method['fitclass'] is None:
+            raise ValueError('No class object available for constructing the model!')
+        if not callable(self.method['fitclass'].construct_continuum_models):
+            raise AttributeError('Provided fit class object has no callable ' \
+                                 '\'construct_continuum_models\' attribute!')
+        if corrected_dispersion and 'NEAREST_BIN' not in self.hdu['FIT'].columns.names:
+            raise KeyError('Nearest stellar continuum bin not set in fit parameters.  Cannot '
+                           'apply dispersion corrections.')
+
+        # The input bin id array must have the same shape as self
+        if binid.shape != self.spatial_shape:
+            raise ValueError('Input bin ID matrix has incorrect shape.')
+
+        # Get the number of output models
+        nbins = numpy.amax(binid)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) )
+
+        # Pull out the dispersion corrections, if requested
+        dispersion_corrections = None
+        if corrected_dispersion:
+            nsc = self.stellar_continuum['PAR'].data['BINID'].size
+            indx = [ numpy.arange(nsc)[self.stellar_continuum['PAR'].data['BINID'] == nb][0]
+                        for nb in self.hdu['FIT'].data['NEAREST_BIN'] ]
+            dispersion_corrections = self.stellar_continuum['PAR'].data['SIGMACORR_EMP'][indx]
+
+        # Get the continuum models
+        best_fit_continuum = self.construct_continuum_models(
+                                            replacement_templates=replacement_templates,
+                                            deredshift=deredshift, redshift_only=redshift_only,
+                                            dispersion_corrections=dispersion_corrections)
+
+        # Get the number of output models
+        nbins = numpy.amax(binid).astype(int)
+        if missing is not None:
+            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
+        nbins += 1
+
+        # Fill in bins with no models with masked zeros
+        continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
+        continuum[:,:] = numpy.ma.masked
+        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+            if i < 0 or j < 0:
+                continue
+            continuum[i,:] = best_fit_continuum[j,:]
+
+        return continuum
+
+
+    def construct_continuum_models(self, replacement_templates=None, redshift_only=False,
+                                   deredshift=False, dispersion_corrections=None):
+
+        if self.stellar_continuum is None:
+            raise ValueError('EmissionLineModel object has no associated StellarContinuumModel.')
+
+        if self.method['fitclass'] is None:
+            raise ValueError('No class object available for constructing the model!')
+        if not callable(self.method['fitclass'].construct_continuum_models):
+            raise AttributeError('Provided fit class object has no callable ' \
+                                 '\'construct_continuum_models\' attribute!')
+        if replacement_templates is not None \
+                and not isinstance(replacement_templates, TemplateLibrary):
+            raise TypeError('Provided template replacements must have type TemplateLibrary.')
+
+        select = numpy.invert(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
+                                            flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
+        templates = self.stellar_continuum.method['fitpar']['template_library'] \
+                            if replacement_templates is None else replacement_templates
+
+        return self.method['fitclass'].construct_continuum_models(
+                                        self.emldb, templates['WAVE'].data, templates['FLUX'].data,
+                                        self.hdu['WAVE'].data, self.hdu['FLUX'].data.shape,
+                                        self.hdu['FIT'].data, select=select,
+                                        redshift_only=redshift_only, deredshift=deredshift,
+                                        dispersion_corrections=dispersion_corrections, dvtol=1e-9)
+
+
 

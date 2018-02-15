@@ -138,8 +138,9 @@ def available_artifact_databases(dapsrc=None):
             :func:`mangadap.config.defaults.default_dap_source`.
 
     Returns:
-        list: An list of :func:`SpectralFeatureDBDef` objects, each of
-        which defines a unique emission-line database.
+        list: An list of
+        :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
+        objects, each of which defines a unique emission-line database.
 
     .. todo::
         - Add backup function for Python 2.
@@ -160,9 +161,9 @@ class ArtifactDB(ParDatabase):
     Args:
         database_key (str): Keyword selecting the database to use.
         artdb_list (list): (**Optional**) List of
-            :class:`SpectralFeatureDBDef` objects that defines the
-            unique key for the database and the path to the source SDSS
-            parameter file.
+            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
+            objects that defines the unique key for the database and the
+            path to the source SDSS parameter file.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
             :func:`mangadap.config.defaults.default_dap_source`.

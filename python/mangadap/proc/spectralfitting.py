@@ -35,10 +35,10 @@ Implements a few base classes used during spectral fitting procedures.
     | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
         output table.
     | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database
+    | **02 Feb 2018**: (KBW) Added :func:`select_binned_spectra_to_fit`
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
-
 
 """
 
@@ -165,6 +165,56 @@ class EmissionLineFit(SpectralFitting):
                  ('EW', numpy.float, (neml,)),
                  ('EWERR', numpy.float, (neml,))
                ]
+
+
+
+    @staticmethod
+    def select_binned_spectra_to_fit(binned_spectra, minimum_snr=0.0, stellar_continuum=None):
+        """
+        Select binned spectra for which to fit emission lines.
+
+        .. todo::
+            This could be based on the moment assessment of the
+            emission-line S/N instead; for now just based on continuum
+            S/N.
+
+        Args:
+            binned_spectra
+                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+                Binned spectra to be fit.
+            minimum_snr (float): The minimum S/N of the binned spectrum
+                to fit; see
+                :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit`.
+            stellar_continuum
+                (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
+                (**Optional**) Stellar-continuum models that have been
+                fit to the binned spectra, if available.  The current
+                function will only return True for spectra that are both
+                above the S/N limit and have good stellar-continuum
+                models.
+
+        Returns:
+            numpy.ndarray: Boolean vector with the spectra in the
+            binned_spectra object to fit.
+        """
+
+        bins_to_fit = binned_spectra.above_snr_limit(minimum_snr)
+        if stellar_continuum is None:
+            return bins_to_fit
+
+        # Determine which spectra have a valid stellar continuum fit
+        indx = numpy.invert(stellar_continuum.bitmask.flagged(
+                                    stellar_continuum['PAR'].data['MASK'],
+                                    flag=[ 'NO_FIT', 'INSUFFICIENT_DATA', 'FIT_FAILED']))
+        with_good_continuum = numpy.zeros(binned_spectra.nbins, dtype=bool)
+        with_good_continuum[stellar_continuum['PAR'].data['BINID_INDEX'][indx]] = True
+        bins_to_fit &= with_good_continuum
+
+#        warnings.warn('DEBUG!!')
+#        k = numpy.argmin(numpy.arange(len(bins_to_fit))[bins_to_fit])
+#        bins_to_fit[k+1:] = False
+
+        return bins_to_fit
 
 
     @staticmethod

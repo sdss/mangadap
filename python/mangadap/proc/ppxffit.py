@@ -67,6 +67,7 @@ Implements a wrapper class for pPXF.
     | **30 Aug 2017**: (KBW) Switch from
         :func:`mangadap.util.instrument.resample_vector` to
         :func:`mangadap.util.instrument.resample1d`.
+    | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.
 
 .. todo::
 
@@ -98,8 +99,7 @@ import numpy
 from scipy import interpolate, fftpack
 import astropy.constants
 
-from captools.ppxf import ppxf, _losvd_rfft
-from captools import capfit
+from captools import ppxf, capfit
 
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask
@@ -361,6 +361,273 @@ class PPXFFitResult(object):
 
     def fit_failed(self):
         return self.empty_fit() or self.status <= 0
+
+
+class PPXFModel():
+    """
+    Class that reconstructs a pPXF model given a set of templates and
+    the model parameters.
+
+    This pulls functions from M. Cappellari's ppxf class, version 6.7.0.
+
+    Input common to ppxf() input should have the same format as pPXF
+    input.
+
+    The only reason the galaxy spectrum (or spectra) are provided is to
+    set if the data are to fit as reflection-symmetric and how many
+    spectral pixels there are.
+
+    """
+    def __init__(self, templates, galaxy, velscale, velscale_ratio=None, vsyst=None, sigma_diff=0,
+                 moments=2, degree=4, mdegree=0, component=0, gas_component=None, lam=None,
+                 reddening=None, gas_reddening=None, reddening_func=None, sky=None,
+                 templates_rfft=None, trig=False, quiet=False):
+
+        # Suppress terminal output
+        self.quiet = quiet
+
+        # Dimensions of spectrum (or spectra) to fit
+        self.nspec = galaxy.ndim     # nspec=2 for reflection-symmetric LOSVD
+        self.npix = galaxy.shape[0]  # total pixels in the galaxy spectrum
+        if not numpy.all(numpy.isfinite(galaxy)):
+            raise ValueError('GALAXY data must be finite')
+        if self.nspec == 2 and vsyst is None:
+            raise ValueError('VSYST must be defined for two-sided fitting')
+
+        # Set templates to use
+        self.templates = templates.reshape(templates.shape[0], -1)
+        self.npix_temp, self.ntemp = self.templates.shape
+
+        # Pixel sampling
+        self.velscale = velscale
+        self.vsyst = 0 if vsyst is None else vsyst/velscale
+        self.sigma_diff = sigma_diff/velscale
+        self.factor = 1   # default value
+        if velscale_ratio is not None:
+            if not isinstance(velscale_ratio, int):
+                raise ValueError('VELSCALE_RATIO must be an integer')
+            self.npix_temp -= self.npix_temp % velscale_ratio
+            # Make size multiple of velscale_ratio
+            self.templates = self.templates[:self.npix_temp, :]
+            # This is the size after rebin()
+            self.npix_temp //= velscale_ratio
+            self.factor = velscale_ratio
+        if self.npix_temp < galaxy.shape[0]:
+            raise ValueError('TEMPLATES length cannot be smaller than GALAXY')
+
+        # Set the FFT of the templates
+        self.npad = fftpack.next_fast_len(self.templates.shape[0])
+        self.templates_rfft = numpy.fft.rfft(self.templates, self.npad, axis=0) \
+                                if templates_rfft is None else templates_rfft
+
+        # Set sky spectrum
+        if sky is None:
+            self.sky = None
+        else:
+            if sky.shape[0] != galaxy.shape[0]:
+                raise ValueError('GALAXY and SKY must have the same size')
+            self.sky = sky.reshape(sky.shape[0], -1)
+        self.nsky = 0 if self.sky is None else self.sky.shape[1]
+
+        # Select polynomials to use
+        self.degree = max(degree, -1)
+        self.mdegree = max(mdegree, 0)
+        if trig:
+            if self.degree > -1 and self.degree % 2 != 0:
+                raise ValueError('`degree` must be even with `trig=True`')
+            if self.mdegree > -1 and self.mdegree % 2 != 0:
+                raise ValueError('`mdegree` must be even with `trig=True`')
+            self.polyval = ppxf.trigval
+            self.polyvander = ppxf.trigvander
+        else:
+            self.polyval = numpy.polynomial.legendre.legval
+            self.polyvander = numpy.polynomial.legendre.legvander
+
+        # Initialize the design matrix.  Additive polynomial components
+        # are independent of the input parameters.
+        self.npoly = (self.degree + 1)*self.nspec  # Number of additive polynomials in fit
+        self.ndmcols = self.npoly + self.nsky*self.nspec + self.ntemp
+        self.matrix = numpy.zeros((self.npix*self.nspec, self.ndmcols))
+        if self.degree > -1:
+            vand = self.polyvander(numpy.linspace(-1, 1, self.npix), self.degree)
+            self.matrix[: self.npix, : self.npoly//self.nspec] = vand
+            if self.nspec == 2:     # poly for right spectrum
+                self.matrix[self.npix :, self.npoly//self.nspec : self.npoly] = vand
+
+        # Kinematic components
+        self.component = numpy.atleast_1d(component)
+        if self.component.dtype != int:
+            raise TypeError('COMPONENT must be integers')
+        if self.component.size == 1 and self.ntemp > 1:
+            # component is a scalar so all templates have the same LOSVD
+            self.component = numpy.zeros(self.ntemp, dtype=int)
+        elif self.component.size != self.ntemp:
+            raise ValueError('There must be one kinematic COMPONENT per template')
+        tmp = numpy.unique(self.component)
+        self.ncomp = tmp.size
+        if not numpy.array_equal(tmp, numpy.arange(self.ncomp)):
+            raise ValueError('COMPONENT must range from 0 to NCOMP-1')
+
+        # Isolate gas components
+        if gas_component is None:
+            self.gas_component = numpy.zeros(self.component.size, dtype=bool)
+            self.gas_any = False
+        else:
+            self.gas_component = numpy.asarray(gas_component)
+            if self.gas_component.dtype != bool:
+                raise TypeError('`gas_component` must be boolean')
+            if self.gas_component.size != component.size:
+                raise ValueError('`gas_component` and `component` must have the same size')
+            if not numpy.any(gas_component):
+                raise ValueError('At least one `gas_component` must be set to true')
+            self.gas_any = True
+
+        # Set reddening
+        if lam is None and (reddening is not None or gas_reddening is not None):
+            raise ValueError('LAM must be given with REDDENING or GAS_REDDENING keyword')
+        if self.mdegree > 0 and reddening is not None:
+            raise ValueError('MDEGREE cannot be used with REDDENING keyword')
+        if gas_reddening is not None and not self.gas_any:
+            raise ValueError('GAS_COMPONENT must be nonzero with GAS_REDDENING keyword')
+        if lam is not None and lam.shape != galaxy.shape:
+            raise ValueError('GALAXY and LAM must have the same size')
+        self.lam = lam
+        self.reddening = reddening
+        self.gas_reddening = gas_reddening
+        if reddening_func is None:
+            self.reddening_func = ppxf.reddening_cal00
+        else:
+            if not callable(reddening_func):
+                raise TypeError('`reddening_func` must be callable')
+            self.reddening_func = reddening_func
+
+        # Kinematic moments to fit
+        self.moments = numpy.atleast_1d(moments)
+        if self.moments.size == 1:
+            # moments is scalar: all LOSVDs have same number of G-H moments
+            self.moments = numpy.full(self.ncomp, self.moments, dtype=int)
+        self.fixall = self.moments < 0  # negative moments --> keep entire LOSVD fixed
+        self.moments = numpy.abs(self.moments)
+        if self.moments.size != self.ncomp:
+            raise ValueError('MOMENTS must be an array of length NCOMP')
+
+
+    def __call__(self, kin, tplwgts, addpoly=None, multpoly=None, reddening=None,
+                 gas_reddening=None):
+        """Same as :func:`construct`"""
+        return self.construct(kin, tplwgts, addpoly=addpoly, multpoly=multpoly,
+                              reddening=reddening, gas_reddening=gas_reddening)
+
+
+    def construct(self, kin, tplwgts, addpoly=None, multpoly=None, reddening=None,
+                  gas_reddening=None):
+        """
+        Construct a pPXF model spectrum provided the input
+        parameters.  Mostly a copy of ppxf._linear_fit().
+
+        Args:
+            kin (list, numpy.ndarray): Must have the kinematics of each
+                component.  Must be a list or array of vectors with a
+                shape (NCOMP,).  The length of each vector in the
+                list/array must be the same as MOMENTS.
+            tplwgts (numpy.ndarray): Weights to apply to each template.
+                Shape must be (NTEMP,).
+            addpoly (numpy.ndarray): (**Optional**) Coefficients of the
+                additive polynomials.  Shape must be
+                (NSPEC*(DEGREE+1),).  Exception is raised if
+                coefficients are expected (self.degree > -1), but no
+                coefficiencts are provided.
+            multpoly (numpy.ndarray): (**Optional**) Coefficients of the
+                multiplicative polynomials.  Shape must be
+                (NSPEC*MDEGREE,).  Exception is raised if coefficients
+                are expected (self.mdegree > 0), but no coefficiencts
+                are provided.
+            reddening (float): (**Optional**) E(B-V) value for the
+                continuum fit.  Exception is raised if value is expected
+                (self.reddening is not None), but none is provided.
+            gas_reddening (float): (**Optional**) E(B-V) value for the
+                gas components.  Exception is raised if value is
+                expected (self.reddening is not None), but none is
+                provided.
+
+        Returns:
+
+            numpy.ndarray:
+        
+        """
+
+        # Check the input kinematics
+        params = [kin] if self.ncomp == 1 else list(kin)
+        if len(params) != self.ncomp:
+            raise ValueError('There must be one set of kinematic moments per component')
+        if not numpy.all([hasattr(p, "__len__") and len(p) == m 
+                                for p,m in zip(params, self.moments)]):
+            raise ValueError('Input kinematics have the incorrect length')
+        # Convert velocity from km/s to pixels
+        for j, flx in enumerate(params):
+            params[j][:2] = flx[:2]/self.velscale
+        params = numpy.concatenate(params)
+
+        # Check the optional input
+        if self.degree > -1 and (addpoly is None or len(addpoly) != (self.degree + 1)*self.nspec):
+            raise ValueError('addpoly must be provided with length {0}'.format(
+                                                                    (self.degree+1)*self.nspec))
+        if self.mdegree > 0 and (multpoly is None or len(multpoly) != self.mdegree*self.nspec):
+            raise ValueError('multpoly must be provided with length {0}'.format(
+                                                                    self.mdegree*self.nspec))
+        if self.reddening is not None and reddening is None:
+            raise ValueError('reddening must be provided')
+        if self.gas_reddening is not None and gas_reddening is None:
+            raise ValueError('gas_reddening must be provided')
+
+        # Check the input template weights
+        weights = numpy.atleast_1d(tplwgts)
+        if weights.size != self.ntemp:
+            raise ValueError('Incorrect number of template weights provided.')
+        # Include the additive polynomial weights
+        if self.degree > -1:
+            weights = numpy.append(addpoly, weights)
+
+        # Get the real FFT of the LOSVDs
+        losvd_rfft = ppxf._losvd_rfft(params, self.nspec, self.moments,
+                                      self.templates_rfft.shape[0], self.ncomp, self.vsyst,
+                                      self.factor, self.sigma_diff)
+
+        # Get the multiplicative polynomials
+        x = numpy.linspace(-1, 1, self.npix)
+        if self.mdegree > 0:
+            if self.nspec == 2: # Different multiplicative poly for left/right spectra
+                mpoly1 = self.polyval(x, numpy.append(1.0, multpoly[::2]))
+                mpoly2 = self.polyval(x, numpy.append(1.0, multpoly[1::2]))
+                mpoly = numpy.append(mpoly1, mpoly2).clip(0.1)
+            else:
+                mpoly = self.polyval(x, numpy.append(1.0, multpoly)).clip(0.1)
+        else:
+            mpoly = None if reddening is None else self.reddening_func(self.lam, reddening)
+        gas_mpoly = None if gas_reddening is None else self.reddening_func(self.lam, gas_reddening)
+
+        # Perform the LOSVD convolution and finish the design matrix
+        tmp = numpy.empty((self.nspec, self.npix_temp))
+        for j, template_rfft in enumerate(self.templates_rfft.T):  # columns loop
+            for k in range(self.nspec):
+                pr = template_rfft*losvd_rfft[:, self.component[j], k]
+                tt = numpy.fft.irfft(pr, self.npad)
+                tmp[k, :] = ppxf.rebin(tt[:self.npix_temp*self.factor], self.factor)
+            self.matrix[:, self.npoly + j] = tmp[:, :self.npix].ravel()
+            if self.gas_component[j]:
+                if gas_mpoly is not None:
+                    self.matrix[:, self.npoly + j] *= gas_mpoly
+            elif mpoly is not None:
+                self.matrix[:, self.npoly + j] *= mpoly
+
+        if self.nsky > 0:
+            k = self.npoly + self.ntemp
+            self.matrix[: self.npix, k : k + self.nsky] = self.sky
+            if nspec == 2:      # Sky for right spectrum
+                self.matrix[self.npix :, k + self.nsky : k + 2*self.nsky] = self.sky
+
+        # return the model
+        return self.matrix.dot(weights)
 
 
 class PPXFFit(StellarKinematicsFit):
@@ -781,6 +1048,8 @@ class PPXFFit(StellarKinematicsFit):
         # Create the object to hold all the fits
         result = numpy.empty(nspec, dtype=object)
 
+#        plot=True
+
         # Fit each spectrum
         for i in range(nspec):
             print('Running pPXF fit on spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
@@ -806,14 +1075,15 @@ class PPXFFit(StellarKinematicsFit):
             if plot:
                 pyplot.clf()
             result[i] = PPXFFitResult(degree, mdegree, start[i], end[i], _tpl_to_use[i,:],
-                            ppxf(tpl_flux[tpl_to_use[i,:],:].T, obj_flux.data[i,start[i]:end[i]],
-                                 obj_ferr.data[i,start[i]:end[i]], self.velscale,
-                                 guess_kin[i,:], velscale_ratio=self.velscale_ratio,
-                                 goodpixels=gpm, bias=self.bias, degree=degree, mdegree=mdegree,
-                                 moments=moments, vsyst=-base_velocity[i], quiet=(not plot),
-                                 plot=plot, linear=linear,
-                                 templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
-                                 weight_errors=weight_errors)
+                            ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
+                                      obj_flux.data[i,start[i]:end[i]],
+                                      obj_ferr.data[i,start[i]:end[i]], self.velscale,
+                                      guess_kin[i,:], velscale_ratio=self.velscale_ratio,
+                                      goodpixels=gpm, bias=self.bias, degree=degree,
+                                      mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
+                                      quiet=(not plot), plot=plot, linear=linear,
+                                      templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
+                                      weight_errors=weight_errors)
 
 #            if numpy.sum(result[i].tplwgt) == 0:
 #                print(numpy.sum(numpy.invert(numpy.isfinite(obj_ferr.data[i,start[i]:end[i]]))))
@@ -840,6 +1110,21 @@ class PPXFFit(StellarKinematicsFit):
                               '{0}.'.format(i+1))
             if plot:
                 pyplot.show()
+
+#            model = PPXFModel(tpl_flux[tpl_to_use[i,:],:].T, obj_flux.data[i,start[i]:end[i]],
+#                              self.velscale, velscale_ratio=self.velscale_ratio, degree=degree,
+#                              mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
+#                              quiet=True, templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T)
+#           
+#            modelfit = model(result[i].kin, result[i].tplwgt, addpoly=result[i].addcoef,
+#                             multpoly=result[i].multcoef)
+#
+#            print(numpy.sum(result[i].bestfit-modelfit))
+#
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], modelfit, color='C0')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit, color='C3')
+#            pyplot.plot(self.obj_wave[start[i]:end[i]], result[i].bestfit-modelfit, color='C1')
+#            pyplot.show()
 
         print('Running pPXF fit on spectrum: {0}/{1}'.format(nspec,nspec))
         return result
@@ -938,7 +1223,7 @@ class PPXFFit(StellarKinematicsFit):
             if result[i] is None or result[i].fit_failed():
                 continue
             par, _moments, vj = self._fill_ppxf_par(result[i].kin, no_shift=no_shift)
-            losvd_kernel_rfft[i] = _losvd_rfft(par, 1, _moments, self.tpl_rfft.shape[1], 1,
+            losvd_kernel_rfft[i] = ppxf._losvd_rfft(par, 1, _moments, self.tpl_rfft.shape[1], 1,
                                         0.0 if no_shift else -self.base_velocity[i]/self.velscale,
                                                self.velscale_ratio, 0.0)[:,0,0]
         return losvd_kernel_rfft
@@ -1290,7 +1575,7 @@ class PPXFFit(StellarKinematicsFit):
 #                                        model_mask[i,self.spectrum_start[i]:self.spectrum_end[i]],
 #                                        flag='EML_REGION'))[0])
 #        # Fit with emission lines, using only multiplicative polynomials
-#        _ppxf_fit = ppxf(_templates.T,
+#        _ppxf_fit = ppxf.ppxf(_templates.T,
 #                         self.obj_flux.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
 #                         self.obj_ferr.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
 #                         self.velscale, _guess_kin, velscale_ratio=self.velscale_ratio,
@@ -1390,7 +1675,7 @@ class PPXFFit(StellarKinematicsFit):
                 # Get the convolution kernel with 0 velocity shift
                 nominal_par, _moments, vj = self._fill_ppxf_par(numpy.array([0.0,
                                                                             nominal_dispersion[i]]))
-                nominal_losvd_kernel_rfft = _losvd_rfft(nominal_par, 1, _moments,
+                nominal_losvd_kernel_rfft = ppxf._losvd_rfft(nominal_par, 1, _moments,
                                                         self.tpl_rfft.shape[1], 1, 0.0,
                                                         self.velscale_ratio, 0.0)[:,0,0]
 
@@ -2621,8 +2906,7 @@ class PPXFFit(StellarKinematicsFit):
     def check_templates(tpl_wave, tpl_flux, tpl_sres=None, velscale_ratio=None):
         r"""
         Check that the input template data is valid for use with
-        pPXFFit.  Static so that it can also be called by
-        :func:`construct_models`.
+        pPXFFit.
         """
         if len(tpl_wave.shape) != 1:
             raise ValueError('Input template wavelengths must be a vector; all spectra should '
@@ -2657,8 +2941,6 @@ class PPXFFit(StellarKinematicsFit):
     def check_objects(obj_wave, obj_flux, obj_ferr=None, obj_sres=None):
         r"""
         Check that the input object data is valid for use with pPXFFit.
-        Static so that it can also be called by
-        :func:`construct_models` and :class:`mangadap.proc.sasuke.Sasuke`.
 
         Args:
             obj_wave (numpy.ndarray): 1D vector of object wavelengths in
@@ -2709,8 +2991,6 @@ class PPXFFit(StellarKinematicsFit):
         input pixel-scale ratio.  Returns the velocity scale of the
         object spectra and the velocity scale ratio wrt the template
         spectra.
-
-        Static so that it can be called by :func:`construct_models`.
         """
         # Get the pixel scale
         velscale = spectrum_velocity_scale(obj_wave)
@@ -2851,7 +3131,11 @@ class PPXFFit(StellarKinematicsFit):
                           mpolyweights=None, start=None, end=None, redshift_only=False,
                           sigma_corr=0.0, velscale_ratio=None, dvtol=1e-10, revert_velocity=True):
         """
-        Construct a pPXF model spectrum based on a set of input spectra and parameters.
+        Construct a pPXF model spectrum based on a set of input spectra
+        and parameters.
+
+        **This function is outdated!  Use :func:`construct_models` or
+        :class:`PPXFModel` instead.**
         """
         # Make sure the pixel scales match
         _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
@@ -2934,7 +3218,7 @@ class PPXFFit(StellarKinematicsFit):
             par[0:2] /= velscale
 
             # Construct the model spectrum
-            kern_rfft = _losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
+            kern_rfft = ppxf._losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
                                     _velscale_ratio, 0.0)
             _model = numpy.fft.irfft(ctmp_rfft[0,:] * kern_rfft[:,0,0])[:npix_tpl]
             if _velscale_ratio > 1:
@@ -2958,28 +3242,46 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux, model_par, select=None,
-                         velscale_ratio=None, redshift_only=False, dvtol=1e-10):
+    def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux_shape, model_par, select=None,
+                         redshift_only=False, deredshift=False, corrected_dispersion=False,
+                         dvtol=1e-10):
         """
         Construct models using the provided set of model parameters.
-        This is a wrapper for :func:`PPXFFit.reconstruct_model`.
+        This is a wrapper for :class:`PPXFModel`.
+
+        Only the shape of the object data is needed, not the data
+        itself.
 
         Allows for a replacement template library that must have the
         same shape as :attr:`tpl_flux`.
 
-        If redshift_only is true, ignore the LOSVD and simply shift the
-        model to the correct redshift.
+        The input velocities are expected to be cz, not "ppxf"
+        (pixelized) velocities.
 
+        If redshift_only is true, the provided dispersion is set to 1e-9
+        km/s, which is numerically identical to 0 (i.e., just shifting
+        the spectrum) in the tested applications.  However, beware that
+        this is a HARDCODED number.
+        
         .. warning::
             This will not work if the parameters are the result of a
             filtered fit! (iteration_mode = 'fit_reject_filter')
 
+        To convolve the model to the corrected dispersion, instead of
+        the uncorrected dispersion, set corrected_dispersion=True.
+        Correction *always* uses SIGMACORR_EMP data.
         """
+        if redshift_only and corrected_dispersion:
+            raise ValueError('The redshift_only and corrected_dispersion are mutually exclusive.')
+
         # Check the spectral sampling
+        velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
+                                        / spectrum_velocity_scale(tpl_wave)))
         _velscale, _velscale_ratio \
                 = PPXFFit.check_pixel_scale(tpl_wave, obj_wave, velscale_ratio=velscale_ratio,
                                              dvtol=dvtol)
         # Check the input spectra
+        obj_flux = numpy.zeros(obj_flux_shape, dtype=float)
         _obj_wave, _obj_flux, _, _ = PPXFFit.check_objects(obj_wave, obj_flux)
         nobj = _obj_flux.shape[0]
         _tpl_wave, _tpl_flux, _ = PPXFFit.check_templates(tpl_wave, tpl_flux,
@@ -2992,11 +3294,36 @@ class PPXFFit(StellarKinematicsFit):
         if model_par['TPLWGT'].shape[1] != ntpl:
             raise ValueError('The number of weights does not match the number of templates.')
 
+        # Get the input pixel shift between the object and template
+        # wavelength vectors; interpretted by pPXF as a base velocity
+        # shift between the two
+        vsyst = numpy.array([ -PPXFFit.ppxf_tpl_obj_voff(_tpl_wave, _obj_wave[s:e], _velscale,
+                                                         velscale_ratio=_velscale_ratio)
+                                    for s,e in zip(model_par['BEGPIX'], model_par['ENDPIX'])])
+
+        # Get the additive and multiplicative degree of the polynomials
+        degree = model_par['ADDCOEF'].shape
+        degree = -1 if len(degree) == 1 else degree[1]-1
+        mdegree = model_par['MULTCOEF'].shape
+        mdegree = 0 if len(mdegree) == 1 else mdegree[1]
+        moments = model_par['KIN'].shape[1]
+
         # Only produce selected models
         skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+
+        # Set the kinematics
+        kin = model_par['KIN'].copy()
+        kin[:,0],_ = PPXFFit.revert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
+        if redshift_only:
+            kin[:,1] = 1e-9
+        elif corrected_dispersion:
+            kin[:,1] = numpy.ma.sqrt(numpy.square(model_par['KIN'][:,1]) 
+                                        - numpy.square(model_par['SIGMACORR_EMP'])).filled(1e-9)
+        if deredshift:
+            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):
@@ -3004,13 +3331,19 @@ class PPXFFit(StellarKinematicsFit):
                 models[i,:] = numpy.ma.masked
                 continue
 
-            models[i,:] = PPXFFit.reconstruct_model(_tpl_wave, _tpl_flux, _obj_wave,
-                                                    model_par['KIN'][i,:], model_par['TPLWGT'][i],
-                                                    _velscale, polyweights=model_par['ADDCOEF'][i],
-                                                    mpolyweights=model_par['MULTCOEF'][i],
-                                                    start=model_par['BEGPIX'][i],
-                                                    end=model_par['ENDPIX'][i],
-                                                    redshift_only=redshift_only,
-                                                    velscale_ratio=_velscale_ratio, dvtol=dvtol)
+            # This has to be redeclared every iteration because the
+            # starting and ending pixels might be different (annoying);
+            # as will the velocity offset; this means that the FFT of
+            # the templates is recalculated at every step...
+            f = PPXFModel(_tpl_flux.T,
+                          _obj_flux.data[i,model_par['BEGPIX'][i]:model_par['ENDPIX'][i]],
+                          _velscale, velscale_ratio=_velscale_ratio, vsyst=vsyst[i],
+                          moments=moments, degree=degree, mdegree=mdegree)
+
+            models[i,model_par['BEGPIX'][i]:model_par['ENDPIX'][i]] \
+                        = f(kin[i,:], model_par['TPLWGT'][i,:],
+                            addpoly=None if degree < 0 else model_par['ADDCOEF'][i,:],
+                            multpoly=None if mdegree < 1 else model_par['MULTCOEF'][i,:])
+
         return models
 

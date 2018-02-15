@@ -72,6 +72,8 @@ Implements an emission-line profile fitting class.
     | **24 Aug 2017**: (KBW) Use new
         :func:`mangadap.proc.util.sample_growth` instead of old
         residual_growth function.
+    | **02 Feb 2018**: (KBW) Adjust for change to
+        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
 
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
@@ -1313,7 +1315,8 @@ class Elric(EmissionLineFit):
                 and not isinstance(par['stellar_continuum'], StellarContinuumModel):
             raise TypeError('Must provide a valid StellarContinuumModel object.')
         continuum = None if par['stellar_continuum'] is None \
-                        else par['stellar_continuum'].fill_to_match(binned_spectra)
+                        else par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
+                                                            missing=binned_spectra.missing_bins)
         if continuum is not None:
             if continuum.shape != binned_spectra['FLUX'].data.shape:
                 raise ValueError('Provided continuum does not match shape of the binned spectra.')
