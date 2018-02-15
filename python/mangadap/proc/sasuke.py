@@ -2458,7 +2458,7 @@ class Sasuke(EmissionLineFit):
     @staticmethod
     def construct_continuum_models(emission_lines, stpl_wave, stpl_flux, obj_wave, obj_flux_shape,
                                    model_fit_par, select=None, redshift_only=False,
-                                   dispersion_corrections=None, dvtol=1e-10):
+                                   deredshift=False, dispersion_corrections=None, dvtol=1e-10):
         """
         Construct the continuum models using the provided set of model
         parameters.
@@ -2546,6 +2546,8 @@ class Sasuke(EmissionLineFit):
         elif dispersion_corrections is not None:
             kin[:,1] = numpy.ma.sqrt(numpy.square(model_fit_par['KIN'][:,1]) 
                                         - numpy.square(dispersion_corrections)).filled(1e-9)
+        if deredshift:
+            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):

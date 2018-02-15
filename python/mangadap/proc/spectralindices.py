@@ -1196,10 +1196,13 @@ class SpectralIndices:
 
     @staticmethod
     def calculate_dispersion_corrections(absdb, bhddb, wave, flux, continuum, continuum_dcnvlv,
-                                         redshift=None, bitmask=None):
+                                         redshift=None, redshift_dcnvlv=None, bitmask=None):
         """
         Calculate the dispersion corrections using the best-fitting
         template models.
+
+        Allow the "deconvolved" continuum spectra to be at a different
+        redshift than the best-fitting continuum.
         """
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=1)
 #        pyplot.plot(wave, continuum[0,:], linestyle='-', color='g', lw=1.0, zorder=3, alpha=0.5)
@@ -1219,7 +1222,7 @@ class SpectralIndices:
         indx = SpectralIndices.measure_indices(absdb, bhddb, wave, _continuum, redshift=redshift,
                                                bitmask=bitmask)
         dcnvlv_indx = SpectralIndices.measure_indices(absdb, bhddb, wave, _continuum_dcnvlv,
-                                                      redshift=redshift, bitmask=bitmask)
+                                                      redshift=redshift_dcnvlv, bitmask=bitmask)
 
         # Do not apply the correction if any of the bands were empty or
         # would have had to divide by zero
@@ -1949,7 +1952,10 @@ class SpectralIndices:
                             binned_spectra.drpf.spatial_shape) if measure_on_unbinned_spaxels \
                                                                else binned_spectra['BINID'].data
 
-            # Get the continuum with and without the LOSVD convolution
+            # Get two versions of the best-fitting continuum:
+            #   - exactly the best fitting, continuum-only model
+            #   - the same without convolving with the velocity
+            #     dispersion and deredshifted
             fill_to_match_f = self.emission_line_model.fill_continuum_to_match \
                                 if eml_stellar_continuum_available else \
                                 self.stellar_continuum.fill_to_match
@@ -1960,7 +1966,7 @@ class SpectralIndices:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
             continuum_dcnvlv = fill_to_match_f(binid, replacement_templates=replacement_templates,
-                                               redshift_only=True)
+                                               redshift_only=True, deredshift=True)
 
             # Get the corrections by performing the measurements on the
             # best-fitting continuum models, with and without the

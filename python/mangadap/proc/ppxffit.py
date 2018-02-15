@@ -3243,7 +3243,8 @@ class PPXFFit(StellarKinematicsFit):
 
     @staticmethod
     def construct_models(tpl_wave, tpl_flux, obj_wave, obj_flux_shape, model_par, select=None,
-                         redshift_only=False, corrected_dispersion=False, dvtol=1e-10):
+                         redshift_only=False, deredshift=False, corrected_dispersion=False,
+                         dvtol=1e-10):
         """
         Construct models using the provided set of model parameters.
         This is a wrapper for :class:`PPXFModel`.
@@ -3313,6 +3314,7 @@ class PPXFFit(StellarKinematicsFit):
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
 
+        # Set the kinematics
         kin = model_par['KIN'].copy()
         kin[:,0],_ = PPXFFit.revert_velocity(model_par['KIN'][:,0], model_par['KINERR'][:,0])
         if redshift_only:
@@ -3320,6 +3322,8 @@ class PPXFFit(StellarKinematicsFit):
         elif corrected_dispersion:
             kin[:,1] = numpy.ma.sqrt(numpy.square(model_par['KIN'][:,1]) 
                                         - numpy.square(model_par['SIGMACORR_EMP'])).filled(1e-9)
+        if deredshift:
+            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):

@@ -1321,7 +1321,7 @@ class EmissionLineModel:
 
 
     def fill_continuum_to_match(self, binid, replacement_templates=None, redshift_only=False,
-                                corrected_dispersion=False, missing=None):
+                                deredshift=False, corrected_dispersion=False, missing=None):
         """
 
         Get the emission-line continuum model, if possible, that matches
@@ -1368,7 +1368,7 @@ class EmissionLineModel:
         # Get the continuum models
         best_fit_continuum = self.construct_continuum_models(
                                             replacement_templates=replacement_templates,
-                                            redshift_only=redshift_only,
+                                            deredshift=deredshift, redshift_only=redshift_only,
                                             dispersion_corrections=dispersion_corrections)
 
         # Get the number of output models
@@ -1389,7 +1389,7 @@ class EmissionLineModel:
 
 
     def construct_continuum_models(self, replacement_templates=None, redshift_only=False,
-                                   dispersion_corrections=None):
+                                   deredshift=False, dispersion_corrections=None):
 
         if self.stellar_continuum is None:
             raise ValueError('EmissionLineModel object has no associated StellarContinuumModel.')
@@ -1412,7 +1412,7 @@ class EmissionLineModel:
                                         self.emldb, templates['WAVE'].data, templates['FLUX'].data,
                                         self.hdu['WAVE'].data, self.hdu['FLUX'].data.shape,
                                         self.hdu['FIT'].data, select=select,
-                                        redshift_only=redshift_only,
+                                        redshift_only=redshift_only, deredshift=deredshift,
                                         dispersion_corrections=dispersion_corrections, dvtol=1e-9)
 
 

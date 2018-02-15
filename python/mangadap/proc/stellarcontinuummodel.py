@@ -1200,7 +1200,7 @@ class StellarContinuumModel:
 
 
     def construct_models(self, replacement_templates=None, redshift_only=False,
-                         corrected_dispersion=False):
+                         deredshift=False, corrected_dispersion=False):
         """
         Reconstruct the best fitting models.
         """
@@ -1227,6 +1227,7 @@ class StellarContinuumModel:
                                                         self.hdu['FLUX'].data.shape,
                                                         self.hdu['PAR'].data, select=select,
                                                         redshift_only=redshift_only,
+                                                        deredshift=deredshift,
                                                         corrected_dispersion=corrected_dispersion,
                                                         dvtol=1e-9)
 
@@ -1266,7 +1267,7 @@ class StellarContinuumModel:
 
 
     def unmasked_continuum_model(self, replacement_templates=None, redshift_only=False,
-                                 corrected_dispersion=False):
+                                 deredshift=False, corrected_dispersion=False):
         """
         Return the stellar continuum unmasked over the full continuous
         fitting region.  Models are reconstructed based on the model
@@ -1277,7 +1278,7 @@ class StellarContinuumModel:
         # Get the models for the binned spectra
         reconstruct = replacement_templates is not None or redshift_only or corrected_dispersion
         continuum = self.construct_models(replacement_templates=replacement_templates,
-                                          redshift_only=redshift_only,
+                                          redshift_only=redshift_only, deredshift=deredshift,
                                           corrected_dispersion=corrected_dispersion) \
                         if reconstruct \
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
@@ -1306,7 +1307,7 @@ class StellarContinuumModel:
 #        raise NotImplementedError('Can only match to internal binned_spectra.')
 
     def fill_to_match(self, binid, replacement_templates=None, redshift_only=False,
-                      corrected_dispersion=False, missing=None):
+                      deredshift=False, corrected_dispersion=False, missing=None):
         """
         Get the stellar-continuum model from this objects that matches
         the input bin ID matrix.  The output is a 2D matrix ordered by
@@ -1334,7 +1335,7 @@ class StellarContinuumModel:
         # Construct the best-fitting models
         best_fit_continuum = self.unmasked_continuum_model(
                                     replacement_templates=replacement_templates,
-                                    redshift_only=redshift_only,
+                                    redshift_only=redshift_only, deredshift=deredshift,
                                     corrected_dispersion=corrected_dispersion)
 
         # Get the number of output continuua
