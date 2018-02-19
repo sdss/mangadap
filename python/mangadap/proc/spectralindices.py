@@ -894,7 +894,7 @@ class SpectralIndices:
 
     def _get_missing_bins(self, unique_bins=None):
         if unique_bins is None:
-            good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+            good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
             return numpy.sort(self.binned_spectra.missing_bins + 
                         self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
