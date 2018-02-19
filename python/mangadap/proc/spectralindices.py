@@ -892,13 +892,16 @@ class SpectralIndices:
         self.image_arrays = [ 'BINID' ]
 
 
-    def _get_missing_bins(self):
-        good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
-                                + self.binned_spectra.missing_bins).tolist()
+    def _get_missing_bins(self, unique_bins=None):
+        if unique_bins is None:
+            good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+            return numpy.sort(self.binned_spectra.missing_bins + 
+                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+        return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
 
-    def _assign_redshifts(self, redshift, default_redshift=None, nspec=None):
+    def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
+                          default_redshift=None):
         """
         Set the redshift to use for each spectrum for the spectral index
         measurements.
@@ -934,33 +937,39 @@ class SpectralIndices:
                 :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
                 If None (default), the median of the unmasked stellar
                 velocities will be used.
-
-            nspec (int): (**Optional**) Number of spectra with needed
-                redshifts.  If None, assumed to be the same as the
-                number of binned spectra.
-
         """
+
+        # Construct the binid matrix if measuring on unbinned spaxels
+        if measure_on_unbinned_spaxels:
+            binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
+            binid.ravel()[good_snr] = numpy.arange(self.nbins)
+            missing = []
+            nspec = self.binned_spectra.drpf.nspec
+        else:
+            binid = self.binned_spectra['BINID'].data
+            missing = self.binned_spectra.missing_bins
+            nspec = self.binned_spectra.nbins
+
         #---------------------------------------------------------------
         # Get the redshift measured for the stars and use them if no
         # default value is provided
-        obj_redshift = None
         if self.stellar_continuum is not None and redshift is None:
-            obj_redshift, _ = \
-                    self.stellar_continuum.matched_kinematics(self.binned_spectra['BINID'].data,
-                                                              redshift=default_redshift,
-                                                              corrected=True, nearest=True,
-                                                          missing=self.binned_spectra.missing_bins)
-            self.redshift = obj_redshift.copy()
+            self.redshift, _ = self.stellar_continuum.matched_kinematics(
+                                                binid, redshift=default_redshift,
+                                                nearest=True, missing=missing)
+            if measure_on_unbinned_spaxels:
+                tmp = self.redshift.copy()
+                self.redshift = numpy.zeros(nspec, dtype=float)
+                self.redshift[good_snr] = tmp
             return
 
         #---------------------------------------------------------------
         # Use the default value(s)
-        _nspec = self.binned_spectra.nbins if nspec is None else nspec
         _redshift = numpy.atleast_1d(redshift)
-        if len(_redshift) not in [ 1, _nspec ]:
-            raise ValueError('Provided redshift must be either a single value or match the ' \
-                             'number of binned spectra or the number of spectra argument.')
-        self.redshift = numpy.full(_nspec, redshift, dtype=float) \
+        if len(_redshift) not in [ 1, nspec ]:
+            raise ValueError('Provided redshift must be either a single value or match the '
+                             'number of binned spectra or the number of unbinned spaxels.')
+        self.redshift = numpy.full(nspec, redshift, dtype=float) \
                                 if len(_redshift) == 1 else _redshift.copy()
 
 
@@ -1823,8 +1832,6 @@ class SpectralIndices:
                 raise TypeError('Provided emission line models must be of type EmissionLineModel.')
             if emission_line_model.hdu is None:
                 raise ValueError('Provided EmissionLineModel is undefined!')
-#            if emission_line_model.method['deconstruct_bins']:
-#                raise NotImplementedError('Cannot use EmissionLineModel with bins deconstructed.')
             self.emission_line_model = emission_line_model
 
         # What stellar continuum is available?
@@ -1854,19 +1861,22 @@ class SpectralIndices:
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
                 and self.emission_line_model.method['deconstruct_bins']
-        print(measure_on_unbinned_spaxels)
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
                             else self.binned_spectra.nbins
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
-        # Get the redshifts to apply
-        self._assign_redshifts(redshift, nspec=self.nspec)
-
         #---------------------------------------------------------------
         # Get the good spectra
         good_snr = self._flag_good_spectra(measure_on_unbinned_spaxels)
+
+        # Set the number of bins measured and missing bins
+        self.nbins = numpy.sum(good_snr)
+        self.missing_bins = [] if measure_on_unbinned_spaxels else self._get_missing_bins()
+        
+        # Get the redshifts to apply
+        self._assign_redshifts(redshift, measure_on_unbinned_spaxels, good_snr)
 
         # Report
         if not self.quiet:
@@ -2002,9 +2012,6 @@ class SpectralIndices:
 
         #---------------------------------------------------------------
         # Set the number of bins measured, missing bins, and bin IDs
-        self.nbins = numpy.sum(good_snr)
-        self.missing_bins = [] if measure_on_unbinned_spaxels else self._get_missing_bins()
-        
         measurements['BINID'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
                                     else self.binned_spectra['BINS'].data['BINID'][good_snr]
         measurements['BINID_INDEX'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
@@ -2041,7 +2048,7 @@ class SpectralIndices:
 
             # Get the bin ids with measured indices
             bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
-                                                   measurements['BINID'])
+                                                measurements['BINID']).reshape(self.spatial_shape)
         else:
             # Assume any model with a binid less than zero is from a
             # spaxel that was not used
@@ -2062,8 +2069,7 @@ class SpectralIndices:
 
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
-                                                header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                     format=rec_to_fits_type(passband_database[n]),
@@ -2123,6 +2129,8 @@ class SpectralIndices:
 #        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
-        self.missing_bins = self._get_missing_bins()
+        unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
+                            if self.hdu['PRIMARY'].header['SIREBIN'] else None
+        self.missing_bins = self._get_missing_bins(unique_bins=unique_bins)
 
 

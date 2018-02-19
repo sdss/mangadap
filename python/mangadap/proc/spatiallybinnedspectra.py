@@ -117,7 +117,7 @@ from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
-from .util import select_proc_method
+from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
 #from memory_profiler import profile
@@ -860,7 +860,9 @@ class SpatiallyBinnedSpectra:
         """
         # Get the unique bins and the number of spectra in each bin
         unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
-        unique_bins, unique_indx, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_index=True, return_counts=True))
+        unique_bins, unique_indx, bin_count = map(lambda x : x[1:],
+                                                  numpy.unique(bin_indx, return_index=True,
+                                                               return_counts=True))
 
         # Get the number of returned bins:
         # - The number of returned bins MAY NOT BE THE SAME as the
@@ -1034,6 +1036,9 @@ class SpatiallyBinnedSpectra:
         Construct :attr:`hdu` that is held in memory for manipulation of
         the object.  See :func:`construct_3d_hdu` if you want to convert
         the object into a DRP-like datacube.
+
+        bin_indx is 2d
+
         """
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
@@ -1085,8 +1090,7 @@ class SpatiallyBinnedSpectra:
                                                 name='REDCORR'),
                                   fits.ImageHDU(data=stack_sdev.data, name='FLUXD'),
                                   fits.ImageHDU(data=stack_npix.data, name='NPIX'),
-                                  fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
-                                                header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns( [ fits.Column(name=n,
                                                              format=rec_to_fits_type(bin_data[n]),
@@ -1507,8 +1511,9 @@ class SpatiallyBinnedSpectra:
         #---------------------------------------------------------------
         # Build the internal HDUList object and covariance attribute
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(bin_indx, good_fgoodpix, good_snr, bin_data, stack_flux, stack_sdev,
-                               stack_ivar, stack_npix, stack_mask, stack_sres, stack_covar)
+        self._construct_2d_hdu(bin_indx.reshape(self.spatial_shape), good_fgoodpix, good_snr,
+                               bin_data, stack_flux, stack_sdev, stack_ivar, stack_npix,
+                               stack_mask, stack_sres, stack_covar)
 
         #---------------------------------------------------------------
         # Write the data, if requested
@@ -1531,7 +1536,7 @@ class SpatiallyBinnedSpectra:
             log_output(self.loggers, 1, logging.INFO, 'Constructing binned spectra datacube ...')
 
         # Get/Copy the necessary data arrays
-        bin_indx = self.hdu['BINID'].data.copy().ravel()
+        bin_indx = self.hdu['BINID'].data.copy()
         stack_flux = self.hdu['FLUX'].data.copy()
         stack_sdev = self.hdu['FLUXD'].data.copy()
         stack_ivar = self.hdu['IVAR'].data.copy()
@@ -1540,13 +1545,13 @@ class SpatiallyBinnedSpectra:
 
         # Reconstruct the stacked spectra into a DRP-like datacube
         flux, mask, sdev, ivar, npix, sres \
-                = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx,
+                = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx.ravel(),
                                                [ stack_flux, numpy.ma.getmaskarray(stack_flux),
                                                  stack_sdev, stack_ivar, stack_npix, stack_sres ])
 
         # TODO: Move this to the Covariance class?
         if self.covariance is not None:
-            covariance = self.covariance.bin_to_spaxel_covariance(bin_indx)
+            covariance = self.covariance.bin_to_spaxel_covariance(bin_indx.ravel())
 
 #        print(self.covariance.input_indx)
 #        self.covariance.show(plane=self.covariance.input_indx[0])
@@ -1813,7 +1818,6 @@ class SpatiallyBinnedSpectra:
             the BINID columns of the BINS extension.
         """
         return numpy.array([numpy.where(self.hdu['BINS'].data['BINID'] == b)[0][0] for b in bins])
-        
 
 
     def find_nearest_bin(self, input_bins, weighted=False, indices=False):
@@ -1892,7 +1896,7 @@ class SpatiallyBinnedSpectra:
 
     def replace_with_data_from_nearest_bin(self, data, bad_bins):
         """
-        Replace data in the list provided bad bins with the data from
+        Replace data in the list of provided bad bins with the data from
         the nearest good bin.
 
         Args:
@@ -1916,17 +1920,15 @@ class SpatiallyBinnedSpectra:
         # No bad bins so just return the input
         if len(bad_bins) == 0:
             return data
-        
-        if numpy.amin(bad_bins) < 0 or numpy.amax(bad_bins) > self.nbins-1:
-            raise ValueError('Bad bins must be between 0 and {0}.'.format(self.nbins-1))
 
-        # Find the nearest bins
-        nearest_good_bin_index = self.find_nearest_bin(bad_bins, indices=True)
-        # Get the indices of the bad bins
-        bad_bin_index = self.get_bin_indices(bad_bins)
-        # Replace the data
-        data[bad_bin_index] = data[nearest_good_bin_index]
+        # Select the bins to replace
+        replace = numpy.zeros(self.nbins, dtype=bool)
+        replace[self.get_bin_indices(bad_bins)] = True
 
-        return data
-        
+        # Get the coordinates of the reference grid
+        coo = numpy.array([ self.hdu['BINS'].data['SKY_COO'][:,0],
+                            self.hdu['BINS'].data['SKY_COO'][:,1] ]).T
+
+        # Return the replaced data
+        return replace_with_data_from_nearest_coo(coo, data, replace)
 

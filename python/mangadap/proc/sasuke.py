@@ -1458,9 +1458,9 @@ class Sasuke(EmissionLineFit):
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
 
         # Get the data arrays to fit
-        wave = binned_spectra['WAVE'].data.copy()
-        flux, ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra, pixelmask=par['pixelmask'],
-                                                        error=True)
+        wave, flux, ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra,
+                                                              pixelmask=par['pixelmask'],
+                                                              error=True)
         sres = binned_spectra.copy_to_array(ext='SPECRES')
         _sres = numpy.ma.MaskedArray(sres.copy(), mask=numpy.invert(sres > 0))
         for i in range(sres.shape[0]):
@@ -1527,7 +1527,7 @@ class Sasuke(EmissionLineFit):
             # than one spaxel...
 
             # Get the individual spaxel data
-            spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
+            _, spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
                                                                         pixelmask=par['pixelmask'],
                                                                           error=True)
             # Apply the Galactic extinction
@@ -1640,7 +1640,9 @@ class Sasuke(EmissionLineFit):
             # Add the equivalent width data
 #            redshift=par['guess_redshift'][bins_to_fit],
             # TODO: Redshift is set to fitted redshift.  Should it use
-            # this or the input guess?
+            # this or the input guess?  Should the EWs be measured in
+            # EmissionLineModel instead?  (Computation not specific to
+            # Sasuke...)
             EmissionLineFit.measure_equivalent_width(wave, flux[bins_to_fit,:],
                                                      par['emission_lines'], model_eml_par,
                                                      #redshift=redshift,

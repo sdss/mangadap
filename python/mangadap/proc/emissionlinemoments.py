@@ -65,6 +65,10 @@ A class hierarchy that measures moments of the observed emission lines.
         on input
     | **02 Feb 2018**: (KBW) Adjust for change to
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
+    | **15 Feb 2018**: (KBW) Add parameter that will set whether or not
+        the moments should be remeasured after the emission-line
+        modeling.  Allow to pass an emission-line model for setting up
+        the continuum and the velocities to measure.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -129,13 +133,15 @@ class EmissionLineMomentsDef(ParSet):
         artifacts (str): String identifying the artifact database to use
         passbands (str): String identifying the emission-line bandpass
             filter database to use
+        
     """
-    def __init__(self, key, minimum_snr, artifacts, passbands):
+    def __init__(self, key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name):
         in_fl = [ int, float ]
 
-        pars =     [ 'key', 'minimum_snr', 'artifacts', 'passbands' ]
-        values =   [   key,   minimum_snr,   artifacts,   passbands ]
-        dtypes =   [   str,         in_fl,         str,         str ]
+        pars =     [ 'key', 'minimum_snr', 'artifacts', 'passbands', 'redo_postmodeling',
+                     'fit_vel_name' ]
+        values =   [ key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name ]
+        dtypes =   [ str, in_fl, str, str, bool, str ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
@@ -217,8 +223,11 @@ def available_emission_line_moment_databases(dapsrc=None):
 
         moment_set_list += [ EmissionLineMomentsDef(cnfg['key'],
                                                     cnfg.getfloat('minimum_snr', default=0.),
-                                                    cnfg['artifact_mask'],
-                                                    cnfg['emission_passbands']) ]
+                                                    cnfg.get('artifact_mask'),
+                                                    cnfg['emission_passbands'],
+                                                    cnfg.getbool('redo_postmodeling',
+                                                                 default=False),
+                                                    cnfg.get('fit_vel_name')) ]
 
 #    for db in moment_set_list:
 #        print(db['key'])
@@ -274,10 +283,11 @@ class EmissionLineMoments:
 
     """
 #    @profile
-    def __init__(self, database_key, binned_spectra, stellar_continuum=None, redshift=None,
-                 database_list=None, artifact_list=None, bandpass_list=None, dapsrc=None,
-                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, clobber=False, checksum=False, loggers=None, quiet=False):
+    def __init__(self, database_key, binned_spectra, stellar_continuum=None,
+                 emission_line_model=None, redshift=None, database_list=None, artifact_list=None,
+                 bandpass_list=None, dapsrc=None, dapver=None, analysis_path=None,
+                 directory_path=None, output_file=None, hardcopy=True, clobber=False,
+                 checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -294,6 +304,7 @@ class EmissionLineMoments:
 
         self.binned_spectra = None
         self.stellar_continuum = None
+        self.emission_line_model = None
         self.redshift = None
 
         # Define the output directory and file
@@ -316,21 +327,11 @@ class EmissionLineMoments:
         self.missing_bins = None
 
         # Run the assessments of the DRP file
-        self.measure(binned_spectra, stellar_continuum=stellar_continuum, redshift=redshift,
-                     dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
-                     directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                     clobber=clobber, loggers=loggers, quiet=quiet)
-
-
-#    def __del__(self):
-#        """
-#        Deconstruct the data object by ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
+        self.measure(binned_spectra, stellar_continuum=stellar_continuum,
+                     emission_line_model=emission_line_model, redshift=redshift, dapsrc=dapsrc,
+                     dapver=dapver, analysis_path=analysis_path, directory_path=directory_path,
+                     output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
+                     quiet=quiet)
 
 
     def __getitem__(self, key):
@@ -347,8 +348,6 @@ class EmissionLineMoments:
                                            method_list=database_list,
                                            available_func=available_emission_line_moment_databases,
                                            dapsrc=dapsrc)
-#        print(self.database['key'])
-#        print(self.database['passbands'])
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
@@ -366,6 +365,11 @@ class EmissionLineMoments:
         provided, the defaults are set using, respectively,
         :func:`mangadap.config.defaults.default_dap_method_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
+
+        ..warning::
+
+            File name is different if an emission-line model is
+            provided!
 
         Args:
             directory_path (str): The exact path to the DAP
@@ -394,13 +398,15 @@ class EmissionLineMoments:
                                       self.binned_spectra.method['key'])
         if continuum_method is not None:
             ref_method = '{0}-{1}'.format(ref_method, continuum_method)
+        if self.emission_line_model is not None:
+            ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
-    def _initialize_primary_header(self, hdr=None):
+    def _initialize_primary_header(self, hdr=None, measurements_binid=None):
         """
         Initialize the header of :attr:`hdu`.
 
@@ -420,11 +426,11 @@ class EmissionLineMoments:
         hdr['MOMDB'] = (self.database['passbands'], 'Emission-line moments database keyword')
         if self.stellar_continuum is not None:
             hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
-        hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-#        if len(self.missing_bins) > 0:
-#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
-        # Anything else?
-        # Additional database details?
+        if self.emission_line_model is not None:
+            hdr['ELFKEY'] = (self.emission_line_model.method['key'],
+                                'Emission-line modeling method keyword')
+        hdr['NBINS'] = (self.nbins, 'Number of unique spectra for measurements')
+        hdr['ELMREBIN'] = (measurements_binid is not None, 'Bin IDs disconnected from SC binning')
         return hdr
 
 
@@ -463,22 +469,6 @@ class EmissionLineMoments:
         return passband_database
 
 
-#    def _check_snr(self):
-#        """
-#        Determine which spectra in :attr:`binned_spectra` have a S/N
-#        greater than the minimum set by :attr:`method`.  Only these
-#        spectra will be analyzed.
-#    
-#        Returns:
-#            numpy.ndarray : Boolean array for the spectra that satisfy
-#            the criterion.
-#        """
-#        warnings.warn('You\'re running the moments on ALL spectra.')
-#        return numpy.ones(self.binned_spectra.nbins, dtype=bool)
-#        return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-##        return self.binned_spectra['BINS'].data['SNR'] > self.database['minimum_snr']
-
-
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
@@ -487,37 +477,97 @@ class EmissionLineMoments:
         self.image_arrays = [ 'BINID' ]
 
 
-    def _get_missing_bins(self):
-        good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-        return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
-                                + self.binned_spectra.missing_bins) 
+    def _get_missing_bins(self, unique_bins=None):
+        if unique_bins is None:
+            good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
+            return numpy.sort(self.binned_spectra.missing_bins + 
+                        self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
+        return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
 
-    def _assign_redshifts(self, redshift):
+    def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
+                          default_redshift=None):
         """
-        Set the redshift to apply to each spectrum.
+        Set the redshift to use for each spectrum for the emission-line
+        moments.
+        
+        In terms of precedence, directly provided redshifts override
+        those in any available EmissionLineModel.
+
+        If self.emission_line_model and redshift are None, the default
+        redshift is used (or 0.0 if this is also None).
+
+        To get the emission_line stellar kinematics, the function calls
+        :func:`mangadap.proc.emissionlinemodel.EmissionLineModel.matched_kinematics`.
+        The method must have a fit_vel_name define for this use!
+
+        In this function, the provided redshift must be a single value
+        or None; therefore, the means of any vectors should be provided
+        instead of the full vector.
+
+        Args:
+
+            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
+                use for each spectrum.  If None, the default
+
+            measure_on_unbinned_spaxels (bool): Flag that method expects
+                to measure moments on unbinned spaxels.
+
+            good_snr (numpy.ndarray): Boolean array setting which
+                spectra have sufficient S/N for the measurements.
+
+            default_redshift (float): (**Optional**) Only used if there
+                are stellar kinematics available.  Provides the default
+                redshift to use for spectra without stellar
+                measurements; see :arg:`redshift` in
+                :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
+                If None (default), the median of the unmasked stellar
+                velocities will be used.
+
         """
-        self.redshift = numpy.zeros(self.binned_spectra.nbins, dtype=numpy.float)
-        if redshift is None and self.stellar_continuum is None:
-            return
 
-        if redshift is None:
-            self.redshift, _ = self.stellar_continuum.matched_kinematics(
-                                                self.binned_spectra['BINID'].data,
-                                                missing=self.binned_spectra.missing_bins)
-            return
-
-        _redshift = numpy.atleast_1d(redshift)
-        if len(_redshift) == 1:
-            self.redshift, _ = self.stellar_continuum.matched_kinematics(
-                                                self.binned_spectra['BINID'].data,
-                                                redshift=redshift,
-                                                missing=self.binned_spectra.missing_bins)
-        elif len(_redshift) == self.binned_spectra.nbins:
-            self.redshift = _redshift.copy()
+        # Construct the binid matrix if measuring on unbinned spaxels
+        if measure_on_unbinned_spaxels:
+            binid = numpy.full(self.spatial_shape, -1, dtype=int)
+            binid.ravel()[good_snr] = numpy.arange(self.nbins)
+            missing = []
+            nspec = self.binned_spectra.drpf.nspec
         else:
-            raise ValueError('Provided redshift must be either a single value or match the ' \
-                             'number of binned spectra.')
+            binid = self.binned_spectra['BINID'].data
+            missing = self.binned_spectra.missing_bins
+            nspec = self.binned_spectra.nbins
+
+        #---------------------------------------------------------------
+        # Get the redshifts measured for the selected emission line and
+        # use them if no default value is provided
+        if self.emission_line_model is not None and self.database['fit_vel_name'] is not None \
+                and redshift is None:
+            self.redshift, _ = self.emission_line_model.matched_kinematics(
+                                        binid, self.database['fit_vel_name'],
+                                        redshift=default_redshift, nearest=True, missing=missing)
+            if measure_on_unbinned_spaxels:
+                tmp = self.redshift.copy()
+                self.redshift = numpy.zeros(nspec, dtype=float)
+                self.redshift[good_snr] = tmp
+            return
+
+        #---------------------------------------------------------------
+        # Use the default value(s)
+        _redshift = numpy.atleast_1d(redshift)
+        if len(_redshift) not in [ 1, nspec ]:
+            raise ValueError('Provided redshift must be either a single value or match the '
+                             'number of binned spectra or the number of unbinned spaxels.')
+        self.redshift = numpy.full(nspec, redshift, dtype=float) \
+                                if len(_redshift) == 1 else _redshift.copy()
+
+
+    def _flag_good_spectra(self, measure_on_unbinned_spaxels):
+        if measure_on_unbinned_spaxels:
+            fgoodpix = self.binned_spectra.check_fgoodpix()
+            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
+                                > self.database['minimum_snr']
+            return fgoodpix & good_snr
+        return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
 
     @staticmethod
@@ -1013,11 +1063,47 @@ class EmissionLineMoments:
         return os.path.join(self.directory_path, self.output_file)
 
 
-    def measure(self, binned_spectra, stellar_continuum=None, redshift=None, dapsrc=None,
-                dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                hardcopy=True, clobber=False, loggers=None, quiet=False):
+    def measure(self, binned_spectra, stellar_continuum=None, emission_line_model=None,
+                redshift=None, dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
+                output_file=None, hardcopy=True, clobber=False, loggers=None, quiet=False):
         """
         Measure the emission-line moments using the binned spectra.
+
+        If neither stellar-continuum nor emission-line models are provided:
+            - Moments are measure on the binned spectra
+            - No continuum subtraction is performed
+
+        If a stellar-continuum model is provided without an
+        emission-line model:
+            - Moments are measured on the binned spectra
+            - The best-fitting stellar continuum is subtracted
+
+        If an emission-line model is provided without a
+        stellar-continuum model:
+            - Moments are measured on the relevant (binned or unbinned)
+              spectra
+            - If the emission-line model includes data regarding the
+              stellar-continuum fit (template spectra and template
+              weights), the continuum is subtracted before the
+              measurements are made; otherwise, no continuum is
+              subtracted
+
+        If both stellar-continuum and emission-line models are provided,
+        and if the stellar-continuum and emission-line fits are
+        performed on the same spectra:
+            - Moments are measured on the relevant (binned or unbinned)
+              spectra
+            - If the emission-line model includes data regarding the
+              stellar-continuum fit (template spectra and template
+              weights), the continuum is subtracted before the
+              measurements are made; otherwise, the stellar continuum is
+              used.
+
+        If both stellar-continuum and emission-line models are provided,
+        and if the stellar-continuum and emission-line fits are
+        performed on different spectra:
+            - The behavior is exactly as if the stellar-continuum model
+              was not provided.
         """
         # Initialize the reporting
         if loggers is not None:
@@ -1033,62 +1119,70 @@ class EmissionLineMoments:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
         self.binned_spectra = binned_spectra
 
-        # Continuum accounts for underlying absorption
-        if stellar_continuum is not None \
-                and not isinstance(stellar_continuum, StellarContinuumModel):
-            raise TypeError('Must provide a valid StellarContinuumModel object.')
-        self.stellar_continuum = stellar_continuum
-        continuum = None if self.stellar_continuum is None \
-                        else stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
-                                                        missing=self.binned_spectra.missing_bins)
-        if continuum is not None:
-            if continuum.shape != self.binned_spectra['FLUX'].data.shape:
-                raise ValueError('Provided continuum does not match shape of the binned spectra.')
-            if not isinstance(continuum, numpy.ma.MaskedArray):
-                continuum = numpy.ma.MaskedArray(continuum)
+        # Check stellar-continuum model object, if provided
+        self.stellar_continuum = None
+        if stellar_continuum is not None:
+            if not isinstance(stellar_continuum, StellarContinuumModel):
+                raise TypeError('Provided stellar continuum must have StellarContinuumModel type!')
+            if stellar_continuum.hdu is None:
+                raise ValueError('Provided StellarContinuumModel is undefined!')
+            self.stellar_continuum = stellar_continuum
+
+        # Check emission-line model object, if provided
+        self.emission_line_model = None
+        if emission_line_model is not None:
+#            if not isinstance(emission_line_model, EmissionLineModel):
+#                raise TypeError('Provided emission line models must be of type EmissionLineModel.')
+            if emission_line_model.hdu is None:
+                raise ValueError('Provided EmissionLineModel is undefined!')
+            self.emission_line_model = emission_line_model
+
+        # What stellar continuum is available?
+        #  - Assume the stellar continuum can always be extracted if a
+        #    StellarContinuumModel object is provided
+        #  - Check if the EmissionLineModel fitter has the appropriate
+        #    function; True for Sasuke, not currently true for Elric
+        eml_stellar_continuum_available = self.emission_line_model is not None \
+                and callable(self.emission_line_model.method['fitclass'].construct_continuum_models)
+
+        # What spectra to use?
+        #  - Assume StellarContinuumModel always fits the binned spectra
+        #  - The EmissionLineModel fits the binned spectra or unbinned
+        #    spaxels as specified by its deconstruct_bins flag
+        measure_on_unbinned_spaxels = self.emission_line_model is not None \
+                and self.emission_line_model.method['deconstruct_bins']
 
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.nspec
+        self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
+                            else self.binned_spectra.nbins
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
-        # Get the redshifts to apply
-        self._assign_redshifts(redshift)
-
-#        matchedz = DAPFitsUtil.reconstruct_map(self.spatial_shape,
-#                                               self.binned_spectra['BINID'].data.ravel(),
-#                                               self.redshift)
-#        matchedz = numpy.ma.MaskedArray(matchedz, mask=matchedz==0)
-#        inputz = DAPFitsUtil.reconstruct_map(self.spatial_shape,
-#                                             self.stellar_continuum['BINID'].data.ravel(),
-#                                             self.stellar_continuum['PAR'].data['KIN'][:,0]
-#                                                / astropy.constants.c.to('km/s').value)
-#        inputz = numpy.ma.MaskedArray(inputz, mask=inputz==0)
-#
-#        pyplot.imshow(inputz.T, origin='lower', interpolation='nearest')
-#        pyplot.show()
-#        pyplot.imshow(matchedz.T, origin='lower', interpolation='nearest')
-#        pyplot.show()
-
-#        pyplot.scatter(numpy.arange(self.nbins), self.redshift, marker='.', s=50, color='k', lw=0)
-#        pyplot.show()
-
         #---------------------------------------------------------------
         # Get the good spectra
-        good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
+        good_snr = self._flag_good_spectra(measure_on_unbinned_spaxels)
+
+        # Set the number of bins measured and missing bins
+        self.nbins = numpy.sum(good_snr)
+        self.missing_bins = [] if measure_on_unbinned_spaxels else self._get_missing_bins()
+
+        # Get the redshifts to apply
+        self._assign_redshifts(redshift, measure_on_unbinned_spaxels, good_snr)
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(loggers, 1, logging.INFO, '{0:^50}'.format('EMISSION-LINE MOMENTS'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Number of binned spectra: {0}'.format(
-                                                            self.binned_spectra.nbins))
-            if len(self.binned_spectra.missing_bins) > 0:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, 'Measurements for {0}'.format(
+                        'unbinned spaxels' if measure_on_unbinned_spaxels else 'binned spectra'))
+            log_output(self.loggers, 1, logging.INFO, 'Number of spectra: {0}'.format(self.nspec))
+            if not measure_on_unbinned_spaxels and len(self.binned_spectra.missing_bins) > 0:
                 log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
                                                             len(self.binned_spectra.missing_bins)))
             log_output(self.loggers, 1, logging.INFO, 'With good S/N and to measure: {0}'.format(
                                                             numpy.sum(good_snr)))
-            
+
         # Make sure there are good spectra
         if numpy.sum(good_snr) == 0:
             raise ValueError('No good spectra for measurements!')
@@ -1105,10 +1199,8 @@ class EmissionLineMoments:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
+            log_output(self.loggers,1,logging.INFO, 'Output path: {0}'.format(self.directory_path))
+            log_output(self.loggers,1,logging.INFO, 'Output file: {0}'.format(self.output_file))
         
         #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
@@ -1123,23 +1215,39 @@ class EmissionLineMoments:
             return
 
         #---------------------------------------------------------------
-        # Set the number of bins measured and missing bins
-        self.nbins = numpy.sum(good_snr)
-        self.missing_bins = self._get_missing_bins()
-
-        #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        flux, ivar = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                        pixelmask=self.pixelmask, select=good_snr)
+        wave, flux, ivar = EmissionLineFit.get_spectra_to_fit(self.binned_spectra.drpf
+                                                                if measure_on_unbinned_spaxels
+                                                                else self.binned_spectra,
+                                                              pixelmask=self.pixelmask,
+                                                              select=good_snr)
+
+        # Get the continuum if there is any
+        if eml_stellar_continuum_available:
+            if measure_on_unbinned_spaxels:
+                binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
+                binid.ravel()[good_snr] = numpy.arange(self.nbins)
+                continuum = self.emission_line_model.fill_continuum_to_match(binid)
+                specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' else None
+                sres = self.binned_spectra.drpf.spectral_resolution(ext=specres_ext, toarray=True,
+                                    pre=self.binned_spectra.method['prepixel_sres'])[good_snr,:]
+            else:
+                continuum = self.emission_line_model.fill_continuum_to_match(
+                                                self.binned_spectra['BINID'].data,
+                                                missing=self.binned_spectra.missing_bins)
+                sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
+        elif self.stellar_continuum is not None:
+            continuum = self.stellar_continuum.fill_to_match(
+                                self.binned_spectra['BINID'].data,
+                                missing=self.binned_spectra.missing_bins)
+            sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
         _redshift = self.redshift[good_snr]
-        _continuum = None if continuum is None else continuum[good_snr,:]
-        sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
 
         #---------------------------------------------------------------
         # Perform the moment measurements
-        measurements = self.measure_moments(self.momdb, self.binned_spectra['WAVE'].data, flux,
-                                            ivar=ivar, sres=sres, continuum=_continuum,
-                                            redshift=_redshift, bitmask=self.bitmask)
+        measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
+                                            continuum=continuum, redshift=_redshift,
+                                            bitmask=self.bitmask)
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
@@ -1159,8 +1267,7 @@ class EmissionLineMoments:
 
         measurements['BMED'], measurements['RMED'], pos, measurements['EWCONT'], \
                 measurements['EW'], measurements['EWERR'] \
-                        = emission_line_equivalent_width(self.binned_spectra['WAVE'].data, flux,
-                                                         self.momdb['blueside'],
+                        = emission_line_equivalent_width(wave, flux, self.momdb['blueside'],
                                                          self.momdb['redside'], line_center,
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
@@ -1172,11 +1279,17 @@ class EmissionLineMoments:
                                            'NON_POSITIVE_CONTINUUM')
 
         #---------------------------------------------------------------
-        # Save the bin numbers and indices with measurements
-        measurements['BINID'] = self.binned_spectra['BINS'].data['BINID'][good_snr]
-        measurements['BINID_INDEX'] = numpy.arange(self.binned_spectra.nbins)[good_snr]
-        # Save the redshift
+        # Set the number of bins measured, missing bins, and bin IDs
+        measurements['BINID'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
+                                    else self.binned_spectra['BINS'].data['BINID'][good_snr]
+        measurements['BINID_INDEX'] = numpy.arange(self.nbins) if measure_on_unbinned_spaxels \
+                                        else numpy.arange(self.binned_spectra.nbins)[good_snr]
+        measurements_binid = None
+        if measure_on_unbinned_spaxels:
+            measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
+            measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
         measurements['REDSHIFT'] = _redshift
+
 #        # Set the undefined bands
 #        measurements['MASK'][:,self.momdb.dummy] \
 #                    = self.bitmask.turn_on(measurements['MASK'][:,self.momdb.dummy],
@@ -1185,36 +1298,70 @@ class EmissionLineMoments:
         #---------------------------------------------------------------
         # Initialize the header
         self.hardcopy = hardcopy
-        pri_hdr = self._initialize_primary_header()
+        pri_hdr = self._initialize_primary_header(measurements_binid=measurements_binid)
         map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
         map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
-        # Add any spaxel not used because it was flagged by the binning
-        # step
-        indx = self.binned_spectra['MAPMASK'].data > 0
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
-        # Isolate any spaxels with foreground stars
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
-        # Get the bins that were below the S/N limit
-        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+
+        # Account for measurements on individual spaxels
+        if measurements_binid is None:
+            # Add any spaxel not used because it was flagged by the
+            # binning step
+            indx = self.binned_spectra['MAPMASK'].data > 0
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+            # Isolate any spaxels with foreground stars
+            indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data,
+                                                       'FORESTAR')
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+            # Get the bins that were below the S/N limit
+            indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                         self.binned_spectra['BINID'].data.ravel(),
                                                         good_snr, dtype='bool')) & (map_mask == 0)
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
-        # Get the bin ids with measurements
-        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
-                                               measurements['BINID'])
+            # Get the bin ids with measured indices
+            bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
+                                                measurements['BINID']).reshape(self.spatial_shape)
+        else:
+            # Assume any model with a binid less than zero is from a
+            # spaxel that was not used
+            indx = measurements_binid < 0
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+
+            # The number of valid bins MUST match the number of
+            # measurements
+            nvalid = numpy.sum(numpy.invert(indx))
+            if nvalid != len(measurements):
+                raise ValueError('Provided id does not match the number of measurements.')
+
+            # Get the bin ids with fitted models
+            bin_indx = measurements_binid
+
+#        # Add any spaxel not used because it was flagged by the binning
+#        # step
+#        indx = self.binned_spectra['MAPMASK'].data > 0
+#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
+#        # Isolate any spaxels with foreground stars
+#        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+#        # Get the bins that were below the S/N limit
+#        indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
+#                                                        self.binned_spectra['BINID'].data.ravel(),
+#                                                        good_snr, dtype='bool')) & (map_mask == 0)
+#        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+#
+#        # Get the bin ids with measurements
+#        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
+#                                               measurements['BINID'])
 
         # Compile the saved information on the suite of measured indices
         passband_database = self._compile_database()
 
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=bin_indx.reshape(self.spatial_shape),
-                                                header=map_hdr, name='BINID'),
+                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
                                   fits.BinTableHDU.from_columns(
                                         [ fits.Column(name=n,
@@ -1279,7 +1426,9 @@ class EmissionLineMoments:
 #        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
 
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
-        self.missing_bins = self._get_missing_bins()
+        unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
+                            if self.hdu['PRIMARY'].header['ELMREBIN'] else None
+        self.missing_bins = self._get_missing_bins(unique_bins=unique_bins)
 
 
     # TODO: Use the EmissionMomentsDB.channel_names function!

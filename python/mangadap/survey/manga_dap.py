@@ -298,29 +298,26 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         emission_line_model = None if plan['elfit_key'][i] is None else \
                    EmissionLineModel(plan['elfit_key'][i], binned_spectra,
                                      stellar_continuum=stellar_continuum,
-                                     emission_line_moments=emission_line_moments,
-#                                     redshift=el_init_redshift,
-                                     dispersion=100.0,
+                                     emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
-        # TODO: If the emission-line fitting method deconstructs the
-        # bins into individual spaxels, remeasure the emission-line
-        # moments using the fitted emission-line velocities and the any
-        # adjustments to the continuum...
+        # If requested by the emission-line moments method, remeasure
+        # the moments after the emission-line modeling.  This will
+        # produce a new reference file that will have a different name
+        # than the one produced above.
         #---------------------------------------------------------------
-#        emission_line_moments = None if plan['elmom_key'][i] is None else \
-#                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
-#                                        stellar_continuum=stellar_continuum, redshift=nsa_redshift,
-#                                        dapsrc=dapsrc, analysis_path=_analysis_path,
-#                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
+        if emission_line_moments is not None \
+                and emission_line_moments.database['redo_postmodeling']:
+            emission_line_moments.measure(binned_spectra, stellar_continuum=stellar_continuum,
+                                          emission_line_model=emission_line_model, dapsrc=dapsrc,
+                                          analysis_path=_analysis_path,
+                                          clobber=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements
-        # TODO: This can only be done if the emission-line model was
-        # performed on the binned spectra
         #---------------------------------------------------------------
 #        _emlmodel = None if emission_line_model is not None \
 #                            and emission_line_model.method['deconstruct_bins'] \

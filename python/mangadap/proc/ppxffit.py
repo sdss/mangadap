@@ -589,9 +589,9 @@ class PPXFModel():
             weights = numpy.append(addpoly, weights)
 
         # Get the real FFT of the LOSVDs
-        losvd_rfft = ppxf._losvd_rfft(params, self.nspec, self.moments,
-                                      self.templates_rfft.shape[0], self.ncomp, self.vsyst,
-                                      self.factor, self.sigma_diff)
+        losvd_rfft = ppxf.losvd_rfft(params, self.nspec, self.moments,
+                                     self.templates_rfft.shape[0], self.ncomp, self.vsyst,
+                                     self.factor, self.sigma_diff)
 
         # Get the multiplicative polynomials
         x = numpy.linspace(-1, 1, self.npix)
@@ -1223,9 +1223,9 @@ class PPXFFit(StellarKinematicsFit):
             if result[i] is None or result[i].fit_failed():
                 continue
             par, _moments, vj = self._fill_ppxf_par(result[i].kin, no_shift=no_shift)
-            losvd_kernel_rfft[i] = ppxf._losvd_rfft(par, 1, _moments, self.tpl_rfft.shape[1], 1,
+            losvd_kernel_rfft[i] = ppxf.losvd_rfft(par, 1, _moments, self.tpl_rfft.shape[1], 1,
                                         0.0 if no_shift else -self.base_velocity[i]/self.velscale,
-                                               self.velscale_ratio, 0.0)[:,0,0]
+                                                   self.velscale_ratio, 0.0)[:,0,0]
         return losvd_kernel_rfft
             
 
@@ -1675,9 +1675,9 @@ class PPXFFit(StellarKinematicsFit):
                 # Get the convolution kernel with 0 velocity shift
                 nominal_par, _moments, vj = self._fill_ppxf_par(numpy.array([0.0,
                                                                             nominal_dispersion[i]]))
-                nominal_losvd_kernel_rfft = ppxf._losvd_rfft(nominal_par, 1, _moments,
-                                                        self.tpl_rfft.shape[1], 1, 0.0,
-                                                        self.velscale_ratio, 0.0)[:,0,0]
+                nominal_losvd_kernel_rfft = ppxf.losvd_rfft(nominal_par, 1, _moments,
+                                                            self.tpl_rfft.shape[1], 1, 0.0,
+                                                            self.velscale_ratio, 0.0)[:,0,0]
 
                 # Get the composite template
                 model_template[i,:] = numpy.dot(result[i].tplwgt,
@@ -3218,8 +3218,8 @@ class PPXFFit(StellarKinematicsFit):
             par[0:2] /= velscale
 
             # Construct the model spectrum
-            kern_rfft = ppxf._losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
-                                    _velscale_ratio, 0.0)
+            kern_rfft = ppxf.losvd_rfft(par, 1, _moments, ctmp_rfft.shape[1], 1, vsyst/velscale,
+                                        _velscale_ratio, 0.0)
             _model = numpy.fft.irfft(ctmp_rfft[0,:] * kern_rfft[:,0,0])[:npix_tpl]
             if _velscale_ratio > 1:
                 _model = numpy.mean(_model.reshape(-1,_velscale_ratio), axis=1)

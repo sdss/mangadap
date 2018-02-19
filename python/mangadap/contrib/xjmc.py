@@ -956,7 +956,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
             _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
 
     else:
-        nearest_bin = numpy.arange(nspec)
+        nearest_bin = np.arange(nspec)
         stellar_wgts = None
         _templates = templates
         _gas_template = gas_template
