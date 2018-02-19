@@ -44,7 +44,7 @@ if sys.version > '3':
 import warnings
 import numpy
 import astropy.constants
-from scipy import interpolate
+from scipy import interpolate, spatial
 
 from matplotlib import pyplot
 
@@ -358,5 +358,62 @@ def optimal_scale(dat, mod, wgt=None):
         warnings.warn('Scale not determined because model norm is 0.')
 
     return 1.0 if norm_mp == 0 else numpy.sum(numpy.square(_wgt)*_dat*_mod)/norm_mp
+
+
+def replace_with_data_from_nearest_coo(coo, data, replace):
+    """
+    Replace data in array with the spatially nearest neighbor.
+
+    Args:
+        coo (numpy.ndarray): A 2D array with the x and y coordinates of
+            all the data.  Shape must be (NDATA, 2).
+
+        data (numpy.ndarray): A 1D or 2D array with data to replace.
+            The length of the first (or only) axis must be NDATA.
+
+        replace (numpy.ndarray): Boolean array that is True for elements
+            that should be replaced on output.  Shape must be (NDATA,).
+
+    Returns:
+            numpy.ndarray: The data array with the selected rows
+            replaced with the nearest data set.
+
+    Raises:
+        ValueError: Raised if the array sizes are inappropriate.
+
+    """
+    # Check the input
+    _coo = numpy.asarray(coo)
+    if len(_coo.shape) != 2:
+        raise ValueError('Input coordinate array must be two-dimensional.')
+    if _coo.shape[1] != 2:
+        raise ValueError('Currently only works with two coordinates.')
+    ndata = _coo.shape[0]
+    _data = numpy.asarray(data)
+    if _data.shape[0] != ndata:
+        raise ValueError('Coordinate and data arrays have a mismatched shape.')
+    oned = len(_data.shape) == 1
+    _replace = numpy.asarray(replace, dtype=bool)
+    if len(_replace.shape) != 1 or _replace.shape[0] != ndata:
+        raise ValueError('Input replacement selection array has an incorrect shape.')
+
+    # Nothing flagged to replace, so just return a copy of the input
+    if numpy.sum(_replace) == 0:
+        return data.copy()
+
+    # Use the coordinates to replace to set the KDTree reference grid
+    do_not_replace = numpy.invert(_replace)
+    kd = spatial.KDTree(_coo[do_not_replace,:])
+
+    # Get the indices of the nearest data points
+    dist, nearest_bin = kd.query(_coo[_replace,:])
+
+    # Replace the existing data with the nearest one and return it
+    new_data = _data.copy()
+    if oned:
+        new_data[_replace] = _data[do_not_replace][nearest_bin]
+    else:
+        new_data[_replace,:] = _data[do_not_replace,:][nearest_bin,:]
+    return new_data
 
 

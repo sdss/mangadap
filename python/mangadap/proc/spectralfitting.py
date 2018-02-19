@@ -159,6 +159,13 @@ class EmissionLineFit(SpectralFitting):
                  ('CONTAPLY', numpy.float, (neml,)),
                  ('CONTMPLY', numpy.float, (neml,)),
                  ('CONTRFIT', numpy.float, (neml,)),
+                 ('LINE_PIXC', numpy.int, (neml,)),
+                 ('AMP', numpy.float, (neml,)),
+                 ('ANR', numpy.float, (neml,)),
+                 ('LINE_NSTAT', numpy.int, (neml,)),
+                 ('LINE_RMS', numpy.float, (neml,)),
+                 ('LINE_FRMS', numpy.float, (neml,)),
+                 ('LINE_CHI2', numpy.float, (neml,)),
                  ('BMED', numpy.float, (neml,)),
                  ('RMED', numpy.float, (neml,)),
                  ('EWCONT', numpy.float, (neml,)),
@@ -243,6 +250,7 @@ class EmissionLineFit(SpectralFitting):
 
         """
         # Grab the spectra
+        wave = spectra['WAVE'].data.copy()
         flux = spectra.copy_to_masked_array(flag=spectra.do_not_fit_flags())
         ivar = spectra.copy_to_masked_array(ext='IVAR', flag=spectra.do_not_fit_flags())
         nspec = flux.shape[0]
@@ -259,7 +267,7 @@ class EmissionLineFit(SpectralFitting):
             ivar[indx] = numpy.ma.masked
         
         _select = numpy.ones(nspec, dtype=bool) if select is None else select
-        return flux[_select,:], ivar[_select,:]
+        return wave, flux[_select,:], ivar[_select,:]
 
 
     @staticmethod
