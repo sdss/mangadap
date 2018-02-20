@@ -790,8 +790,10 @@ class EmissionLineModel:
                         if self.stellar_continuum is None else \
                     self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
         print(continuum.shape)
-
-        continuum += model_base
+        indx = numpy.unique(bin_indx.ravel())[1:]
+        print(len(indx))
+        continuum = continuum[indx,:] + model_base
+        print(continuum.shape)
 
         # Get the fitted spectra and errors
         if self.method['deconstruct_bins']:
