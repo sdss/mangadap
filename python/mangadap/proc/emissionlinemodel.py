@@ -1554,9 +1554,12 @@ class EmissionLineModel:
         if nearest:
             # Fill masked values with the nearest datum
             best_fit_kinematics = numpy.ma.append([eml_z], [eml_d], axis=0).T
-            coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][
-                            self['BINID'].data.ravel() > -1,:] if self.method['deconstruct_bins'] \
-                                        else self.binned_spectra['BINS'].data['SKY_COO']
+            if self.method['deconstruct_bins']:
+                indx = self['BINID'].data.ravel() > -1
+                coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
+            else:
+                valid_bins = numpy.unique(self['BINID'].data)[1:]
+                coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
             replace = eml_z.mask | eml_d.mask
             _kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
             eml_z = _kinematics[:,0]
