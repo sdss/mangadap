@@ -820,7 +820,7 @@ class EmissionLineMoments:
         divbyzero = numpy.zeros(nbands, dtype=numpy.bool)
         undefined_mom2 = numpy.zeros(nbands, dtype=numpy.bool)
 
-        if rcen-bcen == 0:
+        if numpy.any(rcen-bcen == 0):
             print('band centers are the same!')
         cntm = (rcont - bcont) / (rcen - bcen)
         cntb = bcont - bcen*cntm
