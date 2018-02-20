@@ -932,6 +932,7 @@ class EmissionLineMoments:
                                 else bitmask.turn_on(measurements['MASK'][i,:],
                                                      'NO_ABSORPTION_CORRECTION')
             else:
+                print('band flagging')
                 blue_fraction[numpy.invert(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_bluebands,
                                                 log=True) / numpy.diff(_bluebands, axis=1).ravel()
@@ -968,6 +969,7 @@ class EmissionLineMoments:
                             else bitmask.turn_on(measurements['MASK'][i,spec_n == 0],
                                                  'NO_ABSORPTION_CORRECTION')
 
+            print('pseudo-continua')
             # Get the blue pseudo continuum
             measurements['BCEN'][i,numpy.invert(momdb.dummy)], \
                 measurements['BCONT'][i,numpy.invert(momdb.dummy)], conterr, \
@@ -1011,6 +1013,7 @@ class EmissionLineMoments:
 
             _mainbands = momdb['primary'][indx]*(1.0+_redshift[i])
 
+            print('moments')
             measurements['CNTSLOPE'][i,indx], cntb, measurements['FLUX'][i,indx], \
                     measurements['FLUXERR'][i,indx], measurements['MOM1'][i,indx], \
                     measurements['MOM1ERR'][i,indx], measurements['MOM2'][i,indx], \
