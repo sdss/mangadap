@@ -1464,7 +1464,8 @@ class StellarContinuumModel:
         if nearest:
             # Fill masked values with the nearest datum
             best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
-            coo = self.binned_spectra['BINS'].data['SKY_COO']
+            valid_bins = numpy.unique(self['BINID'].data)[1:]
+            coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
             replace = str_z.mask | str_d.mask
             print(best_fit_kinematics.shape)
             print(coo.shape)
