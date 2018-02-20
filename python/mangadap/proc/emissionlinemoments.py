@@ -1248,6 +1248,8 @@ class EmissionLineMoments:
         measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
                                             continuum=continuum, redshift=_redshift,
                                             bitmask=self.bitmask)
+        print(numpy.sum(numpy.isfinite(measurements['FLUX'])))
+        print(numpy.prod(measurements['FLUX'].shape))
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
