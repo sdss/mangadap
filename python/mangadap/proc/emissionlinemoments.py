@@ -725,7 +725,7 @@ class EmissionLineMoments:
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
-        print('interval has not finite: ', numpy.any(numpy.invert(numpy.isfinite(interval_frac))))
+        print('interval has not finite: ', numpy.invert(numpy.isfinite(interval_frac)))
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -736,7 +736,7 @@ class EmissionLineMoments:
 
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
-        print('flux has not finite: ', numpy.any(numpy.invert(numpy.isfinite(flux))))
+        print('flux has not finite: ', numpy.invert(numpy.isfinite(flux)))
         fluxerr = None if err is None else \
                     numpy.ma.sqrt( passband_integral(wave, numpy.square(err), passband=passband,
                                                      log=True))
