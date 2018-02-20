@@ -1339,14 +1339,19 @@ class StellarContinuumModel:
                                     corrected_dispersion=corrected_dispersion)
 
         # Get the number of output continuua
-        nbins = numpy.amax(binid).astype(int)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
-        nbins += 1
+        print(numpy.amax(binid))
+        print(missing)
+        nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
+                    numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
+        print(nbins)
 
         # Fill in bins with no models with masked zeros
         continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
         continuum[:,:] = numpy.ma.masked
+
+        print(continuum.shape)
+        print(best_fit_continuum.shape)
+        print(numpy.amax(self.hdu['BINID'].data)+1)
         for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
             if i < 0 or j < 0:
                 continue
