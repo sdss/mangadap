@@ -1466,6 +1466,9 @@ class StellarContinuumModel:
             best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
             coo = self.binned_spectra['BINS'].data['SKY_COO']
             replace = str_z.mask | str_d.mask
+            print(best_fit_kinematics.shape)
+            print(coo.shape)
+            print(replace.shape)
             _kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
             str_z = _kinematics[:,0]
             str_d = _kinematics[:,1]
