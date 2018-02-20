@@ -812,6 +812,11 @@ class EmissionLineModel:
             _, flux, ferr = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
                                                                pixelmask=self.pixelmask,
                                                                error=True)
+            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        stellar_continuum=self.stellar_continuum)
+            flux = flux[bins_to_fit,:]
+            ferr = ferr[bins_to_fit,:]
 
         # Get the continuum-subtracted flux
         flux_nc = flux - continuum
