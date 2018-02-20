@@ -1408,15 +1408,20 @@ class EmissionLineModel:
             best_fit_model += self.copy_to_array(ext='BASE')
 
         # Get the number of output models
-        nbins = numpy.amax(binid).astype(int)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
-        nbins += 1
+        nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
+                    numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
+
+        # Map the BINID to the spectrum index, assuming bins are sorted
+        # and that the BINID map has -1 BINID values
+        u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
+                                            return_inverse=True)
+        u_bin_indx = numpy.arange(len(u))-1
+        _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Fill in bins with no models with masked zeros
         emission_lines = numpy.ma.zeros((nbins,best_fit_model.shape[1]), dtype=float)
         emission_lines[:,:] = numpy.ma.masked
-        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+        for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
             emission_lines[i,:] = best_fit_model[j,:]
@@ -1489,10 +1494,8 @@ class EmissionLineModel:
         vel_channel = numpy.arange(len(names))[names == line_name][0]
 
         # Get the number of output kinematics
-        nbins = numpy.amax(binid).astype(int)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
-        nbins += 1
+        nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
+                    numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
 
         # Instantiate the output
         kinematics = numpy.ma.zeros((nbins,2), dtype=float)
@@ -1556,9 +1559,15 @@ class EmissionLineModel:
             eml_z = eml_z.filled(_redshift)
             eml_d = eml_d.filled(_dispersion)
 
-        # Match the kinematics to the output bin ID map; keep track of
-        # which ones have a valid self['BINID'] but are masked
-        for i,j in zip(binid.ravel(), self['BINID'].data.ravel()):
+        # Map the BINID to the spectrum index, assuming bins are sorted
+        # and that the BINID map has -1 BINID values
+        u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
+                                            return_inverse=True)
+        u_bin_indx = numpy.arange(len(u))-1
+        _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
+
+        # Match the kinematics to the output bin ID map
+        for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
             kinematics[i,0] = eml_z[j]
@@ -1602,11 +1611,6 @@ class EmissionLineModel:
         if binid.shape != self.spatial_shape:
             raise ValueError('Input bin ID matrix has incorrect shape.')
 
-        # Get the number of output models
-        nbins = numpy.amax(binid)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) )
-
         # Pull out the dispersion corrections, if requested
         dispersion_corrections = None
         if corrected_dispersion:
@@ -1621,16 +1625,21 @@ class EmissionLineModel:
                                             deredshift=deredshift, redshift_only=redshift_only,
                                             dispersion_corrections=dispersion_corrections)
 
-        # Get the number of output models
-        nbins = numpy.amax(binid).astype(int)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
-        nbins += 1
+        # Get the number of output continuua
+        nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
+                    numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
+
+        # Map the BINID to the spectrum index, assuming bins are sorted
+        # and that the BINID map has -1 BINID values
+        u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
+                                            return_inverse=True)
+        u_bin_indx = numpy.arange(len(u))-1
+        _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Fill in bins with no models with masked zeros
         continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
         continuum[:,:] = numpy.ma.masked
-        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+        for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
             continuum[i,:] = best_fit_continuum[j,:]

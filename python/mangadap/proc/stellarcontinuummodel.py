@@ -1339,28 +1339,19 @@ class StellarContinuumModel:
                                     corrected_dispersion=corrected_dispersion)
 
         # Get the number of output continuua
-        print(numpy.amax(binid))
-        print(missing)
         nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
                     numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
-        print(nbins)
 
         # Map the BINID to the spectrum index, assuming bins are sorted
         # and that the BINID map has -1 BINID values
         u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
                                             return_inverse=True)
         u_bin_indx = numpy.arange(len(u))-1
-        print(u)
-        print(u_bin_indx)
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Fill in bins with no models with masked zeros
         continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
         continuum[:,:] = numpy.ma.masked
-
-        print(continuum.shape)
-        print(best_fit_continuum.shape)
-        print(numpy.amax(_bin_indx)+1)
         for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
@@ -1426,10 +1417,8 @@ class StellarContinuumModel:
             raise ValueError('Input bin ID map must match the spatial shape of the DRP cube.')
 
         # Get the number of output kinematics
-        nbins = numpy.amax(binid).astype(int)
-        if missing is not None:
-            nbins = numpy.amax( numpy.append([nbins], missing) ).astype(int)
-        nbins += 1
+        nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
+                    numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
 
         # Instantiate the output
         kinematics = numpy.ma.zeros((nbins,2), dtype=float)
@@ -1485,9 +1474,15 @@ class StellarContinuumModel:
             str_z = str_z.filled(_redshift)
             str_d = str_d.filled(_dispersion)
 
-        # Match the kinematics to the output bin ID map; keep track of
-        # which ones have a valid self['BINID'] but are masked
-        for i,j in zip(binid.ravel(), self['BINID'].data.ravel()):
+        # Map the BINID to the spectrum index, assuming bins are sorted
+        # and that the BINID map has -1 BINID values
+        u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
+                                            return_inverse=True)
+        u_bin_indx = numpy.arange(len(u))-1
+        _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
+
+        # Match the kinematics to the output bin ID map
+        for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
             kinematics[i,0] = str_z[j]
