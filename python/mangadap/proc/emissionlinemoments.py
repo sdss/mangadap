@@ -725,6 +725,7 @@ class EmissionLineMoments:
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
+        print('interval has not finite: ', numpy.any(numpy.invert(numpy.isfinite(interval_frac))))
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -735,6 +736,7 @@ class EmissionLineMoments:
 
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
+        print('flux has not finite: ', numpy.any(numpy.invert(numpy.isfinite(flux))))
         fluxerr = None if err is None else \
                     numpy.ma.sqrt( passband_integral(wave, numpy.square(err), passband=passband,
                                                      log=True))
@@ -818,6 +820,8 @@ class EmissionLineMoments:
         divbyzero = numpy.zeros(nbands, dtype=numpy.bool)
         undefined_mom2 = numpy.zeros(nbands, dtype=numpy.bool)
 
+        if rcen-bcen == 0:
+            print('band centers are the same!')
         cntm = (rcont - bcont) / (rcen - bcen)
         cntb = bcont - bcen*cntm
 
@@ -932,7 +936,6 @@ class EmissionLineMoments:
                                 else bitmask.turn_on(measurements['MASK'][i,:],
                                                      'NO_ABSORPTION_CORRECTION')
             else:
-                print('band flagging')
                 blue_fraction[numpy.invert(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_bluebands,
                                                 log=True) / numpy.diff(_bluebands, axis=1).ravel()
@@ -969,7 +972,6 @@ class EmissionLineMoments:
                             else bitmask.turn_on(measurements['MASK'][i,spec_n == 0],
                                                  'NO_ABSORPTION_CORRECTION')
 
-            print('pseudo-continua')
             # Get the blue pseudo continuum
             measurements['BCEN'][i,numpy.invert(momdb.dummy)], \
                 measurements['BCONT'][i,numpy.invert(momdb.dummy)], conterr, \
