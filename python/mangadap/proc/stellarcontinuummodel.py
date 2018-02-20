@@ -1345,14 +1345,23 @@ class StellarContinuumModel:
                     numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
         print(nbins)
 
+        # Map the BINID to the spectrum index, assuming bins are sorted
+        # and that the BINID map has -1 BINID values
+        u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
+                                            return_inverse=True)
+        u_bin_indx = numpy.arange(len(u))-1
+        print(u)
+        print(u_bin_indx)
+        _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
+
         # Fill in bins with no models with masked zeros
         continuum = numpy.ma.zeros((nbins,best_fit_continuum.shape[1]), dtype=float)
         continuum[:,:] = numpy.ma.masked
 
         print(continuum.shape)
         print(best_fit_continuum.shape)
-        print(numpy.amax(self.hdu['BINID'].data)+1)
-        for i,j in zip(binid.ravel(), self.hdu['BINID'].data.ravel()):
+        print(numpy.amax(_bin_indx)+1)
+        for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
             continuum[i,:] = best_fit_continuum[j,:]
