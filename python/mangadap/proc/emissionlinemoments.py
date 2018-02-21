@@ -723,12 +723,13 @@ class EmissionLineMoments:
             undefined 2nd moment
         """
         # Get the fraction of the passband that is unmasked
-        print('wave', type(wave))
-        print('spec', type(spec))
-        print('pass', type(passband))
+#        print('wave', type(wave))
+#        print('spec', type(spec))
+#        print('pass', type(passband))
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
-        print('interval has not finite: ', numpy.invert(numpy.isfinite(interval_frac)))
+#        print('frac', type(interval_frac))
+#        print('interval has not finite: ', numpy.invert(numpy.isfinite(interval_frac)))
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -911,6 +912,13 @@ class EmissionLineMoments:
         empty = numpy.zeros(nmom, dtype=numpy.bool)
         divbyzero = numpy.zeros(nmom, dtype=numpy.bool)
         undefined_mom2 = numpy.zeros(nmom, dtype=numpy.bool)
+
+        print('before')
+        print(type(_flux))
+        print(type(_err))
+        print(type(_sres))
+        print(type(_continuum))
+        print(type(_redshift))
 
         # Perform the measurements for each spectrum
         for i in range(nspec):
