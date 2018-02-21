@@ -1504,10 +1504,6 @@ class EmissionLineModel:
         nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
                     numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
 
-        # Instantiate the output
-        kinematics = numpy.ma.zeros((nbins,2), dtype=float)
-        kinematics[:,:] = numpy.ma.masked
-
         # Mask bad values
         mask = self.bitmask.flagged(self.hdu['EMLDATA'].data['MASK'][:,vel_channel].copy(),
                                     [ 'NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA', 'NEAR_BOUND' ])
@@ -1547,9 +1543,10 @@ class EmissionLineModel:
 
         # Just return the single value
         if constant:
-            kinematics[:,0] = _redshift * astropy.constants.c.to('km/s').value if cz else _redshift
-            kinematics[:,1] = _dispersion
-            return kinematics[:,0], kinematics[:,1]
+            eml_z = numpy.full(nbins, _redshift * astropy.constants.c.to('km/s').value
+                                        if cz else _redshift, dtype=float)
+            eml_d = numpy.full(nbins, _dispersion, dtype=float)
+            return eml_z, eml_d
 
         if nearest:
             # Fill masked values with the nearest datum
@@ -1561,9 +1558,9 @@ class EmissionLineModel:
                 valid_bins = numpy.unique(self['BINID'].data)[1:]
                 coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
             replace = eml_z.mask | eml_d.mask
-            _kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
-            eml_z = _kinematics[:,0]
-            eml_d = _kinematics[:,1]
+            kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
+            eml_z = kinematics[:,0]
+            eml_d = kinematics[:,1]
         else:
             # Fill any masked values with the single estimate
             eml_z = eml_z.filled(_redshift)
@@ -1577,17 +1574,20 @@ class EmissionLineModel:
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Match the kinematics to the output bin ID map
+        _eml_z = numpy.ma.masked_all(nbins, dtype=float)
+        _eml_d = numpy.ma.masked_all(nbins, dtype=float)
         for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
-            kinematics[i,0] = eml_z[j]
-            kinematics[i,1] = eml_d[j]
+            _eml_z[[i] = eml_z[j]
+            _eml_d[[i] = eml_d[j]
 
+        eml_z = _eml_z.filled(_redshift)
+        eml_d = _eml_d.filled(_dispersion)
         # Convert to cz velocities (km/s)
         if cz:
-            kinematics[:,0] *= astropy.constants.c.to('km/s').value
-        # Done
-        return kinematics[:,0], kinematics[:,1]
+            eml_z *= astropy.constants.c.to('km/s').value
+        return eml_z, eml_d
 
 
     def fill_continuum_to_match(self, binid, replacement_templates=None, redshift_only=False,

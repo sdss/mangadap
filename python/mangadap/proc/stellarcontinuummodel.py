@@ -1400,9 +1400,8 @@ class StellarContinuumModel:
                 output matched data.
 
         Returns:
-
-            numpy.ma.MaskedArray: Returns arrays with a redshift (or cz) and
-            dispersion for each binned spectrum.
+            numpy.ndarray: Returns (unmasked!) arrays with a redshift
+            (or cz) and dispersion for each binned spectrum.
 
         Raises:
             TypeError: Raised if the input redshift or dispersion values
@@ -1419,10 +1418,6 @@ class StellarContinuumModel:
         # Get the number of output kinematics
         nbins = numpy.amax(binid).astype(int)+1 if missing is None or len(missing) == 0 else \
                     numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
-
-        # Instantiate the output
-        kinematics = numpy.ma.zeros((nbins,2), dtype=float)
-        kinematics[:,:] = numpy.ma.masked
 
         # Mask bad values
         mask = self.bitmask.flagged(self.hdu['PAR'].data['MASK'].copy(),
@@ -1456,9 +1451,10 @@ class StellarContinuumModel:
 
         # Just return the single value
         if constant:
-            kinematics[:,0] = _redshift * astropy.constants.c.to('km/s').value if cz else _redshift
-            kinematics[:,1] = _dispersion
-            return kinematics[:,0], kinematics[:,1]
+            str_z = numpy.full(nbins, _redshift * astropy.constants.c.to('km/s').value
+                                        if cz else _redshift, dtype=float)
+            str_d = numpy.full(nbins, _dispersion, dtype=float)
+            return str_z, str_d
 
         # Fill masked values with the nearest datum
         if nearest:
@@ -1467,9 +1463,9 @@ class StellarContinuumModel:
             valid_bins = numpy.unique(self['BINID'].data)[1:]
             coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
             replace = str_z.mask | str_d.mask
-            _kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
-            str_z = _kinematics[:,0]
-            str_d = _kinematics[:,1]
+            kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
+            str_z = kinematics[:,0]
+            str_d = kinematics[:,1]
         else:
             # Fill any masked values with the single estimate
             str_z = str_z.filled(_redshift)
@@ -1483,17 +1479,20 @@ class StellarContinuumModel:
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Match the kinematics to the output bin ID map
+        _str_z = numpy.ma.masked_all(nbins, dtype=float)
+        _str_d = numpy.ma.masked_all(nbins, dtype=float)
         for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
-            kinematics[i,0] = str_z[j]
-            kinematics[i,1] = str_d[j]
+            _str_z[[i] = str_z[j]
+            _str_d[[i] = str_d[j]
 
+        str_z = _str_z.filled(_redshift)
+        str_d = _str_d.filled(_dispersion)
         # Convert to cz velocities (km/s)
         if cz:
-            kinematics[:,0] *= astropy.constants.c.to('km/s').value
-        # Done
-        return kinematics[:,0], kinematics[:,1]
+            str_z *= astropy.constants.c.to('km/s').value
+        return str_z, str_d
 
 
     def matched_template_flags(self, binned_spectra):
