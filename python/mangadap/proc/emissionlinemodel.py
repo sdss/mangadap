@@ -1579,8 +1579,8 @@ class EmissionLineModel:
         for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
-            _eml_z[[i] = eml_z[j]
-            _eml_d[[i] = eml_d[j]
+            _eml_z[i] = eml_z[j]
+            _eml_d[i] = eml_d[j]
 
         eml_z = _eml_z.filled(_redshift)
         eml_d = _eml_d.filled(_dispersion)

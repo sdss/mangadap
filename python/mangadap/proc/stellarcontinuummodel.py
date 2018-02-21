@@ -1484,8 +1484,8 @@ class StellarContinuumModel:
         for i,j in zip(binid.ravel(), _bin_indx.ravel()):
             if i < 0 or j < 0:
                 continue
-            _str_z[[i] = str_z[j]
-            _str_d[[i] = str_d[j]
+            _str_z[i] = str_z[j]
+            _str_d[i] = str_d[j]
 
         str_z = _str_z.filled(_redshift)
         str_d = _str_d.filled(_dispersion)
