@@ -723,6 +723,9 @@ class EmissionLineMoments:
             undefined 2nd moment
         """
         # Get the fraction of the passband that is unmasked
+        print('wave', type(wave))
+        print('spec', type(spec))
+        print('pass', type(passband))
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
         print('interval has not finite: ', numpy.invert(numpy.isfinite(interval_frac)))
@@ -805,6 +808,10 @@ class EmissionLineMoments:
             undefined_mom2
 
         """
+        print(type(wave))
+        print(type(spec))
+        print(type(err))
+        print(type(mainbands))
 
         # Get the parameters for the linear continuum across the
         # primary passband

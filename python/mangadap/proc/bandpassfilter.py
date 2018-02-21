@@ -256,8 +256,6 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0):
     """
     # Ensure that y is a numpy array, fill any masked values with 0s,
     # and check its shape
-#    _y = y.filled(0.0) if isinstance(y, numpy.ma.MaskedArray) else numpy.asarray(y) 
-#    _x = numpy.asarray(x)
     _y = y.filled(0.0) if isinstance(y, numpy.ma.MaskedArray) else numpy.atleast_1d(y) 
     _x = numpy.atleast_1d(x)
     if len(_x.shape) != 1 or len(_y.shape) != 1:
@@ -269,7 +267,6 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0):
         _x, dx = _pixel_borders( numpy.array([x[0],x[-1]]), _y.size, log=log, base=base)
     if passband is None:
         return numpy.dot(_y, numpy.diff(_x))
-#    _passband = numpy.asarray(passband)
     _passband = numpy.atleast_1d(passband)
     if len(_passband.shape) > 2:
         raise ValueError('Can only handle passband arrays of 1 or 2 dimensions.')
