@@ -776,7 +776,6 @@ class EmissionLineModel:
             warnings.warn('Cannot construct line metrics.')
             return model_eml_par
         neml = len(line_database)
-        print(neml)
 
         # Construct the bin ID map
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
@@ -789,11 +788,8 @@ class EmissionLineModel:
         continuum = numpy.ma.MaskedArray(numpy.zeros(model_base.shape, dtype=float)) \
                         if self.stellar_continuum is None else \
                     self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
-        print(continuum.shape)
         indx = numpy.unique(bin_indx.ravel())[1:]
-        print(len(indx))
         continuum = continuum[indx,:] + model_base
-        print(continuum.shape)
 
         # Get the fitted spectra and errors
         if self.method['deconstruct_bins']:

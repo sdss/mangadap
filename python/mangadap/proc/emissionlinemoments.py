@@ -229,10 +229,6 @@ def available_emission_line_moment_databases(dapsrc=None):
                                                                  default=False),
                                                     cnfg.get('fit_vel_name')) ]
 
-#    for db in moment_set_list:
-#        print(db['key'])
-#        print(db['passbands'])
-
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
                 != len(moment_set_list):
@@ -723,13 +719,8 @@ class EmissionLineMoments:
             undefined 2nd moment
         """
         # Get the fraction of the passband that is unmasked
-#        print('wave', type(wave))
-#        print('spec', type(spec))
-#        print('pass', type(passband))
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
                                 / numpy.diff(passband).ravel()
-#        print('frac', type(interval_frac))
-#        print('interval has not finite: ', numpy.invert(numpy.isfinite(interval_frac)))
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -740,7 +731,6 @@ class EmissionLineMoments:
 
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
-        print('flux has not finite: ', numpy.invert(numpy.isfinite(flux)))
         fluxerr = None if err is None else \
                     numpy.ma.sqrt( passband_integral(wave, numpy.square(err), passband=passband,
                                                      log=True))
@@ -809,11 +799,6 @@ class EmissionLineMoments:
             undefined_mom2
 
         """
-        print(type(wave))
-        print(type(spec))
-        print(type(err))
-        print(type(mainbands))
-
         # Get the parameters for the linear continuum across the
         # primary passband
         nbands = mainbands.shape[0]
@@ -913,16 +898,8 @@ class EmissionLineMoments:
         divbyzero = numpy.zeros(nmom, dtype=numpy.bool)
         undefined_mom2 = numpy.zeros(nmom, dtype=numpy.bool)
 
-        print('before')
-        print(type(_flux))
-        print(type(_err))
-        print(type(_sres))
-        print(type(_continuum))
-        print(type(_redshift))
-
         # Perform the measurements for each spectrum
         for i in range(nspec):
-
             print('Measuring emission-line moments in spectrum: {0}/{1}'.format(i+1,nspec),
                   end='\r')
 
@@ -1030,7 +1007,6 @@ class EmissionLineMoments:
 
             _mainbands = momdb['primary'][indx]*(1.0+_redshift[i])
 
-            print('moments')
             measurements['CNTSLOPE'][i,indx], cntb, measurements['FLUX'][i,indx], \
                     measurements['FLUXERR'][i,indx], measurements['MOM1'][i,indx], \
                     measurements['MOM1ERR'][i,indx], measurements['MOM2'][i,indx], \
@@ -1268,8 +1244,6 @@ class EmissionLineMoments:
         measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
                                             continuum=continuum, redshift=_redshift,
                                             bitmask=self.bitmask)
-        print(numpy.sum(numpy.isfinite(measurements['FLUX'])))
-        print(numpy.prod(measurements['FLUX'].shape))
 
         #---------------------------------------------------------------
         # Perform the equivalent width measurements
