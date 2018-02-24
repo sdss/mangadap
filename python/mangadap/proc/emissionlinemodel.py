@@ -1515,8 +1515,7 @@ class EmissionLineModel:
                                                     (0.0 if redshift is None else redshift),
                                                     dtype=float))
             eml_d = numpy.ma.MaskedArray(numpy.full(self.nmodels,
-                                    (100.0 if default_dispersion is None else default_dispersion),
-                                    dtype=float))
+                                    (100.0 if dispersion is None else dispersion), dtype=float))
         else:
             # Pull out the data
             eml_z = numpy.ma.MaskedArray(self.hdu['EMLDATA'].data['KIN'][:,vel_channel,0].copy(),
