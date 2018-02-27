@@ -236,11 +236,9 @@ def _validate_templates_components(templates, gas_template, component, moments, 
     returned data is identical to the input.  If not, the returned data
     are restructured as necessary for running pPXF.
     
-    
-    The start vector is used to set
-    the guess offset (including vsyst) between the provided mask and the
-    template.  The tpl_to_use vector is used to set a tempate as
-    invalid.
+    The start vector is used to set the guess offset (including vsyst)
+    between the provided mask and the template.  The tpl_to_use vector
+    is used to set a tempate as invalid.
 
     ..warning::
         Unclear what happens if an entire component is lost!
@@ -689,7 +687,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
     Main calling function for fitting stellar-continuum and nebular
     emission lines in many spectra using pPXF.
 
-    This is a generalization of :func:`emline_fitter_with_ppxf provided
+    This is a generalization of :func:`emline_fitter_with_ppxf` provided
     by Xihan Ji and Michele Cappellari.
     
     The function *does not* fit for the stellar kinematics; these are

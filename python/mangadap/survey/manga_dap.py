@@ -303,6 +303,16 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
+#        model_flux = emission_line_model['FLUX'].data
+#        model_base = emission_line_model['BASE'].data
+#        model_mask = emission_line_model['MASK'].data
+#        model_eml_par = emission_line_model['EMLDATA'].data
+#        model_binid = emission_line_model['BINID'].data \
+#                        if emission_line_model.method['deconstruct_bins'] else None
+#        test_eml_par = emission_line_model._get_line_fit_metrics(model_flux, model_base,
+#                                                                 model_mask, model_eml_par,
+#                                                                 model_binid)
+
         #---------------------------------------------------------------
         # If requested by the emission-line moments method, remeasure
         # the moments after the emission-line modeling.  This will

@@ -56,6 +56,9 @@ Implements an emission-line fitting class that largely wraps pPXF.
         :func:`mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit`.
         Adjust for change to
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
+    | **24 Feb 2018**: (KBW) Allow for a new template library to be
+        used, different from the one used during the stellar continuum
+        fit.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -93,6 +96,7 @@ from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
 from ..util import lineprofiles
+from .templatelibrary import TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
@@ -117,10 +121,6 @@ class SasukePar(ParSet):
     and some of its components are filled by
     :func:`mangdap.proc.emissionlinemodel.EmissionLineModel._fill_method_par`.
 
-    .. todo::
-        It should be possible to allow for a replacement set of
-        templates but I (KBW) need to remember how to do this.
-
     When instantiated, the :class:`mangadap.par.parset.ParSet` objects
     test that the input objects match the provided dtypes.  See
     documentation for :class:`mangadap.par.parset.ParSet` for the list
@@ -134,6 +134,10 @@ class SasukePar(ParSet):
             (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Emission-line database with the details of the lines to be
             fit.
+        continuum_templates
+            (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
+            (**Optional**) The new continuum template library to use
+            during the emission-line fit.
         etpl_line_sigma_mode (str): (**Optional**) Mode used to set the
             instrumental dispersion of the emission-line templates.
             Mode options are explated by
@@ -162,29 +166,32 @@ class SasukePar(ParSet):
         reddening (float): pPXF reddening parameter setting the initial
             :math:`E(B-V)` to fit, based on a Calzetti law.
     """
-    def __init__(self, stellar_continuum, emission_lines, etpl_line_sigma_mode=None,
-                 etpl_line_sigma_min=None,guess_redshift=None, guess_dispersion=None,
-                 minimum_snr=None, deconstruct_bins=None, pixelmask=None, reject_boxcar=None,
-                 bias=None, moments=None, degree=None, mdegree=None, reddening=None):
+    def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
+                 etpl_line_sigma_mode=None, etpl_line_sigma_min=None,guess_redshift=None,
+                 guess_dispersion=None, minimum_snr=None, deconstruct_bins=None, pixelmask=None,
+                 reject_boxcar=None, bias=None, moments=None, degree=None, mdegree=None,
+                 reddening=None):
 
         arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
         etpl_mode_options = Sasuke.etpl_line_sigma_options()
 
-        pars =     [ 'stellar_continuum', 'emission_lines', 'etpl_line_sigma_mode',
-                     'etpl_line_sigma_min', 'guess_redshift', 'guess_dispersion', 'minimum_snr',
-                     'deconstruct_bins', 'pixelmask', 'reject_boxcar', 'bias', 'moments', 'degree',
-                     'mdegree', 'reddening' ]
-        values =   [ stellar_continuum, emission_lines, etpl_line_sigma_mode, etpl_line_sigma_min,
-                     guess_redshift, guess_dispersion, minimum_snr, deconstruct_bins, pixelmask,
-                     reject_boxcar, bias, moments, degree, mdegree, reddening ]
-        defaults = [ None, None, 'default', 0.0, None, None, 0.0, False, None, None, None, 2, -1,
-                     0, None ]
-        options = [ None, None, etpl_mode_options, None, None, None, None, None, None, None, None,
-                    None, None, None, None ]
-        dtypes =   [ StellarContinuumModel, EmissionLineDB, str, in_fl, arr_in_fl, arr_in_fl,
-                     in_fl, bool, SpectralPixelMask, int, in_fl, int, int, int, in_fl ]
+        pars =     [ 'stellar_continuum', 'emission_lines', 'continuum_templates',
+                     'etpl_line_sigma_mode', 'etpl_line_sigma_min', 'guess_redshift',
+                     'guess_dispersion', 'minimum_snr', 'deconstruct_bins', 'pixelmask',
+                     'reject_boxcar', 'bias', 'moments', 'degree', 'mdegree', 'reddening' ]
+        values =   [ stellar_continuum, emission_lines, continuum_templates,
+                     etpl_line_sigma_mode, etpl_line_sigma_min, guess_redshift, guess_dispersion,
+                     minimum_snr, deconstruct_bins, pixelmask, reject_boxcar, bias, moments,
+                     degree, mdegree, reddening ]
+        defaults = [ None, None, None, 'default', 0.0, None, None, 0.0, False, None, None, None,
+                     2, -1, 0, None ]
+        options = [ None, None, None, etpl_mode_options, None, None, None, None, None, None, None,
+                    None, None, None, None, None ]
+        dtypes =   [ StellarContinuumModel, EmissionLineDB, TemplateLibrary, str, in_fl,
+                     arr_in_fl, arr_in_fl, in_fl, bool, SpectralPixelMask, int, in_fl, int, int,
+                     int, in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)

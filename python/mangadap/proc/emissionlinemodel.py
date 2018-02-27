@@ -63,6 +63,9 @@ A class hierarchy that fits the emission lines.
     | **15 Feb 2018**: (KBW) No longer imports
         :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`
         to avoid circular imports (this should be coded better...)
+    | **24 Feb 2018**: (KBW) Added keyword for a new template library
+        that can be used instead of the same templates used during the
+        stellar-continuum fit.
     
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -136,20 +139,21 @@ class EmissionLineModelDef(ParSet):
         artifacts (str): String identifying the artifact database to use
         emission_lines (str): String identifying the emission-line
             database to use
+        continuum_templates (str): String identifying the continuum
+            templates to use
     """
     def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
-                 artifacts, emission_lines, fitpar, fitclass, fitfunc):
+                 artifacts, emission_lines, continuum_templates, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
-                     'artifacts', 'emission_lines', 'fitpar', 'fitclass', 'fitfunc' ]
+                     'artifacts', 'emission_lines', 'continuum_templates', 'fitpar', 'fitclass',
+                     'fitfunc' ]
         values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
-                     emission_lines, fitpar, fitclass, fitfunc ]
-        dtypes =   [ str, in_fl, bool, str, str, str, str, par_opt, None, None ]
-
-        can_call = [ False, False, False, False, False, False, False, False, False, True ]
-
+                     emission_lines, continuum_templates, fitpar, fitclass, fitfunc ]
+        dtypes =   [ str, in_fl, bool, str, str, str, str, str, par_opt, None, None ]
+        can_call = [ False, False, False, False, False, False, False, False, False, False, True ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
@@ -230,6 +234,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
         validate_emission_line_modeling_method_config(cnfg)
         deconstruct_bins = cnfg.getbool('deconstruct_bins', default=False)
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
+        continuum_templates = cnfg.get('continuum_templates')
 
         if cnfg['fit_method'] == 'elric':
             # Chose to use Elric: Parameter set has defaults to handle
@@ -237,6 +242,8 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # and minimum_snr
             if deconstruct_bins:
                 raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
+            if continuum_templates is not None:
+                raise NotImplementedError('When using Elric, cannot change continuum templates.')
 
             fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
                               None, None, minimum_snr=minimum_snr)
@@ -246,8 +253,10 @@ def available_emission_line_modeling_methods(dapsrc=None):
         elif cnfg['fit_method'] == 'sasuke':
             # Chose to use Sasuke: Parameter set has defaults to handle
             # missing or None values for reject_boxcar, bias, moments,
-            # degree, mdegree
-            fitpar = SasukePar(None, None, etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
+            # degree, mdegree; if provided new continuum templates are
+            # constructed during the _fill_method_par call.
+            fitpar = SasukePar(None, None, continuum_templates=None,
+                               etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
                                etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
                                guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
                                deconstruct_bins=deconstruct_bins, pixelmask=None,
@@ -261,7 +270,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
         method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
                                               cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
                                               cnfg.get('artifact_mask'), cnfg['emission_lines'],
-                                              fitpar, fitclass, fitfunc) ]
+                                              continuum_templates, fitpar, fitclass, fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -656,6 +665,9 @@ class EmissionLineModel:
 
         Fill in any remaining modeling parameters.
 
+        .. todo::
+            - Construct the replacement template library here instead of
+              in Sasuke?
         """
         # Fit parameters not defined so continue
         if self.method['fitpar'] is None:
@@ -673,6 +685,48 @@ class EmissionLineModel:
         if self.stellar_continuum is not None \
                 and 'stellar_continuum' in self.method['fitpar'].keys():
             self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
+
+        if self.method['continuum_templates'] is not None:
+            if self.method['fitpar']['stellar_continuum'] is not None \
+                    and self.stellar_continuum.method['fitpar']['template_library_key'] \
+                                    == self.method['continuum_templates']:
+                warnings.warn('Request emission-line continuum templates identical to those used'
+                              'during the stellar continuum fitting; selection unnecessary.')
+                self.method['fitpar']['continuum_templates'] = None
+            else:
+                # A different set of templates are being used:
+                #   - Must match the spectral resolution of the
+                #     templates to the galaxy data.
+                #   - Fitting function must use the corrected
+                #     dispersions for the stellar kinematics!
+                if self.method['deconstruct_bins']:
+                    # If ultimately fitting the unbinned spaxels, match
+                    # the resolution to the DRP file
+                    spaxel_to_fit = self.binned_spectra.check_fgoodpix()
+                    specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' \
+                                            else None
+                    sres = self.binned_spectra.drpf.spectral_resolution(
+                                ext=specres_ext, toarray=True, fill=True,
+                                pre=self.binned_spectra.method['prepixel_sres'])[spaxel_to_fit,:]
+                    sres = numpy.median(sres, axis=0)
+                else:
+                    # Otherwise match to the median resolution of the
+                    # binned spectra.
+                    bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        stellar_continuum=self.stellar_continuum)
+                    sres = numpy.median(
+                                self.binned_spectra.copy_to_array(ext='SPECRES')[bins_to_fit,:],
+                                axis=0)
+                dlogl = spectral_coordinate_step(self.binned_spectra['WAVE'].data, log=True)
+                voff = numpy.mean(astropy.constants.c.to('km/s').value 
+                                        * self.method['fitpar']['guess_redshift'])
+
+                self.method['fitpar']['continuum_templates'] \
+                        = TemplateLibrary(self.method['continuum_templates'], sres=sres,
+                                          velocity_offset=voff, spectral_step=dlogl, log=True,
+                                          dapsrc=dapsrc, analysis_path=analysis_path,
+                                          hardcopy=False, loggers=self.loggers, quiet=self.quiet)
 
 
     def _add_method_header(self, hdr, model_binid=None):
@@ -777,10 +831,17 @@ class EmissionLineModel:
             return model_eml_par
         neml = len(line_database)
 
+#        print(neml)
+#        print(line_database['RESTWAVE'])
+
         # Construct the bin ID map
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                             model_eml_par['BINID']).reshape(self.spatial_shape) \
                             if model_binid is None else model_binid
+
+#        pyplot.imshow(bin_indx.T, origin='lower', interpolation='nearest')
+#        pyplot.colorbar()
+#        pyplot.show()
 
         wave = self.binned_spectra['WAVE'].data
 
@@ -790,6 +851,13 @@ class EmissionLineModel:
                     self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
         indx = numpy.unique(bin_indx.ravel())[1:]
         continuum = continuum[indx,:] + model_base
+
+        # Allow the fitting function to return a boolean model mask
+        if model_mask.dtype is numpy.dtype('bool'):
+            _model_mask = numpy.zeros(model_flux.shape, dtype=self.bitmask.minimum_dtype())
+            _model_mask[model_mask] = self.bitmask.turn_on(_model_mask[model_mask], 'DIDNOTUSE')
+        else:
+            _model_mask = model_mask
 
         # Get the fitted spectra and errors
         if self.method['deconstruct_bins']:
@@ -818,16 +886,34 @@ class EmissionLineModel:
         flux_nc = flux - continuum
 
         # Mask the model flux
-        _model_flux = numpy.ma.MaskedArray(model_flux, mask=model_mask>0)
+        _model_flux = numpy.ma.MaskedArray(model_flux+continuum, mask=_model_mask>0)
+
+        nspec = continuum.shape[0]
+#        print(nspec, flux.shape[0])
+#        pyplot.plot(wave, flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, _model_flux[nspec//2,:], color='C3')
+#        pyplot.plot(wave, flux_nc[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, _model_flux[nspec//2,:]-continuum[nspec//2,:], color='C0')
+#        pyplot.show()
 
         # Get the data for the metrics
-        resid = numpy.square(flux-model_flux)
-        fresid = numpy.square(numpy.ma.divide(flux-model_flux, model_flux))
-        chisqr = numpy.square(numpy.ma.divide(flux-model_flux, ferr))
+        resid = numpy.square(flux-_model_flux)
+        fresid = numpy.square(numpy.ma.divide(flux-_model_flux, _model_flux))
+        chisqr = numpy.square(numpy.ma.divide(flux-_model_flux, ferr))
         spec_mask = resid.mask | fresid.mask | chisqr.mask
         resid[spec_mask] = numpy.ma.masked
         fresid[spec_mask] = numpy.ma.masked
         chisqr[spec_mask] = numpy.ma.masked
+
+#        pyplot.plot(wave, flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, resid[nspec//2,:], color='0.5', lw=1.5)
+#        pyplot.show()
+#        pyplot.plot(wave, flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, fresid[nspec//2,:], color='0.5', lw=1.5)
+#        pyplot.show()
+#        pyplot.plot(wave, flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, chisqr[nspec//2,:], color='0.5', lw=1.5)
+#        pyplot.show()
 
         # Get the pixel at which to center the metric calculations
         flags = ['INSUFFICIENT_DATA', 'FIT_FAILED', 'UNDEFINED_COVAR', 'NEAR_BOUND' ]
@@ -836,14 +922,35 @@ class EmissionLineModel:
         sample_wave = line_database['RESTWAVE'][None,:]*(1+z)
         interp = interpolate.interp1d(wave, numpy.arange(wave.size), bounds_error=False,
                                       fill_value=-1, assume_sorted=True)
-        unraveled_mask = numpy.invert(sample_wave.mask.ravel())
-        model_eml_par['LINE_PIXC'].ravel()[unraveled_mask] \
-                = numpy.around(interp(sample_wave.data.ravel()[unraveled_mask])).astype(int)
+        model_eml_par['LINE_PIXC'] = numpy.around(interp(sample_wave.data)).astype(int)
+        model_eml_par['LINE_PIXC'][sample_wave.mask] = -1
         mask = (model_eml_par['LINE_PIXC'] < 0) | (model_eml_par['LINE_PIXC'] >= wave.size)
+
+#        print(sample_wave.shape)
+#        print(sample_wave[nspec//2,:])
+#        print(interp(sample_wave.data[nspec//2,:]))
+#
+#        print(len(wave), flux.shape[1])
+#        print(model_eml_par['LINE_PIXC'].shape)
+#        print(model_eml_par['LINE_PIXC'][nspec//2,:])
+
+#        pyplot.plot(wave, flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(wave, _model_flux[nspec//2,:], color='C3')
+#        pyplot.scatter(sample_wave[nspec//2,:], [numpy.amax(flux[nspec//2,:])]*neml, marker='.',
+#                       s=50, color='C0')
+#        pyplot.show()
+#
+#        pyplot.plot(numpy.arange(len(wave)), flux[nspec//2,:], color='k', lw=1.5)
+#        pyplot.plot(numpy.arange(len(wave)), _model_flux[nspec//2,:], color='C3')
+#        pyplot.scatter(model_eml_par['LINE_PIXC'][nspec//2,:],
+#                       [numpy.amax(flux[nspec//2,:])]*neml, marker='.', s=50, color='C0')
+#        pyplot.show()
 
         # Iterate over the number of lines
         nspec = flux.shape[0]
         for i in range(neml):
+            if not self.quiet:
+                print('Getting fit metrics for line: {0}/{1}'.format(i+1, neml), end='\r')
             start = model_eml_par['LINE_PIXC'][:,i] - metric_window//2
             end = start + metric_window
             m = numpy.zeros(flux.shape, dtype=float)
@@ -851,16 +958,28 @@ class EmissionLineModel:
                 if mask[j,i]:
                     continue
                 m[j,start[j]:end[j]] = 1.
-                model_eml_par['AMP'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]]
-                model_eml_par['ANR'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]] \
-                                                / ferr[j,model_eml_par['LINE_PIXC'][j,i]]
+                masked_pixel = flux_nc.mask[j,model_eml_par['LINE_PIXC'][j,i]] \
+                                | ferr.mask[j,model_eml_par['LINE_PIXC'][j,i]]
+                if masked_pixel:
+                    model_eml_par['AMP'][j,i] = 0.0 
+                    model_eml_par['ANR'][j,i] = 0.0
+                else:     
+                    model_eml_par['AMP'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]]
+                    model_eml_par['ANR'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]] \
+                                                    / ferr[j,model_eml_par['LINE_PIXC'][j,i]]
             m[spec_mask] = 0.
 
             model_eml_par['LINE_NSTAT'][:,i] = numpy.sum(m,axis=1)
-            model_eml_par['LINE_RMS'][:,i] = numpy.sqrt(numpy.mean(m*resid,axis=1))
-            model_eml_par['LINE_FRMS'][:,i] = numpy.sqrt(numpy.mean(m*fresid,axis=1))
-            model_eml_par['LINE_CHI2'][:,i] = numpy.sqrt(numpy.sum(m*fresid,axis=1))
+            model_eml_par['LINE_RMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*resid,axis=1)
+                                                           ).filled(0.0)
+            model_eml_par['LINE_FRMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*fresid,axis=1)
+                                                            ).filled(0.0)
+            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sqrt(numpy.ma.sum(m*fresid,axis=1)
+                                                            ).filled(0.0)
 
+        if not self.quiet:
+            print('Getting fit metrics for line: {0}/{0}'.format(neml))
+#        print(model_eml_par['LINE_RMS'][nspec//2,:])
         return model_eml_par
 
 
