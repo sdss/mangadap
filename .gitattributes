@@ -2641,6 +2641,10 @@ python/mangadap/config/emission_line_modeling/efitmdb.ini -text
 python/mangadap/config/emission_line_modeling/efitmr.ini -text
 python/mangadap/config/emission_line_modeling/efitmrdb.ini -text
 python/mangadap/config/emission_line_modeling/efits.ini -text
+python/mangadap/config/emission_line_modeling/efitt0db.ini -text
+python/mangadap/config/emission_line_modeling/efitt1db.ini -text
+python/mangadap/config/emission_line_modeling/efitt2db.ini -text
+python/mangadap/config/emission_line_modeling/efitt3db.ini -text
 python/mangadap/config/emission_line_moments/emomf.ini -text
 python/mangadap/config/emission_line_moments/emomm.ini -text
 python/mangadap/config/emission_line_moments/emoms.ini -text
