@@ -35,6 +35,7 @@ data/emission_bandpass_filters/elb_mpl5.par -text
 data/emission_bandpass_filters/elbfull.par -text
 data/emission_bandpass_filters/elbmiles.par -text
 data/emission_bandpass_filters/elbstrong.par -text
+data/emission_bandpass_filters/elbtt.par -text
 data/emission_lines/README -text
 data/emission_lines/elp_mpl5.par -text
 data/emission_lines/elpext.par -text
@@ -42,6 +43,10 @@ data/emission_lines/elpfull.par -text
 data/emission_lines/elpmiles.par -text
 data/emission_lines/elpsiii.par -text
 data/emission_lines/elpstrong.par -text
+data/emission_lines/elpt0.par -text
+data/emission_lines/elpt1.par -text
+data/emission_lines/elpt2.par -text
+data/emission_lines/elpt3.par -text
 data/filter_response/README -text
 data/filter_response/gunn_2001_g_response.db -text
 data/filter_response/gunn_2001_i_response.db -text
@@ -2629,6 +2634,7 @@ python/mangadap/config/defaults.py -text
 python/mangadap/config/emission_bandpass_filters/elbfull.ini -text
 python/mangadap/config/emission_bandpass_filters/elbmiles.ini -text
 python/mangadap/config/emission_bandpass_filters/elbstrong.ini -text
+python/mangadap/config/emission_bandpass_filters/elbtt.ini -text
 python/mangadap/config/emission_line_modeling/efitf.ini -text
 python/mangadap/config/emission_line_modeling/efitm.ini -text
 python/mangadap/config/emission_line_modeling/efitmdb.ini -text
@@ -2638,10 +2644,15 @@ python/mangadap/config/emission_line_modeling/efits.ini -text
 python/mangadap/config/emission_line_moments/emomf.ini -text
 python/mangadap/config/emission_line_moments/emomm.ini -text
 python/mangadap/config/emission_line_moments/emoms.ini -text
+python/mangadap/config/emission_line_moments/emomt.ini -text
 python/mangadap/config/emission_lines/elpext.ini -text
 python/mangadap/config/emission_lines/elpfull.ini -text
 python/mangadap/config/emission_lines/elpmiles.ini -text
 python/mangadap/config/emission_lines/elpstrong.ini -text
+python/mangadap/config/emission_lines/elpt0.ini -text
+python/mangadap/config/emission_lines/elpt1.ini -text
+python/mangadap/config/emission_lines/elpt2.ini -text
+python/mangadap/config/emission_lines/elpt3.ini -text
 python/mangadap/config/example_ini/example_absorption_index_config.ini -text
 python/mangadap/config/example_ini/example_bandhead_index_config.ini -text
 python/mangadap/config/example_ini/example_bitmask_config.ini -text

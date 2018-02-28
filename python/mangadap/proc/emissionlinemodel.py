@@ -974,8 +974,7 @@ class EmissionLineModel:
                                                            ).filled(0.0)
             model_eml_par['LINE_FRMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*fresid,axis=1)
                                                             ).filled(0.0)
-            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sqrt(numpy.ma.sum(m*fresid,axis=1)
-                                                            ).filled(0.0)
+            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sum(m*chisqr,axis=1)).filled(0.0)
 
         if not self.quiet:
             print('Getting fit metrics for line: {0}/{0}'.format(neml))
