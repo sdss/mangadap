@@ -211,7 +211,8 @@ class EmissionLineTemplates:
         if _sinst.shape != self.wave.shape:
             raise ValueError('Provided sigma_inst must be a single number or a vector with the'
                              'same length as the wavelength vector.')
-        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True)
+        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True,
+                                               fill_value=-1)
         self.log = log
         self.base = base
 
