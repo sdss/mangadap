@@ -37,7 +37,7 @@ typedef struct {
 } DAPEML;
 
 DAPEML   1  OII     3727.092   vac  f   1.000  k20  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
-DAPEML   2  OII     3729.875   vac  f   1.000   k1  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML   2  OII     3729.875   vac  f   1.000  k20  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
 DAPEML   3  Hthe    3798.9826  vac  f   1.000  k19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3771.5  3791.5 } { 3806.5  3826.5 }
 DAPEML   4  Heta    3836.4790  vac  f   1.000  k19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
 DAPEML   5  NeIII   3869.86    vac  f   1.000  k14  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
