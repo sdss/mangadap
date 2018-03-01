@@ -515,10 +515,10 @@ class DRPComplete:
             # the plateTargets files
             corrected_z = None
             if redshift_fix_data is not None:
-                indx = (redshift_fix_data['DAPZCORR']['plate'] == self.platelist[i]) \
+                z_indx = (redshift_fix_data['DAPZCORR']['plate'] == self.platelist[i]) \
                             & (redshift_fix_data['DAPZCORR']['ifudesign'] == self.ifudesignlist[i])
-                if numpy.sum(indx) == 1:
-                    corrected_z = redshift_fix_data['DAPZCORR']['z'][indx][0]
+                if numpy.sum(z_indx) == 1:
+                    corrected_z = redshift_fix_data['DAPZCORR']['z'][z_indx][0]
 
             if corrected_z is None:
                 # As of MPL-6, platetargets files now include the
