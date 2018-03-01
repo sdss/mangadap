@@ -53,6 +53,7 @@ data/filter_response/gunn_2001_i_response.db -text
 data/filter_response/gunn_2001_r_response.db -text
 data/filter_response/gunn_2001_u_response.db -text
 data/filter_response/gunn_2001_z_response.db -text
+data/fix/redshift_fix.par -text
 data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.005.fits -text svneol=unset#unset
 data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.025.fits -text svneol=unset#unset
 data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.101.fits -text svneol=unset#unset
