@@ -350,8 +350,12 @@ class DRPComplete:
 
         plttrg_data = []
 
+        root = '/'+os.path.join(*(self.platetargets[0].split('/')[:-1]))
+        print('plateTargets root directory: {0}'.format(root))
+
         for p in self.platetargets:
-            print('Reading plateTargets file: {0}'.format(p), end='\r')
+            pfile = p.split('/')[-1]
+            print('Reading plateTargets file: {0}'.format(pfile), end='\r')
             # Check that the file exists
             if not os.path.exists(p):
                 raise FileNotFoundError('Cannot open {0}!'.format(p))
