@@ -1170,6 +1170,7 @@ class PPXFFit(StellarKinematicsFit):
         # spectra
         usetpl = numpy.any(self.usetpl, axis=0).reshape(1,-1)
 
+#        plot=True
         # Fit the spectrum
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'First fit to global spectrum.')
@@ -1726,7 +1727,7 @@ class PPXFFit(StellarKinematicsFit):
                          match_spectral_resolution(self.tpl_wave, tmp_wlosvd,
                                                    self.tpl_sres.sres(),
                                                    self.obj_wave/(1+nominal_redshift[i]),
-                                                   self.obj_sres[i,:], min_sig_pix=1.0, log10=True,
+                                                   self.obj_sres[i,:], min_sig_pix=0.0, log10=True,
                                                    new_log10=True, quiet=True, no_offset=False)
 
                 # Check 2-pixel resolution limit in resolution-matched
@@ -1741,8 +1742,10 @@ class PPXFFit(StellarKinematicsFit):
 #                pyplot.plot(self.tpl_wave, model_template[i,:])
 #                pyplot.plot(self.tpl_wave, tmp_wlosvd)
 #                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres)
+#                pyplot.plot(self.tpl_wave, mask)
 ##                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres - model_template[i,:])
 #                pyplot.show()
+#                exit()
 
                 # Resample to match the object spectra
                 inRange = self.tpl_wave[[0,-1]] * (1.0 + nominal_redshift[i])

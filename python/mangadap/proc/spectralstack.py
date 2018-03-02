@@ -851,7 +851,7 @@ class SpectralStack():
         flux = drpf.copy_to_masked_array(flag=drpf.do_not_stack_flags())
         ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_stack_flags())
         sres = None if par is None or not par['stack_sres'] \
-                else drpf.spectral_resolution(toarray=True, pre=par['prepixel_sres'])
+                else drpf.spectral_resolution(toarray=True, pre=par['prepixel_sres'], fill=True)
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 
