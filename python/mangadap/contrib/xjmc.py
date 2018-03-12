@@ -889,8 +889,17 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
     # If debugging, just return the initialized output
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
+        if mode == 'fitBins':
+            # - Get the index of the nearest bin for every spaxel
+            nearest_bin = np.argmin(np.square(x[:,None] - x_binned)
+                                        + np.square(y[:,None] - y_binned), axis=1)
+        else:
+            nearest_bin = np.arange(nspec)
+        kininp = np.array([np.concatenate(tuple(inp_start[0]))]*nspec)
+        kin = kininp
+        kinerr = kin/10
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err
+                    ebv, kininp, kin, kin_err, nearest_bin
 
     # First fit the binned data
     if mode == 'fitBins':
