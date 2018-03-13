@@ -285,6 +285,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
+#        ha_flux = emission_line_moments['ELMMNTS'].data['FLUX'][:,18].copy()
+
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
@@ -313,6 +315,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 #                                                                 model_mask, model_eml_par,
 #                                                                 model_binid)
 
+#        el_continuum = emission_line_model.fill_continuum_to_match(binned_spectra['BINID'].data,
+#                                                        missing=binned_spectra.missing_bins)
+#        sc_continuum = stellar_continuum.fill_to_match(binned_spectra['BINID'].data,
+#                                               missing=binned_spectra.missing_bins)
+#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[0,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum[0,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, sc_continuum[0,:])
+#        pyplot.show()
+
         #---------------------------------------------------------------
         # If requested by the emission-line moments method, remeasure
         # the moments after the emission-line modeling.  This will
@@ -326,24 +337,31 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           analysis_path=_analysis_path,
                                           clobber=plan['elmom_clobber'][i], loggers=loggers)
 
+#        print(emission_line_moments['ELMMNTS'].data['FLUX'].shape)
+#
+#        pyplot.scatter(ha_flux,
+#                       numpy.ma.divide(emission_line_moments['ELMMNTS'].data['FLUX'][:,18],ha_flux),
+#                       marker='.', s=20, lw=0)
+#        pyplot.show()
+#
+#        pyplot.scatter(emission_line_model['EMLDATA'].data['FLUX'][:,18],
+#                       numpy.ma.divide(ha_flux,emission_line_model['EMLDATA'].data['FLUX'][:,18]),
+#                       marker='.', s=20, lw=0)
+#        pyplot.show()
+#
+#        pyplot.scatter(emission_line_model['EMLDATA'].data['FLUX'][:,18],
+#                       numpy.ma.divide(emission_line_moments['ELMMNTS'].data['FLUX'][:,18],
+#                                       emission_line_model['EMLDATA'].data['FLUX'][:,18]),
+#                       marker='.', s=20, lw=0)
+#        pyplot.show()
+
         #---------------------------------------------------------------
         # Spectral-Index Measurements
         #---------------------------------------------------------------
-#        _emlmodel = None if emission_line_model is not None \
-#                            and emission_line_model.method['deconstruct_bins'] \
-#                            and plan['spindex_key'][i] is not None \
-#                         else emission_line_model
-#        if plan['spindex_key'][i] is not None and emission_line_model.method['deconstruct_bins']:
-#            warnings.warn('Cannot perform spectral index measurements when emission-line model '
-#                          'is fit to deconstructed bins. Continuing without subtracting '
-#                          'emission-line model from data.')
-##            raise NotImplementedError('Cannot perform spectral index measurements when '
-##                                      'emission-line model is fit to deconstructed bins')
         spectral_indices = None if plan['spindex_key'][i] is None else \
                     SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
-#                                    emission_line_model=_emlmodel, dapsrc=dapsrc,
                                     analysis_path=_analysis_path, tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
 

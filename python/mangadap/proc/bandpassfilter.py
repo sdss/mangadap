@@ -536,6 +536,10 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         ewerr[i,pos[i,:]] = 0.0 if line_flux_err is None \
                                 else line_flux_err[i,pos[i,:]] / ewcont[i,pos[i,:]]
 
+        # Correct for the redshift
+        ew[i,pos[i,:]] /= (1.0+_redshift[i])
+        ewerr[i,pos[i,:]] /= (1.0+_redshift[i])
+
 #        pyplot.step(wave, _flux[i,:], where='mid', color='k', lw=0.5, zorder=1)
 #        pyplot.scatter(bcen[indx], bmed[i,indx], marker='.', s=50, color='b', lw=0, zorder=3)
 #        pyplot.scatter(rcen[indx], rmed[i,indx], marker='.', s=50, color='r', lw=0, zorder=3)
