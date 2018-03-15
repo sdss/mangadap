@@ -44,7 +44,8 @@ Container class that defines a bandpass filter.
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **20 Apr 2016**: (KBW) Include measurements
     | **29 Jul 2016**: (KBW) Convert some calls to asarray to atleast_1d
-
+    | **15 Mar 2018**: (KBW) Allow the redshift in the equivalent width
+        measurement to be specific to each bandpass.
 """
 
 from __future__ import division
@@ -414,8 +415,11 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         log (bool): (**Optional**) Boolean that the spectra are
             logarithmically sampled in wavelength.  Default is True.
         redshift (numpy.ndarray): (**Optional**) Redshift of each
-            spectrum.  Default is to assume the redshift is 0 (i.e.,
-            that the observed and rest frames are identical).
+            spectrum and each bandpass.  If a single vector is provided,
+            the length must match the number of provided spectra; if an
+            array is provided, the shape must be (Nspec,Nband).  By
+            default, all measurements are done assuming the redshift is
+            0 (i.e., that the observed and rest frames are identical).
         line_flux_err (numpy.ndarray): (**Optional**) Errors in the line
             flux, with size Nspec x Nband.  Default is to ignore the
             error propagation.
@@ -486,9 +490,13 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         raise ValueError('Bands flags array must have shape: {0}'.format(expected_shape))
 
     # Check the input redshifts
-    _redshift = numpy.zeros(nspec, dtype=numpy.float) if redshift is None else redshift
-    if len(_redshift) != nspec:
-        raise ValueError('Must provide one redshift per input spectrum (flux.shape[0]).')
+    _redshift = numpy.zeros(expected_shape, dtype=numpy.float) if redshift is None else redshift
+    if _redshift.ndim == 1:
+        if len(_redshift) != nspec:
+            raise ValueError('Must provide at least one redshift per input spectrum.')
+        _redshift = numpy.array([_redshift]*nbands).T
+    if _redshift.ndim == 2 and _redshift.shape != expected_shape:
+        raise ValueError('Provided redshift array does not match the number of spectra and bands.')
 
     # Initialize the output data
     bmed = numpy.zeros(expected_shape, dtype=float)
@@ -512,12 +520,12 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         indx = _include_band[i,:]
 
         # Shift the bands to the appropriate redshift
-        _bluebands = bluebands[indx]*(1.0+_redshift[i])
-        _redbands = redbands[indx]*(1.0+_redshift[i])
+        _bluebands = bluebands[indx]*(1.0+_redshift[i,indx])
+        _redbands = redbands[indx]*(1.0+_redshift[i,indx])
 
         # Center of each band (for all bands!)
-        bcen = numpy.mean(bluebands*(1.0+_redshift[i]), axis=1)
-        rcen = numpy.mean(redbands*(1.0+_redshift[i]), axis=1)
+        bcen = numpy.mean(bluebands*(1.0+_redshift[i,indx]), axis=1)
+        rcen = numpy.mean(redbands*(1.0+_redshift[i,indx]), axis=1)
 
         # Median of each band
         bmed[i,indx] = passband_median(wave, _flux[i,:], passband=_bluebands)
@@ -537,8 +545,8 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
                                 else line_flux_err[i,pos[i,:]] / ewcont[i,pos[i,:]]
 
         # Correct for the redshift
-        ew[i,pos[i,:]] /= (1.0+_redshift[i])
-        ewerr[i,pos[i,:]] /= (1.0+_redshift[i])
+        ew[i,pos[i,:]] /= (1.0+_redshift[i,indx])
+        ewerr[i,pos[i,:]] /= (1.0+_redshift[i,indx])
 
 #        pyplot.step(wave, _flux[i,:], where='mid', color='k', lw=0.5, zorder=1)
 #        pyplot.scatter(bcen[indx], bmed[i,indx], marker='.', s=50, color='b', lw=0, zorder=3)

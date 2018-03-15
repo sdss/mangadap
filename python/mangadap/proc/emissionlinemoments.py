@@ -1268,6 +1268,7 @@ class EmissionLineMoments:
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
+        measurements['REDSHIFT'] = _redshift
 
         # Flag non-positive measurements
         measurements['MASK'][include_band & numpy.invert(pos)] \
@@ -1284,7 +1285,6 @@ class EmissionLineMoments:
         if measure_on_unbinned_spaxels:
             measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
-        measurements['REDSHIFT'] = _redshift
 
 #        # Set the undefined bands
 #        measurements['MASK'][:,self.momdb.dummy] \

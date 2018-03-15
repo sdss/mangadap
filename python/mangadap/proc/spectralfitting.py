@@ -35,7 +35,10 @@ Implements a few base classes used during spectral fitting procedures.
     | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
         output table.
     | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database
-    | **02 Feb 2018**: (KBW) Added :func:`select_binned_spectra_to_fit`
+    | **02 Feb 2018**: (KBW) Added :func:`select_binned_spectra_to_fit`.
+    | **15 Mar 2018**: (KBW) Equivalenth width now measured at the
+        velocity of each line if a redshift is not provided.  See
+        :func:`measure_equivalent_width`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -541,22 +544,41 @@ class EmissionLineFit(SpectralFitting):
         if checkdb:
             EmissionLineFit.check_emission_line_database(emission_lines)
 
-        # If the redshift is NOT provided, use the fitted velocity
-        _redshift = numpy.mean(model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value,
-                               axis=1) if redshift is None else redshift
+        nspec = flux.shape[0]
+        nbands = emission_lines.neml
+        if redshift is None:
+            # If the redshift is NOT provided, use the fitted velocity
+            # for each emission line.  Replace masked measurements with
+            # mean (unmasked) redshift of that spectrum, or of all
+            # spectra.
+            _redshift = model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value
+            _redshift = numpy.ma.MaskedArray(_redshift,
+                                             mask=bitmask.flagged(model_eml_par['MASK']))
+            mean_redshift = numpy.ma.mean(_redshift, axis=1).filled(numpy.ma.mean(_redshift))
+            mean_redshift = numpy.array([mean_redshift]*nbands).T
+            _redshift[_redshift.mask] = mean_redshift[_redshift.mask]
+            _redshift = numpy.asarray(_redshift)
+        else:
+            # Use provided data and check its shape
+            _redshift = redshift
+            if _redshift.ndim == 1:
+                if len(_redshift) != nspec:
+                    raise ValueError('Must provide at least one redshift per input spectrum.')
+                _redshift = numpy.array([_redshift]*nbands).T
+            if _redshift.ndim == 2 and _redshift.shape != (nspec,nbands):
+                raise ValueError('Provided redshift array does not match spectra and bands.')
 
         # Calculate the wavelength at which to measure the continuum,
         # matching what is done by
         # :class:`mangadap.proc.emissionlineMoments.EmissionLineMoments`
-        line_center = (1+_redshift)[:,None]*emission_lines['restwave'][None,:]
+        line_center = (1+_redshift)*emission_lines['restwave'][None,:]
 
         # Compute the equivalent widths.  The checking done by
         # EmissionLineFit.check_and_prep_input is *identical* to what is
         # done within emission_line_equivalent_width()
         model_eml_par['BMED'], model_eml_par['RMED'], pos, model_eml_par['EWCONT'], \
                 model_eml_par['EW'], model_eml_par['EWERR'] \
-                        = emission_line_equivalent_width(wave, flux,
-                                                         emission_lines['blueside'],
+                        = emission_line_equivalent_width(wave, flux, emission_lines['blueside'],
                                                          emission_lines['redside'], line_center,
                                                          model_eml_par['FLUX'], mask=mask,
                                                          redshift=_redshift,
