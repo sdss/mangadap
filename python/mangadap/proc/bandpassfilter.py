@@ -520,12 +520,12 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         indx = _include_band[i,:]
 
         # Shift the bands to the appropriate redshift
-        _bluebands = bluebands[indx]*(1.0+_redshift[i,indx])
-        _redbands = redbands[indx]*(1.0+_redshift[i,indx])
+        _bluebands = bluebands[indx,:]*(1.0+_redshift[i,indx,None])
+        _redbands = redbands[indx,:]*(1.0+_redshift[i,indx,None])
 
         # Center of each band (for all bands!)
-        bcen = numpy.mean(bluebands*(1.0+_redshift[i,indx]), axis=1)
-        rcen = numpy.mean(redbands*(1.0+_redshift[i,indx]), axis=1)
+        bcen = numpy.mean(bluebands*(1.0+_redshift[i,:,None]), axis=1)
+        rcen = numpy.mean(redbands*(1.0+_redshift[i,:,None]), axis=1)
 
         # Median of each band
         bmed[i,indx] = passband_median(wave, _flux[i,:], passband=_bluebands)
@@ -545,8 +545,8 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
                                 else line_flux_err[i,pos[i,:]] / ewcont[i,pos[i,:]]
 
         # Correct for the redshift
-        ew[i,pos[i,:]] /= (1.0+_redshift[i,indx])
-        ewerr[i,pos[i,:]] /= (1.0+_redshift[i,indx])
+        ew[i,pos[i,:]] /= (1.0+_redshift[i,pos[i,:]])
+        ewerr[i,pos[i,:]] /= (1.0+_redshift[i,pos[i,:]])
 
 #        pyplot.step(wave, _flux[i,:], where='mid', color='k', lw=0.5, zorder=1)
 #        pyplot.scatter(bcen[indx], bmed[i,indx], marker='.', s=50, color='b', lw=0, zorder=3)
