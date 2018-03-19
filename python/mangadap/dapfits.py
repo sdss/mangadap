@@ -68,6 +68,8 @@ the MaNGA Data Analysis Pipeline (DAP).
         the :class:`mangadap.par.obsinput.ObsInputPar` object.
     | **29 Aug 2017**: (KBW) Add S/N metrics to the MAPS primary header
     | **30 Aug 2017**: (KBW) Convert some changes from Xihan Ji.
+    | **19 Mar 2018**: (KBW) Mask spectral indices with incomplete band
+        coverage as unreliable.
 
 .. todo::
     - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
@@ -1051,6 +1053,8 @@ class construct_maps_file:
 
         MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
+        MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE
+
         NO_DISPERSION_CORRECTION propagated to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
@@ -1073,6 +1077,11 @@ class construct_maps_file:
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['MAIN_EMPTY', 'BLUE_EMPTY',
                                                                'RED_EMPTY', 'UNDEFINED_BANDS' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
+
+        # Consolidate to UNRELIABLE
+        flgd = spectral_indices.bitmask.flagged(si_mask, flag=['MAIN_INCOMP', 'BLUE_INCOMP',
+                                                               'RED_INCOMP' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
         # Consolidate to NOCORRECTION
         # TODO: What do I do about this!
