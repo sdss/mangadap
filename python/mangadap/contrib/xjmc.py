@@ -39,6 +39,8 @@ Implements an emission-line fitting function using pPXF.
     | **31 Aug 2017**: First commit by Xihan Ji (XJ)
     | **06 Feb 2018**: K. Westfall (KBW) added documentation
     | **09 Feb 2018**: (KBW) Return the bin matching vector
+    | **20 Mar 2018**: (KBW) Correct error in carrying around pixels
+        rejected during fit
 
 """
 
@@ -552,7 +554,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
         if reject_boxcar is not None:
             # - Calculate residuals
             resid = flux[i,:] - pp.bestfit
-            # - Select pixels includes in the fit and not fit by
+            # - Select pixels included in the fit and not fit by
             # emission lines
             reject_pixels = list(set(pp.goodpixels)
                                     & set(np.arange(len(resid))[pp.gas_bestfit < 1e-6]))
@@ -582,6 +584,33 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                            gas_component=_gas_template, quiet=quiet, linear=linear)
             if plot:
                 plt.show()
+
+#        # npoly assumed to be zero
+#        print('GAS TEMPLATE SUM:')
+#        print(pp.matrix.shape)
+#        print(pp.lam.shape)
+#        s = np.sum(pp.matrix[:,pp.gas_component], axis=0)
+#        ws = np.sum(pp.matrix[:,pp.gas_component]*pp.weights[pp.gas_component], axis=0)
+#        wi = np.sum((pp.matrix[:,pp.gas_component]*pp.weights[None,pp.gas_component])[:-1,:]
+#                            * np.diff(pp.lam)[:,None], axis=0)
+#
+#        mw = np.ma.divide(np.sum((pp.lam[:,None] * pp.matrix[:,pp.gas_component] 
+#                                    * pp.weights[None,pp.gas_component])[:-1,:]
+#                                        * np.diff(pp.lam)[:,None], axis=0),wi)
+#        fmw = np.mean(pp.lam)
+#        gc = np.unique(pp.component[pp.gas_component]).astype(int)
+#        print(gc)
+#        print([np.exp(pp.sol[i][0]/astropy.constants.c.to('km/s').value) for i in gc])
+#        print(s)
+#        print(ws)
+#        print(wi)
+#        print(np.ma.divide(wi,ws))
+#        print(mw)
+#        print(mw/fmw)
+#        print(np.ma.divide(wi,ws)*(fmw/mw))
+#
+#        print('GAS FLUXES:')
+#        print(pp.gas_flux)
 
         # Reorder the output; sets any omitted components to a default
         # value of -999.
@@ -976,12 +1005,13 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
     #  - Fit with all the gas templates as part of one component
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
-
-    _, _, _, tpl_wgts, _, _, _, _, _, kin, _ \
+    model_mask = mask.copy()
+    _, _, model_mask, tpl_wgts, _, _, _, _, _, kin, _ \
             = _fit_iteration(_templates, wave, flux, noise, velscale, start, moments, component,
                              _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,
                              velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
-                             reddening=reddening, mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
+                             reddening=reddening, mask=model_mask, vsyst=vsyst, plot=plot,
+                             quiet=quiet)
 
     if mode == 'noBins':
         # - If no previous fit to binned spectra, create new template
@@ -1006,7 +1036,8 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                                                   tpl_to_use=_tpl_to_use, reject_boxcar=None,
                                                   velscale_ratio=velscale_ratio, degree=degree,
                                                   mdegree=mdegree, reddening=reddening, tied=tied,
-                                                  mask=mask, vsyst=vsyst, plot=plot, quiet=quiet)
+                                                  mask=model_mask, vsyst=vsyst, plot=plot,
+                                                  quiet=quiet)
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the

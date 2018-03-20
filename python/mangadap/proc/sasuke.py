@@ -59,6 +59,8 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **24 Feb 2018**: (KBW) Allow for a new template library to be
         used, different from the one used during the stellar continuum
         fit.
+    | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
+        of provided pixel mask.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -1177,21 +1179,22 @@ class Sasuke(EmissionLineFit):
             # The "fit index" is the component of the line
             model_eml_par['FIT_INDEX'][:,j] = self.eml_compi[j]
 
-            # Use the fitted weights to set the gas flux; the
-            # EmissionLineTemplates class constructs each line to have
-            # the flux provided by the emission-line database, so these
-            # can be renormalized by the ppxf-fitted weights.  The
-            # fluxes are adjusted for any fitted multiplicative
-            # polynomial below.
-            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
-                                            * self.emldb['flux'][j]
-            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j]
-
             # Use the flattened vectors to set the kinematics
             indx = par_indx[self.eml_compi[j]]
             model_eml_par['KIN'][:,j,:] = model_fit_par['KIN'][:,indx]
             model_eml_par['KINERR'][:,j,:] = model_fit_par['KINERR'][:,indx]
+            z = model_eml_par['KIN'][:,j,0]/astropy.constants.c.to('km/s').value
+
+            # Use the fitted weights to set the gas flux; the
+            # EmissionLineTemplates class constructs each line to have
+            # the flux provided by the emission-line database in the
+            # rest frame.  The ppxf convolution keeps the sum of the
+            # template constant, meaning that the total flux in the line
+            # increases with redshift.
+            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
+                                            * self.emldb['flux'][j] * (1 + z)
+            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
+                                                * self.emldb['flux'][j] * (1 + z)
 
             # Get the bound masks specific to this emission-line (set)
             # - Determine if the emission-line was part of a rejected
@@ -2301,7 +2304,7 @@ class Sasuke(EmissionLineFit):
                     = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave, self.obj_flux,
                                                        self.obj_ferr, self.velscale,
                                                        velscale_ratio=self.velscale_ratio,
-                                                       waverange=waverange, # mask=obj_mask,
+                                                       waverange=waverange, mask=obj_mask,
                                                        bitmask=self.bitmask,
                                                        velocity_offset=self.input_cz,
                                                        max_velocity_range=max_velocity_range,
@@ -2320,7 +2323,8 @@ class Sasuke(EmissionLineFit):
                         = self.bitmask.turn_on(model_eml_par['MASK'][ended_in_error], 'NO_FIT')
         if numpy.all(ended_in_error):
             if self.nremap == 0:
-                return self.obj_wave, model_flux, model_eml_flux, obj_model_mask, model_eml_par
+                return self.obj_wave, model_flux, model_eml_flux, obj_model_mask, \
+                            model_fit_par, model_eml_par
             else:
                 raise ValueError('Could not prepare spectra for fitting!')
 
@@ -2352,7 +2356,8 @@ class Sasuke(EmissionLineFit):
                 model_eml_par['MASK'][ended_in_error] \
                         = self.bitmask.turn_on(model_eml_par['MASK'][ended_in_error], 'NO_FIT')
             if numpy.all(ended_in_error):
-                return self.obj_wave, model_flux, model_eml_flux, remap_model_mask, model_eml_par
+                return self.obj_wave, model_flux, model_eml_flux, remap_model_mask, \
+                            model_fit_par, model_eml_par
         else:
             remap_model_mask= None
             remap_start = None
@@ -2415,7 +2420,7 @@ class Sasuke(EmissionLineFit):
                                                            x_binned=self.obj_skyx,
                                                            y_binned=self.obj_skyy,
                                                            x=self.remap_skyx, y=self.remap_skyy,
-                                                           plot=False, quiet=True)
+                                                           plot=plot, quiet=not plot)
 #                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers

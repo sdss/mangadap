@@ -199,7 +199,7 @@ class EmissionLineTemplates:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, flux_density=False,
+    def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, flux_density=True,
                  loggers=None, quiet=False):
 
         self.loggers=None
@@ -429,7 +429,7 @@ class EmissionLineTemplates:
             warnings.warn('Any line with mode=w treated the same as mode=f.')
 
 
-    def build_templates(self, emldb, flux_density=False, loggers=None, quiet=False):
+    def build_templates(self, emldb, flux_density=True, loggers=None, quiet=False):
         r"""
         Build the set of templates for a given emission-line database.
         The function uses the current values in :attr:`wave` and
