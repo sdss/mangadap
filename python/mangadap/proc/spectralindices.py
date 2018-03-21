@@ -459,18 +459,21 @@ class BandheadIndices:
         # error calculation
         self.main_incomplete = None
         self.main_empty = None
-        # TODO: this definition of divbyzero may not actually reflect a
-        # division by zero?
-        self.divbyzero = numpy.invert(numpy.absolute(self.red_continuum.filled(0.0)) > 0) \
-                            | numpy.invert(numpy.absolute(self.blue_continuum.filled(0.0)) > 0)
+
+#        self.divbyzero = numpy.invert(numpy.absolute(self.red_continuum.filled(0.0)) > 0) \
+#                            | numpy.invert(numpy.absolute(self.blue_continuum.filled(0.0)) > 0)
+        self.divbyzero = numpy.zeros(self.nindx, dtype=bool)
 
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
+        self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
         self.index[numpy.invert(blue_n)] = numpy.ma.divide(self.red_continuum[numpy.invert(blue_n)],
                                               self.blue_continuum[numpy.invert(blue_n)]).filled(0.0)
+        self.divbyzero[numpy.invert(blue_n)] \
+                = numpy.invert(numpy.absolute(self.blue_continuum[numpy.invert(blue_n)])>0.0)
 
         # Calculate the index errors
         berr = numpy.ma.zeros(self.nindx) if self.blue_continuum_err is None \
@@ -1048,15 +1051,18 @@ class SpectralIndices:
                 and not emission_line_model.method['deconstruct_bins']:
             raise ValueError('Cannot use this emission-line model with unbinned spaxels.')
 
-        # Set the resolution
         # Get the main data arrays
         if measure_on_unbinned_spaxels:
+            # TODO: Should probably make this a function within
+            # SpatiallyBinnedSpectra, particularly because of the
+            # dereddening
             flags = binned_spectra.drpf.do_not_fit_flags()
             binid = numpy.arange(binned_spectra.drpf.nspec).reshape(
                                                                 binned_spectra.drpf.spatial_shape)
             wave = binned_spectra.drpf['WAVE'].data
             flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
             ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=flags)
+            flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
             missing = None
             sres = binned_spectra.drpf.spectral_resolution(
                         ext= 'SPECRES' if binned_spectra.method['spec_res'] == 'cube' else None,
@@ -1170,21 +1176,27 @@ class SpectralIndices:
 
     @staticmethod
     def unit_selection(absdb, bhddb):
+        """
+        Return boolean arrays selection which indices are unitless, in
+        angstrom units, or in magnitude units.
+        """
         nabs, nbhd = SpectralIndices.count_indices(absdb, bhddb)
         
         # Flag the indices as either having magnitude or angstrom units
         angu = numpy.zeros(nabs + nbhd, dtype=bool)
+        magu = numpy.zeros(nabs + nbhd, dtype=bool)
+        ules = numpy.zeros(nabs + nbhd, dtype=bool)
+
+        # Flag absorption-line indices as either angstrom or magnitude
         if nabs > 0:
             angu[:nabs] = absdb['units'] == 'ang'
-        magu = numpy.invert(angu)
+            magu[:nabs] = absdb['units'] == 'mag'
 
-        # Bandhead indices are unitless, but the correction follows the
-        # same operation as for the absorption-line indices with
-        # angstrom units
-        magu[nabs:] = False
-        angu[nabs:] = True
+        # Bandhead indices are unitless
+        if nbhd > 0:
+            ules[nabs:] = True
 
-        return angu, magu
+        return ules, angu, magu
 
 
     def _resolution_matched_templates(self, dapsrc=None, dapver=None, analysis_path=None,
@@ -1231,6 +1243,15 @@ class SpectralIndices:
         dcnvlv_indx = SpectralIndices.measure_indices(absdb, bhddb, wave, _continuum_dcnvlv,
                                                       redshift=redshift_dcnvlv, bitmask=bitmask)
 
+#        print('Flagged D4000:')
+#        for bit in ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ]:
+#            print('indx {0}:        {1}/{2}'.format(bit,
+#                                            numpy.sum(bitmask.flagged(indx['MASK'][:,43],
+#                                            flag=bit)), indx['MASK'].shape[0]))
+#            print('dcnvlv_indx {0}: {1}/{2}'.format(bit,
+#                                            numpy.sum(bitmask.flagged(dcnvlv_indx['MASK'][:,43],
+#                                            flag=bit)), dcnvlv_indx['MASK'].shape[0]))
+
         # Do not apply the correction if any of the bands were empty or
         # would have had to divide by zero
         bad_indx = bitmask.flagged(indx['MASK'], flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
@@ -1242,29 +1263,34 @@ class SpectralIndices:
         print('Bad indices: ', numpy.sum(bad_indx))
 
         # Determine which indices have good measurements
-        angu, magu = SpectralIndices.unit_selection(absdb, bhddb)
+        ules, angu, magu = SpectralIndices.unit_selection(absdb, bhddb)
+        good_les = numpy.invert(bad_indx) & (numpy.array([ules]*nspec)) \
+                        & (numpy.absolute(indx['INDX']) > 0)
         good_ang = numpy.invert(bad_indx) & (numpy.array([angu]*nspec)) \
                         & (numpy.absolute(indx['INDX']) > 0)
         good_mag = numpy.invert(bad_indx) & (numpy.array([magu]*nspec))
 
+        print('Good unitless indices: ', numpy.sum(good_les))
         print('Good angstrom indices: ', numpy.sum(good_ang))
         print('Good magnitude indices: ', numpy.sum(good_mag))
 
         # Save the *good* indices for the best-fitting models
         model_indices = numpy.zeros(indx['INDX'].shape, dtype=numpy.float)
-        model_indices[good_ang | good_mag] = indx['INDX'][good_ang | good_mag]
+        model_indices[good_les | good_ang | good_mag] \
+                = indx['INDX'][good_les | good_ang | good_mag]
 
         # Determine the dispersion corrections
         corrections = numpy.zeros(indx['INDX'].shape, dtype=numpy.float)
+        corrections[good_les] = dcnvlv_indx['INDX'][good_les] / indx['INDX'][good_les]
         corrections[good_ang] = dcnvlv_indx['INDX'][good_ang] / indx['INDX'][good_ang]
         corrections[good_mag] = dcnvlv_indx['INDX'][good_mag] - indx['INDX'][good_mag]
 
         # Return the results
-        return model_indices, corrections, good_ang, good_mag
+        return model_indices, corrections, good_les, good_ang, good_mag
 
 
     @staticmethod
-    def apply_dispersion_corrections(indx, indxcorr, err=None, unit='ang'):
+    def apply_dispersion_corrections(indx, indxcorr, err=None, unit=None):
         """
         Apply a set of dispersion corrections.  Errors in the dispersion
         corrections are assumed to be negligible.
@@ -1274,8 +1300,9 @@ class SpectralIndices:
             indxcorr (array-like): Index corrections.
             err (array-like): (**Optional**) Error in the indices.
             unit (str): (**Optional**) Unit of the index; must be either
-                magnitudes (mag) or angstroms (ang).  Default is
-                angstroms.
+                magnitudes (mag) or angstroms (ang) or None.  Default is
+                None.  Unitless corrections and angstrom corrections are
+                treated identically.
     
         Returns:
             numpy.ndarray: The corrected indices and errors are
@@ -1286,10 +1313,10 @@ class SpectralIndices:
             ValueError: Raised if the unit is not ang or mag.
 
         """
-        if unit not in [ 'ang', 'mag' ]:
-            raise ValueError('Unit must be mag or ang.')
+        if unit not in [ None, 'ang', 'mag' ]:
+            raise ValueError('Unit must be None, ang, or mag.')
 
-        if unit == 'ang':
+        if unit in [ None, 'ang' ]:
             _indx = indx * indxcorr
             _err = None if err is None else err * numpy.absolute(indxcorr)
         else:
@@ -1671,7 +1698,7 @@ class SpectralIndices:
         print('Measuring spectral indices in spectrum: {0}/{0}'.format(nspec))
 
         # Correct the indices with angstrom units to rest-frame
-        angu, magu = SpectralIndices.unit_selection(absdb, bhddb)
+        _, angu, _ = SpectralIndices.unit_selection(absdb, bhddb)
         measurements['INDX'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
 
 #        x = numpy.append(center, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
@@ -1952,6 +1979,12 @@ class SpectralIndices:
         measurements = self.measure_indices(self.absdb, self.bhddb, wave, flux, ivar=ivar,
                                             redshift=self.redshift[good_snr], bitmask=self.bitmask)
 
+#        print('Flagged D4000:')
+#        for bit in ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ]:
+#            print('measurements {0}: {1}/{2}'.format(bit,
+#                        numpy.sum(self.bitmask.flagged(measurements['MASK'][:,43], flag=bit)),
+#                        measurements['MASK'].shape[0]))
+
         #---------------------------------------------------------------
         # Determine the velocity dispersion corrections, if requested.
         if self.compute_corrections:
@@ -1975,7 +2008,11 @@ class SpectralIndices:
             # Get two versions of the best-fitting continuum:
             #   - exactly the best fitting, continuum-only model
             #   - the same without convolving with the velocity
-            #     dispersion and deredshifted
+            #     dispersion
+            # TODO: To also correct for difference in definition of
+            # velocity, may also want to deredshift the model and
+            # perform the measurements at rest wavelengths; not
+            # currently possible though
             fill_to_match_f = self.emission_line_model.fill_continuum_to_match \
                                 if eml_stellar_continuum_available else \
                                 self.stellar_continuum.fill_to_match
@@ -1986,7 +2023,28 @@ class SpectralIndices:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Constructing models without LOSVD')
             continuum_dcnvlv = fill_to_match_f(binid, replacement_templates=replacement_templates,
-                                               redshift_only=True, deredshift=True)
+                                               redshift_only=True) #, deredshift=True)
+
+#            pyplot.imshow(flux, origin='lower', interpolation='nearest', aspect='auto')
+#            pyplot.colorbar()
+#            pyplot.show()
+#
+#            pyplot.imshow(continuum[good_snr,:], origin='lower', interpolation='nearest',
+#                          aspect='auto')
+#            pyplot.colorbar()
+#            pyplot.show()
+#
+#            pyplot.imshow(continuum_dcnvlv[good_snr,:], origin='lower', interpolation='nearest',
+#                          aspect='auto')
+#            pyplot.colorbar()
+#            pyplot.show()
+#
+#            indx = numpy.argmax(numpy.ma.mean(flux, axis=1))
+#            print(indx)
+#            pyplot.plot(wave, flux[indx,:])
+#            pyplot.plot(wave, continuum[good_snr,:][indx,:])
+#            pyplot.plot(wave, continuum_dcnvlv[good_snr,:][indx,:])
+#            pyplot.show()
 
             # Get the corrections by performing the measurements on the
             # best-fitting continuum models, with and without the
@@ -1994,20 +2052,29 @@ class SpectralIndices:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
                            'Calculating dispersion corrections using stellar continuum model...')
-            measurements['MODEL_INDX'], measurements['INDX_DISPCORR'], good_ang, good_mag \
-                    = SpectralIndices.calculate_dispersion_corrections(
-                                self.absdb, self.bhddb, wave, flux, continuum[good_snr,:],
-                                continuum_dcnvlv[good_snr,:], redshift=self.redshift[good_snr],
-                                bitmask=self.bitmask)
+            measurements['MODEL_INDX'], measurements['INDX_DISPCORR'], \
+                    good_les, good_ang, good_mag \
+                        = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
+                                        wave, flux, continuum[good_snr,:],
+                                        continuum_dcnvlv[good_snr,:],
+                                        redshift=self.redshift[good_snr],
+                                        redshift_dcnvlv=self.redshift[good_snr],
+                                        bitmask=self.bitmask)
 
             # Flag bad corrections
-            bad_correction = numpy.invert(good_ang) & numpy.invert(good_mag)
+            bad_correction = numpy.invert(good_les) & numpy.invert(good_ang) \
+                                & numpy.invert(good_mag)
             measurements['MASK'][bad_correction] = self.bitmask.turn_on(
                                                             measurements['MASK'][bad_correction],
                                                             'NO_DISPERSION_CORRECTION')
             # Apply the corrections
             if self.correct_indices:
                 # Measured indices
+                measurements['INDX'][good_les], measurements['INDXERR'][good_les] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX'][good_les],
+                                                    measurements['INDX_DISPCORR'][good_les],
+                                                    err=measurements['INDXERR'][good_les])
                 measurements['INDX'][good_ang], measurements['INDXERR'][good_ang] \
                         = SpectralIndices.apply_dispersion_corrections(
                                                     measurements['INDX'][good_ang],
@@ -2021,6 +2088,10 @@ class SpectralIndices:
                                                     err=measurements['INDXERR'][good_mag],
                                                     unit='mag')
                 # Model indices
+                measurements['MODEL_INDX'][good_les], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['MODEL_INDX'][good_les],
+                                                    measurements['INDX_DISPCORR'][good_les])
                 measurements['MODEL_INDX'][good_ang], _ \
                         = SpectralIndices.apply_dispersion_corrections(
                                                     measurements['MODEL_INDX'][good_ang],

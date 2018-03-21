@@ -1785,6 +1785,7 @@ class EmissionLineModel:
                 and not isinstance(replacement_templates, TemplateLibrary):
             raise TypeError('Provided template replacements must have type TemplateLibrary.')
 
+        # Only the selected models are constructed, others are masked
         select = numpy.invert(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
         templates = self.stellar_continuum.method['fitpar']['template_library'] \

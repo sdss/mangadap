@@ -1717,7 +1717,7 @@ class Sasuke(EmissionLineFit):
 
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models
-                model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
+                model_eml_base = (el_continuum - sc_model_flux).filled(0.0).reshape(-1,
                                                                 self.npix_obj)[spaxel_to_fit,:]
 #                if model_mask is not None:
 #                    model_eml_base[model_mask==0] = 0.0
@@ -2491,6 +2491,8 @@ class Sasuke(EmissionLineFit):
         """
         if redshift_only and dispersion_corrections is not None:
             raise ValueError('redshift_only and dispersion_corrections are mutually exclusive.')
+        if deredshift:
+            raise NotImplementedError('Cannot yet deredshift models.')
         
         # Check the spectral sampling
         velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
@@ -2550,6 +2552,8 @@ class Sasuke(EmissionLineFit):
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        # Initially mask everything
+        models[:,:] = numpy.ma.masked
 
         # Get the kinematics to use
         kin = model_fit_par['KIN'].copy()[:,:smoments]
@@ -2560,15 +2564,16 @@ class Sasuke(EmissionLineFit):
         elif dispersion_corrections is not None:
             kin[:,1] = numpy.ma.sqrt(numpy.square(model_fit_par['KIN'][:,1]) 
                                         - numpy.square(dispersion_corrections)).filled(1e-9)
-        if deredshift:
-            kin[:,0] = 0.0
+#        if deredshift:
+#            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):
             if skip[i]:
-                models[i,:] = numpy.ma.masked
                 continue
             ebv = model_fit_par['EBV'][i] if reddening else None
+
+            print('Constructing continuum for spectrum: {0}/{1}'.format(i+1,nobj), end='\r')
 
             # This is redeclared every iteration to allow for the
             # starting and ending pixels to be different (annoying); as
@@ -2584,5 +2589,14 @@ class Sasuke(EmissionLineFit):
                             addpoly=None if degree < 0 else model_fit_par['ADDCOEF'][i,:],
                             multpoly=None if mdegree < 1 else model_fit_par['MULTCOEF'][i,:],
                             reddening=ebv)
+
+#            if i == 0 or redshift_only:
+#                pyplot.plot(_obj_wave, _obj_flux[i,:])
+#                pyplot.plot(_obj_wave, models[i,:])
+#                pyplot.show()
+#                if redshift_only:
+#                    exit()
+#
+        print('Constructing continuum for spectrum: {0}/{0}'.format(nobj))
         return models
 

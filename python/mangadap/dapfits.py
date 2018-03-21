@@ -946,17 +946,17 @@ class construct_maps_file:
 
         DIDNOTUSE, FORESTAR propagated from already existing mask (self.bin_mask)
 
-        NO_MEASURMENT, MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
+        MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE
 
         MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED
+
+        MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE
 
         NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
         Second moments not provided so no need to include UNDEFINED_MOM2
-
-        Need to further assess \*_INCOMP to see if these lead to bad values (BADVALUE).
         """
 
         # Copy the binning mask
@@ -981,6 +981,11 @@ class construct_maps_file:
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_JUMP', 'BLUE_JUMP',
                                                                  'RED_JUMP', 'JUMP_BTWN_SIDEBANDS'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'FITFAILED')
+
+        # Consolidate to UNRELIABLE
+        flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['MAIN_INCOMP', 'BLUE_INCOMP',
+                                                                     'RED_INCOMP' ])
+        mask[flgd] = self.bitmask.turn_on(mask[flgd], 'UNRELIABLE')
 
         # Consolidate to NOCORRECTION
         flgd = emission_line_moments.bitmask.flagged(elm_mask, flag=['NO_ABSORPTION_CORRECTION'])

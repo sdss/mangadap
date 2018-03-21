@@ -284,6 +284,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
+#                                        clobber=False, loggers=loggers)
 
 #        ha_flux = emission_line_moments['ELMMNTS'].data['FLUX'][:,18].copy()
 
@@ -304,6 +305,42 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      minimum_error=numpy.finfo(numpy.float32).eps,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+
+#        cen = drpf.spatial_shape[0]//2
+#        indx = emission_line_model['BINID'].data[cen,cen]
+#        indx = numpy.arange(len(emission_line_model['EMLDATA'].data['BINID']))[emission_line_model['EMLDATA'].data['BINID'] == indx][0]
+#        print(indx)
+#        pyplot.plot(emission_line_model['WAVE'].data, emission_line_model['FLUX'].data[indx,:])
+#        pyplot.show()
+#
+#        el_continuum = emission_line_model.fill_continuum_to_match(
+#                                            emission_line_model['BINID'].data,
+#                                            missing=emission_line_model.missing_models)
+#        el_continuum_dcnvlv = emission_line_model.fill_continuum_to_match(
+#                                            emission_line_model['BINID'].data,
+#                                            missing=emission_line_model.missing_models,
+#                                            redshift_only=True)
+#        el_continuum_dcnvlv_rest = emission_line_model.fill_continuum_to_match(
+#                                            emission_line_model['BINID'].data,
+#                                            missing=emission_line_model.missing_models,
+#                                            redshift_only=True, deredshift=True)
+#
+#        pyplot.imshow(el_continuum, origin='lower', interpolation='nearest', aspect='auto')
+#        pyplot.colorbar()
+#        pyplot.show()
+#
+#        pyplot.imshow(el_continuum_dcnvlv, origin='lower', interpolation='nearest', aspect='auto')
+#        pyplot.colorbar()
+#        pyplot.show()
+#
+#        pyplot.imshow(el_continuum_dcnvlv_rest, origin='lower', interpolation='nearest', aspect='auto')
+#        pyplot.colorbar()
+#        pyplot.show()
+#
+#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum[indx,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum_dcnvlv[indx,:])
+#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum_dcnvlv_rest[indx,:])
+#        pyplot.show()
 
 #        model_flux = emission_line_model['FLUX'].data
 #        model_base = emission_line_model['BASE'].data
