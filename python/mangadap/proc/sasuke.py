@@ -1690,7 +1690,7 @@ class Sasuke(EmissionLineFit):
                 # Construct the full 3D cube for the stellar continuum
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                              binned_spectra['BINID'].data.ravel(),
-                                                             sc_continuum)
+                                                             sc_continuum.filled(0.0))
 
 #                print(type(sc_model_flux))
 #                print(sc_model_flux.shape)
@@ -1717,7 +1717,7 @@ class Sasuke(EmissionLineFit):
 
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models
-                model_eml_base = (el_continuum - sc_model_flux).filled(0.0).reshape(-1,
+                model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
                                                                 self.npix_obj)[spaxel_to_fit,:]
 #                if model_mask is not None:
 #                    model_eml_base[model_mask==0] = 0.0
