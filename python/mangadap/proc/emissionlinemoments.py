@@ -1002,8 +1002,7 @@ class EmissionLineMoments:
                         & numpy.invert(measurements['MASK'][i,:] if bitmask is None
                                         else bitmask.flagged(measurements['MASK'][i,:],
                                                              flag=['BLUE_EMPTY', 'RED_EMPTY',
-                                                                   'BLUE_JUMP', 'RED_JUMP'])
-                                      )
+                                                                   'BLUE_JUMP', 'RED_JUMP']))
 
             _mainbands = momdb['primary'][indx]*(1.0+_redshift[i])
 
@@ -1172,6 +1171,14 @@ class EmissionLineMoments:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(self.loggers, 1, logging.INFO, 'Measurements for {0}'.format(
                         'unbinned spaxels' if measure_on_unbinned_spaxels else 'binned spectra'))
+            if self.stellar_continuum is None and self.emission_line_model is None:
+                log_output(self.loggers, 1, logging.INFO, 'No stellar continuum available.')
+            elif self.emission_line_model is not None and eml_stellar_continuum_available:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Using stellar continuum from emission-line model fit.')
+            else:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Using stellar continuum from stellar-continuum model fit.')
             log_output(self.loggers, 1, logging.INFO, 'Number of spectra: {0}'.format(self.nspec))
             if not measure_on_unbinned_spaxels and len(self.binned_spectra.missing_bins) > 0:
                 log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
@@ -1217,6 +1224,10 @@ class EmissionLineMoments:
                                                                 else self.binned_spectra,
                                                               pixelmask=self.pixelmask,
                                                               select=good_snr)
+        # Make sure that the spectra have been corrected for Galactic
+        # extinction
+        if measure_on_unbinned_spaxels:
+            flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
 
         # Get the continuum if there is any
         if eml_stellar_continuum_available:
@@ -1268,6 +1279,7 @@ class EmissionLineMoments:
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
+        measurements['REDSHIFT'] = _redshift
 
         # Flag non-positive measurements
         measurements['MASK'][include_band & numpy.invert(pos)] \
@@ -1284,7 +1296,6 @@ class EmissionLineMoments:
         if measure_on_unbinned_spaxels:
             measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
-        measurements['REDSHIFT'] = _redshift
 
 #        # Set the undefined bands
 #        measurements['MASK'][:,self.momdb.dummy] \

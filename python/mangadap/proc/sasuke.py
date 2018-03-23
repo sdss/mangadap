@@ -56,6 +56,11 @@ Implements an emission-line fitting class that largely wraps pPXF.
         :func:`mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit`.
         Adjust for change to
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
+    | **24 Feb 2018**: (KBW) Allow for a new template library to be
+        used, different from the one used during the stellar continuum
+        fit.
+    | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
+        of provided pixel mask.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -93,6 +98,7 @@ from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
 from ..util import lineprofiles
+from .templatelibrary import TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
@@ -117,10 +123,6 @@ class SasukePar(ParSet):
     and some of its components are filled by
     :func:`mangdap.proc.emissionlinemodel.EmissionLineModel._fill_method_par`.
 
-    .. todo::
-        It should be possible to allow for a replacement set of
-        templates but I (KBW) need to remember how to do this.
-
     When instantiated, the :class:`mangadap.par.parset.ParSet` objects
     test that the input objects match the provided dtypes.  See
     documentation for :class:`mangadap.par.parset.ParSet` for the list
@@ -134,6 +136,10 @@ class SasukePar(ParSet):
             (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Emission-line database with the details of the lines to be
             fit.
+        continuum_templates
+            (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
+            (**Optional**) The new continuum template library to use
+            during the emission-line fit.
         etpl_line_sigma_mode (str): (**Optional**) Mode used to set the
             instrumental dispersion of the emission-line templates.
             Mode options are explated by
@@ -162,29 +168,32 @@ class SasukePar(ParSet):
         reddening (float): pPXF reddening parameter setting the initial
             :math:`E(B-V)` to fit, based on a Calzetti law.
     """
-    def __init__(self, stellar_continuum, emission_lines, etpl_line_sigma_mode=None,
-                 etpl_line_sigma_min=None,guess_redshift=None, guess_dispersion=None,
-                 minimum_snr=None, deconstruct_bins=None, pixelmask=None, reject_boxcar=None,
-                 bias=None, moments=None, degree=None, mdegree=None, reddening=None):
+    def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
+                 etpl_line_sigma_mode=None, etpl_line_sigma_min=None,guess_redshift=None,
+                 guess_dispersion=None, minimum_snr=None, deconstruct_bins=None, pixelmask=None,
+                 reject_boxcar=None, bias=None, moments=None, degree=None, mdegree=None,
+                 reddening=None):
 
         arr_like = [ numpy.ndarray, list ]
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
         etpl_mode_options = Sasuke.etpl_line_sigma_options()
 
-        pars =     [ 'stellar_continuum', 'emission_lines', 'etpl_line_sigma_mode',
-                     'etpl_line_sigma_min', 'guess_redshift', 'guess_dispersion', 'minimum_snr',
-                     'deconstruct_bins', 'pixelmask', 'reject_boxcar', 'bias', 'moments', 'degree',
-                     'mdegree', 'reddening' ]
-        values =   [ stellar_continuum, emission_lines, etpl_line_sigma_mode, etpl_line_sigma_min,
-                     guess_redshift, guess_dispersion, minimum_snr, deconstruct_bins, pixelmask,
-                     reject_boxcar, bias, moments, degree, mdegree, reddening ]
-        defaults = [ None, None, 'default', 0.0, None, None, 0.0, False, None, None, None, 2, -1,
-                     0, None ]
-        options = [ None, None, etpl_mode_options, None, None, None, None, None, None, None, None,
-                    None, None, None, None ]
-        dtypes =   [ StellarContinuumModel, EmissionLineDB, str, in_fl, arr_in_fl, arr_in_fl,
-                     in_fl, bool, SpectralPixelMask, int, in_fl, int, int, int, in_fl ]
+        pars =     [ 'stellar_continuum', 'emission_lines', 'continuum_templates',
+                     'etpl_line_sigma_mode', 'etpl_line_sigma_min', 'guess_redshift',
+                     'guess_dispersion', 'minimum_snr', 'deconstruct_bins', 'pixelmask',
+                     'reject_boxcar', 'bias', 'moments', 'degree', 'mdegree', 'reddening' ]
+        values =   [ stellar_continuum, emission_lines, continuum_templates,
+                     etpl_line_sigma_mode, etpl_line_sigma_min, guess_redshift, guess_dispersion,
+                     minimum_snr, deconstruct_bins, pixelmask, reject_boxcar, bias, moments,
+                     degree, mdegree, reddening ]
+        defaults = [ None, None, None, 'default', 0.0, None, None, 0.0, False, None, None, None,
+                     2, -1, 0, None ]
+        options = [ None, None, None, etpl_mode_options, None, None, None, None, None, None, None,
+                    None, None, None, None, None ]
+        dtypes =   [ StellarContinuumModel, EmissionLineDB, TemplateLibrary, str, in_fl,
+                     arr_in_fl, arr_in_fl, in_fl, bool, SpectralPixelMask, int, in_fl, int, int,
+                     int, in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -1170,21 +1179,22 @@ class Sasuke(EmissionLineFit):
             # The "fit index" is the component of the line
             model_eml_par['FIT_INDEX'][:,j] = self.eml_compi[j]
 
-            # Use the fitted weights to set the gas flux; the
-            # EmissionLineTemplates class constructs each line to have
-            # the flux provided by the emission-line database, so these
-            # can be renormalized by the ppxf-fitted weights.  The
-            # fluxes are adjusted for any fitted multiplicative
-            # polynomial below.
-            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
-                                            * self.emldb['flux'][j]
-            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j]
-
             # Use the flattened vectors to set the kinematics
             indx = par_indx[self.eml_compi[j]]
             model_eml_par['KIN'][:,j,:] = model_fit_par['KIN'][:,indx]
             model_eml_par['KINERR'][:,j,:] = model_fit_par['KINERR'][:,indx]
+            z = model_eml_par['KIN'][:,j,0]/astropy.constants.c.to('km/s').value
+
+            # Use the fitted weights to set the gas flux; the
+            # EmissionLineTemplates class constructs each line to have
+            # the flux provided by the emission-line database in the
+            # rest frame.  The ppxf convolution keeps the sum of the
+            # template constant, meaning that the total flux in the line
+            # increases with redshift.
+            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
+                                            * self.emldb['flux'][j] * (1 + z)
+            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
+                                                * self.emldb['flux'][j] * (1 + z)
 
             # Get the bound masks specific to this emission-line (set)
             # - Determine if the emission-line was part of a rejected
@@ -1680,7 +1690,7 @@ class Sasuke(EmissionLineFit):
                 # Construct the full 3D cube for the stellar continuum
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                              binned_spectra['BINID'].data.ravel(),
-                                                             sc_continuum)
+                                                             sc_continuum.filled(0.0))
 
 #                print(type(sc_model_flux))
 #                print(sc_model_flux.shape)
@@ -2294,7 +2304,7 @@ class Sasuke(EmissionLineFit):
                     = PPXFFit.initialize_pixels_to_fit(self.tpl_wave, self.obj_wave, self.obj_flux,
                                                        self.obj_ferr, self.velscale,
                                                        velscale_ratio=self.velscale_ratio,
-                                                       waverange=waverange, # mask=obj_mask,
+                                                       waverange=waverange, mask=obj_mask,
                                                        bitmask=self.bitmask,
                                                        velocity_offset=self.input_cz,
                                                        max_velocity_range=max_velocity_range,
@@ -2313,7 +2323,8 @@ class Sasuke(EmissionLineFit):
                         = self.bitmask.turn_on(model_eml_par['MASK'][ended_in_error], 'NO_FIT')
         if numpy.all(ended_in_error):
             if self.nremap == 0:
-                return self.obj_wave, model_flux, model_eml_flux, obj_model_mask, model_eml_par
+                return self.obj_wave, model_flux, model_eml_flux, obj_model_mask, \
+                            model_fit_par, model_eml_par
             else:
                 raise ValueError('Could not prepare spectra for fitting!')
 
@@ -2345,7 +2356,8 @@ class Sasuke(EmissionLineFit):
                 model_eml_par['MASK'][ended_in_error] \
                         = self.bitmask.turn_on(model_eml_par['MASK'][ended_in_error], 'NO_FIT')
             if numpy.all(ended_in_error):
-                return self.obj_wave, model_flux, model_eml_flux, remap_model_mask, model_eml_par
+                return self.obj_wave, model_flux, model_eml_flux, remap_model_mask, \
+                            model_fit_par, model_eml_par
         else:
             remap_model_mask= None
             remap_start = None
@@ -2408,7 +2420,7 @@ class Sasuke(EmissionLineFit):
                                                            x_binned=self.obj_skyx,
                                                            y_binned=self.obj_skyy,
                                                            x=self.remap_skyx, y=self.remap_skyy,
-                                                           plot=False, quiet=True)
+                                                           plot=plot, quiet=not plot)
 #                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers
@@ -2479,6 +2491,8 @@ class Sasuke(EmissionLineFit):
         """
         if redshift_only and dispersion_corrections is not None:
             raise ValueError('redshift_only and dispersion_corrections are mutually exclusive.')
+        if deredshift:
+            raise NotImplementedError('Cannot yet deredshift models.')
         
         # Check the spectral sampling
         velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
@@ -2538,6 +2552,8 @@ class Sasuke(EmissionLineFit):
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        # Initially mask everything
+        models[:,:] = numpy.ma.masked
 
         # Get the kinematics to use
         kin = model_fit_par['KIN'].copy()[:,:smoments]
@@ -2548,15 +2564,16 @@ class Sasuke(EmissionLineFit):
         elif dispersion_corrections is not None:
             kin[:,1] = numpy.ma.sqrt(numpy.square(model_fit_par['KIN'][:,1]) 
                                         - numpy.square(dispersion_corrections)).filled(1e-9)
-        if deredshift:
-            kin[:,0] = 0.0
+#        if deredshift:
+#            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):
             if skip[i]:
-                models[i,:] = numpy.ma.masked
                 continue
             ebv = model_fit_par['EBV'][i] if reddening else None
+
+            print('Constructing continuum for spectrum: {0}/{1}'.format(i+1,nobj), end='\r')
 
             # This is redeclared every iteration to allow for the
             # starting and ending pixels to be different (annoying); as
@@ -2572,5 +2589,14 @@ class Sasuke(EmissionLineFit):
                             addpoly=None if degree < 0 else model_fit_par['ADDCOEF'][i,:],
                             multpoly=None if mdegree < 1 else model_fit_par['MULTCOEF'][i,:],
                             reddening=ebv)
+
+#            if i == 0 or redshift_only:
+#                pyplot.plot(_obj_wave, _obj_flux[i,:])
+#                pyplot.plot(_obj_wave, models[i,:])
+#                pyplot.show()
+#                if redshift_only:
+#                    exit()
+#
+        print('Constructing continuum for spectrum: {0}/{0}'.format(nobj))
         return models
 

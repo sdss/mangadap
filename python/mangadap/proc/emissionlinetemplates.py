@@ -144,6 +144,9 @@ class EmissionLineTemplates:
             are constructed in instantiation; to build the templates
             using an existing instantiation, use
             :func:`build_templates`.
+        flux_density (bool): (**Optional**) Return spectrum in units of
+            flux density (flux per angstrom).  Default is to return the
+            spectrum in units of flux per pixel.
         loggers (list): (**Optional**) List of `logging.Logger`_ objects
             to log progress; ignored if quiet=True.  Logging is done
             using :func:`mangadap.util.log.log_output`.  Default is no
@@ -196,8 +199,8 @@ class EmissionLineTemplates:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-    def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, loggers=None,
-                 quiet=False):
+    def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, flux_density=True,
+                 loggers=None, quiet=False):
 
         self.loggers=None
         self.quiet=None
@@ -211,7 +214,8 @@ class EmissionLineTemplates:
         if _sinst.shape != self.wave.shape:
             raise ValueError('Provided sigma_inst must be a single number or a vector with the'
                              'same length as the wavelength vector.')
-        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True)
+        self.sigma_inst = interpolate.interp1d(self.wave, _sinst, assume_sorted=True,
+                                               bounds_error=False, fill_value=-1)
         self.log = log
         self.base = base
 
@@ -219,6 +223,7 @@ class EmissionLineTemplates:
 #                    else astropy.constants.c.to('km/s').value*spectral_coordinate_step(wave)/wave
 
         self.emldb = None           # Original database
+        self.flux_density = None    # Templates are in flux per Angstrom, not flux per pixel
         self.ntpl = None            # Number of templates
         self.flux = None            # Template fluxes
         self.tpli = None            # Template associated with each emission line
@@ -229,7 +234,7 @@ class EmissionLineTemplates:
 
         # If emission-line database is provided, use it to build the templates
         if emldb is not None:
-            self.build_templates(emldb, loggers=loggers, quiet=quiet)
+            self.build_templates(emldb, flux_density=flux_density, loggers=loggers, quiet=quiet)
 
 
     def _tied_index(self, i, primary=False):
@@ -424,7 +429,7 @@ class EmissionLineTemplates:
             warnings.warn('Any line with mode=w treated the same as mode=f.')
 
 
-    def build_templates(self, emldb, loggers=None, quiet=False):
+    def build_templates(self, emldb, flux_density=True, loggers=None, quiet=False):
         r"""
         Build the set of templates for a given emission-line database.
         The function uses the current values in :attr:`wave` and
@@ -451,6 +456,14 @@ class EmissionLineTemplates:
         Args:
             emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
                 Emission-line database.
+            flux_density (bool): (**Optional**) Return spectrum in units
+                of flux density (flux per angstrom).  Default is to
+                return the spectrum in units of flux per pixel.
+            loggers (list): (**Optional**) List of `logging.Logger`_
+                objects to log progress; ignored if quiet=True.  Logging
+                is done using :func:`mangadap.util.log.log_output`.
+            quiet (bool): (**Optional**) Suppress all terminal and
+                logging output.
 
         Returns:
             numpy.ndarray: Returns 4 arrays: (1) the set of templates
@@ -464,6 +477,7 @@ class EmissionLineTemplates:
         if loggers is not None:
             self.loggers = loggers
         self.quiet = quiet
+        self.flux_density = flux_density
 
         #---------------------------------------------------------------
         # Check the database can be used with this class
@@ -504,10 +518,11 @@ class EmissionLineTemplates:
 
         # Rest wavelength in pixel units
         _restwave = (_restwave - _wave[0])/_dw
-        # Flux to pixel units
+        # Flux to pixel units; less accurate when spectrum is
+        # logarithmically binned
         dl = self.emldb['restwave']*(numpy.power(self.base,_dw/2)-numpy.power(self.base,-_dw/2)) \
                         if self.log else _dw
-        _flux = self.emldb['flux'] / dl
+        _flux = self.emldb['flux'] / dl if self.flux_density else self.emldb['flux']
         # Dispersion in pixel units
         _sigma = self.eml_sigma_inst * self.emldb['restwave'] \
                         / astropy.constants.c.to('km/s').value / dl
@@ -541,6 +556,11 @@ class EmissionLineTemplates:
 #                    warnings.warn('{0} line is undersampled!'.format(self.emldb['name'][j]))
                 # Add the line to the flux in this template
                 self.flux[i,:] += profile(pix, p)
+
+                #line_spec = profile(pix,p)
+                #line_spec *= (_flux[j]/numpy.sum(line_spec))
+                #print(numpy.sum(line_spec), _flux[j], numpy.sum(line_spec)/_flux[j])
+                #self.flux[i,:] += line_spec
 
         return self.flux, self.comp, self.vgrp, self.sgrp
 

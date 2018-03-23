@@ -35,19 +35,67 @@ data/emission_bandpass_filters/elb_mpl5.par -text
 data/emission_bandpass_filters/elbfull.par -text
 data/emission_bandpass_filters/elbmiles.par -text
 data/emission_bandpass_filters/elbstrong.par -text
+data/emission_bandpass_filters/elbtt.par -text
 data/emission_lines/README -text
 data/emission_lines/elp_mpl5.par -text
 data/emission_lines/elpext.par -text
 data/emission_lines/elpfull.par -text
 data/emission_lines/elpmiles.par -text
+data/emission_lines/elpmilest.par -text
 data/emission_lines/elpsiii.par -text
 data/emission_lines/elpstrong.par -text
+data/emission_lines/elpt0.par -text
+data/emission_lines/elpt1.par -text
+data/emission_lines/elpt2.par -text
+data/emission_lines/elpt3.par -text
 data/filter_response/README -text
 data/filter_response/gunn_2001_g_response.db -text
 data/filter_response/gunn_2001_i_response.db -text
 data/filter_response/gunn_2001_r_response.db -text
 data/filter_response/gunn_2001_u_response.db -text
 data/filter_response/gunn_2001_z_response.db -text
+data/fix/redshift_fix.par -text
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.005.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.025.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.101.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.286.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.640.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a00.904.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a01.434.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a02.500.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a05.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.004_a10.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.005.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.025.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.101.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.286.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.640.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a00.904.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a01.434.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a02.500.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a05.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.008_a10.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.005.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.025.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.101.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.286.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.640.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a00.904.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a01.434.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a02.500.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a05.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.020_a10.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.005.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.025.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.101.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.286.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.640.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a00.904.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a01.434.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a02.500.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a05.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/BC03_z0.050_a10.000.fits -text svneol=unset#unset
+data/spectral_templates/bc03_mpajhu/README -text
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0030000000_z_0.02.fits -text svneol=unset#unset
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0035000000_z_0.02.fits -text svneol=unset#unset
 data/spectral_templates/m11_elodie/M11_ELODIE_res0.55_imf_ss_age_0.0040000000_z_0.02.fits -text svneol=unset#unset
@@ -1755,11 +1803,7 @@ data/spectral_templates/miles_cluster/MILES_cluster_group_12.fits -text svneol=u
 data/spectral_templates/miles_cluster/MILES_cluster_group_13.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_14.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_15.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_16.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_17.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_18.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_19.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_20.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_21.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_22.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_23.fits -text svneol=unset#unset
@@ -1775,8 +1819,6 @@ data/spectral_templates/miles_cluster/MILES_cluster_group_32.fits -text svneol=u
 data/spectral_templates/miles_cluster/MILES_cluster_group_33.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_34.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_35.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_36.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_37.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_38.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_39.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_40.fits -text svneol=unset#unset
@@ -1785,7 +1827,6 @@ data/spectral_templates/miles_cluster/MILES_cluster_group_42.fits -text svneol=u
 data/spectral_templates/miles_cluster/MILES_cluster_group_43.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_44.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_45.fits -text svneol=unset#unset
-data/spectral_templates/miles_cluster/MILES_cluster_group_46.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_47.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_48.fits -text svneol=unset#unset
 data/spectral_templates/miles_cluster/MILES_cluster_group_49.fits -text svneol=unset#unset
@@ -2629,19 +2670,30 @@ python/mangadap/config/defaults.py -text
 python/mangadap/config/emission_bandpass_filters/elbfull.ini -text
 python/mangadap/config/emission_bandpass_filters/elbmiles.ini -text
 python/mangadap/config/emission_bandpass_filters/elbstrong.ini -text
+python/mangadap/config/emission_bandpass_filters/elbtt.ini -text
 python/mangadap/config/emission_line_modeling/efitf.ini -text
 python/mangadap/config/emission_line_modeling/efitm.ini -text
 python/mangadap/config/emission_line_modeling/efitmdb.ini -text
 python/mangadap/config/emission_line_modeling/efitmr.ini -text
 python/mangadap/config/emission_line_modeling/efitmrdb.ini -text
 python/mangadap/config/emission_line_modeling/efits.ini -text
+python/mangadap/config/emission_line_modeling/efitt0db.ini -text
+python/mangadap/config/emission_line_modeling/efitt1db.ini -text
+python/mangadap/config/emission_line_modeling/efitt2db.ini -text
+python/mangadap/config/emission_line_modeling/efitt3db.ini -text
 python/mangadap/config/emission_line_moments/emomf.ini -text
 python/mangadap/config/emission_line_moments/emomm.ini -text
 python/mangadap/config/emission_line_moments/emoms.ini -text
+python/mangadap/config/emission_line_moments/emomt.ini -text
 python/mangadap/config/emission_lines/elpext.ini -text
 python/mangadap/config/emission_lines/elpfull.ini -text
 python/mangadap/config/emission_lines/elpmiles.ini -text
+python/mangadap/config/emission_lines/elpmilest.ini -text
 python/mangadap/config/emission_lines/elpstrong.ini -text
+python/mangadap/config/emission_lines/elpt0.ini -text
+python/mangadap/config/emission_lines/elpt1.ini -text
+python/mangadap/config/emission_lines/elpt2.ini -text
+python/mangadap/config/emission_lines/elpt3.ini -text
 python/mangadap/config/example_ini/example_absorption_index_config.ini -text
 python/mangadap/config/example_ini/example_bandhead_index_config.ini -text
 python/mangadap/config/example_ini/example_bitmask_config.ini -text
@@ -2671,6 +2723,9 @@ python/mangadap/config/spectral_indices/bhindxn.ini -text
 python/mangadap/config/spectral_indices/indxe.ini -text
 python/mangadap/config/spectral_indices/indxen.ini -text
 python/mangadap/config/spectral_indices/indxend.ini -text
+python/mangadap/config/spectral_templates/bc03.ini -text
+python/mangadap/config/spectral_templates/ckc.ini -text
+python/mangadap/config/spectral_templates/ckc_local.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
 python/mangadap/config/spectral_templates/m11_marcs.ini -text
 python/mangadap/config/spectral_templates/m11_miles.ini -text
@@ -2683,7 +2738,13 @@ python/mangadap/config/spectral_templates/miles_thin.ini -text
 python/mangadap/config/spectral_templates/miuscat.ini -text
 python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_bc03.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_ckc.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_ckcl.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_m11_marcs.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_m11_miles.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_miuscat_thin.ini -text
 python/mangadap/contrib/LambdaR_2D_forMaNGA.py -text
 python/mangadap/contrib/__init__.py -text
 python/mangadap/contrib/xjmc.py -text

@@ -1,12 +1,59 @@
 --------------------------------------------------------------------------------
-KBW (??         ): tag 2.2
-    - Fixed NaN problems in DAPall file
+KBW (??         ): tag ??
 
 TODO:
     - Documentation of config examples are out of date!
     - Get rid of the filter keyword from the output headers...
     - Change default to fix bad pixels in spectral resolution?
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+KBW (23 Mar 2018): tag 2.2; Initial tag for DR15
+    - Fixed NaN problems in DAPall file
+    - Emission-lines moments are remeasured after the emission-line
+      model fitting to account for the adjustments made to the continuum
+      during that process.
+    - During the emission-line modeling, fit metrics are now computed in
+      15-pixel wide windows around each fitted line.  The metrics are
+      amplitude, amplitude-to-noise, chi-square, root-mean-square
+      difference with the model, and fractional RMS wrt the model.
+      These data are currently only in the reference files, not the
+      output maps.
+    - Begun coding for switching the templates between what is used for
+      the stellar kinematics fitting and what's used for the
+      emission-line modeling.  Coding incomplete, but does not effect
+      runs that use the same template sets for both analysis steps (as
+      done in DR15).
+    - MILES-HC templates changed to reflect re-run of the analysis by M.
+      Cappellari so that we have documented which MILES template is
+      incorporated into each MILES-HC template.  The total number of
+      templates was again 49; however, 7 of these have been removed
+      because they had artifacts and/or emission-lines in their spectra.
+      See ./data/spectral_templates/miles_cluster/README .
+    - Included redshift fix file that can be used to replace the
+      redshift used for any PLATEIFU either because it's not provided by
+      the relevant ancillary programs or the NSA redshift is incorrect.
+    - Corrected error in the emission-line fluxes for the fact that the
+      input template flux increases with the fitted redshift.  So:
+      F_true = (1+z)*F_MPL6.
+    - Corrected the emission-line equivalent width measurements from
+      observed to rest frame.
+    - Corrected the absorption-line spectral-index equivalent widths
+      (angstrom units) from observed to rest frame.
+    - Emission-line moments and spectral-indices (anything depending on
+      the integration over a set of bandpasses) are now flagged as
+      UNRELIABLE in the output maps if *any* pixels are masked in *any*
+      their respective band passes.  This is true for both the main
+      passband and any sidebands.
+    - Spectral index measurements are now provided for the HYB binning
+      scheme.
+    - Spectral-index velocity-dispersion corrections are done adopting
+      the NSA redshift for all spectra.  This means that there will be a
+      *velocity* dependence of the correction that can be more
+      significant that the correction for the velocity dispersion
+      itself.  The approach to the velocity dispersion corrections
+      should be improved in future releases.
+    
 --------------------------------------------------------------------------------
 KBW (21 Nov 2017): tag 2.1.3
     - Minor bug fix

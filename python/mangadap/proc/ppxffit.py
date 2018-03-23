@@ -1170,6 +1170,7 @@ class PPXFFit(StellarKinematicsFit):
         # spectra
         usetpl = numpy.any(self.usetpl, axis=0).reshape(1,-1)
 
+#        plot=True
         # Fit the spectrum
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'First fit to global spectrum.')
@@ -1726,7 +1727,7 @@ class PPXFFit(StellarKinematicsFit):
                          match_spectral_resolution(self.tpl_wave, tmp_wlosvd,
                                                    self.tpl_sres.sres(),
                                                    self.obj_wave/(1+nominal_redshift[i]),
-                                                   self.obj_sres[i,:], min_sig_pix=1.0, log10=True,
+                                                   self.obj_sres[i,:], min_sig_pix=0.0, log10=True,
                                                    new_log10=True, quiet=True, no_offset=False)
 
                 # Check 2-pixel resolution limit in resolution-matched
@@ -1741,8 +1742,10 @@ class PPXFFit(StellarKinematicsFit):
 #                pyplot.plot(self.tpl_wave, model_template[i,:])
 #                pyplot.plot(self.tpl_wave, tmp_wlosvd)
 #                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres)
+#                pyplot.plot(self.tpl_wave, mask)
 ##                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres - model_template[i,:])
 #                pyplot.show()
+#                exit()
 
                 # Resample to match the object spectra
                 inRange = self.tpl_wave[[0,-1]] * (1.0 + nominal_redshift[i])
@@ -3273,6 +3276,8 @@ class PPXFFit(StellarKinematicsFit):
         """
         if redshift_only and corrected_dispersion:
             raise ValueError('The redshift_only and corrected_dispersion are mutually exclusive.')
+        if deredshift:
+            raise NotImplementedError('Cannot yet deredshift models.')
 
         # Check the spectral sampling
         velscale_ratio = int(numpy.around(spectrum_velocity_scale(obj_wave)
@@ -3313,6 +3318,8 @@ class PPXFFit(StellarKinematicsFit):
 
         # Instantiate the output model array
         models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        # Initially mask everything
+        models[:,:] = numpy.ma.masked
 
         # Set the kinematics
         kin = model_par['KIN'].copy()
@@ -3322,14 +3329,15 @@ class PPXFFit(StellarKinematicsFit):
         elif corrected_dispersion:
             kin[:,1] = numpy.ma.sqrt(numpy.square(model_par['KIN'][:,1]) 
                                         - numpy.square(model_par['SIGMACORR_EMP'])).filled(1e-9)
-        if deredshift:
-            kin[:,0] = 0.0
+#        if deredshift:
+#            kin[:,0] = 0.0
 
         # Construct the model for each (selected) object spectrum
         for i in range(nobj):
             if skip[i]:
-                models[i,:] = numpy.ma.masked
                 continue
+
+            print('Constructing model for spectrum: {0}/{1}'.format(i+1,nobj), end='\r')
 
             # This has to be redeclared every iteration because the
             # starting and ending pixels might be different (annoying);
@@ -3345,5 +3353,6 @@ class PPXFFit(StellarKinematicsFit):
                             addpoly=None if degree < 0 else model_par['ADDCOEF'][i,:],
                             multpoly=None if mdegree < 1 else model_par['MULTCOEF'][i,:])
 
+        print('Constructing model for spectrum: {0}/{0}'.format(nobj))
         return models
 

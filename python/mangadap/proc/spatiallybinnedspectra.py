@@ -1363,7 +1363,8 @@ class SpatiallyBinnedSpectra:
             # !! Use the new pre-pixelized LSF measurements !!
             specres_ext='SPECRES' if self.method['spec_res'] == 'cube' else None
             sres = self.drpf.spectral_resolution(ext=specres_ext, toarray=True,
-                                                 pre=self.method['prepixel_sres'])[good_spec,:]
+                                                 pre=self.method['prepixel_sres'],
+                                                 fill=True)[good_spec,:]
 
             # TODO: Does this work with any covariance mode?  Don't like
             # this back and forth between what is supposed to be a stack

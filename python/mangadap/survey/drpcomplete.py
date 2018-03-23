@@ -88,6 +88,8 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
         plateTargets column names defined for DR13.
     | **02 Aug 2016**: (KBW) Added directory_path input parameter to
         :class:`DRPComplete`
+    | **01 Mar 2018**: (KBW) Added ability to read the redshift fix
+        file.
     
 .. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
 .. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
@@ -348,8 +350,12 @@ class DRPComplete:
 
         plttrg_data = []
 
+        root = '/'+os.path.join(*(self.platetargets[0].split('/')[:-1]))
+        print('plateTargets root directory: {0}'.format(root))
+
         for p in self.platetargets:
-            print('Reading plateTargets file: {0}'.format(p), end='\r')
+            pfile = p.split('/')[-1]
+            print('Reading plateTargets file: {0}'.format(pfile), end='\r')
             # Check that the file exists
             if not os.path.exists(p):
                 raise FileNotFoundError('Cannot open {0}!'.format(p))
@@ -358,6 +364,25 @@ class DRPComplete:
         print('\nReading plateTargets file: DONE')
 
         return plttrg_data
+
+
+    def _read_redshift_fix(self, quiet=True):
+        """
+        Read data from the $MANGADAP_DIR/data/fix/redshift_fix.par file,
+        if it exists.
+
+        Args:
+            quiet (bool): (**Optional**) Suppress terminal output (NOT USED)
+
+        Returns:
+            yanny: A yanny structure with the redshift fixes.  Returns
+            None and raises a warning if the file does not exist.
+        """
+        fix_file = defaults.default_redshift_fix_file()
+        if not os.path.isfile(fix_file):
+            warnings.warn('No redshift fix file available.')
+            return None
+        return yanny(filename=fix_file)
 
 
     def _match_platetargets(self, quiet=True):
@@ -402,6 +427,9 @@ class DRPComplete:
         plttrg_data = self._read_platetargets(quiet=quiet)
         ntrg = len(plttrg_data)
         print('Read {0} plateTargets file(s)'.format(ntrg))
+
+        # Read the redshift fix file
+        redshift_fix_data = self._read_redshift_fix(quiet=quiet)
 
         # Initialize the output arrays (needed in case some DRP targets not found)
         n_drp = len(self.platelist)
@@ -487,22 +515,36 @@ class DRPComplete:
             except:
                 manga_trg3[i] = -9999
 
-            # As of MPL-6, platetargets files now include the redshift
-            # from the targeting catalog which is the combination of
-            # the NSA data and the ancillary targets; the NSA only
-            # redshift column is 'nsa_z'.  To be compatible with
-            # previous versions, first try to grab the redshift using
-            # the keyword 'z', then try with 'nsa_z', then just set it
-            # to -9999.
-            try:
-                vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['z'][indx][0] \
-                            * astropy.constants.c.to('km/s').value
-            except:
+            # Allow for the redshift to come from a fix file instead of
+            # the plateTargets files
+            corrected_z = None
+            if redshift_fix_data is not None:
+                z_indx = (redshift_fix_data['DAPZCORR']['plate'] == self.platelist[i]) \
+                            & (redshift_fix_data['DAPZCORR']['ifudesign'] == self.ifudesignlist[i])
+                if numpy.sum(z_indx) == 1:
+                    corrected_z = redshift_fix_data['DAPZCORR']['z'][z_indx][0]
+
+            if corrected_z is None:
+                # As of MPL-6, platetargets files now include the
+                # redshift from the targeting catalog which is the
+                # combination of the NSA data and the ancillary targets;
+                # the NSA only redshift column is 'nsa_z'.  To be
+                # compatible with previous versions, first try to grab
+                # the redshift using the keyword 'z', then try with
+                # 'nsa_z', then just set it to -9999.
                 try:
-                    vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0] \
+                    vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['z'][indx][0] \
                                 * astropy.constants.c.to('km/s').value
                 except:
-                    vel[i] = -9999.0
+                    try:
+                        vel[i] = plttrg_data[plttrg_j]['PLTTRGT']['nsa_z'][indx][0] \
+                                    * astropy.constants.c.to('km/s').value
+                    except:
+                        vel[i] = -9999.0
+            else:
+                vel[i] = corrected_z * astropy.constants.c.to('km/s').value
+                warnings.warn('Using redshift fix for {0}-{1} (v={2:.1f})'.format(
+                                    self.platelist[i], self.ifudesignlist[i], vel[i]))
 
             try:
                 if plttrg_data[plttrg_j]['PLTTRGT']['nsa_elpetro_ba'][indx][0] < 0:

@@ -62,12 +62,12 @@ MaNGA DAP, such as paths and file names.
         to
         :func:`mangadap.config.inputdata.available_template_libraries`.
         No longer need ConfigParser here.
+    | **12 Jul 2016**: (KBW) Changed :func:`default_manga_fits_root` to
+        accommodate MAPS output name.
     | **05 May 2017**: (KBW) :func:`default_dap_version` returns
         internal version if MANGADAP_VER environmental variable is not
         defined.
-
-    | **12 Jul 2016**: (KBW) Changed :func:`default_manga_fits_root` to
-        accommodate MAPS output name.
+    | **01 Mar 2018**: (KBW) Added :func:`default_redshift_fix_file`.
 
 """
 
@@ -514,4 +514,16 @@ def default_plate_target_files():
     
     return numpy.array(file_list), trgid
 
+
+def default_redshift_fix_file():
+    """
+    Return the path to the default redshift fix file.
+
+    Returns:
+        str: Expected path to the redshift-fix parameter file.
+    """
+
+    # Default search string
+    check_environment_variable('MANGADAP_DIR')
+    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'fix', 'redshift_fix.par')
 

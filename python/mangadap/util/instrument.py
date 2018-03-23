@@ -322,11 +322,13 @@ class VariableGaussianKernel:
         x2 = numpy.square(numpy.linspace(-self.p, self.p, self.m))   # X^2 for kernel
 
         # Kernel will have size m x n
+#        print('division by zero?')
         self.kernel = (erf((x2[:,None]+0.5)/numpy.sqrt(2)/self.sigma) 
                             - erf((x2[:,None]-0.5)/numpy.sqrt(2)/self.sigma))/2. if integral else \
                       numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma)))
 
         self.kernel /= numpy.sum(self.kernel, axis=0)[None, :]       # Normalize kernel
+#        print('division by zero...')
 
 
     def _check_shape(self, y, ye=None):
@@ -543,6 +545,7 @@ class SpectralResolution:
         the attributes :attr:`sig_pd` and :attr:`sig_mask`.  See
         :func:`GaussianKernelDifference`.
         """
+#        print('finalize b')
         indx = numpy.isclose(sig2_pd, 0.0)
         nindx = numpy.invert(indx)
         self.sig_pd = sig2_pd.copy()
@@ -550,6 +553,7 @@ class SpectralResolution:
         self.sig_pd[indx] = 0.0
 #        self.sig_mask = numpy.array(self.sig_pd < -self.min_sig).astype(numpy.uint)
         self.sig_mask = numpy.array(self.sig_pd < self.min_sig).astype(numpy.uint)
+#        print('finalize e')
 
 
     def _convert_vd2pd(self, sig2_vd):
@@ -557,6 +561,7 @@ class SpectralResolution:
         Convert from :math:`\sigma^2_{v,d}` to :math:`\sigma^2_{p,d}`.
         See :func:`GaussianKernelDifference`.
         """
+#        print('vd2pd')
         return sig2_vd / numpy.square(self.dv) if self.log10 else \
                sig2_vd / numpy.square(self.c*self.dw/self.wave())
 
@@ -566,6 +571,7 @@ class SpectralResolution:
         Convert from :math:`\sigma^2_{p,d}` to :math:`\sigma^2_{v,d}`.
         See :func:`GaussianKernelDifference`.
         """
+#        print('pd2vd')
         return sig2_pd * numpy.square(self.dv) if self.log10 else \
                sig2_pd * numpy.square(self.c*self.dw/self.wave())
 
@@ -755,6 +761,7 @@ class SpectralResolution:
                 standard deviation allowed before assuming the kernel is
                 a Delta function.
         """
+#        print('kernel difference')
         # Save the minimum pixel sigma to allow
         self.min_sig = min_sig_pix
 
@@ -766,8 +773,15 @@ class SpectralResolution:
 
         # Determine the variance (in angstroms) of Gaussian needed to match
         # input resolution to the new values
+#        print('sig2_wd')
         sig2_wd = numpy.square(_wave/DAPConstants.sig2fwhm) \
                   * (1.0/numpy.square(interp_sres) - 1.0/numpy.square(_sres))
+
+#        pyplot.plot(_wave, _sres)
+#        pyplot.plot(_wave, interp_sres)
+#        pyplot.show()
+
+#        print('sig2_vd')
         # Convert to km/s
         sig2_vd = numpy.square(self.c/_wave) * sig2_wd
 
@@ -799,6 +813,7 @@ class SpectralResolution:
 
         self._finalize_GaussianKernelDifference(sig2_pd)
 
+#        print('kernel difference done')
 
 #    def ZeroGaussianKernelDifference(self, min_sig_pix=0.0):
 #        self.min_sig = min_sig_pix
@@ -1052,6 +1067,10 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
     new_res = SpectralResolution(new_sres_wave, new_sres, log10=new_log10)
 
+#    pyplot.plot(new_sres_wave, new_sres)
+#    pyplot.show()
+#    exit()
+
     res = numpy.empty(nspec, dtype=object)
 
     # Get the kernel parameters necessary to match all spectra to the
@@ -1092,8 +1111,11 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     _mask = numpy.zeros(flux.shape, dtype=numpy.uint) if mask is None else mask
     out_mask = _mask.copy()
 
+#    print('test div by zero')
     if nspec == 1 and spec_dim == 1:
-        indx = numpy.where(res[0].sig_pd > min_sig_pix)
+#        indx = numpy.where(res[0].sig_pd > min_sig_pix)
+        indx = res[0].sig_pd > min_sig_pix
+#        print(len(indx), numpy.sum(indx))
         try:
             if ivar is None:
                 out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
@@ -1114,7 +1136,8 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
             if not quiet:
                 print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
             try:
-                indx = numpy.where(res[i].sig_pd > min_sig_pix)
+#                indx = numpy.where(res[i].sig_pd > min_sig_pix)
+                indx = res[i].sig_pd > min_sig_pix
                 if ivar is None:
                     out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
                                                                   res[i].sig_pd[indx],

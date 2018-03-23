@@ -467,7 +467,7 @@ def smooth_masked_vector(x, nsmooth):
     return numpy.ma.MaskedArray(numpy.dot(n,x.data), mask=numpy.invert(nn>0) | x.mask)/nn
 
 
-def interpolate_masked_vector(y, quiet=True):
+def interpolate_masked_vector(y, quiet=True, extrap_with_median=False):
     """
     Interpolate over the masked pixels in an input vector using linear
     interpolation.
@@ -482,6 +482,12 @@ def interpolate_masked_vector(y, quiet=True):
                                         fill_value='extrapolate')
     _y = y.data.copy()
     _y[indx] = interpolator(x[indx])
+
+    if extrap_with_median:
+        med = numpy.median(interpolator.y)
+        m_indx = (x[indx] < interpolator.x[0]) | (x[indx] > interpolator.x[-1])
+        _y[indx][m_indx] = med
+
     return _y
 
 

@@ -1351,10 +1351,11 @@ class DRPFits:
                 raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
             _ext = 'PRE'+_ext
 
+        sres = None
         if 'DISP' in _ext:
 #            print('using DISP')
-            disp = self.copy_to_array(ext=_ext) if toarray else \
-                        numpy.ma.MaskedArray(self.hdu[_ext].data.copy())
+            disp = numpy.ma.MaskedArray(self.copy_to_array(ext=_ext))
+            disp[numpy.invert(disp > 0)] = numpy.ma.masked
 #            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
 #            i = self.spatial_shape[0]//2
 #            ii = i*self.spatial_shape[0] + i
@@ -1369,22 +1370,28 @@ class DRPFits:
 #            pyplot.show()
 #            exit()
             sres = numpy.ma.power(DAPConstants.sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
-            if fill:
-                _sres = sres.reshape(self.nspec, -1)
-                for i in range(self.nspec):
-                    _sres[i,:] = interpolate_masked_vector(_sres[i,:])
-                sres = _sres.reshape(sres.shape)
-#                pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest')
-#                pyplot.colorbar()
-#                pyplot.show()
-#                exit()
-            return sres
-        if 'SPECRES' in _ext:
+        elif 'SPECRES' in _ext:
 #            print('using SPECRES')
             sres = numpy.ma.MaskedArray(numpy.array([self.hdu[_ext].data] 
                                                         * numpy.prod(self.spatial_shape)))
-            return sres if toarray else sres.reshape(*self.spatial_shape,self.nwave)
-        return None
+            sres[numpy.invert(sres > 0)] = numpy.ma.masked
+        if sres is not None and fill:
+#            pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest',
+#                          aspect='auto')
+#            pyplot.colorbar()
+#            pyplot.show()
+            _sres = sres.reshape(self.nspec, -1)
+            for i in range(self.nspec):
+                _sres[i,:] = interpolate_masked_vector(_sres[i,:]) #, extrap_with_median=True)
+            sres = _sres.reshape(sres.shape)
+#            pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest',
+#                          aspect='auto')
+#            pyplot.colorbar()
+#            pyplot.show()
+#            exit()
+        if sres is not None and not toarray:
+            sres = sres.reshape(*self.spatial_shape,self.nwave)
+        return sres
 
 
     def spectral_resolution_header(self, ext=None, pre=False):

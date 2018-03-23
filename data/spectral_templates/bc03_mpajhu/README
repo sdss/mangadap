@@ -1,0 +1,27 @@
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+BC03-MPAJHU STELLAR LIBRARY
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+
+This is a library of select BC03 models used by the MPA-JHU catalog with
+SDSS DR4 data.
+
+The SSP templates have ages and metallicities as follows:
+
+    Ages: 0.005, 0.025, 0.101, 0.286, 0.640, 0.904, 1.434, 2.500, 5.000,
+          10.000 Gyr
+       Z: 0.008, 0.004, 0.02, 0.05
+
+The wavelengths were restricted to 3325 - 9295 just as a convenience to
+keep the pixel sampling the same as the proviced data, 1 angstrom per
+pixel.  We think the resolution is 2.3 angstroms, independent of
+wavelength.
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+K.B. Westfall,  1 Mar 2018 - Provided by Christy Tremonti; 27 Feb 2018
+------------------------------------------------------------------------
+
+
+
