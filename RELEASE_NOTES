@@ -8,7 +8,7 @@ TODO:
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-KBW (23 Mar 2018): tag 2.2; Initial tag for DR15
+KBW (23 Mar 2018): tag 2.2.0; Initial tag for DR15
     - Fixed NaN problems in DAPall file
     - Emission-lines moments are remeasured after the emission-line
       model fitting to account for the adjustments made to the continuum

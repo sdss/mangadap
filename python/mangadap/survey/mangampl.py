@@ -110,6 +110,8 @@ class MaNGAMPL:
     +--------+-------------+------------+--------+--------+--------+
     | MPL-6  |        None |    v5_5_30 | v1_6_0 | v2_3_1 |  2.1.3 |
     +--------+-------------+------------+--------+--------+--------+
+    | MPL-7  |        None |    v5_5_32 | v1_6_2 | v2_4_3 |  2.2.0 |
+    +--------+-------------+------------+--------+--------+--------+
 
     **Python versions**
     +--------+--------+--------+--------+------------+---------+-------+----------------+
@@ -118,6 +120,8 @@ class MaNGAMPL:
     | MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |       None |   1.1.2 | 0.5.0 |            yes |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
     | MPL-6  |  3.6.3 | 1.13.3 |  1.0.0 |       None |   2.0.2 | 0.6.0 |            N/A |
+    +--------+--------+--------+--------+------------+---------+-------+----------------+
+    | MPL-7  |  3.6.3 | 1.13.3 |  1.0.0 |       None |   2.0.2 | 0.6.0 |            N/A |
     +--------+--------+--------+--------+------------+---------+-------+----------------+
 
     .. note::
@@ -241,8 +245,11 @@ class MaNGAMPL:
                                     '3.5.1', '1.11.0', '0.17.1',       None,  '1.1.2', '0.5.0' ],
                                 [ 'MPL-6',      None, 'v5_5_30', 'v1_6_0', 'v2_3_1',  '2.1.3',
                                     '3.6.3', '1.13.3',    '1.0',       None,  '2.0.2', '0.6.0' ],
+                                [ 'MPL-7',      None, 'v5_5_32', 'v1_6_2', 'v2_4_3',  '2.2.0',
+                                    '3.6.3', '1.13.3',    '1.0',       None,  '2.0.2', '0.6.0' ],
                                 ['env'] + self.get_environment_versions()
                                 ])
+
         nmpl = mpl_def.shape[1]
         if write:
             print('Available MPLs:')
@@ -341,34 +348,6 @@ class MaNGAMPL:
 
         if self.pydlver is not None and StrictVersion(env[10]) != StrictVersion(self.pydlver):
             self._version_mismatch('pydl', self.pydlver, env[10], quiet=quiet)
-
-
-#    def module_file(self):
-#        """
-#        Return the name of the module file specific to the MPL to analyze.
-#
-#        .. warning::
-#            This function is incomplete in the sense that not all MPLs
-#            listed in the above table have an associated module file.
-#
-#        Returns:
-#            str: Name of the manga module to load.  E.g. 'manga/mpl3'
-#            for MPL-3.
-#        """
-#        if self.mplver == 'MPL-1':
-#            return 'manga/westfall3_mpl1'
-#        elif self.mplver == 'MPL-2':
-#            return 'manga/westfall3_mpl2'
-#        elif self.mplver == 'MPL-3':
-#            return 'manga/mpl3'
-#        elif self.mplver == 'MPL-4':
-#            return 'manga/mpl4'
-#        elif self.mplver == 'MPL-5':
-#            return 'manga/mpl5'
-#        elif self.mplver == 'MPL-6':
-#            return 'manga/mpl6'
-#        else:
-#            return 'manga/westfall3_mpl1'
 
 
     def show(self):
