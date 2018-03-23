@@ -41,6 +41,7 @@ data/emission_lines/elp_mpl5.par -text
 data/emission_lines/elpext.par -text
 data/emission_lines/elpfull.par -text
 data/emission_lines/elpmiles.par -text
+data/emission_lines/elpmilest.par -text
 data/emission_lines/elpsiii.par -text
 data/emission_lines/elpstrong.par -text
 data/emission_lines/elpt0.par -text
@@ -2687,6 +2688,7 @@ python/mangadap/config/emission_line_moments/emomt.ini -text
 python/mangadap/config/emission_lines/elpext.ini -text
 python/mangadap/config/emission_lines/elpfull.ini -text
 python/mangadap/config/emission_lines/elpmiles.ini -text
+python/mangadap/config/emission_lines/elpmilest.ini -text
 python/mangadap/config/emission_lines/elpstrong.ini -text
 python/mangadap/config/emission_lines/elpt0.ini -text
 python/mangadap/config/emission_lines/elpt1.ini -text
@@ -2723,6 +2725,7 @@ python/mangadap/config/spectral_indices/indxen.ini -text
 python/mangadap/config/spectral_indices/indxend.ini -text
 python/mangadap/config/spectral_templates/bc03.ini -text
 python/mangadap/config/spectral_templates/ckc.ini -text
+python/mangadap/config/spectral_templates/ckc_local.ini -text
 python/mangadap/config/spectral_templates/m11_elodie.ini -text
 python/mangadap/config/spectral_templates/m11_marcs.ini -text
 python/mangadap/config/spectral_templates/m11_miles.ini -text
@@ -2737,6 +2740,7 @@ python/mangadap/config/spectral_templates/miuscat_thin.ini -text
 python/mangadap/config/spectral_templates/stelib.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_bc03.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_ckc.ini -text
+python/mangadap/config/stellar_continuum_modeling/gau_ckcl.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_m11_marcs.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_m11_miles.ini -text
 python/mangadap/config/stellar_continuum_modeling/gau_mileshc.ini -text
