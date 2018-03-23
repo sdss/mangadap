@@ -15,7 +15,7 @@ Library reconstructed by M. Cappellari in order to document the specific
 MILES stars that are used to construct each template star (appended
 below).  Data sent to KBW on 9 Feb 2018.  We decided to remove clusters
 16, 17, 18, 20, 36, 37, and 46 because of emission lines present in
-flaring late-type stars (clusters 16,17,18) and artifacts (clustrs 20,
+flaring late-type stars (clusters 16,17,18) and artifacts (clusters 20,
 36, 37, 46).  Most of these spectra are from single stars
 (16,17,20,36,46), cluster 18 is only 2 stars, but cluster 37 has 9
 stars.  There are many more clusters that are made up of single stars
