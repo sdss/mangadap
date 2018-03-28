@@ -8,6 +8,10 @@ TODO:
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+KBW (28 Mar 2018): tag 2.2.1; MPL-7/DR15 Candidate tag
+    - Add DAPFRMT and DAPTYPE header keywords to MAPS and LOGCUBE files.
+
+--------------------------------------------------------------------------------
 KBW (23 Mar 2018): tag 2.2.0; Initial tag for DR15
     - Fixed NaN problems in DAPall file
     - Emission-lines moments are remeasured after the emission-line
