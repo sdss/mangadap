@@ -694,6 +694,12 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPPIXMASK')
+        # Add the DAP method
+        prihdr['DAPTYPE'] = (default_dap_method(binned_spectra=binned_spectra,
+                                                stellar_continuum=stellar_continuum),
+                             'DAP analysis method')
+        # Add the format of this file
+        prihdr['DAPFRMT'] = ('MAPS', 'DAP data file format')
 
         # Get the base map headers
         self.multichannel_maphdr \
@@ -1769,6 +1775,12 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPSPECMASK')
+        # Add the DAP method
+        prihdr['DAPTYPE'] = (default_dap_method(binned_spectra=binned_spectra,
+                                                stellar_continuum=stellar_continuum),
+                             'DAP analysis method')
+        # Add the format of this file
+        prihdr['DAPFRMT'] = ('LOGCUBE', 'DAP data file format')
 
         # Get the base map header
         self.base_cubehdr = DAPFitsUtil.build_cube_header(self.drpf,
