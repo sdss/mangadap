@@ -1439,18 +1439,39 @@ class TemplateLibrary:
         if velscale_ratio is not None and velscale_ratio == 1:
             velscale_ratio = None
 
-        # Use the DRP file object to set the spectral resolution and
-        # velocity scale to match to.
-        # TODO: Need to update the matching for 'DISP' in new LOGCUBEs?
         if drpf is not None:
+            # Use the DRP file object to set the spectral resolution and
+            # velocity scale to match to.  TODO: Need to update the
+            # matching for 'DISP' in new LOGCUBEs?
             if drpf.hdu is None:
                 if not self.quiet:
                     warnings.warn('DRP file previously unopened.  Reading now.')
                 drpf.open_hdu()
-            self.sres = SpectralResolution(drpf.hdu['WAVE'].data, drpf.hdu['SPECRES'].data,
-                                           log10=True) if match_to_drp_resolution else None
-            # Set this by default, but need DRPFits to return if the
-            # file is logarithmically sampled!
+
+            # If resolution matching is requested, get the spectral
+            # resolution vector.
+            #   - The procedure requires that the resolution be measured
+            #     without the pixel convolution; however, the PRESPECRES
+            #     extension is not available with all releases of the
+            #     DRP.  So first try to get the prepixelized
+            #     measurements, and then warn the user and get the
+            #     pixelized measuremeents if that fails.
+            #   - The spectral_resolution function returns a full array
+            #     with the spectral resolution for each spectrum by
+            #     default.  Calling it with median=True will only return
+            #     the single vector with the median spectral resolution.
+            if match_to_drp_resolution:
+                try:
+                    self.sres = drpf.spectral_resolution(ext='SPECRES', toarray=True, fill=True,
+                                                         pre=True, median=True)
+                except:
+                    self.sres = drpf.spectral_resolution(ext='SPECRES', toarray=True, fill=True,
+                                                         median=True)
+            else:
+                self.sres = None
+
+            # Set log sampling by default, but should instead query
+            # DRPFits to check if the wavelengths are log binned!
             self.log10_sampling = True
             self.spectral_step = spectral_coordinate_step(drpf.hdu['WAVE'].data, log=True)
         # Use the provided input values

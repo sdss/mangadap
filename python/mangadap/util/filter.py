@@ -471,6 +471,19 @@ def interpolate_masked_vector(y, quiet=True, extrap_with_median=False):
     """
     Interpolate over the masked pixels in an input vector using linear
     interpolation.
+
+    Args:
+        y (numpy.ma.MaskedArray):
+            Vector to interpolate.
+        quiet (:obj:`bool`, optional):
+            Suppress standard output (default is True).
+        extrap_with_median (:obj:`bool`, optional):
+            Instead of linear extrapolation, use the median of the
+            interpolated vector.  Defaults to linear extrapolation.
+
+    Returns:
+        numpy.ndarray: Returns the interpolated, unmasked vector.
+
     """
     x = numpy.arange(y.size)
     indx = numpy.ma.getmaskarray(y)

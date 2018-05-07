@@ -1237,7 +1237,8 @@ class EmissionLineMoments:
                 continuum = self.emission_line_model.fill_continuum_to_match(binid)
                 specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' else None
                 sres = self.binned_spectra.drpf.spectral_resolution(ext=specres_ext, toarray=True,
-                                    pre=self.binned_spectra.method['prepixel_sres'])[good_snr,:]
+                                    pre=self.binned_spectra.method['prepixel_sres'], fill=True)
+                sres = sres.data[good_snr,:]    # spectral_resolution returns a masked array
             else:
                 continuum = self.emission_line_model.fill_continuum_to_match(
                                                 self.binned_spectra['BINID'].data,

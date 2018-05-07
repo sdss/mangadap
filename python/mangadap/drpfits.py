@@ -1307,7 +1307,8 @@ class DRPFits:
                                                 waverange=waverange)
 
 
-    def spectral_resolution(self, ext=None, toarray=False, fill=False, pre=False):
+    def spectral_resolution(self, ext=None, toarray=False, fill=False, pre=False,
+                            median=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
@@ -1318,79 +1319,89 @@ class DRPFits:
         'PREPREDISP' and fault.
 
         Args:
-            ext (str): (**Optional**) Specify the extension with the
-                spectral estimate to use.  Should be in [ None, 'DISP',
-                'SPECRES'].  The default is None, which means it will
-                return, in order of precedence, the data in 'DISP',
-                'SPECRES', or a None value if neither are present.
-            toarray (bool): (**Optional**) Return the spectral
-                resolution as a 2D array: Nspec x Nwave, even if the DRP
-                file is a CUBE object, similar to
+            ext (:obj:`str`, optional):
+                Specify the extension with the spectral estimate to use.
+                Should be in [ None, 'DISP', 'SPECRES'].  The default is
+                None, which means it will return, in order of
+                precedence, the data in 'DISP', 'SPECRES', or a None
+                value if neither are present.
+            toarray (:obj:`bool`, optiional):
+                Return the spectral resolution as a 2D array: Nspec x
+                Nwave, even if the DRP file is a CUBE object, similar to
                 :func:`DRPFits.copy_to_array`.  Default is to return an
                 object with the same shape as the flux array.
-            fill (bool): (**Optional**) Fill masked values by
-                interpolation.  Default is to leave masked pixels
-                in returned array.
-            pre (bool): (**Optional**) Read the pre-pixelized version of
-                the spectral resolution, instead of the post-pixelized
-                version.  This prepends 'PRE' to the extension name.
+            fill (:obj:`bool`, optional):
+                Fill masked values by interpolation.  Default is to
+                leave masked pixels in returned array.
+            pre (:obj:`bool`, optional):
+                Read the pre-pixelized version of the spectral
+                resolution, instead of the post-pixelized version.  This
+                prepends 'PRE' to the extension name.
+            median (:obj:`bool`, optional):
+                Return a single vector with the median spectral
+                resolution instead of a per spectrum array.  When using
+                the `SPECRES` extension, this just returns the vector
+                provided by the DRP file; when using the `DISP`
+                extension, this performs a masked median across the
+                array and then interpolates any wavelengths that were
+                masked in all vectors.
 
         Returns:
-            `numpy.ma.MaskedArray`_ : Masked array with the spectral
-            resolution.
+            `numpy.ma.MaskedArray`_ : Even if interpolated such that
+            there should be not masked values, the function returns a
+            masked array.  Array contains the spectral resolution
+            (:math:`R = \lambda/\Delta\lambda`) pulled from the DRP
+            file.
         """
+        # Make sure the fits file has been opened
         self.open_hdu(checksum=self.checksum)
+        # Check the selected base extension exists
         if ext in ['DISP','SPECRES'] and ext not in self.ext:
             raise ValueError('No extension: {0}'.format(ext))
 
-        # Set the extension
+        # Set the base extension
         _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
-
+        # Add the 'PRE' qualifier if requested and check that it exists
         if pre:
             if 'PRE'+_ext not in self.ext:
                 raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
             _ext = 'PRE'+_ext
 
+        # Build the spectral resolution vectors
         sres = None
         if 'DISP' in _ext:
-#            print('using DISP')
             disp = numpy.ma.MaskedArray(self.copy_to_array(ext=_ext))
+            # Mask any non-positive value
             disp[numpy.invert(disp > 0)] = numpy.ma.masked
-#            sres = self.copy_to_array(ext='DISP') if toarray else self.hdu['DISP'].data.copy()
-#            i = self.spatial_shape[0]//2
-#            ii = i*self.spatial_shape[0] + i
-#            print(self.spatial_shape[0], i, ii)
-#            pyplot.plot(self['WAVE'].data, sres[ii,:])
-#            pyplot.show()
-#            exit()
-#            sres = numpy.ma.power(DAPConstants.sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
-#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[149,:])
-#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[150,:])
-#            pyplot.plot(self.hdu['WAVE'].data, sres.filled(0.0)[151,:])
-#            pyplot.show()
-#            exit()
+            # Convert from sigma in angstroms to spectral resolution
+            # (based on FWHM)
             sres = numpy.ma.power(DAPConstants.sig2fwhm * disp / self.hdu['WAVE'].data[None,:], -1)
         elif 'SPECRES' in _ext:
-#            print('using SPECRES')
-            sres = numpy.ma.MaskedArray(numpy.array([self.hdu[_ext].data] 
-                                                        * numpy.prod(self.spatial_shape)))
+            sres = numpy.ma.MaskedArray(self.hdu[_ext].data if median
+                                        else numpy.array([self.hdu[_ext].data] 
+                                                            * numpy.prod(self.spatial_shape)))
             sres[numpy.invert(sres > 0)] = numpy.ma.masked
-        if sres is not None and fill:
-#            pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest',
-#                          aspect='auto')
-#            pyplot.colorbar()
-#            pyplot.show()
-            _sres = sres.reshape(self.nspec, -1)
-            for i in range(self.nspec):
-                _sres[i,:] = interpolate_masked_vector(_sres[i,:]) #, extrap_with_median=True)
-            sres = _sres.reshape(sres.shape)
-#            pyplot.imshow(numpy.ma.log10(sres), origin='lower', interpolation='nearest',
-#                          aspect='auto')
-#            pyplot.colorbar()
-#            pyplot.show()
-#            exit()
-        if sres is not None and not toarray:
+        else:
+            raise ValueError('Extension {0} invalid.'.format(_ext))
+
+        # Interpolate over any masked values
+        if fill:
+            outshape = sres.shape
+            sres = numpy.ma.MaskedArray(
+                            numpy.apply_along_axis(interpolate_masked_vector, 1,
+                                                   sres.reshape(1,-1) if sres.ndim == 1
+                                                        else sres.reshape(outshape[0], -1))
+                                        ).reshape(outshape)
+
+        if median and sres.ndim > 1 and sres.shape[0] > 1:
+            # Determine the median over all spectra if requested and
+            # necessary
+            sres = numpy.ma.median(sres, axis=0)
+        elif not toarray:
+            # Convert back to datacube format if array format not
+            # requested
             sres = sres.reshape(*self.spatial_shape,self.nwave)
+
         return sres
 
 

@@ -1039,12 +1039,13 @@ class SpatiallyBinnedSpectra:
 
         bin_indx is 2d
 
+        stack_sres is expected to be a MaskedArray
+
         """
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
         if stack_sres is None:
             stack_sres = numpy.ma.MaskedArray([self.drpf['SPECRES'].data]*self.nbins)
-#        sres_hdr = self.drpf.spectral_resolution_header(ext='SPECRES')
 
         self.covariance = None if (stack_covar is None or not isinstance(stack_covar, Covariance)) \
                                     else stack_covar.copy()

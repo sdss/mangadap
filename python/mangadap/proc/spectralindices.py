@@ -1066,7 +1066,7 @@ class SpectralIndices:
             missing = None
             sres = binned_spectra.drpf.spectral_resolution(
                         ext= 'SPECRES' if binned_spectra.method['spec_res'] == 'cube' else None,
-                        toarray=True, pre=binned_spectra.method['prepixel_sres'])
+                        toarray=True, pre=binned_spectra.method['prepixel_sres'], fill=True).data
         else:
             flags = binned_spectra.do_not_fit_flags()
             binid = binned_spectra['BINID'].data

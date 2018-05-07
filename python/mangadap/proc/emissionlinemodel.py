@@ -118,11 +118,6 @@ from .util import select_proc_method, replace_with_data_from_nearest_coo
 from .spectralfitting import EmissionLineFit
 
 from matplotlib import pyplot
-#from memory_profiler import profile
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 class EmissionLineModelDef(ParSet):
     """
@@ -139,19 +134,19 @@ class EmissionLineModelDef(ParSet):
         artifacts (str): String identifying the artifact database to use
         emission_lines (str): String identifying the emission-line
             database to use
-        continuum_templates (str): String identifying the continuum
+        continuum_tpl_key (str): String identifying the continuum
             templates to use
     """
     def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
-                 artifacts, emission_lines, continuum_templates, fitpar, fitclass, fitfunc):
+                 artifacts, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
-                     'artifacts', 'emission_lines', 'continuum_templates', 'fitpar', 'fitclass',
+                     'artifacts', 'emission_lines', 'continuum_tpl_key', 'fitpar', 'fitclass',
                      'fitfunc' ]
         values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
-                     emission_lines, continuum_templates, fitpar, fitclass, fitfunc ]
+                     emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc ]
         dtypes =   [ str, in_fl, bool, str, str, str, str, str, par_opt, None, None ]
         can_call = [ False, False, False, False, False, False, False, False, False, False, True ]
 
@@ -234,7 +229,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
         validate_emission_line_modeling_method_config(cnfg)
         deconstruct_bins = cnfg.getbool('deconstruct_bins', default=False)
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
-        continuum_templates = cnfg.get('continuum_templates')
+        continuum_tpl_key = cnfg.get('continuum_templates')
 
         if cnfg['fit_method'] == 'elric':
             # Chose to use Elric: Parameter set has defaults to handle
@@ -242,7 +237,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # and minimum_snr
             if deconstruct_bins:
                 raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
-            if continuum_templates is not None:
+            if continuum_tpl_key is not None:
                 raise NotImplementedError('When using Elric, cannot change continuum templates.')
 
             fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
@@ -255,9 +250,10 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # missing or None values for reject_boxcar, bias, moments,
             # degree, mdegree; if provided new continuum templates are
             # constructed during the _fill_method_par call.
-            fitpar = SasukePar(None, None, continuum_templates=None,
+            fitpar = SasukePar(None, None, continuum_templates=continuum_tpl_key,
                                etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
                                etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
+                               velscale_ratio=cnfg.getint('velscale_ratio'),
                                guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
                                deconstruct_bins=deconstruct_bins, pixelmask=None,
                                reject_boxcar=cnfg.getint('reject_boxcar'),
@@ -270,7 +266,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
         method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
                                               cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
                                               cnfg.get('artifact_mask'), cnfg['emission_lines'],
-                                              continuum_templates, fitpar, fitclass, fitfunc) ]
+                                              continuum_tpl_key, fitpar, fitclass, fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -685,48 +681,6 @@ class EmissionLineModel:
         if self.stellar_continuum is not None \
                 and 'stellar_continuum' in self.method['fitpar'].keys():
             self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
-
-        if self.method['continuum_templates'] is not None:
-            if self.method['fitpar']['stellar_continuum'] is not None \
-                    and self.stellar_continuum.method['fitpar']['template_library_key'] \
-                                    == self.method['continuum_templates']:
-                warnings.warn('Request emission-line continuum templates identical to those used'
-                              'during the stellar continuum fitting; selection unnecessary.')
-                self.method['fitpar']['continuum_templates'] = None
-            else:
-                # A different set of templates are being used:
-                #   - Must match the spectral resolution of the
-                #     templates to the galaxy data.
-                #   - Fitting function must use the corrected
-                #     dispersions for the stellar kinematics!
-                if self.method['deconstruct_bins']:
-                    # If ultimately fitting the unbinned spaxels, match
-                    # the resolution to the DRP file
-                    spaxel_to_fit = self.binned_spectra.check_fgoodpix()
-                    specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' \
-                                            else None
-                    sres = self.binned_spectra.drpf.spectral_resolution(
-                                ext=specres_ext, toarray=True, fill=True,
-                                pre=self.binned_spectra.method['prepixel_sres'])[spaxel_to_fit,:]
-                    sres = numpy.median(sres, axis=0)
-                else:
-                    # Otherwise match to the median resolution of the
-                    # binned spectra.
-                    bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
-                                                        minimum_snr=self.method['minimum_snr'],
-                                                        stellar_continuum=self.stellar_continuum)
-                    sres = numpy.median(
-                                self.binned_spectra.copy_to_array(ext='SPECRES')[bins_to_fit,:],
-                                axis=0)
-                dlogl = spectral_coordinate_step(self.binned_spectra['WAVE'].data, log=True)
-                voff = numpy.mean(astropy.constants.c.to('km/s').value 
-                                        * self.method['fitpar']['guess_redshift'])
-
-                self.method['fitpar']['continuum_templates'] \
-                        = TemplateLibrary(self.method['continuum_templates'], sres=sres,
-                                          velocity_offset=voff, spectral_step=dlogl, log=True,
-                                          dapsrc=dapsrc, analysis_path=analysis_path,
-                                          hardcopy=False, loggers=self.loggers, quiet=self.quiet)
 
 
     def _add_method_header(self, hdr, model_binid=None):
