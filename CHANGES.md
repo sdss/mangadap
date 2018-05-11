@@ -6,6 +6,9 @@ TODO:
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
  - Change default to fix bad pixels in spectral resolution?
+ - Fix MASKNAME in reference files
+ - Add DAP versioning to reference files
+ - Fix ELMREBIN in 2nd round of moment calculations
 
 2.2.1 (28 Mar 2018): MPL-7/DR15 Candidate tag
 ---------------------------------------------
